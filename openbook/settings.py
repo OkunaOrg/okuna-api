@@ -11,22 +11,77 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
+import logging
+import logging.config
+
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+
+from dotenv import load_dotenv, find_dotenv
+from pathlib import Path
+
+from openbook.utils.environment import EnvironmentChecker
+
+# Logging config
+LOGGING_CONFIG = None
+logging.config.dictConfig({
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'console': {
+            # exact format is not important, this is the minimum information
+            'format': '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+        }
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'console',
+        }
+    },
+    'loggers': {
+        # root logger
+        '': {
+            'level': 'INFO',
+            'handlers': ['console'],
+        },
+    },
+})
+
+logger = logging.getLogger(__name__)
+
+# Load dotenv
+load_dotenv(verbose=True, dotenv_path=find_dotenv())
+
+# The current execution environment
+ENVIRONMENT = os.environ.get('ENVIRONMENT')
+
+if not ENVIRONMENT:
+    raise NameError('ENVIRONMENT environment variable is required')
+
+environment_checker = EnvironmentChecker(environment_value=ENVIRONMENT)
+
+# Django SECRET_KEY
+SECRET_KEY = os.environ.get('SECRET_KEY')
+
+if not SECRET_KEY:
+    raise NameError('SECRET_KEY environment variable is required')
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '&$v@z@fnm(dvqrp!cmu)9+$%&9-(de7y0io!ap#&f!@2u^dqnm'
-
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = environment_checker.is_debug()
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS')
+if environment_checker.is_production():
+    if not ALLOWED_HOSTS:
+        raise NameError('ALLOWED_HOSTS environment variable is required when running on a production environment')
+    ALLOWED_HOSTS = [allowed_host.strip() for allowed_host in ALLOWED_HOSTS.split(',')]
+else:
+    if ALLOWED_HOSTS:
+        logger.info('ALLOWED_HOSTS environment variable ignored.')
+    ALLOWED_HOSTS = []
 
 # Application definition
 
@@ -37,6 +92,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -69,7 +125,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'openbook.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
@@ -79,7 +134,6 @@ DATABASES = {
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
@@ -99,6 +153,29 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# REST Framework config
+
+REST_FRAMEWORK = {
+    'DEFAULT_PARSER_CLASSES': (
+        'rest_framework.parsers.JSONParser',
+    ),
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+    )
+}
+
+# The sentry DSN for error reporting
+SENTRY_DSN = os.environ.get('SENTRY_DSN')
+if environment_checker.is_production():
+    if not SENTRY_DSN:
+        raise NameError('SENTRY_DSN environment variable is required when running on a production environment')
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()]
+    )
+else:
+    if SENTRY_DSN:
+        logger.info('SENTRY_DSN environment variable ignored.')
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
@@ -112,7 +189,6 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/

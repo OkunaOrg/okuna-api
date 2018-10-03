@@ -12,6 +12,8 @@ The API server for Openbook.
     + [Other issues](#other-issues)
     + [Git commit message conventions](#git-commit-message-conventions)
 - [Getting started](#getting-started)
+- [FAQ](#faq)
+    + [Double logging in console](#double-logging-in-console)
 
 ## Requirements
 
@@ -91,6 +93,16 @@ python manage.py runserver
 ```
 
 <br>
+
+## FAQ
+
+### Double logging in console
+
+The local development server runs a separate process for the auto-reloader. You can turn off the auto-reload process by passing the --noreload flag.
+
+````bash
+python manage.py runserver --noreload
+````
 
 #### Happy coding 🎉!
 

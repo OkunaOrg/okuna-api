@@ -12,3 +12,6 @@ name = "pypi"
 [packages]
 
 django = "*"
+python-dotenv = "*"
+djangorestframework = "*"
+sentry-sdk = "*"
