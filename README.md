@@ -73,7 +73,7 @@ git clone git@github.com:OpenbookOrg/openbook-api.git
 Create and configure your .env file
 
 ```bash
-cp sample.env .env
+cp .env.sample .env
 nano .env
 ```
 
