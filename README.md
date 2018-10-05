@@ -12,6 +12,8 @@ The API server for Openbook.
     + [Other issues](#other-issues)
     + [Git commit message conventions](#git-commit-message-conventions)
 - [Getting started](#getting-started)
+- [FAQ](#faq)
+    + [Double logging in console](#double-logging-in-console)
 
 ## Requirements
 
@@ -35,7 +37,7 @@ Examples of contributions we love include:
 
 #### Code of Conduct
 
-Please read and follow our [Code of Conduct](https://github.com/OpenBookOrg/openbook-org-backend/blob/master/CODE_OF_CONDUCT.md).
+Please read and follow our [Code of Conduct](https://github.com/OpenBookOrg/openbook-api/blob/master/CODE_OF_CONDUCT.md).
 
 #### License
 
@@ -71,7 +73,7 @@ git clone git@github.com:OpenbookOrg/openbook-api.git
 Create and configure your .env file
 
 ```bash
-cp sample.env .env
+cp .env.sample .env
 nano .env
 ```
 
@@ -91,6 +93,16 @@ python manage.py runserver
 ```
 
 <br>
+
+## FAQ
+
+### Double logging in console
+
+The local development server runs a separate process for the auto-reloader. You can turn off the auto-reload process by passing the --noreload flag.
+
+````bash
+python manage.py runserver --noreload
+````
 
 #### Happy coding 🎉!
 
