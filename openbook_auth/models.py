@@ -33,6 +33,22 @@ class User(AbstractUser):
         },
     )
 
+    @classmethod
+    def is_username_taken(cls, username):
+        try:
+            cls.objects.get(username=username)
+            return True
+        except User.DoesNotExist:
+            return False
+
+    @classmethod
+    def is_email_taken(cls, email):
+        try:
+            cls.objects.get(email=email)
+            return True
+        except User.DoesNotExist:
+            return False
+
     def save(self, *args, **kwargs):
         self.full_clean()
         return super(User, self).save(*args, **kwargs)
