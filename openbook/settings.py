@@ -93,6 +93,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
+    'openbook_auth'
 ]
 
 MIDDLEWARE = [
@@ -106,6 +108,8 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'openbook.urls'
+
+AUTH_USER_MODEL = 'openbook_auth.User'
 
 TEMPLATES = [
     {
@@ -161,6 +165,9 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
     )
 }
 
@@ -182,7 +189,7 @@ else:
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Amsterdam'
 
 USE_I18N = True
 
