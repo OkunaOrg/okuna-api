@@ -2,8 +2,8 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
-from rest_framework.response import Response
 
+from openbook.responses import ApiMessageResponse
 from .serializers import RegisterSerializer
 from .models import UserProfile
 
@@ -30,4 +30,4 @@ class Register(APIView):
             new_user = User.objects.create_user(email=email, username=username, password=password)
             UserProfile.objects.create(name=name, user=new_user, birth_date=birth_date, avatar=avatar)
 
-        return Response('User created!')
+        return ApiMessageResponse('User successfully created')
