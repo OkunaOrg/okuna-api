@@ -94,6 +94,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
+    'django_nose',
     'openbook_auth'
 ]
 
@@ -112,6 +113,11 @@ ROOT_URLCONF = 'openbook.urls'
 
 AUTH_USER_MODEL = 'openbook_auth.User'
 
+TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
+
+NOSE_ARGS = ['--with-spec', '--spec-color',
+             '--with-coverage', '--cover-html',
+             '--cover-package=.', '--cover-html-dir=reports/cover']
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',

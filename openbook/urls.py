@@ -20,7 +20,7 @@ from django.contrib import admin
 from openbook_auth.views import Register
 
 auth_patterns = [
-    path('register/', Register.as_view()),
+    path('register/', Register.as_view(), name='register-user'),
 ]
 
 api_patterns = [

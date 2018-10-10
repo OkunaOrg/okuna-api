@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
 
@@ -30,4 +31,4 @@ class Register(APIView):
             new_user = User.objects.create_user(email=email, username=username, password=password)
             UserProfile.objects.create(name=name, user=new_user, birth_date=birth_date, avatar=avatar)
 
-        return ApiMessageResponse('User successfully created')
+        return ApiMessageResponse('User successfully created', status=status.HTTP_201_CREATED)
