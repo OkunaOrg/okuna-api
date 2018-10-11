@@ -1,5 +1,7 @@
 <img alt="Open book logo" src="https://snag.gy/yWbLr1.jpg" width="200">
 
+[![CircleCI](https://circleci.com/gh/OpenbookOrg/openbook-api.svg?style=svg&circle-token=b41cbfe3c292a3e900120dac5713328b1e754d20)](https://circleci.com/gh/OpenbookOrg/openbook-api)[![Maintainability](https://api.codeclimate.com/v1/badges/5e6ae40e9d945cad0591/maintainability)](https://codeclimate.com/repos/5bbf4878e46c0d3b620000a2/maintainability)[![Test Coverage](https://api.codeclimate.com/v1/badges/5e6ae40e9d945cad0591/test_coverage)](https://codeclimate.com/repos/5bbf4878e46c0d3b620000a2/test_coverage)
+
 The API server for Openbook.
 
 ## Table of contents
