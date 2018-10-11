@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 import os
 import logging
 import logging.config
+import sys
 
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
@@ -57,7 +58,10 @@ load_dotenv(verbose=True, dotenv_path=find_dotenv())
 ENVIRONMENT = os.environ.get('ENVIRONMENT')
 
 if not ENVIRONMENT:
-    raise NameError('ENVIRONMENT environment variable is required')
+    if 'test' in sys.argv:
+        ENVIRONMENT = EnvironmentChecker.TEST_VALUE
+    else:
+        raise NameError('ENVIRONMENT environment variable is required')
 
 environment_checker = EnvironmentChecker(environment_value=ENVIRONMENT)
 

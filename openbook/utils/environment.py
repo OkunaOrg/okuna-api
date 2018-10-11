@@ -10,8 +10,10 @@ class EnvironmentChecker:
     PRODUCTION_VALUE = 'production'
     ACCEPTANCE_VALUE = 'acceptance'
     DEVELOPMENT_VALUE = 'development'
+    TEST_VALUE = 'test'
 
     ALLOWED_ENVIRONMENTS = [
+        TEST_VALUE,
         PRODUCTION_VALUE,
         DEVELOPMENT_VALUE,
         ACCEPTANCE_VALUE,
@@ -31,6 +33,9 @@ class EnvironmentChecker:
 
     def is_acceptance(self):
         return self.environment_value == self.ACCEPTANCE_VALUE
+
+    def is_test(self):
+        return self.environment_value == self.TEST_VALUE
 
     def is_debug(self):
         return self.is_development() or self.is_acceptance()
