@@ -120,12 +120,19 @@ AUTH_USER_MODEL = 'openbook_auth.User'
 
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
-NOSE_ARGS = [
-    '--cover-erase',
-    '--cover-package=./',
-    '--with-spec', '--spec-color',
-    '--with-coverage', '--cover-html',
-    '--cover-html-dir=reports/cover', '--verbosity=1', '--nologcapture']
+if environment_checker.is_build():
+    NOSE_ARGS = [
+        '--cover-package=./',
+        '--with-spec', '--spec-color',
+        '--with-coverage', '--cover-xml',
+        '--verbosity=1', '--nologcapture']
+else:
+    NOSE_ARGS = [
+        '--cover-erase',
+        '--cover-package=./',
+        '--with-spec', '--spec-color',
+        '--with-coverage', '--cover-html',
+        '--cover-html-dir=reports/cover', '--verbosity=1', '--nologcapture']
 
 TEMPLATES = [
     {
