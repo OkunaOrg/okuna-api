@@ -16,12 +16,14 @@ class User(AbstractUser):
     """
     first_name = None
     last_name = None
-    email = models.EmailField(_('email address'), unique=True)
+    email = models.EmailField(_('email address'), unique=True, null=False, blank=False)
 
     username_validator = UnicodeUsernameValidator() if six.PY3 else ASCIIUsernameValidator()
 
     username = models.CharField(
         _('username'),
+        blank=False,
+        null=False,
         max_length=150,
         unique=True,
         help_text=_('Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.'),
@@ -30,6 +32,22 @@ class User(AbstractUser):
             'unique': _("A user with that username already exists."),
         },
     )
+
+    @classmethod
+    def is_username_taken(cls, username):
+        try:
+            cls.objects.get(username=username)
+            return True
+        except User.DoesNotExist:
+            return False
+
+    @classmethod
+    def is_email_taken(cls, email):
+        try:
+            cls.objects.get(email=email)
+            return True
+        except User.DoesNotExist:
+            return False
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -46,7 +64,7 @@ def create_auth_token(sender, instance=None, created=False, **kwargs):
 
 
 class UserProfile(models.Model):
-    name = models.CharField(_('name'), max_length=150, blank=False, null=False)
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    name = models.CharField(_('name'), max_length=50, blank=False, null=False)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     birth_date = models.DateField(_('birth date'), null=False, blank=False)
     avatar = models.ImageField(_('avatar'), blank=True, null=True)

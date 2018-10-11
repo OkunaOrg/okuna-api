@@ -14,8 +14,20 @@ Including another URLconf
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
 from django.conf.urls import url
+from django.urls import path, include
 from django.contrib import admin
 
+from openbook_auth.views import Register
+
+auth_patterns = [
+    path('register/', Register.as_view(), name='register-user'),
+]
+
+api_patterns = [
+    path('auth/', include(auth_patterns)),
+]
+
 urlpatterns = [
-    url(r'^admin/', admin.site.urls),
+    path('api/', include(api_patterns)),
+    url('admin/', admin.site.urls),
 ]

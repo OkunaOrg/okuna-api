@@ -94,6 +94,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
+    'django_nose',
     'openbook_auth'
 ]
 
@@ -105,12 +106,18 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'openbook.middleware.TimezoneMiddleware'
 ]
 
 ROOT_URLCONF = 'openbook.urls'
 
 AUTH_USER_MODEL = 'openbook_auth.User'
 
+TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
+
+NOSE_ARGS = ['--with-spec', '--spec-color',
+             '--with-coverage', '--cover-html',
+             '--cover-package=.', '--cover-html-dir=reports/cover', '--verbosity=1', '--nologcapture']
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -201,3 +208,5 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+
+MEDIA_ROOT = os.environ.get('MEDIA_ROOT', './files')
