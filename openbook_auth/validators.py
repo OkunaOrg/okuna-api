@@ -7,14 +7,14 @@ from openbook_auth.models import User
 
 
 def username_characters_validator(username):
-    if not re.match(r'^\w+$', username):
+    if not re.match('^[a-zA-Z0-9_]*$', username):
         raise ValidationError(
             _('Usernames can only contain alphanumeric characters and underscores.'),
         )
 
 
 def name_characters_validator(name):
-    if not re.match('(\w+\s\w+)', name):
+    if not re.match('^[a-zA-Z0-9 ]*$', name):
         raise ValidationError(
             _('Names can only contain alphanumeric characters and spaces.'),
         )
@@ -23,7 +23,6 @@ def name_characters_validator(name):
 def username_not_taken_validator(username):
     if User.is_username_taken(username):
         raise ValidationError(
-            code=
             _('The username is already taken.')
         )
 

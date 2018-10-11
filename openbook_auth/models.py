@@ -65,6 +65,6 @@ def create_auth_token(sender, instance=None, created=False, **kwargs):
 
 class UserProfile(models.Model):
     name = models.CharField(_('name'), max_length=50, blank=False, null=False)
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     birth_date = models.DateField(_('birth date'), null=False, blank=False)
     avatar = models.ImageField(_('avatar'), blank=True, null=True)
