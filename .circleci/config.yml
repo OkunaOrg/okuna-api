@@ -60,6 +60,3 @@ jobs:
           # upload test report to Code Climate using `after-build`
                       ./cc-test-reporter after-build --exit-code $?
 
-    - store_artifacts:
-        path: reports
-        destination: reports
