@@ -126,7 +126,7 @@ if environment_checker.is_build():
         '--cover-package=.',
         '--with-spec', '--spec-color',
         '--with-coverage', '--cover-xml',
-        '--exclude-dir=venv',
+        '--exclude-dir=./venv',
         '--verbosity=1', '--nologcapture']
 else:
     NOSE_ARGS = [
