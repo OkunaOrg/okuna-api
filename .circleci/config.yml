@@ -53,9 +53,9 @@ jobs:
     - run:
         name: run tests
         command: |
+          . venv/bin/activate
           # notify Code Climate of a pending test report using `before-build`
           ./cc-test-reporter before-build
-          . venv/bin/activate
           python manage.py test
           # upload test report to Code Climate using `after-build`
                       ./cc-test-reporter after-build --exit-code $?
