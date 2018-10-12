@@ -1,6 +1,7 @@
 # Create your tests here.
+import tempfile
 
-
+from PIL import Image
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -157,13 +158,28 @@ class RegistrationAPITests(APITestCase):
         """
         url = self._get_url()
         username = 'vegueta968'
-        first_request_data = {'username': username, 'name': 'Joel Hernandez', 'email': 'test@email.com',
-                              'password': 'secretPassword123', 'birth_date': '27-1-1996'}
-        response = self.client.post(url, first_request_data, format='multipart')
+        request_data = {'username': username, 'name': 'Joel Hernandez', 'email': 'test@email.com',
+                        'password': 'secretPassword123', 'birth_date': '27-1-1996'}
+        response = self.client.post(url, request_data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(UserProfile.objects.count(), 1)
         user = User.objects.get(username=username)
         self.assertTrue(hasattr(user, 'profile'))
+
+    def test_user_avatar(self):
+        """
+        Should accept an avatar file and store it on the UserProfile
+        """
+        image = Image.new('RGB', (100, 100))
+        tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
+        image.save(tmp_file)
+        username = 'testusername'
+        request_data = {'username': username, 'name': 'Joel Hernandez', 'email': 'test@email.com',
+                        'password': 'secretPassword123', 'birth_date': '27-1-1996', 'avatar': tmp_file}
+        url = self._get_url()
+        self.client.post(url, request_data, format='multipart')
+        user = User.objects.get(username=username)
+        self.assertTrue(hasattr(user.profile, 'avatar'))
 
     def test_user_status(self):
         """
