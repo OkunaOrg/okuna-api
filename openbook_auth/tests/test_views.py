@@ -18,13 +18,13 @@ class RegistrationAPITests(APITestCase):
     RegistrationAPI
     """
 
-    def test_username_alphanumeric_and_underscores_only(self):
+    def test_invalid_username(self):
         """
-        should only not allow usernames with non alphanumeric and underscore characters
+        should return 400 if the username is not valid
         """
         url = self._get_url()
-        usernames = ('lifenautjoe!', 'lifenautjo@', 'lifenautpoe🔒', 'lifenaut-joe', '字kasmndikasm')
-        for username in usernames:
+        invalid_usernames = ('lifenautjoe!', 'lifenautjo@', 'lifenautpoe🔒', 'lifenaut-joe', '字kasmndikasm')
+        for username in invalid_usernames:
             data = {
                 'username': username,
                 'name': 'Miguel',
@@ -37,13 +37,13 @@ class RegistrationAPITests(APITestCase):
             self.assertIn('username', parsed_response)
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_name_alphanumeric_and_spaces_only(self):
+    def test_invalid_name(self):
         """
-        should only not allow usernames with non alphanumeric and underscore characters
+        should return 400 if the name is not valid
         """
         url = self._get_url()
-        names = ('Joel!', 'Joel_', 'Joel@', 'Joel ✨', 'Joel 字', 'Joel -!')
-        for name in names:
+        invalid_names = ('Joel!', 'Joel_', 'Joel@', 'Joel ✨', 'Joel 字', 'Joel -!')
+        for name in invalid_names:
             data = {
                 'username': 'lifenautjoe',
                 'name': name,
@@ -56,9 +56,9 @@ class RegistrationAPITests(APITestCase):
             self.assertIn('name', parsed_response)
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_username_is_required(self):
+    def test_username_required(self):
         """
-        should require a username
+        should return 400 if the username is not present
         """
         url = self._get_url()
         data = {'name': 'Joel', 'email': 'user@mail.com', 'password': 'secretPassword123', 'birth_date': '27-1-1996'}
@@ -67,9 +67,9 @@ class RegistrationAPITests(APITestCase):
         self.assertIn('username', parsed_response)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_name_is_required(self):
+    def test_name_required(self):
         """
-        should require a name
+        should return 400 if the name is not present
         """
         url = self._get_url()
         data = {'username': 'lifenautjoe', 'email': 'user@mail.com', 'password': 'secretPassword123',
@@ -79,9 +79,9 @@ class RegistrationAPITests(APITestCase):
         self.assertIn('name', parsed_response)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_email_is_required(self):
+    def test_email_required(self):
         """
-        should require an email
+        should return 400 if the email is not present
         """
         url = self._get_url()
         data = {'username': 'lifenautjoe', 'name': 'Joel Hernandez', 'password': 'secretPassword123',
@@ -91,9 +91,9 @@ class RegistrationAPITests(APITestCase):
         self.assertIn('email', parsed_response)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_birth_date_is_required(self):
+    def test_birth_date_required(self):
         """
-        should require a birth_date
+        should return 400 if the birth_date is not present
         """
         url = self._get_url()
         data = {'username': 'lifenautjoe', 'name': 'Joel Hernandez', 'email': 'user@mail.com',
@@ -103,9 +103,9 @@ class RegistrationAPITests(APITestCase):
         self.assertIn('birth_date', parsed_response)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_username_is_not_taken(self):
+    def test_username_taken(self):
         """
-        should check whether the username is not taken
+        should return 400 if username is taken.
         """
         url = self._get_url()
         username = 'lifenautjoe'
@@ -121,9 +121,9 @@ class RegistrationAPITests(APITestCase):
         self.assertIn('username', parsed_response)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_email_is_not_taken(self):
+    def test_email_taken(self):
         """
-        should check whether the email is not taken
+        should return 400 if email is taken.
         """
         url = self._get_url()
         email = 'joel@open-book.org'
@@ -138,7 +138,7 @@ class RegistrationAPITests(APITestCase):
         self.assertIn('email', parsed_response)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_user_is_created(self):
+    def test_user_created(self):
         """
         should create a User model instance
         """
@@ -164,6 +164,29 @@ class RegistrationAPITests(APITestCase):
         self.assertEqual(UserProfile.objects.count(), 1)
         user = User.objects.get(username=username)
         self.assertTrue(hasattr(user, 'profile'))
+
+    def test_user_status(self):
+        """
+        Should return 201 when the user was created successfully
+        """
+        users_data = (
+            {
+                'username': 'a_valid_username', 'name': 'Joel Hernandez', 'email': 'hi@ohmy.com',
+                'password': 'askdnaoisd!', 'birth_date': '27-1-1991'
+            },
+            {
+                'username': 'terry_crews', 'name': 'Terry Crews', 'email': 'terry@oldsp.ie',
+                'password': 'secretPassword123', 'birth_date': '27-1-1996'
+            },
+            {
+                'username': 'mike_chowder___', 'name': 'Mike Johnson', 'email': 'mike@chowchow.com',
+                'password': 'OhGoDwEnEEdFixTurES!', 'birth_date': '27-01-1991'
+            }
+        )
+        url = self._get_url()
+        for user_data_item in users_data:
+            response = self.client.post(url, user_data_item, format='multipart')
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def _get_url(self):
         return reverse('register-user')
