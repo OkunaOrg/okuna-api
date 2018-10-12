@@ -1,6 +1,7 @@
 import re
 
 from django.utils.translation import gettext_lazy as _
+from rest_framework import status
 from rest_framework.exceptions import ValidationError
 
 from openbook_auth.models import User
@@ -23,7 +24,7 @@ def name_characters_validator(name):
 def username_not_taken_validator(username):
     if User.is_username_taken(username):
         raise ValidationError(
-            _('The username is already taken.')
+            _('The username is already taken.'),
         )
 
 

@@ -13,3 +13,12 @@ class RegisterSerializer(serializers.Serializer):
     name = serializers.CharField(min_length=1, max_length=50, validators=[name_characters_validator])
     avatar = serializers.FileField(allow_empty_file=True, required=False)
     email = serializers.EmailField(validators=[email_not_taken_validator])
+
+
+class UsernameCheckSerializer(serializers.Serializer):
+    username = serializers.CharField(min_length=1, max_length=30,
+                                     validators=[username_characters_validator, username_not_taken_validator])
+
+
+class EmailCheckSerializer(serializers.Serializer):
+    email = serializers.EmailField(validators=[email_not_taken_validator])
