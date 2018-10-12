@@ -17,10 +17,12 @@ from django.conf.urls import url
 from django.urls import path, include
 from django.contrib import admin
 
-from openbook_auth.views import Register
+from openbook_auth.views import Register, UsernameCheck, EmailCheck
 
 auth_patterns = [
     path('register/', Register.as_view(), name='register-user'),
+    path('username-check/', UsernameCheck.as_view(), name='username-check'),
+    path('email-check/', EmailCheck.as_view(), name='email-check'),
 ]
 
 api_patterns = [
