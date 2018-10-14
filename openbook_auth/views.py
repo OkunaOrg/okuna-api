@@ -3,6 +3,7 @@ from django.db import transaction
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
+from django.utils.translation import gettext as _
 
 from openbook.responses import ApiMessageResponse
 from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheckSerializer
@@ -34,7 +35,7 @@ class Register(APIView):
             new_user = User.objects.create_user(email=email, username=username, password=password)
             UserProfile.objects.create(name=name, user=new_user, birth_date=birth_date, avatar=avatar)
 
-        return ApiMessageResponse('User successfully created', status=status.HTTP_201_CREATED)
+        return ApiMessageResponse(_('User successfully created'), status=status.HTTP_201_CREATED)
 
 
 class UsernameCheck(APIView):
@@ -47,7 +48,7 @@ class UsernameCheck(APIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         # The serializer contains the username checks, meaning at this line, it's all good.
-        return ApiMessageResponse('Username available', status=status.HTTP_202_ACCEPTED)
+        return ApiMessageResponse(_('Username available'), status=status.HTTP_202_ACCEPTED)
 
 
 class EmailCheck(APIView):
@@ -60,4 +61,4 @@ class EmailCheck(APIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         # The serializer contains the email checks, meaning at this line, it's all good.
-        return ApiMessageResponse('Email available', status=status.HTTP_202_ACCEPTED)
+        return ApiMessageResponse(_('Email available'), status=status.HTTP_202_ACCEPTED)
