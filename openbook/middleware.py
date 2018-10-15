@@ -10,7 +10,7 @@ class TimezoneMiddleware(MiddlewareMixin):
     """
 
     def process_request(self, request):
-        tzname = request.session.get('timezone')
+        tzname = request.META.get('HTTP_TIME_ZONE')
         if tzname:
             timezone.activate(pytz.timezone(tzname))
         else:
