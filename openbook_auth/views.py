@@ -10,7 +10,8 @@ from django.utils.translation import gettext as _
 from rest_framework.authtoken.models import Token
 
 from openbook.responses import ApiMessageResponse
-from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheckSerializer, LoginSerializer
+from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheckSerializer, LoginSerializer, \
+    GetUserSerializer
 from .models import UserProfile
 
 
@@ -85,3 +86,11 @@ class Login(APIView):
             return Response({'token': token.key}, status=status.HTTP_200_OK)
         else:
             raise AuthenticationFailed()
+
+
+class User(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        user_serializer = GetUserSerializer(request.user)
+        return Response(user_serializer.data, status=status.HTTP_200_OK)

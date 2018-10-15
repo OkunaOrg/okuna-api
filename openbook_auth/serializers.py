@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from openbook_auth.models import User
 from openbook_auth.validators import username_characters_validator, name_characters_validator, \
     username_not_taken_validator, email_not_taken_validator
 from django.contrib.auth.password_validation import validate_password
@@ -28,3 +29,13 @@ class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(min_length=1, max_length=30,
                                      validators=[username_characters_validator])
     password = serializers.CharField(min_length=8, max_length=100)
+
+class GetUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            'email',
+            'username',
+            'profile',
+        )
+        depth = 1
