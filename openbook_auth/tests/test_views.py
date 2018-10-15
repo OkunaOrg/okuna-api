@@ -14,6 +14,9 @@ import json
 logger = logging.getLogger(__name__)
 
 
+# TODO Create a user factory to automate the creation of testing users.
+
+
 class RegistrationAPITests(APITestCase):
     """
     RegistrationAPI
@@ -183,7 +186,7 @@ class RegistrationAPITests(APITestCase):
 
     def test_user_status(self):
         """
-        Should return 201 when the user was created successfully
+        Should return 201 when the user was created successfully and return its auth token.
         """
         users_data = (
             {
@@ -203,6 +206,11 @@ class RegistrationAPITests(APITestCase):
         for user_data_item in users_data:
             response = self.client.post(url, user_data_item, format='multipart')
             self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            parsed_response = json.loads(response.content)
+            self.assertIn('token', parsed_response)
+            response_auth_token = parsed_response['token']
+            user = User.objects.get(username=user_data_item['username'])
+            self.assertEqual(response_auth_token, user.auth_token.key)
 
     def _get_url(self):
         return reverse('register-user')
@@ -330,3 +338,94 @@ class EmailCheckAPITests(APITestCase):
 
     def _get_url(self):
         return reverse('email-check')
+
+
+class LoginAPITests(APITestCase):
+    """
+    LoginAPI
+    """
+
+    def test_login_success(self):
+        """
+        should return 200 and the user token when sending correct credentials
+        """
+        username = 'mike_waswski'
+        password = 'boo_scary!'
+
+        user = User.objects.create_user(username=username, password=password, email='lifenautjoe@mail.com')
+
+        url = self._get_url()
+
+        request_data = {
+            'username': username,
+            'password': password
+        }
+
+        response = self.client.post(url, request_data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertIn('token', parsed_response)
+        response_token = parsed_response['token']
+        user_token = user.auth_token
+
+        self.assertEqual(response_token, user_token.key)
+
+    def test_login_failure(self):
+        """
+        should return 401 when sending incorrect credentials
+        """
+        username = 'pauly_d'
+        password = 'theW0rstDJEv4'
+
+        User.objects.create_user(username=username, password=password, email='pauly@mail.com')
+
+        url = self._get_url()
+
+        request_data = {
+            'username': username,
+            'password': password + '!'
+        }
+
+        response = self.client.post(url, request_data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def _get_url(self):
+        return reverse('login-user')
+
+
+class UserAPITests(APITestCase):
+    """
+    UserAPI
+    """
+
+    def test_retrieve_user(self):
+        """
+        should return 200 and the data of the authenticated user
+        """
+        username = 'another_user'
+        password = 'yap!oansid_'
+
+        user = User.objects.create_user(username=username, password=password, email='lifenautjoe@mail.com')
+
+        auth_token = user.auth_token.key
+
+        header = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
+
+        url = self._get_url()
+
+        response = self.client.get(url, **header)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertIn('username', parsed_response)
+        response_username = parsed_response['username']
+        self.assertEqual(response_username, username)
+
+    def _get_url(self):
+        return reverse('user')

@@ -1,12 +1,17 @@
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, authenticate
 from django.db import transaction
 from rest_framework import status
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.translation import gettext as _
+from rest_framework.authtoken.models import Token
 
 from openbook.responses import ApiMessageResponse
-from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheckSerializer
+from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheckSerializer, LoginSerializer, \
+    GetUserSerializer
 from .models import UserProfile
 
 
@@ -35,7 +40,11 @@ class Register(APIView):
             new_user = User.objects.create_user(email=email, username=username, password=password)
             UserProfile.objects.create(name=name, user=new_user, birth_date=birth_date, avatar=avatar)
 
-        return ApiMessageResponse(_('User successfully created'), status=status.HTTP_201_CREATED)
+        user_auth_token = new_user.auth_token
+
+        return Response({
+            'token': user_auth_token.key
+        }, status=status.HTTP_201_CREATED)
 
 
 class UsernameCheck(APIView):
@@ -62,3 +71,30 @@ class EmailCheck(APIView):
         serializer.is_valid(raise_exception=True)
         # The serializer contains the email checks, meaning at this line, it's all good.
         return ApiMessageResponse(_('Email available'), status=status.HTTP_202_ACCEPTED)
+
+
+class Login(APIView):
+    serializer_class = LoginSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return self.on_valid_request_data(serializer.validated_data)
+
+    def on_valid_request_data(self, data):
+        username = data['username']
+        password = data['password']
+        user = authenticate(username=username, password=password)
+        if user is not None:
+            token, created = Token.objects.get_or_create(user=user)
+            return Response({'token': token.key}, status=status.HTTP_200_OK)
+        else:
+            raise AuthenticationFailed()
+
+
+class User(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        user_serializer = GetUserSerializer(request.user)
+        return Response(user_serializer.data, status=status.HTTP_200_OK)

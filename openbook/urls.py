@@ -20,12 +20,14 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from openbook.views import Time
-from openbook_auth.views import Register, UsernameCheck, EmailCheck
+from openbook_auth.views import Register, UsernameCheck, EmailCheck, Login, User
 
 auth_patterns = [
     path('register/', Register.as_view(), name='register-user'),
+    path('login/', Login.as_view(), name='login-user'),
     path('username-check/', UsernameCheck.as_view(), name='username-check'),
     path('email-check/', EmailCheck.as_view(), name='email-check'),
+    path('user/', User.as_view(), name='user'),
 ]
 
 api_patterns = [
