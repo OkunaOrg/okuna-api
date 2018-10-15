@@ -32,6 +32,9 @@ class User(AbstractUser):
             'unique': _("A user with that username already exists."),
         },
     )
+    class Meta:
+        verbose_name = _('user')
+        verbose_name_plural = _('users')
 
     @classmethod
     def is_username_taken(cls, username):
@@ -68,3 +71,13 @@ class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     birth_date = models.DateField(_('birth date'), null=False, blank=False)
     avatar = models.ImageField(_('avatar'), blank=True, null=True)
+
+    class Meta:
+        verbose_name = _('user profile')
+        verbose_name_plural = _('users profiles')
+
+    def __repr__(self):
+        return '<UserProfile %s>' % self.user.username
+
+    def __str__(self):
+        return self.user.username
