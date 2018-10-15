@@ -8,12 +8,6 @@ from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 from rest_framework.authtoken.models import Token
 
-from django.contrib.auth.base_user import BaseUserManager
-
-
-class UserManager(BaseUserManager):
-    use_in_migrations = True
-
 
 class User(AbstractUser):
     """"
@@ -38,9 +32,6 @@ class User(AbstractUser):
             'unique': _("A user with that username already exists."),
         },
     )
-
-    objects = UserManager()
-
     class Meta:
         verbose_name = _('user')
         verbose_name_plural = _('users')
