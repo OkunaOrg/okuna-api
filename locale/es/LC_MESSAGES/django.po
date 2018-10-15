@@ -1,0 +1,87 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# 
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2018-10-14 16:04+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: Joel Levi Hernandez Fernandez <joel@open-book.org>, 2018\n"
+"Language-Team: Spanish (https://www.transifex.com/openbook-bv/teams/92528/es/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: es\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: openbook/settings.py:227
+msgid "Spanish"
+msgstr "Español"
+
+#: openbook/settings.py:228
+msgid "English"
+msgstr "Inglés"
+
+#: openbook_auth/models.py:19
+msgid "email address"
+msgstr "Dirección de correo"
+
+#: openbook_auth/models.py:24
+msgid "username"
+msgstr "Nombre de usuario"
+
+#: openbook_auth/models.py:29
+msgid "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."
+msgstr ""
+"Mandatorio. 150 Carácteres o menos. Letras, numeros y @/./+/-/_ únicamente."
+
+#: openbook_auth/models.py:32
+msgid "A user with that username already exists."
+msgstr "Un usuario con ese nombre ya existe."
+
+#: openbook_auth/models.py:67
+msgid "name"
+msgstr "Nombre"
+
+#: openbook_auth/models.py:69
+msgid "birth date"
+msgstr "Fecha de nacimiento"
+
+#: openbook_auth/models.py:70
+msgid "avatar"
+msgstr "Avatar"
+
+#: openbook_auth/validators.py:12
+msgid "Usernames can only contain alphanumeric characters and underscores."
+msgstr ""
+"Nombres de usuario pueden contener caracteres alfanumericos y guiones bajos "
+"únicamente."
+
+#: openbook_auth/validators.py:19
+msgid "Names can only contain alphanumeric characters and spaces."
+msgstr ""
+"Nombres pueden contener caracteres alfanumericos y espacios únicamente."
+
+#: openbook_auth/validators.py:26
+msgid "The username is already taken."
+msgstr "El nombre de usuario ya existe."
+
+#: openbook_auth/validators.py:33
+msgid "An account for the email already exists."
+msgstr "Una cuenta con esa dirección de correo ya existe."
+
+#: openbook_auth/views.py:38
+msgid "User successfully created"
+msgstr "Usuario creado exitosamente."
+
+#: openbook_auth/views.py:51
+msgid "Username available"
+msgstr "El nombre de usuario esta disponible."
+
+#: openbook_auth/views.py:64
+msgid "Email available"
+msgstr "El email esta disponible."

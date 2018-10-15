@@ -1,0 +1,83 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2018-10-14 16:04+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: openbook/settings.py:227
+msgid "Spanish"
+msgstr ""
+
+#: openbook/settings.py:228
+msgid "English"
+msgstr ""
+
+#: openbook_auth/models.py:19
+msgid "email address"
+msgstr ""
+
+#: openbook_auth/models.py:24
+msgid "username"
+msgstr ""
+
+#: openbook_auth/models.py:29
+msgid "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."
+msgstr ""
+
+#: openbook_auth/models.py:32
+msgid "A user with that username already exists."
+msgstr ""
+
+#: openbook_auth/models.py:67
+msgid "name"
+msgstr ""
+
+#: openbook_auth/models.py:69
+msgid "birth date"
+msgstr ""
+
+#: openbook_auth/models.py:70
+msgid "avatar"
+msgstr ""
+
+#: openbook_auth/validators.py:12
+msgid "Usernames can only contain alphanumeric characters and underscores."
+msgstr ""
+
+#: openbook_auth/validators.py:19
+msgid "Names can only contain alphanumeric characters and spaces."
+msgstr ""
+
+#: openbook_auth/validators.py:26
+msgid "The username is already taken."
+msgstr ""
+
+#: openbook_auth/validators.py:33
+msgid "An account for the email already exists."
+msgstr ""
+
+#: openbook_auth/views.py:38
+msgid "User successfully created"
+msgstr ""
+
+#: openbook_auth/views.py:51
+msgid "Username available"
+msgstr ""
+
+#: openbook_auth/views.py:64
+msgid "Email available"
+msgstr ""
