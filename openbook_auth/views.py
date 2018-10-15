@@ -40,7 +40,11 @@ class Register(APIView):
             new_user = User.objects.create_user(email=email, username=username, password=password)
             UserProfile.objects.create(name=name, user=new_user, birth_date=birth_date, avatar=avatar)
 
-        return ApiMessageResponse(_('User successfully created'), status=status.HTTP_201_CREATED)
+        user_auth_token = new_user.auth_token
+
+        return Response({
+            'token': user_auth_token.key
+        }, status=status.HTTP_201_CREATED)
 
 
 class UsernameCheck(APIView):

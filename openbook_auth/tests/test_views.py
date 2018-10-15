@@ -186,7 +186,7 @@ class RegistrationAPITests(APITestCase):
 
     def test_user_status(self):
         """
-        Should return 201 when the user was created successfully
+        Should return 201 when the user was created successfully and return its auth token.
         """
         users_data = (
             {
@@ -206,6 +206,11 @@ class RegistrationAPITests(APITestCase):
         for user_data_item in users_data:
             response = self.client.post(url, user_data_item, format='multipart')
             self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            parsed_response = json.loads(response.content)
+            self.assertIn('token', parsed_response)
+            response_auth_token = parsed_response['token']
+            user = User.objects.get(username=user_data_item['username'])
+            self.assertEqual(response_auth_token, user.auth_token.key)
 
     def _get_url(self):
         return reverse('register-user')
@@ -412,7 +417,7 @@ class UserAPITests(APITestCase):
 
         url = self._get_url()
 
-        response = self.client.get(url,  **header)
+        response = self.client.get(url, **header)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
