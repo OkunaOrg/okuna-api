@@ -390,3 +390,37 @@ class LoginAPITests(APITestCase):
 
     def _get_url(self):
         return reverse('login-user')
+
+
+class UserAPITests(APITestCase):
+    """
+    UserAPI
+    """
+
+    def test_retrieve_user(self):
+        """
+        should return 200 and the data of the authenticated user
+        """
+        username = 'another_user'
+        password = 'yap!oansid_'
+
+        user = User.objects.create_user(username=username, password=password, email='lifenautjoe@mail.com')
+
+        auth_token = user.auth_token.key
+
+        header = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
+
+        url = self._get_url()
+
+        response = self.client.get(url,  **header)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertIn('username', parsed_response)
+        response_username = parsed_response['username']
+        self.assertEqual(response_username, username)
+
+    def _get_url(self):
+        return reverse('user')
