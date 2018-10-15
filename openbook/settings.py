@@ -239,3 +239,5 @@ LANGUAGE_CODE = 'en'
 STATIC_URL = '/static/'
 
 MEDIA_ROOT = os.environ.get('MEDIA_ROOT', './files')
+
+MEDIA_URL = os.environ.get('MEDIA_ROOT', '/files/')

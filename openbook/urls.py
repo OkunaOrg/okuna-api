@@ -16,6 +16,8 @@ Including another URLconf
 from django.conf.urls import url
 from django.urls import path, include
 from django.contrib import admin
+from django.conf import settings
+from django.conf.urls.static import static
 
 from openbook.views import Time
 from openbook_auth.views import Register, UsernameCheck, EmailCheck
@@ -35,3 +37,7 @@ urlpatterns = [
     path('api/', include(api_patterns)),
     url('admin/', admin.site.urls),
 ]
+
+# The static helper works only in debug mode
+# https://docs.djangoproject.com/en/2.1/howto/static-files/#serving-files-uploaded-by-a-user-during-development
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
