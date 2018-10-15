@@ -22,3 +22,9 @@ class UsernameCheckSerializer(serializers.Serializer):
 
 class EmailCheckSerializer(serializers.Serializer):
     email = serializers.EmailField(validators=[email_not_taken_validator])
+
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField(min_length=1, max_length=30,
+                                     validators=[username_characters_validator])
+    password = serializers.CharField(min_length=8, max_length=100)
