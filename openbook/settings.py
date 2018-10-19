@@ -87,7 +87,7 @@ if environment_checker.is_production():
 else:
     if ALLOWED_HOSTS:
         logger.info('ALLOWED_HOSTS environment variable ignored.')
-    ALLOWED_HOSTS = []
+    ALLOWED_HOSTS = ['*']
 
 # Application definition
 
