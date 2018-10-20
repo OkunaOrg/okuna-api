@@ -21,7 +21,7 @@ class Post(models.Model):
 
 
 class PostImage(models.Model):
-    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='post')
+    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='image')
     image = models.ImageField(_('image'), blank=False, null=False)
 
 
