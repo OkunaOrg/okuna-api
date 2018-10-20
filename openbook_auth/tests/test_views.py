@@ -176,11 +176,13 @@ class RegistrationAPITests(APITestCase):
         image = Image.new('RGB', (100, 100))
         tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
         image.save(tmp_file)
+        tmp_file.seek(0)
         username = 'testusername'
         request_data = {'username': username, 'name': 'Joel Hernandez', 'email': 'test@email.com',
                         'password': 'secretPassword123', 'birth_date': '27-1-1996', 'avatar': tmp_file}
         url = self._get_url()
-        self.client.post(url, request_data, format='multipart')
+        response = self.client.post(url, request_data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         user = User.objects.get(username=username)
         self.assertTrue(hasattr(user.profile, 'avatar'))
 
