@@ -7,11 +7,10 @@ from django.utils import timezone
 
 class Time(APIView):
     """
-    The API to check if a username is both valid and not taken.
+    API for returning the current time.
     """
 
     def get(self, request):
-        # The serializer contains the username checks, meaning at this line, it's all good.
         time = timezone.localtime(timezone.now())
         time_zone = get_current_timezone()
 
