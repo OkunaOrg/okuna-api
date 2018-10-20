@@ -8,6 +8,8 @@ from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 from rest_framework.authtoken.models import Token
 
+from openbook.settings import USERNAME_MAX_LENGTH
+
 
 class User(AbstractUser):
     """"
@@ -24,14 +26,16 @@ class User(AbstractUser):
         _('username'),
         blank=False,
         null=False,
-        max_length=150,
+        max_length=USERNAME_MAX_LENGTH,
         unique=True,
-        help_text=_('Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.'),
+        help_text=_('Required. %(username_max_length)d characters or fewer. Letters, digits and _ only.' % {
+            'username_max_length': USERNAME_MAX_LENGTH}),
         validators=[username_validator],
         error_messages={
             'unique': _("A user with that username already exists."),
         },
     )
+
     class Meta:
         verbose_name = _('user')
         verbose_name_plural = _('users')

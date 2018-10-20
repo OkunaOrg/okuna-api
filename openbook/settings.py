@@ -242,3 +242,11 @@ STATIC_URL = '/static/'
 MEDIA_ROOT = os.environ.get('MEDIA_ROOT', './files')
 
 MEDIA_URL = os.environ.get('MEDIA_ROOT', '/files/')
+
+# Openbook config
+
+USERNAME_MAX_LENGTH = 30
+POST_MAX_LENGTH = 560
+COMMENT_MAX_LENGTH = 280
+PASSWORD_MIN_LENGTH = 10
+PASSWORD_MAX_LENGTH = 100
