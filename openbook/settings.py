@@ -101,7 +101,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'django_nose',
-    'openbook_auth'
+    'openbook_auth',
+    'openbook_posts',
 ]
 
 MIDDLEWARE = [
