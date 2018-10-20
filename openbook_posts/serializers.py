@@ -9,7 +9,15 @@ class CreatePostSerializer(serializers.Serializer):
     image = serializers.ImageField(allow_empty_file=True, required=False)
 
 
-class CreatePostPostImageSerializer(serializers.ModelSerializer):
+class CommentPostSerializer(serializers.Serializer):
+    text = serializers.CharField(max_length=COMMENT_MAX_LENGTH, required=True, allow_blank=False)
+
+
+class ReactToPostSerializer(serializers.Serializer):
+    reaction_id = serializers.IntegerField(required=True, min_value=0)
+
+
+class PostImageSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(max_length=None, use_url=True, allow_null=True, required=False)
 
     class Meta:
@@ -19,8 +27,8 @@ class CreatePostPostImageSerializer(serializers.ModelSerializer):
         )
 
 
-class CreatePostPostSerializer(serializers.ModelSerializer):
-    image = CreatePostPostImageSerializer(many=False)
+class PostSerializer(serializers.ModelSerializer):
+    image = PostImageSerializer(many=False)
 
     class Meta:
         model = Post
@@ -29,11 +37,3 @@ class CreatePostPostSerializer(serializers.ModelSerializer):
             'text',
             'image'
         )
-
-
-class CommentPostSerializer(serializers.Serializer):
-    text = serializers.CharField(max_length=COMMENT_MAX_LENGTH, required=True, allow_blank=False)
-
-
-class ReactToPostSerializer(serializers.Serializer):
-    reaction_id = serializers.IntegerField(required=True, min_value=0)
