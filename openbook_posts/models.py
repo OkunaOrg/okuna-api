@@ -4,8 +4,12 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
 # Create your views here.
+from openbook.settings import CIRCLE_MAX_LENGTH
 from openbook_auth.models import User
 from openbook_posts.validators import hex_color_validator
+
+# #FFFFFF
+COLOR_ATTR_MAX_LENGTH = 7
 
 
 class Post(models.Model):
@@ -52,7 +56,8 @@ class PostReactionEmoji(models.Model):
     name = models.CharField(_('name'), max_length=32, blank=False, null=False)
     shortcut = models.CharField(_('shortcut'), max_length=16, blank=False, null=False)
     # Hex colour. #FFFFFF
-    color = models.CharField(_('color'), max_length=7, blank=False, null=False, validators=[hex_color_validator])
+    color = models.CharField(_('color'), max_length=COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
+                             validators=[hex_color_validator])
     image = models.ImageField(_('image'), blank=False, null=False)
     created = models.DateTimeField(editable=False)
 
@@ -61,3 +66,18 @@ class PostReactionEmoji(models.Model):
         if not self.id:
             self.created = timezone.now()
         return super(PostReactionEmoji, self).save(*args, **kwargs)
+
+
+class Circle(models.Model):
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='circles')
+    name = models.CharField(_('name'), max_length=CIRCLE_MAX_LENGTH, blank=False, null=False)
+    color = models.CharField(_('color'), max_length=COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
+                             validators=[hex_color_validator])
+    posts = models.ManyToManyField(Post, related_name='circles')
+
+
+class CircleConnection(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='connections')
+    circle = models.ForeignKey(Circle, on_delete=models.CASCADE, related_name='connections')
+    target_connection = models.OneToOneField('self', on_delete=models.CASCADE)
+    following = models.BooleanField(default=True, blank=False, null=False)
