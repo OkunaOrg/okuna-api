@@ -156,23 +156,23 @@ WSGI_APPLICATION = 'openbook.wsgi.application'
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
 if environment_checker.is_test():
-  DATABASES = {
-    'default': {
-      'ENGINE': 'django.db.backends.sqlite3',
-      'NAME': 'open-book-api'
+    DATABASES = {
+      'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': 'open-book-api'
+      }
     }
-  }
 else:
     DATABASES = {
-    'default': {
+     'default':  {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'openbook-api',
         'USER': os.environ.get('DB_USER'),
         'PASSWORD': os.environ.get('DB_PASSWORD'),
         'HOST': os.environ.get('DB_HOST'),   # Or an IP Address that your DB is hosted on
         'PORT': os.environ.get('DB_PORT'),
+      }
     }
-}
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
