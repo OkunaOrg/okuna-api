@@ -162,8 +162,8 @@ if environment_checker.is_test():
       'NAME': 'open-book-api'
     }
   }
-
-DATABASES = {
+else:
+    DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'openbook-api',
