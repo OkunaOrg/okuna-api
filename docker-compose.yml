@@ -1,0 +1,26 @@
+version: '3'
+services:
+  db:
+    image: mysql:5.7
+    ports:
+    - "3306:3306"
+    networks:
+    - openbook-net
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: openbook-api
+  web:
+    image: openbook-api:1.0
+    build: .
+    restart: always
+    command: ["./wait-for-it.sh","db:3306","--","python", "manage.py" ,"runserver", "0.0.0.0:8000"]
+    volumes:
+    - .:/code
+    ports:
+    - "8000:8000"
+    networks:
+    - openbook-net
+    depends_on:
+    - db
+networks:
+  openbook-net:
