@@ -10,17 +10,14 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
-import os
-import logging
 import logging.config
+import os
 import sys
 
 import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
 from django.utils.translation import gettext_lazy  as _
-
 from dotenv import load_dotenv, find_dotenv
-from pathlib import Path
+from sentry_sdk.integrations.django import DjangoIntegration
 
 from openbook.utils.environment import EnvironmentChecker
 
@@ -157,6 +154,14 @@ WSGI_APPLICATION = 'openbook.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
+
+if environment_checker.is_test():
+  DATABASES = {
+    'default': {
+      'ENGINE': 'django.db.backends.sqlite3',
+      'NAME': 'open-book-api'
+    }
+  }
 
 DATABASES = {
     'default': {
