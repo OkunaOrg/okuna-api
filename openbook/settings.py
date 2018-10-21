@@ -160,8 +160,12 @@ WSGI_APPLICATION = 'openbook.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'openbook-api',
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_HOST'),   # Or an IP Address that your DB is hosted on
+        'PORT': os.environ.get('DB_PORT'),
     }
 }
 
