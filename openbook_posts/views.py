@@ -1,5 +1,6 @@
 from django.db import transaction
 from rest_framework import status
+from rest_framework.exceptions import NotFound
 from rest_framework.parsers import FormParser, MultiPartParser, JSONParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -35,3 +36,32 @@ class Posts(APIView):
         post_serializer = PostSerializer(user.posts, many=True, context={"request": request})
 
         return Response(post_serializer.data, status=status.HTTP_200_OK)
+
+
+class PostView(APIView):
+    def get(self, request, post_id):
+        user = request.user
+        try:
+            post = user.posts.get(pk=post_id)
+        except Post.DoesNotExist:
+            raise NotFound()
+
+        post_serializer = PostSerializer(post, context={"request": request})
+
+        return Response(post_serializer.data, status=status.HTTP_200_OK)
+
+
+class PostComments(APIView):
+    def get(self, request, post_id):
+        pass
+
+    def put(self, request, post_id):
+        pass
+
+
+class PostReactions(APIView):
+    def get(self, request, post_id):
+        pass
+
+    def put(self, request, post_id):
+        pass

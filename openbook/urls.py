@@ -21,7 +21,7 @@ from django.conf.urls.static import static
 
 from openbook.views import Time
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, Login, User
-from openbook_posts.views import Posts
+from openbook_posts.views import Posts, PostView
 
 auth_patterns = [
     path('register/', Register.as_view(), name='register-user'),
@@ -33,6 +33,7 @@ auth_patterns = [
 
 posts_patterns = [
     path('', Posts.as_view(), name='posts'),
+    path('<int:post_id>/', PostView.as_view(), name='post'),
 ]
 
 api_patterns = [
