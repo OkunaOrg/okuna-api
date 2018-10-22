@@ -6,14 +6,15 @@ services:
     - "3306:3306"
     networks:
     - openbook-net
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: openbook-api
+    env_file:
+      - ./.env
+    volumes:
+      - .docker/mysql/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/
   web:
     image: openbook-api:1.0
     build: .
     restart: always
-    command: ["./wait-for-it.sh","db:3306","--","python", "manage.py" ,"runserver", "0.0.0.0:8000"]
+    command: [".docker/wait-for-it.sh","db:3306","--","python", "manage.py" ,"runserver", "0.0.0.0:8000"]
     volumes:
     - .:/code
     ports:

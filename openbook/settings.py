@@ -166,11 +166,11 @@ else:
     DATABASES = {
      'default':  {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'openbook-api',
-        'USER': os.environ.get('DB_USER'),
-        'PASSWORD': os.environ.get('DB_PASSWORD'),
-        'HOST': os.environ.get('DB_HOST'),   # Or an IP Address that your DB is hosted on
-        'PORT': os.environ.get('DB_PORT'),
+        'NAME': os.environ.get('MYSQL_DATABASE'),
+        'USER': os.environ.get('MYSQL_USER'),
+        'PASSWORD': os.environ.get('MYSQL_PASSWORD'),
+        'HOST': os.environ.get('MYSQL_HOST'),   # Or an IP Address that your DB is hosted on
+        'PORT': os.environ.get('MYSQL_PORT'),
       }
     }
 
