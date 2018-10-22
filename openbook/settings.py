@@ -193,6 +193,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_PARSER_CLASSES': (
+        'rest_framework.parsers.MultiPartParser',
+        'rest_framework.parsers.FormParser',
         'rest_framework.parsers.JSONParser',
     ),
     'DEFAULT_RENDERER_CLASSES': (
@@ -256,3 +258,4 @@ COMMENT_MAX_LENGTH = 280
 PASSWORD_MIN_LENGTH = 10
 PASSWORD_MAX_LENGTH = 100
 CIRCLE_MAX_LENGTH = 100
+COLOR_ATTR_MAX_LENGTH = 7

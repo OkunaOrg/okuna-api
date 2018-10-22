@@ -1,4 +1,3 @@
-
 # Create your models here.
 # Create your models here.
 from django.db import models
@@ -6,10 +5,8 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
 # Create your views here.
+from openbook.settings import COLOR_ATTR_MAX_LENGTH
 from openbook_common.validators import hex_color_validator
-
-# #FFFFFF
-COLOR_ATTR_MAX_LENGTH = 7
 
 
 class Emoji(models.Model):

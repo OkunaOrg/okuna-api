@@ -9,8 +9,6 @@ from openbook_auth.models import User
 # #FFFFFF
 from openbook_common.models import Emoji
 
-COLOR_ATTR_MAX_LENGTH = 7
-
 
 class Post(models.Model):
     text = models.CharField(_('text'), max_length=560, blank=False, null=False)

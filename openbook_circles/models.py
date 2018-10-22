@@ -1,9 +1,9 @@
 from django.db import models
 
 # Create your models here.
-from openbook.settings import CIRCLE_MAX_LENGTH
+from openbook.settings import CIRCLE_MAX_LENGTH, COLOR_ATTR_MAX_LENGTH
 from openbook_auth.models import User
-from openbook_posts.models import COLOR_ATTR_MAX_LENGTH, Post
+from openbook_posts.models import Post
 from openbook_common.validators import hex_color_validator
 from django.utils.translation import ugettext_lazy as _
 
