@@ -19,7 +19,7 @@ from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 
-from openbook_circles.views import Circles, CircleView
+from openbook_circles.views import Circles, CircleItem
 from openbook_common.views import Time
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, Login, User
 from openbook_posts.views import Posts, PostView
@@ -40,7 +40,7 @@ posts_patterns = [
 
 circles_patterns = [
     path('', Circles.as_view(), name='circles'),
-    path('<int:circle_id>/', CircleView.as_view(), name='circle'),
+    path('<int:circle_id>/', CircleItem.as_view(), name='circle'),
 ]
 
 api_patterns = [

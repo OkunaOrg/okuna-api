@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from openbook_circles.models import Circle
-from openbook_circles.serializers import CreateCircleSerializer, CircleSerializer
+from openbook_circles.serializers import CreateCircleSerializer, CircleSerializer, DeleteCircleSerializer
 
 
 class Circles(APIView):
@@ -33,5 +33,11 @@ class Circles(APIView):
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
-class CircleView(APIView):
-    pass
+class CircleItem(APIView):
+    def delete(self, request, circle_id):
+        user = request.user
+        serializer = DeleteCircleSerializer(data={'circle_id': circle_id})
+        serializer.is_valid(raise_exception=True)
+        circle = user.circles.get(id=circle_id)
+        circle.delete()
+        return Response(status=status.HTTP_200_OK)

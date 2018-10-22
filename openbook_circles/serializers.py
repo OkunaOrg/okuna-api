@@ -3,7 +3,7 @@ from rest_framework.exceptions import ValidationError
 
 from openbook.settings import CIRCLE_MAX_LENGTH, COLOR_ATTR_MAX_LENGTH
 from openbook_circles.models import Circle
-from openbook_circles.validators import circle_name_not_taken_for_user_validator
+from openbook_circles.validators import circle_name_not_taken_for_user_validator, circle_id_exists
 from openbook_common.validators import hex_color_validator
 from django.utils.translation import ugettext_lazy as _
 
@@ -24,6 +24,10 @@ class CreateCircleSerializer(serializers.Serializer):
             raise ValidationError(
                 _('A user is required.'),
             )
+
+
+class DeleteCircleSerializer(serializers.Serializer):
+    circle_id = serializers.IntegerField(required=True, validators=[circle_id_exists])
 
 
 class CircleSerializer(serializers.ModelSerializer):
