@@ -40,17 +40,6 @@ class PostComment(models.Model):
         return super(PostComment, self).save(*args, **kwargs)
 
 
-class PostReaction(models.Model):
-    created = models.DateTimeField(editable=False)
-    reactor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reactions')
-
-    def save(self, *args, **kwargs):
-        ''' On save, update timestamps '''
-        if not self.id:
-            self.created = timezone.now()
-        return super(PostReaction, self).save(*args, **kwargs)
-
-
 class PostReactionEmoji(models.Model):
     name = models.CharField(_('name'), max_length=32, blank=False, null=False)
     shortcut = models.CharField(_('shortcut'), max_length=16, blank=False, null=False)
@@ -65,3 +54,15 @@ class PostReactionEmoji(models.Model):
         if not self.id:
             self.created = timezone.now()
         return super(PostReactionEmoji, self).save(*args, **kwargs)
+
+
+class PostReaction(models.Model):
+    created = models.DateTimeField(editable=False)
+    reactor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reactions')
+    emoji = models.ForeignKey(PostReactionEmoji, on_delete=models.CASCADE, related_name='reactions')
+
+    def save(self, *args, **kwargs):
+        ''' On save, update timestamps '''
+        if not self.id:
+            self.created = timezone.now()
+        return super(PostReaction, self).save(*args, **kwargs)
