@@ -103,6 +103,8 @@ INSTALLED_APPS = [
     'django_nose',
     'openbook_auth',
     'openbook_posts',
+    'openbook_circles',
+    'openbook_connections',
 ]
 
 MIDDLEWARE = [
