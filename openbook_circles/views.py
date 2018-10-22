@@ -1,4 +1,5 @@
 # Create your views here.
+from django.db import IntegrityError
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -12,7 +13,7 @@ class Circles(APIView):
     permission_classes = (IsAuthenticated,)
 
     def put(self, request):
-        serializer = CreateCircleSerializer(data=request.data)
+        serializer = CreateCircleSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         name = data.get('name')

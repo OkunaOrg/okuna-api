@@ -14,3 +14,14 @@ class Circle(models.Model):
     color = models.CharField(_('color'), max_length=COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
                              validators=[hex_color_validator])
     posts = models.ManyToManyField(Post, related_name='circles')
+
+    class Meta:
+        unique_together = ('creator', 'name',)
+
+    @classmethod
+    def is_name_taken_for_user(cls, name, user):
+        try:
+            cls.objects.get(creator=user, name=name)
+            return True
+        except Circle.DoesNotExist:
+            return False
