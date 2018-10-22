@@ -4,7 +4,7 @@ from django.db import models
 from openbook.settings import CIRCLE_MAX_LENGTH
 from openbook_auth.models import User
 from openbook_posts.models import COLOR_ATTR_MAX_LENGTH, Post
-from openbook.validators import hex_color_validator
+from openbook_common.validators import hex_color_validator
 from django.utils.translation import ugettext_lazy as _
 
 

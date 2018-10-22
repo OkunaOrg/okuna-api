@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from django.utils.translation import gettext as _
 from rest_framework.authtoken.models import Token
 
-from openbook.responses import ApiMessageResponse
+from openbook_common.responses import ApiMessageResponse
 from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheckSerializer, LoginSerializer, \
     GetUserSerializer
 from .models import UserProfile

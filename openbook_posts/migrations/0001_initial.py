@@ -3,7 +3,7 @@
 from django.conf import settings
 from django.db import migrations, models
 import django.db.models.deletion
-import openbook.validators
+import openbook_common.validators
 
 
 class Migration(migrations.Migration):
@@ -55,7 +55,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('name', models.CharField(max_length=32, verbose_name='name')),
                 ('shortcut', models.CharField(max_length=16, verbose_name='shortcut')),
-                ('color', models.CharField(max_length=7, validators=[openbook.validators.hex_color_validator], verbose_name='color')),
+                ('color', models.CharField(max_length=7, validators=[openbook_common.validators.hex_color_validator], verbose_name='color')),
                 ('image', models.ImageField(upload_to='', verbose_name='image')),
                 ('created', models.DateTimeField(editable=False)),
             ],

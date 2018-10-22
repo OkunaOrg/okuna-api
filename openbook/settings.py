@@ -101,10 +101,13 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'django_nose',
+    'openbook_common',
     'openbook_auth',
     'openbook_posts',
     'openbook_circles',
     'openbook_connections',
+    'openbook_lists',
+    'openbook_follows',
 ]
 
 MIDDLEWARE = [
@@ -116,7 +119,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'openbook.middleware.TimezoneMiddleware'
+    'openbook_common.middleware.TimezoneMiddleware'
 ]
 
 ROOT_URLCONF = 'openbook.urls'

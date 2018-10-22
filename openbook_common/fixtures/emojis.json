@@ -1,6 +1,6 @@
 [
   {
-    "model": "openbook_posts.PostReactionEmoji",
+    "model": "openbook_common.Emoji",
     "pk": 1,
     "fields": {
       "name": "Doge",
