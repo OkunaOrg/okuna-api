@@ -1,0 +1,13 @@
+[
+  {
+    "model": "openbook_posts.PostReactionEmoji",
+    "pk": 1,
+    "fields": {
+      "name": "Doge",
+      "shortcut": "doge",
+      "color": "#FFFFFF",
+      "image": "/files/doge.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  }
+]
