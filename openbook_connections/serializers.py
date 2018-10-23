@@ -56,21 +56,8 @@ class ConnectionUserSerializer(serializers.ModelSerializer):
         )
 
 
-class TargetConnectionSerializer(serializers.ModelSerializer):
-    user = ConnectionUserSerializer(many=False)
-
-    class Meta:
-        model = Connection
-        fields = (
-            'id',
-            'user',
-            'circle',
-            'target_connection',
-        )
-
-
 class ConnectionSerializer(serializers.ModelSerializer):
-    target_connection = TargetConnectionSerializer(many=False)
+    target_user = ConnectionUserSerializer(many=False)
 
     class Meta:
         model = Connection
@@ -78,7 +65,7 @@ class ConnectionSerializer(serializers.ModelSerializer):
             'id',
             'user',
             'circle',
-            'target_connection',
+            'target_user',
         )
 
 

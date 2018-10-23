@@ -36,3 +36,7 @@ class Connection(models.Model):
             return True
 
         return False
+
+    @property
+    def target_user(self):
+        return self.target_connection.user
