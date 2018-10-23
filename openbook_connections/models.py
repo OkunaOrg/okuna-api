@@ -11,9 +11,9 @@ class Connection(models.Model):
     target_connection = models.OneToOneField('self', on_delete=models.CASCADE, null=True)
 
     @classmethod
-    def create_connection(cls, user, target_user, circle):
-        target_connection = cls.objects.create(user=target_user)
-        connection = cls.objects.create(user=user, target_connection=target_connection, circle=circle)
+    def create_connection(cls, user, target_user_id, circle_id):
+        target_connection = cls.objects.create(user_id=target_user_id)
+        connection = cls.objects.create(user=user, target_connection=target_connection, circle_id=circle_id)
         # Why do we need to do this? Isn't it supposed to be default functionality
         # to add it to the other field too?
         target_connection.target_connection = connection

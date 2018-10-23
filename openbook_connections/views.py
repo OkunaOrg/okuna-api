@@ -23,11 +23,9 @@ class Connections(APIView):
         circle_id = data.get('circle_id')
 
         user = request.user
-        target_user = User.objects.get(pk=user_id)
-        circle = Circle.objects.get(pk=circle_id)
 
         with transaction.atomic():
-            connection = Connection.create_connection(user=user, target_user=target_user, circle=circle)
+            connection = Connection.create_connection(user=user, target_user_id=user_id, circle_id=circle_id)
 
         response_serializer = ConnectionSerializer(connection, context={"request": request})
 

@@ -23,6 +23,7 @@ from openbook_circles.views import Circles, CircleItem
 from openbook_common.views import Time
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, Login, User
 from openbook_connections.views import Connections, ConnectionItem
+from openbook_follows.views import Follows, FollowItem
 from openbook_lists.views import Lists, ListItem
 from openbook_posts.views import Posts, PostView
 
@@ -54,12 +55,18 @@ lists_patterns = [
     path('<int:list_id>/', ListItem.as_view(), name='list'),
 ]
 
+follows_patterns = [
+    path('', Follows.as_view(), name='follows'),
+    path('<int:follow_id>/', FollowItem.as_view(), name='follow'),
+]
+
 api_patterns = [
     path('auth/', include(auth_patterns)),
     path('posts/', include(posts_patterns)),
     path('circles/', include(circles_patterns)),
     path('connections/', include(connections_patterns)),
     path('lists/', include(lists_patterns)),
+    path('follows/', include(follows_patterns)),
     url('time/', Time.as_view(), name='time')
 ]
 
