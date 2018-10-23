@@ -4,8 +4,8 @@ from django.utils.translation import ugettext_lazy as _
 from openbook_follows.models import Follow
 
 
-def follow_does_not_exist(user_a, user_b):
-    if Follow.follow_exists(user_a, user_b):
+def follow_does_not_exist(user_a_id, user_b_id):
+    if Follow.follow_exists(user_a_id, user_b_id):
         raise ValidationError(
             _('A follow already exists.'),
         )

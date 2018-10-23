@@ -23,9 +23,9 @@ class Follows(APIView):
         list_id = data.get('list_id')
 
         user = request.user
-        followed_user = User.objects.get(pk=user_id)
 
-        follow = Follow.objects.create(user=user, followed_user=followed_user, list_id=list_id)
+        with transaction.atomic():
+            follow = Follow.create_follow(user_id=user.pk, followed_user_id=user_id, list_id=list_id)
 
         response_serializer = FollowSerializer(follow, context={"request": request})
 

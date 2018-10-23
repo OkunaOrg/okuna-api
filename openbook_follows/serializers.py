@@ -25,8 +25,7 @@ class CreateFollowSerializer(serializers.Serializer):
                 )
             else:
                 # Check follow does not already exist
-                target_user = User.objects.get(pk=user_id)
-                follow_does_not_exist(user, target_user)
+                follow_does_not_exist(user.pk, user_id)
             return user_id
         else:
             raise ValidationError(

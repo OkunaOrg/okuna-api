@@ -1,12 +1,11 @@
 # Create your views here.
+from django.apps import apps
 from django.db import IntegrityError, transaction
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from openbook_auth.models import User
-from openbook_circles.models import Circle
 from openbook_connections.models import Connection
 from openbook_connections.serializers import CreateConnectionSerializer, ConnectionSerializer, \
     DeleteConnectionSerializer
@@ -25,7 +24,7 @@ class Connections(APIView):
         user = request.user
 
         with transaction.atomic():
-            connection = Connection.create_connection(user=user, target_user_id=user_id, circle_id=circle_id)
+            connection = Connection.create_connection(user_id=user.pk, target_user_id=user_id, circle_id=circle_id)
 
         response_serializer = ConnectionSerializer(connection, context={"request": request})
 

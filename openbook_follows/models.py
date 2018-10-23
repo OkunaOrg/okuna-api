@@ -15,8 +15,12 @@ class Follow(models.Model):
         unique_together = ('user', 'followed_user',)
 
     @classmethod
-    def follow_exists(cls, user_a, user_b):
-        count = user_a.follows.filter(followed_user=user_b).count()
+    def create_follow(cls, user_id, followed_user_id, list_id=None):
+        return Follow.objects.create(user_id=user_id, followed_user_id=followed_user_id, list_id=list_id)
+
+    @classmethod
+    def follow_exists(cls, user_a_id, user_b_id):
+        count = Follow.objects.filter(user_id=user_a_id, followed_user_id=user_b_id).count()
 
         if count > 0:
             return True
