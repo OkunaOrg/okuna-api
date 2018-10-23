@@ -8,7 +8,8 @@ from rest_framework.views import APIView
 from openbook_auth.models import User
 from openbook_circles.models import Circle
 from openbook_connections.models import Connection
-from openbook_connections.serializers import CreateConnectionSerializer, ConnectionSerializer
+from openbook_connections.serializers import CreateConnectionSerializer, ConnectionSerializer, \
+    DeleteConnectionSerializer
 
 
 class Connections(APIView):
@@ -37,3 +38,13 @@ class Connections(APIView):
         response_serializer = ConnectionSerializer(user.connections, many=True, context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class ConnectionItem(APIView):
+    def delete(self, request, connection_id):
+        user = request.user
+        serializer = DeleteConnectionSerializer(data={'connection_id': connection_id}, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        connection = user.connections.get(id=connection_id)
+        connection.delete()
+        return Response(status=status.HTTP_200_OK)

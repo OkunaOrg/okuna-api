@@ -23,3 +23,12 @@ class Connection(models.Model):
             return True
 
         return False
+
+    @classmethod
+    def connection_with_id_exists_for_user(cls, connection_id, user):
+        count = user.connections.filter(pk=connection_id).count()
+
+        if count > 0:
+            return True
+
+        return False
