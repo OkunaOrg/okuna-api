@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from openbook_auth.models import User
+from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import user_id_exists
 from openbook_circles.validators import circle_id_exists
 from django.utils.translation import ugettext_lazy as _
@@ -34,7 +34,44 @@ class CreateConnectionSerializer(serializers.Serializer):
             )
 
 
+class ConnectionUserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = (
+            'name',
+            'avatar',
+            'birth_date'
+        )
+
+
+class ConnectionUserSerializer(serializers.ModelSerializer):
+    profile = ConnectionUserProfileSerializer(many=False)
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'username',
+            'profile'
+        )
+
+
+class TargetConnectionSerializer(serializers.ModelSerializer):
+    user = ConnectionUserSerializer(many=False)
+
+    class Meta:
+        model = Connection
+        fields = (
+            'id',
+            'user',
+            'circle',
+            'target_connection',
+        )
+
+
 class ConnectionSerializer(serializers.ModelSerializer):
+    target_connection = TargetConnectionSerializer(many=False)
+
     class Meta:
         model = Connection
         fields = (
