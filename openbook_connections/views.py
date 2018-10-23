@@ -43,5 +43,6 @@ class ConnectionItem(APIView):
         serializer = DeleteConnectionSerializer(data={'connection_id': connection_id}, context={"request": request})
         serializer.is_valid(raise_exception=True)
         connection = user.connections.get(id=connection_id)
-        connection.delete()
+        with transaction.atomic():
+            connection.delete()
         return Response(status=status.HTTP_200_OK)

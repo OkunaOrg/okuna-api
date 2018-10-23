@@ -33,17 +33,18 @@ class Connection(models.Model):
         return connection
 
     @classmethod
-    def connection_exists(cls, user_a, user_b):
-        count = user_a.connections.filter(target_connection__user=user_b.pk).count()
+    def connection_exists(cls, user_a_id, user_b_id):
+        count = Connection.objects.select_related('target_connection__user_id').filter(user_id=user_a_id,
+                                                                                       target_connection__user_id=user_b_id).count()
         if count > 0:
             return True
 
         return False
 
     @classmethod
-    def connection_with_id_exists_for_user(cls, connection_id, user):
-        count = user.connections.filter(pk=connection_id).count()
-
+    def connection_with_id_exists_for_user_with_id(cls, connection_id, user_id):
+        count = Connection.objects.filter(id=connection_id,
+                                          user_id=user_id).count()
         if count > 0:
             return True
 
@@ -52,3 +53,14 @@ class Connection(models.Model):
     @property
     def target_user(self):
         return self.target_connection.user
+
+    def delete(self, *args, **kwargs):
+        user_id = self.user_id
+        target_user_id = self.target_connection.user_id
+
+        # Unfollow the user if following
+        Follow = get_follow_model()
+        if Follow.follow_exists(user_id, target_user_id):
+            Follow.delete_follow(user_id, target_user_id)
+
+        return super(Connection, self).delete(*args, **kwargs)

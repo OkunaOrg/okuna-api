@@ -7,7 +7,7 @@ from openbook_circles.validators import circle_id_exists
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_connections.models import Connection
-from openbook_connections.validators import connection_does_not_exist, connection_with_id_exists_for_user
+from openbook_connections.validators import connection_does_not_exist, connection_with_id_exists_for_user_id
 
 
 class CreateConnectionSerializer(serializers.Serializer):
@@ -25,8 +25,7 @@ class CreateConnectionSerializer(serializers.Serializer):
                 )
             else:
                 # Check connection does not already exist
-                target_user = User.objects.get(pk=user_id)
-                connection_does_not_exist(user, target_user)
+                connection_does_not_exist(user.pk, user_id)
             return user_id
         else:
             raise ValidationError(
@@ -76,7 +75,7 @@ class DeleteConnectionSerializer(serializers.Serializer):
         request = self.context.get("request")
         if request and hasattr(request, "user"):
             user = request.user
-            connection_with_id_exists_for_user(connection_id, user)
+            connection_with_id_exists_for_user_id(connection_id, user.pk)
             return connection_id
         else:
             raise ValidationError(

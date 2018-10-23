@@ -19,6 +19,11 @@ class Follow(models.Model):
         return Follow.objects.create(user_id=user_id, followed_user_id=followed_user_id, list_id=list_id)
 
     @classmethod
+    def delete_follow(cls, user_id, followed_user_id):
+        follow = Follow.objects.get(user_id=user_id, followed_user_id=followed_user_id)
+        follow.delete()
+
+    @classmethod
     def follow_exists(cls, user_a_id, user_b_id):
         count = Follow.objects.filter(user_id=user_a_id, followed_user_id=user_b_id).count()
 
