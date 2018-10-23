@@ -15,6 +15,20 @@ class Post(models.Model):
     created = models.DateTimeField(editable=False)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
 
+    @classmethod
+    def create_post(cls, text, creator_id, circles_ids=None, image=None):
+        if circles_ids is None:
+            circles_ids = []
+
+        post = Post.objects.create(text=text, creator_id=creator_id)
+
+        if image:
+            PostImage.objects.create(image=image, post_id=post.pk)
+
+        post.circles.add(*circles_ids)
+
+        return post
+
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
         if not self.id:

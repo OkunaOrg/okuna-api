@@ -15,17 +15,16 @@ class Posts(APIView):
     parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def put(self, request):
-        serializer = CreatePostSerializer(data=request.data)
+        serializer = CreatePostSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         text = data.get('text')
         image = data.get('image')
+        circles_ids = data.get('circle_id')
         user = request.user
 
         with transaction.atomic():
-            post = Post.objects.create(text=text, creator=user)
-            if image:
-                PostImage.objects.create(image=image, post=post)
+            post = Post.create_post(text=text, creator_id=user.pk, circles_ids=circles_ids, image=image)
 
         post_serializer = PostSerializer(post, context={"request": request})
 

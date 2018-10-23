@@ -11,10 +11,9 @@ def circle_name_not_taken_for_user_validator(circle_name, user):
         )
 
 
-def circle_id_exists(circle_id):
-    try:
-        Circle.objects.get(pk=circle_id)
-    except Circle.DoesNotExist:
-        raise ValidationError(
-            _('No circle with the provided id exists.'),
-        )
+def circle_with_id_exists_for_user_with_id(circle_id, user_id):
+    count = Circle.objects.filter(creator_id=user_id, id=circle_id).count()
+
+    if count > 0:
+        return True
+    return False

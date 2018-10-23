@@ -1,12 +1,25 @@
 from rest_framework import serializers
 
 from openbook.settings import POST_MAX_LENGTH, COMMENT_MAX_LENGTH
+from openbook_circles.models import Circle
+from openbook_circles.validators import circle_with_id_exists_for_user_with_id
 from openbook_posts.models import PostImage, Post
 
 
 class CreatePostSerializer(serializers.Serializer):
     text = serializers.CharField(max_length=POST_MAX_LENGTH, required=True, allow_blank=False)
     image = serializers.ImageField(allow_empty_file=True, required=False)
+    circle_id = serializers.ListField(
+        child=serializers.IntegerField()
+    )
+
+    def validate_circle_id(self, circle_id):
+        request = self.context.get("request")
+        user = request.user
+        if circle_id:
+            for id in circle_id:
+                circle_with_id_exists_for_user_with_id(id, user.pk)
+        return circle_id
 
 
 class CommentPostSerializer(serializers.Serializer):
@@ -27,8 +40,18 @@ class PostImageSerializer(serializers.ModelSerializer):
         )
 
 
+class PostCircleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Circle
+        fields = (
+            'id',
+            'name'
+        )
+
+
 class PostSerializer(serializers.ModelSerializer):
     image = PostImageSerializer(many=False)
+    circles = PostCircleSerializer(many=True)
 
     class Meta:
         model = Post
@@ -36,5 +59,6 @@ class PostSerializer(serializers.ModelSerializer):
             'id',
             'created',
             'text',
-            'image'
+            'image',
+            'circles'
         )
