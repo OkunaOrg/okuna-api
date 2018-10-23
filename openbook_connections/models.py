@@ -14,6 +14,10 @@ class Connection(models.Model):
     def create_connection(cls, user, target_user, circle):
         target_connection = cls.objects.create(user=target_user)
         connection = cls.objects.create(user=user, target_connection=target_connection, circle=circle)
+        # Why do we need to do this? Isn't it supposed to be default functionality
+        # to add it to the other field too?
+        target_connection.target_connection = connection
+        target_connection.save()
         return connection
 
     @classmethod
