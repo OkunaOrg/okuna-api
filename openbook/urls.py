@@ -23,6 +23,7 @@ from openbook_circles.views import Circles, CircleItem
 from openbook_common.views import Time
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, Login, User
 from openbook_connections.views import Connections, ConnectionItem
+from openbook_lists.views import Lists, ListItem
 from openbook_posts.views import Posts, PostView
 
 auth_patterns = [
@@ -48,11 +49,17 @@ circles_patterns = [
     path('<int:circle_id>/', CircleItem.as_view(), name='circle'),
 ]
 
+lists_patterns = [
+    path('', Lists.as_view(), name='lists'),
+    path('<int:list_id>/', ListItem.as_view(), name='list'),
+]
+
 api_patterns = [
     path('auth/', include(auth_patterns)),
     path('posts/', include(posts_patterns)),
     path('circles/', include(circles_patterns)),
     path('connections/', include(connections_patterns)),
+    path('lists/', include(lists_patterns)),
     url('time/', Time.as_view(), name='time')
 ]
 

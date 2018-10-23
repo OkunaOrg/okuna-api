@@ -33,7 +33,6 @@ class Circle(models.Model):
 
     @property
     def users(self):
-        # TODO Optimize fetching
         circle_connections = get_connection_model().objects.select_related('target_connection__user').filter(circle_id=self.id)
         users = []
         for connection in circle_connections:
