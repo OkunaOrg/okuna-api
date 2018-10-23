@@ -24,7 +24,7 @@ class Posts(APIView):
         user = request.user
 
         with transaction.atomic():
-            post = Post.create_post(text=text, creator_id=user.pk, circles_ids=circles_ids, image=image)
+            post = Post.create_post(text=text, creator=user, circles_ids=circles_ids, image=image)
 
         post_serializer = PostSerializer(post, context={"request": request})
 
@@ -32,7 +32,8 @@ class Posts(APIView):
 
     def get(self, request):
         user = request.user
-        post_serializer = PostSerializer(user.posts, many=True, context={"request": request})
+        posts = Post.get_posts_for_user(user).order_by('-created')
+        post_serializer = PostSerializer(posts, many=True, context={"request": request})
 
         return Response(post_serializer.data, status=status.HTTP_200_OK)
 

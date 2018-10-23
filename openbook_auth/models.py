@@ -1,3 +1,4 @@
+from django.apps import apps
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
 from django.db import models
 from django.contrib.auth.models import AbstractUser
@@ -11,6 +12,10 @@ from rest_framework.authtoken.models import Token
 from openbook.settings import USERNAME_MAX_LENGTH
 
 
+def get_circle_model():
+    return apps.get_model('openbook_circles.Circle')
+
+
 class User(AbstractUser):
     """"
     Custom user model to change behaviour of the default user model
@@ -19,6 +24,9 @@ class User(AbstractUser):
     first_name = None
     last_name = None
     email = models.EmailField(_('email address'), unique=True, null=False, blank=False)
+    world_circle = models.ForeignKey('openbook_circles.Circle', on_delete=models.PROTECT, related_name='+', null=True, blank=True)
+    connections_circle = models.ForeignKey('openbook_circles.Circle', on_delete=models.PROTECT, related_name='+',
+                                           null=True, blank=True)
 
     username_validator = UnicodeUsernameValidator() if six.PY3 else ASCIIUsernameValidator()
 
@@ -68,6 +76,16 @@ def create_auth_token(sender, instance=None, created=False, **kwargs):
     """
     if created:
         Token.objects.create(user=instance)
+
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def bootstrap_circles(sender, instance=None, created=False, **kwargs):
+    """"
+    Bootstrap the user circles
+    """
+    if created:
+        Circle = get_circle_model()
+        Circle.bootstrap_circles_for_user(instance)
 
 
 class UserProfile(models.Model):

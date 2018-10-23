@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from rest_framework.fields import CurrentUserDefault
 
 from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import user_id_exists
@@ -16,7 +15,8 @@ class CreateConnectionSerializer(serializers.Serializer):
     circle_id = serializers.IntegerField(required=True)
 
     def validate_user_id(self, user_id):
-        user = CurrentUserDefault()
+        request = self.context.get("request")
+        user = request.user
 
         if user.pk == user_id:
             raise ValidationError(
@@ -28,7 +28,8 @@ class CreateConnectionSerializer(serializers.Serializer):
         return user_id
 
     def validate_circle_id(self, circle_id):
-        user = CurrentUserDefault()
+        request = self.context.get("request")
+        user = request.user
         circle_with_id_exists_for_user_with_id(circle_id, user.pk)
 
 

@@ -60,5 +60,6 @@ class PostSerializer(serializers.ModelSerializer):
             'created',
             'text',
             'image',
-            'circles'
+            'circles',
+            'creator_id'
         )

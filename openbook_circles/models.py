@@ -24,6 +24,14 @@ class Circle(models.Model):
         unique_together = ('creator', 'name',)
 
     @classmethod
+    def bootstrap_circles_for_user(cls, user):
+        user_world_circle = cls.objects.create(name=_('World'), color='#23A0F5', creator=user)
+        user_connections_circle = cls.objects.create(name=_('Connections'), color='#FFFFFF', creator=user)
+        user.world_circle = user_world_circle
+        user.connections_circle = user_connections_circle
+        user.save()
+
+    @classmethod
     def is_name_taken_for_user(cls, name, user):
         try:
             cls.objects.get(creator=user, name=name)
@@ -33,7 +41,8 @@ class Circle(models.Model):
 
     @property
     def users(self):
-        circle_connections = get_connection_model().objects.select_related('target_connection__user').filter(circle_id=self.id)
+        circle_connections = get_connection_model().objects.select_related('target_connection__user').filter(
+            circle_id=self.id)
         users = []
         for connection in circle_connections:
             users.append(connection.target_connection.user)
