@@ -6,6 +6,11 @@ from openbook_auth.models import User
 from openbook_posts.models import Post
 from openbook_common.validators import hex_color_validator
 from django.utils.translation import ugettext_lazy as _
+from django.apps import apps
+
+
+def get_connection_model():
+    return apps.get_model('openbook_connections.Connection')
 
 
 class Circle(models.Model):
@@ -25,3 +30,12 @@ class Circle(models.Model):
             return True
         except Circle.DoesNotExist:
             return False
+
+    @property
+    def users(self):
+        # TODO Optimize fetching
+        circle_connections = get_connection_model().objects.select_related('target_connection').filter(circle_id=self.id)
+        users = []
+        for connection in circle_connections:
+            users.append(connection.target_connection.user)
+        return users

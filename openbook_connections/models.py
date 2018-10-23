@@ -2,12 +2,12 @@ from django.db import models
 
 # Create your models here.
 from openbook_auth.models import User
-from openbook_circles.models import Circle
 
 
 class Connection(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='connections')
-    circle = models.ForeignKey(Circle, on_delete=models.CASCADE, related_name='connections', null=True)
+    circle = models.ForeignKey('openbook_circles.Circle', on_delete=models.CASCADE, related_name='connections',
+                               null=True)
     target_connection = models.OneToOneField('self', on_delete=models.CASCADE, null=True)
 
     @classmethod
