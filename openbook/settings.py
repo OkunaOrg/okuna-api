@@ -155,7 +155,7 @@ WSGI_APPLICATION = 'openbook.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
-if environment_checker.is_test():
+if environment_checker.is_build():
     DATABASES = {
       'default': {
         'ENGINE': 'django.db.backends.sqlite3',
