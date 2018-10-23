@@ -22,6 +22,7 @@ from django.conf.urls.static import static
 from openbook_circles.views import Circles, CircleItem
 from openbook_common.views import Time
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, Login, User
+from openbook_connections.views import Connections
 from openbook_posts.views import Posts, PostView
 
 auth_patterns = [
@@ -37,6 +38,9 @@ posts_patterns = [
     path('<int:post_id>/', PostView.as_view(), name='post'),
 ]
 
+connections_patterns = [
+    path('', Connections.as_view(), name='connections')
+]
 
 circles_patterns = [
     path('', Circles.as_view(), name='circles'),
@@ -47,6 +51,7 @@ api_patterns = [
     path('auth/', include(auth_patterns)),
     path('posts/', include(posts_patterns)),
     path('circles/', include(circles_patterns)),
+    path('connections/', include(connections_patterns)),
     url('time/', Time.as_view(), name='time')
 ]
 

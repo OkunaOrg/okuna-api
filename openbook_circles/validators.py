@@ -1,5 +1,4 @@
 from rest_framework.exceptions import ValidationError
-from rest_framework.fields import CurrentUserDefault
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_circles.models import Circle

@@ -3,11 +3,23 @@ from django.db import models
 # Create your models here.
 from openbook_auth.models import User
 from openbook_circles.models import Circle
-from django.utils.translation import ugettext_lazy as _
 
 
 class Connection(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='connections')
-    circle = models.ForeignKey(Circle, on_delete=models.CASCADE, related_name='connections')
-    target_connection = models.OneToOneField('self', on_delete=models.CASCADE)
-    following = models.BooleanField(_('following'), default=True, blank=False, null=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='connections')
+    circle = models.ForeignKey(Circle, on_delete=models.CASCADE, related_name='connections', null=True)
+    target_connection = models.OneToOneField('self', on_delete=models.CASCADE, null=True)
+
+    @classmethod
+    def create_connection(cls, user, target_user, circle):
+        target_connection = cls.objects.create(user=target_user)
+        connection = cls.objects.create(user=user, target_connection=target_connection, circle=circle)
+        return connection
+
+    @classmethod
+    def connection_exists(cls, user_a, user_b):
+        count = user_a.connections.filter(target_connection__user=user_b.pk).count()
+        if count > 0:
+            return True
+
+        return False
