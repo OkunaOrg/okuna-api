@@ -15,6 +15,10 @@ def get_circle_model():
     return apps.get_model('openbook_circles.Circle')
 
 
+def get_connection_model():
+    return apps.get_model('openbook_connections.Connection')
+
+
 class Post(models.Model):
     text = models.CharField(_('text'), max_length=560, blank=False, null=False)
     created = models.DateTimeField(editable=False)
@@ -35,18 +39,46 @@ class Post(models.Model):
         return post
 
     @classmethod
-    def get_posts_for_user(cls, user):
+    def get_posts_for_user(cls, user, lists_ids=None, circles_ids=None):
+        # TODO Desperately optimize. Basically the core functionality of everything.
         posts_queryset = user.posts.all()
 
-        follows = user.follows.all()
+        follows = None
+
+        if lists_ids is not None:
+            follows = user.follows.filter(list_id=lists_ids).get()
+        else:
+            follows = user.follows.all()
 
         for follow in follows:
             followed_user = follow.followed_user
             # Add the followed user public posts
             posts_queryset = posts_queryset | followed_user.world_circle.posts.all()
 
-            if user.is_connected_with(followed_user):
-                connection = user.get_connection_with(followed_user)
+            is_connected_with_followed_user = None
+
+            if circles_ids is not None:
+                is_connected_with_followed_user = user.is_connected_with_user_in_circle(followed_user, circles_ids)
+            else:
+                is_connected_with_followed_user = user.is_connected_with_user(followed_user)
+
+            if is_connected_with_followed_user:
+                Connection = get_connection_model()
+
+                connection = Connection.objects.select_related(
+                    'target_connection__user'
+                ).prefetch_related(
+                    'target_connection__user__connections_circle__posts'
+                ).filter(
+                    user_id=user.pk,
+                    target_connection__user_id=followed_user.pk).get()
+
+                target_connection = connection.target_connection
+
+                # Add the connected user posts with connections circle
+                posts_queryset = posts_queryset | target_connection.user.connections_circle.posts.all()
+
+                # Add the connected user circle posts we migt be in
                 target_connection_circle = connection.target_connection.circle
                 # The other user might not have the user in a circle yet
                 if target_connection_circle:

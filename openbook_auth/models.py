@@ -73,13 +73,13 @@ class User(AbstractUser):
         self.full_clean()
         return super(User, self).save(*args, **kwargs)
 
-    def is_connected_with(self, user):
+    def is_connected_with_user(self, user):
         Connection = get_connection_model()
         return Connection.connection_exists(self.pk, user.pk)
 
-    def get_connection_with(self, user):
+    def is_connected_with_user_in_circle(self, user, circle_id):
         Connection = get_connection_model()
-        return Connection.get_connection(self.pk, user.pk)
+        return Connection.connection_exists_in_circle(self.pk, user.pk, circle_id)
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
