@@ -31,6 +31,7 @@ class CreateConnectionSerializer(serializers.Serializer):
         request = self.context.get("request")
         user = request.user
         circle_with_id_exists_for_user_with_id(circle_id, user.pk)
+        return circle_id
 
 
 class ConnectionUserProfileSerializer(serializers.ModelSerializer):

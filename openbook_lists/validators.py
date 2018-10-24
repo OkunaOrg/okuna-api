@@ -11,10 +11,5 @@ def list_name_not_taken_for_user_validator(list_name, user):
         )
 
 
-def list_id_exists(list_id):
-    try:
-        List.objects.get(pk=list_id)
-    except List.DoesNotExist:
-        raise ValidationError(
-            _('No list with the provided id exists.'),
-        )
+def list_with_id_exists_for_user_with_id(list_id, user_id):
+    return List.objects.filter(creator_id=user_id, id=list_id).count() > 0

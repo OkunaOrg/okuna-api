@@ -3,7 +3,7 @@ from rest_framework.exceptions import ValidationError
 
 from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import user_id_exists
-from openbook_lists.validators import list_id_exists
+from openbook_lists.validators import list_with_id_exists_for_user_with_id
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_follows.models import Follow
@@ -12,25 +12,23 @@ from openbook_follows.validators import follow_does_not_exist, follow_with_id_ex
 
 class CreateFollowSerializer(serializers.Serializer):
     user_id = serializers.IntegerField(required=True, validators=[user_id_exists])
-    list_id = serializers.IntegerField(required=True, validators=[list_id_exists])
+    list_id = serializers.IntegerField(required=True)
 
     def validate_user_id(self, user_id):
-        request = self.context.get("request")
-        if request and hasattr(request, "user"):
-            user = request.user
-            # Check follow is not with oneself
-            if user.pk == user_id:
-                raise ValidationError(
-                    _('You cannot follow yourself.'),
-                )
-            else:
-                # Check follow does not already exist
-                follow_does_not_exist(user.pk, user_id)
-            return user_id
-        else:
+        user = self.context.get("request").user
+        # Check follow is not with oneself
+        if user.pk == user_id:
             raise ValidationError(
-                _('A user is required.'),
+                _('You cannot follow yourself.'),
             )
+        else:
+            # Check follow does not already exist
+            follow_does_not_exist(user.pk, user_id)
+        return user_id
+
+    def validate_list_id(self, list_id):
+        user = self.context.get("request").user
+        list_with_id_exists_for_user_with_id(list_id, user.pk)
 
 
 class FollowUserProfileSerializer(serializers.ModelSerializer):

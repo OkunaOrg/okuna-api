@@ -45,22 +45,25 @@ class Post(models.Model):
 
         follows = None
 
-        if lists_ids is not None:
-            follows = user.follows.filter(list_id=lists_ids).get()
+        if lists_ids:
+            follows = user.follows.filter(list_id__in=lists_ids)
         else:
             follows = user.follows.all()
 
         for follow in follows:
             followed_user = follow.followed_user
-            # Add the followed user public posts
-            posts_queryset = posts_queryset | followed_user.world_circle.posts.all()
 
             is_connected_with_followed_user = None
 
-            if circles_ids is not None:
-                is_connected_with_followed_user = user.is_connected_with_user_in_circle(followed_user, circles_ids)
+            if circles_ids:
+                is_connected_with_followed_user = user.is_connected_with_user_in_circles(followed_user, circles_ids)
+                if is_connected_with_followed_user:
+                    # Add the connected user public posts
+                    posts_queryset = posts_queryset | followed_user.world_circle.posts.all()
             else:
                 is_connected_with_followed_user = user.is_connected_with_user(followed_user)
+                # Add the followed user public posts
+                posts_queryset = posts_queryset | followed_user.world_circle.posts.all()
 
             if is_connected_with_followed_user:
                 Connection = get_connection_model()
@@ -78,7 +81,7 @@ class Post(models.Model):
                 # Add the connected user posts with connections circle
                 posts_queryset = posts_queryset | target_connection.user.connections_circle.posts.all()
 
-                # Add the connected user circle posts we migt be in
+                # Add the connected user circle posts we might be in
                 target_connection_circle = connection.target_connection.circle
                 # The other user might not have the user in a circle yet
                 if target_connection_circle:

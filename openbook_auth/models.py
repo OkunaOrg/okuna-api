@@ -77,9 +77,9 @@ class User(AbstractUser):
         Connection = get_connection_model()
         return Connection.connection_exists(self.pk, user.pk)
 
-    def is_connected_with_user_in_circle(self, user, circle_id):
+    def is_connected_with_user_in_circles(self, user, circles_ids):
         Connection = get_connection_model()
-        return Connection.connection_exists_in_circle(self.pk, user.pk, circle_id)
+        return Connection.connection_exists_in_circles(self.pk, user.pk, circles_ids)
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)

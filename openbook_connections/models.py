@@ -46,6 +46,13 @@ class Connection(models.Model):
         return count > 0
 
     @classmethod
+    def connection_exists_in_circles(cls, user_a_id, user_b_id, circles_ids):
+        count = Connection.objects.select_related('target_connection__user_id').filter(user_id=user_a_id,
+                                                                                       target_connection__user_id=user_b_id,
+                                                                                       circle_id__in=circles_ids).count()
+        return count == len(circles_ids)
+
+    @classmethod
     def connection_with_id_exists_for_user_with_id(cls, connection_id, user_id):
         count = Connection.objects.filter(id=connection_id,
                                           user_id=user_id).count()

@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from openbook_posts.models import Post, PostImage
-from openbook_posts.serializers import CreatePostSerializer, PostSerializer
+from openbook_posts.serializers import CreatePostSerializer, PostSerializer, GetPostsSerializer
 
 
 class Posts(APIView):
@@ -32,7 +32,20 @@ class Posts(APIView):
 
     def get(self, request):
         user = request.user
-        posts = Post.get_posts_for_user(user).order_by('-created')
+
+        serializer = GetPostsSerializer(data=request.query_params, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        circles_ids = data.get('circle_id')
+        lists_ids = data.get('list_id')
+
+        posts = Post.get_posts_for_user(
+            user,
+            circles_ids=circles_ids,
+            lists_ids=lists_ids
+        ).order_by('-created')[:10]
+
         post_serializer = PostSerializer(posts, many=True, context={"request": request})
 
         return Response(post_serializer.data, status=status.HTTP_200_OK)

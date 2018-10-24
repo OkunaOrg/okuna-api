@@ -4,7 +4,7 @@ from rest_framework.exceptions import ValidationError
 from openbook.settings import LIST_MAX_LENGTH, COLOR_ATTR_MAX_LENGTH
 from openbook_auth.models import UserProfile, User
 from openbook_lists.models import List
-from openbook_lists.validators import list_name_not_taken_for_user_validator, list_id_exists
+from openbook_lists.validators import list_name_not_taken_for_user_validator, list_with_id_exists_for_user_with_id
 from openbook_common.validators import emoji_id_exists
 from django.utils.translation import ugettext_lazy as _
 
@@ -27,7 +27,11 @@ class CreateListSerializer(serializers.Serializer):
 
 
 class DeleteListSerializer(serializers.Serializer):
-    list_id = serializers.IntegerField(required=True, validators=[list_id_exists])
+    list_id = serializers.IntegerField(required=True)
+
+    def validate_list_id(self, list_id):
+        user = self.context.get("request").user
+        list_with_id_exists_for_user_with_id(list_id, user.pk)
 
 
 class ListUserProfileSerializer(serializers.ModelSerializer):
