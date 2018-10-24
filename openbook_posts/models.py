@@ -38,24 +38,20 @@ class Post(models.Model):
     def get_posts_for_user(cls, user):
         posts_queryset = user.posts.all()
 
-        connections = user.connections.all()
-        for connection in connections:
-            target_connection = connection.target_connection
-            target_user = target_connection.user
-
-            # Add connection connections circle posts
-            target_user_connections_circle = target_user.connections_circle
-            posts_queryset = posts_queryset | target_user_connections_circle.posts.all()
-
-            # Add connection circle posts
-            target_connection_circle = target_connection.circle
-            if target_connection_circle:
-                posts_queryset = posts_queryset | target_connection_circle.posts.all()
-
         follows = user.follows.all()
+
         for follow in follows:
             followed_user = follow.followed_user
+            # Add the followed user public posts
             posts_queryset = posts_queryset | followed_user.world_circle.posts.all()
+
+            if user.is_connected_with(followed_user):
+                connection = user.get_connection_with(followed_user)
+                target_connection_circle = connection.target_connection.circle
+                # The other user might not have the user in a circle yet
+                if target_connection_circle:
+                    target_connection_circle_posts = target_connection_circle.posts.all()
+                    posts_queryset = posts_queryset | target_connection_circle_posts
 
         return posts_queryset
 

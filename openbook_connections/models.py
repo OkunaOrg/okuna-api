@@ -34,12 +34,16 @@ class Connection(models.Model):
 
     @classmethod
     def connection_exists(cls, user_a_id, user_b_id):
-        count = Connection.objects.select_related('target_connection__user_id').filter(user_id=user_a_id,
-                                                                                       target_connection__user_id=user_b_id).count()
+        count = cls.get_connection(user_a_id, user_b_id)
         if count > 0:
             return True
 
         return False
+
+    @classmethod
+    def get_connection(cls, user_a_id, user_b_id):
+        return Connection.objects.select_related('target_connection__user_id').filter(user_id=user_a_id,
+                                                                                      target_connection__user_id=user_b_id)
 
     @classmethod
     def connection_with_id_exists_for_user_with_id(cls, connection_id, user_id):

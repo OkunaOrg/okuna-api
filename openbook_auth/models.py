@@ -16,6 +16,10 @@ def get_circle_model():
     return apps.get_model('openbook_circles.Circle')
 
 
+def get_connection_model():
+    return apps.get_model('openbook_connections.Connection')
+
+
 class User(AbstractUser):
     """"
     Custom user model to change behaviour of the default user model
@@ -24,7 +28,8 @@ class User(AbstractUser):
     first_name = None
     last_name = None
     email = models.EmailField(_('email address'), unique=True, null=False, blank=False)
-    world_circle = models.ForeignKey('openbook_circles.Circle', on_delete=models.PROTECT, related_name='+', null=True, blank=True)
+    world_circle = models.ForeignKey('openbook_circles.Circle', on_delete=models.PROTECT, related_name='+', null=True,
+                                     blank=True)
     connections_circle = models.ForeignKey('openbook_circles.Circle', on_delete=models.PROTECT, related_name='+',
                                            null=True, blank=True)
 
@@ -67,6 +72,14 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         self.full_clean()
         return super(User, self).save(*args, **kwargs)
+
+    def is_connected_with(self, user):
+        Connection = get_connection_model()
+        return Connection.connection_exists(self.pk, user.pk)
+
+    def get_connection_with(self, user):
+        Connection = get_connection_model()
+        return Connection.get_connection(self.pk, user.pk)
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
