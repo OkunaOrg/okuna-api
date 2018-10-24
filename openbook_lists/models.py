@@ -1,4 +1,3 @@
-from django.apps import apps
 from django.db import models
 
 # Create your models here.
@@ -7,10 +6,7 @@ from openbook_auth.models import User
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.models import Emoji
-
-
-def get_follow_model():
-    return apps.get_model('openbook_follows.Follow')
+from openbook_common.utils.model_loaders import get_follow_model
 
 
 class List(models.Model):

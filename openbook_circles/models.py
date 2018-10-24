@@ -3,14 +3,10 @@ from django.db import models
 # Create your models here.
 from openbook.settings import CIRCLE_MAX_LENGTH, COLOR_ATTR_MAX_LENGTH
 from openbook_auth.models import User
+from openbook_common.utils.model_loaders import get_connection_model
 from openbook_posts.models import Post
 from openbook_common.validators import hex_color_validator
 from django.utils.translation import ugettext_lazy as _
-from django.apps import apps
-
-
-def get_connection_model():
-    return apps.get_model('openbook_connections.Connection')
 
 
 class Circle(models.Model):

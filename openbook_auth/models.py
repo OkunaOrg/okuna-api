@@ -1,4 +1,3 @@
-from django.apps import apps
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
 from django.db import models
 from django.contrib.auth.models import AbstractUser
@@ -10,14 +9,7 @@ from django.conf import settings
 from rest_framework.authtoken.models import Token
 
 from openbook.settings import USERNAME_MAX_LENGTH
-
-
-def get_circle_model():
-    return apps.get_model('openbook_circles.Circle')
-
-
-def get_connection_model():
-    return apps.get_model('openbook_connections.Connection')
+from openbook_common.utils.model_loaders import get_connection_model, get_circle_model
 
 
 class User(AbstractUser):

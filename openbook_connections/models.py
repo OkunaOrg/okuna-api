@@ -1,12 +1,7 @@
-from django.apps import apps
 from django.db import models
 
 # Create your models here.
 from openbook_auth.models import User
-
-
-def get_follow_model():
-    return apps.get_model('openbook_follows.Follow')
 
 
 class Connection(models.Model):

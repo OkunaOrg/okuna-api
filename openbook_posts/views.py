@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from openbook_posts.models import Post, PostImage
+from openbook_posts.models import Post
 from openbook_posts.serializers import CreatePostSerializer, PostSerializer, GetPostsSerializer
 
 

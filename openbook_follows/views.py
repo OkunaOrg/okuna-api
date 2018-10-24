@@ -46,3 +46,11 @@ class FollowItem(APIView):
         follow = user.follows.get(id=follow_id)
         follow.delete()
         return Response(status=status.HTTP_200_OK)
+
+    def patch(self, request, follow_id):
+        user = request.user
+        serializer = DeleteFollowSerializer(data={'follow_id': follow_id}, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        follow = user.follows.get(id=follow_id)
+        follow.delete()
+        return Response(status=status.HTTP_200_OK)

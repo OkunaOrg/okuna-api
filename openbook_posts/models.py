@@ -1,5 +1,4 @@
 # Create your models here.
-from django.apps import apps
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
@@ -7,16 +6,8 @@ from django.utils.translation import ugettext_lazy as _
 # Create your views here.
 from openbook_auth.models import User
 
-# #FFFFFF
 from openbook_common.models import Emoji
-
-
-def get_circle_model():
-    return apps.get_model('openbook_circles.Circle')
-
-
-def get_connection_model():
-    return apps.get_model('openbook_connections.Connection')
+from openbook_common.utils.model_loaders import get_connection_model
 
 
 class Post(models.Model):

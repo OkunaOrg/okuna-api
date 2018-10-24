@@ -22,9 +22,10 @@ from django.utils.translation import gettext_lazy  as _
 from dotenv import load_dotenv, find_dotenv
 from pathlib import Path
 
-from openbook.utils.environment import EnvironmentChecker
 
 # Logging config
+from openbook_common.utils.environment import EnvironmentChecker
+
 LOGGING_CONFIG = None
 logging.config.dictConfig({
     'version': 1,
