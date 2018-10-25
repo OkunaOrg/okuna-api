@@ -11,3 +11,11 @@ def get_connection_model():
 
 def get_follow_model():
     return apps.get_model('openbook_follows.Follow')
+
+
+def get_post_model():
+    return apps.get_model('openbook_posts.Post')
+
+
+def get_list_model():
+    return apps.get_model('openbook_lists.List')

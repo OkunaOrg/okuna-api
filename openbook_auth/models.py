@@ -10,7 +10,8 @@ from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError
 
 from openbook.settings import USERNAME_MAX_LENGTH
-from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model
+from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
+    get_post_model, get_list_model
 
 
 class User(AbstractUser):
@@ -93,14 +94,97 @@ class User(AbstractUser):
     def has_circle_with_id(self, circle_id):
         return self.circles.filter(id=circle_id).count() > 0
 
+    def has_circle_with_name(self, circle_name):
+        return self.circles.filter(name=circle_name).count() > 0
+
+    def has_post_with_id(self, post_id):
+        return self.posts.filter(id=post_id).count() > 0
+
     def has_circles_with_ids(self, circles_ids):
         return self.circles.filter(id__in=circles_ids).count() == len(circles_ids)
 
     def has_list_with_id(self, list_id):
         return self.lists.filter(id=list_id).count() > 0
 
+    def has_list_with_name(self, list_name):
+        return self.lists.filter(name=list_name).count() > 0
+
     def has_lists_with_ids(self, lists_ids):
         return self.lists.filter(id__in=lists_ids).count() == len(lists_ids)
+
+    def create_circle(self, name, color):
+        self._check_circle_name_not_taken(name)
+        Circle = get_circle_model()
+        circle = Circle.objects.create(name=name, creator=self, color=color)
+
+        return circle
+
+    def delete_circle(self, circle):
+        return self.delete_circle_with_id(circle.pk)
+
+    def delete_circle_with_id(self, circle_id):
+        self._check_can_delete_circle_with_id(circle_id)
+        circle = self.circles.get(id=circle_id)
+        circle.delete()
+
+    def update_circle(self, circle):
+        return self.update_circle_with_id(circle.pk)
+
+    def update_circle_with_id(self, circle_id):
+        pass
+
+    def get_circle_with_id(self, circle_id):
+        self._check_can_get_circle_with_id(circle_id)
+        return self.circles.get(id=circle_id)
+
+    def create_list(self, name, emoji_id):
+        self._check_list_name_not_taken(name)
+        List = get_list_model()
+        list = List.objects.create(name=name, creator=self, emoji_id=emoji_id)
+
+        return list
+
+    def delete_list(self, list):
+        return self.delete_list_with_id(list.pk)
+
+    def delete_list_with_id(self, list_id):
+        self._check_can_delete_list_with_id(list_id)
+        list = self.lists.get(id=list_id)
+        list.delete()
+
+    def update_list(self, list):
+        return self.update_list_with_id(list.pk)
+
+    def update_list_with_id(self, list_id):
+        pass
+
+    def get_list_with_id(self, list_id):
+        self._check_can_get_list_with_id(list_id)
+        return self.lists.get(id=list_id)
+
+    def create_post(self, text, circles_ids, image):
+        # If no circles were specified, add post to the world circle.
+        if circles_ids is None or len(circles_ids) == 0:
+            circles_ids = [self.world_circle_id]
+
+        Post = get_post_model()
+        post = Post.create_post(text=text, image=image, circles_ids=circles_ids, creator=self)
+
+        return post
+
+    def delete_post(self, post):
+        return self.delete_post_with_id(post.pk)
+
+    def delete_post_with_id(self, post_id):
+        self._check_can_delete_post_with_id(post_id)
+        post = self.posts.get(id=post_id)
+        post.delete()
+
+    def update_post(self, post):
+        return self.update_post_with_id(post.pk)
+
+    def update_post_with_id(self, post_id):
+        pass
 
     def get_posts(self, lists_ids=None, circles_ids=None):
         # TODO Desperately optimize. Basically the core functionality of everything.
@@ -119,7 +203,8 @@ class User(AbstractUser):
             is_connected_with_followed_user = None
 
             if circles_ids:
-                is_connected_with_followed_user = self.is_connected_with_user_in_circles(followed_user, circles_ids)
+                is_connected_with_followed_user = self.is_connected_with_user_with_id_in_circles_with_ids(followed_user,
+                                                                                                          circles_ids)
                 if is_connected_with_followed_user:
                     # Add the connected user public posts
                     posts_queryset = posts_queryset | followed_user.world_circle.posts.all()
@@ -157,14 +242,14 @@ class User(AbstractUser):
         return self.follow_user_with_id(user.pk, **kwargs)
 
     def follow_user_with_id(self, user_id, **kwargs):
-        self.check_is_not_following_user_with_id(user_id)
+        self._check_is_not_following_user_with_id(user_id)
 
         if self.pk == user_id:
             raise ValidationError(
                 _('A user cannot follow itself.'),
             )
 
-        self.check_follow_data(kwargs)
+        self._check_follow_data(kwargs)
 
         Follow = get_follow_model()
         return Follow.create_follow(user_id=self.pk, followed_user_id=user_id, **kwargs)
@@ -173,7 +258,7 @@ class User(AbstractUser):
         return self.unfollow_user_with_id(user.pk)
 
     def unfollow_user_with_id(self, user_id):
-        self.check_is_following_user_with_id(user_id)
+        self._check_is_following_user_with_id(user_id)
         follow = self.follows.get(followed_user_id=user_id)
         follow.delete()
 
@@ -181,8 +266,8 @@ class User(AbstractUser):
         return self.update_follow_for_user_with_id(user.pk, **kwargs)
 
     def update_follow_for_user_with_id(self, user_id, **kwargs):
-        self.check_is_following_user_with_id(user_id)
-        self.check_follow_data(kwargs)
+        self._check_is_following_user_with_id(user_id)
+        self._check_follow_data(kwargs)
         follow = self.get_follow_for_user_with_id(user_id)
         for attr, value in kwargs.items():
             setattr(follow, attr, value)
@@ -193,7 +278,7 @@ class User(AbstractUser):
         return self.connect_with_user_with_id(user.pk, **kwargs)
 
     def connect_with_user_with_id(self, user_id, **kwargs):
-        self.check_is_not_connected_with_user_with_id(user_id)
+        self._check_is_not_connected_with_user_with_id(user_id)
         self.check_connect_data(kwargs)
 
         if self.pk == user_id:
@@ -211,7 +296,7 @@ class User(AbstractUser):
         return connection
 
     def update_connection_with_user_with_id(self, user_id, **kwargs):
-        self.check_is_connected_with_user_with_id(user_id)
+        self._check_is_connected_with_user_with_id(user_id)
         self.check_connect_data(kwargs)
         connection = self.get_connection_for_user_with_id(user_id)
         for attr, value in kwargs.items():
@@ -228,13 +313,13 @@ class User(AbstractUser):
                 circle_id = circle.pk
 
         if circle_id:
-            self.check_has_circle_with_id(circle_id)
+            self._check_has_circle_with_id(circle_id)
 
     def disconnect_from_user(self, user):
         return self.disconnect_from_user_with_id(user.pk)
 
     def disconnect_from_user_with_id(self, user_id):
-        self.check_is_connected_with_user_with_id(user_id)
+        self._check_is_connected_with_user_with_id(user_id)
         # Actually disconnect
         connection = self.connections.get(target_connection__user_id=user_id)
         connection.delete()
@@ -248,7 +333,7 @@ class User(AbstractUser):
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
 
-    def check_follow_data(self, data):
+    def _check_follow_data(self, data):
         list_id = data.get('list_id')
 
         if not list_id:
@@ -257,42 +342,84 @@ class User(AbstractUser):
                 list_id = list.pk
 
         if list_id:
-            self.check_has_list_with_id(list_id)
+            self._check_has_list_with_id(list_id)
 
-    def check_is_not_following_user_with_id(self, user_id):
+    def _check_is_not_following_user_with_id(self, user_id):
         if self.is_following_user_with_id(user_id):
             raise ValidationError(
                 _('Already following user.'),
             )
 
-    def check_is_following_user_with_id(self, user_id):
+    def _check_is_following_user_with_id(self, user_id):
         if not self.is_following_user_with_id(user_id):
             raise ValidationError(
                 _('Not following user.'),
             )
 
-    def check_is_not_connected_with_user_with_id(self, user_id):
+    def _check_is_not_connected_with_user_with_id(self, user_id):
         if self.is_connected_with_user_with_id(user_id):
             raise ValidationError(
                 _('Already connected with user.'),
             )
 
-    def check_is_connected_with_user_with_id(self, user_id):
+    def _check_is_connected_with_user_with_id(self, user_id):
         if not self.is_connected_with_user_with_id(user_id):
             raise ValidationError(
                 _('Not connected with user.'),
             )
 
-    def check_has_list_with_id(self, list_id):
+    def _check_has_list_with_id(self, list_id):
         if not self.has_list_with_id(list_id):
             raise ValidationError(
                 _('List does not exist.'),
             )
 
-    def check_has_circle_with_id(self, circle_id):
+    def _check_has_circle_with_id(self, circle_id):
         if not self.has_circle_with_id(circle_id):
             raise ValidationError(
                 _('Circle does not exist.'),
+            )
+
+    def _check_can_delete_post_with_id(self, post_id):
+        if not self.has_post_with_id(post_id):
+            raise ValidationError(
+                _('Can\'t delete a post that does not belong to you.'),
+            )
+
+    def _check_can_delete_list_with_id(self, list_id):
+        if not self.has_list_with_id(list_id):
+            raise ValidationError(
+                _('Can\'t delete a list that does not belong to you.'),
+            )
+
+    def _check_can_delete_circle_with_id(self, circle_id):
+        if not self.has_circle_with_id(circle_id):
+            raise ValidationError(
+                _('Can\'t delete a circle that does not belong to you.'),
+            )
+
+    def _check_can_get_circle_with_id(self, circle_id):
+        if not self.has_circle_with_id(circle_id):
+            raise ValidationError(
+                _('Can\'t view a circle that does not belong to you.'),
+            )
+
+    def _check_can_get_list_with_id(self, list_id):
+        if not self.has_list_with_id(list_id):
+            raise ValidationError(
+                _('Can\'t view a list that does not belong to you.'),
+            )
+
+    def _check_circle_name_not_taken(self, circle_name):
+        if self.has_circle_with_name(circle_name):
+            raise ValidationError(
+                _('You already have a circle with that name.'),
+            )
+
+    def _check_list_name_not_taken(self, list_name):
+        if self.has_list_with_name(list_name):
+            raise ValidationError(
+                _('You already have a list with that name.'),
             )
 
 

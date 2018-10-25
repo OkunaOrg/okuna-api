@@ -1,11 +1,10 @@
 # Create your views here.
-from django.db import IntegrityError
+from django.db import transaction
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from openbook_circles.models import Circle
 from openbook_circles.serializers import CreateCircleSerializer, CircleSerializer, DeleteCircleSerializer
 
 
@@ -20,7 +19,8 @@ class Circles(APIView):
         color = data.get('color')
         user = request.user
 
-        circle = Circle.objects.create(name=name, color=color, creator=user)
+        with transaction.atomic():
+            circle = user.create_circle(name=name, color=color)
 
         response_serializer = CircleSerializer(circle, context={"request": request})
 
@@ -38,6 +38,8 @@ class CircleItem(APIView):
         user = request.user
         serializer = DeleteCircleSerializer(data={'circle_id': circle_id})
         serializer.is_valid(raise_exception=True)
-        circle = user.circles.get(id=circle_id)
-        circle.delete()
+
+        with transaction.atomic():
+            user.delete_circle_with_id(circle_id)
+
         return Response(status=status.HTTP_200_OK)

@@ -1,37 +1,19 @@
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 
-from openbook.settings import LIST_MAX_LENGTH, COLOR_ATTR_MAX_LENGTH
+from openbook.settings import LIST_MAX_LENGTH
 from openbook_auth.models import UserProfile, User
 from openbook_lists.models import List
-from openbook_lists.validators import list_name_not_taken_for_user_validator, list_with_id_exists_for_user_with_id
 from openbook_common.validators import emoji_id_exists
-from django.utils.translation import ugettext_lazy as _
+from openbook_lists.validators import list_id_exists
 
 
 class CreateListSerializer(serializers.Serializer):
-    name = serializers.CharField(max_length=LIST_MAX_LENGTH, required=True, allow_blank=False,
-                                 validators=[])
+    name = serializers.CharField(max_length=LIST_MAX_LENGTH, required=True, allow_blank=False)
     emoji_id = serializers.IntegerField(validators=[emoji_id_exists])
-
-    def validate_name(self, name):
-        request = self.context.get("request")
-        if request and hasattr(request, "user"):
-            user = request.user
-            list_name_not_taken_for_user_validator(name, user)
-            return name
-        else:
-            raise ValidationError(
-                _('A user is required.'),
-            )
 
 
 class DeleteListSerializer(serializers.Serializer):
-    list_id = serializers.IntegerField(required=True)
-
-    def validate_list_id(self, list_id):
-        user = self.context.get("request").user
-        list_with_id_exists_for_user_with_id(list_id, user.pk)
+    list_id = serializers.IntegerField(required=True, validators=[list_id_exists])
 
 
 class ListUserProfileSerializer(serializers.ModelSerializer):

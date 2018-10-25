@@ -1,10 +1,7 @@
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 
 from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import user_id_exists
-from openbook_lists.validators import list_with_id_exists_for_user_with_id
-from django.utils.translation import ugettext_lazy as _
 
 from openbook_follows.models import Follow
 

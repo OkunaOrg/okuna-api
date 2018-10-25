@@ -3,49 +3,27 @@ from rest_framework import serializers
 from openbook.settings import POST_MAX_LENGTH, COMMENT_MAX_LENGTH
 from openbook_circles.models import Circle
 from openbook_circles.validators import circle_id_exists
-from openbook_lists.validators import list_with_id_exists_for_user_with_id
+from openbook_lists.validators import list_id_exists
 from openbook_posts.models import PostImage, Post
 
 
 class GetPostsSerializer(serializers.Serializer):
     circle_id = serializers.ListField(
         required=False,
-        child=serializers.IntegerField()
+        child=serializers.IntegerField(validators=[circle_id_exists]),
     )
     list_id = serializers.ListField(
         required=False,
-        child=serializers.IntegerField()
+        child=serializers.IntegerField(validators=[list_id_exists])
     )
-
-    def validate_circle_id(self, circle_id):
-        user = self.context.get("request").user
-        if circle_id:
-            for id in circle_id:
-                circle_id_exists(id, user.pk)
-        return circle_id
-
-    def validate_list_id(self, list_id):
-        user = self.context.get("request").user
-        if list_id:
-            for id in list_id:
-                list_with_id_exists_for_user_with_id(id, user.pk)
-        return list_id
 
 
 class CreatePostSerializer(serializers.Serializer):
     text = serializers.CharField(max_length=POST_MAX_LENGTH, required=True, allow_blank=False)
     image = serializers.ImageField(allow_empty_file=True, required=False)
     circle_id = serializers.ListField(
-        child=serializers.IntegerField()
+        child=serializers.IntegerField(validators=[circle_id_exists]),
     )
-
-    def validate_circle_id(self, circle_id):
-        request = self.context.get("request")
-        user = request.user
-        if circle_id:
-            for id in circle_id:
-                circle_id_exists(id, user.pk)
-        return circle_id
 
 
 class CommentPostSerializer(serializers.Serializer):

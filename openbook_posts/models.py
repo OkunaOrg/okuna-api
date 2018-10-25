@@ -17,9 +17,6 @@ class Post(models.Model):
 
     @classmethod
     def create_post(cls, text, creator, circles_ids=None, image=None):
-        if circles_ids is None or len(circles_ids) == 0:
-            circles_ids = [creator.world_circle_id]
-
         post = Post.objects.create(text=text, creator=creator)
 
         if image:

@@ -24,7 +24,8 @@ class Posts(APIView):
         user = request.user
 
         with transaction.atomic():
-            post = Post.create_post(text=text, creator=user, circles_ids=circles_ids, image=image)
+            post = user.create_post(text=text, circles_ids=circles_ids, image=image)
+            # post = Post.create_post(text=text, creator=user, circles_ids=circles_ids, image=image)
 
         post_serializer = PostSerializer(post, context={"request": request})
 
@@ -39,9 +40,9 @@ class Posts(APIView):
 
         circles_ids = data.get('circle_id')
         lists_ids = data.get('list_id')
+        user = request.user
 
-        posts = Post.get_posts_for_user(
-            user,
+        posts = user.get_posts(
             circles_ids=circles_ids,
             lists_ids=lists_ids
         ).order_by('-created')[:10]
@@ -49,32 +50,3 @@ class Posts(APIView):
         post_serializer = PostSerializer(posts, many=True, context={"request": request})
 
         return Response(post_serializer.data, status=status.HTTP_200_OK)
-
-
-class PostView(APIView):
-    def get(self, request, post_id):
-        user = request.user
-        try:
-            post = user.posts.get(pk=post_id)
-        except Post.DoesNotExist:
-            raise NotFound()
-
-        post_serializer = PostSerializer(post, context={"request": request})
-
-        return Response(post_serializer.data, status=status.HTTP_200_OK)
-
-
-class PostComments(APIView):
-    def get(self, request, post_id):
-        pass
-
-    def put(self, request, post_id):
-        pass
-
-
-class PostReactions(APIView):
-    def get(self, request, post_id):
-        pass
-
-    def put(self, request, post_id):
-        pass
