@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from openbook.settings import POST_MAX_LENGTH, COMMENT_MAX_LENGTH
 from openbook_circles.models import Circle
-from openbook_circles.validators import circle_with_id_exists_for_user_with_id
+from openbook_circles.validators import circle_id_exists
 from openbook_lists.validators import list_with_id_exists_for_user_with_id
 from openbook_posts.models import PostImage, Post
 
@@ -21,7 +21,7 @@ class GetPostsSerializer(serializers.Serializer):
         user = self.context.get("request").user
         if circle_id:
             for id in circle_id:
-                circle_with_id_exists_for_user_with_id(id, user.pk)
+                circle_id_exists(id, user.pk)
         return circle_id
 
     def validate_list_id(self, list_id):
@@ -44,7 +44,7 @@ class CreatePostSerializer(serializers.Serializer):
         user = request.user
         if circle_id:
             for id in circle_id:
-                circle_with_id_exists_for_user_with_id(id, user.pk)
+                circle_id_exists(id, user.pk)
         return circle_id
 
 

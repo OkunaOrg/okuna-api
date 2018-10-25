@@ -4,7 +4,7 @@ from rest_framework.exceptions import ValidationError
 from openbook.settings import CIRCLE_MAX_LENGTH, COLOR_ATTR_MAX_LENGTH
 from openbook_auth.models import UserProfile, User
 from openbook_circles.models import Circle
-from openbook_circles.validators import circle_name_not_taken_for_user_validator, circle_with_id_exists_for_user_with_id
+from openbook_circles.validators import circle_name_not_taken_for_user_validator, circle_id_exists
 from openbook_common.validators import hex_color_validator
 
 
@@ -27,7 +27,7 @@ class DeleteCircleSerializer(serializers.Serializer):
     def validate_circle_id(self, circle_id):
         request = self.context.get("request")
         user = request.user
-        circle_with_id_exists_for_user_with_id(circle_id, user.pk)
+        circle_id_exists(circle_id, user.pk)
         return circle_id
 
 

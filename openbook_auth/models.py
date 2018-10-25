@@ -189,12 +189,46 @@ class User(AbstractUser):
         follow.save()
         return follow
 
-    def connect_with_user(self, user):
-        pass
+    def connect_with_user(self, user, **kwargs):
+        return self.connect_with_user_with_id(user.pk, **kwargs)
 
-    def connect_with_user_with_id(self, user_id):
+    def connect_with_user_with_id(self, user_id, **kwargs):
         self.check_is_not_connected_with_user_with_id(user_id)
-        # Actually connect
+        self.check_connect_data(kwargs)
+
+        if self.pk == user_id:
+            raise ValidationError(
+                _('A user cannot follow itself.'),
+            )
+
+        Connection = get_connection_model()
+        connection = Connection.create_connection(user_id=self.pk, target_user_id=user_id, **kwargs)
+
+        # Automatically follow user
+        if not self.is_following_user_with_id(user_id):
+            self.follow_user_with_id(user_id)
+
+        return connection
+
+    def update_connection_with_user_with_id(self, user_id, **kwargs):
+        self.check_is_connected_with_user_with_id(user_id)
+        self.check_connect_data(kwargs)
+        connection = self.get_connection_for_user_with_id(user_id)
+        for attr, value in kwargs.items():
+            setattr(connection, attr, value)
+        connection.save()
+        return connection
+
+    def check_connect_data(self, data):
+        circle_id = data.get('circle_id')
+
+        if not circle_id:
+            circle = data.get('circle')
+            if circle:
+                circle_id = circle.pk
+
+        if circle_id:
+            self.check_has_circle_with_id(circle_id)
 
     def disconnect_from_user(self, user):
         return self.disconnect_from_user_with_id(user.pk)
@@ -202,6 +236,14 @@ class User(AbstractUser):
     def disconnect_from_user_with_id(self, user_id):
         self.check_is_connected_with_user_with_id(user_id)
         # Actually disconnect
+        connection = self.connections.get(target_connection__user_id=user_id)
+        connection.delete()
+        # Stop following user
+        if self.is_following_user_with_id(user_id):
+            self.unfollow_user_with_id(user_id)
+
+    def get_connection_for_user_with_id(self, user_id):
+        return self.connections.get(target_connection__user_id=user_id)
 
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
@@ -245,6 +287,12 @@ class User(AbstractUser):
         if not self.has_list_with_id(list_id):
             raise ValidationError(
                 _('List does not exist.'),
+            )
+
+    def check_has_circle_with_id(self, circle_id):
+        if not self.has_circle_with_id(circle_id):
+            raise ValidationError(
+                _('Circle does not exist.'),
             )
 
 

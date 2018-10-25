@@ -18,13 +18,6 @@ class Connection(models.Model):
         # to add it to the other field too?
         target_connection.target_connection = connection
         target_connection.save()
-
-        # Follow the user if not already following
-        Follow = get_follow_model()
-
-        if not Follow.follow_exists(user_id, target_user_id):
-            Follow.create_follow(user_id=user_id, followed_user_id=target_user_id)
-
         return connection
 
     @classmethod
@@ -59,14 +52,3 @@ class Connection(models.Model):
     @property
     def target_user(self):
         return self.target_connection.user
-
-    def delete(self, *args, **kwargs):
-        user_id = self.user_id
-        target_user_id = self.target_connection.user_id
-
-        # Unfollow the user if following
-        Follow = get_follow_model()
-        if Follow.follow_exists(user_id, target_user_id):
-            Follow.delete_follow(user_id, target_user_id)
-
-        return super(Connection, self).delete(*args, **kwargs)

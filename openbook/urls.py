@@ -22,7 +22,7 @@ from django.conf.urls.static import static
 from openbook_circles.views import Circles, CircleItem
 from openbook_common.views import Time
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, Login, User
-from openbook_connections.views import Connections, ConnectionItem
+from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
 from openbook_lists.views import Lists, ListItem
 from openbook_posts.views import Posts, PostView
@@ -42,7 +42,9 @@ posts_patterns = [
 
 connections_patterns = [
     path('', Connections.as_view(), name='connections'),
-    path('<int:connection_id>/', ConnectionItem.as_view(), name='connection'),
+    path('connect/', ConnectWithUser.as_view(), name='connect-with-user'),
+    path('disconnect/', DisconnectFromUser.as_view(), name='disconnect-from-user'),
+    path('update/', UpdateConnection.as_view(), name='update-connection'),
 ]
 
 circles_patterns = [
