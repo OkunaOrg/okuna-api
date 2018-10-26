@@ -17,6 +17,13 @@ class DeleteCircleSerializer(serializers.Serializer):
     circle_id = serializers.IntegerField(required=True, validators=[circle_id_exists])
 
 
+class UpdateCircleSerializer(serializers.Serializer):
+    circle_id = serializers.IntegerField(required=True, validators=[circle_id_exists])
+    name = serializers.CharField(max_length=CIRCLE_MAX_LENGTH, required=True, allow_blank=False)
+    color = serializers.CharField(max_length=COLOR_ATTR_MAX_LENGTH, required=True, allow_blank=False,
+                                  validators=[hex_color_validator])
+
+
 class CircleUserProfileSerializer(serializers.ModelSerializer):
     avatar = serializers.ImageField(max_length=None, use_url=True, allow_null=True, required=False)
 

@@ -5,7 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from openbook_circles.serializers import CreateCircleSerializer, CircleSerializer, DeleteCircleSerializer
+from openbook_circles.serializers import CreateCircleSerializer, CircleSerializer, DeleteCircleSerializer, \
+    UpdateCircleSerializer
 
 
 class Circles(APIView):
@@ -41,5 +42,20 @@ class CircleItem(APIView):
 
         with transaction.atomic():
             user.delete_circle_with_id(circle_id)
+
+        return Response(status=status.HTTP_200_OK)
+
+    def patch(self, request, circle_id):
+        request_data = request.data.copy()
+        request_data['circle_id'] = circle_id
+
+        serializer = UpdateCircleSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user = request.user
+
+        with transaction.atomic():
+            user.update_circle_with_id(**data)
 
         return Response(status=status.HTTP_200_OK)
