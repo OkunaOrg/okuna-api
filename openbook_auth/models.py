@@ -8,6 +8,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError
+from django.db.models import Q
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
@@ -187,8 +188,12 @@ class User(AbstractUser):
         pass
 
     def get_posts(self, lists_ids=None, circles_ids=None):
-        # TODO Desperately optimize. Basically the core functionality of everything.
-        posts_queryset = self.posts.all()
+
+        queries = []
+
+        # Add own posts
+        own_posts_query = Q(creator_id=self.pk)
+        queries.append(own_posts_query)
 
         follows = None
 
@@ -206,12 +211,17 @@ class User(AbstractUser):
                 is_connected_with_followed_user = self.is_connected_with_user_with_id_in_circles_with_ids(followed_user,
                                                                                                           circles_ids)
                 if is_connected_with_followed_user:
-                    # Add the connected user public posts
-                    posts_queryset = posts_queryset | followed_user.world_circle.posts.all()
+                    # Add the connected & followed user public posts
+                    # posts_queryset = posts_queryset | followed_user.world_circle.posts.all()
+                    followed_user_work_circle_query = Q(creator_id=followed_user.pk,
+                                                        circles__id=followed_user.world_circle.pk)
+                    queries.append(followed_user_work_circle_query)
             else:
                 is_connected_with_followed_user = self.is_connected_with_user(followed_user)
                 # Add the followed user public posts
-                posts_queryset = posts_queryset | followed_user.world_circle.posts.all()
+                followed_user_work_circle_query = Q(creator_id=followed_user.pk,
+                                                    circles__id=followed_user.world_circle.pk)
+                queries.append(followed_user_work_circle_query)
 
             if is_connected_with_followed_user:
                 Connection = get_connection_model()
@@ -227,16 +237,27 @@ class User(AbstractUser):
                 target_connection = connection.target_connection
 
                 # Add the connected user posts with connections circle
-                posts_queryset = posts_queryset | target_connection.user.connections_circle.posts.all()
+                connected_user_connections_circle_posts_query = Q(creator_id=target_connection.user_id,
+                                                                  circles__id=target_connection.user.connections_circle.pk)
+                queries.append(connected_user_connections_circle_posts_query)
 
                 # Add the connected user circle posts we might be in
                 target_connection_circle = connection.target_connection.circle
                 # The other user might not have the user in a circle yet
                 if target_connection_circle:
-                    target_connection_circle_posts = target_connection_circle.posts.all()
-                    posts_queryset = posts_queryset | target_connection_circle_posts
+                    connected_user_circle_posts_query = Q(creator_id=target_connection.user_id,
+                                                          circles__id=target_connection.circle_id)
+                    queries.append(connected_user_circle_posts_query)
 
-        return posts_queryset
+        final_query = Q()
+
+        for query in queries:
+            final_query.add(query, Q.OR)
+
+        Post = get_post_model()
+        result = Post.objects.filter(final_query)
+
+        return result
 
     def follow_user(self, user, **kwargs):
         return self.follow_user_with_id(user.pk, **kwargs)
@@ -281,9 +302,11 @@ class User(AbstractUser):
         self._check_is_not_connected_with_user_with_id(user_id)
         self.check_connect_data(kwargs)
 
+        # Check dont connect to world circle
+
         if self.pk == user_id:
             raise ValidationError(
-                _('A user cannot follow itself.'),
+                _('A user cannot connect with itself.'),
             )
 
         Connection = get_connection_model()
