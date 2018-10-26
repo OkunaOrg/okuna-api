@@ -34,16 +34,6 @@ class ReactToPostSerializer(serializers.Serializer):
     reaction_id = serializers.IntegerField(required=True, min_value=0)
 
 
-class PostImageSerializer(serializers.ModelSerializer):
-    image = serializers.ImageField(max_length=None, use_url=True, allow_null=True, required=False)
-
-    class Meta:
-        model = PostImage
-        fields = (
-            'image',
-        )
-
-
 class PostCircleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Circle
@@ -54,14 +44,11 @@ class PostCircleSerializer(serializers.ModelSerializer):
 
 
 class PostSerializer(serializers.ModelSerializer):
-    image = PostImageSerializer(many=False)
-
     class Meta:
         model = Post
         fields = (
             'id',
             'created',
             'text',
-            'image',
             'creator_id'
         )

@@ -228,8 +228,6 @@ class User(AbstractUser):
 
                 connection = Connection.objects.select_related(
                     'target_connection__user'
-                ).prefetch_related(
-                    'target_connection__user__connections_circle__posts'
                 ).filter(
                     user_id=self.pk,
                     target_connection__user_id=followed_user.pk).get()
