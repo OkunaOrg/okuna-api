@@ -3,6 +3,7 @@ import tempfile
 
 from PIL import Image
 from django.urls import reverse
+from faker import Faker
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -10,6 +11,10 @@ from openbook_auth.models import User, UserProfile
 
 import logging
 import json
+
+from openbook_circles.models import Circle
+
+fake = Faker()
 
 logger = logging.getLogger(__name__)
 
@@ -168,6 +173,26 @@ class RegistrationAPITests(APITestCase):
         self.assertEqual(UserProfile.objects.count(), 1)
         user = User.objects.get(username=username)
         self.assertTrue(hasattr(user, 'profile'))
+
+    def test_user_circles_are_created(self):
+        """
+        should create the default circles instance and associate it to the User instance
+        """
+        url = self._get_url()
+        username = fake.user_name()
+        request_data = {'username': username, 'name': 'Joel Hernandez', 'email': 'test@email.com',
+                        'password': 'secretPassword123', 'birth_date': '27-1-1996'}
+        response = self.client.post(url, request_data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Circle.objects.count(), 2)
+
+        user = User.objects.get(username=username)
+
+        # Check we created the 2 world circle and connections circle
+        self.assertTrue(Circle.objects.filter(id__in=(user.world_circle_id, user.connections_circle_id)).count() == 2)
+
+        # Check we have a circles related manager
+        self.assertTrue(hasattr(user, 'circles'))
 
     def test_user_avatar(self):
         """
