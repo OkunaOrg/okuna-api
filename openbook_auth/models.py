@@ -92,6 +92,12 @@ class User(AbstractUser):
     def is_following_user_with_id(self, user_id):
         return self.follows.filter(followed_user_id=user_id)
 
+    def is_world_circle_id(self, id):
+        return self.world_circle_id == id
+
+    def is_connections_circle_id(self, id):
+        return self.connections_circle_id == id
+
     def has_circle_with_id(self, circle_id):
         return self.circles.filter(id=circle_id).count() > 0
 
@@ -128,11 +134,17 @@ class User(AbstractUser):
         circle = self.circles.get(id=circle_id)
         circle.delete()
 
-    def update_circle(self, circle):
-        return self.update_circle_with_id(circle.pk)
+    def update_circle(self, circle, **kwargs):
+        return self.update_circle_with_id(circle.pk, **kwargs)
 
-    def update_circle_with_id(self, circle_id):
-        pass
+    def update_circle_with_id(self, circle_id, **kwargs):
+        self._check_can_update_circle_with_id(circle_id)
+        self._check_circle_data(kwargs)
+        circle = self.circles.get(id=circle_id)
+
+        for attr, value in kwargs.items():
+            setattr(circle, attr, value)
+        circle.save()
 
     def get_circle_with_id(self, circle_id):
         self._check_can_get_circle_with_id(circle_id)
@@ -378,6 +390,11 @@ class User(AbstractUser):
         if name:
             self._check_list_name_not_taken(name)
 
+    def _check_circle_data(self, data):
+        name = data.get('name')
+        if name:
+            self._check_circle_name_not_taken(name)
+
     def _check_is_not_following_user_with_id(self, user_id):
         if self.is_following_user_with_id(user_id):
             raise ValidationError(
@@ -432,18 +449,34 @@ class User(AbstractUser):
                 _('Can\'t update a list that does not belong to you.'),
             )
 
+    def _check_can_update_circle_with_id(self, circle_id):
+        if not self.has_circle_with_id(circle_id):
+            raise ValidationError(
+                _('Can\'t update a circle that does not belong to you.'),
+            )
+
+        if self.is_world_circle_id(circle_id):
+            raise ValidationError(
+                _('Can\'t update the world circle.'),
+            )
+
+        if self.is_connections_circle_id(circle_id):
+            raise ValidationError(
+                _('Can\'t update the connections circle.'),
+            )
+
     def _check_can_delete_circle_with_id(self, circle_id):
         if not self.has_circle_with_id(circle_id):
             raise ValidationError(
                 _('Can\'t delete a circle that does not belong to you.'),
             )
 
-        if circle_id == self.world_circle_id:
+        if self.is_world_circle_id(circle_id):
             raise ValidationError(
                 _('Can\'t delete the world circle.'),
             )
 
-        if circle_id == self.connections_circle_id:
+        if self.is_connections_circle_id(circle_id):
             raise ValidationError(
                 _('Can\'t delete the connections circle.'),
             )
