@@ -212,16 +212,15 @@ class User(AbstractUser):
                                                                                                           circles_ids)
                 if is_connected_with_followed_user:
                     # Add the connected & followed user public posts
-                    # posts_queryset = posts_queryset | followed_user.world_circle.posts.all()
-                    followed_user_work_circle_query = Q(creator_id=followed_user.pk,
+                    followed_user_world_circle_query = Q(creator_id=followed_user.pk,
                                                         circles__id=followed_user.world_circle.pk)
-                    queries.append(followed_user_work_circle_query)
+                    queries.append(followed_user_world_circle_query)
             else:
                 is_connected_with_followed_user = self.is_connected_with_user(followed_user)
                 # Add the followed user public posts
-                followed_user_work_circle_query = Q(creator_id=followed_user.pk,
+                followed_user_world_circle_query = Q(creator_id=followed_user.pk,
                                                     circles__id=followed_user.world_circle.pk)
-                queries.append(followed_user_work_circle_query)
+                queries.append(followed_user_world_circle_query)
 
             if is_connected_with_followed_user:
                 Connection = get_connection_model()
