@@ -1,5 +1,6 @@
 # Create your tests here.
 from django.urls import reverse
+from faker import Faker
 from rest_framework import status
 from rest_framework.test import APITestCase
 from mixer.backend.django import mixer
@@ -13,7 +14,7 @@ from openbook_common.models import Emoji
 from openbook_lists.models import List
 
 logger = logging.getLogger(__name__)
-
+fake = Faker()
 
 class ListsAPITests(APITestCase):
     """
@@ -30,7 +31,7 @@ class ListsAPITests(APITestCase):
 
         list_emoji = mixer.blend(Emoji)
 
-        list_name = 'Friends'
+        list_name = fake.name()
         emoji_id = list_emoji.pk
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
