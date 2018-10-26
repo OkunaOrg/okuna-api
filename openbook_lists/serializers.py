@@ -16,6 +16,12 @@ class DeleteListSerializer(serializers.Serializer):
     list_id = serializers.IntegerField(required=True, validators=[list_id_exists])
 
 
+class UpdateListSerializer(serializers.Serializer):
+    list_id = serializers.IntegerField(required=True, validators=[list_id_exists])
+    name = serializers.CharField(max_length=LIST_MAX_LENGTH, required=True, allow_blank=False)
+    emoji_id = serializers.IntegerField(validators=[emoji_id_exists])
+
+
 class ListUserProfileSerializer(serializers.ModelSerializer):
     avatar = serializers.ImageField(max_length=None, use_url=True, allow_null=True, required=False)
 

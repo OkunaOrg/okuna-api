@@ -9,5 +9,16 @@
       "image": "/files/doge.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 2,
+    "fields": {
+      "name": "Dancing Parrot",
+      "shortcut": "parrot",
+      "color": "#FFFFFF",
+      "image": "/files/doge.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
   }
 ]

@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from openbook_lists.serializers import CreateListSerializer, ListSerializer, DeleteListSerializer
+from openbook_lists.serializers import CreateListSerializer, ListSerializer, DeleteListSerializer, UpdateListSerializer
 
 
 class Lists(APIView):
@@ -34,6 +34,8 @@ class Lists(APIView):
 
 
 class ListItem(APIView):
+    permission_classes = (IsAuthenticated,)
+
     def delete(self, request, list_id):
         serializer = DeleteListSerializer(data={'list_id': list_id})
         serializer.is_valid(raise_exception=True)
@@ -42,5 +44,20 @@ class ListItem(APIView):
 
         with transaction.atomic():
             user.delete_list_with_id(list_id)
+
+        return Response(status=status.HTTP_200_OK)
+
+    def patch(self, request, list_id):
+        request_data = request.data.copy()
+        request_data['list_id'] = list_id
+
+        serializer = UpdateListSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user = request.user
+
+        with transaction.atomic():
+            user.update_list_with_id(**data)
 
         return Response(status=status.HTTP_200_OK)

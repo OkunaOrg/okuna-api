@@ -153,11 +153,17 @@ class User(AbstractUser):
         list = self.lists.get(id=list_id)
         list.delete()
 
-    def update_list(self, list):
-        return self.update_list_with_id(list.pk)
+    def update_list(self, list, **kwargs):
+        return self.update_list_with_id(list.pk, **kwargs)
 
-    def update_list_with_id(self, list_id):
-        pass
+    def update_list_with_id(self, list_id, **kwargs):
+        self._check_can_update_list_with_id(list_id)
+        self._check_list_data(kwargs)
+        list = self.lists.get(id=list_id)
+
+        for attr, value in kwargs.items():
+            setattr(list, attr, value)
+        list.save()
 
     def get_list_with_id(self, list_id):
         self._check_can_get_list_with_id(list_id)
@@ -213,13 +219,13 @@ class User(AbstractUser):
                 if is_connected_with_followed_user:
                     # Add the connected & followed user public posts
                     followed_user_world_circle_query = Q(creator_id=followed_user.pk,
-                                                        circles__id=followed_user.world_circle.pk)
+                                                         circles__id=followed_user.world_circle.pk)
                     queries.append(followed_user_world_circle_query)
             else:
                 is_connected_with_followed_user = self.is_connected_with_user(followed_user)
                 # Add the followed user public posts
                 followed_user_world_circle_query = Q(creator_id=followed_user.pk,
-                                                    circles__id=followed_user.world_circle.pk)
+                                                     circles__id=followed_user.world_circle.pk)
                 queries.append(followed_user_world_circle_query)
 
             if is_connected_with_followed_user:
@@ -367,6 +373,11 @@ class User(AbstractUser):
         if list_id:
             self._check_has_list_with_id(list_id)
 
+    def _check_list_data(self, data):
+        name = data.get('name')
+        if name:
+            self._check_list_name_not_taken(name)
+
     def _check_is_not_following_user_with_id(self, user_id):
         if self.is_following_user_with_id(user_id):
             raise ValidationError(
@@ -413,6 +424,12 @@ class User(AbstractUser):
         if not self.has_list_with_id(list_id):
             raise ValidationError(
                 _('Can\'t delete a list that does not belong to you.'),
+            )
+
+    def _check_can_update_list_with_id(self, list_id):
+        if not self.has_list_with_id(list_id):
+            raise ValidationError(
+                _('Can\'t update a list that does not belong to you.'),
             )
 
     def _check_can_delete_circle_with_id(self, circle_id):
