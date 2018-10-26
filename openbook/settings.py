@@ -10,17 +10,14 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
-import os
-import logging
 import logging.config
+import os
 import sys
 
 import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
 from django.utils.translation import gettext_lazy  as _
-
 from dotenv import load_dotenv, find_dotenv
-from pathlib import Path
+from sentry_sdk.integrations.django import DjangoIntegration
 
 from openbook.utils.environment import EnvironmentChecker
 
@@ -158,12 +155,24 @@ WSGI_APPLICATION = 'openbook.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
-DATABASES = {
-    'default': {
+if environment_checker.is_build():
+    DATABASES = {
+      'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME': 'open-book-api'
+      }
     }
-}
+else:
+    DATABASES = {
+     'default':  {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.environ.get('MYSQL_DATABASE'),
+        'USER': os.environ.get('MYSQL_USER'),
+        'PASSWORD': os.environ.get('MYSQL_PASSWORD'),
+        'HOST': os.environ.get('MYSQL_HOST'),   # Or an IP Address that your DB is hosted on
+        'PORT': os.environ.get('MYSQL_PORT'),
+      }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
