@@ -438,6 +438,16 @@ class User(AbstractUser):
                 _('Can\'t delete a circle that does not belong to you.'),
             )
 
+        if circle_id == self.world_circle_id:
+            raise ValidationError(
+                _('Can\'t delete the world circle.'),
+            )
+
+        if circle_id == self.connections_circle_id:
+            raise ValidationError(
+                _('Can\'t delete the connections circle.'),
+            )
+
     def _check_can_get_circle_with_id(self, circle_id):
         if not self.has_circle_with_id(circle_id):
             raise ValidationError(
