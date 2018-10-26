@@ -1,0 +1,27 @@
+version: '3'
+services:
+  db:
+    image: mysql:5.7
+    ports:
+    - "3306:3306"
+    networks:
+    - openbook-net
+    env_file:
+      - ./.env
+    volumes:
+      - .docker/mysql/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/
+  web:
+    image: openbook-api:1.0
+    build: .
+    restart: always
+    command: [".docker/wait-for-it.sh","db:3306","--","python", "manage.py" ,"runserver", "0.0.0.0:8000"]
+    volumes:
+    - .:/code
+    ports:
+    - "8000:8000"
+    networks:
+    - openbook-net
+    depends_on:
+    - db
+networks:
+  openbook-net:

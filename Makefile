@@ -6,3 +6,18 @@ compilemessages_en:
 
 compilemessages_es:
 	django-admin compilemessages --locale=es
+
+build_openbook_api:
+	docker-compose build
+
+start_openbook_api:
+	docker-compose up
+
+stop_openbook_api:
+	docker-compose stop
+
+clean_openbook-api:
+	docker-compose down -v --rmi local
+
+logs_openbook-api:
+	docker-compose logs -f
