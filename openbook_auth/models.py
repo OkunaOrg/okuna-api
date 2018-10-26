@@ -187,7 +187,7 @@ class User(AbstractUser):
     def update_post_with_id(self, post_id):
         pass
 
-    def get_posts(self, lists_ids=None, circles_ids=None):
+    def get_posts(self, lists_ids=None, circles_ids=None, max_id=None):
 
         queries = []
 
@@ -251,6 +251,9 @@ class User(AbstractUser):
 
         for query in queries:
             final_query.add(query, Q.OR)
+
+        if max_id:
+            final_query.add(Q(id__lt=max_id), Q.AND)
 
         Post = get_post_model()
         result = Post.objects.filter(final_query)

@@ -16,6 +16,13 @@ class GetPostsSerializer(serializers.Serializer):
         required=False,
         child=serializers.IntegerField(validators=[list_id_exists])
     )
+    max_id = serializers.IntegerField(
+        required=False,
+    )
+    count = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
 
 
 class CreatePostSerializer(serializers.Serializer):

@@ -40,12 +40,15 @@ class Posts(APIView):
 
         circles_ids = data.get('circle_id')
         lists_ids = data.get('list_id')
+        max_id = data.get('max_id')
+        count = data.get('count', 10)
         user = request.user
 
         posts = user.get_posts(
             circles_ids=circles_ids,
-            lists_ids=lists_ids
-        ).order_by('-created')[:10]
+            lists_ids=lists_ids,
+            max_id=max_id
+        ).order_by('-created')[:count]
 
         post_serializer = PostSerializer(posts, many=True, context={"request": request})
 
