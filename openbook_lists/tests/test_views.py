@@ -23,7 +23,7 @@ class ListsAPITests(APITestCase):
 
     def test_create_list(self):
         """
-        should create a list for the authenticated user and return 201
+        should be able to create a list and return 201
         """
         user = mixer.blend(User)
 
@@ -51,7 +51,7 @@ class ListsAPITests(APITestCase):
 
     def test_retrieve_own_lists(self):
         """
-        should retrieve the lists of the authenticated user and return 200
+        should be able to retrieve all own lists return 200
         """
         user = mixer.blend(User)
         auth_token = user.auth_token.key
@@ -84,7 +84,7 @@ class ListItemAPITests(APITestCase):
 
     def test_delete_own_list(self):
         """
-        should delete the list with the specified id and return 200
+        should be able to delete an own list and return 200
         """
         user = mixer.blend(User)
         auth_token = user.auth_token.key
@@ -102,7 +102,7 @@ class ListItemAPITests(APITestCase):
 
     def test_cannot_delete_other_user_list(self):
         """
-        should not delete the list with the specified id and return 400
+        should not be able to delete another user list with and return 400
         """
         user = mixer.blend(User)
         auth_token = user.auth_token.key
@@ -122,7 +122,7 @@ class ListItemAPITests(APITestCase):
 
     def test_can_update_own_list(self):
         """
-        should update the list with the specified id and return 200
+        should be able to update an own list and return 200
         """
         user = mixer.blend(User)
         auth_token = user.auth_token.key
@@ -148,7 +148,7 @@ class ListItemAPITests(APITestCase):
 
     def test_cannot_update_other_user_list(self):
         """
-        should not update the list with the specified id and return 400
+        should not be able update another user list and return 400
         """
         user = mixer.blend(User)
         auth_token = user.auth_token.key

@@ -10,7 +10,6 @@ from faker import Faker
 import logging
 import json
 
-from openbook_common.models import Emoji
 from openbook_circles.models import Circle
 
 logger = logging.getLogger(__name__)
@@ -25,7 +24,7 @@ class CirclesAPITests(APITestCase):
 
     def test_create_circle(self):
         """
-        should create a circle for the authenticated user and return 201
+        should be able to create a circle and return 201
         """
         user = mixer.blend(User)
 
@@ -51,7 +50,7 @@ class CirclesAPITests(APITestCase):
 
     def test_retrieve_own_circles(self):
         """
-        should retrieve the circles of the authenticated user and return 200
+        should retrieve the all own circles and return 200
         """
         user = mixer.blend(User)
         auth_token = user.auth_token.key
@@ -88,7 +87,7 @@ class CircleItemAPITests(APITestCase):
 
     def test_delete_own_circle(self):
         """
-        should delete the circle with the specified id and return 200
+        should be able to delete an own circle and return 200
         """
         user = mixer.blend(User)
         auth_token = user.auth_token.key
@@ -106,7 +105,7 @@ class CircleItemAPITests(APITestCase):
 
     def test_cannot_delete_world_circle(self):
         """
-        should not be able to delete the world circle and return 400
+        should not be able to own world circle and return 400
         """
         user = mixer.blend(User)
         auth_token = user.auth_token.key
@@ -123,7 +122,7 @@ class CircleItemAPITests(APITestCase):
 
     def test_cannot_delete_connections_circle(self):
         """
-        should not be able to delete the connections circle and return 400
+        should not be able to delete own connections circle and return 400
         """
         user = mixer.blend(User)
         auth_token = user.auth_token.key
@@ -140,7 +139,7 @@ class CircleItemAPITests(APITestCase):
 
     def test_cannot_delete_other_user_circle(self):
         """
-        should not be able to delete the circle of another user and return 400
+        should not be able to delete another user's circle and return 400
         """
         user = mixer.blend(User)
         auth_token = user.auth_token.key
@@ -160,7 +159,7 @@ class CircleItemAPITests(APITestCase):
 
     def test_can_update_own_circle(self):
         """
-        should be able to update a user-owned circle and return 200
+        should be able to update own circle and return 200
         """
         user = mixer.blend(User)
         auth_token = user.auth_token.key
@@ -216,7 +215,7 @@ class CircleItemAPITests(APITestCase):
 
     def test_cannot_update_world_circle(self):
         """
-        should not be able to update the user world circle and return 400
+        should not be able to update own world circle and return 400
         """
         user = mixer.blend(User)
         auth_token = user.auth_token.key
@@ -241,7 +240,7 @@ class CircleItemAPITests(APITestCase):
 
     def test_cannot_update_connections_circle(self):
         """
-        should not be able to update the user connections circle and return 400
+        should not be able to update own connections circle and return 400
         """
         user = mixer.blend(User)
         auth_token = user.auth_token.key
