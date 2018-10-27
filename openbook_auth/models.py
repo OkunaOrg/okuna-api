@@ -76,6 +76,14 @@ class User(AbstractUser):
             target_connection__user_id=user_id).count()
         return count > 0
 
+    def is_connected_with_user_in_circle(self, user, circle):
+        return self.is_connected_with_user_with_id_in_circle_with_id(user.pk, circle.pk)
+
+    def is_connected_with_user_with_id_in_circle_with_id(self, user_id, circle_id):
+        return self.connections.select_related('target_connection__user_id').filter(
+            target_connection__user_id=user_id,
+            circle_id=circle_id).count() == 1
+
     def is_connected_with_user_in_circles(self, user, circles):
         circles_ids = [circle.pk for circle in circles]
         return self.is_connected_with_user_with_id_in_circles_with_ids(user.pk, circles_ids)
@@ -355,6 +363,11 @@ class User(AbstractUser):
 
         if circle_id:
             self._check_has_circle_with_id(circle_id)
+
+            if self.is_world_circle_id(circle_id):
+                raise ValidationError(
+                   _('Can\'t connect in the world circle.'),
+                )
 
     def disconnect_from_user(self, user):
         return self.disconnect_from_user_with_id(user.pk)
