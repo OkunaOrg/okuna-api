@@ -100,6 +100,14 @@ class User(AbstractUser):
     def is_following_user_with_id(self, user_id):
         return self.follows.filter(followed_user_id=user_id)
 
+    def is_following_user_in_list(self, user, list):
+        return self.is_following_user_with_id_in_list_with_id(user.pk, list.pk)
+
+    def is_following_user_with_id_in_list_with_id(self, user_id, list_id):
+        return self.follows.filter(
+            followed_user_id=user_id,
+            list_id=list_id).count() == 1
+
     def is_world_circle_id(self, id):
         return self.world_circle_id == id
 
@@ -366,7 +374,7 @@ class User(AbstractUser):
 
             if self.is_world_circle_id(circle_id):
                 raise ValidationError(
-                   _('Can\'t connect in the world circle.'),
+                    _('Can\'t connect in the world circle.'),
                 )
 
     def disconnect_from_user(self, user):
