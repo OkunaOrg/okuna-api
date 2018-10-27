@@ -197,13 +197,15 @@ class User(AbstractUser):
         self._check_can_get_list_with_id(list_id)
         return self.lists.get(id=list_id)
 
-    def create_post(self, text, circles_ids=None, image=None):
+    def create_post(self, text, **kwargs):
+
+        circles_ids = kwargs.get('circles_ids')
         # If no circles were specified, add post to the world circle.
         if circles_ids is None or len(circles_ids) == 0:
-            circles_ids = [self.world_circle_id]
+            kwargs['circles_ids'] = [self.world_circle_id]
 
         Post = get_post_model()
-        post = Post.create_post(text=text, image=image, circles_ids=circles_ids, creator=self)
+        post = Post.create_post(text=text, creator=self, **kwargs)
 
         return post
 

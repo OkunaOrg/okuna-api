@@ -28,7 +28,7 @@ class PostsAPITests(APITestCase):
 
     def test_create_post(self):
         """
-        should be able to create a text post and return 201
+        should be able to create a text post automatically added to world circle and  return 201
         """
         user = mixer.blend(User)
 
@@ -49,6 +49,8 @@ class PostsAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         self.assertTrue(user.posts.filter(text=post_text).count() == 1)
+
+        self.assertTrue(user.world_circle.posts.filter(text=post_text).count() == 1)
 
     def test_create_image_post(self):
         """
