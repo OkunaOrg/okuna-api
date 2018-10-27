@@ -57,6 +57,8 @@ class UnfollowUser(APIView):
 
 
 class UpdateFollowUser(APIView):
+    permission_classes = (IsAuthenticated,)
+
     def post(self, request):
         user = request.user
         serializer = UpdateFollowSerializer(data=request.data)

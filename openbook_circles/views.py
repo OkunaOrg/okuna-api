@@ -35,6 +35,8 @@ class Circles(APIView):
 
 
 class CircleItem(APIView):
+    permission_classes = (IsAuthenticated,)
+
     def delete(self, request, circle_id):
         user = request.user
         serializer = DeleteCircleSerializer(data={'circle_id': circle_id})
