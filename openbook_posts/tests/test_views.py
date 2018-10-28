@@ -47,8 +47,6 @@ class PostsAPITests(APITestCase):
 
         response = self.client.put(url, data, **headers, format='multipart')
 
-        print(response.content)
-
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         self.assertTrue(user.posts.filter(text=post_text).count() == 1)
@@ -80,8 +78,6 @@ class PostsAPITests(APITestCase):
         url = self._get_url()
 
         response = self.client.put(url, data, **headers, format='multipart')
-
-        print(response.content)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
