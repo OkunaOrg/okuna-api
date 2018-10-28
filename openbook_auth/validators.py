@@ -32,3 +32,12 @@ def email_not_taken_validator(email):
         raise ValidationError(
             _('An account for the email already exists.'),
         )
+
+
+def user_id_exists(user_id):
+    try:
+        User.objects.get(pk=user_id)
+    except User.DoesNotExist:
+        raise ValidationError(
+            _('No user with the provided id exists.'),
+        )

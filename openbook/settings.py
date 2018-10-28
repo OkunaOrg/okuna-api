@@ -19,9 +19,10 @@ from django.utils.translation import gettext_lazy  as _
 from dotenv import load_dotenv, find_dotenv
 from sentry_sdk.integrations.django import DjangoIntegration
 
-from openbook.utils.environment import EnvironmentChecker
 
 # Logging config
+from openbook_common.utils.environment import EnvironmentChecker
+
 LOGGING_CONFIG = None
 logging.config.dictConfig({
     'version': 1,
@@ -98,7 +99,13 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'django_nose',
-    'openbook_auth'
+    'openbook_common',
+    'openbook_auth',
+    'openbook_posts',
+    'openbook_circles',
+    'openbook_connections',
+    'openbook_lists',
+    'openbook_follows',
 ]
 
 MIDDLEWARE = [
@@ -110,7 +117,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'openbook.middleware.TimezoneMiddleware'
+    'openbook_common.middleware.TimezoneMiddleware'
 ]
 
 ROOT_URLCONF = 'openbook.urls'
@@ -196,6 +203,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_PARSER_CLASSES': (
+        'rest_framework.parsers.MultiPartParser',
+        'rest_framework.parsers.FormParser',
         'rest_framework.parsers.JSONParser',
     ),
     'DEFAULT_RENDERER_CLASSES': (
@@ -250,3 +259,14 @@ STATIC_URL = '/static/'
 MEDIA_ROOT = os.environ.get('MEDIA_ROOT', './files')
 
 MEDIA_URL = os.environ.get('MEDIA_ROOT', '/files/')
+
+# Openbook config
+
+USERNAME_MAX_LENGTH = 30
+POST_MAX_LENGTH = 560
+COMMENT_MAX_LENGTH = 280
+PASSWORD_MIN_LENGTH = 10
+PASSWORD_MAX_LENGTH = 100
+CIRCLE_MAX_LENGTH = 100
+COLOR_ATTR_MAX_LENGTH = 7
+LIST_MAX_LENGTH = 100

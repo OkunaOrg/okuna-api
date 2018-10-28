@@ -19,8 +19,13 @@ from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 
-from openbook.views import Time
+from openbook_circles.views import Circles, CircleItem
+from openbook_common.views import Time
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, Login, User
+from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection
+from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
+from openbook_lists.views import Lists, ListItem
+from openbook_posts.views import Posts
 
 auth_patterns = [
     path('register/', Register.as_view(), name='register-user'),
@@ -30,8 +35,41 @@ auth_patterns = [
     path('user/', User.as_view(), name='user'),
 ]
 
+posts_patterns = [
+    path('', Posts.as_view(), name='posts')
+]
+
+connections_patterns = [
+    path('', Connections.as_view(), name='connections'),
+    path('connect/', ConnectWithUser.as_view(), name='connect-with-user'),
+    path('disconnect/', DisconnectFromUser.as_view(), name='disconnect-from-user'),
+    path('update/', UpdateConnection.as_view(), name='update-connection'),
+]
+
+circles_patterns = [
+    path('', Circles.as_view(), name='circles'),
+    path('<int:circle_id>/', CircleItem.as_view(), name='circle'),
+]
+
+lists_patterns = [
+    path('', Lists.as_view(), name='lists'),
+    path('<int:list_id>/', ListItem.as_view(), name='list'),
+]
+
+follows_patterns = [
+    path('', Follows.as_view(), name='follows'),
+    path('follow/', FollowUser.as_view(), name='follow-user'),
+    path('unfollow/', UnfollowUser.as_view(), name='unfollow-user'),
+    path('update/', UpdateFollowUser.as_view(), name='update-follow'),
+]
+
 api_patterns = [
     path('auth/', include(auth_patterns)),
+    path('posts/', include(posts_patterns)),
+    path('circles/', include(circles_patterns)),
+    path('connections/', include(connections_patterns)),
+    path('lists/', include(lists_patterns)),
+    path('follows/', include(follows_patterns)),
     url('time/', Time.as_view(), name='time')
 ]
 
