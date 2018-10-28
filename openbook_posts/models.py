@@ -16,8 +16,10 @@ class Post(models.Model):
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
 
     @classmethod
-    def create_post(cls, text, creator, circles_ids=None, image=None):
+    def create_post(cls, text, creator, circles_ids, **kwargs):
         post = Post.objects.create(text=text, creator=creator)
+
+        image = kwargs.get('image')
 
         if image:
             PostImage.objects.create(image=image, post_id=post.pk)

@@ -92,7 +92,7 @@ class User(AbstractUser):
         count = self.connections.select_related('target_connection__user_id').filter(
             target_connection__user_id=user_id,
             circle_id__in=circles_ids).count()
-        return count == len(circles_ids)
+        return count > 0
 
     def is_following_user(self, user):
         return self.is_following_user_with_id(user.pk)
@@ -197,15 +197,25 @@ class User(AbstractUser):
         self._check_can_get_list_with_id(list_id)
         return self.lists.get(id=list_id)
 
-    def create_post(self, text, **kwargs):
+    def create_post(self, text, circles_ids=None, circles=None, circle=None, circle_id=None, **kwargs):
+        if circles:
+            circles_ids = [circle.pk for circle in circles]
+        elif not circles_ids:
+            circles_ids = []
+            if circle:
+                circle_id = circle.pk
 
-        circles_ids = kwargs.get('circles_ids')
-        # If no circles were specified, add post to the world circle.
-        if circles_ids is None or len(circles_ids) == 0:
-            kwargs['circles_ids'] = [self.world_circle_id]
+            if circle_id:
+                circles_ids.append(circle_id)
+
+        self._check_post_data(kwargs)
+
+        if len(circles_ids) == 0:
+            # If no circle, add post to world circle
+            circles_ids.append(self.world_circle_id)
 
         Post = get_post_model()
-        post = Post.create_post(text=text, creator=self, **kwargs)
+        post = Post.create_post(text=text, creator=self, circles_ids=circles_ids, **kwargs)
 
         return post
 
@@ -226,10 +236,6 @@ class User(AbstractUser):
     def get_posts(self, lists_ids=None, circles_ids=None, max_id=None):
 
         queries = []
-
-        # Add own posts
-        own_posts_query = Q(creator_id=self.pk)
-        queries.append(own_posts_query)
 
         follows = None
 
@@ -282,7 +288,7 @@ class User(AbstractUser):
                                                           circles__id=target_connection.circle_id)
                     queries.append(connected_user_circle_posts_query)
 
-        final_query = Q()
+        final_query = Q(creator_id=self.pk)
 
         for query in queries:
             final_query.add(query, Q.OR)
@@ -408,6 +414,12 @@ class User(AbstractUser):
         if list_id:
             self._check_has_list_with_id(list_id)
 
+    def _check_post_data(self, data):
+        circles_ids = data.get('circles_ids')
+
+        if circles_ids:
+            self._check_has_circles_with_ids(circles_ids)
+
     def _check_list_data(self, data):
         name = data.get('name')
         if name:
@@ -452,6 +464,12 @@ class User(AbstractUser):
         if not self.has_circle_with_id(circle_id):
             raise ValidationError(
                 _('Circle does not exist.'),
+            )
+
+    def _check_has_circles_with_ids(self, circles_ids):
+        if not self.has_circles_with_ids(circles_ids):
+            raise ValidationError(
+                _('One or more of the circles do not exist.'),
             )
 
     def _check_can_delete_post_with_id(self, post_id):

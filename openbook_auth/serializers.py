@@ -43,6 +43,7 @@ class GetUserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = (
+            'id',
             'name',
             'avatar',
             'birth_date'

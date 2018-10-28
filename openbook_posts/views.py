@@ -32,9 +32,17 @@ class Posts(APIView):
         return Response(post_serializer.data, status=status.HTTP_201_CREATED)
 
     def get(self, request):
-        user = request.user
+        query_params = {**request.query_params}
 
-        serializer = GetPostsSerializer(data=request.query_params, context={"request": request})
+        circle_id = query_params.get('circle_id', None)
+        if circle_id:
+            query_params['circle_id'] = query_params['circle_id'][0].split(',')
+
+        list_id = query_params.get('list_id', None)
+        if list_id:
+            query_params['list_id'] = query_params['list_id'][0].split(',')
+
+        serializer = GetPostsSerializer(data=query_params)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
@@ -42,6 +50,7 @@ class Posts(APIView):
         lists_ids = data.get('list_id')
         max_id = data.get('max_id')
         count = data.get('count', 10)
+
         user = request.user
 
         posts = user.get_posts(
