@@ -1,5 +1,6 @@
 # Create your tests here.
 import tempfile
+from random import randint
 
 from PIL import Image
 from django.urls import reverse
@@ -16,7 +17,6 @@ import json
 
 from openbook_circles.models import Circle
 from openbook_lists.models import List
-from openbook_posts.models import Post
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -234,6 +234,7 @@ class PostsAPITests(APITestCase):
         """
         should be able to retrieve all posts for a given list
         """
+
         user = mixer.blend(User)
         auth_token = user.auth_token.key
 
@@ -287,6 +288,70 @@ class PostsAPITests(APITestCase):
 
         for response_post in response_posts:
             self.assertIn(response_post.get('id'), in_list_posts_ids)
+
+    def test_get_all_posts_with_max_id_and_count(self):
+        """
+        should be able to retrieve all posts with a max id and count
+        """
+        user = mixer.blend(User)
+        auth_token = user.auth_token.key
+
+        amount_of_own_posts = 10
+
+        user_posts_ids = []
+        for i in range(amount_of_own_posts):
+            post = user.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
+            user_posts_ids.append(post.pk)
+
+        amount_of_users_to_follow = 5
+
+        lists_to_follow_in = mixer.cycle(amount_of_users_to_follow).blend(List, creator=user)
+
+        users_to_follow = mixer.cycle(amount_of_users_to_follow).blend(User)
+        users_to_follow_posts_ids = []
+
+        for index, user_to_follow in enumerate(users_to_follow):
+            user.follow_user(user_to_follow, list=lists_to_follow_in[index])
+            post = user_to_follow.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
+            users_to_follow_posts_ids.append(post.pk)
+
+        amount_of_users_to_connect = 5
+
+        circles_to_connect_in = mixer.cycle(amount_of_users_to_connect).blend(Circle, creator=user)
+
+        users_to_connect = mixer.cycle(amount_of_users_to_connect).blend(User)
+        users_to_connect_posts_ids = []
+
+        for index, user_to_connect in enumerate(users_to_connect):
+            user.connect_with_user(user_to_connect, circle=circles_to_connect_in[index])
+            post = user_to_connect.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
+            users_to_connect_posts_ids.append(post.pk)
+
+        headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
+
+        all_posts_ids = users_to_connect_posts_ids + users_to_follow_posts_ids + user_posts_ids
+
+        url = self._get_url()
+
+        max_id = 10
+
+        count = 3
+
+        response = self.client.get(url, {
+            'count': count,
+            'max_id': max_id
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(count, len(response_posts))
+
+        for response_post in response_posts:
+            response_post_id = response_post.get('id')
+            self.assertIn(response_post_id, all_posts_ids)
+            self.assertTrue(response_post_id < max_id)
 
     def _get_url(self):
         return reverse('posts')
