@@ -230,5 +230,63 @@ class PostsAPITests(APITestCase):
         for response_post in response_posts:
             self.assertIn(response_post.get('id'), in_circle_posts_ids)
 
+    def test_get_all_lists_posts(self):
+        """
+        should be able to retrieve all posts for a given list
+        """
+        user = mixer.blend(User)
+        auth_token = user.auth_token.key
+
+        amount_of_users_to_follow = 5
+
+        lists_to_follow_in = mixer.cycle(amount_of_users_to_follow).blend(List, creator=user)
+
+        users_to_follow = mixer.cycle(amount_of_users_to_follow).blend(User)
+
+        for index, user_to_follow in enumerate(users_to_follow):
+            user.follow_user(user_to_follow, list=lists_to_follow_in[index])
+            user_to_follow.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
+
+        amount_of_users_to_connect = 5
+
+        circles_to_connect_in = mixer.cycle(amount_of_users_to_connect).blend(Circle, creator=user)
+
+        users_to_connect = mixer.cycle(amount_of_users_to_connect).blend(User)
+
+        for index, user_to_connect in enumerate(users_to_connect):
+            user.connect_with_user(user_to_connect, circle=circles_to_connect_in[index])
+            user_to_connect.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
+
+        number_of_lists_to_retrieve_posts_from = 3
+
+        lists_to_retrieve_posts_from = mixer.cycle(number_of_lists_to_retrieve_posts_from).blend(List,
+                                                                                                 creator=user)
+        in_list_posts_ids = []
+
+        for index, list_to_retrieve_posts_from in enumerate(lists_to_retrieve_posts_from):
+            user_in_list = mixer.blend(User)
+            user.follow_user(user_in_list, list=list_to_retrieve_posts_from)
+            post_in_list = user_in_list.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
+            in_list_posts_ids.append(post_in_list.pk)
+
+        number_of_expected_posts = number_of_lists_to_retrieve_posts_from
+
+        headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
+
+        url = self._get_url()
+
+        lists_query_str_value = ','.join(map(str, [list.pk for list in lists_to_retrieve_posts_from]))
+
+        response = self.client.get(url, {'list_id': lists_query_str_value}, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(number_of_expected_posts, len(response_posts))
+
+        for response_post in response_posts:
+            self.assertIn(response_post.get('id'), in_list_posts_ids)
+
     def _get_url(self):
         return reverse('posts')
