@@ -53,6 +53,35 @@ class PostsAPITests(APITestCase):
 
         self.assertTrue(user.world_circle.posts.filter(text=post_text).count() == 1)
 
+    def test_create_post_in_circle(self):
+        """
+        should be able to create a text post in an specified circle and  return 201
+        """
+        user = mixer.blend(User)
+
+        circle = mixer.blend(Circle, creator=user)
+
+        auth_token = user.auth_token.key
+
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+
+        headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
+
+        data = {
+            'text': post_text,
+            'circle_id': circle.pk
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(user.posts.filter(text=post_text).count() == 1)
+
+        self.assertTrue(circle.posts.filter(text=post_text).count() == 1)
+
     def test_create_image_post(self):
         """
         should be able to create an image post and return 201
