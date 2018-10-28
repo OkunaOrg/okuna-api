@@ -39,25 +39,15 @@ class Posts(APIView):
         return Response(post_serializer.data, status=status.HTTP_201_CREATED)
 
     def get(self, request):
-        query_params = {**request.query_params}
-
-        # TODO There must be a better way to validate query params :facepalm:
-
-        count = query_params.get('count', None)
-        if count:
-            query_params['count'] = int(count[0])
-
-        max_id = query_params.get('max_id', None)
-        if max_id:
-            query_params['max_id'] = int(max_id[0])
+        query_params = request.query_params.dict()
 
         circle_id = query_params.get('circle_id', None)
         if circle_id:
-            query_params['circle_id'] = query_params['circle_id'][0].split(',')
+            query_params['circle_id'] = query_params['circle_id'].split(',')
 
         list_id = query_params.get('list_id', None)
         if list_id:
-            query_params['list_id'] = query_params['list_id'][0].split(',')
+            query_params['list_id'] = query_params['list_id'].split(',')
 
         serializer = GetPostsSerializer(data=query_params)
         serializer.is_valid(raise_exception=True)
