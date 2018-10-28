@@ -25,7 +25,6 @@ class Posts(APIView):
 
         with transaction.atomic():
             post = user.create_post(text=text, circles_ids=circles_ids, image=image)
-            # post = Post.create_post(text=text, creator=user, circles_ids=circles_ids, image=image)
 
         post_serializer = PostSerializer(post, context={"request": request})
 
