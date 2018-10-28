@@ -15,7 +15,15 @@ class Posts(APIView):
     parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def put(self, request):
-        serializer = CreatePostSerializer(data=request.data, context={"request": request})
+
+        request_data = request.data.dict()
+
+        circle_id = request_data.get('circle_id', None)
+        if circle_id and isinstance(circle_id, str):
+            circle_id = circle_id.split(',')
+            request_data['circle_id'] = circle_id
+
+        serializer = CreatePostSerializer(data=request_data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         text = data.get('text')
