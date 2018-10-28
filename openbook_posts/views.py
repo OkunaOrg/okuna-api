@@ -34,6 +34,16 @@ class Posts(APIView):
     def get(self, request):
         query_params = {**request.query_params}
 
+        # TODO There must be a better way to validate query params :facepalm:
+
+        count = query_params.get('count', None)
+        if count:
+            query_params['count'] = int(count[0])
+
+        max_id = query_params.get('max_id', None)
+        if max_id:
+            query_params['max_id'] = int(max_id[0])
+
         circle_id = query_params.get('circle_id', None)
         if circle_id:
             query_params['circle_id'] = query_params['circle_id'][0].split(',')
