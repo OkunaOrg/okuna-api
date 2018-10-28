@@ -22,6 +22,9 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
+# TODO A lot of setup duplication. Perhaps its a good idea to create a single factory on top of mixer or Factory boy
+
+
 class PostsAPITests(APITestCase):
     """
     PostsAPI
