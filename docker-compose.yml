@@ -9,7 +9,7 @@ services:
     env_file:
       - ./.env
     volumes:
-      - .docker/mysql/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/
+      - openbook-data
   web:
     image: openbook-api:1.0
     build: .
@@ -25,3 +25,5 @@ services:
     - db
 networks:
   openbook-net:
+volumes:
+  openbook-data:
