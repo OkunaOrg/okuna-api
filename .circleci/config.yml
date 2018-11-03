@@ -54,6 +54,12 @@ jobs:
           python manage.py test
           # upload test report to Code Climate using `after-build`
                       ./cc-test-reporter after-build --exit-code $?
+    # static code analysis for basic secure coding practices
+    - run:
+        name: run bandit
+        command: |
+          . venv/bin/activate
+          bandit -r .
   deploy:
     working_directory: ~/repo
     docker:
