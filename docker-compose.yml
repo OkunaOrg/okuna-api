@@ -7,14 +7,17 @@ services:
     networks:
     - opb-net
     env_file:
-      - ./.env
+    - ./.env
     volumes:
-      - opb-data
+    - opb-data
   web:
     image: openbook-api:1.0
     build: .
     restart: always
-    command: [".docker/wait-for-it.sh","db:3306","--","python", "manage.py" ,"runserver", "0.0.0.0:8000"]
+    command: >
+      sh -c ".docker/wait-for-it.sh db:3306 -- &&
+             python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
     volumes:
     - .:/code
     ports:
