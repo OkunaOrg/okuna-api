@@ -27,3 +27,15 @@ class TimeAPITests(APITestCase):
 
     def _get_url(self):
         return reverse('time')
+
+
+class TestHealth(APITestCase):
+    """
+    Health API
+    """
+
+    url = reverse('health')
+
+    def test_should_say_hello(self):
+        response = self.client.get(self.url)
+        self.assertTrue(response.status_code, status.HTTP_200_OK)
