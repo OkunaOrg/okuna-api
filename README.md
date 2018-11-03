@@ -100,9 +100,9 @@ python manage.py runserver
 
 ## Docker
 If you love containerization and you want to keep your local environment clean you can run Openbook API server inside Docker! <br>
-The `docker-compose.yml` contains two services. The first is a mysql container and the second is a python container. <br>
-Your local copy of Openbook API it's mirrored inside the container, this means you can work from your favourite IDE and check immediatly the results.
-Add inside the `.env` file created above the following lines in order to have the mysql container properly configured:
+The `docker-compose.yml` contains two services: one mysql container and one python container. <br>
+Your local copy of Openbook API it's mirrored inside the container, this means you can work from your favourite IDE and check immediatly the results. <br>
+Add inside the `.env` file created above, the following lines in order to have the mysql container properly configured:
 ```text
 MYSQL_HOST=db
 MYSQL_PORT=3306
