@@ -4,14 +4,10 @@ files:
     owner: root
     group: root
     content: |
-      <VirtualHost>
-          Require valid-user
-          Order allow,deny
-          AuthType Basic
-          AuthName "Restricted Content"
-          AuthUserFile /etc/apache2/.htpasswd
-          Satisfy any
-      </VirtualHost>
+      AuthType Basic
+      AuthName "Please login."
+      AuthUserFile /etc/apache2/.htpasswd
+      Require valid-user
   "/etc/apache2/.htpasswd" :
     mode: "000644"
     owner: root
