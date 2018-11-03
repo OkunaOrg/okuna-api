@@ -9,7 +9,7 @@ def make_eb_basic_auth_config(htpasswd_contents):
     # Create the jinja2 environment.
     # Notice the use of trim_blocks, which greatly helps control whitespace.
     j2_env = Environment(loader=FileSystemLoader(UTILS_DIR), autoescape=True)
-    return j2_env.get_template('templates/eb/basic_auth.config.yml').render(
+    return j2_env.get_template('templates/eb/auth.config.yml').render(
         HTPASSWD=htpasswd_contents
     )
 
@@ -26,7 +26,7 @@ if __name__ == '__main__':
     # Optional argument
     parser.add_argument('--dest', type=str,
                         help='The destination of the generated eb config',
-                        default='./.ebextensions/basic_auth.config')
+                        default='./.ebextensions/auth.config')
 
     parser.add_argument('--htpasswd', type=str,
                         required=True,
