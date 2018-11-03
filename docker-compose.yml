@@ -3,13 +3,13 @@ services:
   db:
     image: mysql:5.7
     ports:
-    - "3306:3306"
+    - "127.0.0.1:3306:3306"
     networks:
-    - openbook-net
+    - opb-net
     env_file:
       - ./.env
     volumes:
-      - .docker/mysql/docker-entrypoint-initdb.d/:/docker-entrypoint-initdb.d/
+      - opb-data
   web:
     image: openbook-api:1.0
     build: .
@@ -18,10 +18,12 @@ services:
     volumes:
     - .:/code
     ports:
-    - "8000:8000"
+    - "127.0.0.1:8000:8000"
     networks:
-    - openbook-net
+    - opb-net
     depends_on:
     - db
 networks:
-  openbook-net:
+  opb-net:
+volumes:
+  opb-data:
