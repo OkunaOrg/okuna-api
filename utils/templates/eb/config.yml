@@ -1,0 +1,22 @@
+branch-defaults:
+  master:
+    environment: $CIRCLE_BRANCH-{{ APPLICATION_NAME }}
+global:
+  application_name: {{ APPLICATION_NAME }}
+  default_region: {{ DEFAULT_REGION }}
+  default_ec2_keyname: null
+  default_platform: python-3.6
+  include_git_submodules: true
+  instance_profile: null
+  platform_name: null
+  platform_version: null
+  profile: null
+  repository: null
+  sc: git
+  workspace_type: Application
+Resources:
+  AWSEBAutoScalingGroup:
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Properties:
+      HealthCheckType: "ELB"
+      HealthCheckGracePeriod: "600"
