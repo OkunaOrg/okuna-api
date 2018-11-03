@@ -71,12 +71,12 @@ api_patterns = [
     path('lists/', include(lists_patterns)),
     path('follows/', include(follows_patterns)),
     url('time/', Time.as_view(), name='time'),
-    url('health/', Health.as_view(), name='health'),
 ]
 
 urlpatterns = [
     path('api/', include(api_patterns)),
     url('admin/', admin.site.urls),
+    url('health/', Health.as_view(), name='health'),
 ]
 
 # The static helper works only in debug mode
