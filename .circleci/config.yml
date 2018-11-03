@@ -83,7 +83,7 @@ jobs:
         name: Make EB Basic Auth Config
         command: |
           . venv/bin/activate
-          python utils/make_eb_basic_auth_config.py --htpasswd=$HTTPASSWD
+          python utils/make_eb_basic_auth_config.py --htpasswd=$HTPASSWD
     - run:
         name: Make EB Config
         command: |
