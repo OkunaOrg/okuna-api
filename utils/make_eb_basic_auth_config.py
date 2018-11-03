@@ -8,7 +8,7 @@ def make_eb_basic_auth_config(htpasswd_contents):
     UTILS_DIR = os.path.dirname(os.path.abspath(__file__))
     # Create the jinja2 environment.
     # Notice the use of trim_blocks, which greatly helps control whitespace.
-    j2_env = Environment(loader=FileSystemLoader(UTILS_DIR))
+    j2_env = Environment(loader=FileSystemLoader(UTILS_DIR), autoescape=True)
     return j2_env.get_template('templates/eb/basic_auth.config.yml').render(
         HTPASSWD=htpasswd_contents
     )
