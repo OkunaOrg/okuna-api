@@ -18,3 +18,13 @@ class Time(APIView):
             'time': time,
             'timezone': str(time_zone)
         }, status=status.HTTP_200_OK)
+
+
+class Health(APIView):
+    """
+    API
+    """
+    def get(self, request):
+        return Response({
+            'message': 'Todo muy bueno!'
+        })
