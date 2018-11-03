@@ -1,18 +1,16 @@
 files:
-  "/etc/httpd/conf.d/basic_auth.conf" :
+  "/etc/httpd/conf.d/basic_auth.conf":
     mode: "000644"
     owner: root
     group: root
     content: |
-      <VirtualHost *:80>
-          <Location />
-              AuthType Basic
-              AuthName "Restricted Files"
-              AuthUserFile /etc/apache2/.htpasswd
-              Require valid-user
-          </Location>
-      </VirtualHost>
-  "/etc/apache2/.htpasswd" :
+      <Location />
+          AuthType Basic
+          AuthName "Restricted Files"
+          AuthUserFile /etc/apache2/.htpasswd
+          Require valid-user
+      </Location>
+  "/etc/apache2/.htpasswd":
     mode: "000644"
     owner: root
     group: root
