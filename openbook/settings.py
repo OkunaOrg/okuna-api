@@ -19,7 +19,6 @@ from django.utils.translation import gettext_lazy  as _
 from dotenv import load_dotenv, find_dotenv
 from sentry_sdk.integrations.django import DjangoIntegration
 
-
 # Logging config
 from openbook_common.utils.environment import EnvironmentChecker
 
@@ -164,21 +163,21 @@ WSGI_APPLICATION = 'openbook.wsgi.application'
 
 if environment_checker.is_build():
     DATABASES = {
-      'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'open-book-api'
-      }
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': 'open-book-api'
+        }
     }
 else:
     DATABASES = {
-     'default':  {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get('MYSQL_DATABASE'),
-        'USER': os.environ.get('MYSQL_USER'),
-        'PASSWORD': os.environ.get('MYSQL_PASSWORD'),
-        'HOST': os.environ.get('MYSQL_HOST'),   # Or an IP Address that your DB is hosted on
-        'PORT': os.environ.get('MYSQL_PORT'),
-      }
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.environ.get('MYSQL_DATABASE'),
+            'USER': os.environ.get('MYSQL_USER'),
+            'PASSWORD': os.environ.get('MYSQL_PASSWORD'),
+            'HOST': os.environ.get('MYSQL_HOST'),  # Or an IP Address that your DB is hosted on
+            'PORT': os.environ.get('MYSQL_PORT'),
+        }
     }
 
 # Password validation
