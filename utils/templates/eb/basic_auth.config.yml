@@ -4,19 +4,14 @@ files:
     owner: root
     group: root
     content: |
-      # set an environtment variable "noauth" if the request starts with "/callbacks/"
-      SetEnvIf Request_URI ^/health/ noauth=1
-
-      # the auth block
-      AuthName "Please login."
-      AuthType Basic
-      AuthUserFile /etc/apache2/.htpasswd
-
-      Order Deny,Allow
-      Satisfy any
-      Deny from all
-      Require valid-user
-      Allow from env=noauth
+      <VirtualHost *:80>
+          <Location />
+              AuthType Basic
+              AuthName "Restricted Files"
+              AuthUserFile /etc/apache2/.htpasswd
+              Require valid-user
+          </Location>
+      </VirtualHost>
   "/etc/apache2/.htpasswd" :
     mode: "000644"
     owner: root
