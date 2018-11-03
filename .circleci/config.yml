@@ -92,7 +92,6 @@ jobs:
     - run:
         name: Deploy to EB
         command: eb deploy $CIRCLE_BRANCH-$APPLICATION_NAME
-
 workflows:
   version: 2
   build:
