@@ -1,2 +1,3 @@
 [bandit]
+targets: ./openbook_lists,./openbook_follows,./openbook_common,./openbook,./openbook_connections,./openbook_circles,./openbook_auth,./openbook_posts
 exclude: ./openbook_circles/tests,./openbook_connections/tests,./openbook_posts/tests,./openbook_follows/tests,./openbook_auth/tests,./openbook_common/tests,./openbook_lists/tests
