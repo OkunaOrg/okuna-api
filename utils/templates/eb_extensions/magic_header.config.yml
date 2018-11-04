@@ -1,5 +1,5 @@
 files:
-  "/etc/httpd/conf.d/cors.conf" :
+  "/etc/httpd/conf.d/magic_header.conf" :
     mode: "000644"
     owner: root
     group: root
