@@ -6,7 +6,7 @@ files:
     content: |
       <Location "/">
         RewriteEngine On
-        RewriteCond %{HTTP:{{ HEADER_NAME }} !^({{ HEADER_VALUE }})$
+        RewriteCond %{HTTP:{{ HEADER_NAME }}} !^({{ HEADER_VALUE }})$
         RewriteCond %{REQUEST_URI} !^/health/
         RewriteRule ^ - [F]
       </Location>
