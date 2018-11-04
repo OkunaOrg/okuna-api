@@ -1,7 +1,0 @@
-files:
-  "/etc/apache2/.htpasswd":
-    mode: "000644"
-    owner: root
-    group: root
-    content: |
-      {{ HTPASSWD }}
