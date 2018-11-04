@@ -80,11 +80,6 @@ jobs:
           sudo apt-get install python-pip python-dev build-essential
           sudo pip install awsebcli --upgrade
     - run:
-        name: Make EB Basic Auth Config
-        command: |
-          . venv/bin/activate
-          python utils/make_eb_basic_auth_config.py --htpasswd=$HTPASSWD
-    - run:
         name: Make EB Config
         command: |
           . venv/bin/activate
