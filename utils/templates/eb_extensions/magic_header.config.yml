@@ -1,0 +1,12 @@
+files:
+  "/etc/httpd/conf.d/cors.conf" :
+    mode: "000644"
+    owner: root
+    group: root
+    content: |
+      <Location "/">
+        RewriteEngine On
+        RewriteCond %{HTTP:{{ HEADER_NAME }} !^({{ HEADER_VALUE }})$
+        RewriteCond %{REQUEST_URI} !^/health/
+        RewriteRule ^ - [F]
+      </Location>
