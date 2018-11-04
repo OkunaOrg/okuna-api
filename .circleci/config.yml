@@ -90,6 +90,13 @@ jobs:
           . venv/bin/activate
           python utils/make_eb_config.py --name=$APPLICATION_NAME --region=$AWS_DEFAULT_REGION
     - run:
+        name: Commit Dynamic EB Extensions
+        command: |
+          git config --global user.email "circle@ci.com"
+          git config --global user.name "CIRCLECI"
+          git add .ebextensions/
+          git commit -m "EB Uploads only committed files, therefore this"
+    - run:
         name: Deploy to EB
         command: eb deploy $CIRCLE_BRANCH-$APPLICATION_NAME
 workflows:
