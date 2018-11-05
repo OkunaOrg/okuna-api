@@ -275,6 +275,11 @@ LIST_MAX_LENGTH = 100
 
 # AWS Storage config
 
+AWS_PUBLIC_MEDIA_LOCATION = os.environ.get('AWS_PUBLIC_MEDIA_LOCATION')
+AWS_STATIC_LOCATION = 'static'
+AWS_PRIVATE_MEDIA_LOCATION = os.environ.get('AWS_PRIVATE_MEDIA_LOCATION')
+AWS_DEFAULT_ACL = None
+
 if environment_checker.is_production():
     STATICFILES_DIRS = [
         os.path.join(BASE_DIR, 'openbook/static'),
@@ -284,7 +289,6 @@ if environment_checker.is_production():
     AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
     AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
     AWS_S3_ENCRYPTION = True
-    AWS_DEFAULT_ACL = None
     AWS_S3_SIGNATURE_VERSION = 's3v4'
     AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
 
@@ -292,13 +296,10 @@ if environment_checker.is_production():
         'CacheControl': 'max-age=86400',
     }
 
-    AWS_STATIC_LOCATION = 'static'
     STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
     STATIC_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, AWS_STATIC_LOCATION)
 
-    AWS_PUBLIC_MEDIA_LOCATION = os.environ.get('AWS_PUBLIC_MEDIA_LOCATION')
     DEFAULT_FILE_STORAGE = 'openbook.storage_backends.PublicMediaStorage'
 
-    AWS_PRIVATE_MEDIA_LOCATION = os.environ.get('AWS_PRIVATE_MEDIA_LOCATION')
     PRIVATE_FILE_STORAGE = 'openbook.storage_backends.PrivateMediaStorage'
