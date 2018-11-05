@@ -177,6 +177,9 @@ else:
             'PASSWORD': os.environ.get('MYSQL_PASSWORD'),
             'HOST': os.environ.get('MYSQL_HOST'),  # Or an IP Address that your DB is hosted on
             'PORT': os.environ.get('MYSQL_PORT'),
+            'OPTIONS': {
+                'sql_mode': 'STRICT_TRANS_TABLES',
+            }
         }
     }
 
