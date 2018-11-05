@@ -296,10 +296,10 @@ if environment_checker.is_production():
         'CacheControl': 'max-age=86400',
     }
 
-    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-
     STATIC_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, AWS_STATIC_LOCATION)
 
-    DEFAULT_FILE_STORAGE = 'openbook.storage_backends.PublicMediaStorage'
+    STATICFILES_STORAGE = 'openbook.storage_backends.S3StaticStorage'
 
-    PRIVATE_FILE_STORAGE = 'openbook.storage_backends.PrivateMediaStorage'
+    DEFAULT_FILE_STORAGE = 'openbook.storage_backends.S3PublicMediaStorage'
+
+    PRIVATE_FILE_STORAGE = 'openbook.storage_backends.S3PrivateMediaStorage'
