@@ -1,16 +1,11 @@
 [[source]]
-
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
-
 [dev-packages]
 
-
-
 [packages]
-
 django = "*"
 python-dotenv = "*"
 djangorestframework = "*"
@@ -24,3 +19,5 @@ coverage = "*"
 nose-exclude = "*"
 mixer = "*"
 faker = "*"
+"boto3" = "*"
+django-storages = "*"

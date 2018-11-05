@@ -6,7 +6,7 @@
       "name": "Doge",
       "shortcut": "doge",
       "color": "#FFFFFF",
-      "image": "/files/doge.png",
+      "image": "/media/doge.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -17,7 +17,7 @@
       "name": "Dancing Parrot",
       "shortcut": "parrot",
       "color": "#FFFFFF",
-      "image": "/files/doge.png",
+      "image": "/media/doge.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   }

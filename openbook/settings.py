@@ -50,7 +50,7 @@ logging.config.dictConfig({
 logger = logging.getLogger(__name__)
 
 # Load dotenv
-load_dotenv(verbose=True, dotenv_path=find_dotenv())
+load_dotenv(verbose=False, dotenv_path=find_dotenv())
 
 # The current execution environment
 ENVIRONMENT = os.environ.get('ENVIRONMENT')
@@ -98,6 +98,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'django_nose',
+    'storages',
     'openbook_common',
     'openbook_auth',
     'openbook_posts',
@@ -255,12 +256,11 @@ LANGUAGE_CODE = 'en'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
-
 STATIC_URL = '/static/'
 
-MEDIA_ROOT = os.environ.get('MEDIA_ROOT', './files')
+MEDIA_ROOT = os.environ.get('MEDIA_ROOT', './media')
 
-MEDIA_URL = os.environ.get('MEDIA_ROOT', '/files/')
+MEDIA_URL = os.environ.get('MEDIA_ROOT', '/media/')
 
 # Openbook config
 
@@ -272,3 +272,33 @@ PASSWORD_MAX_LENGTH = 100
 CIRCLE_MAX_LENGTH = 100
 COLOR_ATTR_MAX_LENGTH = 7
 LIST_MAX_LENGTH = 100
+
+# AWS Storage config
+
+if environment_checker.is_production():
+    STATICFILES_DIRS = [
+        os.path.join(BASE_DIR, 'openbook/static'),
+    ]
+
+    AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+    AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
+    AWS_S3_ENCRYPTION = True
+    AWS_DEFAULT_ACL = None
+    AWS_S3_SIGNATURE_VERSION = 's3v4'
+    AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
+
+    AWS_S3_OBJECT_PARAMETERS = {
+        'CacheControl': 'max-age=86400',
+    }
+
+    AWS_STATIC_LOCATION = 'static'
+    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+    STATIC_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, AWS_STATIC_LOCATION)
+
+    AWS_PUBLIC_MEDIA_LOCATION = os.environ.get('AWS_PUBLIC_MEDIA_LOCATION')
+    DEFAULT_FILE_STORAGE = 'openbook.storage_backends.PublicMediaStorage'
+
+    AWS_PRIVATE_MEDIA_LOCATION = os.environ.get('AWS_PRIVATE_MEDIA_LOCATION')
+    PRIVATE_FILE_STORAGE = 'openbook.storage_backends.PrivateMediaStorage'

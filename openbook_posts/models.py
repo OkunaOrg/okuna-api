@@ -4,6 +4,7 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
 # Create your views here.
+from openbook.storage_backends import PrivateMediaStorage
 from openbook_auth.models import User
 
 from openbook_common.models import Emoji
@@ -37,7 +38,7 @@ class Post(models.Model):
 
 class PostImage(models.Model):
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='image')
-    image = models.ImageField(_('image'), blank=False, null=False)
+    image = models.ImageField(_('image'), blank=False, null=False, storage=PrivateMediaStorage())
 
 
 class PostComment(models.Model):
