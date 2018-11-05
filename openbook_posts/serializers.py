@@ -51,12 +51,23 @@ class PostCircleSerializer(serializers.ModelSerializer):
         )
 
 
+class PostImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostImage
+        fields = (
+            'image',
+        )
+
+
 class PostSerializer(serializers.ModelSerializer):
+    image = PostImageSerializer(many=False)
+
     class Meta:
         model = Post
         fields = (
             'id',
             'created',
             'text',
-            'creator_id'
+            'creator_id',
+            'image'
         )

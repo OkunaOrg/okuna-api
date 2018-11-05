@@ -1,13 +1,15 @@
 # Create your models here.
+from django.core.files.storage import default_storage
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
 # Create your views here.
+from openbook import settings
+from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
 from openbook_common.models import Emoji
-from openbook_common.utils.model_loaders import get_connection_model
 
 
 class Post(models.Model):
@@ -34,10 +36,11 @@ class Post(models.Model):
             self.created = timezone.now()
         return super(Post, self).save(*args, **kwargs)
 
+post_image_storage = S3PrivateMediaStorage() if settings.environment_checker.is_production() else default_storage
 
 class PostImage(models.Model):
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='image')
-    image = models.ImageField(_('image'), blank=False, null=False)
+    image = models.ImageField(_('image'), blank=False, null=False, storage=post_image_storage)
 
 
 class PostComment(models.Model):
