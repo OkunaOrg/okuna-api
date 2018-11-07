@@ -59,4 +59,6 @@ class GetUserSerializer(serializers.ModelSerializer):
             'email',
             'username',
             'profile',
+            'posts_count',
+            'followers_count'
         )
