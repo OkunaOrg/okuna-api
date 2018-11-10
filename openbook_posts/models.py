@@ -5,6 +5,8 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
 # Create your views here.
+from rest_framework.exceptions import ValidationError
+
 from openbook import settings
 from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
@@ -13,20 +15,29 @@ from openbook_common.models import Emoji
 
 
 class Post(models.Model):
-    text = models.CharField(_('text'), max_length=560, blank=False, null=False)
+    text = models.CharField(_('text'), max_length=560, blank=True, null=True)
     created = models.DateTimeField(editable=False)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
 
     @classmethod
-    def create_post(cls, text, creator, circles_ids, **kwargs):
-        post = Post.objects.create(text=text, creator=creator)
-
+    def create_post(cls, creator, circles_ids, **kwargs):
+        text = kwargs.get('text')
         image = kwargs.get('image')
+
+        if not text and not image:
+            raise ValidationError(_('A post requires must have text or an image.'))
+
+        post = Post.objects.create(creator=creator)
+
+        if text:
+            post.text = text
 
         if image:
             PostImage.objects.create(image=image, post_id=post.pk)
 
         post.circles.add(*circles_ids)
+
+        post.save()
 
         return post
 

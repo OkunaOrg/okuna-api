@@ -26,7 +26,7 @@ class GetPostsSerializer(serializers.Serializer):
 
 
 class CreatePostSerializer(serializers.Serializer):
-    text = serializers.CharField(max_length=POST_MAX_LENGTH, required=True, allow_blank=False)
+    text = serializers.CharField(max_length=POST_MAX_LENGTH, required=False, allow_blank=False)
     image = serializers.ImageField(allow_empty_file=False, required=False)
     circle_id = serializers.ListField(
         required=False,
