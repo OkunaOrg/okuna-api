@@ -15,7 +15,7 @@ from openbook_common.models import Emoji
 
 
 class Post(models.Model):
-    text = models.CharField(_('text'), max_length=560, blank=True, null=True)
+    text = models.CharField(_('text'), max_length=560, blank=False, null=True)
     created = models.DateTimeField(editable=False)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
 
