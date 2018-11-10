@@ -32,7 +32,7 @@ class PostsAPITests(APITestCase):
 
     def test_create_text_post(self):
         """
-        should be able to create a text post automatically added to world circle and  return 201
+        should be able to create a text post and return 201
         """
         user = mixer.blend(User)
 
@@ -53,6 +53,28 @@ class PostsAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         self.assertTrue(user.posts.filter(text=post_text).count() == 1)
+
+        self.assertTrue(user.world_circle.posts.filter(text=post_text).count() == 1)
+
+    def test_create_post_is_added_to_world_circle(self):
+        """
+        the created text post should automatically added to world circle
+        """
+        user = mixer.blend(User)
+
+        auth_token = user.auth_token.key
+
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+
+        headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
+
+        data = {
+            'text': post_text
+        }
+
+        url = self._get_url()
+
+        self.client.put(url, data, **headers, format='multipart')
 
         self.assertTrue(user.world_circle.posts.filter(text=post_text).count() == 1)
 
