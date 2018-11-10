@@ -30,9 +30,9 @@ class PostsAPITests(APITestCase):
     PostsAPI
     """
 
-    def test_create_post(self):
+    def test_create_text_post(self):
         """
-        should be able to create a text post automatically added to world circle and  return 201
+        should be able to create a text post and return 201
         """
         user = mixer.blend(User)
 
@@ -53,6 +53,28 @@ class PostsAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         self.assertTrue(user.posts.filter(text=post_text).count() == 1)
+
+        self.assertTrue(user.world_circle.posts.filter(text=post_text).count() == 1)
+
+    def test_create_post_is_added_to_world_circle(self):
+        """
+        the created text post should automatically added to world circle
+        """
+        user = mixer.blend(User)
+
+        auth_token = user.auth_token.key
+
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+
+        headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
+
+        data = {
+            'text': post_text
+        }
+
+        url = self._get_url()
+
+        self.client.put(url, data, **headers, format='multipart')
 
         self.assertTrue(user.world_circle.posts.filter(text=post_text).count() == 1)
 
@@ -93,6 +115,41 @@ class PostsAPITests(APITestCase):
 
         auth_token = user.auth_token.key
 
+        image = Image.new('RGB', (100, 100))
+        tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
+        image.save(tmp_file)
+        tmp_file.seek(0)
+
+        headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
+
+        data = {
+            'image': tmp_file
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        response_post = json.loads(response.content)
+
+        response_post_id = response_post.get('id')
+
+        self.assertTrue(user.posts.count() == 1)
+
+        created_post = user.posts.filter(pk=response_post_id).get()
+
+        self.assertTrue(hasattr(created_post, 'image'))
+
+    def test_create_image_and_text_post(self):
+        """
+        should be able to create an image and text post and return 201
+        """
+        user = mixer.blend(User)
+
+        auth_token = user.auth_token.key
+
         post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
 
         image = Image.new('RGB', (100, 100))
@@ -113,9 +170,15 @@ class PostsAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        self.assertTrue(user.posts.filter(text=post_text).count() == 1)
+        response_post = json.loads(response.content)
 
-        created_post = user.posts.filter(text=post_text).get()
+        response_post_id = response_post.get('id')
+
+        self.assertTrue(user.posts.count() == 1)
+
+        created_post = user.posts.filter(pk=response_post_id).get()
+
+        self.assertEqual(created_post.text, post_text)
 
         self.assertTrue(hasattr(created_post, 'image'))
 

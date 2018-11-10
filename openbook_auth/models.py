@@ -64,6 +64,14 @@ class User(AbstractUser):
         except User.DoesNotExist:
             return False
 
+    @property
+    def posts_count(self):
+        return self.posts.count()
+
+    @property
+    def followers_count(self):
+        return self.follows.count()
+
     def save(self, *args, **kwargs):
         self.full_clean()
         return super(User, self).save(*args, **kwargs)

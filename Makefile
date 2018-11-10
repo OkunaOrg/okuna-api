@@ -21,3 +21,9 @@ clean_openbook-api:
 
 logs_openbook-api:
 	docker-compose logs -f
+
+runserver:
+	python manage.py runserver
+
+runserver_public:
+	python manage.py runserver 0.0.0.0:8000
