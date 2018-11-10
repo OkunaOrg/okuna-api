@@ -14,7 +14,7 @@ class Posts(APIView):
     permission_classes = (IsAuthenticated,)
     parser_classes = (MultiPartParser, FormParser, JSONParser)
 
-    def put(self, request):
+    def post(self, request):
 
         request_data = request.data.dict()
 

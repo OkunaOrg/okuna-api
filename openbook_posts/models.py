@@ -36,7 +36,9 @@ class Post(models.Model):
             self.created = timezone.now()
         return super(Post, self).save(*args, **kwargs)
 
+
 post_image_storage = S3PrivateMediaStorage() if settings.environment_checker.is_production() else default_storage
+
 
 class PostImage(models.Model):
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='image')
