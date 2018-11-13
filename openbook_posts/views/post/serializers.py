@@ -32,7 +32,8 @@ class PostCommentSerializer(serializers.ModelSerializer):
         fields = (
             'commenter',
             'text',
-            'created'
+            'created',
+            'id'
         )
 
 
@@ -49,7 +50,7 @@ class GetPostCommentsSerializer(serializers.Serializer):
         validators=[post_id_exists],
         required=True,
     )
-    max_id = serializers.IntegerField(
+    min_id = serializers.IntegerField(
         required=False,
     )
     count = serializers.IntegerField(

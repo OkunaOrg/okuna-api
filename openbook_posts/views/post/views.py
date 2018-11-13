@@ -20,12 +20,12 @@ class PostComments(APIView):
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
-        max_id = data.get('max_id')
+        min_id = data.get('min_id')
         count = data.get('count', 10)
         post_id = data.get('post_id')
         user = request.user
 
-        post_comments = user.get_comments_for_post_with_id(post_id, max_id=max_id).order_by('created')[:count]
+        post_comments = user.get_comments_for_post_with_id(post_id, min_id=min_id).order_by('created')[:count]
 
         post_comments_serializer = PostCommentSerializer(post_comments, many=True)
 
@@ -50,6 +50,8 @@ class PostComments(APIView):
 
     def _get_request_data(self, request, post_id):
         request_data = request.data.copy()
+        query_params = request.query_params.dict()
+        request_data.update(query_params)
         request_data['post_id'] = post_id
         return request_data
 
@@ -74,7 +76,7 @@ class PostCommentItem(APIView):
         })
 
     def _get_request_data(self, request, post_id, post_comment_id):
-        request_data = request.data.dict()
+        request_data = request.data.copy()
         request_data['post_id'] = post_id
         request_data['post_comment_id'] = post_comment_id
         return request_data
