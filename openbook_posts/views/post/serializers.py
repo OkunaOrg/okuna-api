@@ -15,6 +15,8 @@ class PostCommenterProfileSerializer(serializers.ModelSerializer):
 
 
 class PostCommentCommenterSerializer(serializers.ModelSerializer):
+    profile = PostCommenterProfileSerializer(many=False)
+
     class Meta:
         model = User
         fields = (
@@ -29,6 +31,7 @@ class PostCommentSerializer(serializers.ModelSerializer):
         model = PostComment
         fields = (
             'commenter',
+            'text',
             'created'
         )
 

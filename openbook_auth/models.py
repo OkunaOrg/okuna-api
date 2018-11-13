@@ -161,7 +161,7 @@ class User(AbstractUser):
 
     def comment_post_with_id(self, post_id, text):
         self._check_can_comment_in_post_with_id(post_id)
-        post = self.posts.get(post_id)
+        post = self.get_posts(post_id=post_id).get()
         post_comment = post.comment(text=text, commenter=self)
         return post_comment
 

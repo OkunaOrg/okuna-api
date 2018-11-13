@@ -22,9 +22,10 @@ class PostComments(APIView):
         data = serializer.validated_data
         max_id = data.get('max_id')
         count = data.get('count', 10)
+        post_id = data.get('post_id')
         user = request.user
 
-        post_comments = user.get_comments_for_post_with_id(post_id, max_id=max_id).order_by('-created')[:count]
+        post_comments = user.get_comments_for_post_with_id(post_id, max_id=max_id).order_by('created')[:count]
 
         post_comments_serializer = PostCommentSerializer(post_comments, many=True)
 
@@ -38,12 +39,14 @@ class PostComments(APIView):
 
         data = serializer.validated_data
         comment_text = data.get('text')
+        post_id = data.get('post_id')
         user = request.user
 
         with transaction.atomic():
             post_comment = user.comment_post_with_id(post_id=post_id, text=comment_text)
 
-        return CommentPostSerializer(data=post_comment)
+        post_comment_serializer = CommentPostSerializer(post_comment)
+        return Response(post_comment_serializer.data, status=status.HTTP_201_CREATED)
 
     def _get_request_data(self, request, post_id):
         request_data = request.data.copy()
