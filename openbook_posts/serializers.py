@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from openbook.settings import POST_MAX_LENGTH, COMMENT_MAX_LENGTH
+from openbook_auth.models import User, UserProfile
 from openbook_circles.models import Circle
 from openbook_circles.validators import circle_id_exists
 from openbook_lists.validators import list_id_exists
@@ -51,6 +52,25 @@ class PostCircleSerializer(serializers.ModelSerializer):
         )
 
 
+class PostCreatorProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = (
+            'avatar',
+        )
+
+
+class PostCreatorSerializer(serializers.ModelSerializer):
+    profile = PostCreatorProfileSerializer(many=False)
+
+    class Meta:
+        model = User
+        fields = (
+            'profile',
+            'username'
+        )
+
+
 class PostImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostImage
@@ -61,6 +81,7 @@ class PostImageSerializer(serializers.ModelSerializer):
 
 class PostSerializer(serializers.ModelSerializer):
     image = PostImageSerializer(many=False)
+    creator = PostCreatorSerializer(many=False)
 
     class Meta:
         model = Post
@@ -68,6 +89,6 @@ class PostSerializer(serializers.ModelSerializer):
             'id',
             'created',
             'text',
-            'creator_id',
-            'image'
+            'image',
+            'creator'
         )
