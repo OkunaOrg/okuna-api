@@ -146,9 +146,15 @@ class User(AbstractUser):
     def get_comments_for_post(self, post, **kwargs):
         return self.get_comments_for_post_with_id(post.pk, **kwargs)
 
-    def get_comments_for_post_with_id(self, post_id, limit=10, max_id=0):
+    def get_comments_for_post_with_id(self, post_id, max_id=0):
         self._check_can_get_comments_for_post_with_id(post_id)
-        return self.posts.filter(post_id, limit=limit).comments
+        comments_query = Q(post_id=post_id)
+
+        if max_id:
+            comments_query.add(Q(id__lt=max_id), Q.AND)
+
+        PostComment = get_post_comment_model()
+        return PostComment.objects.filter(comments_query)
 
     def comment_post(self, post, **kwargs):
         return self.comment_post_with_id(post.pk, **kwargs)

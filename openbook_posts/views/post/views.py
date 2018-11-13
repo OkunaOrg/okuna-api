@@ -1,4 +1,5 @@
 from django.db import transaction
+from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -20,17 +21,19 @@ class PostComments(APIView):
 
         data = serializer.validated_data
         max_id = data.get('max_id')
-        limit = data.get('limit')
+        count = data.get('count', 10)
         user = request.user
 
-        post_comments = user.get_comments_for_post_with_id(post_id, max_id=max_id, limit=limit)
+        post_comments = user.get_comments_for_post_with_id(post_id, max_id=max_id).order_by('-created')[:count]
 
-        return CommentPostSerializer(data=post_comments, many=True)
+        post_comments_serializer = PostCommentSerializer(post_comments, many=True)
+
+        return Response(post_comments_serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, post_id):
         request_data = self._get_request_data(request, post_id)
 
-        serializer = PostCommentSerializer(data=request_data)
+        serializer = CommentPostSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
@@ -43,7 +46,7 @@ class PostComments(APIView):
         return CommentPostSerializer(data=post_comment)
 
     def _get_request_data(self, request, post_id):
-        request_data = request.data.dict()
+        request_data = request.data.copy()
         request_data['post_id'] = post_id
         return request_data
 
