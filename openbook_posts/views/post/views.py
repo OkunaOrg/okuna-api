@@ -45,7 +45,7 @@ class PostComments(APIView):
         with transaction.atomic():
             post_comment = user.comment_post_with_id(post_id=post_id, text=comment_text)
 
-        post_comment_serializer = CommentPostSerializer(post_comment)
+        post_comment_serializer = PostCommentSerializer(post_comment)
         return Response(post_comment_serializer.data, status=status.HTTP_201_CREATED)
 
     def _get_request_data(self, request, post_id):

@@ -167,7 +167,7 @@ class User(AbstractUser):
 
     def delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
         self._check_can_delete_comment_with_id_for_post_with_id(post_comment_id, post_id)
-        post = self.posts.get(post_id)
+        post = self.posts.filter(pk=post_id).get()
         post.remove_comment_with_id(post_comment_id)
 
     def create_circle(self, name, color):
@@ -449,6 +449,7 @@ class User(AbstractUser):
                 raise ValidationError(
                     _('That comment does not belong to the specified post.')
                 )
+            return
 
         if self.posts_comments.filter(id=post_comment_id).count() == 0:
             raise ValidationError(

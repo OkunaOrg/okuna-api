@@ -38,7 +38,7 @@ auth_patterns = [
 
 post_patterns = [
     path('comments/', PostComments.as_view(), name='post-comments'),
-    path('comments/<int:list_id>', PostCommentItem.as_view(), name='post-comment'),
+    path('comments/<int:post_comment_id>/', PostCommentItem.as_view(), name='post-comment'),
 ]
 
 posts_patterns = [
