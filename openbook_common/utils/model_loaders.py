@@ -19,3 +19,7 @@ def get_post_model():
 
 def get_list_model():
     return apps.get_model('openbook_lists.List')
+
+
+def get_post_comment_model():
+    return apps.get_model('openbook_posts.PostComment')

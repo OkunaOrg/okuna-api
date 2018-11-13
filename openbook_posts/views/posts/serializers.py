@@ -2,7 +2,6 @@ from rest_framework import serializers
 
 from django.conf import settings
 from openbook_auth.models import User, UserProfile
-from openbook_circles.models import Circle
 from openbook_circles.validators import circle_id_exists
 from openbook_lists.validators import list_id_exists
 from openbook_posts.models import PostImage, Post
@@ -33,15 +32,6 @@ class CreatePostSerializer(serializers.Serializer):
         required=False,
         child=serializers.IntegerField(validators=[circle_id_exists]),
     )
-
-
-class PostCircleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Circle
-        fields = (
-            'id',
-            'name'
-        )
 
 
 class PostCreatorProfileSerializer(serializers.ModelSerializer):

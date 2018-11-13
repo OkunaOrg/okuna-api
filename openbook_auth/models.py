@@ -12,7 +12,7 @@ from django.db.models import Q
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
-    get_post_model, get_list_model
+    get_post_model, get_list_model, get_post_comment_model
 
 
 class User(AbstractUser):
@@ -143,6 +143,27 @@ class User(AbstractUser):
     def has_lists_with_ids(self, lists_ids):
         return self.lists.filter(id__in=lists_ids).count() == len(lists_ids)
 
+    def get_comments_for_post(self, post, **kwargs):
+        return self.get_comments_for_post_with_id(post.pk, **kwargs)
+
+    def get_comments_for_post_with_id(self, post_id, limit=10, max_id=0):
+        self._check_can_get_comments_for_post_with_id(post_id)
+        return self.posts.filter(post_id, limit=limit).comments
+
+    def comment_post(self, post, **kwargs):
+        return self.comment_post_with_id(post.pk, **kwargs)
+
+    def comment_post_with_id(self, post_id, text):
+        self._check_can_comment_in_post_with_id(post_id)
+        post = self.posts.get(post_id)
+        post_comment = post.comment(text=text, commenter=self)
+        return post_comment
+
+    def delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
+        self._check_can_delete_comment_with_id_for_post_with_id(post_comment_id, post_id)
+        post = self.posts.get(post_id)
+        post.remove_comment_with_id(post_comment_id)
+
     def create_circle(self, name, color):
         self._check_circle_name_not_taken(name)
         Circle = get_circle_model()
@@ -241,7 +262,7 @@ class User(AbstractUser):
     def update_post_with_id(self, post_id):
         pass
 
-    def get_posts(self, lists_ids=None, circles_ids=None, max_id=None):
+    def get_posts(self, lists_ids=None, circles_ids=None, max_id=None, post_id=None):
 
         queries = []
 
@@ -303,6 +324,8 @@ class User(AbstractUser):
 
         if max_id:
             final_query.add(Q(id__lt=max_id), Q.AND)
+        elif post_id:
+            final_query.add(Q(id=post_id), Q.AND)
 
         Post = get_post_model()
         result = Post.objects.filter(final_query)
@@ -410,6 +433,33 @@ class User(AbstractUser):
 
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
+
+    def _check_can_delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
+        # Check if the post belongs to us
+        if self.has_post_with_id(post_id):
+            # Check that the comment belongs to the post
+            PostComment = get_post_comment_model()
+            if PostComment.objects.filter(id=post_comment_id, post_id=post_id).count() == 0:
+                raise ValidationError(
+                    _('That comment does not belong to the specified post.')
+                )
+
+        if self.posts_comments.filter(id=post_comment_id).count() == 0:
+            raise ValidationError(
+                _('Can\'t delete a comment that does not belong to you.'),
+            )
+
+    def _check_can_get_comments_for_post_with_id(self, post_id):
+        self._check_can_see_post_with_id(post_id)
+
+    def _check_can_comment_in_post_with_id(self, post_id):
+        self._check_can_see_post_with_id(post_id)
+
+    def _check_can_see_post_with_id(self, post_id):
+        if self.get_posts(post_id=post_id).count() == 0:
+            raise ValidationError(
+                _('This post is private.'),
+            )
 
     def _check_follow_data(self, data):
         list_id = data.get('list_id')

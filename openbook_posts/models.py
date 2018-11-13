@@ -41,6 +41,12 @@ class Post(models.Model):
 
         return post
 
+    def comment(self, text, commenter):
+        return PostComment.create_comment(text=text, commenter=commenter, post=self)
+
+    def remove_comment_with_id(self, post_comment_id):
+        self.comments.filter(id=post_comment_id).delete()
+
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
         if not self.id:
@@ -57,9 +63,14 @@ class PostImage(models.Model):
 
 
 class PostComment(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
     created = models.DateTimeField(editable=False)
     commenter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_comments')
     text = models.CharField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False)
+
+    @classmethod
+    def create_comment(cls, text, commenter, post):
+        return PostComment.objects.create(text=text, commenter=commenter, post=post)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
