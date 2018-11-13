@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from openbook.settings import POST_MAX_LENGTH, COMMENT_MAX_LENGTH
+from django.conf import settings
 from openbook_auth.models import User, UserProfile
 from openbook_circles.models import Circle
 from openbook_circles.validators import circle_id_exists
@@ -27,20 +27,12 @@ class GetPostsSerializer(serializers.Serializer):
 
 
 class CreatePostSerializer(serializers.Serializer):
-    text = serializers.CharField(max_length=POST_MAX_LENGTH, required=False, allow_blank=False)
+    text = serializers.CharField(max_length=settings.POST_MAX_LENGTH, required=False, allow_blank=False)
     image = serializers.ImageField(allow_empty_file=False, required=False)
     circle_id = serializers.ListField(
         required=False,
         child=serializers.IntegerField(validators=[circle_id_exists]),
     )
-
-
-class CommentPostSerializer(serializers.Serializer):
-    text = serializers.CharField(max_length=COMMENT_MAX_LENGTH, required=True, allow_blank=False)
-
-
-class ReactToPostSerializer(serializers.Serializer):
-    reaction_id = serializers.IntegerField(required=True, min_value=0)
 
 
 class PostCircleSerializer(serializers.ModelSerializer):
