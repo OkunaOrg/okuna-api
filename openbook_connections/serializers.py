@@ -54,3 +54,8 @@ class DisconnectFromUserSerializer(serializers.Serializer):
 class UpdateConnectionSerializer(serializers.Serializer):
     user_id = serializers.IntegerField(required=True, validators=[user_id_exists])
     circle_id = serializers.IntegerField(required=True, validators=[circle_id_exists])
+
+
+class ConfirmConnectionSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField(required=True, validators=[user_id_exists])
+    circle_id = serializers.IntegerField(required=False, validators=[circle_id_exists])

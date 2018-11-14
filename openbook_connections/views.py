@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from openbook_connections.serializers import ConnectWithUserSerializer, ConnectionSerializer, \
-    DisconnectFromUserSerializer, UpdateConnectionSerializer
+    DisconnectFromUserSerializer, UpdateConnectionSerializer, ConfirmConnectionSerializer
 
 
 class Connections(APIView):
@@ -67,6 +67,26 @@ class UpdateConnection(APIView):
         user = request.user
 
         with transaction.atomic():
-            user.update_connection_with_user_with_id(user_id, circle_id=circle_id)
+            connection = user.update_connection_with_user_with_id(user_id, circle_id=circle_id)
 
-        return Response(status=status.HTTP_200_OK)
+        response_serializer = ConnectionSerializer(connection)
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class ConfirmConnection(APIView):
+    def post(self, request):
+        serializer = ConfirmConnectionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        user_id = data.get('user_id')
+        circle_id = data.get('circle_id')
+        user = request.user
+
+        with transaction.atomic():
+            connection = user.confirm_connection_with_user_with_id(user_id, circle_id=circle_id)
+
+        response_serializer = ConnectionSerializer(connection)
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)

@@ -392,8 +392,11 @@ class User(AbstractUser):
 
         return connection
 
-    def confirm_connection_with_user_with_id(self, user_id):
-        return self.update_connection_with_user_with_id(user_id, circle_id=self.connections_circle_id)
+    def confirm_connection_with_user_with_id(self, user_id, circle_id=None):
+        if not circle_id:
+            circle_id = self.connections_circle_id
+
+        return self.update_connection_with_user_with_id(user_id, circle_id=circle_id)
 
     def update_connection_with_user_with_id(self, user_id, circle_id=None):
         self._check_is_connected_with_user_with_id(user_id)
