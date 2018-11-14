@@ -58,7 +58,7 @@ class Posts(APIView):
 
         user = request.user
 
-        posts = user.get_posts(
+        posts = user.get_timeline_posts(
             circles_ids=circles_ids,
             lists_ids=lists_ids,
             max_id=max_id

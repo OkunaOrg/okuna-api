@@ -174,7 +174,8 @@ class User(AbstractUser):
 
     def comment_post_with_id(self, post_id, text):
         self._check_can_comment_in_post_with_id(post_id)
-        post = self.get_posts(post_id=post_id).get()
+        Post = get_post_model()
+        post = Post.objects.filter(pk=post_id).get()
         post_comment = post.comment(text=text, commenter=self)
         return post_comment
 
@@ -281,7 +282,7 @@ class User(AbstractUser):
     def update_post_with_id(self, post_id):
         pass
 
-    def get_posts(self, lists_ids=None, circles_ids=None, max_id=None, post_id=None):
+    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None, post_id=None):
 
         queries = []
 
@@ -479,7 +480,13 @@ class User(AbstractUser):
         self._check_can_see_post_with_id(post_id)
 
     def _check_can_see_post_with_id(self, post_id):
-        if self.get_posts(post_id=post_id).count() == 0:
+        # Check if post is public
+        Post = get_post_model()
+        post = Post.objects.filter(pk=post_id).get()
+        if post.is_public_post():
+            return
+
+        if self.get_timeline_posts(post_id=post_id).count() == 0:
             raise ValidationError(
                 _('This post is private.'),
             )

@@ -47,6 +47,13 @@ class Post(models.Model):
     def remove_comment_with_id(self, post_comment_id):
         self.comments.filter(id=post_comment_id).delete()
 
+    def is_public_post(self):
+        creator = self.creator
+        creator_world_circle_id = creator.world_circle_id
+        if self.circles.filter(id=creator_world_circle_id).count() == 1:
+            return True
+        return False
+
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
         if not self.id:

@@ -4,12 +4,8 @@ from django.urls import reverse
 from faker import Faker
 from rest_framework import status
 from rest_framework.test import APITestCase
-from mixer.backend.django import mixer
-
-from openbook_auth.models import User
 
 import logging
-import json
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle
@@ -87,13 +83,14 @@ class PostCommentsAPITests(APITestCase):
 
     def test_cannot_comment_in_foreign_post(self):
         """
-         should not be able to comment in a foreign post and return 400
+         should not be able to comment in a foreign encircled post and return 400
          """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
         foreign_user = make_user()
-        post = foreign_user.create_post(text=make_fake_post_text())
+        circle = make_circle(creator=foreign_user)
+        post = foreign_user.create_post(text=make_fake_post_text(), circle=circle)
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -179,28 +176,26 @@ class PostCommentsAPITests(APITestCase):
 
         self.assertTrue(PostComment.objects.filter(post_id=connected_user_post.pk, text=post_comment_text).count() == 0)
 
-    def test_can_comment_in_followed_user_public_post(self):
+    def test_can_comment_in_user_public_post(self):
         """
-          should be able to comment in the public post of a followed user and return 201
+          should be able to comment in the public post of any user and return 201
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        user_to_follow = make_user()
+        foreign_user = make_user()
 
-        user.follow_user_with_id(user_to_follow.pk)
-
-        followed_user_post = user_to_follow.create_post(text=make_fake_post_text())
+        foreign_user_post = foreign_user.create_post(text=make_fake_post_text(), circle_id=foreign_user.world_circle_id)
 
         post_comment_text = make_fake_post_comment_text()
 
         data = self._get_create_post_comment_request_data(post_comment_text)
 
-        url = self._get_url(followed_user_post)
+        url = self._get_url(foreign_user_post)
         response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(PostComment.objects.filter(post_id=followed_user_post.pk, text=post_comment_text).count() == 1)
+        self.assertTrue(PostComment.objects.filter(post_id=foreign_user_post.pk, text=post_comment_text).count() == 1)
 
     def test_cannot_comment_in_followed_user_encircled_post(self):
         """
@@ -226,7 +221,6 @@ class PostCommentsAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(PostComment.objects.filter(post_id=followed_user_post.pk, text=post_comment_text).count() == 0)
 
-
     def _get_create_post_comment_request_data(self, post_comment_text):
         return {
             'text': post_comment_text
@@ -244,6 +238,9 @@ class PostCommentItemAPITests(APITestCase):
     """
 
     def test_can_delete_foreign_comment_in_own_post(self):
+        """
+          should be able to delete a foreign comment in own post and return 200
+        """
         pass
 
     def test_can_delete_own_comment_in_foreign_post(self):
