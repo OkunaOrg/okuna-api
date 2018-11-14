@@ -76,6 +76,19 @@ class User(AbstractUser):
         self.full_clean()
         return super(User, self).save(*args, **kwargs)
 
+    def is_fully_connected_with_user_with_id(self, user_id):
+        if not self.is_connected_with_user_with_id(user_id):
+            return False
+
+        connection = self.connections.select_related('target_connection__circle').filter(
+            target_connection__user_id=user_id).get()
+        target_connection = connection.target_connection
+
+        if target_connection.circle and connection.circle:
+            return True
+
+        return False
+
     def is_connected_with_user(self, user):
         return self.is_connected_with_user_with_id(user.pk)
 
@@ -377,8 +390,10 @@ class User(AbstractUser):
     def connect_with_user_with_id(self, user_id, circle_id=None):
         self._check_is_not_connected_with_user_with_id(user_id)
 
-        if circle_id:
-            self.check_connection_circle_id(circle_id)
+        if not circle_id:
+            circle_id = self.connections_circle_id
+
+        self.check_connection_circle_id(circle_id)
 
         if self.pk == user_id:
             raise ValidationError(
@@ -393,8 +408,11 @@ class User(AbstractUser):
         return connection
 
     def confirm_connection_with_user_with_id(self, user_id, circle_id=None):
+        self._check_is_not_fully_connected_with_user_with_id(user_id)
+
         if not circle_id:
             circle_id = self.connections_circle_id
+        self.check_connection_circle_id(circle_id)
 
         return self.update_connection_with_user_with_id(user_id, circle_id=circle_id)
 
@@ -509,6 +527,12 @@ class User(AbstractUser):
         if self.is_connected_with_user_with_id(user_id):
             raise ValidationError(
                 _('Already connected with user.'),
+            )
+
+    def _check_is_not_fully_connected_with_user_with_id(self, user_id):
+        if self.is_fully_connected_with_user_with_id(user_id):
+            raise ValidationError(
+                _('Already fully connected with user.'),
             )
 
     def _check_is_connected_with_user_with_id(self, user_id):

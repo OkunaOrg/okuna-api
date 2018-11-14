@@ -12,6 +12,7 @@ import json
 
 from openbook_circles.models import Circle
 from openbook_common.models import Emoji
+from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_circle
 from openbook_connections.models import Connection
 
 logger = logging.getLogger(__name__)
@@ -253,3 +254,89 @@ class UpdateConnectionAPITest(APITestCase):
 
     def _get_url(self):
         return reverse('update-connection')
+
+
+class ConfirmConnectionAPITest(APITestCase):
+    def test_confirm_connection(self):
+        """
+        should be able to confirm a connection, have it automatically added to connections circle and return 200
+        """
+        user = make_user()
+
+        user_to_connect = make_user()
+
+        user.connect_with_user_with_id(user_to_connect.pk)
+
+        headers = make_authentication_headers_for_user(user_to_connect)
+
+        data = {
+            'user_id': user.pk
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(user.is_fully_connected_with_user_with_id(user_to_connect.pk))
+        self.assertTrue(user_to_connect.is_fully_connected_with_user_with_id(user.pk))
+
+        connection = user_to_connect.get_connection_for_user_with_id(user.pk)
+        self.assertEqual(connection.circle_id, user_to_connect.connections_circle_id)
+
+    def test_confirm_connection_in_circle(self):
+        """
+        should be able to confirm a connection in a custom circle and return 200
+        """
+        user = make_user()
+
+        user_to_connect = make_user()
+        circle = make_circle(creator=user_to_connect)
+
+        user.connect_with_user_with_id(user_to_connect.pk)
+
+        headers = make_authentication_headers_for_user(user_to_connect)
+
+        data = {
+            'user_id': user.pk,
+            'circle_id': circle.pk
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(user.is_fully_connected_with_user_with_id(user_to_connect.pk))
+        self.assertTrue(user_to_connect.is_fully_connected_with_user_with_id(user.pk))
+
+        connection = user_to_connect.get_connection_for_user_with_id(user.pk)
+        self.assertEqual(connection.circle_id, circle.pk)
+
+    def test_cannot_confirm_unexisting_connection(self):
+        """
+        should not be able to confirm an unexisting connection and return 400
+        """
+        user = make_user()
+
+        user_to_connect = make_user()
+
+        headers = make_authentication_headers_for_user(user_to_connect)
+
+        data = {
+            'user_id': user.pk
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(user.is_fully_connected_with_user_with_id(user_to_connect.pk))
+        self.assertFalse(user_to_connect.is_fully_connected_with_user_with_id(user.pk))
+
+    def _get_url(self):
+        return reverse('confirm-connection')
