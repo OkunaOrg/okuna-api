@@ -378,22 +378,33 @@ class User(AbstractUser):
         return self.connect_with_user_with_id(user.pk, **kwargs)
 
     def connect_with_user_with_id(self, user_id, **kwargs):
-        self._check_is_not_connected_with_user_with_id(user_id)
         self.check_connect_data(kwargs)
 
-        # Check dont connect to world circle
+        if self.is_connected_with_user_with_id(user_id):
+            connection = self.get_connection_for_user_with_id(user_id)
+            circle_id = kwargs.get('circle_id')
 
-        if self.pk == user_id:
-            raise ValidationError(
-                _('A user cannot connect with itself.'),
-            )
+            if not circle_id:
+                circle = kwargs.get('circle')
+                if not circle:
+                    circle_id = self.connections_circle_id
+                else:
+                    circle_id = circle.pk
 
-        Connection = get_connection_model()
-        connection = Connection.create_connection(user_id=self.pk, target_user_id=user_id, **kwargs)
+            connection.circle_id = circle_id
+            connection.save()
+        else:
+            if self.pk == user_id:
+                raise ValidationError(
+                    _('A user cannot connect with itself.'),
+                )
 
-        # Automatically follow user
-        if not self.is_following_user_with_id(user_id):
-            self.follow_user_with_id(user_id)
+            Connection = get_connection_model()
+            connection = Connection.create_connection(user_id=self.pk, target_user_id=user_id, **kwargs)
+
+            # Automatically follow user
+            if not self.is_following_user_with_id(user_id):
+                self.follow_user_with_id(user_id)
 
         return connection
 
