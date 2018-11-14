@@ -4,9 +4,35 @@ from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.utils.translation import ugettext_lazy as _
 
 from openbook_posts.views.post.serializers import GetPostCommentsSerializer, PostCommentSerializer, \
-    CommentPostSerializer, DeletePostCommentSerializer
+    CommentPostSerializer, DeletePostCommentSerializer, DeletePostSerializer
+
+
+class PostItem(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def delete(self, request, post_id):
+        request_data = self._get_request_data(request, post_id)
+        serializer = DeletePostSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        post_id = data.get('post_id')
+        user = request.user
+
+        with transaction.atomic():
+            user.delete_post_with_id(post_id)
+
+        return Response({
+            'message': _('Post deleted')
+        }, status=status.HTTP_200_OK)
+
+    def _get_request_data(self, request, post_id):
+        request_data = request.data.copy()
+        request_data['post_id'] = post_id
+        return request_data
 
 
 class PostComments(APIView):
@@ -72,8 +98,8 @@ class PostCommentItem(APIView):
             user.delete_comment_with_id_for_post_with_id(post_comment_id=post_comment_id, post_id=post_id, )
 
         return Response({
-            'message': 'Done!'
-        })
+            'message': _('Comment deleted')
+        }, status=status.HTTP_200_OK)
 
     def _get_request_data(self, request, post_id, post_comment_id):
         request_data = request.data.copy()
