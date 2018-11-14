@@ -38,7 +38,7 @@ class ConnectionsAPITests(APITestCase):
         user_to_connect_ids = [user_to_connect.pk for user_to_connect in users_to_connect]
 
         for user_to_connect in users_to_connect:
-            user.connect_with_user(user_to_connect, circle=circle)
+            user.connect_with_user_with_id(user_to_connect.pk, circle_id=circle.pk)
 
         url = self._get_url()
         response = self.client.get(url, **headers)
@@ -96,7 +96,7 @@ class ConnectAPITests(APITestCase):
         circle_to_connect = mixer.blend(Circle, creator=user)
         user_to_connect = mixer.blend(User)
 
-        user.connect_with_user(user_to_connect, circle=circle_to_connect)
+        user.connect_with_user_with_id(user_to_connect.pk, circle_id=circle_to_connect.pk)
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
@@ -150,7 +150,7 @@ class DisconnectAPITest(APITestCase):
         circle_to_connect = mixer.blend(Circle, creator=user)
         user_to_connect = mixer.blend(User)
 
-        user.connect_with_user(user_to_connect, circle=circle_to_connect)
+        user.connect_with_user_with_id(user_to_connect.pk, circle_id=circle_to_connect.pk)
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
@@ -206,7 +206,7 @@ class UpdateConnectionAPITest(APITestCase):
         circle_to_connect = mixer.blend(Circle, creator=user)
         user_to_connect = mixer.blend(User)
 
-        user.connect_with_user(user_to_connect, circle=circle_to_connect)
+        user.connect_with_user_with_id(user_to_connect.pk, circle_id=circle_to_connect.pk)
 
         new_circle = mixer.blend(Circle, creator=user)
 

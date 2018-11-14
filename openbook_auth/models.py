@@ -374,64 +374,48 @@ class User(AbstractUser):
         follow.save()
         return follow
 
-    def connect_with_user(self, user, **kwargs):
-        return self.connect_with_user_with_id(user.pk, **kwargs)
+    def connect_with_user_with_id(self, user_id, circle_id=None):
+        self._check_is_not_connected_with_user_with_id(user_id)
 
-    def connect_with_user_with_id(self, user_id, **kwargs):
-        self.check_connect_data(kwargs)
+        if circle_id:
+            self.check_connection_circle_id(circle_id)
 
-        if self.is_connected_with_user_with_id(user_id):
-            connection = self.get_connection_for_user_with_id(user_id)
-            circle_id = kwargs.get('circle_id')
-
-            if not circle_id:
-                circle = kwargs.get('circle')
-                if not circle:
-                    circle_id = self.connections_circle_id
-                else:
-                    circle_id = circle.pk
-
-            connection.circle_id = circle_id
-            connection.save()
-        else:
-            if self.pk == user_id:
-                raise ValidationError(
-                    _('A user cannot connect with itself.'),
-                )
-
-            Connection = get_connection_model()
-            connection = Connection.create_connection(user_id=self.pk, target_user_id=user_id, **kwargs)
-
-            # Automatically follow user
-            if not self.is_following_user_with_id(user_id):
-                self.follow_user_with_id(user_id)
+        if self.pk == user_id:
+            raise ValidationError(
+                _('A user cannot connect with itself.'),
+            )
+        Connection = get_connection_model()
+        connection = Connection.create_connection(user_id=self.pk, target_user_id=user_id, circle_id=circle_id)
+        # Automatically follow user
+        if not self.is_following_user_with_id(user_id):
+            self.follow_user_with_id(user_id)
 
         return connection
 
-    def update_connection_with_user_with_id(self, user_id, **kwargs):
+    def confirm_connection_with_user_with_id(self, user_id):
+        return self.update_connection_with_user_with_id(user_id, circle_id=self.connections_circle_id)
+
+    def update_connection_with_user_with_id(self, user_id, circle_id=None):
         self._check_is_connected_with_user_with_id(user_id)
-        self.check_connect_data(kwargs)
+
+        if not circle_id:
+            raise ValidationError(
+                _('No data to update the connection with.'),
+            )
+
+        self.check_connection_circle_id(circle_id)
         connection = self.get_connection_for_user_with_id(user_id)
-        for attr, value in kwargs.items():
-            setattr(connection, attr, value)
+        connection.circle_id = circle_id
         connection.save()
         return connection
 
-    def check_connect_data(self, data):
-        circle_id = data.get('circle_id')
+    def check_connection_circle_id(self, circle_id):
+        self._check_has_circle_with_id(circle_id)
 
-        if not circle_id:
-            circle = data.get('circle')
-            if circle:
-                circle_id = circle.pk
-
-        if circle_id:
-            self._check_has_circle_with_id(circle_id)
-
-            if self.is_world_circle_id(circle_id):
-                raise ValidationError(
-                    _('Can\'t connect in the world circle.'),
-                )
+        if self.is_world_circle_id(circle_id):
+            raise ValidationError(
+                _('Can\'t connect in the world circle.'),
+            )
 
     def disconnect_from_user(self, user):
         return self.disconnect_from_user_with_id(user.pk)

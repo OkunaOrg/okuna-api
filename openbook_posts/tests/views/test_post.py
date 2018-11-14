@@ -114,7 +114,7 @@ class PostCommentsAPITests(APITestCase):
 
         user_to_connect = make_user()
 
-        user.connect_with_user(user_to_connect)
+        user.connect_with_user_with_id(user_to_connect.pk)
 
         connected_user_post = user_to_connect.create_post(text=make_fake_post_text())
 
@@ -138,8 +138,8 @@ class PostCommentsAPITests(APITestCase):
         user_to_connect = make_user()
         circle = make_circle(creator=user_to_connect)
 
-        user_to_connect.connect_with_user(user, circle=circle)
-        user.connect_with_user(user_to_connect)
+        user_to_connect.connect_with_user_with_id(user.pk, circle_id=circle.pk)
+        user.connect_with_user_with_id(user_to_connect.pk)
 
         connected_user_post = user_to_connect.create_post(text=make_fake_post_text(), circle=circle)
 
