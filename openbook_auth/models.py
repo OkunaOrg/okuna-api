@@ -169,9 +169,6 @@ class User(AbstractUser):
         PostComment = get_post_comment_model()
         return PostComment.objects.filter(comments_query)
 
-    def comment_post(self, post, **kwargs):
-        return self.comment_post_with_id(post.pk, **kwargs)
-
     def comment_post_with_id(self, post_id, text):
         self._check_can_comment_in_post_with_id(post_id)
         Post = get_post_model()
@@ -181,7 +178,8 @@ class User(AbstractUser):
 
     def delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
         self._check_can_delete_comment_with_id_for_post_with_id(post_comment_id, post_id)
-        post = self.posts.filter(pk=post_id).get()
+        Post = get_post_model()
+        post = Post.objects.filter(pk=post_id).get()
         post.remove_comment_with_id(post_comment_id)
 
     def create_circle(self, name, color):
@@ -245,6 +243,9 @@ class User(AbstractUser):
     def get_list_with_id(self, list_id):
         self._check_can_get_list_with_id(list_id)
         return self.lists.get(id=list_id)
+
+    def create_public_post(self, text=None, image=None):
+        return self.create_post(text=text, image=image, circle_id=self.world_circle_id)
 
     def create_post(self, text, circles_ids=None, circles=None, circle=None, circle_id=None, **kwargs):
         if circles:
