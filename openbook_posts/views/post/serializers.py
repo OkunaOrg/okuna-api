@@ -2,8 +2,15 @@ from rest_framework import serializers
 from django.conf import settings
 
 from openbook_auth.models import UserProfile, User
-from openbook_posts.models import PostImage, Post, PostComment
+from openbook_posts.models import PostComment
 from openbook_posts.validators import post_id_exists, post_comment_id_exists
+
+
+class DeletePostSerializer(serializers.Serializer):
+    post_id = serializers.IntegerField(
+        validators=[post_id_exists],
+        required=True,
+    )
 
 
 class PostCommenterProfileSerializer(serializers.ModelSerializer):
