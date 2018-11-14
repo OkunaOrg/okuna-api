@@ -128,7 +128,7 @@ class PostCommentsAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(PostComment.objects.filter(post_id=connected_user_post.pk, text=post_comment_text).count() == 1)
 
-    def _test_can_comment_in_connected_user_encircled_post_part_of(self):
+    def test_can_comment_in_connected_user_encircled_post_part_of(self):
         """
           should be able to comment in the encircled post of a connected user which the user is part of and return 201
         """
@@ -138,8 +138,8 @@ class PostCommentsAPITests(APITestCase):
         user_to_connect = make_user()
         circle = make_circle(creator=user_to_connect)
 
-        user_to_connect.connect_with_user_with_id(user.pk, circle_id=circle.pk)
         user.connect_with_user_with_id(user_to_connect.pk)
+        user_to_connect.confirm_connection_with_user_with_id(user.pk, circle_id=circle.pk)
 
         connected_user_post = user_to_connect.create_post(text=make_fake_post_text(), circle=circle)
 
@@ -150,19 +150,82 @@ class PostCommentsAPITests(APITestCase):
         url = self._get_url(connected_user_post)
         response = self.client.put(url, data, **headers)
 
-        print(response.content)
-
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(PostComment.objects.filter(post_id=connected_user_post.pk, text=post_comment_text).count() == 1)
 
     def test_cannot_comment_in_connected_user_encircled_post_not_part_of(self):
-        pass
+        """
+             should NOT be able to comment in the encircled post of a connected user which the user is NOT part of and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user_to_connect = make_user()
+        circle = make_circle(creator=user_to_connect)
+
+        user.connect_with_user_with_id(user_to_connect.pk)
+        # Note there is no confirmation of the connection on the other side
+
+        connected_user_post = user_to_connect.create_post(text=make_fake_post_text(), circle=circle)
+
+        post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(connected_user_post)
+        response = self.client.put(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(PostComment.objects.filter(post_id=connected_user_post.pk, text=post_comment_text).count() == 0)
 
     def test_can_comment_in_followed_user_public_post(self):
-        pass
+        """
+          should be able to comment in the public post of a followed user and return 201
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user_to_follow = make_user()
+
+        user.follow_user_with_id(user_to_follow.pk)
+
+        followed_user_post = user_to_follow.create_post(text=make_fake_post_text())
+
+        post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(followed_user_post)
+        response = self.client.put(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(PostComment.objects.filter(post_id=followed_user_post.pk, text=post_comment_text).count() == 1)
 
     def test_cannot_comment_in_followed_user_encircled_post(self):
-        pass
+        """
+          should be able to comment in the encircled post of a followed user return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user_to_follow = make_user()
+        circle = make_circle(creator=user_to_follow)
+
+        user.follow_user_with_id(user_to_follow.pk)
+
+        followed_user_post = user_to_follow.create_post(text=make_fake_post_text(), circle=circle)
+
+        post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(followed_user_post)
+        response = self.client.put(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(PostComment.objects.filter(post_id=followed_user_post.pk, text=post_comment_text).count() == 0)
+
 
     def _get_create_post_comment_request_data(self, post_comment_text):
         return {
