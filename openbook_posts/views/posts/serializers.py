@@ -4,7 +4,7 @@ from django.conf import settings
 from openbook_auth.models import User, UserProfile
 from openbook_circles.validators import circle_id_exists
 from openbook_lists.validators import list_id_exists
-from openbook_posts.models import PostImage, Post
+from openbook_posts.models import PostImage, Post, PostComment
 
 
 class GetPostsSerializer(serializers.Serializer):
@@ -61,9 +61,46 @@ class PostImageSerializer(serializers.ModelSerializer):
         )
 
 
+class PostCommenterProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = (
+            'avatar',
+        )
+
+
+class PostCommentCommenterSerializer(serializers.ModelSerializer):
+    profile = PostCommenterProfileSerializer(many=False)
+
+    class Meta:
+        model = User
+        fields = (
+            'profile',
+            'username'
+        )
+
+
+class PostCommentSerializer(serializers.ModelSerializer):
+    commenter = PostCommentCommenterSerializer(many=False)
+
+    class Meta:
+        model = PostComment
+        fields = (
+            'text',
+            'commenter',
+            'created',
+            'id'
+        )
+
+
 class PostSerializer(serializers.ModelSerializer):
+    comments = serializers.SerializerMethodField()
     image = PostImageSerializer(many=False)
     creator = PostCreatorSerializer(many=False)
+
+    def get_comments(self, obj):
+        comments = obj.comments.all().order_by('created')[:2]
+        return PostCommentSerializer(comments, many=True, context=self.context).data
 
     class Meta:
         model = Post
@@ -74,5 +111,6 @@ class PostSerializer(serializers.ModelSerializer):
             'created',
             'text',
             'image',
+            'comments',
             'creator'
         )
