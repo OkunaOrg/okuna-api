@@ -69,6 +69,8 @@ class PostSerializer(serializers.ModelSerializer):
         model = Post
         fields = (
             'id',
+            'comments_count',
+            'reactions_count',
             'created',
             'text',
             'image',

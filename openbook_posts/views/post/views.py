@@ -37,7 +37,6 @@ class PostItem(APIView):
 
 class PostComments(APIView):
     permission_classes = (IsAuthenticated,)
-    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def get(self, request, post_id):
         request_data = self._get_request_data(request, post_id)

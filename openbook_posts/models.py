@@ -41,6 +41,14 @@ class Post(models.Model):
 
         return post
 
+    @property
+    def comments_count(self):
+        return self.comments.count()
+
+    @property
+    def reactions_count(self):
+        return self.reactions.count()
+
     def comment(self, text, commenter):
         return PostComment.create_comment(text=text, commenter=commenter, post=self)
 
@@ -87,6 +95,7 @@ class PostComment(models.Model):
 
 
 class PostReaction(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='reactions')
     created = models.DateTimeField(editable=False)
     reactor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reactions')
     emoji = models.ForeignKey(Emoji, on_delete=models.CASCADE, related_name='reactions')
