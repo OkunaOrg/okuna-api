@@ -80,27 +80,9 @@ class PostCommentCommenterSerializer(serializers.ModelSerializer):
         )
 
 
-class PostCommentSerializer(serializers.ModelSerializer):
-    commenter = PostCommentCommenterSerializer(many=False)
-
-    class Meta:
-        model = PostComment
-        fields = (
-            'text',
-            'commenter',
-            'created',
-            'id'
-        )
-
-
 class PostSerializer(serializers.ModelSerializer):
-    comments = serializers.SerializerMethodField()
     image = PostImageSerializer(many=False)
     creator = PostCreatorSerializer(many=False)
-
-    def get_comments(self, obj):
-        comments = obj.comments.all().order_by('created')[:2]
-        return PostCommentSerializer(comments, many=True, context=self.context).data
 
     class Meta:
         model = Post
