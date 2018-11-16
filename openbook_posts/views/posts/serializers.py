@@ -4,7 +4,7 @@ from django.conf import settings
 from openbook_auth.models import User, UserProfile
 from openbook_circles.validators import circle_id_exists
 from openbook_lists.validators import list_id_exists
-from openbook_posts.models import PostImage, Post, PostComment
+from openbook_posts.models import PostImage, Post
 
 
 class GetPostsSerializer(serializers.Serializer):
@@ -93,6 +93,5 @@ class PostSerializer(serializers.ModelSerializer):
             'created',
             'text',
             'image',
-            'comments',
             'creator'
         )

@@ -45,12 +45,13 @@ class PostComments(APIView):
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
-        min_id = data.get('min_id')
+        max_id = data.get('max_id')
         count = data.get('count', 10)
         post_id = data.get('post_id')
         user = request.user
 
-        post_comments = user.get_comments_for_post_with_id(post_id, min_id=min_id).order_by('created')[:count]
+        post_comments = user.get_comments_for_post_with_id(post_id, max_id=max_id).order_by('-created')[
+                        :count]
 
         post_comments_serializer = PostCommentSerializer(post_comments, many=True, context={"request": request})
 

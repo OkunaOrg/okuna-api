@@ -58,7 +58,7 @@ class GetPostCommentsSerializer(serializers.Serializer):
         validators=[post_id_exists],
         required=True,
     )
-    min_id = serializers.IntegerField(
+    max_id = serializers.IntegerField(
         required=False,
     )
     count = serializers.IntegerField(
