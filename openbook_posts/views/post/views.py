@@ -52,7 +52,7 @@ class PostComments(APIView):
 
         post_comments = user.get_comments_for_post_with_id(post_id, min_id=min_id).order_by('created')[:count]
 
-        post_comments_serializer = PostCommentSerializer(post_comments, many=True)
+        post_comments_serializer = PostCommentSerializer(post_comments, many=True, context={"request": request})
 
         return Response(post_comments_serializer.data, status=status.HTTP_200_OK)
 
@@ -70,7 +70,7 @@ class PostComments(APIView):
         with transaction.atomic():
             post_comment = user.comment_post_with_id(post_id=post_id, text=comment_text)
 
-        post_comment_serializer = PostCommentSerializer(post_comment)
+        post_comment_serializer = PostCommentSerializer(post_comment, context={"request": request})
         return Response(post_comment_serializer.data, status=status.HTTP_201_CREATED)
 
     def _get_request_data(self, request, post_id):
