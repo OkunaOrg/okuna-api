@@ -60,6 +60,14 @@ jobs:
         command: |
           . venv/bin/activate
           bandit -r .
+
+    # check for known vulns in python packages
+    - run:
+        name: run safety
+        command: |
+          . venv/bin/activate
+          safety check
+
   deploy:
     working_directory: ~/repo
     docker:
