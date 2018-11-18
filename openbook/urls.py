@@ -22,10 +22,12 @@ from django.conf.urls.static import static
 from openbook_circles.views import Circles, CircleItem
 from openbook_common.views import Time, Health
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, Login, User
-from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection
+from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
+    ConfirmConnection
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
 from openbook_lists.views import Lists, ListItem
-from openbook_posts.views import Posts
+from openbook_posts.views.post.views import PostComments, PostCommentItem, PostItem
+from openbook_posts.views.posts.views import Posts
 
 auth_patterns = [
     path('register/', Register.as_view(), name='register-user'),
@@ -35,13 +37,21 @@ auth_patterns = [
     path('user/', User.as_view(), name='user'),
 ]
 
+post_patterns = [
+    path('', PostItem.as_view(), name='post'),
+    path('comments/', PostComments.as_view(), name='post-comments'),
+    path('comments/<int:post_comment_id>/', PostCommentItem.as_view(), name='post-comment'),
+]
+
 posts_patterns = [
-    path('', Posts.as_view(), name='posts')
+    path('<int:post_id>/', include(post_patterns)),
+    path('', Posts.as_view(), name='posts'),
 ]
 
 connections_patterns = [
     path('', Connections.as_view(), name='connections'),
     path('connect/', ConnectWithUser.as_view(), name='connect-with-user'),
+    path('confirm/', ConfirmConnection.as_view(), name='confirm-connection'),
     path('disconnect/', DisconnectFromUser.as_view(), name='disconnect-from-user'),
     path('update/', UpdateConnection.as_view(), name='update-connection'),
 ]

@@ -7,7 +7,7 @@ from django.utils.translation import ugettext_lazy as _
 # Create your views here.
 from rest_framework.exceptions import ValidationError
 
-from openbook import settings
+from django.conf import settings
 from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
@@ -15,7 +15,7 @@ from openbook_common.models import Emoji
 
 
 class Post(models.Model):
-    text = models.CharField(_('text'), max_length=560, blank=False, null=True)
+    text = models.CharField(_('text'), max_length=settings.POST_MAX_LENGTH, blank=False, null=True)
     created = models.DateTimeField(editable=False)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
 
@@ -41,6 +41,27 @@ class Post(models.Model):
 
         return post
 
+    @property
+    def comments_count(self):
+        return self.comments.count()
+
+    @property
+    def reactions_count(self):
+        return self.reactions.count()
+
+    def comment(self, text, commenter):
+        return PostComment.create_comment(text=text, commenter=commenter, post=self)
+
+    def remove_comment_with_id(self, post_comment_id):
+        self.comments.filter(id=post_comment_id).delete()
+
+    def is_public_post(self):
+        creator = self.creator
+        creator_world_circle_id = creator.world_circle_id
+        if self.circles.filter(id=creator_world_circle_id).count() == 1:
+            return True
+        return False
+
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
         if not self.id:
@@ -48,7 +69,7 @@ class Post(models.Model):
         return super(Post, self).save(*args, **kwargs)
 
 
-post_image_storage = S3PrivateMediaStorage() if settings.environment_checker.is_production() else default_storage
+post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else default_storage
 
 
 class PostImage(models.Model):
@@ -57,9 +78,14 @@ class PostImage(models.Model):
 
 
 class PostComment(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
     created = models.DateTimeField(editable=False)
     commenter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_comments')
-    text = models.CharField(_('text'), max_length=280, blank=False, null=False)
+    text = models.CharField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False)
+
+    @classmethod
+    def create_comment(cls, text, commenter, post):
+        return PostComment.objects.create(text=text, commenter=commenter, post=post)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
@@ -69,6 +95,7 @@ class PostComment(models.Model):
 
 
 class PostReaction(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='reactions')
     created = models.DateTimeField(editable=False)
     reactor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reactions')
     emoji = models.ForeignKey(Emoji, on_delete=models.CASCADE, related_name='reactions')

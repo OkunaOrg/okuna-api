@@ -12,7 +12,7 @@ from django.db.models import Q
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
-    get_post_model, get_list_model
+    get_post_model, get_list_model, get_post_comment_model
 
 
 class User(AbstractUser):
@@ -75,6 +75,19 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         self.full_clean()
         return super(User, self).save(*args, **kwargs)
+
+    def is_fully_connected_with_user_with_id(self, user_id):
+        if not self.is_connected_with_user_with_id(user_id):
+            return False
+
+        connection = self.connections.select_related('target_connection__circle').filter(
+            target_connection__user_id=user_id).get()
+        target_connection = connection.target_connection
+
+        if target_connection.circle and connection.circle:
+            return True
+
+        return False
 
     def is_connected_with_user(self, user):
         return self.is_connected_with_user_with_id(user.pk)
@@ -143,6 +156,32 @@ class User(AbstractUser):
     def has_lists_with_ids(self, lists_ids):
         return self.lists.filter(id__in=lists_ids).count() == len(lists_ids)
 
+    def get_comments_for_post(self, post, **kwargs):
+        return self.get_comments_for_post_with_id(post.pk, **kwargs)
+
+    def get_comments_for_post_with_id(self, post_id, max_id=None):
+        self._check_can_get_comments_for_post_with_id(post_id)
+        comments_query = Q(post_id=post_id)
+
+        if max_id:
+            comments_query.add(Q(id__lt=max_id), Q.AND)
+
+        PostComment = get_post_comment_model()
+        return PostComment.objects.filter(comments_query)
+
+    def comment_post_with_id(self, post_id, text):
+        self._check_can_comment_in_post_with_id(post_id)
+        Post = get_post_model()
+        post = Post.objects.filter(pk=post_id).get()
+        post_comment = post.comment(text=text, commenter=self)
+        return post_comment
+
+    def delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
+        self._check_can_delete_comment_with_id_for_post_with_id(post_comment_id, post_id)
+        Post = get_post_model()
+        post = Post.objects.filter(pk=post_id).get()
+        post.remove_comment_with_id(post_comment_id)
+
     def create_circle(self, name, color):
         self._check_circle_name_not_taken(name)
         Circle = get_circle_model()
@@ -205,6 +244,9 @@ class User(AbstractUser):
         self._check_can_get_list_with_id(list_id)
         return self.lists.get(id=list_id)
 
+    def create_public_post(self, text=None, image=None):
+        return self.create_post(text=text, image=image, circle_id=self.world_circle_id)
+
     def create_post(self, text, circles_ids=None, circles=None, circle=None, circle_id=None, **kwargs):
         if circles:
             circles_ids = [circle.pk for circle in circles]
@@ -241,7 +283,7 @@ class User(AbstractUser):
     def update_post_with_id(self, post_id):
         pass
 
-    def get_posts(self, lists_ids=None, circles_ids=None, max_id=None):
+    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None, post_id=None):
 
         queries = []
 
@@ -303,6 +345,8 @@ class User(AbstractUser):
 
         if max_id:
             final_query.add(Q(id__lt=max_id), Q.AND)
+        elif post_id:
+            final_query.add(Q(id=post_id), Q.AND)
 
         Post = get_post_model()
         result = Post.objects.filter(final_query)
@@ -345,53 +389,56 @@ class User(AbstractUser):
         follow.save()
         return follow
 
-    def connect_with_user(self, user, **kwargs):
-        return self.connect_with_user_with_id(user.pk, **kwargs)
-
-    def connect_with_user_with_id(self, user_id, **kwargs):
+    def connect_with_user_with_id(self, user_id, circle_id=None):
         self._check_is_not_connected_with_user_with_id(user_id)
-        self.check_connect_data(kwargs)
 
-        # Check dont connect to world circle
+        if not circle_id:
+            circle_id = self.connections_circle_id
+
+        self.check_connection_circle_id(circle_id)
 
         if self.pk == user_id:
             raise ValidationError(
                 _('A user cannot connect with itself.'),
             )
-
         Connection = get_connection_model()
-        connection = Connection.create_connection(user_id=self.pk, target_user_id=user_id, **kwargs)
-
+        connection = Connection.create_connection(user_id=self.pk, target_user_id=user_id, circle_id=circle_id)
         # Automatically follow user
         if not self.is_following_user_with_id(user_id):
             self.follow_user_with_id(user_id)
 
         return connection
 
-    def update_connection_with_user_with_id(self, user_id, **kwargs):
+    def confirm_connection_with_user_with_id(self, user_id, circle_id=None):
+        self._check_is_not_fully_connected_with_user_with_id(user_id)
+
+        if not circle_id:
+            circle_id = self.connections_circle_id
+        self.check_connection_circle_id(circle_id)
+
+        return self.update_connection_with_user_with_id(user_id, circle_id=circle_id)
+
+    def update_connection_with_user_with_id(self, user_id, circle_id=None):
         self._check_is_connected_with_user_with_id(user_id)
-        self.check_connect_data(kwargs)
+
+        if not circle_id:
+            raise ValidationError(
+                _('No data to update the connection with.'),
+            )
+
+        self.check_connection_circle_id(circle_id)
         connection = self.get_connection_for_user_with_id(user_id)
-        for attr, value in kwargs.items():
-            setattr(connection, attr, value)
+        connection.circle_id = circle_id
         connection.save()
         return connection
 
-    def check_connect_data(self, data):
-        circle_id = data.get('circle_id')
+    def check_connection_circle_id(self, circle_id):
+        self._check_has_circle_with_id(circle_id)
 
-        if not circle_id:
-            circle = data.get('circle')
-            if circle:
-                circle_id = circle.pk
-
-        if circle_id:
-            self._check_has_circle_with_id(circle_id)
-
-            if self.is_world_circle_id(circle_id):
-                raise ValidationError(
-                    _('Can\'t connect in the world circle.'),
-                )
+        if self.is_world_circle_id(circle_id):
+            raise ValidationError(
+                _('Can\'t connect in the world circle.'),
+            )
 
     def disconnect_from_user(self, user):
         return self.disconnect_from_user_with_id(user.pk)
@@ -410,6 +457,40 @@ class User(AbstractUser):
 
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
+
+    def _check_can_delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
+        # Check if the post belongs to us
+        if self.has_post_with_id(post_id):
+            # Check that the comment belongs to the post
+            PostComment = get_post_comment_model()
+            if PostComment.objects.filter(id=post_comment_id, post_id=post_id).count() == 0:
+                raise ValidationError(
+                    _('That comment does not belong to the specified post.')
+                )
+            return
+
+        if self.posts_comments.filter(id=post_comment_id).count() == 0:
+            raise ValidationError(
+                _('Can\'t delete a comment that does not belong to you.'),
+            )
+
+    def _check_can_get_comments_for_post_with_id(self, post_id):
+        self._check_can_see_post_with_id(post_id)
+
+    def _check_can_comment_in_post_with_id(self, post_id):
+        self._check_can_see_post_with_id(post_id)
+
+    def _check_can_see_post_with_id(self, post_id):
+        # Check if post is public
+        Post = get_post_model()
+        post = Post.objects.filter(pk=post_id).get()
+        if post.is_public_post():
+            return
+
+        if self.get_timeline_posts(post_id=post_id).count() == 0:
+            raise ValidationError(
+                _('This post is private.'),
+            )
 
     def _check_follow_data(self, data):
         list_id = data.get('list_id')
@@ -454,6 +535,12 @@ class User(AbstractUser):
         if self.is_connected_with_user_with_id(user_id):
             raise ValidationError(
                 _('Already connected with user.'),
+            )
+
+    def _check_is_not_fully_connected_with_user_with_id(self, user_id):
+        if self.is_fully_connected_with_user_with_id(user_id):
+            raise ValidationError(
+                _('Already fully connected with user.'),
             )
 
     def _check_is_connected_with_user_with_id(self, user_id):

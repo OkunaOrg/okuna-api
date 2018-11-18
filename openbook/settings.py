@@ -75,9 +75,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = environment_checker.is_debug()
+IS_PRODUCTION = environment_checker.is_production()
+IS_BUILD = environment_checker.is_build()
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS')
-if environment_checker.is_production():
+if IS_PRODUCTION:
     if not ALLOWED_HOSTS:
         raise NameError('ALLOWED_HOSTS environment variable is required when running on a production environment')
     ALLOWED_HOSTS = [allowed_host.strip() for allowed_host in ALLOWED_HOSTS.split(',')]
@@ -126,7 +128,7 @@ AUTH_USER_MODEL = 'openbook_auth.User'
 
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
-if environment_checker.is_build():
+if IS_BUILD:
     NOSE_ARGS = [
         '--cover-erase',
         '--cover-package=.',
@@ -162,7 +164,7 @@ WSGI_APPLICATION = 'openbook.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
-if environment_checker.is_build():
+if IS_BUILD:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -220,7 +222,7 @@ REST_FRAMEWORK = {
 
 # The sentry DSN for error reporting
 SENTRY_DSN = os.environ.get('SENTRY_DSN')
-if environment_checker.is_production():
+if IS_PRODUCTION:
     if not SENTRY_DSN:
         raise NameError('SENTRY_DSN environment variable is required when running on a production environment')
     sentry_sdk.init(
@@ -266,7 +268,7 @@ MEDIA_URL = os.environ.get('MEDIA_ROOT', '/media/')
 
 USERNAME_MAX_LENGTH = 30
 POST_MAX_LENGTH = 560
-COMMENT_MAX_LENGTH = 280
+POST_COMMENT_MAX_LENGTH = 280
 PASSWORD_MIN_LENGTH = 10
 PASSWORD_MAX_LENGTH = 100
 CIRCLE_MAX_LENGTH = 100
@@ -280,7 +282,7 @@ AWS_STATIC_LOCATION = 'static'
 AWS_PRIVATE_MEDIA_LOCATION = os.environ.get('AWS_PRIVATE_MEDIA_LOCATION')
 AWS_DEFAULT_ACL = None
 
-if environment_checker.is_production():
+if IS_PRODUCTION:
     STATICFILES_DIRS = [
         os.path.join(BASE_DIR, 'openbook/static'),
     ]

@@ -1,18 +1,14 @@
 from django.db import transaction
 from rest_framework import status
-from rest_framework.exceptions import NotFound
-from rest_framework.parsers import FormParser, MultiPartParser, JSONParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from openbook_posts.models import Post
-from openbook_posts.serializers import CreatePostSerializer, PostSerializer, GetPostsSerializer
+from openbook_posts.views.posts.serializers import CreatePostSerializer, PostSerializer, GetPostsSerializer
 
 
 class Posts(APIView):
     permission_classes = (IsAuthenticated,)
-    parser_classes = (MultiPartParser, FormParser, JSONParser)
 
     def put(self, request):
 
@@ -60,7 +56,7 @@ class Posts(APIView):
 
         user = request.user
 
-        posts = user.get_posts(
+        posts = user.get_timeline_posts(
             circles_ids=circles_ids,
             lists_ids=lists_ids,
             max_id=max_id
