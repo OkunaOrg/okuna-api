@@ -48,6 +48,7 @@ class PostCreatorSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
+            'id',
             'profile',
             'username'
         )
@@ -58,25 +59,6 @@ class PostImageSerializer(serializers.ModelSerializer):
         model = PostImage
         fields = (
             'image',
-        )
-
-
-class PostCommenterProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserProfile
-        fields = (
-            'avatar',
-        )
-
-
-class PostCommentCommenterSerializer(serializers.ModelSerializer):
-    profile = PostCommenterProfileSerializer(many=False)
-
-    class Meta:
-        model = User
-        fields = (
-            'profile',
-            'username'
         )
 
 

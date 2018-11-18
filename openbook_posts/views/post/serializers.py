@@ -29,6 +29,7 @@ class PostCommentCommenterSerializer(serializers.ModelSerializer):
         fields = (
             'username',
             'profile',
+            'id'
         )
 
 
