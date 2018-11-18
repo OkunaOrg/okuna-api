@@ -1,3 +1,4 @@
+bandit
 boto3==1.9.37
 botocore==1.12.37
 certifi==2018.10.15
@@ -24,6 +25,7 @@ python-dateutil==2.7.5
 python-dotenv==0.9.1
 pytz==2018.7
 s3transfer==0.1.13
+safety
 sentry-sdk==0.5.3
 six==1.11.0
 sqlparse==0.2.4
