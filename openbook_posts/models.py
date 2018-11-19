@@ -49,6 +49,16 @@ class Post(models.Model):
     def reactions_count(self):
         return self.reactions.count()
 
+    def has_text(self):
+        if self.text:
+            return True
+        return False
+
+    def has_image(self):
+        if self.image:
+            return True
+        return False
+
     def comment(self, text, commenter):
         return PostComment.create_comment(text=text, commenter=commenter, post=self)
 
