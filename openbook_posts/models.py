@@ -55,6 +55,12 @@ class Post(models.Model):
     def remove_comment_with_id(self, post_comment_id):
         self.comments.filter(id=post_comment_id).delete()
 
+    def react(self, reactor, emoji_id):
+        return PostReaction.create_reaction(reactor=reactor, emoji_id=emoji_id, post=self)
+
+    def remove_reaction_with_id(self, reaction_id):
+        self.reactions.filter(id=reaction_id).delete()
+
     def is_public_post(self):
         creator = self.creator
         creator_world_circle_id = creator.world_circle_id
@@ -97,8 +103,12 @@ class PostComment(models.Model):
 class PostReaction(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='reactions')
     created = models.DateTimeField(editable=False)
-    reactor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reactions')
+    reactor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_reactions')
     emoji = models.ForeignKey(Emoji, on_delete=models.CASCADE, related_name='reactions')
+
+    @classmethod
+    def create_reaction(cls, reactor, emoji_id, post):
+        return PostReaction.objects.create(reactor=reactor, emoji_id=emoji_id, post=post)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''

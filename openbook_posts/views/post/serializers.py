@@ -2,8 +2,10 @@ from rest_framework import serializers
 from django.conf import settings
 
 from openbook_auth.models import UserProfile, User
-from openbook_posts.models import PostComment
-from openbook_posts.validators import post_id_exists, post_comment_id_exists
+from openbook_common.models import Emoji
+from openbook_common.validators import emoji_id_exists
+from openbook_posts.models import PostComment, PostReaction
+from openbook_posts.validators import post_id_exists, post_comment_id_exists, post_reaction_id_exists
 
 
 class DeletePostSerializer(serializers.Serializer):
@@ -75,5 +77,80 @@ class DeletePostCommentSerializer(serializers.Serializer):
     )
     post_comment_id = serializers.IntegerField(
         validators=[post_comment_id_exists],
+        required=True,
+    )
+
+
+class PostReactorProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = (
+            'avatar',
+        )
+
+
+class PostReactionReactorSerializer(serializers.ModelSerializer):
+    profile = PostReactorProfileSerializer(many=False)
+
+    class Meta:
+        model = User
+        fields = (
+            'username',
+            'profile',
+            'id'
+        )
+
+
+class PostReactionEmojiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Emoji
+        fields = (
+            'name',
+            'shortcut',
+            'color',
+            'image',
+            'created',
+        )
+
+
+class PostReactionSerializer(serializers.ModelSerializer):
+    reactor = PostReactionReactorSerializer(many=False)
+    emoji = PostReactionEmojiSerializer(many=False)
+
+    class Meta:
+        model = PostReaction
+        fields = (
+            'reactor',
+            'created',
+            'emoji',
+            'id'
+        )
+
+
+class ReactToPostSerializer(serializers.Serializer):
+    post_id = serializers.IntegerField(
+        validators=[post_id_exists],
+        required=True,
+    )
+    emoji_id = serializers.IntegerField(
+        validators=[emoji_id_exists],
+        required=True,
+    )
+
+
+class GetPostReactionsSerializer(serializers.Serializer):
+    post_id = serializers.IntegerField(
+        validators=[post_id_exists],
+        required=True,
+    )
+
+
+class DeletePostReactionSerializer(serializers.Serializer):
+    post_id = serializers.IntegerField(
+        validators=[post_id_exists],
+        required=True,
+    )
+    post_reaction_id = serializers.IntegerField(
+        validators=[post_reaction_id_exists],
         required=True,
     )

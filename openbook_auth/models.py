@@ -12,7 +12,7 @@ from django.db.models import Q
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
-    get_post_model, get_list_model, get_post_comment_model
+    get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model
 
 
 class User(AbstractUser):
@@ -158,6 +158,26 @@ class User(AbstractUser):
 
     def get_comments_for_post(self, post, **kwargs):
         return self.get_comments_for_post_with_id(post.pk, **kwargs)
+
+    def get_reactions_for_post_with_id(self, post_id):
+        self._check_can_get_reactions_for_post_with_id(post_id)
+        reactions_query = Q(post_id=post_id)
+
+        PostReaction = get_post_reaction_model()
+        return PostReaction.objects.filter(reactions_query)
+
+    def react_to_post_with_id(self, post_id, emoji_id):
+        self._check_can_react_to_post_with_id(post_id)
+        Post = get_post_model()
+        post = Post.objects.filter(pk=post_id).get()
+        post_reaction = post.react(reactor=self, emoji_id=emoji_id)
+        return post_reaction
+
+    def delete_reaction_with_id_for_post_with_id(self, post_reaction_id, post_id):
+        self._check_can_delete_reaction_with_id_for_post_with_id(post_reaction_id, post_id)
+        Post = get_post_model()
+        post = Post.objects.filter(pk=post_id).get()
+        post.remove_reaction_with_id(post_reaction_id)
 
     def get_comments_for_post_with_id(self, post_id, max_id=None):
         self._check_can_get_comments_for_post_with_id(post_id)
@@ -478,6 +498,28 @@ class User(AbstractUser):
         self._check_can_see_post_with_id(post_id)
 
     def _check_can_comment_in_post_with_id(self, post_id):
+        self._check_can_see_post_with_id(post_id)
+
+    def _check_can_delete_reaction_with_id_for_post_with_id(self, post_reaction_id, post_id):
+        # Check if the post belongs to us
+        if self.has_post_with_id(post_id):
+            # Check that the comment belongs to the post
+            PostReaction = get_post_reaction_model()
+            if PostReaction.objects.filter(id=post_reaction_id, post_id=post_id).count() == 0:
+                raise ValidationError(
+                    _('That reaction does not belong to the specified post.')
+                )
+            return
+
+        if self.post_reactions.filter(id=post_reaction_id).count() == 0:
+            raise ValidationError(
+                _('Can\'t delete a reaction that does not belong to you.'),
+            )
+
+    def _check_can_get_reactions_for_post_with_id(self, post_id):
+        self._check_can_see_post_with_id(post_id)
+
+    def _check_can_react_to_post_with_id(self, post_id):
         self._check_can_see_post_with_id(post_id)
 
     def _check_can_see_post_with_id(self, post_id):

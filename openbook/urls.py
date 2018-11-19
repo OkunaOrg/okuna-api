@@ -26,7 +26,7 @@ from openbook_connections.views import ConnectWithUser, Connections, DisconnectF
     ConfirmConnection
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
 from openbook_lists.views import Lists, ListItem
-from openbook_posts.views.post.views import PostComments, PostCommentItem, PostItem
+from openbook_posts.views.post.views import PostComments, PostCommentItem, PostItem, PostReactions, PostReactionItem
 from openbook_posts.views.posts.views import Posts
 
 auth_patterns = [
@@ -41,6 +41,8 @@ post_patterns = [
     path('', PostItem.as_view(), name='post'),
     path('comments/', PostComments.as_view(), name='post-comments'),
     path('comments/<int:post_comment_id>/', PostCommentItem.as_view(), name='post-comment'),
+    path('reactions/', PostReactions.as_view(), name='post-reactions'),
+    path('reactions/<int:post_reaction_id>/', PostReactionItem.as_view(), name='post-reaction'),
 ]
 
 posts_patterns = [

@@ -23,3 +23,7 @@ def get_list_model():
 
 def get_post_comment_model():
     return apps.get_model('openbook_posts.PostComment')
+
+
+def get_post_reaction_model():
+    return apps.get_model('openbook_posts.PostReaction')
