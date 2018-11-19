@@ -1,0 +1,22 @@
+[
+  {
+    "model": "openbook_common.EmojiGroup",
+    "pk": 1,
+    "fields": {
+      "order": 1,
+      "keyword": "primary",
+      "color": "#FFFFFF",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.EmojiGroup",
+    "pk": 2,
+    "fields": {
+      "order": 2,
+      "keyword": "gold",
+      "color": "#FFFFFF",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  }
+]
