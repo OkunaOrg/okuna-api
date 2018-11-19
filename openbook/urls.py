@@ -20,7 +20,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from openbook_circles.views import Circles, CircleItem
-from openbook_common.views import Time, Health
+from openbook_common.views import Time, Health, EmojiGroups
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, Login, User
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
@@ -85,6 +85,7 @@ api_patterns = [
     path('lists/', include(lists_patterns)),
     path('follows/', include(follows_patterns)),
     url('time/', Time.as_view(), name='time'),
+    url('emojis/groups/', EmojiGroups.as_view(), name='emoji-groups'),
 ]
 
 urlpatterns = [

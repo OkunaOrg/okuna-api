@@ -31,3 +31,7 @@ def get_post_reaction_model():
 
 def get_emoji_model():
     return apps.get_model('openbook_common.Emoji')
+
+
+def get_emoji_group_model():
+    return apps.get_model('openbook_common.EmojiGroup')
