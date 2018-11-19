@@ -12,7 +12,7 @@ from django.db.models import Q
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
-    get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model
+    get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, get_emoji_model
 
 
 class User(AbstractUser):
@@ -162,9 +162,26 @@ class User(AbstractUser):
     def get_reactions_for_post_with_id(self, post_id):
         self._check_can_get_reactions_for_post_with_id(post_id)
         reactions_query = Q(post_id=post_id)
-
         PostReaction = get_post_reaction_model()
         return PostReaction.objects.filter(reactions_query)
+
+    def get_emoji_counts_for_post_with_id(self, post_id):
+        self._check_can_get_reactions_for_post_with_id(post_id)
+
+        PostReaction = get_post_reaction_model()
+        Emoji = get_emoji_model()
+        emojis_reacted_with = Emoji.objects.filter(reactions__post_id=post_id).distinct()
+
+        emoji_counts = []
+
+        for emoji in emojis_reacted_with:
+            emoji_count = PostReaction.objects.filter(post_id=post_id, emoji_id=emoji.pk).count()
+            emoji_counts.append({
+                'emoji': emoji,
+                'count': emoji_count
+            })
+
+        return emoji_counts
 
     def react_to_post_with_id(self, post_id, emoji_id):
         self._check_can_react_to_post_with_id(post_id)

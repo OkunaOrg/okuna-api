@@ -105,6 +105,7 @@ class PostReactionEmojiSerializer(serializers.ModelSerializer):
     class Meta:
         model = Emoji
         fields = (
+            'id',
             'name',
             'shortcut',
             'color',
@@ -125,6 +126,11 @@ class PostReactionSerializer(serializers.ModelSerializer):
             'emoji',
             'id'
         )
+
+
+class PostEmojiCountSerializer(serializers.Serializer):
+    emoji = PostReactionEmojiSerializer(many=False)
+    count = serializers.IntegerField(required=True, )
 
 
 class ReactToPostSerializer(serializers.Serializer):

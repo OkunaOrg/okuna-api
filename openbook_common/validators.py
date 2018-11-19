@@ -1,12 +1,9 @@
 import re
 
-from django.apps import apps
 from rest_framework.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 
-
-def get_emoji_model():
-    return apps.get_model('openbook_common.Emoji')
+from openbook_common.utils.model_loaders import get_emoji_model
 
 
 def hex_color_validator(hex_color):

@@ -27,3 +27,7 @@ def get_post_comment_model():
 
 def get_post_reaction_model():
     return apps.get_model('openbook_posts.PostReaction')
+
+
+def get_emoji_model():
+    return apps.get_model('openbook_common.Emoji')
