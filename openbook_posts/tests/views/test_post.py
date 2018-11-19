@@ -1,4 +1,5 @@
 # Create your tests here.
+import json
 
 from django.urls import reverse
 from faker import Faker
@@ -545,7 +546,8 @@ class PostReactionsAPITests(APITestCase):
         response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(PostReaction.objects.filter(post_id=post.pk, emoji_id=post_reaction_emoji_id, reactor_id=user.pk).count() == 1)
+        self.assertTrue(PostReaction.objects.filter(post_id=post.pk, emoji_id=post_reaction_emoji_id,
+                                                    reactor_id=user.pk).count() == 1)
 
     def test_cannot_react_to_foreign_post(self):
         """
@@ -566,7 +568,8 @@ class PostReactionsAPITests(APITestCase):
         response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertTrue(PostReaction.objects.filter(post_id=post.pk, emoji_id=post_reaction_emoji_id, reactor_id=user.pk).count() == 0)
+        self.assertTrue(PostReaction.objects.filter(post_id=post.pk, emoji_id=post_reaction_emoji_id,
+                                                    reactor_id=user.pk).count() == 0)
 
     def test_can_react_to_connected_user_public_post(self):
         """
@@ -590,7 +593,8 @@ class PostReactionsAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(
-            PostReaction.objects.filter(post_id=connected_user_post.pk, emoji_id=post_reaction_emoji_id, reactor_id=user.pk).count() == 1)
+            PostReaction.objects.filter(post_id=connected_user_post.pk, emoji_id=post_reaction_emoji_id,
+                                        reactor_id=user.pk).count() == 1)
 
     def test_can_react_to_connected_user_encircled_post_part_of(self):
         """
@@ -616,7 +620,8 @@ class PostReactionsAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(
-            PostReaction.objects.filter(post_id=connected_user_post.pk, emoji_id=post_reaction_emoji_id, reactor_id=user.pk).count() == 1)
+            PostReaction.objects.filter(post_id=connected_user_post.pk, emoji_id=post_reaction_emoji_id,
+                                        reactor_id=user.pk).count() == 1)
 
     def test_cannot_react_to_connected_user_encircled_post_not_part_of(self):
         """
@@ -643,7 +648,8 @@ class PostReactionsAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         self.assertTrue(
-            PostReaction.objects.filter(post_id=connected_user_post.pk, emoji_id=post_reaction_emoji_id, reactor_id=user.pk).count() == 0)
+            PostReaction.objects.filter(post_id=connected_user_post.pk, emoji_id=post_reaction_emoji_id,
+                                        reactor_id=user.pk).count() == 0)
 
     def test_can_react_to_user_public_post(self):
         """
@@ -665,7 +671,8 @@ class PostReactionsAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(
-            PostReaction.objects.filter(post_id=foreign_user_post.pk, emoji_id=post_reaction_emoji_id, reactor_id=user.pk).count() == 1)
+            PostReaction.objects.filter(post_id=foreign_user_post.pk, emoji_id=post_reaction_emoji_id,
+                                        reactor_id=user.pk).count() == 1)
 
     def test_cannot_react_to_followed_user_encircled_post(self):
         """
@@ -690,7 +697,8 @@ class PostReactionsAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(
-            PostReaction.objects.filter(post_id=followed_user_post.pk, emoji_id=post_reaction_emoji_id, reactor_id=user.pk).count() == 0)
+            PostReaction.objects.filter(post_id=followed_user_post.pk, emoji_id=post_reaction_emoji_id,
+                                        reactor_id=user.pk).count() == 0)
 
     def test_can_react_to_post_only_once(self):
         """
@@ -1015,4 +1023,69 @@ class PostReactionItemAPITests(APITestCase):
         return reverse('post-reaction', kwargs={
             'post_id': post.pk,
             'post_reaction_id': post_reaction.pk
+        })
+
+
+class PostReactionsEmojiCountAPITests(APITestCase):
+    """
+    PostReactionsEmojiCountAPI
+    """
+
+    def test_can_retrieve_reactions_emoji_count(self):
+        """
+        should be able to retrieve a valid reactions emoji count and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        emojis_to_react_with = [
+            {
+                'emoji': make_emoji(),
+                'count': 3
+            },
+            {
+                'emoji': make_emoji(),
+                'count': 7
+            },
+            {
+                'emoji': make_emoji(),
+                'count': 2
+            }
+        ]
+
+        reactions = {}
+
+        for reaction in emojis_to_react_with:
+            id = reaction.get('emoji').pk
+            reactions[str(id)] = reaction
+
+        for reaction in emojis_to_react_with:
+            for count in range(reaction['count']):
+                reactor = make_user()
+                emoji = reaction.get('emoji')
+                reactor.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_emojis_counts = json.loads(response.content)
+
+        self.assertTrue(len(response_emojis_counts), len(emojis_to_react_with))
+
+        for response_emoji_count in response_emojis_counts:
+            response_emoji_id = response_emoji_count.get('emoji').get('id')
+            count = response_emoji_count.get('count')
+            reaction = reactions[str(response_emoji_id)]
+            reaction_emoji = reaction['emoji']
+            self.assertIsNotNone(reaction_emoji)
+            reaction_count = reaction['count']
+            self.assertEqual(count, reaction_count)
+
+    def _get_url(self, post):
+        return reverse('post-reactions-emoji-count', kwargs={
+            'post_id': post.pk
         })
