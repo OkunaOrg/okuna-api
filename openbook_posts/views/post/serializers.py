@@ -106,8 +106,7 @@ class PostReactionEmojiSerializer(serializers.ModelSerializer):
         model = Emoji
         fields = (
             'id',
-            'name',
-            'shortcut',
+            'keyword',
             'color',
             'image',
             'created',
