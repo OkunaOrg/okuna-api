@@ -116,6 +116,9 @@ class PostReaction(models.Model):
     reactor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_reactions')
     emoji = models.ForeignKey(Emoji, on_delete=models.CASCADE, related_name='reactions')
 
+    class Meta:
+        unique_together = ('reactor', 'post',)
+
     @classmethod
     def create_reaction(cls, reactor, emoji_id, post):
         return PostReaction.objects.create(reactor=reactor, emoji_id=emoji_id, post=post)

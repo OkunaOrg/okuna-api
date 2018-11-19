@@ -24,8 +24,21 @@ class PostCommentInline(admin.TabularInline):
         return False
 
 
+class PostReactionInline(admin.TabularInline):
+    model = PostReaction
+
+    readonly_fields = [
+        'reactor',
+        'emoji'
+    ]
+
+    def has_add_permission(self, request, obj):
+        return False
+
+
 class PostAdmin(admin.ModelAdmin):
     inlines = [
+        PostReactionInline,
         PostImageInline,
         PostCommentInline
     ]

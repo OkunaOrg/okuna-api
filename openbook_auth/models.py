@@ -156,6 +156,9 @@ class User(AbstractUser):
     def has_lists_with_ids(self, lists_ids):
         return self.lists.filter(id__in=lists_ids).count() == len(lists_ids)
 
+    def has_reacted_to_post_with_id(self, post_id):
+        return self.post_reactions.filter(post_id=post_id).count() > 0
+
     def get_reactions_for_post_with_id(self, post_id, max_id=None, emoji_id=None):
         self._check_can_get_reactions_for_post_with_id(post_id)
         reactions_query = Q(post_id=post_id)
@@ -189,9 +192,16 @@ class User(AbstractUser):
 
     def react_to_post_with_id(self, post_id, emoji_id):
         self._check_can_react_to_post_with_id(post_id)
-        Post = get_post_model()
-        post = Post.objects.filter(pk=post_id).get()
-        post_reaction = post.react(reactor=self, emoji_id=emoji_id)
+
+        if self.has_reacted_to_post_with_id(post_id):
+            post_reaction = self.post_reactions.get(post_id=post_id)
+            post_reaction.emoji_id = emoji_id
+            post_reaction.save()
+        else:
+            Post = get_post_model()
+            post = Post.objects.filter(pk=post_id).get()
+            post_reaction = post.react(reactor=self, emoji_id=emoji_id)
+
         return post_reaction
 
     def delete_reaction_with_id_for_post_with_id(self, post_reaction_id, post_id):

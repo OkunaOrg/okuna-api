@@ -16,6 +16,9 @@ class EmojiGroup(models.Model):
     order = models.IntegerField(unique=False, default=100)
     created = models.DateTimeField(editable=False)
 
+    def __str__(self):
+        return 'EmojiGroup: ' + self.keyword
+
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
         if not self.id:
@@ -32,6 +35,9 @@ class Emoji(models.Model):
     image = models.ImageField(_('image'), blank=False, null=False, unique=True)
     created = models.DateTimeField(editable=False)
     order = models.IntegerField(unique=False, default=100)
+
+    def __str__(self):
+        return 'Emoji: ' + self.keyword
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
