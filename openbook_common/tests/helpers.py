@@ -26,7 +26,7 @@ def make_user():
     return mixer.blend(User)
 
 
-def make_emoji(group):
+def make_emoji(group=None):
     return mixer.blend(Emoji, group=group)
 
 
