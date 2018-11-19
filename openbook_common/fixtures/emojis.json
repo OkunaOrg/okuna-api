@@ -3,10 +3,10 @@
     "model": "openbook_common.Emoji",
     "pk": 1,
     "fields": {
-      "name": "Doge",
-      "shortcut": "doge",
+      "order": 9,
+      "keyword": "doge",
       "color": "#FFFFFF",
-      "image": "/media/doge.png",
+      "image": "/fixtures/emojis/doge.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -14,10 +14,87 @@
     "model": "openbook_common.Emoji",
     "pk": 2,
     "fields": {
-      "name": "Dancing Parrot",
-      "shortcut": "parrot",
+      "order": 8,
+      "keyword": "parrot",
       "color": "#FFFFFF",
-      "image": "/media/doge.png",
+      "image": "/fixtures/emojis/dancing_parrot.gif",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 4,
+    "fields": {
+      "order": 1,
+      "keyword": "heart",
+      "color": "#FFFFFF",
+      "image": "/fixtures/emojis/like.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 5,
+    "fields": {
+      "order": 4,
+      "keyword": "sad",
+      "color": "#FFFFFF",
+      "image": "/fixtures/emojis/sad.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 6,
+    "fields": {
+      "order": 7,
+      "keyword": "fire",
+      "color": "#FFFFFF",
+      "image": "/fixtures/emojis/fire.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 7,
+    "fields": {
+      "order": 6,
+      "keyword": "party",
+      "color": "#FFFFFF",
+      "image": "/fixtures/emojis/party.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 8,
+    "fields": {
+      "order": 5,
+      "keyword": "upset",
+      "color": "#FFFFFF",
+      "image": "/fixtures/emojis/upset.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 3,
+    "fields": {
+      "order": 3,
+      "keyword": "wow",
+      "color": "#FFFFFF",
+      "image": "/fixtures/emojis/wow.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 10,
+    "fields": {
+      "order": 2,
+      "keyword": "haha",
+      "color": "#FFFFFF",
+      "image": "/fixtures/emojis/haha.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   }

@@ -10,13 +10,13 @@ from openbook_common.validators import hex_color_validator
 
 
 class Emoji(models.Model):
-    name = models.CharField(_('name'), max_length=32, blank=False, null=False)
-    shortcut = models.CharField(_('shortcut'), max_length=16, blank=False, null=False)
+    keyword = models.CharField(_('keyword'), max_length=16, blank=False, null=False, unique=True)
     # Hex colour. #FFFFFF
     color = models.CharField(_('color'), max_length=COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
-                             validators=[hex_color_validator])
-    image = models.ImageField(_('image'), blank=False, null=False)
+                             validators=[hex_color_validator], unique=False)
+    image = models.ImageField(_('image'), blank=False, null=False, unique=True)
     created = models.DateTimeField(editable=False)
+    order = models.IntegerField(unique=False, default=100)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''

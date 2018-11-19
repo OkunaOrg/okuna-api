@@ -7,9 +7,9 @@ from openbook_common.models import Emoji
 class EmojiAdmin(admin.ModelAdmin):
     list_display = (
         'id',
-        'name',
+        'order',
         'created',
-        'shortcut',
+        'keyword',
         'color',
     )
 
