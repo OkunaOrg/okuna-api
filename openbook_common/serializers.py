@@ -8,6 +8,7 @@ class EmojiSerializer(serializers.ModelSerializer):
         model = Emoji
 
         fields = (
+            'id',
             'keyword',
             'color',
             'image',
@@ -27,6 +28,7 @@ class EmojiGroupSerializer(serializers.ModelSerializer):
         model = EmojiGroup
 
         fields = (
+            'id',
             'keyword',
             'color',
             'created',
