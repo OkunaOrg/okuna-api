@@ -144,10 +144,28 @@ class ReactToPostSerializer(serializers.Serializer):
     )
 
 
+class GetPostReactionsEmojiCountSerializer(serializers.Serializer):
+    post_id = serializers.IntegerField(
+        validators=[post_id_exists],
+        required=True,
+    )
+
+
 class GetPostReactionsSerializer(serializers.Serializer):
     post_id = serializers.IntegerField(
         validators=[post_id_exists],
         required=True,
+    )
+    max_id = serializers.IntegerField(
+        required=False,
+    )
+    count = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
+    emoji_id = serializers.IntegerField(
+        validators=[emoji_id_exists],
+        required=False,
     )
 
 

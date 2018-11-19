@@ -156,12 +156,16 @@ class User(AbstractUser):
     def has_lists_with_ids(self, lists_ids):
         return self.lists.filter(id__in=lists_ids).count() == len(lists_ids)
 
-    def get_comments_for_post(self, post, **kwargs):
-        return self.get_comments_for_post_with_id(post.pk, **kwargs)
-
-    def get_reactions_for_post_with_id(self, post_id):
+    def get_reactions_for_post_with_id(self, post_id, max_id=None, emoji_id=None):
         self._check_can_get_reactions_for_post_with_id(post_id)
         reactions_query = Q(post_id=post_id)
+
+        if max_id:
+            reactions_query.add(Q(id__lt=max_id), Q.AND)
+
+        if emoji_id:
+            reactions_query.add(Q(emoji_id=emoji_id), Q.AND)
+
         PostReaction = get_post_reaction_model()
         return PostReaction.objects.filter(reactions_query)
 

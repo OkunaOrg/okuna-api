@@ -7,7 +7,8 @@ from django.utils.translation import ugettext_lazy as _
 
 from openbook_posts.views.post.serializers import GetPostCommentsSerializer, PostCommentSerializer, \
     CommentPostSerializer, DeletePostCommentSerializer, DeletePostSerializer, DeletePostReactionSerializer, \
-    ReactToPostSerializer, PostReactionSerializer, GetPostReactionsSerializer, PostEmojiCountSerializer
+    ReactToPostSerializer, PostReactionSerializer, GetPostReactionsSerializer, PostEmojiCountSerializer, \
+    GetPostReactionsEmojiCountSerializer
 
 
 class PostItem(APIView):
@@ -111,6 +112,28 @@ class PostCommentItem(APIView):
 class PostReactions(APIView):
     permission_classes = (IsAuthenticated,)
 
+    def get(self, request, post_id):
+        request_data = self._get_request_data(request, post_id)
+
+        serializer = GetPostReactionsSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        post_id = data.get('post_id')
+        emoji_id = data.get('emoji_id')
+        max_id = data.get('max_id')
+        count = data.get('count', 10)
+        user = request.user
+
+        post_reactions = user.get_reactions_for_post_with_id(post_id=post_id, max_id=max_id,
+                                                             emoji_id=emoji_id).order_by(
+            '-created')[
+                         :count]
+
+        post_reactions_serializer = PostReactionSerializer(post_reactions, many=True, context={"request": request})
+
+        return Response(post_reactions_serializer.data, status=status.HTTP_200_OK)
+
     def put(self, request, post_id):
         request_data = self._get_request_data(request, post_id)
 
@@ -142,7 +165,7 @@ class PostReactionsEmojiCount(APIView):
     def get(self, request, post_id):
         request_data = self._get_request_data(request, post_id)
 
-        serializer = GetPostReactionsSerializer(data=request_data)
+        serializer = GetPostReactionsEmojiCountSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
