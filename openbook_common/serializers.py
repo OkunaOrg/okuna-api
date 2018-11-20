@@ -22,7 +22,9 @@ class EmojiGroupSerializer(serializers.ModelSerializer):
 
     def get_emojis(self, obj):
         emojis = obj.emojis.all().order_by('order')
-        return EmojiSerializer(emojis, many=True).data
+
+        request = self.context['request']
+        return EmojiSerializer(emojis, many=True, context={'request': request}).data
 
     class Meta:
         model = EmojiGroup

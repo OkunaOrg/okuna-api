@@ -41,6 +41,6 @@ class EmojiGroups(APIView):
     def get(self, request):
         EmojiGroup = get_emoji_group_model()
         emoji_groups = EmojiGroup.objects.all().order_by('order')
-        serializer = EmojiGroupSerializer(emoji_groups, many=True)
+        serializer = EmojiGroupSerializer(emoji_groups, many=True, context={'request': request})
 
         return Response(serializer.data, status=status.HTTP_200_OK)
