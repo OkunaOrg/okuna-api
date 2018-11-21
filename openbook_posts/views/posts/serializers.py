@@ -91,6 +91,7 @@ class PostReactionEmojiSerializer(serializers.ModelSerializer):
             'id',
             'color',
             'image',
+            'order'
         )
 
 

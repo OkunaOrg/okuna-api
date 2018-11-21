@@ -199,6 +199,8 @@ class User(AbstractUser):
                 'count': emoji_count
             })
 
+        emoji_counts.sort(key=lambda x: x['count'], reverse=True)
+
         return emoji_counts
 
     def react_to_post_with_id(self, post_id, emoji_id):
