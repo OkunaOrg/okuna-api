@@ -159,6 +159,12 @@ class User(AbstractUser):
     def has_reacted_to_post_with_id(self, post_id):
         return self.post_reactions.filter(post_id=post_id).count() > 0
 
+    def has_commented_post_with_id(self, post_id):
+        return self.posts_comments.filter(post_id=post_id).count() > 0
+
+    def get_reaction_for_post_with_id(self, post_id):
+        return self.post_reactions.filter(post_id=post_id).get()
+
     def get_reactions_for_post_with_id(self, post_id, max_id=None, emoji_id=None):
         self._check_can_get_reactions_for_post_with_id(post_id)
         reactions_query = Q(post_id=post_id)
