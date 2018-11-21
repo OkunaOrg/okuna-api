@@ -156,8 +156,13 @@ class User(AbstractUser):
     def has_lists_with_ids(self, lists_ids):
         return self.lists.filter(id__in=lists_ids).count() == len(lists_ids)
 
-    def has_reacted_to_post_with_id(self, post_id):
-        return self.post_reactions.filter(post_id=post_id).count() > 0
+    def has_reacted_to_post_with_id(self, post_id, emoji_id=None):
+        has_reacted_query = Q(post_id=post_id)
+
+        if emoji_id:
+            has_reacted_query.add(Q(emoji_id=emoji_id), Q.AND)
+
+        return self.post_reactions.filter(has_reacted_query).count() > 0
 
     def has_commented_post_with_id(self, post_id):
         return self.posts_comments.filter(post_id=post_id).count() > 0

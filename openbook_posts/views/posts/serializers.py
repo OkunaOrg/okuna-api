@@ -84,14 +84,35 @@ class PostReactionSerializer(serializers.ModelSerializer):
         )
 
 
+class PostReactionEmojiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Emoji
+        fields = (
+            'id',
+            'color',
+            'image',
+        )
+
+
+class PostEmojiCountSerializer(serializers.Serializer):
+    emoji = PostReactionEmojiSerializer(many=False)
+    count = serializers.IntegerField(required=True, )
+    reacted = serializers.SerializerMethodField()
+
+    def get_reacted(self, obj):
+        request = self.context['request']
+        post = self.context['post']
+        emoji = obj['emoji']
+        user = request.user
+        return user.has_reacted_to_post_with_id(post.pk, emoji_id=emoji.pk)
+
+
 class PostSerializer(serializers.ModelSerializer):
     image = PostImageSerializer(many=False)
     creator = PostCreatorSerializer(many=False)
     commented = serializers.SerializerMethodField()
     reacted = serializers.SerializerMethodField()
-    reaction = serializers.SerializerMethodField()
-
-    # reactions_emoji_count = serializers.SerializerMethodField()
+    reactions_emoji_counts = serializers.SerializerMethodField()
 
     def get_commented(self, obj):
         user = self.context['request'].user
@@ -101,25 +122,24 @@ class PostSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         return user.has_reacted_to_post_with_id(obj.pk)
 
-    def get_reaction(self, obj):
+    def get_reactions_emoji_counts(self, obj):
         request = self.context['request']
         user = request.user
-        try:
-            post_reaction = user.get_reaction_for_post_with_id(obj.pk)
-            return PostReactionSerializer(post_reaction, context={'request': request}).data
-        except PostReaction.DoesNotExist:
-            return None
+        post_emoji_counts = user.get_emoji_counts_for_post_with_id(obj.pk)
+        post_reactions_serializer = PostEmojiCountSerializer(post_emoji_counts, many=True,
+                                                             context={"request": request, 'post': obj})
+        return post_reactions_serializer.data
 
     class Meta:
         model = Post
         fields = (
             'id',
             'comments_count',
+            'reactions_emoji_counts',
             'created',
             'text',
             'image',
             'creator',
             'commented',
-            'reacted',
-            'reaction'
+            'reacted'
         )
