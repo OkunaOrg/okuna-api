@@ -103,18 +103,8 @@ class PostEmojiCountSerializer(serializers.Serializer):
 class PostSerializer(serializers.ModelSerializer):
     image = PostImageSerializer(many=False)
     creator = PostCreatorSerializer(many=False)
-    commented = serializers.SerializerMethodField()
-    reacted = serializers.SerializerMethodField()
     reactions_emoji_counts = serializers.SerializerMethodField()
     reaction = serializers.SerializerMethodField()
-
-    def get_commented(self, obj):
-        user = self.context['request'].user
-        return user.has_commented_post_with_id(obj.pk)
-
-    def get_reacted(self, obj):
-        user = self.context['request'].user
-        return user.has_reacted_to_post_with_id(obj.pk)
 
     def get_reaction(self, obj):
         request = self.context['request']
@@ -122,7 +112,7 @@ class PostSerializer(serializers.ModelSerializer):
 
         try:
             reaction = user.get_reaction_for_post_with_id(obj.pk)
-            return PostReactionSerializer(reaction).data
+            return PostReactionSerializer(reaction, context={'request': request}).data
         except PostReaction.DoesNotExist:
             return None
 
@@ -144,7 +134,5 @@ class PostSerializer(serializers.ModelSerializer):
             'text',
             'image',
             'creator',
-            'commented',
-            'reacted',
             'reaction'
         )
