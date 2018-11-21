@@ -6,7 +6,7 @@
       "order": 9,
       "group_id": 2,
       "keyword": "doge",
-      "color": "#FFFFFF",
+      "color": "#f1b01b",
       "image": "/fixtures/emojis/doge.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
@@ -18,7 +18,7 @@
       "group_id": 2,
       "order": 8,
       "keyword": "parrot",
-      "color": "#FFFFFF",
+      "color": "#000000",
       "image": "/fixtures/emojis/dancing_parrot.gif",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
@@ -30,7 +30,7 @@
       "group_id": 1,
       "order": 1,
       "keyword": "heart",
-      "color": "#FFFFFF",
+      "color": "#bd0043",
       "image": "/fixtures/emojis/like.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
@@ -42,7 +42,7 @@
       "group_id": 1,
       "order": 4,
       "keyword": "sad",
-      "color": "#FFFFFF",
+      "color": "#505050",
       "image": "/fixtures/emojis/sad.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
@@ -54,7 +54,7 @@
       "group_id": 2,
       "order": 7,
       "keyword": "fire",
-      "color": "#FFFFFF",
+      "color": "#e48200",
       "image": "/fixtures/emojis/fire.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
@@ -66,7 +66,7 @@
       "group_id": 1,
       "order": 6,
       "keyword": "party",
-      "color": "#FFFFFF",
+      "color": "#5200d4",
       "image": "/fixtures/emojis/party.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
@@ -78,7 +78,7 @@
       "group_id": 1,
       "order": 5,
       "keyword": "upset",
-      "color": "#FFFFFF",
+      "color": "#1b1b1b",
       "image": "/fixtures/emojis/upset.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
@@ -90,7 +90,7 @@
       "group_id": 2,
       "order": 3,
       "keyword": "wow",
-      "color": "#FFFFFF",
+      "color": "#00d546",
       "image": "/fixtures/emojis/wow.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
@@ -102,7 +102,7 @@
       "group_id": 1,
       "order": 2,
       "keyword": "haha",
-      "color": "#FFFFFF",
+      "color": "#0089f2",
       "image": "/fixtures/emojis/haha.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
