@@ -183,12 +183,18 @@ class User(AbstractUser):
         PostReaction = get_post_reaction_model()
         return PostReaction.objects.filter(reactions_query)
 
-    def get_emoji_counts_for_post_with_id(self, post_id):
+    def get_emoji_counts_for_post_with_id(self, post_id, emoji_id=None):
         self._check_can_get_reactions_for_post_with_id(post_id)
 
         PostReaction = get_post_reaction_model()
         Emoji = get_emoji_model()
-        emojis_reacted_with = Emoji.objects.filter(reactions__post_id=post_id).distinct()
+
+        emoji_query = Q(reactions__post_id=post_id)
+
+        if emoji_id:
+            emoji_query.add(Q(reactions__emoji_id=emoji_id), Q.AND)
+
+        emojis_reacted_with = Emoji.objects.filter(emoji_query).distinct()
 
         emoji_counts = []
 
