@@ -11,7 +11,7 @@ from rest_framework.authtoken.models import Token
 
 from openbook_common.responses import ApiMessageResponse
 from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheckSerializer, LoginSerializer, \
-    GetAuthenticatedUserSerializer, GetUserSerializer
+    GetAuthenticatedUserSerializer, GetUserSerializer, UpdateAuthenticatedUserSerializer
 from .models import UserProfile
 
 
@@ -97,6 +97,19 @@ class AuthenticatedUser(APIView):
 
     def get(self, request):
         user_serializer = GetAuthenticatedUserSerializer(request.user, context={"request": request})
+        return Response(user_serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request):
+        serializer = UpdateAuthenticatedUserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user = request.user
+
+        with transaction.atomic():
+            user.update(**data)
+
+        user_serializer = GetAuthenticatedUserSerializer(user, context={"request": request})
         return Response(user_serializer.data, status=status.HTTP_200_OK)
 
 

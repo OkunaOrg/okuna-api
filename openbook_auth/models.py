@@ -76,6 +76,49 @@ class User(AbstractUser):
         self.full_clean()
         return super(User, self).save(*args, **kwargs)
 
+    def update(self,
+               username=None,
+               password=None,
+               cover=None,
+               avatar=None,
+               name=None,
+               location=None,
+               birth_date=None,
+               bio=None,
+               followers_count_visible=None):
+
+        profile = self.profile
+
+        if username:
+            self.username = username
+
+        if password:
+            self.set_password(password)
+
+        if cover:
+            profile.cover = cover
+
+        if avatar:
+            profile.avatar = avatar
+
+        if name:
+            profile.name = name
+
+        if location:
+            profile.location = location
+
+        if birth_date:
+            profile.birth_date = birth_date
+
+        if bio:
+            profile.bio = bio
+
+        if followers_count_visible is not None:
+            profile.followers_count_visible = followers_count_visible
+
+        profile.save()
+        self.save()
+
     def is_fully_connected_with_user_with_id(self, user_id):
         if not self.is_connected_with_user_with_id(user_id):
             return False
@@ -761,13 +804,13 @@ def bootstrap_circles(sender, instance=None, created=False, **kwargs):
 
 
 class UserProfile(models.Model):
-    name = models.CharField(_('name'), max_length=192, blank=False, null=False)
-    location = models.CharField(_('name'), max_length=64, blank=False, null=True)
+    name = models.CharField(_('name'), max_length=settings.PROFILE_NAME_MAX_LENGTH, blank=False, null=False)
+    location = models.CharField(_('name'), max_length=settings.PROFILE_LOCATION_MAX_LENGTH, blank=False, null=True)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     birth_date = models.DateField(_('birth date'), null=False, blank=False)
     avatar = models.ImageField(_('avatar'), blank=False, null=True)
     cover = models.ImageField(_('cover'), blank=False, null=True)
-    bio = models.CharField(_('bio'), max_length=150, blank=False, null=True)
+    bio = models.CharField(_('bio'), max_length=settings.PROFILE_BIO_MAX_LENGTH, blank=False, null=True)
     followers_count_visible = models.BooleanField(_('followers count visible'), blank=False, null=False, default=False)
 
     class Meta:
