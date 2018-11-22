@@ -11,7 +11,7 @@ from rest_framework.authtoken.models import Token
 
 from openbook_common.responses import ApiMessageResponse
 from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheckSerializer, LoginSerializer, \
-    GetUserSerializer
+    GetAuthenticatedUserSerializer, GetUserSerializer
 from .models import UserProfile
 
 
@@ -92,9 +92,18 @@ class Login(APIView):
             raise AuthenticationFailed()
 
 
-class User(APIView):
+class AuthenticatedUser(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
-        user_serializer = GetUserSerializer(request.user, context={"request":request})
+        user_serializer = GetAuthenticatedUserSerializer(request.user, context={"request": request})
+        return Response(user_serializer.data, status=status.HTTP_200_OK)
+
+
+class User(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, user_id):
+        user = request.user.get_user_with_id(user_id)
+        user_serializer = GetUserSerializer(user, context={"request": request})
         return Response(user_serializer.data, status=status.HTTP_200_OK)

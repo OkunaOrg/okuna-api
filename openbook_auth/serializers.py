@@ -37,7 +37,7 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH)
 
 
-class GetUserProfileSerializer(serializers.ModelSerializer):
+class GetAuthenticatedUserProfileSerializer(serializers.ModelSerializer):
     avatar = serializers.ImageField(max_length=None, use_url=True, allow_null=True, required=False)
 
     class Meta:
@@ -50,8 +50,8 @@ class GetUserProfileSerializer(serializers.ModelSerializer):
         )
 
 
-class GetUserSerializer(serializers.ModelSerializer):
-    profile = GetUserProfileSerializer(many=False)
+class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
+    profile = GetAuthenticatedUserProfileSerializer(many=False)
 
     class Meta:
         model = User
@@ -61,5 +61,36 @@ class GetUserSerializer(serializers.ModelSerializer):
             'username',
             'profile',
             'posts_count',
+            'followers_count'
+        )
+
+
+class GetUserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = (
+            'name',
+            'avatar',
+            'location',
+            'cover',
+            'bio',
+        )
+
+
+class GetUserSerializer(serializers.ModelSerializer):
+    profile = GetUserProfileSerializer(many=False)
+    followers_count = serializers.SerializerMethodField()
+
+    def get_followers_count(self, obj):
+        if obj.profile.followers_count_visible:
+            return obj.followers_count
+        return None
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'username',
+            'profile',
             'followers_count'
         )

@@ -455,4 +455,4 @@ class UserAPITests(APITestCase):
         self.assertEqual(response_username, username)
 
     def _get_url(self):
-        return reverse('user')
+        return reverse('authenticated-user')
