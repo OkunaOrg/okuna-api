@@ -754,10 +754,14 @@ def bootstrap_circles(sender, instance=None, created=False, **kwargs):
 
 
 class UserProfile(models.Model):
-    name = models.CharField(_('name'), max_length=50, blank=False, null=False)
+    name = models.CharField(_('name'), max_length=192, blank=False, null=False)
+    location = models.CharField(_('name'), max_length=64, blank=False, null=True)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     birth_date = models.DateField(_('birth date'), null=False, blank=False)
-    avatar = models.ImageField(_('avatar'), blank=True, null=True)
+    avatar = models.ImageField(_('avatar'), blank=False, null=True)
+    cover = models.ImageField(_('cover'), blank=False, null=True)
+    bio = models.CharField(_('bio'), max_length=150, blank=False, null=True)
+    followers_count_visible = models.BooleanField(_('followers count visible'), blank=False, null=False, default=False)
 
     class Meta:
         verbose_name = _('user profile')
