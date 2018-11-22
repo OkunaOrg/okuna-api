@@ -1,13 +1,14 @@
 from django.db import transaction
 from rest_framework import status
-from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_posts.views.post.serializers import GetPostCommentsSerializer, PostCommentSerializer, \
-    CommentPostSerializer, DeletePostCommentSerializer, DeletePostSerializer
+    CommentPostSerializer, DeletePostCommentSerializer, DeletePostSerializer, DeletePostReactionSerializer, \
+    ReactToPostSerializer, PostReactionSerializer, GetPostReactionsSerializer, PostEmojiCountSerializer, \
+    GetPostReactionsEmojiCountSerializer
 
 
 class PostItem(APIView):
@@ -105,4 +106,107 @@ class PostCommentItem(APIView):
         request_data = request.data.copy()
         request_data['post_id'] = post_id
         request_data['post_comment_id'] = post_comment_id
+        return request_data
+
+
+class PostReactions(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, post_id):
+        request_data = self._get_request_data(request, post_id)
+
+        serializer = GetPostReactionsSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        post_id = data.get('post_id')
+        emoji_id = data.get('emoji_id')
+        max_id = data.get('max_id')
+        count = data.get('count', 10)
+        user = request.user
+
+        post_reactions = user.get_reactions_for_post_with_id(post_id=post_id, max_id=max_id,
+                                                             emoji_id=emoji_id).order_by(
+            '-created')[
+                         :count]
+
+        post_reactions_serializer = PostReactionSerializer(post_reactions, many=True, context={"request": request})
+
+        return Response(post_reactions_serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, post_id):
+        request_data = self._get_request_data(request, post_id)
+
+        serializer = ReactToPostSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        emoji_id = data.get('emoji_id')
+        post_id = data.get('post_id')
+        user = request.user
+
+        with transaction.atomic():
+            post_reaction = user.react_to_post_with_id(post_id=post_id, emoji_id=emoji_id)
+
+        post_reaction_serializer = PostReactionSerializer(post_reaction, context={"request": request})
+        return Response(post_reaction_serializer.data, status=status.HTTP_201_CREATED)
+
+    def _get_request_data(self, request, post_id):
+        request_data = request.data.copy()
+        query_params = request.query_params.dict()
+        request_data.update(query_params)
+        request_data['post_id'] = post_id
+        return request_data
+
+
+class PostReactionsEmojiCount(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, post_id):
+        request_data = self._get_request_data(request, post_id)
+
+        serializer = GetPostReactionsEmojiCountSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        post_id = data.get('post_id')
+        user = request.user
+
+        post_emoji_counts = user.get_emoji_counts_for_post_with_id(post_id)
+
+        post_reactions_serializer = PostEmojiCountSerializer(post_emoji_counts, many=True, context={"request": request})
+
+        return Response(post_reactions_serializer.data, status=status.HTTP_200_OK)
+
+    def _get_request_data(self, request, post_id):
+        request_data = request.data.copy()
+        query_params = request.query_params.dict()
+        request_data.update(query_params)
+        request_data['post_id'] = post_id
+        return request_data
+
+
+class PostReactionItem(APIView):
+    def delete(self, request, post_id, post_reaction_id):
+        request_data = self._get_request_data(request, post_id, post_reaction_id)
+
+        serializer = DeletePostReactionSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        post_id = data.get('post_id')
+        post_reaction_id = data.get('post_reaction_id')
+        user = request.user
+
+        with transaction.atomic():
+            user.delete_reaction_with_id_for_post_with_id(post_reaction_id=post_reaction_id, post_id=post_id, )
+
+        return Response({
+            'message': _('Reaction deleted')
+        }, status=status.HTTP_200_OK)
+
+    def _get_request_data(self, request, post_id, post_reaction_id):
+        request_data = request.data.copy()
+        request_data['post_id'] = post_id
+        request_data['post_reaction_id'] = post_reaction_id
         return request_data

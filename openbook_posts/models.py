@@ -49,11 +49,27 @@ class Post(models.Model):
     def reactions_count(self):
         return self.reactions.count()
 
+    def has_text(self):
+        if self.text:
+            return True
+        return False
+
+    def has_image(self):
+        if self.image:
+            return True
+        return False
+
     def comment(self, text, commenter):
         return PostComment.create_comment(text=text, commenter=commenter, post=self)
 
     def remove_comment_with_id(self, post_comment_id):
         self.comments.filter(id=post_comment_id).delete()
+
+    def react(self, reactor, emoji_id):
+        return PostReaction.create_reaction(reactor=reactor, emoji_id=emoji_id, post=self)
+
+    def remove_reaction_with_id(self, reaction_id):
+        self.reactions.filter(id=reaction_id).delete()
 
     def is_public_post(self):
         creator = self.creator
@@ -97,8 +113,15 @@ class PostComment(models.Model):
 class PostReaction(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='reactions')
     created = models.DateTimeField(editable=False)
-    reactor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reactions')
+    reactor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_reactions')
     emoji = models.ForeignKey(Emoji, on_delete=models.CASCADE, related_name='reactions')
+
+    class Meta:
+        unique_together = ('reactor', 'post',)
+
+    @classmethod
+    def create_reaction(cls, reactor, emoji_id, post):
+        return PostReaction.objects.create(reactor=reactor, emoji_id=emoji_id, post=post)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''

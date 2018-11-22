@@ -12,7 +12,7 @@ from django.db.models import Q
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
-    get_post_model, get_list_model, get_post_comment_model
+    get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, get_emoji_model
 
 
 class User(AbstractUser):
@@ -156,8 +156,78 @@ class User(AbstractUser):
     def has_lists_with_ids(self, lists_ids):
         return self.lists.filter(id__in=lists_ids).count() == len(lists_ids)
 
-    def get_comments_for_post(self, post, **kwargs):
-        return self.get_comments_for_post_with_id(post.pk, **kwargs)
+    def has_reacted_to_post_with_id(self, post_id, emoji_id=None):
+        has_reacted_query = Q(post_id=post_id)
+
+        if emoji_id:
+            has_reacted_query.add(Q(emoji_id=emoji_id), Q.AND)
+
+        return self.post_reactions.filter(has_reacted_query).count() > 0
+
+    def has_commented_post_with_id(self, post_id):
+        return self.posts_comments.filter(post_id=post_id).count() > 0
+
+    def get_reaction_for_post_with_id(self, post_id):
+        return self.post_reactions.filter(post_id=post_id).get()
+
+    def get_reactions_for_post_with_id(self, post_id, max_id=None, emoji_id=None):
+        self._check_can_get_reactions_for_post_with_id(post_id)
+        reactions_query = Q(post_id=post_id)
+
+        if max_id:
+            reactions_query.add(Q(id__lt=max_id), Q.AND)
+
+        if emoji_id:
+            reactions_query.add(Q(emoji_id=emoji_id), Q.AND)
+
+        PostReaction = get_post_reaction_model()
+        return PostReaction.objects.filter(reactions_query)
+
+    def get_emoji_counts_for_post_with_id(self, post_id, emoji_id=None):
+        self._check_can_get_reactions_for_post_with_id(post_id)
+
+        PostReaction = get_post_reaction_model()
+        Emoji = get_emoji_model()
+
+        emoji_query = Q(reactions__post_id=post_id)
+
+        if emoji_id:
+            emoji_query.add(Q(reactions__emoji_id=emoji_id), Q.AND)
+
+        emojis_reacted_with = Emoji.objects.filter(emoji_query).distinct()
+
+        emoji_counts = []
+
+        for emoji in emojis_reacted_with:
+            emoji_count = PostReaction.objects.filter(post_id=post_id, emoji_id=emoji.pk).count()
+            emoji_counts.append({
+                'emoji': emoji,
+                'count': emoji_count
+            })
+
+        emoji_counts.sort(key=lambda x: x['count'], reverse=True)
+
+        return emoji_counts
+
+    def react_to_post_with_id(self, post_id, emoji_id):
+        self._check_can_react_to_post_with_id(post_id)
+
+        if self.has_reacted_to_post_with_id(post_id):
+            post_reaction = self.post_reactions.get(post_id=post_id)
+            post_reaction.emoji_id = emoji_id
+            post_reaction.save()
+        else:
+            Post = get_post_model()
+            post = Post.objects.filter(pk=post_id).get()
+            post_reaction = post.react(reactor=self, emoji_id=emoji_id)
+
+        return post_reaction
+
+    def delete_reaction_with_id_for_post_with_id(self, post_reaction_id, post_id):
+        self._check_can_delete_reaction_with_id_for_post_with_id(post_reaction_id, post_id)
+        Post = get_post_model()
+        post = Post.objects.filter(pk=post_id).get()
+        post.remove_reaction_with_id(post_reaction_id)
 
     def get_comments_for_post_with_id(self, post_id, max_id=None):
         self._check_can_get_comments_for_post_with_id(post_id)
@@ -478,6 +548,28 @@ class User(AbstractUser):
         self._check_can_see_post_with_id(post_id)
 
     def _check_can_comment_in_post_with_id(self, post_id):
+        self._check_can_see_post_with_id(post_id)
+
+    def _check_can_delete_reaction_with_id_for_post_with_id(self, post_reaction_id, post_id):
+        # Check if the post belongs to us
+        if self.has_post_with_id(post_id):
+            # Check that the comment belongs to the post
+            PostReaction = get_post_reaction_model()
+            if PostReaction.objects.filter(id=post_reaction_id, post_id=post_id).count() == 0:
+                raise ValidationError(
+                    _('That reaction does not belong to the specified post.')
+                )
+            return
+
+        if self.post_reactions.filter(id=post_reaction_id).count() == 0:
+            raise ValidationError(
+                _('Can\'t delete a reaction that does not belong to you.'),
+            )
+
+    def _check_can_get_reactions_for_post_with_id(self, post_id):
+        self._check_can_see_post_with_id(post_id)
+
+    def _check_can_react_to_post_with_id(self, post_id):
         self._check_can_see_post_with_id(post_id)
 
     def _check_can_see_post_with_id(self, post_id):

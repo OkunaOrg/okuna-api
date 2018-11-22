@@ -1,8 +1,12 @@
 from django.utils.timezone import get_current_timezone
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils import timezone
+
+from openbook_common.serializers import EmojiGroupSerializer
+from openbook_common.utils.model_loaders import get_emoji_group_model
 
 
 class Time(APIView):
@@ -22,9 +26,21 @@ class Time(APIView):
 
 class Health(APIView):
     """
-    API
+    API for checking the app health
     """
+
     def get(self, request):
         return Response({
             'message': 'Todo muy bueno!'
         })
+
+
+class EmojiGroups(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        EmojiGroup = get_emoji_group_model()
+        emoji_groups = EmojiGroup.objects.all().order_by('order')
+        serializer = EmojiGroupSerializer(emoji_groups, many=True, context={'request': request})
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
