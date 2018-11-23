@@ -21,3 +21,10 @@ def emoji_id_exists(list_id):
         raise ValidationError(
             _('No emoji with the provided id exists.'),
         )
+
+
+def name_characters_validator(name):
+    if '>' in name or '<' in name:
+        raise ValidationError(
+            _('Names cant contain < or >.'),
+        )

@@ -53,7 +53,7 @@ class RegistrationAPITests(APITestCase):
         should return 400 if the name is not valid
         """
         url = self._get_url()
-        invalid_names = ('Joel!', 'Joel_', 'Joel@', 'Joel ✨', 'Joel 字', 'Joel -!')
+        invalid_names = ('Joel<', '<>', '',)
         for name in invalid_names:
             data = {
                 'username': 'lifenautjoe',
