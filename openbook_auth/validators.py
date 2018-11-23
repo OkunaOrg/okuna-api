@@ -13,13 +13,6 @@ def username_characters_validator(username):
         )
 
 
-def name_characters_validator(name):
-    if not re.match('^[a-zA-Z0-9 ]*$', name):
-        raise ValidationError(
-            _('Names can only contain alphanumeric characters and spaces.'),
-        )
-
-
 def username_not_taken_validator(username):
     if User.is_username_taken(username):
         raise ValidationError(
