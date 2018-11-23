@@ -668,3 +668,33 @@ class AuthenticatedUserAPITests(APITestCase):
 
     def _get_url(self):
         return reverse('authenticated-user')
+
+
+class UserAPITests(APITestCase):
+    """
+    UserAPI
+    """
+
+    def test_can_retrieve_user(self):
+        """
+        should be able to retrieve a user when authenticated and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertIn('uuid', parsed_response)
+        response_uuid = parsed_response['uuid']
+        self.assertEqual(response_uuid, str(user.uuid))
+
+    def _get_url(self, user):
+        return reverse('user', kwargs={
+            'user_uuid': user.uuid
+        })

@@ -117,6 +117,7 @@ class GetUserSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             'id',
+            'uuid',
             'username',
             'profile',
             'followers_count'

@@ -1,3 +1,4 @@
+import uuid as uuid
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
 from django.db import models
 from django.contrib.auth.models import AbstractUser
@@ -21,6 +22,7 @@ class User(AbstractUser):
     Custom user model to change behaviour of the default user model
     such as validation and required fields.
     """
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     first_name = None
     last_name = None
     email = models.EmailField(_('email address'), unique=True, null=False, blank=False)
@@ -214,9 +216,9 @@ class User(AbstractUser):
     def get_reaction_for_post_with_id(self, post_id):
         return self.post_reactions.filter(post_id=post_id).get()
 
-    def get_user_with_id(self, user_id):
-        self._check_can_see_user_with_id(user_id)
-        return User.objects.get(pk=user_id)
+    def get_user_with_uuid(self, user_uuid):
+        self._check_can_see_user_with_uuid(user_uuid)
+        return User.objects.get(uuid=user_uuid)
 
     def get_reactions_for_post_with_id(self, post_id, max_id=None, emoji_id=None):
         self._check_can_get_reactions_for_post_with_id(post_id)
@@ -576,7 +578,7 @@ class User(AbstractUser):
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
 
-    def _check_can_see_user_with_id(self, user_id):
+    def _check_can_see_user_with_uuid(self, user_uuid):
         return True
 
     def _check_can_delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
