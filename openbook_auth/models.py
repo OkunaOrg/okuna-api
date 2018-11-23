@@ -65,6 +65,21 @@ class User(AbstractUser):
         except User.DoesNotExist:
             return False
 
+    @classmethod
+    def get_public_posts_for_user_with_username(cls, username, max_id=None):
+
+        user = cls.objects.get(username=username)
+
+        final_query = Q(creator__username=username, circles__id=user.world_circle_id)
+
+        if max_id:
+            final_query.add(Q(id__lt=max_id), Q.AND)
+
+        Post = get_post_model()
+        result = Post.objects.filter(final_query)
+
+        return result
+
     @property
     def posts_count(self):
         return self.posts.count()
@@ -221,6 +236,11 @@ class User(AbstractUser):
     def get_reactions_for_post_with_id(self, post_id, max_id=None, emoji_id=None):
         self._check_can_get_reactions_for_post_with_id(post_id)
         reactions_query = Q(post_id=post_id)
+        Post = get_post_model()
+
+        # If reactions are private, return only own reactions
+        if not Post.post_with_id_has_public_reactions(post_id):
+            reactions_query = Q(reactor_id=self.pk)
 
         if max_id:
             reactions_query.add(Q(id__lt=max_id), Q.AND)
@@ -231,31 +251,30 @@ class User(AbstractUser):
         PostReaction = get_post_reaction_model()
         return PostReaction.objects.filter(reactions_query)
 
-    def get_emoji_counts_for_post_with_id(self, post_id, emoji_id=None):
-        self._check_can_get_reactions_for_post_with_id(post_id)
+    def get_reactions_count_for_post_with_id(self, post_id):
+        commenter_id = None
+
+        Post = get_post_model()
+
+        # If reactions are private, count only own reactions
+        if not Post.post_with_id_has_public_reactions(post_id):
+            commenter_id = self.pk
 
         PostReaction = get_post_reaction_model()
-        Emoji = get_emoji_model()
 
-        emoji_query = Q(reactions__post_id=post_id)
+        return PostReaction.count_reactions_for_post_with_id(post_id, commenter_id=commenter_id)
 
-        if emoji_id:
-            emoji_query.add(Q(reactions__emoji_id=emoji_id), Q.AND)
+    def get_emoji_counts_for_post_with_id(self, post_id, emoji_id=None):
+        self._check_can_get_reactions_for_post_with_id(post_id)
+        Post = get_post_model()
 
-        emojis_reacted_with = Emoji.objects.filter(emoji_query).distinct()
+        reactor_id = None
 
-        emoji_counts = []
+        # If reactions are private count only own reactions
+        if not Post.post_with_id_has_public_reactions(post_id):
+            reactor_id = self.pk
 
-        for emoji in emojis_reacted_with:
-            emoji_count = PostReaction.objects.filter(post_id=post_id, emoji_id=emoji.pk).count()
-            emoji_counts.append({
-                'emoji': emoji,
-                'count': emoji_count
-            })
-
-        emoji_counts.sort(key=lambda x: x['count'], reverse=True)
-
-        return emoji_counts
+        return Post.get_emoji_counts_for_post_with_id(post_id, emoji_id=emoji_id, reactor_id=reactor_id)
 
     def react_to_post_with_id(self, post_id, emoji_id):
         self._check_can_react_to_post_with_id(post_id)
@@ -281,11 +300,30 @@ class User(AbstractUser):
         self._check_can_get_comments_for_post_with_id(post_id)
         comments_query = Q(post_id=post_id)
 
+        Post = get_post_model()
+
+        # If comments are private, return only own comments
+        if not Post.post_with_id_has_public_comments(post_id):
+            comments_query = Q(commenter_id=self.pk)
+
         if max_id:
             comments_query.add(Q(id__lt=max_id), Q.AND)
 
         PostComment = get_post_comment_model()
         return PostComment.objects.filter(comments_query)
+
+    def get_comments_count_for_post_with_id(self, post_id):
+        commenter_id = None
+
+        Post = get_post_model()
+
+        # If comments are private, count only own comments
+        if not Post.post_with_id_has_public_comments(post_id):
+            commenter_id = self.pk
+
+        PostComment = get_post_comment_model()
+
+        return PostComment.count_comments_for_post_with_id(post_id, commenter_id=commenter_id)
 
     def comment_post_with_id(self, post_id, text):
         self._check_can_comment_in_post_with_id(post_id)
@@ -401,7 +439,7 @@ class User(AbstractUser):
     def update_post_with_id(self, post_id):
         pass
 
-    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None, post_id=None):
+    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None, post_id=None, username=None):
 
         queries = []
 
@@ -465,6 +503,9 @@ class User(AbstractUser):
             final_query.add(Q(id__lt=max_id), Q.AND)
         elif post_id:
             final_query.add(Q(id=post_id), Q.AND)
+
+        if username:
+            final_query.add(Q(creator__username=username), Q.AND)
 
         Post = get_post_model()
         result = Post.objects.filter(final_query)
@@ -630,6 +671,7 @@ class User(AbstractUser):
         if post.is_public_post():
             return
 
+        # Check if post appears in our timeline
         if self.get_timeline_posts(post_id=post_id).count() == 0:
             raise ValidationError(
                 _('This post is private.'),

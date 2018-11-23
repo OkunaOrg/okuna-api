@@ -1,6 +1,7 @@
 # Create your models here.
 from django.core.files.storage import default_storage
 from django.db import models
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
@@ -12,12 +13,23 @@ from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
 from openbook_common.models import Emoji
+from openbook_common.utils.model_loaders import get_post_reaction_model, get_emoji_model, get_post_comment_model
 
 
 class Post(models.Model):
     text = models.CharField(_('text'), max_length=settings.POST_MAX_LENGTH, blank=False, null=True)
     created = models.DateTimeField(editable=False)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
+    public_comments = models.BooleanField(_('public comments'), default=True, editable=False, null=False)
+    public_reactions = models.BooleanField(_('public reactions'), default=True, editable=False, null=False)
+
+    @classmethod
+    def post_with_id_has_public_comments(cls, post_id):
+        return Post.objects.filter(pk=post_id, public_comments=True).count() == 1
+
+    @classmethod
+    def post_with_id_has_public_reactions(cls, post_id):
+        return Post.objects.filter(pk=post_id, public_reactions=True).count() == 1
 
     @classmethod
     def create_post(cls, creator, circles_ids, **kwargs):
@@ -41,13 +53,41 @@ class Post(models.Model):
 
         return post
 
-    @property
-    def comments_count(self):
-        return self.comments.count()
+    @classmethod
+    def get_emoji_counts_for_post_with_id(cls, post_id, emoji_id=None, reactor_id=None):
+        PostReaction = get_post_reaction_model()
+        Emoji = get_emoji_model()
 
-    @property
-    def reactions_count(self):
-        return self.reactions.count()
+        emoji_query = Q(reactions__post_id=post_id)
+
+        if emoji_id:
+            emoji_query.add(Q(reactions__emoji_id=emoji_id), Q.AND)
+
+        emojis_reacted_with = Emoji.objects.filter(emoji_query).distinct()
+
+        emoji_counts = []
+
+        for emoji in emojis_reacted_with:
+            reaction_query = Q(post_id=post_id, emoji_id=emoji.pk)
+
+            if reactor_id:
+                reaction_query.add(Q(reactor_id=reactor_id), Q.AND)
+
+            emoji_count = PostReaction.objects.filter(reaction_query).count()
+            emoji_counts.append({
+                'emoji': emoji,
+                'count': emoji_count
+            })
+
+        emoji_counts.sort(key=lambda x: x['count'], reverse=True)
+
+        return emoji_counts
+
+    def count_comments(self, commenter_id=None):
+        return PostComment.count_comments_for_post_with_id(self.pk, commenter_id=commenter_id)
+
+    def count_reactions(self, reactor_id=None):
+        return PostReaction.count_reactions_for_post_with_id(self.pk, reactor_id=reactor_id)
 
     def has_text(self):
         if self.text:
@@ -103,6 +143,15 @@ class PostComment(models.Model):
     def create_comment(cls, text, commenter, post):
         return PostComment.objects.create(text=text, commenter=commenter, post=post)
 
+    @classmethod
+    def count_comments_for_post_with_id(cls, post_id, commenter_id=None):
+        count_query = Q(pk=post_id)
+
+        if commenter_id:
+            count_query.add(Q(commenter_id=commenter_id), Q.AND)
+
+        return cls.objects.filter(count_query).count()
+
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
         if not self.id:
@@ -122,6 +171,15 @@ class PostReaction(models.Model):
     @classmethod
     def create_reaction(cls, reactor, emoji_id, post):
         return PostReaction.objects.create(reactor=reactor, emoji_id=emoji_id, post=post)
+
+    @classmethod
+    def count_reactions_for_post_with_id(cls, post_id, reactor_id=None):
+        count_query = Q(pk=post_id)
+
+        if reactor_id:
+            count_query.add(Q(reactor_id=reactor_id), Q.AND)
+
+        return cls.objects.filter(count_query).count()
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
