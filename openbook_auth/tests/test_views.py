@@ -690,11 +690,11 @@ class UserAPITests(APITestCase):
 
         parsed_response = json.loads(response.content)
 
-        self.assertIn('uuid', parsed_response)
-        response_uuid = parsed_response['uuid']
-        self.assertEqual(response_uuid, str(user.uuid))
+        self.assertIn('username', parsed_response)
+        response_username = parsed_response['username']
+        self.assertEqual(response_username, user.username)
 
     def _get_url(self, user):
         return reverse('user', kwargs={
-            'user_uuid': user.uuid
+            'user_username': user.username
         })

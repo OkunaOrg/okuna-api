@@ -36,7 +36,7 @@ auth_patterns = [
     path('username-check/', UsernameCheck.as_view(), name='username-check'),
     path('email-check/', EmailCheck.as_view(), name='email-check'),
     path('user/', AuthenticatedUser.as_view(), name='authenticated-user'),
-    path('users/<uuid:user_uuid>/', User.as_view(), name='user'),
+    path('users/<str:user_username>/', User.as_view(), name='user'),
 ]
 
 post_patterns = [

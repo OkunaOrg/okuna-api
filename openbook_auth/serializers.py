@@ -4,7 +4,7 @@ from django.conf import settings
 from openbook.settings import USERNAME_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, PROFILE_NAME_MAX_LENGTH
 from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import username_characters_validator, \
-    username_not_taken_validator, email_not_taken_validator
+    username_not_taken_validator, email_not_taken_validator, user_username_exists
 from django.contrib.auth.password_validation import validate_password
 
 from openbook_common.validators import name_characters_validator
@@ -92,7 +92,14 @@ class UpdateAuthenticatedUserSerializer(serializers.Serializer):
                                      allow_blank=False)
 
 
-class GetUserProfileSerializer(serializers.ModelSerializer):
+class GetUserSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=USERNAME_MAX_LENGTH,
+                                     allow_blank=False,
+                                     validators=[username_characters_validator, user_username_exists],
+                                     required=True)
+
+
+class GetUserUserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = (
@@ -104,8 +111,8 @@ class GetUserProfileSerializer(serializers.ModelSerializer):
         )
 
 
-class GetUserSerializer(serializers.ModelSerializer):
-    profile = GetUserProfileSerializer(many=False)
+class GetUserUserSerializer(serializers.ModelSerializer):
+    profile = GetUserUserProfileSerializer(many=False)
     followers_count = serializers.SerializerMethodField()
 
     def get_followers_count(self, obj):
@@ -117,7 +124,6 @@ class GetUserSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             'id',
-            'uuid',
             'username',
             'profile',
             'followers_count'

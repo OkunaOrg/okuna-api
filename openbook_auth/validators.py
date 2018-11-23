@@ -34,3 +34,11 @@ def user_id_exists(user_id):
         raise ValidationError(
             _('No user with the provided id exists.'),
         )
+
+
+def user_username_exists(username):
+    count = User.objects.filter(username=username).count()
+    if count == 0:
+        raise ValidationError(
+            _('No user with the provided username exists.'),
+        )
