@@ -403,6 +403,9 @@ class User(AbstractUser):
     def create_public_post(self, text=None, image=None):
         return self.create_post(text=text, image=image, circle_id=self.world_circle_id)
 
+    def create_encircled_post(self, circles_ids, text=None, image=None):
+        return self.create_post(text=text, image=image, circles_ids=circles_ids)
+
     def create_post(self, text, circles_ids=None, circles=None, circle=None, circle_id=None, **kwargs):
         if circles:
             circles_ids = [circle.pk for circle in circles]
