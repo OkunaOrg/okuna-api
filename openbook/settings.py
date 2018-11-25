@@ -221,6 +221,8 @@ REST_FRAMEWORK = {
     )
 }
 
+UNICODE_JSON = True
+
 # The sentry DSN for error reporting
 SENTRY_DSN = os.environ.get('SENTRY_DSN')
 if IS_PRODUCTION:

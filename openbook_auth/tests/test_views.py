@@ -666,6 +666,29 @@ class AuthenticatedUserAPITests(APITestCase):
 
         self.assertIsNotNone(user.profile.cover)
 
+    def test_can_update_user_url(self):
+        """
+        should be able to update the authenticated user url and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        new_url = fake.url()
+
+        data = {
+            'url': new_url
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertEqual(new_url, user.profile.url)
+
     def _get_url(self):
         return reverse('authenticated-user')
 

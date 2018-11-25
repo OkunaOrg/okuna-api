@@ -101,6 +101,7 @@ class User(AbstractUser):
                location=None,
                birth_date=None,
                bio=None,
+               url=None,
                followers_count_visible=None):
 
         profile = self.profile
@@ -116,6 +117,9 @@ class User(AbstractUser):
 
         if avatar:
             profile.avatar = avatar
+
+        if url:
+            profile.url = url
 
         if name:
             profile.name = name
@@ -858,6 +862,7 @@ class UserProfile(models.Model):
     avatar = models.ImageField(_('avatar'), blank=False, null=True)
     cover = models.ImageField(_('cover'), blank=False, null=True)
     bio = models.CharField(_('bio'), max_length=settings.PROFILE_BIO_MAX_LENGTH, blank=False, null=True)
+    url = models.URLField(_('url'), blank=False, null=True)
     followers_count_visible = models.BooleanField(_('followers count visible'), blank=False, null=False, default=False)
 
     class Meta:
