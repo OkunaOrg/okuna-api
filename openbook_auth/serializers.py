@@ -137,6 +137,8 @@ class GetUserUserSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
 
         if not request.user.is_anonymous:
+            if request.user.pk == obj.pk:
+                return obj.count_posts()
             return obj.count_posts_for_user_with_id(request.user.pk)
 
         return obj.count_public_posts()
