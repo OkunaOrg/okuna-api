@@ -133,6 +133,17 @@ class GetUserUserSerializer(serializers.ModelSerializer):
     followers_count = serializers.SerializerMethodField()
     following_count = serializers.SerializerMethodField()
     posts_count = serializers.SerializerMethodField()
+    is_following = serializers.SerializerMethodField()
+
+    def get_is_following(self, obj):
+        request = self.context.get('request')
+
+        if not request.user.is_anonymous:
+            if request.user.pk == obj.pk:
+                return None
+            return request.user.is_following_user_with_id(obj.pk)
+
+        return False
 
     def get_following_count(self, obj):
         return obj.count_following()
@@ -160,5 +171,6 @@ class GetUserUserSerializer(serializers.ModelSerializer):
             'profile',
             'followers_count',
             'following_count',
-            'posts_count'
+            'posts_count',
+            'is_following',
         )

@@ -208,7 +208,7 @@ class User(AbstractUser):
         return self.is_following_user_with_id(user.pk)
 
     def is_following_user_with_id(self, user_id):
-        return self.follows.filter(followed_user_id=user_id).count() > 0
+        return self.follows.filter(followed_user__id=user_id).count() > 0
 
     def is_following_user_in_list(self, user, list):
         return self.is_following_user_with_id_in_list_with_id(user.pk, list.pk)
