@@ -50,6 +50,7 @@ class GetAuthenticatedUserProfileSerializer(serializers.ModelSerializer):
             'name',
             'avatar',
             'bio',
+            'url',
             'location',
             'cover',
             'birth_date',
@@ -110,17 +111,27 @@ class GetUserUserProfileSerializer(serializers.ModelSerializer):
             'location',
             'cover',
             'bio',
+            'url'
         )
 
 
 class GetUserUserSerializer(serializers.ModelSerializer):
     profile = GetUserUserProfileSerializer(many=False)
     followers_count = serializers.SerializerMethodField()
+    posts_count = serializers.SerializerMethodField()
 
     def get_followers_count(self, obj):
         if obj.profile.followers_count_visible:
             return obj.followers_count
         return None
+
+    def get_posts_count(self, obj):
+        request = self.context.get('request')
+
+        if not request.user.is_anonymous:
+            return obj.count_posts_for_user_with_id(request.user.pk)
+
+        return obj.count_public_posts()
 
     class Meta:
         model = User
@@ -128,5 +139,6 @@ class GetUserUserSerializer(serializers.ModelSerializer):
             'id',
             'username',
             'profile',
-            'followers_count'
+            'followers_count',
+            'posts_count'
         )

@@ -80,12 +80,34 @@ class User(AbstractUser):
 
         return result
 
-    @property
-    def posts_count(self):
+    @classmethod
+    def get_user_with_username(cls, user_username):
+        return cls.objects.get(username=user_username)
+
+    def count_posts(self):
         return self.posts.count()
 
-    @property
-    def followers_count(self):
+    def count_public_posts(self):
+        """
+        Count how many public posts has the user created
+        :return:
+        """
+        return self.posts.filter(circles__id=self.world_circle_id).count()
+
+    def count_posts_for_user_with_id(self, id):
+        """
+        Count how many posts has the user created relative to another user
+        :param id:
+        :return: count
+        """
+        user = User.objects.get(pk=id)
+        if user.is_connected_with_user_with_id(self.pk):
+            count = user.get_timeline_posts(username=self.username).count()
+        else:
+            count = self.count_public_posts()
+        return count
+
+    def count_followers(self):
         return self.follows.count()
 
     def save(self, *args, **kwargs):
@@ -182,7 +204,7 @@ class User(AbstractUser):
         return self.is_following_user_with_id(user.pk)
 
     def is_following_user_with_id(self, user_id):
-        return self.follows.filter(followed_user_id=user_id)
+        return self.follows.filter(followed_user_id=user_id).count() > 0
 
     def is_following_user_in_list(self, user, list):
         return self.is_following_user_with_id_in_list_with_id(user.pk, list.pk)
@@ -232,10 +254,6 @@ class User(AbstractUser):
 
     def get_reaction_for_post_with_id(self, post_id):
         return self.post_reactions.filter(post_id=post_id).get()
-
-    def get_user_with_username(self, user_username):
-        self._check_can_see_user_with_username(user_username)
-        return User.objects.get(username=user_username)
 
     def get_reactions_for_post_with_id(self, post_id, max_id=None, emoji_id=None):
         self._check_can_get_reactions_for_post_with_id(post_id)
@@ -623,9 +641,6 @@ class User(AbstractUser):
 
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
-
-    def _check_can_see_user_with_username(self, user_username):
-        return True
 
     def _check_can_delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
         # Check if the post belongs to us

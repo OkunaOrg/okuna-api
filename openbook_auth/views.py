@@ -123,7 +123,9 @@ class User(APIView):
         data = serializer.validated_data
         username = data.get('username')
 
-        user = request.user.get_user_with_username(username)
+        User = get_user_model()
+
+        user = User.get_user_with_username(username)
         user_serializer = GetUserUserSerializer(user, context={"request": request})
 
         return Response(user_serializer.data, status=status.HTTP_200_OK)
