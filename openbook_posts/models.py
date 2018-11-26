@@ -145,7 +145,7 @@ class PostComment(models.Model):
 
     @classmethod
     def count_comments_for_post_with_id(cls, post_id, commenter_id=None):
-        count_query = Q(pk=post_id)
+        count_query = Q(post_id=post_id)
 
         if commenter_id:
             count_query.add(Q(commenter_id=commenter_id), Q.AND)
@@ -174,7 +174,7 @@ class PostReaction(models.Model):
 
     @classmethod
     def count_reactions_for_post_with_id(cls, post_id, reactor_id=None):
-        count_query = Q(pk=post_id)
+        count_query = Q(post_id=post_id)
 
         if reactor_id:
             count_query.add(Q(reactor_id=reactor_id), Q.AND)
