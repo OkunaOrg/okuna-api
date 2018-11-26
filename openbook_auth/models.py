@@ -108,6 +108,10 @@ class User(AbstractUser):
         return count
 
     def count_followers(self):
+        Follow = get_follow_model()
+        return Follow.objects.filter(followed_user__id=self.pk).count()
+
+    def count_following(self):
         return self.follows.count()
 
     def save(self, *args, **kwargs):

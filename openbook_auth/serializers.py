@@ -62,6 +62,10 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
     profile = GetAuthenticatedUserProfileSerializer(many=False)
     posts_count = serializers.SerializerMethodField()
     followers_count = serializers.SerializerMethodField()
+    following_count = serializers.SerializerMethodField()
+
+    def get_following_count(self, obj):
+        return obj.count_following()
 
     def get_followers_count(self, obj):
         return obj.count_followers()
@@ -77,7 +81,8 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
             'username',
             'profile',
             'posts_count',
-            'followers_count'
+            'followers_count',
+            'following_count'
         )
 
 
@@ -126,11 +131,15 @@ class GetUserUserProfileSerializer(serializers.ModelSerializer):
 class GetUserUserSerializer(serializers.ModelSerializer):
     profile = GetUserUserProfileSerializer(many=False)
     followers_count = serializers.SerializerMethodField()
+    following_count = serializers.SerializerMethodField()
     posts_count = serializers.SerializerMethodField()
+
+    def get_following_count(self, obj):
+        return obj.count_following()
 
     def get_followers_count(self, obj):
         if obj.profile.followers_count_visible:
-            return obj.followers_count
+            return obj.count_followers()
         return None
 
     def get_posts_count(self, obj):
@@ -150,5 +159,6 @@ class GetUserUserSerializer(serializers.ModelSerializer):
             'username',
             'profile',
             'followers_count',
+            'following_count',
             'posts_count'
         )
