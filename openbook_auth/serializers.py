@@ -60,6 +60,14 @@ class GetAuthenticatedUserProfileSerializer(serializers.ModelSerializer):
 
 class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
     profile = GetAuthenticatedUserProfileSerializer(many=False)
+    posts_count = serializers.SerializerMethodField()
+    followers_count = serializers.SerializerMethodField()
+
+    def get_followers_count(self, obj):
+        return obj.count_followers()
+
+    def get_posts_count(self, obj):
+        return obj.count_posts()
 
     class Meta:
         model = User
