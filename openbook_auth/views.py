@@ -126,6 +126,15 @@ class User(APIView):
         User = get_user_model()
 
         user = User.get_user_with_username(username)
-        user_serializer = GetUserUserSerializer(user, context={"request": request})
+
+        user_serializer = None
+
+        if not request.user.is_anonymous:
+            authenticated_user = request.user
+            if authenticated_user.username == user_username:
+                user_serializer = GetAuthenticatedUserSerializer(user, context={"request": request})
+
+        if not user_serializer:
+            user_serializer = GetUserUserSerializer(user, context={"request": request})
 
         return Response(user_serializer.data, status=status.HTTP_200_OK)
