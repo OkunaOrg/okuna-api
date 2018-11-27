@@ -118,11 +118,31 @@ class User(AbstractUser):
         self.full_clean()
         return super(User, self).save(*args, **kwargs)
 
+    def update_profile_cover(self, cover):
+        if cover is None:
+            self.delete_profile_cover()
+        else:
+            self.profile.cover = cover
+
+        self.save()
+
+    def delete_profile_cover(self):
+        self.profile.cover.delete(save=True)
+
+    def update_profile_avatar(self, avatar):
+        if avatar is None:
+            self.delete_profile_avatar()
+        else:
+            self.profile.avatar = avatar
+
+        self.save()
+
+    def delete_profile_avatar(self):
+        self.profile.avatar.delete(save=True)
+
     def update(self,
                username=None,
                password=None,
-               cover=None,
-               avatar=None,
                name=None,
                location=None,
                birth_date=None,
@@ -137,12 +157,6 @@ class User(AbstractUser):
 
         if password:
             self.set_password(password)
-
-        if cover:
-            profile.cover = cover
-
-        if avatar:
-            profile.avatar = avatar
 
         if url:
             profile.url = url

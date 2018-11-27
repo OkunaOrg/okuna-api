@@ -107,7 +107,32 @@ class AuthenticatedUser(APIView):
         user = request.user
 
         with transaction.atomic():
-            user.update(**data)
+            user.update(
+                username=data.get('username'),
+                password=data.get('password'),
+                name=data.get('name'),
+                location=data.get('location'),
+                birth_date=data.get('birth_date'),
+                bio=data.get('bio'),
+                url=data.get('url'),
+                followers_count_visible=data.get('followers_count_visible')
+            )
+
+            has_avatar = 'avatar' in data
+            if has_avatar:
+                avatar = data.get('avatar')
+                if avatar is None:
+                    user.delete_profile_avatar()
+                else:
+                    user.update_profile_avatar(avatar)
+
+            has_cover = 'cover' in data
+            if has_cover:
+                cover = data.get('cover')
+                if cover is None:
+                    user.delete_profile_cover()
+                else:
+                    user.update_profile_cover(cover)
 
         user_serializer = GetAuthenticatedUserSerializer(user, context={"request": request})
         return Response(user_serializer.data, status=status.HTTP_200_OK)

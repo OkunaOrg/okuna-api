@@ -91,8 +91,8 @@ class UpdateAuthenticatedUserSerializer(serializers.Serializer):
                                      allow_blank=False,
                                      validators=[username_characters_validator, username_not_taken_validator],
                                      required=False)
-    avatar = serializers.ImageField(allow_empty_file=False, required=False, allow_null=False)
-    cover = serializers.ImageField(allow_empty_file=False, required=False, allow_null=False)
+    avatar = serializers.ImageField(allow_empty_file=False, required=False, allow_null=True)
+    cover = serializers.ImageField(allow_empty_file=False, required=False, allow_null=True)
     password = serializers.CharField(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH,
                                      validators=[validate_password], required=False, allow_blank=False)
     birth_date = serializers.DateField(input_formats=["%d-%m-%Y"], required=False, allow_null=False)

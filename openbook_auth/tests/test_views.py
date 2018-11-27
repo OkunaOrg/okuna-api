@@ -643,6 +643,31 @@ class AuthenticatedUserAPITests(APITestCase):
 
         self.assertIsNotNone(user.profile.avatar)
 
+    def test_can_delete_user_avatar(self):
+        """
+        should be able to delete the authenticated user avatar and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user.profile.avatar = make_user_avatar()
+
+        user.save()
+
+        data = {
+            'avatar': ''
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertTrue(not user.profile.avatar)
+
     def test_can_update_user_cover(self):
         """
         should be able to update the authenticated user cover and return 200
@@ -665,6 +690,31 @@ class AuthenticatedUserAPITests(APITestCase):
         user.refresh_from_db()
 
         self.assertIsNotNone(user.profile.cover)
+
+    def test_can_delete_user_cover(self):
+        """
+        should be able to delete the authenticated user cover and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user.profile.cover = make_user_cover()
+
+        user.save()
+
+        data = {
+            'cover': ''
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertTrue(not user.profile.cover)
 
     def test_can_update_user_url(self):
         """
