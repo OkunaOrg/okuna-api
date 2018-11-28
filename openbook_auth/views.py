@@ -115,24 +115,28 @@ class AuthenticatedUser(APIView):
                 birth_date=data.get('birth_date'),
                 bio=data.get('bio'),
                 url=data.get('url'),
-                followers_count_visible=data.get('followers_count_visible')
+                followers_count_visible=data.get('followers_count_visible'),
+                save=False
             )
 
             has_avatar = 'avatar' in data
             if has_avatar:
                 avatar = data.get('avatar')
                 if avatar is None:
-                    user.delete_profile_avatar()
+                    user.delete_profile_avatar(save=False)
                 else:
-                    user.update_profile_avatar(avatar)
+                    user.update_profile_avatar(avatar, save=False)
 
             has_cover = 'cover' in data
             if has_cover:
                 cover = data.get('cover')
                 if cover is None:
-                    user.delete_profile_cover()
+                    user.delete_profile_cover(save=False)
                 else:
-                    user.update_profile_cover(cover)
+                    user.update_profile_cover(cover, save=False)
+
+            user.profile.save()
+            user.save()
 
         user_serializer = GetAuthenticatedUserSerializer(user, context={"request": request})
         return Response(user_serializer.data, status=status.HTTP_200_OK)

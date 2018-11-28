@@ -118,27 +118,29 @@ class User(AbstractUser):
         self.full_clean()
         return super(User, self).save(*args, **kwargs)
 
-    def update_profile_cover(self, cover):
+    def update_profile_cover(self, cover, save=True):
         if cover is None:
-            self.delete_profile_cover()
+            self.delete_profile_cover(save=False)
         else:
             self.profile.cover = cover
 
-        self.save()
+        if save:
+            self.profile.save()
 
-    def delete_profile_cover(self):
-        self.profile.cover.delete(save=True)
+    def delete_profile_cover(self, save=True):
+        self.profile.cover.delete(save=save)
 
-    def update_profile_avatar(self, avatar):
+    def update_profile_avatar(self, avatar, save=True):
         if avatar is None:
-            self.delete_profile_avatar()
+            self.delete_profile_avatar(save=False)
         else:
             self.profile.avatar = avatar
 
-        self.save()
+        if save:
+            self.profile.save()
 
-    def delete_profile_avatar(self):
-        self.profile.avatar.delete(save=True)
+    def delete_profile_avatar(self, save=True):
+        self.profile.avatar.delete(save=save)
 
     def update_username(self, username):
         self._check_username_not_taken(username)
@@ -159,7 +161,8 @@ class User(AbstractUser):
                birth_date=None,
                bio=None,
                url=None,
-               followers_count_visible=None):
+               followers_count_visible=None,
+               save=True):
 
         profile = self.profile
 
@@ -199,8 +202,9 @@ class User(AbstractUser):
         if followers_count_visible is not None:
             profile.followers_count_visible = followers_count_visible
 
-        profile.save()
-        self.save()
+        if save:
+            profile.save()
+            self.save()
 
     def is_fully_connected_with_user_with_id(self, user_id):
         if not self.is_connected_with_user_with_id(user_id):
