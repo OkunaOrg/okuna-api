@@ -158,20 +158,29 @@ class User(AbstractUser):
         if password:
             self.set_password(password)
 
-        if url:
-            profile.url = url
+        if url is not None:
+            if len(url) == 0:
+                profile.url = None
+            else:
+                profile.url = url
 
         if name:
             profile.name = name
 
-        if location:
-            profile.location = location
+        if location is not None:
+            if len(location) == 0:
+                profile.location = None
+            else:
+                profile.location = location
 
         if birth_date:
             profile.birth_date = birth_date
 
-        if bio:
-            profile.bio = bio
+        if bio is not None:
+            if len(bio) == 0:
+                profile.bio = None
+            else:
+                profile.bio = bio
 
         if followers_count_visible is not None:
             profile.followers_count_visible = followers_count_visible

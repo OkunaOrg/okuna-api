@@ -716,6 +716,81 @@ class AuthenticatedUserAPITests(APITestCase):
 
         self.assertTrue(not user.profile.cover)
 
+    def test_can_delete_user_bio(self):
+        """
+        should be able to delete the authenticated user bio and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user.profile.bio = make_user_bio()
+
+        user.save()
+
+        data = {
+            'bio': ''
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertTrue(not user.profile.bio)
+
+    def test_can_delete_user_location(self):
+        """
+        should be able to delete the authenticated user location and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user.profile.location = make_user_location()
+
+        user.save()
+
+        data = {
+            'location': ''
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertTrue(not user.profile.location)
+
+    def test_can_delete_user_url(self):
+        """
+        should be able to delete the authenticated user url and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user.profile.url = fake.url()
+
+        user.save()
+
+        data = {
+            'url': ''
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertTrue(not user.profile.url)
+
     def test_can_update_user_url(self):
         """
         should be able to update the authenticated user url and return 200

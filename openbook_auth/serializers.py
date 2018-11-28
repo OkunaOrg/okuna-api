@@ -101,11 +101,11 @@ class UpdateAuthenticatedUserSerializer(serializers.Serializer):
                                  allow_blank=False, validators=[name_characters_validator])
     followers_count_visible = serializers.BooleanField(required=False, default=None, allow_null=True)
     bio = serializers.CharField(max_length=settings.PROFILE_BIO_MAX_LENGTH, required=False,
-                                allow_blank=False)
+                                allow_blank=True)
     url = serializers.URLField(required=False,
-                               allow_blank=False)
+                               allow_blank=True)
     location = serializers.CharField(max_length=settings.PROFILE_LOCATION_MAX_LENGTH, required=False,
-                                     allow_blank=False)
+                                     allow_blank=True)
 
 
 class GetUserSerializer(serializers.Serializer):
