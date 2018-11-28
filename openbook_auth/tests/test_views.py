@@ -504,6 +504,50 @@ class AuthenticatedUserAPITests(APITestCase):
 
         self.assertEqual(user.username, new_username)
 
+    def test_can_update_user_username_to_same_username(self):
+        """
+        should be able to update the authenticated user username to the same it already has and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'username': user.username
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertEqual(user.username, user.username)
+
+    def test_cannot_update_user_username_to_taken_username(self):
+        """
+        should be able to update the authenticated user username to a taken username and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user_b = make_user()
+
+        data = {
+            'username': user_b.username
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        user.refresh_from_db()
+
+        self.assertNotEqual(user.username, user_b.username)
+
     def test_can_update_user_name(self):
         """
         should be able to update the authenticated user name and return 200

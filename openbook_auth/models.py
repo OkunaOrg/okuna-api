@@ -140,10 +140,21 @@ class User(AbstractUser):
     def delete_profile_avatar(self):
         self.profile.avatar.delete(save=True)
 
+    def update_username(self, username):
+        self._check_username_not_taken(username)
+        self.username = username
+        self.save()
+
+    def update_email(self, email):
+        self._check_email_not_taken(email)
+        self.email = email
+        self.save()
+
     def update(self,
                username=None,
                password=None,
                name=None,
+               email=None,
                location=None,
                birth_date=None,
                bio=None,
@@ -153,7 +164,10 @@ class User(AbstractUser):
         profile = self.profile
 
         if username:
-            self.username = username
+            self.update_username(username)
+
+        if email:
+            self.update_email(email)
 
         if password:
             self.set_password(password)
@@ -668,6 +682,24 @@ class User(AbstractUser):
 
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
+
+    def _check_email_not_taken(self, email):
+        if email == self.email:
+            return
+
+        if User.is_email_taken(email=email):
+            raise ValidationError(
+                _('The email is already taken.')
+            )
+
+    def _check_username_not_taken(self, username):
+        if username == self.username:
+            return
+
+        if User.is_username_taken(username=username):
+            raise ValidationError(
+                _('The username is already taken.')
+            )
 
     def _check_can_delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
         # Check if the post belongs to us

@@ -89,7 +89,7 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
 class UpdateAuthenticatedUserSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=USERNAME_MAX_LENGTH,
                                      allow_blank=False,
-                                     validators=[username_characters_validator, username_not_taken_validator],
+                                     validators=[username_characters_validator],
                                      required=False)
     avatar = serializers.ImageField(allow_empty_file=False, required=False, allow_null=True)
     cover = serializers.ImageField(allow_empty_file=False, required=False, allow_null=True)
