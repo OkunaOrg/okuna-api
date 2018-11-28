@@ -687,6 +687,32 @@ class AuthenticatedUserAPITests(APITestCase):
 
         self.assertIsNotNone(user.profile.avatar)
 
+    def test_can_update_user_avatar_plus_username(self):
+        """
+        should be able to update the authenticated user avatar and username and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        new_avatar = make_user_avatar()
+        new_username = 'paulyd97'
+
+        data = {
+            'avatar': new_avatar,
+            'username': new_username
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertIsNotNone(user.profile.avatar)
+        self.assertEqual(user.username, new_username)
+
     def test_can_delete_user_avatar(self):
         """
         should be able to delete the authenticated user avatar and return 200
