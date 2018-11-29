@@ -265,7 +265,7 @@ STATIC_URL = '/static/'
 
 MEDIA_ROOT = os.environ.get('MEDIA_ROOT', './media')
 
-MEDIA_URL = os.environ.get('MEDIA_ROOT', '/media/')
+MEDIA_URL = os.environ.get('MEDIA_URL', '/media/')
 
 # Openbook config
 
