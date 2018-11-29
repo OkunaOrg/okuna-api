@@ -11,7 +11,7 @@ from rest_framework.authtoken.models import Token
 
 from openbook_common.responses import ApiMessageResponse
 from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheckSerializer, LoginSerializer, \
-    GetUserSerializer
+    GetAuthenticatedUserSerializer, GetUserUserSerializer, UpdateAuthenticatedUserSerializer, GetUserSerializer
 from .models import UserProfile
 
 
@@ -92,9 +92,78 @@ class Login(APIView):
             raise AuthenticationFailed()
 
 
-class User(APIView):
+class AuthenticatedUser(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
-        user_serializer = GetUserSerializer(request.user, context={"request":request})
+        user_serializer = GetAuthenticatedUserSerializer(request.user, context={"request": request})
+        return Response(user_serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request):
+        serializer = UpdateAuthenticatedUserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user = request.user
+
+        with transaction.atomic():
+            user.update(
+                username=data.get('username'),
+                password=data.get('password'),
+                name=data.get('name'),
+                location=data.get('location'),
+                birth_date=data.get('birth_date'),
+                bio=data.get('bio'),
+                url=data.get('url'),
+                followers_count_visible=data.get('followers_count_visible'),
+                save=False
+            )
+
+            has_avatar = 'avatar' in data
+            if has_avatar:
+                avatar = data.get('avatar')
+                if avatar is None:
+                    user.delete_profile_avatar(save=False)
+                else:
+                    user.update_profile_avatar(avatar, save=False)
+
+            has_cover = 'cover' in data
+            if has_cover:
+                cover = data.get('cover')
+                if cover is None:
+                    user.delete_profile_cover(save=False)
+                else:
+                    user.update_profile_cover(cover, save=False)
+
+            user.profile.save()
+            user.save()
+
+        user_serializer = GetAuthenticatedUserSerializer(user, context={"request": request})
+        return Response(user_serializer.data, status=status.HTTP_200_OK)
+
+
+class User(APIView):
+    def get(self, request, user_username):
+        request_data = request.data.copy()
+        request_data['username'] = user_username
+
+        serializer = GetUserSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        username = data.get('username')
+
+        User = get_user_model()
+
+        user = User.get_user_with_username(username)
+
+        user_serializer = None
+
+        if not request.user.is_anonymous:
+            authenticated_user = request.user
+            if authenticated_user.username == user_username:
+                user_serializer = GetAuthenticatedUserSerializer(user, context={"request": request})
+
+        if not user_serializer:
+            user_serializer = GetUserUserSerializer(user, context={"request": request})
+
         return Response(user_serializer.data, status=status.HTTP_200_OK)

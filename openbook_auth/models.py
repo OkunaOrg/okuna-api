@@ -13,6 +13,7 @@ from django.db.models import Q
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, get_emoji_model
+from openbook_common.validators import name_characters_validator
 
 
 class User(AbstractUser):
@@ -64,17 +65,146 @@ class User(AbstractUser):
         except User.DoesNotExist:
             return False
 
-    @property
-    def posts_count(self):
+    @classmethod
+    def get_public_posts_for_user_with_username(cls, username, max_id=None):
+
+        user = cls.objects.get(username=username)
+
+        final_query = Q(creator__username=username, circles__id=user.world_circle_id)
+
+        if max_id:
+            final_query.add(Q(id__lt=max_id), Q.AND)
+
+        Post = get_post_model()
+        result = Post.objects.filter(final_query)
+
+        return result
+
+    @classmethod
+    def get_user_with_username(cls, user_username):
+        return cls.objects.get(username=user_username)
+
+    def count_posts(self):
         return self.posts.count()
 
-    @property
-    def followers_count(self):
+    def count_public_posts(self):
+        """
+        Count how many public posts has the user created
+        :return:
+        """
+        return self.posts.filter(circles__id=self.world_circle_id).count()
+
+    def count_posts_for_user_with_id(self, id):
+        """
+        Count how many posts has the user created relative to another user
+        :param id:
+        :return: count
+        """
+        user = User.objects.get(pk=id)
+        if user.is_connected_with_user_with_id(self.pk):
+            count = user.get_timeline_posts(username=self.username).count()
+        else:
+            count = self.count_public_posts()
+        return count
+
+    def count_followers(self):
+        Follow = get_follow_model()
+        return Follow.objects.filter(followed_user__id=self.pk).count()
+
+    def count_following(self):
         return self.follows.count()
 
     def save(self, *args, **kwargs):
         self.full_clean()
         return super(User, self).save(*args, **kwargs)
+
+    def update_profile_cover(self, cover, save=True):
+        if cover is None:
+            self.delete_profile_cover(save=False)
+        else:
+            self.profile.cover = cover
+
+        if save:
+            self.profile.save()
+
+    def delete_profile_cover(self, save=True):
+        self.profile.cover.delete(save=save)
+
+    def update_profile_avatar(self, avatar, save=True):
+        if avatar is None:
+            self.delete_profile_avatar(save=False)
+        else:
+            self.profile.avatar = avatar
+
+        if save:
+            self.profile.save()
+
+    def delete_profile_avatar(self, save=True):
+        self.profile.avatar.delete(save=save)
+
+    def update_username(self, username):
+        self._check_username_not_taken(username)
+        self.username = username
+        self.save()
+
+    def update_email(self, email):
+        self._check_email_not_taken(email)
+        self.email = email
+        self.save()
+
+    def update(self,
+               username=None,
+               password=None,
+               name=None,
+               email=None,
+               location=None,
+               birth_date=None,
+               bio=None,
+               url=None,
+               followers_count_visible=None,
+               save=True):
+
+        profile = self.profile
+
+        if username:
+            self.update_username(username)
+
+        if email:
+            self.update_email(email)
+
+        if password:
+            self.set_password(password)
+
+        if url is not None:
+            if len(url) == 0:
+                profile.url = None
+            else:
+                profile.url = url
+
+        if name:
+            profile.name = name
+
+        if location is not None:
+            if len(location) == 0:
+                profile.location = None
+            else:
+                profile.location = location
+
+        if birth_date:
+            profile.birth_date = birth_date
+
+        if bio is not None:
+            if len(bio) == 0:
+                profile.bio = None
+            else:
+                profile.bio = bio
+
+        if followers_count_visible is not None:
+            profile.followers_count_visible = followers_count_visible
+
+        if save:
+            profile.save()
+            self.save()
 
     def is_fully_connected_with_user_with_id(self, user_id):
         if not self.is_connected_with_user_with_id(user_id):
@@ -119,7 +249,7 @@ class User(AbstractUser):
         return self.is_following_user_with_id(user.pk)
 
     def is_following_user_with_id(self, user_id):
-        return self.follows.filter(followed_user_id=user_id)
+        return self.follows.filter(followed_user__id=user_id).count() > 0
 
     def is_following_user_in_list(self, user, list):
         return self.is_following_user_with_id_in_list_with_id(user.pk, list.pk)
@@ -173,6 +303,11 @@ class User(AbstractUser):
     def get_reactions_for_post_with_id(self, post_id, max_id=None, emoji_id=None):
         self._check_can_get_reactions_for_post_with_id(post_id)
         reactions_query = Q(post_id=post_id)
+        Post = get_post_model()
+
+        # If reactions are private, return only own reactions
+        if not Post.post_with_id_has_public_reactions(post_id):
+            reactions_query = Q(reactor_id=self.pk)
 
         if max_id:
             reactions_query.add(Q(id__lt=max_id), Q.AND)
@@ -183,31 +318,30 @@ class User(AbstractUser):
         PostReaction = get_post_reaction_model()
         return PostReaction.objects.filter(reactions_query)
 
-    def get_emoji_counts_for_post_with_id(self, post_id, emoji_id=None):
-        self._check_can_get_reactions_for_post_with_id(post_id)
+    def get_reactions_count_for_post_with_id(self, post_id):
+        commenter_id = None
+
+        Post = get_post_model()
+
+        # If reactions are private, count only own reactions
+        if not Post.post_with_id_has_public_reactions(post_id):
+            commenter_id = self.pk
 
         PostReaction = get_post_reaction_model()
-        Emoji = get_emoji_model()
 
-        emoji_query = Q(reactions__post_id=post_id)
+        return PostReaction.count_reactions_for_post_with_id(post_id, commenter_id=commenter_id)
 
-        if emoji_id:
-            emoji_query.add(Q(reactions__emoji_id=emoji_id), Q.AND)
+    def get_emoji_counts_for_post_with_id(self, post_id, emoji_id=None):
+        self._check_can_get_reactions_for_post_with_id(post_id)
+        Post = get_post_model()
 
-        emojis_reacted_with = Emoji.objects.filter(emoji_query).distinct()
+        reactor_id = None
 
-        emoji_counts = []
+        # If reactions are private count only own reactions
+        if not Post.post_with_id_has_public_reactions(post_id):
+            reactor_id = self.pk
 
-        for emoji in emojis_reacted_with:
-            emoji_count = PostReaction.objects.filter(post_id=post_id, emoji_id=emoji.pk).count()
-            emoji_counts.append({
-                'emoji': emoji,
-                'count': emoji_count
-            })
-
-        emoji_counts.sort(key=lambda x: x['count'], reverse=True)
-
-        return emoji_counts
+        return Post.get_emoji_counts_for_post_with_id(post_id, emoji_id=emoji_id, reactor_id=reactor_id)
 
     def react_to_post_with_id(self, post_id, emoji_id):
         self._check_can_react_to_post_with_id(post_id)
@@ -233,11 +367,30 @@ class User(AbstractUser):
         self._check_can_get_comments_for_post_with_id(post_id)
         comments_query = Q(post_id=post_id)
 
+        Post = get_post_model()
+
+        # If comments are private, return only own comments
+        if not Post.post_with_id_has_public_comments(post_id):
+            comments_query = Q(commenter_id=self.pk)
+
         if max_id:
             comments_query.add(Q(id__lt=max_id), Q.AND)
 
         PostComment = get_post_comment_model()
         return PostComment.objects.filter(comments_query)
+
+    def get_comments_count_for_post_with_id(self, post_id):
+        commenter_id = None
+
+        Post = get_post_model()
+
+        # If comments are private, count only own comments
+        if not Post.post_with_id_has_public_comments(post_id):
+            commenter_id = self.pk
+
+        PostComment = get_post_comment_model()
+
+        return PostComment.count_comments_for_post_with_id(post_id, commenter_id=commenter_id)
 
     def comment_post_with_id(self, post_id, text):
         self._check_can_comment_in_post_with_id(post_id)
@@ -317,6 +470,9 @@ class User(AbstractUser):
     def create_public_post(self, text=None, image=None):
         return self.create_post(text=text, image=image, circle_id=self.world_circle_id)
 
+    def create_encircled_post(self, circles_ids, text=None, image=None):
+        return self.create_post(text=text, image=image, circles_ids=circles_ids)
+
     def create_post(self, text, circles_ids=None, circles=None, circle=None, circle_id=None, **kwargs):
         if circles:
             circles_ids = [circle.pk for circle in circles]
@@ -353,7 +509,7 @@ class User(AbstractUser):
     def update_post_with_id(self, post_id):
         pass
 
-    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None, post_id=None):
+    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None, post_id=None, username=None):
 
         queries = []
 
@@ -417,6 +573,9 @@ class User(AbstractUser):
             final_query.add(Q(id__lt=max_id), Q.AND)
         elif post_id:
             final_query.add(Q(id=post_id), Q.AND)
+
+        if username:
+            final_query.add(Q(creator__username=username), Q.AND)
 
         Post = get_post_model()
         result = Post.objects.filter(final_query)
@@ -528,6 +687,24 @@ class User(AbstractUser):
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
 
+    def _check_email_not_taken(self, email):
+        if email == self.email:
+            return
+
+        if User.is_email_taken(email=email):
+            raise ValidationError(
+                _('The email is already taken.')
+            )
+
+    def _check_username_not_taken(self, username):
+        if username == self.username:
+            return
+
+        if User.is_username_taken(username=username):
+            raise ValidationError(
+                _('The username is already taken.')
+            )
+
     def _check_can_delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
         # Check if the post belongs to us
         if self.has_post_with_id(post_id):
@@ -579,6 +756,7 @@ class User(AbstractUser):
         if post.is_public_post():
             return
 
+        # Check if post appears in our timeline
         if self.get_timeline_posts(post_id=post_id).count() == 0:
             raise ValidationError(
                 _('This post is private.'),
@@ -754,10 +932,16 @@ def bootstrap_circles(sender, instance=None, created=False, **kwargs):
 
 
 class UserProfile(models.Model):
-    name = models.CharField(_('name'), max_length=50, blank=False, null=False)
+    name = models.CharField(_('name'), max_length=settings.PROFILE_NAME_MAX_LENGTH, blank=False, null=False,
+                            validators=[name_characters_validator])
+    location = models.CharField(_('name'), max_length=settings.PROFILE_LOCATION_MAX_LENGTH, blank=False, null=True)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     birth_date = models.DateField(_('birth date'), null=False, blank=False)
-    avatar = models.ImageField(_('avatar'), blank=True, null=True)
+    avatar = models.ImageField(_('avatar'), blank=False, null=True)
+    cover = models.ImageField(_('cover'), blank=False, null=True)
+    bio = models.CharField(_('bio'), max_length=settings.PROFILE_BIO_MAX_LENGTH, blank=False, null=True)
+    url = models.URLField(_('url'), blank=False, null=True)
+    followers_count_visible = models.BooleanField(_('followers count visible'), blank=False, null=False, default=False)
 
     class Meta:
         verbose_name = _('user profile')

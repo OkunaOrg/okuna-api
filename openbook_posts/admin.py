@@ -47,8 +47,8 @@ class PostAdmin(admin.ModelAdmin):
         'id',
         'created',
         'creator',
-        'comments_count',
-        'reactions_count',
+        'count_comments',
+        'count_reactions',
         'has_text',
         'has_image'
     )

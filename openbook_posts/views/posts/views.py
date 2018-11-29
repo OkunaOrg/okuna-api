@@ -1,14 +1,16 @@
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from openbook_posts.views.posts.serializers import CreatePostSerializer, PostSerializer, GetPostsSerializer
+from openbook_posts.permissions import IsGetOrIsAuthenticated
+from openbook_posts.views.posts.serializers import CreatePostSerializer, AuthenticatedUserPostSerializer, \
+    GetPostsSerializer, UnauthenticatedUserPostSerializer
 
 
 class Posts(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsGetOrIsAuthenticated,)
 
     def put(self, request):
 
@@ -30,11 +32,17 @@ class Posts(APIView):
         with transaction.atomic():
             post = user.create_post(text=text, circles_ids=circles_ids, image=image)
 
-        post_serializer = PostSerializer(post, context={"request": request})
+        post_serializer = AuthenticatedUserPostSerializer(post, context={"request": request})
 
         return Response(post_serializer.data, status=status.HTTP_201_CREATED)
 
     def get(self, request):
+
+        if request.user.is_authenticated:
+            return self.get_posts_for_authenticated_user(request)
+        return self.get_posts_for_unauthenticated_user(request)
+
+    def get_posts_for_authenticated_user(self, request):
         query_params = request.query_params.dict()
 
         circle_id = query_params.get('circle_id', None)
@@ -53,15 +61,39 @@ class Posts(APIView):
         lists_ids = data.get('list_id')
         max_id = data.get('max_id')
         count = data.get('count', 10)
+        username = data.get('username')
 
         user = request.user
 
         posts = user.get_timeline_posts(
             circles_ids=circles_ids,
             lists_ids=lists_ids,
-            max_id=max_id
+            max_id=max_id,
+            username=username
         ).order_by('-created')[:count]
 
-        post_serializer = PostSerializer(posts, many=True, context={"request": request})
+        post_serializer = AuthenticatedUserPostSerializer(posts, many=True, context={"request": request})
+
+        return Response(post_serializer.data, status=status.HTTP_200_OK)
+
+    def get_posts_for_unauthenticated_user(self, request):
+        query_params = request.query_params.dict()
+
+        serializer = GetPostsSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        max_id = data.get('max_id')
+        count = data.get('count', 10)
+        username = data.get('username')
+
+        User = get_user_model()
+
+        posts = User.get_public_posts_for_user_with_username(
+            max_id=max_id,
+            username=username
+        ).order_by('-created')[:count]
+
+        post_serializer = UnauthenticatedUserPostSerializer(posts, many=True, context={"request": request})
 
         return Response(post_serializer.data, status=status.HTTP_200_OK)

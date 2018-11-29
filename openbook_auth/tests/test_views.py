@@ -13,6 +13,8 @@ import logging
 import json
 
 from openbook_circles.models import Circle
+from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_user_bio, \
+    make_user_location, make_user_birth_date, make_user_avatar, make_user_cover
 
 fake = Faker()
 
@@ -51,7 +53,7 @@ class RegistrationAPITests(APITestCase):
         should return 400 if the name is not valid
         """
         url = self._get_url()
-        invalid_names = ('Joel!', 'Joel_', 'Joel@', 'Joel ✨', 'Joel 字', 'Joel -!')
+        invalid_names = ('Joel<', '<>', '',)
         for name in invalid_names:
             data = {
                 'username': 'lifenautjoe',
@@ -424,12 +426,12 @@ class LoginAPITests(APITestCase):
         return reverse('login-user')
 
 
-class UserAPITests(APITestCase):
+class AuthenticatedUserAPITests(APITestCase):
     """
-    UserAPI
+    AuthenticatedUserAPI
     """
 
-    def test_retrieve_user(self):
+    def test_cat_retrieve_user(self):
         """
         should return 200 and the data of the authenticated user
         """
@@ -454,5 +456,463 @@ class UserAPITests(APITestCase):
         response_username = parsed_response['username']
         self.assertEqual(response_username, username)
 
+    def test_can_update_user_password(self):
+        """
+        should be able to update the authenticated user password and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        new_password = fake.password()
+
+        data = {
+            'password': new_password
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        password_matches = user.check_password(new_password)
+
+        self.assertTrue(password_matches)
+
+    def test_can_update_user_username(self):
+        """
+        should be able to update the authenticated user username and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        new_username = fake.user_name()
+
+        data = {
+            'username': new_username
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertEqual(user.username, new_username)
+
+    def test_can_update_user_username_to_same_username(self):
+        """
+        should be able to update the authenticated user username to the same it already has and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'username': user.username
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertEqual(user.username, user.username)
+
+    def test_cannot_update_user_username_to_taken_username(self):
+        """
+        should be able to update the authenticated user username to a taken username and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user_b = make_user()
+
+        data = {
+            'username': user_b.username
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        user.refresh_from_db()
+
+        self.assertNotEqual(user.username, user_b.username)
+
+    def test_can_update_user_name(self):
+        """
+        should be able to update the authenticated user name and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        new_name = fake.name()
+
+        data = {
+            'name': new_name
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertEqual(user.profile.name, new_name)
+
+    def test_can_update_user_bio(self):
+        """
+        should be able to update the authenticated user bio and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        new_bio = make_user_bio()
+
+        data = {
+            'bio': new_bio
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertEqual(user.profile.bio, new_bio)
+
+    def test_can_update_user_location(self):
+        """
+        should be able to update the authenticated user location and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        new_location = make_user_location()
+
+        data = {
+            'location': new_location
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertEqual(user.profile.location, new_location)
+
+    def test_can_update_user_followers_count_visible(self):
+        """
+        should be able to update the authenticated user followers_count_visible and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        new_followers_count_visible = fake.boolean()
+
+        data = {
+            'followers_count_visible': new_followers_count_visible
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertEqual(user.profile.followers_count_visible, new_followers_count_visible)
+
+    def test_can_update_user_birth_date(self):
+        """
+        should be able to update the authenticated user birth date and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        new_birth_date = make_user_birth_date()
+        stringified_birth_date = new_birth_date.strftime('%d-%m-%Y')
+
+        data = {
+            'birth_date': stringified_birth_date
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertEqual(user.profile.birth_date, new_birth_date)
+
+    def test_can_update_user_avatar(self):
+        """
+        should be able to update the authenticated user avatar and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        new_avatar = make_user_avatar()
+
+        data = {
+            'avatar': new_avatar
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertIsNotNone(user.profile.avatar)
+
+    def test_can_update_user_avatar_plus_username(self):
+        """
+        should be able to update the authenticated user avatar and username and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        new_avatar = make_user_avatar()
+        new_username = 'paulyd97'
+
+        data = {
+            'avatar': new_avatar,
+            'username': new_username
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertIsNotNone(user.profile.avatar)
+        self.assertEqual(user.username, new_username)
+
+    def test_can_delete_user_avatar(self):
+        """
+        should be able to delete the authenticated user avatar and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user.profile.avatar = make_user_avatar()
+
+        user.save()
+
+        data = {
+            'avatar': ''
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertTrue(not user.profile.avatar)
+
+    def test_can_update_user_cover(self):
+        """
+        should be able to update the authenticated user cover and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        new_cover = make_user_cover()
+
+        data = {
+            'cover': new_cover
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertIsNotNone(user.profile.cover)
+
+    def test_can_delete_user_cover(self):
+        """
+        should be able to delete the authenticated user cover and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user.profile.cover = make_user_cover()
+
+        user.save()
+
+        data = {
+            'cover': ''
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertTrue(not user.profile.cover)
+
+    def test_can_delete_user_bio(self):
+        """
+        should be able to delete the authenticated user bio and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user.profile.bio = make_user_bio()
+
+        user.save()
+
+        data = {
+            'bio': ''
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertTrue(not user.profile.bio)
+
+    def test_can_delete_user_location(self):
+        """
+        should be able to delete the authenticated user location and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user.profile.location = make_user_location()
+
+        user.save()
+
+        data = {
+            'location': ''
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertTrue(not user.profile.location)
+
+    def test_can_delete_user_url(self):
+        """
+        should be able to delete the authenticated user url and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user.profile.url = fake.url()
+
+        user.save()
+
+        data = {
+            'url': ''
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertTrue(not user.profile.url)
+
+    def test_can_update_user_url(self):
+        """
+        should be able to update the authenticated user url and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        new_url = fake.url()
+
+        data = {
+            'url': new_url
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertEqual(new_url, user.profile.url)
+
     def _get_url(self):
-        return reverse('user')
+        return reverse('authenticated-user')
+
+
+class UserAPITests(APITestCase):
+    """
+    UserAPI
+    """
+
+    def test_can_retrieve_user(self):
+        """
+        should be able to retrieve a user when authenticated and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertIn('username', parsed_response)
+        response_username = parsed_response['username']
+        self.assertEqual(response_username, user.username)
+
+    def _get_url(self, user):
+        return reverse('user', kwargs={
+            'user_username': user.username
+        })

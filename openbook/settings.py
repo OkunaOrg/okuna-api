@@ -181,7 +181,8 @@ else:
             'HOST': os.environ.get('MYSQL_HOST'),  # Or an IP Address that your DB is hosted on
             'PORT': os.environ.get('MYSQL_PORT'),
             'OPTIONS': {
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                'charset': 'utf8mb4'
             },
         }
     }
@@ -219,6 +220,8 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.TokenAuthentication',
     )
 }
+
+UNICODE_JSON = True
 
 # The sentry DSN for error reporting
 SENTRY_DSN = os.environ.get('SENTRY_DSN')
@@ -274,6 +277,9 @@ PASSWORD_MAX_LENGTH = 100
 CIRCLE_MAX_LENGTH = 100
 COLOR_ATTR_MAX_LENGTH = 7
 LIST_MAX_LENGTH = 100
+PROFILE_NAME_MAX_LENGTH = 192
+PROFILE_LOCATION_MAX_LENGTH = 64
+PROFILE_BIO_MAX_LENGTH = 150
 
 # AWS Storage config
 
