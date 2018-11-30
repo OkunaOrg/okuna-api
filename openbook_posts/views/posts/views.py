@@ -106,6 +106,6 @@ class TrendingPosts(APIView):
 
     def get(self, request):
         Post = get_post_model()
-        posts = Post.get_trending_posts()[:10]
+        posts = Post.get_trending_posts()[:5]
         posts_serializer = AuthenticatedUserPostSerializer(posts, many=True, context={"request": request})
         return Response(posts_serializer.data, status=status.HTTP_200_OK)
