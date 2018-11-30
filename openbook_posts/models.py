@@ -4,6 +4,7 @@ from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
+from django.db.models import Count
 
 # Create your views here.
 from rest_framework.exceptions import ValidationError
@@ -82,6 +83,10 @@ class Post(models.Model):
         emoji_counts.sort(key=lambda x: x['count'], reverse=True)
 
         return emoji_counts
+
+    @classmethod
+    def get_trending_posts(cls):
+        return cls.objects.annotate(Count('reactions')).order_by('-reactions__count', '-created')
 
     def count_comments(self, commenter_id=None):
         return PostComment.count_comments_for_post_with_id(self.pk, commenter_id=commenter_id)

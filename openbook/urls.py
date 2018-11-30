@@ -28,7 +28,7 @@ from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFoll
 from openbook_lists.views import Lists, ListItem
 from openbook_posts.views.post.views import PostComments, PostCommentItem, PostItem, PostReactions, PostReactionItem, \
     PostReactionsEmojiCount
-from openbook_posts.views.posts.views import Posts
+from openbook_posts.views.posts.views import Posts, TrendingPosts
 
 auth_patterns = [
     path('register/', Register.as_view(), name='register-user'),
@@ -52,6 +52,8 @@ post_patterns = [
 posts_patterns = [
     path('<int:post_id>/', include(post_patterns)),
     path('', Posts.as_view(), name='posts'),
+    path('trending/', TrendingPosts.as_view(), name='trending-posts'),
+
 ]
 
 connections_patterns = [

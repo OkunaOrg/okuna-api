@@ -1,9 +1,11 @@
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from openbook_common.utils.model_loaders import get_post_model
 from openbook_posts.permissions import IsGetOrIsAuthenticated
 from openbook_posts.views.posts.serializers import CreatePostSerializer, AuthenticatedUserPostSerializer, \
     GetPostsSerializer, UnauthenticatedUserPostSerializer
@@ -97,3 +99,13 @@ class Posts(APIView):
         post_serializer = UnauthenticatedUserPostSerializer(posts, many=True, context={"request": request})
 
         return Response(post_serializer.data, status=status.HTTP_200_OK)
+
+
+class TrendingPosts(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        Post = get_post_model()
+        posts = Post.get_trending_posts()
+        posts_serializer = AuthenticatedUserPostSerializer(posts, many=True, context={"request": request})
+        return Response(posts_serializer.data, status=status.HTTP_200_OK)
