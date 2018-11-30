@@ -178,9 +178,6 @@ class GetUserUserSerializer(serializers.ModelSerializer):
 
 class GetUsersSerializer(serializers.Serializer):
     query = serializers.CharField(max_length=PROFILE_NAME_MAX_LENGTH, required=True)
-    max_id = serializers.IntegerField(
-        required=False,
-    )
     count = serializers.IntegerField(
         required=False,
         max_value=10

@@ -152,16 +152,15 @@ class Users(APIView):
         data = serializer.validated_data
 
         count = data.get('count', 10)
-        max_id = data.get('max_id')
         query = data.get('query')
 
         user = request.user
 
         if user.is_anonymous:
             User = get_user_model()
-            users = User.get_public_users_with_query(query=query, max_id=max_id)
+            users = User.get_public_users_with_query(query=query)
         else:
-            users = user.get_users_with_query(query=query, max_id=max_id)
+            users = user.get_users_with_query(query=query)
 
         users_serializer = GetUsersUserSerializer(users[:count], many=True, context={'request': request})
 

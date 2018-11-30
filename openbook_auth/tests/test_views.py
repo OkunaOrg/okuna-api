@@ -977,25 +977,5 @@ class UsersAPITests(APITestCase):
 
         self.assertEqual(len(parsed_reponse), limited_users)
 
-    def test_can_limit_users_with_max_id(self):
-        total_users = 10
-        max_id = 3
-
-        for i in range(total_users):
-            user = make_user()
-            user.profile.name = 'Long Johnson'
-            user.profile.save()
-
-        url = self._get_url()
-        response = self.client.get(url, {
-            'query': 'john',
-            'max_id': max_id
-        })
-
-        parsed_reponse = json.loads(response.content)
-
-        for user in parsed_reponse:
-            self.assertLess(user['id'], max_id)
-
     def _get_url(self):
         return reverse('users')
