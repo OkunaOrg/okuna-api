@@ -84,6 +84,16 @@ class User(AbstractUser):
     def get_user_with_username(cls, user_username):
         return cls.objects.get(username=user_username)
 
+    @classmethod
+    def get_public_users_with_query(cls, query, max_id=None):
+        users_query = Q(username__icontains=query)
+        users_query.add(Q(profile__name__icontains=query), Q.OR)
+
+        if max_id:
+            users_query.add(Q(id__lt=max_id), Q.AND)
+
+        return cls.objects.filter(users_query)
+
     def count_posts(self):
         return self.posts.count()
 
@@ -466,6 +476,10 @@ class User(AbstractUser):
     def get_list_with_id(self, list_id):
         self._check_can_get_list_with_id(list_id)
         return self.lists.get(id=list_id)
+
+    def get_users_with_query(self, query, max_id=None):
+        # In the future, the user might have blocked users which should not be displayed
+        return User.get_public_users_with_query(query, max_id)
 
     def create_public_post(self, text=None, image=None):
         return self.create_post(text=text, image=image, circle_id=self.world_circle_id)

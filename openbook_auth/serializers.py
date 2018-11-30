@@ -174,3 +174,36 @@ class GetUserUserSerializer(serializers.ModelSerializer):
             'posts_count',
             'is_following',
         )
+
+
+class GetUsersSerializer(serializers.Serializer):
+    query = serializers.CharField(max_length=PROFILE_NAME_MAX_LENGTH, required=True)
+    max_id = serializers.IntegerField(
+        required=False,
+    )
+    count = serializers.IntegerField(
+        required=False,
+        max_value=10
+    )
+
+
+class GetUsersUserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = (
+            'id',
+            'avatar',
+            'name'
+        )
+
+
+class GetUsersUserSerializer(serializers.ModelSerializer):
+    profile = GetUsersUserProfileSerializer(many=False)
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'profile',
+            'username',
+        )
