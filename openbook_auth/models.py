@@ -712,7 +712,7 @@ class User(AbstractUser):
 
     def get_world_circle_id(self):
         Circle = get_circle_model()
-        return Circle.get_world_circle_id()
+        return Circle.get_world_circle().pk
 
     def _check_username_not_taken(self, username):
         if username == self.username:

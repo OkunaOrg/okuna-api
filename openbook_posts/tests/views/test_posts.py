@@ -27,7 +27,7 @@ fake = Faker()
 # TODO A lot of setup duplication. Perhaps its a good idea to create a single factory on top of mixer or Factory boy
 
 
-class PostsAPITests(APITransactionTestCase):
+class PostsAPITests(APITestCase):
     """
     PostsAPI
     """
@@ -376,7 +376,7 @@ class PostsAPITests(APITransactionTestCase):
 
         user_posts_ids = []
         for i in range(amount_of_own_posts):
-            post = user.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
+            post = user.create_public_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
             user_posts_ids.append(post.pk)
 
         amount_of_users_to_follow = 5
@@ -388,7 +388,7 @@ class PostsAPITests(APITransactionTestCase):
 
         for index, user_to_follow in enumerate(users_to_follow):
             user.follow_user(user_to_follow, list=lists_to_follow_in[index])
-            post = user_to_follow.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
+            post = user_to_follow.create_public_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
             users_to_follow_posts_ids.append(post.pk)
 
         amount_of_users_to_connect = 5
@@ -400,7 +400,7 @@ class PostsAPITests(APITransactionTestCase):
 
         for index, user_to_connect in enumerate(users_to_connect):
             user.connect_with_user_with_id(user_to_connect.pk, circle_id=circles_to_connect_in[index].pk)
-            post = user_to_connect.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
+            post = user_to_connect.create_public_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
             users_to_connect_posts_ids.append(post.pk)
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
