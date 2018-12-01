@@ -237,10 +237,14 @@ class PostCommentsAPITests(APITransactionTestCase):
         })
 
 
-class PostCommentItemAPITests(APITestCase):
+class PostCommentItemAPITests(APITransactionTestCase):
     """
     PostCommentItemAPI
     """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
 
     def test_can_delete_foreign_comment_in_own_post(self):
         """
