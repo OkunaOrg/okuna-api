@@ -261,7 +261,12 @@ class UpdateConnectionAPITest(APITestCase):
         return reverse('update-connection')
 
 
-class ConfirmConnectionAPITest(APITestCase):
+class ConfirmConnectionAPITest(APITransactionTestCase):
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
     def test_confirm_connection(self):
         """
         should be able to confirm a connection, have it automatically added to connections circle and return 200

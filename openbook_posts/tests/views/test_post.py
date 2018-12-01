@@ -533,10 +533,14 @@ class PostCommentItemAPITests(APITransactionTestCase):
         })
 
 
-class PostReactionsAPITests(APITestCase):
+class PostReactionsAPITests(APITransactionTestCase):
     """
     PostReactionsAPI
     """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
 
     def test_can_react_to_own_post(self):
         """

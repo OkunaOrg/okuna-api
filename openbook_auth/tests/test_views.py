@@ -186,7 +186,7 @@ class RegistrationAPITests(APITestCase):
                         'password': 'secretPassword123', 'birth_date': '27-1-1996'}
         response = self.client.post(url, request_data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Circle.objects.count(), 2)
+        self.assertEqual(Circle.objects.count(), 1)
 
         user = User.objects.get(username=username)
 
