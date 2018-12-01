@@ -68,30 +68,40 @@ If you're using git in your command line, you can download the handy tool [gitmo
 
 ## Getting started
 
-Clone the repository
+#### Clone the repository
 
 ```sh
 git clone git@github.com:OpenbookOrg/openbook-api.git
 ```
 
-Create and configure your .env file
+#### Create and configure your .env file
 
 ```bash
 cp .env.sample .env
 nano .env
 ```
 
-Install the dependencies
+#### Install the dependencies
 ```bash
 pipenv install
 ```
 
-Activate the pipenv environment
+#### Activate the pipenv environment
 ```bash
 pipenv shell
 ```
 
-Serve with hot reload at http://127.0.0.1:8000
+#### Run the database migrations
+```bash
+python manage.py migrate
+```
+
+#### Load the fixtures
+```bash
+python manage.py loaddata circles.json emoji-groups.json emojis.json
+```
+
+#### Serve with hot reload at http://127.0.0.1:8000
 ```bash
 python manage.py runserver
 ```
