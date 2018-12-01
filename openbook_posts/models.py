@@ -87,7 +87,9 @@ class Post(models.Model):
 
     @classmethod
     def get_trending_posts(cls):
-        return cls.objects.annotate(Count('reactions')).order_by('-reactions__count', '-created')
+        Circle = get_circle_model()
+        world_circle_id = Circle.get_world_circle_id()
+        return cls.objects.annotate(Count('reactions')).filter(circles__id=world_circle_id).order_by('-reactions__count', '-created')
 
     def count_comments(self, commenter_id=None):
         return PostComment.count_comments_for_post_with_id(self.pk, commenter_id=commenter_id)
