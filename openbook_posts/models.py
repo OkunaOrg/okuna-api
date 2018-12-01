@@ -14,7 +14,8 @@ from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
 from openbook_common.models import Emoji
-from openbook_common.utils.model_loaders import get_post_reaction_model, get_emoji_model, get_post_comment_model
+from openbook_common.utils.model_loaders import get_post_reaction_model, get_emoji_model, get_post_comment_model, \
+    get_circle_model
 
 
 class Post(models.Model):
@@ -117,9 +118,9 @@ class Post(models.Model):
         self.reactions.filter(id=reaction_id).delete()
 
     def is_public_post(self):
-        creator = self.creator
-        creator_world_circle_id = creator.world_circle_id
-        if self.circles.filter(id=creator_world_circle_id).count() == 1:
+        Circle = get_circle_model()
+        world_circle_id = Circle.get_world_circle_id()
+        if self.circles.filter(id=world_circle_id).count() == 1:
             return True
         return False
 

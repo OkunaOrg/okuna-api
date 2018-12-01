@@ -5,7 +5,7 @@ from PIL import Image
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APITransactionTestCase
 from mixer.backend.django import mixer
 
 from openbook.settings import POST_MAX_LENGTH
@@ -27,10 +27,14 @@ fake = Faker()
 # TODO A lot of setup duplication. Perhaps its a good idea to create a single factory on top of mixer or Factory boy
 
 
-class PostsAPITests(APITestCase):
+class PostsAPITests(APITransactionTestCase):
     """
     PostsAPI
     """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
 
     def test_create_text_post(self):
         """
@@ -56,7 +60,9 @@ class PostsAPITests(APITestCase):
 
         self.assertTrue(user.posts.filter(text=post_text).count() == 1)
 
-        self.assertTrue(user.world_circle.posts.filter(text=post_text).count() == 1)
+        world_circle = Circle.get_world_circle()
+
+        self.assertTrue(world_circle.posts.filter(text=post_text).count() == 1)
 
     def test_create_post_is_added_to_world_circle(self):
         """
@@ -78,7 +84,9 @@ class PostsAPITests(APITestCase):
 
         self.client.put(url, data, **headers, format='multipart')
 
-        self.assertTrue(user.world_circle.posts.filter(text=post_text).count() == 1)
+        world_circle = Circle.get_world_circle()
+
+        self.assertTrue(world_circle.posts.filter(text=post_text).count() == 1)
 
     def test_create_post_in_circle(self):
         """

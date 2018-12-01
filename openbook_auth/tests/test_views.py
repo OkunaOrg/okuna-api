@@ -190,8 +190,8 @@ class RegistrationAPITests(APITestCase):
 
         user = User.objects.get(username=username)
 
-        # Check we created the 2 world circle and connections circle
-        self.assertTrue(Circle.objects.filter(id__in=(user.world_circle_id, user.connections_circle_id)).count() == 2)
+        # Check we created the connections circle
+        self.assertTrue(Circle.objects.filter(id__in=(user.connections_circle_id,)).count() == 2)
 
         # Check we have a circles related manager
         self.assertTrue(hasattr(user, 'circles'))

@@ -1,0 +1,10 @@
+[
+  {
+    "model": "openbook_circles.Circle",
+    "pk": 1,
+    "fields": {
+      "name": "World",
+      "color": "#f1b01b"
+    }
+  }
+]

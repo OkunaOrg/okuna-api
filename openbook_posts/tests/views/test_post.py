@@ -4,7 +4,7 @@ import json
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APITransactionTestCase
 
 import logging
 
@@ -59,10 +59,14 @@ class PostItemAPITests(APITestCase):
         })
 
 
-class PostCommentsAPITests(APITestCase):
+class PostCommentsAPITests(APITransactionTestCase):
     """
     PostCommentsAPI
     """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
 
     def test_can_comment_in_own_post(self):
         """
@@ -186,7 +190,7 @@ class PostCommentsAPITests(APITestCase):
 
         foreign_user = make_user()
 
-        foreign_user_post = foreign_user.create_post(text=make_fake_post_text(), circle_id=foreign_user.world_circle_id)
+        foreign_user_post = foreign_user.create_public_post(text=make_fake_post_text())
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -246,7 +250,7 @@ class PostCommentItemAPITests(APITestCase):
 
         commenter = make_user()
 
-        post = user.create_post(text=make_fake_post_text(), circle_id=user.world_circle_id)
+        post = user.create_public_post(text=make_fake_post_text())
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -660,7 +664,7 @@ class PostReactionsAPITests(APITestCase):
 
         foreign_user = make_user()
 
-        foreign_user_post = foreign_user.create_post(text=make_fake_post_text(), circle_id=foreign_user.world_circle_id)
+        foreign_user_post = foreign_user.create_public_post(text=make_fake_post_text())
 
         post_reaction_emoji_id = make_emoji().pk
 
@@ -734,10 +738,14 @@ class PostReactionsAPITests(APITestCase):
         })
 
 
-class PostReactionItemAPITests(APITestCase):
+class PostReactionItemAPITests(APITransactionTestCase):
     """
     PostReactionItemAPI
     """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
 
     def test_can_delete_foreign_reaction_in_own_post(self):
         """
@@ -747,7 +755,7 @@ class PostReactionItemAPITests(APITestCase):
 
         reactioner = make_user()
 
-        post = user.create_post(text=make_fake_post_text(), circle_id=user.world_circle_id)
+        post = user.create_public_post(text=make_fake_post_text())
 
         post_reaction_emoji_id = make_emoji().pk
 

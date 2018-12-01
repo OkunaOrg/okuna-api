@@ -126,7 +126,7 @@ class ConnectAPITests(APITestCase):
 
         data = {
             'user_id': user_to_connect.pk,
-            'circle_id': user.world_circle_id
+            'circle_id': Circle.get_world_circle()
         }
 
         url = self._get_url()

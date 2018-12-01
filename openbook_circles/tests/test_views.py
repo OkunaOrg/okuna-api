@@ -1,7 +1,7 @@
 # Create your tests here.
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APITransactionTestCase
 from mixer.backend.django import mixer
 
 from openbook_auth.models import User
@@ -60,7 +60,6 @@ class CirclesAPITests(APITestCase):
         circles_ids = [circle.pk for circle in circles]
 
         # We also expect to get back the default circles
-        circles_ids.append(user.world_circle_id)
         circles_ids.append(user.connections_circle_id)
 
         url = self._get_url()
@@ -80,10 +79,13 @@ class CirclesAPITests(APITestCase):
         return reverse('circles')
 
 
-class CircleItemAPITests(APITestCase):
+class CircleItemAPITests(APITransactionTestCase):
     """
     CircleItemAPI
     """
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
 
     def test_delete_own_circle(self):
         """
@@ -112,7 +114,7 @@ class CircleItemAPITests(APITestCase):
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
-        circle_id = user.world_circle_id
+        circle_id = Circle.get_world_circle_id()
 
         url = self._get_url(circle_id)
         response = self.client.delete(url, **headers)
@@ -222,7 +224,7 @@ class CircleItemAPITests(APITestCase):
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
-        circle_id = user.world_circle_id
+        circle_id = Circle.get_world_circle_id()
 
         new_circle_name = fake.name()
         new_circle_color = fake.hex_color()
