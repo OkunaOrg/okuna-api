@@ -5,7 +5,7 @@ from PIL import Image
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase, APITransactionTestCase
+from rest_framework.test import APITestCase
 from mixer.backend.django import mixer
 
 from openbook.settings import POST_MAX_LENGTH

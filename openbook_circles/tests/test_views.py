@@ -1,7 +1,7 @@
 # Create your tests here.
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase, APITransactionTestCase
+from rest_framework.test import APITestCase
 from mixer.backend.django import mixer
 
 from openbook_auth.models import User
@@ -79,7 +79,7 @@ class CirclesAPITests(APITestCase):
         return reverse('circles')
 
 
-class CircleItemAPITests(APITransactionTestCase):
+class CircleItemAPITests(APITestCase):
     """
     CircleItemAPI
     """

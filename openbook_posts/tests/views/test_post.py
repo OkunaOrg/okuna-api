@@ -4,7 +4,7 @@ import json
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase, APITransactionTestCase
+from rest_framework.test import APITestCase
 
 import logging
 
@@ -59,7 +59,7 @@ class PostItemAPITests(APITestCase):
         })
 
 
-class PostCommentsAPITests(APITransactionTestCase):
+class PostCommentsAPITests(APITestCase):
     """
     PostCommentsAPI
     """
@@ -237,7 +237,7 @@ class PostCommentsAPITests(APITransactionTestCase):
         })
 
 
-class PostCommentItemAPITests(APITransactionTestCase):
+class PostCommentItemAPITests(APITestCase):
     """
     PostCommentItemAPI
     """
@@ -533,7 +533,7 @@ class PostCommentItemAPITests(APITransactionTestCase):
         })
 
 
-class PostReactionsAPITests(APITransactionTestCase):
+class PostReactionsAPITests(APITestCase):
     """
     PostReactionsAPI
     """
@@ -746,7 +746,7 @@ class PostReactionsAPITests(APITransactionTestCase):
         })
 
 
-class PostReactionItemAPITests(APITransactionTestCase):
+class PostReactionItemAPITests(APITestCase):
     """
     PostReactionItemAPI
     """
