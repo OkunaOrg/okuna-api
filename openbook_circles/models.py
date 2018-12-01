@@ -50,3 +50,6 @@ class Circle(models.Model):
         for connection in circle_connections:
             users.append(connection.target_connection.user)
         return users
+
+    def __str__(self):
+        return self.name
