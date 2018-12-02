@@ -72,7 +72,7 @@ class FollowAPITests(APITestCase):
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
         data = {
-            'user_id': user_to_follow.pk,
+            'username': user_to_follow.username,
             'list_id': list_to_follow.pk
         }
 
@@ -100,7 +100,7 @@ class FollowAPITests(APITestCase):
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
         data = {
-            'user_id': user_to_follow.pk,
+            'username': user_to_follow.username,
             'list_id': list_to_follow.pk
         }
 
@@ -123,7 +123,7 @@ class FollowAPITests(APITestCase):
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
         data = {
-            'user_id': user.pk,
+            'username': user.username,
             'list_id': list_to_follow.pk
         }
 
@@ -155,7 +155,7 @@ class UnfollowAPITest(APITestCase):
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
         data = {
-            'user_id': user_to_unfollow.pk
+            'username': user_to_unfollow.username
         }
 
         url = self._get_url()
@@ -179,7 +179,7 @@ class UnfollowAPITest(APITestCase):
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
         data = {
-            'user_id': not_followed_user
+            'username': not_followed_user.username
         }
 
         url = self._get_url()
@@ -213,7 +213,7 @@ class UpdateFollowAPITest(APITestCase):
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
         data = {
-            'user_id': user_to_follow.pk,
+            'username': user_to_follow.username,
             'list_id': new_list.pk
         }
 
@@ -240,7 +240,7 @@ class UpdateFollowAPITest(APITestCase):
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
         data = {
-            'user_id': not_followed_user.pk,
+            'username': not_followed_user.username,
             'list_id': new_list.pk
         }
 
