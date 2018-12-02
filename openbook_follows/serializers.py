@@ -8,7 +8,7 @@ from openbook_follows.models import Follow
 
 class FollowUserSerializer(serializers.Serializer):
     user_id = serializers.IntegerField(required=True, validators=[user_id_exists])
-    list_id = serializers.IntegerField(required=True)
+    list_id = serializers.IntegerField(required=False)
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
