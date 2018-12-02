@@ -4,6 +4,7 @@ from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
+from django.db.models import Count
 
 # Create your views here.
 from rest_framework.exceptions import ValidationError
@@ -13,7 +14,8 @@ from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
 from openbook_common.models import Emoji
-from openbook_common.utils.model_loaders import get_post_reaction_model, get_emoji_model, get_post_comment_model
+from openbook_common.utils.model_loaders import get_post_reaction_model, get_emoji_model, get_post_comment_model, \
+    get_circle_model
 
 
 class Post(models.Model):
@@ -83,6 +85,12 @@ class Post(models.Model):
 
         return emoji_counts
 
+    @classmethod
+    def get_trending_posts(cls):
+        Circle = get_circle_model()
+        world_circle_id = Circle.get_world_circle_id()
+        return cls.objects.annotate(Count('reactions')).filter(circles__id=world_circle_id).order_by('-reactions__count', '-created')
+
     def count_comments(self, commenter_id=None):
         return PostComment.count_comments_for_post_with_id(self.pk, commenter_id=commenter_id)
 
@@ -112,9 +120,9 @@ class Post(models.Model):
         self.reactions.filter(id=reaction_id).delete()
 
     def is_public_post(self):
-        creator = self.creator
-        creator_world_circle_id = creator.world_circle_id
-        if self.circles.filter(id=creator_world_circle_id).count() == 1:
+        Circle = get_circle_model()
+        world_circle_id = Circle.get_world_circle_id()
+        if self.circles.filter(id=world_circle_id).count() == 1:
             return True
         return False
 

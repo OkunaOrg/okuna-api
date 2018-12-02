@@ -24,8 +24,6 @@ class User(AbstractUser):
     first_name = None
     last_name = None
     email = models.EmailField(_('email address'), unique=True, null=False, blank=False)
-    world_circle = models.ForeignKey('openbook_circles.Circle', on_delete=models.PROTECT, related_name='+', null=True,
-                                     blank=True)
     connections_circle = models.ForeignKey('openbook_circles.Circle', on_delete=models.PROTECT, related_name='+',
                                            null=True, blank=True)
 
@@ -67,10 +65,10 @@ class User(AbstractUser):
 
     @classmethod
     def get_public_posts_for_user_with_username(cls, username, max_id=None):
+        Circle = get_circle_model()
+        world_circle_id = Circle.get_world_circle_id()
 
-        user = cls.objects.get(username=username)
-
-        final_query = Q(creator__username=username, circles__id=user.world_circle_id)
+        final_query = Q(creator__username=username, circles__id=world_circle_id)
 
         if max_id:
             final_query.add(Q(id__lt=max_id), Q.AND)
@@ -84,6 +82,12 @@ class User(AbstractUser):
     def get_user_with_username(cls, user_username):
         return cls.objects.get(username=user_username)
 
+    @classmethod
+    def get_public_users_with_query(cls, query):
+        users_query = Q(username__icontains=query)
+        users_query.add(Q(profile__name__icontains=query), Q.OR)
+        return cls.objects.filter(users_query)
+
     def count_posts(self):
         return self.posts.count()
 
@@ -92,7 +96,9 @@ class User(AbstractUser):
         Count how many public posts has the user created
         :return:
         """
-        return self.posts.filter(circles__id=self.world_circle_id).count()
+        world_circle_id = self.get_world_circle_id()
+
+        return self.posts.filter(circles__id=world_circle_id).count()
 
     def count_posts_for_user_with_id(self, id):
         """
@@ -227,6 +233,11 @@ class User(AbstractUser):
             target_connection__user_id=user_id).count()
         return count > 0
 
+    def is_connected_with_user_with_username(self, username):
+        count = self.connections.select_related('target_connection__user__username').filter(
+            target_connection__user__username=username).count()
+        return count > 0
+
     def is_connected_with_user_in_circle(self, user, circle):
         return self.is_connected_with_user_with_id_in_circle_with_id(user.pk, circle.pk)
 
@@ -260,7 +271,8 @@ class User(AbstractUser):
             list_id=list_id).count() == 1
 
     def is_world_circle_id(self, id):
-        return self.world_circle_id == id
+        world_circle_id = self.get_world_circle_id()
+        return world_circle_id == id
 
     def is_connections_circle_id(self, id):
         return self.connections_circle_id == id
@@ -467,8 +479,13 @@ class User(AbstractUser):
         self._check_can_get_list_with_id(list_id)
         return self.lists.get(id=list_id)
 
+    def get_users_with_query(self, query):
+        # In the future, the user might have blocked users which should not be displayed
+        return User.get_public_users_with_query(query)
+
     def create_public_post(self, text=None, image=None):
-        return self.create_post(text=text, image=image, circle_id=self.world_circle_id)
+        world_circle_id = self.get_world_circle_id()
+        return self.create_post(text=text, image=image, circle_id=world_circle_id)
 
     def create_encircled_post(self, circles_ids, text=None, image=None):
         return self.create_post(text=text, image=image, circles_ids=circles_ids)
@@ -488,7 +505,8 @@ class User(AbstractUser):
 
         if len(circles_ids) == 0:
             # If no circle, add post to world circle
-            circles_ids.append(self.world_circle_id)
+            world_circle_id = self.get_world_circle_id()
+            circles_ids.append(world_circle_id)
 
         Post = get_post_model()
         post = Post.create_post(text=text, creator=self, circles_ids=circles_ids, **kwargs)
@@ -514,6 +532,7 @@ class User(AbstractUser):
         queries = []
 
         follows = None
+        world_circle_id = self.get_world_circle_id()
 
         if lists_ids:
             follows = self.follows.filter(list_id__in=lists_ids)
@@ -531,13 +550,13 @@ class User(AbstractUser):
                 if is_connected_with_followed_user:
                     # Add the connected & followed user public posts
                     followed_user_world_circle_query = Q(creator_id=followed_user.pk,
-                                                         circles__id=followed_user.world_circle.pk)
+                                                         circles__id=world_circle_id)
                     queries.append(followed_user_world_circle_query)
             else:
                 is_connected_with_followed_user = self.is_connected_with_user(followed_user)
                 # Add the followed user public posts
                 followed_user_world_circle_query = Q(creator_id=followed_user.pk,
-                                                     circles__id=followed_user.world_circle.pk)
+                                                     circles__id=world_circle_id)
                 queries.append(followed_user_world_circle_query)
 
             if is_connected_with_followed_user:
@@ -695,6 +714,10 @@ class User(AbstractUser):
             raise ValidationError(
                 _('The email is already taken.')
             )
+
+    def get_world_circle_id(self):
+        Circle = get_circle_model()
+        return Circle.get_world_circle().pk
 
     def _check_username_not_taken(self, username):
         if username == self.username:

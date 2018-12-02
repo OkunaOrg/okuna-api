@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 # Create your models here.
@@ -10,7 +11,7 @@ from django.utils.translation import ugettext_lazy as _
 
 
 class Circle(models.Model):
-    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='circles')
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='circles', null=True)
     name = models.CharField(_('name'), max_length=CIRCLE_MAX_LENGTH, blank=False, null=False)
     color = models.CharField(_('color'), max_length=COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
                              validators=[hex_color_validator])
@@ -21,9 +22,7 @@ class Circle(models.Model):
 
     @classmethod
     def bootstrap_circles_for_user(cls, user):
-        user_world_circle = cls.objects.create(name=_('World'), color='#23A0F5', creator=user)
         user_connections_circle = cls.objects.create(name=_('Connections'), color='#FFFFFF', creator=user)
-        user.world_circle = user_world_circle
         user.connections_circle = user_connections_circle
         user.save()
 
@@ -35,6 +34,14 @@ class Circle(models.Model):
         except Circle.DoesNotExist:
             return False
 
+    @classmethod
+    def get_world_circle(cls):
+        return Circle.objects.get(pk=cls.get_world_circle_id())
+
+    @classmethod
+    def get_world_circle_id(cls):
+        return settings.WORLD_CIRCLE_ID
+
     @property
     def users(self):
         circle_connections = get_connection_model().objects.select_related('target_connection__user').filter(
@@ -43,3 +50,6 @@ class Circle(models.Model):
         for connection in circle_connections:
             users.append(connection.target_connection.user)
         return users
+
+    def __str__(self):
+        return self.name

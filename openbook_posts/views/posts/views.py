@@ -1,9 +1,11 @@
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from openbook_common.utils.model_loaders import get_post_model
 from openbook_posts.permissions import IsGetOrIsAuthenticated
 from openbook_posts.views.posts.serializers import CreatePostSerializer, AuthenticatedUserPostSerializer, \
     GetPostsSerializer, UnauthenticatedUserPostSerializer
@@ -65,12 +67,21 @@ class Posts(APIView):
 
         user = request.user
 
-        posts = user.get_timeline_posts(
-            circles_ids=circles_ids,
-            lists_ids=lists_ids,
-            max_id=max_id,
-            username=username
-        ).order_by('-created')[:count]
+        if username and not user.is_connected_with_user_with_username(username):
+            User = get_user_model()
+            posts = User.get_public_posts_for_user_with_username(
+                max_id=max_id,
+                username=username
+            )
+        else:
+            posts = user.get_timeline_posts(
+                circles_ids=circles_ids,
+                lists_ids=lists_ids,
+                max_id=max_id,
+                username=username
+            )
+
+        posts = posts.order_by('-created')[:count]
 
         post_serializer = AuthenticatedUserPostSerializer(posts, many=True, context={"request": request})
 
@@ -97,3 +108,13 @@ class Posts(APIView):
         post_serializer = UnauthenticatedUserPostSerializer(posts, many=True, context={"request": request})
 
         return Response(post_serializer.data, status=status.HTTP_200_OK)
+
+
+class TrendingPosts(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        Post = get_post_model()
+        posts = Post.get_trending_posts()[:5]
+        posts_serializer = AuthenticatedUserPostSerializer(posts, many=True, context={"request": request})
+        return Response(posts_serializer.data, status=status.HTTP_200_OK)

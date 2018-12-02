@@ -60,6 +60,11 @@ class ConnectionsAPITests(APITestCase):
 
 
 class ConnectAPITests(APITestCase):
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
     def test_connect(self):
         """
         should be able to connect with another user on an specific circle and return 200
@@ -126,7 +131,7 @@ class ConnectAPITests(APITestCase):
 
         data = {
             'user_id': user_to_connect.pk,
-            'circle_id': user.world_circle_id
+            'circle_id': Circle.get_world_circle()
         }
 
         url = self._get_url()
@@ -257,6 +262,11 @@ class UpdateConnectionAPITest(APITestCase):
 
 
 class ConfirmConnectionAPITest(APITestCase):
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
     def test_confirm_connection(self):
         """
         should be able to confirm a connection, have it automatically added to connections circle and return 200

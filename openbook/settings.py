@@ -77,6 +77,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEBUG = environment_checker.is_debug()
 IS_PRODUCTION = environment_checker.is_production()
 IS_BUILD = environment_checker.is_build()
+TESTING = len(sys.argv) > 1 and sys.argv[1] == 'test'
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS')
 if IS_PRODUCTION:
@@ -164,7 +165,7 @@ WSGI_APPLICATION = 'openbook.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
-if IS_BUILD:
+if IS_BUILD or TESTING:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -280,6 +281,7 @@ LIST_MAX_LENGTH = 100
 PROFILE_NAME_MAX_LENGTH = 192
 PROFILE_LOCATION_MAX_LENGTH = 64
 PROFILE_BIO_MAX_LENGTH = 150
+WORLD_CIRCLE_ID = 1
 
 # AWS Storage config
 

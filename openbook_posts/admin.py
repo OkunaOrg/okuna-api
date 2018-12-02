@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 # RegisterView your models here.
+from openbook_circles.models import Circle
 from openbook_posts.models import Post, PostImage, PostComment, PostReaction
 
 
@@ -36,11 +37,25 @@ class PostReactionInline(admin.TabularInline):
         return False
 
 
+class PostCircleInline(admin.TabularInline):
+    model = Circle.posts.through
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_add_permission(self, request, obj):
+        return False
+
+
 class PostAdmin(admin.ModelAdmin):
     inlines = [
         PostReactionInline,
         PostImageInline,
-        PostCommentInline
+        PostCommentInline,
+        PostCircleInline
     ]
 
     list_display = (

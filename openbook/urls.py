@@ -21,14 +21,14 @@ from django.conf.urls.static import static
 
 from openbook_circles.views import Circles, CircleItem
 from openbook_common.views import Time, Health, EmojiGroups
-from openbook_auth.views import Register, UsernameCheck, EmailCheck, Login, AuthenticatedUser, User
+from openbook_auth.views import Register, UsernameCheck, EmailCheck, Login, AuthenticatedUser, User, Users
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
 from openbook_lists.views import Lists, ListItem
 from openbook_posts.views.post.views import PostComments, PostCommentItem, PostItem, PostReactions, PostReactionItem, \
     PostReactionsEmojiCount
-from openbook_posts.views.posts.views import Posts
+from openbook_posts.views.posts.views import Posts, TrendingPosts
 
 auth_patterns = [
     path('register/', Register.as_view(), name='register-user'),
@@ -37,6 +37,7 @@ auth_patterns = [
     path('email-check/', EmailCheck.as_view(), name='email-check'),
     path('user/', AuthenticatedUser.as_view(), name='authenticated-user'),
     path('users/<str:user_username>/', User.as_view(), name='user'),
+    path('users/', Users.as_view(), name='users'),
 ]
 
 post_patterns = [
@@ -51,6 +52,8 @@ post_patterns = [
 posts_patterns = [
     path('<int:post_id>/', include(post_patterns)),
     path('', Posts.as_view(), name='posts'),
+    path('trending/', TrendingPosts.as_view(), name='trending-posts'),
+
 ]
 
 connections_patterns = [

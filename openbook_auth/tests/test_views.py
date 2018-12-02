@@ -186,12 +186,12 @@ class RegistrationAPITests(APITestCase):
                         'password': 'secretPassword123', 'birth_date': '27-1-1996'}
         response = self.client.post(url, request_data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Circle.objects.count(), 2)
+        self.assertEqual(Circle.objects.count(), 1)
 
         user = User.objects.get(username=username)
 
-        # Check we created the 2 world circle and connections circle
-        self.assertTrue(Circle.objects.filter(id__in=(user.world_circle_id, user.connections_circle_id)).count() == 2)
+        # Check we created the connections circle
+        self.assertTrue(Circle.objects.filter(id__in=(user.connections_circle_id,)).count() == 1)
 
         # Check we have a circles related manager
         self.assertTrue(hasattr(user, 'circles'))
@@ -916,3 +916,66 @@ class UserAPITests(APITestCase):
         return reverse('user', kwargs={
             'user_username': user.username
         })
+
+
+class UsersAPITests(APITestCase):
+    """
+    UsersAPI
+    """
+
+    def test_can_query_users(self):
+        user = make_user()
+        user.username = 'lilwayne'
+        user.save()
+
+        user_b = make_user()
+        user_b.username = 'lilscoop'
+        user_b.save()
+
+        user_c = make_user()
+        user_c.profile.name = 'lilwhat'
+        user_c.profile.save()
+
+        lil_users = [user, user_b, user_c]
+
+        user_d = make_user()
+        user_d.username = 'lolwayne'
+        user_d.save()
+
+        url = self._get_url()
+        response = self.client.get(url, {
+            'query': 'lil'
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(len(parsed_response), len(lil_users))
+
+        response_usernames = [user['username'] for user in parsed_response]
+
+        for lil_user in lil_users:
+            self.assertIn(lil_user.username, response_usernames)
+
+    def test_can_limit_amount_of_queried_users(self):
+        total_users = 10
+        limited_users = 5
+
+        for i in range(total_users):
+            user = make_user()
+            user.profile.name = 'John Cena'
+            user.profile.save()
+
+        url = self._get_url()
+        response = self.client.get(url, {
+            'query': 'john',
+            'count': limited_users
+        })
+
+        parsed_reponse = json.loads(response.content)
+
+        self.assertEqual(len(parsed_reponse), limited_users)
+
+    def _get_url(self):
+        return reverse('users')

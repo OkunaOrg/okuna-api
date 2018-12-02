@@ -27,3 +27,12 @@ runserver:
 
 runserver_public:
 	python manage.py runserver 0.0.0.0:8000
+
+load_fixtures: load_circles_fixtures load_emoji_fixtures
+
+load_circles_fixtures:
+	python manage.py loaddata circles.json
+
+load_emoji_fixtures:
+	python manage.py loaddata emoji-groups.json
+	python manage.py loaddata emojis.json

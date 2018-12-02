@@ -140,7 +140,7 @@ class GetUserUserSerializer(serializers.ModelSerializer):
 
         if not request.user.is_anonymous:
             if request.user.pk == obj.pk:
-                return None
+                return False
             return request.user.is_following_user_with_id(obj.pk)
 
         return False
@@ -173,4 +173,47 @@ class GetUserUserSerializer(serializers.ModelSerializer):
             'following_count',
             'posts_count',
             'is_following',
+        )
+
+
+class GetUsersSerializer(serializers.Serializer):
+    query = serializers.CharField(max_length=PROFILE_NAME_MAX_LENGTH, required=True)
+    count = serializers.IntegerField(
+        required=False,
+        max_value=10
+    )
+
+
+class GetUsersUserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = (
+            'id',
+            'avatar',
+            'name'
+        )
+
+
+class GetUsersUserSerializer(serializers.ModelSerializer):
+    profile = GetUsersUserProfileSerializer(many=False)
+
+    is_following = serializers.SerializerMethodField()
+
+    def get_is_following(self, obj):
+        request = self.context.get('request')
+
+        if not request.user.is_anonymous:
+            if request.user.pk == obj.pk:
+                return False
+            return request.user.is_following_user_with_id(obj.pk)
+
+        return False
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'profile',
+            'username',
+            'is_following'
         )

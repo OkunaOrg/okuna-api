@@ -64,6 +64,10 @@ class PostCommentsAPITests(APITestCase):
     PostCommentsAPI
     """
 
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
     def test_can_comment_in_own_post(self):
         """
          should be able to comment in own post and return 201
@@ -186,7 +190,7 @@ class PostCommentsAPITests(APITestCase):
 
         foreign_user = make_user()
 
-        foreign_user_post = foreign_user.create_post(text=make_fake_post_text(), circle_id=foreign_user.world_circle_id)
+        foreign_user_post = foreign_user.create_public_post(text=make_fake_post_text())
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -238,6 +242,10 @@ class PostCommentItemAPITests(APITestCase):
     PostCommentItemAPI
     """
 
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
     def test_can_delete_foreign_comment_in_own_post(self):
         """
           should be able to delete a foreign comment in own post and return 200
@@ -246,7 +254,7 @@ class PostCommentItemAPITests(APITestCase):
 
         commenter = make_user()
 
-        post = user.create_post(text=make_fake_post_text(), circle_id=user.world_circle_id)
+        post = user.create_public_post(text=make_fake_post_text())
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -530,6 +538,10 @@ class PostReactionsAPITests(APITestCase):
     PostReactionsAPI
     """
 
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
     def test_can_react_to_own_post(self):
         """
          should be able to reaction in own post and return 201
@@ -660,7 +672,7 @@ class PostReactionsAPITests(APITestCase):
 
         foreign_user = make_user()
 
-        foreign_user_post = foreign_user.create_post(text=make_fake_post_text(), circle_id=foreign_user.world_circle_id)
+        foreign_user_post = foreign_user.create_public_post(text=make_fake_post_text())
 
         post_reaction_emoji_id = make_emoji().pk
 
@@ -739,6 +751,10 @@ class PostReactionItemAPITests(APITestCase):
     PostReactionItemAPI
     """
 
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
     def test_can_delete_foreign_reaction_in_own_post(self):
         """
           should be able to delete a foreign reaction in own post and return 200
@@ -747,7 +763,7 @@ class PostReactionItemAPITests(APITestCase):
 
         reactioner = make_user()
 
-        post = user.create_post(text=make_fake_post_text(), circle_id=user.world_circle_id)
+        post = user.create_public_post(text=make_fake_post_text())
 
         post_reaction_emoji_id = make_emoji().pk
 

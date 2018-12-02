@@ -11,7 +11,8 @@ from rest_framework.authtoken.models import Token
 
 from openbook_common.responses import ApiMessageResponse
 from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheckSerializer, LoginSerializer, \
-    GetAuthenticatedUserSerializer, GetUserUserSerializer, UpdateAuthenticatedUserSerializer, GetUserSerializer
+    GetAuthenticatedUserSerializer, GetUserUserSerializer, UpdateAuthenticatedUserSerializer, GetUserSerializer, \
+    GetUsersSerializer, GetUsersUserSerializer
 from .models import UserProfile
 
 
@@ -140,6 +141,30 @@ class AuthenticatedUser(APIView):
 
         user_serializer = GetAuthenticatedUserSerializer(user, context={"request": request})
         return Response(user_serializer.data, status=status.HTTP_200_OK)
+
+
+class Users(APIView):
+    def get(self, request):
+        query_params = request.query_params.dict()
+        serializer = GetUsersSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 10)
+        query = data.get('query')
+
+        user = request.user
+
+        if user.is_anonymous:
+            User = get_user_model()
+            users = User.get_public_users_with_query(query=query)
+        else:
+            users = user.get_users_with_query(query=query)
+
+        users_serializer = GetUsersUserSerializer(users[:count], many=True, context={'request': request})
+
+        return Response(users_serializer.data, status=status.HTTP_200_OK)
 
 
 class User(APIView):
