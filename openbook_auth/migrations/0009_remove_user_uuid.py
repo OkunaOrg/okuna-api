@@ -4,14 +4,9 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('openbook_auth', '0008_auto_20181123_1351'),
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='user',
-            name='uuid',
-        ),
     ]
