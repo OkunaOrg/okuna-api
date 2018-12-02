@@ -233,6 +233,11 @@ class User(AbstractUser):
             target_connection__user_id=user_id).count()
         return count > 0
 
+    def is_connected_with_user_with_username(self, username):
+        count = self.connections.select_related('target_connection__user__username').filter(
+            target_connection__user__username=username).count()
+        return count > 0
+
     def is_connected_with_user_in_circle(self, user, circle):
         return self.is_connected_with_user_with_id_in_circle_with_id(user.pk, circle.pk)
 

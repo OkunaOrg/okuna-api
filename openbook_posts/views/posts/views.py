@@ -67,12 +67,21 @@ class Posts(APIView):
 
         user = request.user
 
-        posts = user.get_timeline_posts(
-            circles_ids=circles_ids,
-            lists_ids=lists_ids,
-            max_id=max_id,
-            username=username
-        ).order_by('-created')[:count]
+        if username and not user.is_connected_with_user_with_username(username):
+            User = get_user_model()
+            posts = User.get_public_posts_for_user_with_username(
+                max_id=max_id,
+                username=username
+            )
+        else:
+            posts = user.get_timeline_posts(
+                circles_ids=circles_ids,
+                lists_ids=lists_ids,
+                max_id=max_id,
+                username=username
+            )
+
+        posts = posts.order_by('-created')[:count]
 
         post_serializer = AuthenticatedUserPostSerializer(posts, many=True, context={"request": request})
 
