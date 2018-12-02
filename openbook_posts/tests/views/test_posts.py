@@ -429,23 +429,22 @@ class PostsAPITests(APITestCase):
             self.assertIn(response_post_id, all_posts_ids)
             self.assertTrue(response_post_id < max_id)
 
-    def test_get_all_posts_for_user(self):
+    def test_get_all_public_posts_for_unconnected_user(self):
         """
-        should be able to retrieve all the posts of an specific user
+        should be able to retrieve all the public posts of an unconnected user
         and return 200
         """
         user = make_user()
 
         amount_of_users_to_follow = random.randint(1, 5)
 
-        users_to_follow = make_users(amount_of_users_to_follow)
+        users_to_retrieve_posts_from = make_users(amount_of_users_to_follow)
 
-        for user_to_follow in users_to_follow:
-            user.follow_user_with_id(user_to_follow.pk)
+        for user_to_retrieve_posts_from in users_to_retrieve_posts_from:
             post_text = make_fake_post_text()
-            user_to_follow.create_public_post(text=post_text)
+            user_to_retrieve_posts_from.create_public_post(text=post_text)
 
-        user_to_retrieve_posts_from = random.choice(users_to_follow)
+        user_to_retrieve_posts_from = random.choice(users_to_retrieve_posts_from)
 
         headers = make_authentication_headers_for_user(user)
 
@@ -464,6 +463,54 @@ class PostsAPITests(APITestCase):
         post = response_posts[0]
 
         self.assertEqual(post['creator']['id'], user_to_retrieve_posts_from.pk)
+
+    def test_get_all_public_posts_for_connected_user(self):
+        """
+        should be able to retrieve all the posts of a connected user
+        and return 200
+        """
+        user = make_user()
+
+        user_to_connect_with = make_user()
+
+        user.connect_with_user_with_id(user_to_connect_with.pk)
+        user_to_connect_with.confirm_connection_with_user_with_id(user.pk)
+
+        amount_of_public_posts = random.randint(1, 5)
+        amount_of_encircled_posts = random.randint(1, 5)
+
+        created_posts_ids = []
+
+        for i in range(amount_of_public_posts):
+            post = user_to_connect_with.create_public_post(make_fake_post_text())
+            created_posts_ids.append(post.pk)
+
+        circle = make_circle(creator=user_to_connect_with)
+
+        user_to_connect_with.update_connection_with_user_with_id(user_id=user.pk, circle_id=circle.pk)
+
+        for i in range(amount_of_encircled_posts):
+            post = user_to_connect_with.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+            created_posts_ids.append(post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': user_to_connect_with.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), len(created_posts_ids))
+
+        response_posts_ids = [post['id'] for post in response_posts]
+
+        for post_id in created_posts_ids:
+            self.assertIn(post_id, response_posts_ids)
 
     def test_get_all_public_posts_for_user_unauthenticated(self):
         """
