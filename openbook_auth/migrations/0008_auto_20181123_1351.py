@@ -2,7 +2,6 @@
 
 from django.db import migrations, models
 import openbook_common.validators
-import uuid
 
 
 class Migration(migrations.Migration):
