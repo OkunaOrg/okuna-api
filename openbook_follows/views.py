@@ -15,7 +15,7 @@ class Follows(APIView):
 
     def get(self, request):
         user = request.user
-        response_serializer = FollowSerializer(user.follows, many=True)
+        response_serializer = FollowSerializer(user.follows, many=True, context={'request': request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
