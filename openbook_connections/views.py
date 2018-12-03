@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from openbook_connections.serializers import ConnectWithUserSerializer, ConnectionSerializer, \
-    DisconnectFromUserSerializer, UpdateConnectionSerializer, ConfirmConnectionSerializer
+    DisconnectFromUserSerializer, UpdateConnectionSerializer, ConfirmConnectionSerializer, ConnectionUserSerializer
 
 
 class Connections(APIView):
@@ -60,7 +60,9 @@ class DisconnectFromUser(APIView):
         with transaction.atomic():
             user.disconnect_from_user_with_id(user_to_disconnect_from.pk)
 
-        return Response(status=status.HTTP_200_OK)
+        response_serializer = ConnectionUserSerializer(user_to_disconnect_from, context={'request': request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
 class UpdateConnection(APIView):

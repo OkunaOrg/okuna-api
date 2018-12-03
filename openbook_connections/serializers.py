@@ -33,13 +33,25 @@ class ConnectionUserProfileSerializer(serializers.ModelSerializer):
 
 class ConnectionUserSerializer(serializers.ModelSerializer):
     profile = ConnectionUserProfileSerializer(many=False)
+    is_connected = serializers.SerializerMethodField()
+
+    def get_is_connected(self, obj):
+        request = self.context.get('request')
+
+        if not request.user.is_anonymous:
+            if request.user.pk == obj.pk:
+                return False
+            return request.user.is_connected_with_user_with_id(obj.pk)
+
+        return False
 
     class Meta:
         model = User
         fields = (
             'id',
             'username',
-            'profile'
+            'profile',
+            'is_connected'
         )
 
 
