@@ -1,14 +1,23 @@
+from django.conf import settings
 from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
-from openbook_auth.validators import user_id_exists
+from openbook_auth.validators import username_characters_validator, user_username_exists
 
 from openbook_follows.models import Follow
 
 
-class FollowUserSerializer(serializers.Serializer):
-    user_id = serializers.IntegerField(required=True, validators=[user_id_exists])
-    list_id = serializers.IntegerField(required=True)
+class FollowUserRequestSerializer(serializers.Serializer):
+    username = serializers.CharField(
+        max_length=settings.USERNAME_MAX_LENGTH,
+        allow_blank=False,
+        validators=[
+            username_characters_validator,
+            user_username_exists
+        ],
+        required=False
+    )
+    list_id = serializers.IntegerField(required=False)
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -21,20 +30,24 @@ class UserProfileSerializer(serializers.ModelSerializer):
         )
 
 
-class UserSerializer(serializers.ModelSerializer):
-    profile = UserProfileSerializer(many=False)
+class FollowUserSerializer(serializers.ModelSerializer):
+    is_following = serializers.SerializerMethodField()
+
+    def get_is_following(self, obj):
+        request = self.context.get('request')
+        return request.user.is_following_user_with_id(obj.pk)
 
     class Meta:
         model = User
         fields = (
             'id',
             'username',
-            'profile'
+            'is_following',
         )
 
 
 class FollowSerializer(serializers.ModelSerializer):
-    followed_user = UserSerializer(many=False)
+    followed_user = FollowUserSerializer(many=False)
 
     class Meta:
         model = Follow
@@ -47,9 +60,25 @@ class FollowSerializer(serializers.ModelSerializer):
 
 
 class DeleteFollowSerializer(serializers.Serializer):
-    user_id = serializers.IntegerField(required=True)
+    username = serializers.CharField(
+        max_length=settings.USERNAME_MAX_LENGTH,
+        allow_blank=False,
+        validators=[
+            username_characters_validator,
+            user_username_exists
+        ],
+        required=False
+    )
 
 
 class UpdateFollowSerializer(serializers.Serializer):
-    user_id = serializers.IntegerField(required=True)
+    username = serializers.CharField(
+        max_length=settings.USERNAME_MAX_LENGTH,
+        allow_blank=False,
+        validators=[
+            username_characters_validator,
+            user_username_exists
+        ],
+        required=False
+    )
     list_id = serializers.IntegerField(required=True)
