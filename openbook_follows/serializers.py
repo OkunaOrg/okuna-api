@@ -7,7 +7,7 @@ from openbook_auth.validators import username_characters_validator, user_usernam
 from openbook_follows.models import Follow
 
 
-class FollowUserSerializer(serializers.Serializer):
+class FollowUserRequestSerializer(serializers.Serializer):
     username = serializers.CharField(
         max_length=settings.USERNAME_MAX_LENGTH,
         allow_blank=False,
@@ -30,20 +30,24 @@ class UserProfileSerializer(serializers.ModelSerializer):
         )
 
 
-class UserSerializer(serializers.ModelSerializer):
-    profile = UserProfileSerializer(many=False)
+class FollowUserSerializer(serializers.ModelSerializer):
+    is_following = serializers.SerializerMethodField()
+
+    def get_is_following(self, obj):
+        request = self.context.get('request')
+        return request.user.is_following_user_with_id(obj.pk)
 
     class Meta:
         model = User
         fields = (
             'id',
             'username',
-            'profile'
+            'is_following',
         )
 
 
 class FollowSerializer(serializers.ModelSerializer):
-    followed_user = UserSerializer(many=False)
+    followed_user = FollowUserSerializer(many=False)
 
     class Meta:
         model = Follow

@@ -6,8 +6,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from openbook_follows.serializers import FollowUserSerializer, FollowSerializer, \
-    DeleteFollowSerializer, UpdateFollowSerializer
+from openbook_follows.serializers import FollowUserRequestSerializer, FollowSerializer, \
+    DeleteFollowSerializer, UpdateFollowSerializer, FollowUserSerializer
 
 
 class Follows(APIView):
@@ -24,7 +24,7 @@ class FollowUser(APIView):
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
-        serializer = FollowUserSerializer(data=request.data, context={"request": request})
+        serializer = FollowUserRequestSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
@@ -61,7 +61,8 @@ class UnfollowUser(APIView):
         with transaction.atomic():
             user.unfollow_user_with_id(user_to_unfollow.pk)
 
-        return Response(status=status.HTTP_200_OK)
+        response_serializer = FollowUserSerializer(user_to_unfollow, context={"request": request})
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
 class UpdateFollowUser(APIView):
