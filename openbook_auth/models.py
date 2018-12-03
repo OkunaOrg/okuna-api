@@ -957,7 +957,7 @@ def bootstrap_circles(sender, instance=None, created=False, **kwargs):
 class UserProfile(models.Model):
     name = models.CharField(_('name'), max_length=settings.PROFILE_NAME_MAX_LENGTH, blank=False, null=False,
                             validators=[name_characters_validator])
-    location = models.CharField(_('name'), max_length=settings.PROFILE_LOCATION_MAX_LENGTH, blank=False, null=True)
+    location = models.CharField(_('location'), max_length=settings.PROFILE_LOCATION_MAX_LENGTH, blank=False, null=True)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     birth_date = models.DateField(_('birth date'), null=False, blank=False)
     avatar = models.ImageField(_('avatar'), blank=False, null=True)
