@@ -83,7 +83,7 @@ class UpdateConnection(APIView):
             connection = user.update_connection_with_user_with_id(user_to_update_connection_from.pk,
                                                                   circle_id=circle_id)
 
-        response_serializer = ConnectionSerializer(connection)
+        response_serializer = ConnectionSerializer(connection, context={'request': request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
@@ -106,6 +106,6 @@ class ConfirmConnection(APIView):
             connection = user.confirm_connection_with_user_with_id(user_to_confirm_connection_with.pk,
                                                                    circle_id=circle_id)
 
-        response_serializer = ConnectionSerializer(connection)
+        response_serializer = ConnectionSerializer(connection, context={'request': request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
