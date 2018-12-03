@@ -79,7 +79,7 @@ class ConnectAPITests(APITestCase):
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
         data = {
-            'user_id': user_to_connect.pk,
+            'username': user_to_connect.username,
             'circle_id': circle_to_connect.pk
         }
 
@@ -107,7 +107,7 @@ class ConnectAPITests(APITestCase):
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
         data = {
-            'user_id': user_to_connect.pk,
+            'username': user_to_connect.username,
             'circle_id': circle_to_connect.pk
         }
 
@@ -130,7 +130,7 @@ class ConnectAPITests(APITestCase):
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
         data = {
-            'user_id': user_to_connect.pk,
+            'username': user_to_connect.username,
             'circle_id': Circle.get_world_circle()
         }
 
@@ -161,7 +161,7 @@ class DisconnectAPITest(APITestCase):
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
         data = {
-            'user_id': user_to_connect.pk
+            'username': user_to_connect.username
         }
 
         url = self._get_url()
@@ -185,7 +185,7 @@ class DisconnectAPITest(APITestCase):
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
         data = {
-            'user_id': not_connected_user
+            'username': not_connected_user.username
         }
 
         url = self._get_url()
@@ -219,7 +219,7 @@ class UpdateConnectionAPITest(APITestCase):
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
         data = {
-            'user_id': user_to_connect.pk,
+            'username': user_to_connect.username,
             'circle_id': new_circle.pk
         }
 
@@ -247,7 +247,7 @@ class UpdateConnectionAPITest(APITestCase):
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
         data = {
-            'user_id': not_connected_user.pk,
+            'username': not_connected_user.username,
             'circle_id': new_circle.pk
         }
 
@@ -280,7 +280,7 @@ class ConfirmConnectionAPITest(APITestCase):
         headers = make_authentication_headers_for_user(user_to_connect)
 
         data = {
-            'user_id': user.pk
+            'username': user.username
         }
 
         url = self._get_url()
@@ -309,7 +309,7 @@ class ConfirmConnectionAPITest(APITestCase):
         headers = make_authentication_headers_for_user(user_to_connect)
 
         data = {
-            'user_id': user.pk,
+            'username': user.username,
             'circle_id': circle.pk
         }
 
@@ -336,7 +336,7 @@ class ConfirmConnectionAPITest(APITestCase):
         headers = make_authentication_headers_for_user(user_to_connect)
 
         data = {
-            'user_id': user.pk
+            'username': user.username
         }
 
         url = self._get_url()

@@ -1,4 +1,5 @@
 # Create your views here.
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -26,13 +27,16 @@ class ConnectWithUser(APIView):
         serializer = ConnectWithUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        user_id = data.get('user_id')
+        username = data.get('username')
         circle_id = data.get('circle_id')
 
         user = request.user
 
+        User = get_user_model()
+        user_to_connect_with = User.objects.get(username=username)
+
         with transaction.atomic():
-            connection = user.connect_with_user_with_id(user_id, circle_id=circle_id)
+            connection = user.connect_with_user_with_id(user_to_connect_with.pk, circle_id=circle_id)
 
         response_serializer = ConnectionSerializer(connection, context={"request": request})
 
@@ -46,12 +50,15 @@ class DisconnectFromUser(APIView):
         serializer = DisconnectFromUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        user_id = data.get('user_id')
+        username = data.get('username')
 
         user = request.user
 
+        User = get_user_model()
+        user_to_disconnect_from = User.objects.get(username=username)
+
         with transaction.atomic():
-            user.disconnect_from_user_with_id(user_id)
+            user.disconnect_from_user_with_id(user_to_disconnect_from.pk)
 
         return Response(status=status.HTTP_200_OK)
 
@@ -62,12 +69,17 @@ class UpdateConnection(APIView):
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
-        user_id = data.get('user_id')
+        username = data.get('username')
         circle_id = data.get('circle_id')
+
         user = request.user
 
+        User = get_user_model()
+        user_to_update_connection_from = User.objects.get(username=username)
+
         with transaction.atomic():
-            connection = user.update_connection_with_user_with_id(user_id, circle_id=circle_id)
+            connection = user.update_connection_with_user_with_id(user_to_update_connection_from.pk,
+                                                                  circle_id=circle_id)
 
         response_serializer = ConnectionSerializer(connection)
 
@@ -80,12 +92,17 @@ class ConfirmConnection(APIView):
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
-        user_id = data.get('user_id')
+        username = data.get('username')
         circle_id = data.get('circle_id')
+
         user = request.user
 
+        User = get_user_model()
+        user_to_confirm_connection_with = User.objects.get(username=username)
+
         with transaction.atomic():
-            connection = user.confirm_connection_with_user_with_id(user_id, circle_id=circle_id)
+            connection = user.confirm_connection_with_user_with_id(user_to_confirm_connection_with.pk,
+                                                                   circle_id=circle_id)
 
         response_serializer = ConnectionSerializer(connection)
 
