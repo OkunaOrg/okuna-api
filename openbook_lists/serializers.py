@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from openbook.settings import LIST_MAX_LENGTH
 from openbook_auth.models import UserProfile, User
+from openbook_common.models import Emoji
 from openbook_lists.models import List
 from openbook_common.validators import emoji_id_exists
 from openbook_lists.validators import list_id_exists
@@ -46,8 +47,17 @@ class ListUserSerializer(serializers.ModelSerializer):
         )
 
 
+class ListEmojiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Emoji
+        fields = (
+            'color',
+            'image',
+        )
+
+
 class ListSerializer(serializers.ModelSerializer):
-    users = ListUserSerializer(many=True)
+    emoji = ListEmojiSerializer(many=False)
 
     class Meta:
         model = List
@@ -55,5 +65,5 @@ class ListSerializer(serializers.ModelSerializer):
             'id',
             'name',
             'emoji',
-            'users'
+            'follows_count'
         )

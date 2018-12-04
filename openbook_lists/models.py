@@ -36,3 +36,7 @@ class List(models.Model):
         for follow in list_follows:
             users.append(follow.followed_user)
         return users
+
+    @property
+    def follows_count(self):
+        return self.follows.count()
