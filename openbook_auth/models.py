@@ -253,9 +253,9 @@ class User(AbstractUser):
         return self.is_connected_with_user_with_id_in_circles_with_ids(user.pk, circles_ids)
 
     def is_connected_with_user_with_id_in_circles_with_ids(self, user_id, circles_ids):
-        count = self.connections.select_related('target_connection__user_id').filter(
+        count = self.connections.filter(
             target_connection__user_id=user_id,
-            circle_id__in=circles_ids).count()
+            circles__id__in=circles_ids).count()
         return count > 0
 
     def is_following_user(self, user):
@@ -578,7 +578,7 @@ class User(AbstractUser):
                 queries.append(connected_user_connections_circle_posts_query)
 
                 # Get the circles we're part of
-                target_connection_circles = connection.target_connection.circles.filter(connections__user__id=self.pk)
+                target_connection_circles = connection.target_connection.circles.all()
 
                 # The other user might not have the user in a circle yet
                 if target_connection_circles:
