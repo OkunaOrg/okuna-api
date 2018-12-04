@@ -66,7 +66,7 @@ class User(AbstractUser):
     @classmethod
     def get_public_posts_for_user_with_username(cls, username, max_id=None):
         Circle = get_circle_model()
-        world_circle_id = Circle._get_world_circle_id()
+        world_circle_id = Circle.get_world_circle_id()
 
         final_query = Q(creator__username=username, circles__id=world_circle_id)
 
