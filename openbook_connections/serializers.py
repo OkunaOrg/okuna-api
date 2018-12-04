@@ -18,7 +18,9 @@ class ConnectWithUserSerializer(serializers.Serializer):
         ],
         required=False
     )
-    circle_id = serializers.IntegerField(required=True, validators=[circle_id_exists])
+    circles_ids = serializers.ListSerializer(
+        child=serializers.IntegerField(required=True, validators=[circle_id_exists])
+    )
 
 
 class ConnectionUserProfileSerializer(serializers.ModelSerializer):
@@ -63,7 +65,7 @@ class ConnectionSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'user',
-            'circle',
+            'circles',
             'target_user',
         )
 
@@ -90,7 +92,9 @@ class UpdateConnectionSerializer(serializers.Serializer):
         ],
         required=False
     )
-    circle_id = serializers.IntegerField(required=True, validators=[circle_id_exists])
+    circles_ids = serializers.ListSerializer(
+        child=serializers.IntegerField(required=True, validators=[circle_id_exists])
+    )
 
 
 class ConfirmConnectionSerializer(serializers.Serializer):
@@ -103,4 +107,7 @@ class ConfirmConnectionSerializer(serializers.Serializer):
         ],
         required=False
     )
-    circle_id = serializers.IntegerField(required=False, validators=[circle_id_exists])
+    circles_ids = serializers.ListSerializer(
+        required=False,
+        child=serializers.IntegerField(validators=[circle_id_exists])
+    )

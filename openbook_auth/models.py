@@ -66,7 +66,7 @@ class User(AbstractUser):
     @classmethod
     def get_public_posts_for_user_with_username(cls, username, max_id=None):
         Circle = get_circle_model()
-        world_circle_id = Circle.get_world_circle_id()
+        world_circle_id = Circle._get_world_circle_id()
 
         final_query = Q(creator__username=username, circles__id=world_circle_id)
 
@@ -96,7 +96,7 @@ class User(AbstractUser):
         Count how many public posts has the user created
         :return:
         """
-        world_circle_id = self.get_world_circle_id()
+        world_circle_id = self._get_world_circle_id()
 
         return self.posts.filter(circles__id=world_circle_id).count()
 
@@ -216,11 +216,13 @@ class User(AbstractUser):
         if not self.is_connected_with_user_with_id(user_id):
             return False
 
-        connection = self.connections.select_related('target_connection__circle').filter(
+        connection = self.connections.filter(
             target_connection__user_id=user_id).get()
+
         target_connection = connection.target_connection
 
-        if target_connection.circle and connection.circle:
+        # If both connections have circles on them, we're fully connected
+        if target_connection.circles.all().exists() and connection.circles.all().exists():
             return True
 
         return False
@@ -244,7 +246,7 @@ class User(AbstractUser):
     def is_connected_with_user_with_id_in_circle_with_id(self, user_id, circle_id):
         return self.connections.select_related('target_connection__user_id').filter(
             target_connection__user_id=user_id,
-            circle_id=circle_id).count() == 1
+            circles__id=circle_id).count() == 1
 
     def is_connected_with_user_in_circles(self, user, circles):
         circles_ids = [circle.pk for circle in circles]
@@ -271,7 +273,7 @@ class User(AbstractUser):
             list_id=list_id).count() == 1
 
     def is_world_circle_id(self, id):
-        world_circle_id = self.get_world_circle_id()
+        world_circle_id = self._get_world_circle_id()
         return world_circle_id == id
 
     def is_connections_circle_id(self, id):
@@ -484,7 +486,7 @@ class User(AbstractUser):
         return User.get_public_users_with_query(query)
 
     def create_public_post(self, text=None, image=None):
-        world_circle_id = self.get_world_circle_id()
+        world_circle_id = self._get_world_circle_id()
         return self.create_post(text=text, image=image, circle_id=world_circle_id)
 
     def create_encircled_post(self, circles_ids, text=None, image=None):
@@ -505,7 +507,7 @@ class User(AbstractUser):
 
         if len(circles_ids) == 0:
             # If no circle, add post to world circle
-            world_circle_id = self.get_world_circle_id()
+            world_circle_id = self._get_world_circle_id()
             circles_ids.append(world_circle_id)
 
         Post = get_post_model()
@@ -532,7 +534,7 @@ class User(AbstractUser):
         queries = []
 
         follows = None
-        world_circle_id = self.get_world_circle_id()
+        world_circle_id = self._get_world_circle_id()
 
         if lists_ids:
             follows = self.follows.filter(list_id__in=lists_ids)
@@ -575,13 +577,15 @@ class User(AbstractUser):
                                                                   circles__id=target_connection.user.connections_circle.pk)
                 queries.append(connected_user_connections_circle_posts_query)
 
-                # Add the connected user circle posts we might be in
-                target_connection_circle = connection.target_connection.circle
+                # Get the circles we're part of
+                target_connection_circles = connection.target_connection.circles.filter(connections__user__id=self.pk)
+
                 # The other user might not have the user in a circle yet
-                if target_connection_circle:
-                    connected_user_circle_posts_query = Q(creator_id=target_connection.user_id,
-                                                          circles__id=target_connection.circle_id)
-                    queries.append(connected_user_circle_posts_query)
+                if target_connection_circles:
+                    target_connection_circles_ids = [circle.pk for circle in target_connection_circles]
+                    connected_user_circles_posts_query = Q(creator_id=target_connection.user_id,
+                                                           circles__id__in=target_connection_circles_ids)
+                    queries.append(connected_user_circles_posts_query)
 
         final_query = Q(creator_id=self.pk)
 
@@ -637,56 +641,52 @@ class User(AbstractUser):
         follow.save()
         return follow
 
-    def connect_with_user_with_id(self, user_id, circle_id=None):
+    def connect_with_user_with_id(self, user_id, circles_ids=None):
         self._check_is_not_connected_with_user_with_id(user_id)
 
-        if not circle_id:
-            circle_id = self.connections_circle_id
+        if not circles_ids:
+            circles_ids = self._get_default_connection_circles()
 
-        self.check_connection_circle_id(circle_id)
+        self._check_connection_circles_ids(circles_ids)
 
         if self.pk == user_id:
             raise ValidationError(
                 _('A user cannot connect with itself.'),
             )
+
         Connection = get_connection_model()
-        connection = Connection.create_connection(user_id=self.pk, target_user_id=user_id, circle_id=circle_id)
+        connection = Connection.create_connection(user_id=self.pk, target_user_id=user_id, circles_ids=circles_ids)
+
         # Automatically follow user
         if not self.is_following_user_with_id(user_id):
             self.follow_user_with_id(user_id)
 
         return connection
 
-    def confirm_connection_with_user_with_id(self, user_id, circle_id=None):
+    def confirm_connection_with_user_with_id(self, user_id, circles_ids=None):
         self._check_is_not_fully_connected_with_user_with_id(user_id)
 
-        if not circle_id:
-            circle_id = self.connections_circle_id
-        self.check_connection_circle_id(circle_id)
+        if not circles_ids:
+            circles_ids = self._get_default_connection_circles()
 
-        return self.update_connection_with_user_with_id(user_id, circle_id=circle_id)
+        self._check_connection_circles_ids(circles_ids)
 
-    def update_connection_with_user_with_id(self, user_id, circle_id=None):
+        return self.update_connection_with_user_with_id(user_id, circles_ids=circles_ids)
+
+    def update_connection_with_user_with_id(self, user_id, circles_ids=None):
         self._check_is_connected_with_user_with_id(user_id)
 
-        if not circle_id:
+        if not circles_ids:
             raise ValidationError(
                 _('No data to update the connection with.'),
             )
 
-        self.check_connection_circle_id(circle_id)
+        self._check_connection_circles_ids(circles_ids)
         connection = self.get_connection_for_user_with_id(user_id)
-        connection.circle_id = circle_id
+        connection.circles.clear()
+        connection.circles.add(*circles_ids)
         connection.save()
         return connection
-
-    def check_connection_circle_id(self, circle_id):
-        self._check_has_circle_with_id(circle_id)
-
-        if self.is_world_circle_id(circle_id):
-            raise ValidationError(
-                _('Can\'t connect in the world circle.'),
-            )
 
     def disconnect_from_user(self, user):
         return self.disconnect_from_user_with_id(user.pk)
@@ -706,6 +706,31 @@ class User(AbstractUser):
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
 
+    def _get_world_circle_id(self):
+        Circle = get_circle_model()
+        return Circle.get_world_circle().pk
+
+    def _get_default_connection_circles(self):
+        """
+        If no circles were given on a connection request or confirm,
+        these will be the ones used.
+        :return:
+        """
+        return [self.connections_circle_id]
+
+    def _check_connection_circles_ids(self, circles_ids):
+        # TODO Optimisation opportunity
+        for circle_id in circles_ids:
+            self._check_connection_circle_id(circle_id)
+
+    def _check_connection_circle_id(self, circle_id):
+        self._check_has_circle_with_id(circle_id)
+
+        if self.is_world_circle_id(circle_id):
+            raise ValidationError(
+                _('Can\'t connect in the world circle.'),
+            )
+
     def _check_email_not_taken(self, email):
         if email == self.email:
             return
@@ -714,10 +739,6 @@ class User(AbstractUser):
             raise ValidationError(
                 _('The email is already taken.')
             )
-
-    def get_world_circle_id(self):
-        Circle = get_circle_model()
-        return Circle.get_world_circle().pk
 
     def _check_username_not_taken(self, username):
         if username == self.username:

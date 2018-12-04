@@ -5,6 +5,7 @@ from django.db import models
 from openbook.settings import CIRCLE_MAX_LENGTH, COLOR_ATTR_MAX_LENGTH
 from openbook_auth.models import User
 from openbook_common.utils.model_loaders import get_connection_model
+from openbook_connections.models import Connection
 from openbook_posts.models import Post
 from openbook_common.validators import hex_color_validator
 from django.utils.translation import ugettext_lazy as _
@@ -16,6 +17,7 @@ class Circle(models.Model):
     color = models.CharField(_('color'), max_length=COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
                              validators=[hex_color_validator])
     posts = models.ManyToManyField(Post, related_name='circles')
+    connections = models.ManyToManyField(Connection, related_name='circles')
 
     class Meta:
         unique_together = ('creator', 'name',)
@@ -44,8 +46,10 @@ class Circle(models.Model):
 
     @property
     def users(self):
-        circle_connections = get_connection_model().objects.select_related('target_connection__user').filter(
-            circle_id=self.id)
+        Connection = get_connection_model()
+        circle_connections = Connection.objects.select_related('target_connection__user').filter(
+            circles__id=self.id)
+
         users = []
         for connection in circle_connections:
             users.append(connection.target_connection.user)

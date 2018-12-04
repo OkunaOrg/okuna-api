@@ -39,7 +39,7 @@ class ConnectionsAPITests(APITestCase):
         user_to_connect_ids = [user_to_connect.pk for user_to_connect in users_to_connect]
 
         for user_to_connect in users_to_connect:
-            user.connect_with_user_with_id(user_to_connect.pk, circle_id=circle.pk)
+            user.connect_with_user_with_id(user_to_connect.pk, circles_ids=[circle.pk])
 
         url = self._get_url()
         response = self.client.get(url, **headers)
@@ -60,7 +60,6 @@ class ConnectionsAPITests(APITestCase):
 
 
 class ConnectAPITests(APITestCase):
-
     fixtures = [
         'openbook_circles/fixtures/circles.json'
     ]
@@ -80,7 +79,7 @@ class ConnectAPITests(APITestCase):
 
         data = {
             'username': user_to_connect.username,
-            'circle_id': circle_to_connect.pk
+            'circles_ids': circle_to_connect.pk
         }
 
         url = self._get_url()
@@ -102,13 +101,13 @@ class ConnectAPITests(APITestCase):
         circle_to_connect = mixer.blend(Circle, creator=user)
         user_to_connect = mixer.blend(User)
 
-        user.connect_with_user_with_id(user_to_connect.pk, circle_id=circle_to_connect.pk)
+        user.connect_with_user_with_id(user_to_connect.pk, circles_ids=[circle_to_connect.pk])
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
         data = {
             'username': user_to_connect.username,
-            'circle_id': circle_to_connect.pk
+            'circles_ids': circle_to_connect.pk
         }
 
         url = self._get_url()
@@ -131,7 +130,7 @@ class ConnectAPITests(APITestCase):
 
         data = {
             'username': user_to_connect.username,
-            'circle_id': Circle.get_world_circle()
+            'circles_ids': Circle.get_world_circle()
         }
 
         url = self._get_url()
@@ -156,7 +155,7 @@ class DisconnectAPITest(APITestCase):
         circle_to_connect = mixer.blend(Circle, creator=user)
         user_to_connect = mixer.blend(User)
 
-        user.connect_with_user_with_id(user_to_connect.pk, circle_id=circle_to_connect.pk)
+        user.connect_with_user_with_id(user_to_connect.pk, circles_ids=[circle_to_connect.pk])
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
@@ -212,7 +211,7 @@ class UpdateConnectionAPITest(APITestCase):
         circle_to_connect = mixer.blend(Circle, creator=user)
         user_to_connect = mixer.blend(User)
 
-        user.connect_with_user_with_id(user_to_connect.pk, circle_id=circle_to_connect.pk)
+        user.connect_with_user_with_id(user_to_connect.pk, circles_ids=[circle_to_connect.pk])
 
         new_circle = mixer.blend(Circle, creator=user)
 
@@ -220,7 +219,7 @@ class UpdateConnectionAPITest(APITestCase):
 
         data = {
             'username': user_to_connect.username,
-            'circle_id': new_circle.pk
+            'circles_ids': new_circle.pk
         }
 
         url = self._get_url()
@@ -248,7 +247,7 @@ class UpdateConnectionAPITest(APITestCase):
 
         data = {
             'username': not_connected_user.username,
-            'circle_id': new_circle.pk
+            'circles_ids': new_circle.pk
         }
 
         url = self._get_url()
@@ -262,7 +261,6 @@ class UpdateConnectionAPITest(APITestCase):
 
 
 class ConfirmConnectionAPITest(APITestCase):
-
     fixtures = [
         'openbook_circles/fixtures/circles.json'
     ]
@@ -292,8 +290,9 @@ class ConfirmConnectionAPITest(APITestCase):
         self.assertTrue(user.is_fully_connected_with_user_with_id(user_to_connect.pk))
         self.assertTrue(user_to_connect.is_fully_connected_with_user_with_id(user.pk))
 
+        # Check user got automatically added to connections circle
         connection = user_to_connect.get_connection_for_user_with_id(user.pk)
-        self.assertEqual(connection.circle_id, user_to_connect.connections_circle_id)
+        self.assertTrue(connection.circles.filter(id=user_to_connect.connections_circle_id).exists())
 
     def test_confirm_connection_in_circle(self):
         """
@@ -310,7 +309,7 @@ class ConfirmConnectionAPITest(APITestCase):
 
         data = {
             'username': user.username,
-            'circle_id': circle.pk
+            'circles_ids': circle.pk
         }
 
         url = self._get_url()
@@ -323,7 +322,7 @@ class ConfirmConnectionAPITest(APITestCase):
         self.assertTrue(user_to_connect.is_fully_connected_with_user_with_id(user.pk))
 
         connection = user_to_connect.get_connection_for_user_with_id(user.pk)
-        self.assertEqual(connection.circle_id, circle.pk)
+        self.assertTrue(connection.circles.filter(id=circle.pk).exists())
 
     def test_cannot_confirm_unexisting_connection(self):
         """
