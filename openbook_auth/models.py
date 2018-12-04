@@ -270,7 +270,7 @@ class User(AbstractUser):
     def is_following_user_with_id_in_list_with_id(self, user_id, list_id):
         return self.follows.filter(
             followed_user_id=user_id,
-            list_id=list_id).count() == 1
+            lists__id=list_id).count() == 1
 
     def is_world_circle_id(self, id):
         world_circle_id = self._get_world_circle_id()
@@ -537,7 +537,7 @@ class User(AbstractUser):
         world_circle_id = self._get_world_circle_id()
 
         if lists_ids:
-            follows = self.follows.filter(list_id__in=lists_ids)
+            follows = self.follows.filter(lists__id__in=lists_ids)
         else:
             follows = self.follows.all()
 
@@ -605,10 +605,10 @@ class User(AbstractUser):
 
         return result
 
-    def follow_user(self, user, **kwargs):
-        return self.follow_user_with_id(user.pk, **kwargs)
+    def follow_user(self, user, lists_ids=None):
+        return self.follow_user_with_id(user.pk, lists_ids)
 
-    def follow_user_with_id(self, user_id, **kwargs):
+    def follow_user_with_id(self, user_id, lists_ids=None):
         self._check_is_not_following_user_with_id(user_id)
 
         if self.pk == user_id:
@@ -616,10 +616,13 @@ class User(AbstractUser):
                 _('A user cannot follow itself.'),
             )
 
-        self._check_follow_data(kwargs)
+        if not lists_ids:
+            lists_ids = self._get_default_follow_lists()
+
+        self._check_follow_lists_ids(lists_ids)
 
         Follow = get_follow_model()
-        return Follow.create_follow(user_id=self.pk, followed_user_id=user_id, **kwargs)
+        return Follow.create_follow(user_id=self.pk, followed_user_id=user_id, lists_ids=lists_ids)
 
     def unfollow_user(self, user):
         return self.unfollow_user_with_id(user.pk)
@@ -629,16 +632,23 @@ class User(AbstractUser):
         follow = self.follows.get(followed_user_id=user_id)
         follow.delete()
 
-    def update_follow_for_user(self, user, **kwargs):
-        return self.update_follow_for_user_with_id(user.pk, **kwargs)
+    def update_follow_for_user(self, user, lists_ids=None):
+        return self.update_follow_for_user_with_id(user.pk, lists_ids=lists_ids)
 
-    def update_follow_for_user_with_id(self, user_id, **kwargs):
+    def update_follow_for_user_with_id(self, user_id, lists_ids=None):
         self._check_is_following_user_with_id(user_id)
-        self._check_follow_data(kwargs)
+
+        if not lists_ids:
+            lists_ids = self._get_default_follow_lists()
+
+        self._check_follow_lists_ids(lists_ids)
+
         follow = self.get_follow_for_user_with_id(user_id)
-        for attr, value in kwargs.items():
-            setattr(follow, attr, value)
+
+        follow.lists.clear()
+        follow.lists.add(*lists_ids)
         follow.save()
+
         return follow
 
     def connect_with_user_with_id(self, user_id, circles_ids=None):
@@ -682,10 +692,12 @@ class User(AbstractUser):
             )
 
         self._check_connection_circles_ids(circles_ids)
+
         connection = self.get_connection_for_user_with_id(user_id)
         connection.circles.clear()
         connection.circles.add(*circles_ids)
         connection.save()
+
         return connection
 
     def disconnect_from_user(self, user):
@@ -718,8 +730,15 @@ class User(AbstractUser):
         """
         return [self.connections_circle_id]
 
+    def _get_default_follow_lists(self):
+        """
+        If no list were given on follow,
+        these will be the ones used.
+        :return:
+        """
+        return []
+
     def _check_connection_circles_ids(self, circles_ids):
-        # TODO Optimisation opportunity
         for circle_id in circles_ids:
             self._check_connection_circle_id(circle_id)
 
@@ -806,16 +825,12 @@ class User(AbstractUser):
                 _('This post is private.'),
             )
 
-    def _check_follow_data(self, data):
-        list_id = data.get('list_id')
+    def _check_follow_lists_ids(self, lists_ids):
+        for list_id in lists_ids:
+            self._check_follow_list_id(list_id)
 
-        if not list_id:
-            list = data.get('list')
-            if list:
-                list_id = list.pk
-
-        if list_id:
-            self._check_has_list_with_id(list_id)
+    def _check_follow_list_id(self, list_id):
+        self._check_has_list_with_id(list_id)
 
     def _check_post_data(self, data):
         circles_ids = data.get('circles_ids')

@@ -24,11 +24,13 @@ class FollowUser(APIView):
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
-        serializer = FollowUserRequestSerializer(data=request.data, context={"request": request})
+        request_data = _prepare_request_data_for_validation(request.data)
+
+        serializer = FollowUserRequestSerializer(data=request_data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        list_id = data.get('list_id')
+        lists_ids = data.get('lists_ids')
         user_to_follow_username = data.get('username')
 
         user = request.user
@@ -37,7 +39,7 @@ class FollowUser(APIView):
         user_to_follow = User.objects.get(username=user_to_follow_username)
 
         with transaction.atomic():
-            follow = user.follow_user_with_id(user_to_follow.pk, list_id=list_id)
+            follow = user.follow_user_with_id(user_to_follow.pk, lists_ids=lists_ids)
 
         response_serializer = FollowSerializer(follow, context={"request": request})
 
@@ -69,20 +71,31 @@ class UpdateFollowUser(APIView):
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
+        request_data = _prepare_request_data_for_validation(request.data)
+
         user = request.user
-        serializer = UpdateFollowSerializer(data=request.data)
+        serializer = UpdateFollowSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        list_id = data.get('list_id')
+        lists_ids = data.get('lists_ids')
         followed_user_username = data.get('username')
 
         User = get_user_model()
         followed_user = User.objects.get(username=followed_user_username)
 
         with transaction.atomic():
-            follow = user.update_follow_for_user_with_id(followed_user.pk, list_id=list_id)
+            follow = user.update_follow_for_user_with_id(followed_user.pk, lists_ids=lists_ids)
 
         response_serializer = FollowSerializer(follow, context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+def _prepare_request_data_for_validation(request_data):
+    request_data_copy = request_data.dict()
+    lists_ids = request_data_copy.get('lists_ids', None)
+    if isinstance(lists_ids, str):
+        lists_ids = lists_ids.split(',')
+        request_data_copy['lists_ids'] = lists_ids
+    return request_data_copy

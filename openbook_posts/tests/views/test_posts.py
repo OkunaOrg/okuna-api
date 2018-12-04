@@ -214,7 +214,7 @@ class PostsAPITests(APITestCase):
         users_to_follow_posts_ids = []
 
         for index, user_to_follow in enumerate(users_to_follow):
-            user.follow_user(user_to_follow, list=lists_to_follow_in[index])
+            user.follow_user(user_to_follow, lists_ids=[lists_to_follow_in[index].pk])
             post = user_to_follow.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
             users_to_follow_posts_ids.append(post.pk)
 
@@ -261,7 +261,7 @@ class PostsAPITests(APITestCase):
         users_to_follow = mixer.cycle(amount_of_users_to_follow).blend(User)
 
         for index, user_to_follow in enumerate(users_to_follow):
-            user.follow_user(user_to_follow, list=lists_to_follow_in[index])
+            user.follow_user(user_to_follow, lists_ids=[lists_to_follow_in[index].pk])
             user_to_follow.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
 
         amount_of_users_to_connect = 5
@@ -321,7 +321,7 @@ class PostsAPITests(APITestCase):
         users_to_follow = mixer.cycle(amount_of_users_to_follow).blend(User)
 
         for index, user_to_follow in enumerate(users_to_follow):
-            user.follow_user(user_to_follow, list=lists_to_follow_in[index])
+            user.follow_user(user_to_follow, lists_ids=[lists_to_follow_in[index].pk])
             user_to_follow.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
 
         amount_of_users_to_connect = 5
@@ -342,7 +342,7 @@ class PostsAPITests(APITestCase):
 
         for index, list_to_retrieve_posts_from in enumerate(lists_to_retrieve_posts_from):
             user_in_list = mixer.blend(User)
-            user.follow_user(user_in_list, list=list_to_retrieve_posts_from)
+            user.follow_user(user_in_list, lists_ids=[list_to_retrieve_posts_from.pk])
             post_in_list = user_in_list.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
             in_list_posts_ids.append(post_in_list.pk)
 
@@ -387,7 +387,7 @@ class PostsAPITests(APITestCase):
         users_to_follow_posts_ids = []
 
         for index, user_to_follow in enumerate(users_to_follow):
-            user.follow_user(user_to_follow, list=lists_to_follow_in[index])
+            user.follow_user(user_to_follow, lists_ids=[lists_to_follow_in[index].pk])
             post = user_to_follow.create_public_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
             users_to_follow_posts_ids.append(post.pk)
 

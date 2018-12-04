@@ -5,6 +5,7 @@ from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import username_characters_validator, user_username_exists
 
 from openbook_follows.models import Follow
+from openbook_lists.validators import list_id_exists
 
 
 class FollowUserRequestSerializer(serializers.Serializer):
@@ -17,7 +18,10 @@ class FollowUserRequestSerializer(serializers.Serializer):
         ],
         required=False
     )
-    list_id = serializers.IntegerField(required=False)
+    lists_ids = serializers.ListSerializer(
+        required=False,
+        child=serializers.IntegerField(validators=[list_id_exists])
+    )
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -54,7 +58,7 @@ class FollowSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'user',
-            'list',
+            'lists',
             'followed_user',
         )
 
@@ -81,4 +85,7 @@ class UpdateFollowSerializer(serializers.Serializer):
         ],
         required=False
     )
-    list_id = serializers.IntegerField(required=True)
+    lists_ids = serializers.ListSerializer(
+        required=False,
+        child=serializers.IntegerField(validators=[list_id_exists])
+    )

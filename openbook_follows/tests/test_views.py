@@ -37,7 +37,7 @@ class FollowsAPITests(APITestCase):
         user_to_follow_ids = [user_to_follow.pk for user_to_follow in users_to_follow]
 
         for user_to_follow in users_to_follow:
-            user.follow_user(user_to_follow, list=list)
+            user.follow_user(user_to_follow, lists_ids=[list.pk])
 
         url = self._get_url()
         response = self.client.get(url, **headers)
@@ -73,7 +73,7 @@ class FollowAPITests(APITestCase):
 
         data = {
             'username': user_to_follow.username,
-            'list_id': list_to_follow.pk
+            'lists_ids': list_to_follow.pk
         }
 
         url = self._get_url()
@@ -95,13 +95,13 @@ class FollowAPITests(APITestCase):
         list_to_follow = mixer.blend(List, creator=user)
         user_to_follow = mixer.blend(User)
 
-        user.follow_user(user_to_follow, list=list_to_follow)
+        user.follow_user(user_to_follow, lists_ids=[list_to_follow.pk])
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
         data = {
             'username': user_to_follow.username,
-            'list_id': list_to_follow.pk
+            'lists_ids': list_to_follow.pk
         }
 
         url = self._get_url()
@@ -124,7 +124,7 @@ class FollowAPITests(APITestCase):
 
         data = {
             'username': user.username,
-            'list_id': list_to_follow.pk
+            'lists_ids': list_to_follow.pk
         }
 
         url = self._get_url()
@@ -150,7 +150,7 @@ class UnfollowAPITest(APITestCase):
         list_to_follow = mixer.blend(List, creator=user)
         user_to_unfollow = mixer.blend(User)
 
-        user.follow_user(user_to_unfollow, list=list_to_follow)
+        user.follow_user(user_to_unfollow, lists_ids=[list_to_follow.pk])
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
@@ -206,7 +206,7 @@ class UpdateFollowAPITest(APITestCase):
         list_to_follow = mixer.blend(List, creator=user)
         user_to_follow = mixer.blend(User)
 
-        user.follow_user(user_to_follow, list=list_to_follow)
+        user.follow_user(user_to_follow, lists_ids=[list_to_follow.pk])
 
         new_list = mixer.blend(List, creator=user)
 
@@ -214,7 +214,7 @@ class UpdateFollowAPITest(APITestCase):
 
         data = {
             'username': user_to_follow.username,
-            'list_id': new_list.pk
+            'lists_ids': new_list.pk
         }
 
         url = self._get_url()
@@ -241,7 +241,7 @@ class UpdateFollowAPITest(APITestCase):
 
         data = {
             'username': not_followed_user.username,
-            'list_id': new_list.pk
+            'lists_ids': new_list.pk
         }
 
         url = self._get_url()
