@@ -195,7 +195,7 @@ class ListNameCheckAPITests(APITestCase):
 
         user = make_user()
 
-        list_name = 'Friends'
+        list_name = make_fake_list_name()
         request_data = {'name': list_name}
 
         url = self._get_url()

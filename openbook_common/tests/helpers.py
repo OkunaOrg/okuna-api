@@ -84,3 +84,7 @@ def make_user_cover():
 
 def make_fake_list_name():
     return fake.text(max_nb_chars=settings.LIST_MAX_LENGTH)
+
+
+def make_fake_circle_name():
+    return fake.text(max_nb_chars=settings.CIRCLE_MAX_LENGTH)
