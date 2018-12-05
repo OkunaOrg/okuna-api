@@ -11,10 +11,13 @@ import logging
 import json
 
 from openbook_common.models import Emoji
+from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_emoji, \
+    make_fake_list_name
 from openbook_lists.models import List
 
 logger = logging.getLogger(__name__)
 fake = Faker()
+
 
 class ListsAPITests(APITestCase):
     """
@@ -178,3 +181,46 @@ class ListItemAPITests(APITestCase):
         return reverse('list', kwargs={
             'list_id': list_id
         })
+
+
+class ListNameCheckAPITests(APITestCase):
+    """
+    ListNameCheckAPI
+    """
+
+    def test_list_name_not_taken(self):
+        """
+        should return status 202 if list name is not taken.
+        """
+
+        user = make_user()
+
+        list_name = 'Friends'
+        request_data = {'name': list_name}
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.post(url, request_data, format='json', **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+
+    def test_list_name_taken(self):
+        """
+        should return status 400 if the listName is taken
+        """
+        user = make_user()
+        emoji = make_emoji()
+
+        list = user.create_list(name=make_fake_list_name(), emoji_id=emoji.pk)
+
+        request_data = {'name': list.name}
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.post(url, request_data, format='json', **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def _get_url(self):
+        return reverse('list-name-check')

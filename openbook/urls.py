@@ -25,7 +25,7 @@ from openbook_auth.views import Register, UsernameCheck, EmailCheck, Login, Auth
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
-from openbook_lists.views import Lists, ListItem
+from openbook_lists.views import Lists, ListItem, ListNameCheck
 from openbook_posts.views.post.views import PostComments, PostCommentItem, PostItem, PostReactions, PostReactionItem, \
     PostReactionsEmojiCount
 from openbook_posts.views.posts.views import Posts, TrendingPosts
@@ -71,6 +71,7 @@ circles_patterns = [
 
 lists_patterns = [
     path('', Lists.as_view(), name='lists'),
+    path('name-check/', ListNameCheck.as_view(), name='list-name-check'),
     path('<int:list_id>/', ListItem.as_view(), name='list'),
 ]
 

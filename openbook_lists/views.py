@@ -4,8 +4,11 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.utils.translation import gettext as _
 
-from openbook_lists.serializers import CreateListSerializer, ListSerializer, DeleteListSerializer, UpdateListSerializer
+from openbook_common.responses import ApiMessageResponse
+from openbook_lists.serializers import CreateListSerializer, ListSerializer, DeleteListSerializer, UpdateListSerializer, \
+    ListNameCheckSerializer
 
 
 class Lists(APIView):
@@ -61,3 +64,23 @@ class ListItem(APIView):
             user.update_list_with_id(**data)
 
         return Response(status=status.HTTP_200_OK)
+
+
+class ListNameCheck(APIView):
+    """
+    The API to check if a listName is both valid and not taken.
+    """
+    serializer_class = ListNameCheckSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        name = serializer.validated_data.get('name')
+
+        user = request.user
+
+        if not user.has_list_with_name(name):
+            return ApiMessageResponse(_('List name available'), status=status.HTTP_202_ACCEPTED)
+
+        return ApiMessageResponse(_('List name not available'), status=status.HTTP_400_BAD_REQUEST)

@@ -67,3 +67,7 @@ class ListSerializer(serializers.ModelSerializer):
             'emoji',
             'follows_count'
         )
+
+
+class ListNameCheckSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=LIST_MAX_LENGTH, required=True, allow_blank=False, validators=[])
