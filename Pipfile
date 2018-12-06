@@ -1,11 +1,17 @@
 [[source]]
+
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
+
 [dev-packages]
 
+hashin = "*"
+
+
 [packages]
+
 django = "*"
 python-dotenv = "*"
 djangorestframework = "*"
@@ -21,3 +27,5 @@ mixer = "*"
 faker = "*"
 "boto3" = "*"
 django-storages = "*"
+django-amazon-ses = "*"
+hashin = "*"
