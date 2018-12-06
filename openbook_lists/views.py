@@ -71,9 +71,11 @@ class ListItem(APIView):
         user = request.user
 
         with transaction.atomic():
-            user.update_list_with_id(**data)
+            list = user.update_list_with_id(**data)
 
-        return Response(status=status.HTTP_200_OK)
+        response_serializer = GetListListSerializer(list, context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
 class ListNameCheck(APIView):

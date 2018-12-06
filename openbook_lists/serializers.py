@@ -18,8 +18,8 @@ class DeleteListSerializer(serializers.Serializer):
 
 
 class UpdateListSerializer(serializers.Serializer):
-    list_id = serializers.IntegerField(required=True, validators=[list_id_exists])
-    name = serializers.CharField(max_length=LIST_MAX_LENGTH, required=True, allow_blank=False)
+    list_id = serializers.IntegerField(required=False, validators=[list_id_exists])
+    name = serializers.CharField(max_length=LIST_MAX_LENGTH, required=False, allow_blank=False)
     emoji_id = serializers.IntegerField(validators=[emoji_id_exists])
 
 
@@ -51,6 +51,7 @@ class ListEmojiSerializer(serializers.ModelSerializer):
     class Meta:
         model = Emoji
         fields = (
+            'id',
             'color',
             'image',
         )

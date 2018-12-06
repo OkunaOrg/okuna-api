@@ -468,14 +468,19 @@ class User(AbstractUser):
     def update_list(self, list, **kwargs):
         return self.update_list_with_id(list.pk, **kwargs)
 
-    def update_list_with_id(self, list_id, **kwargs):
+    def update_list_with_id(self, list_id, name=None, emoji_id=None):
         self._check_can_update_list_with_id(list_id)
-        self._check_list_data(kwargs)
+        self._check_list_data(name, emoji_id)
         list = self.lists.get(id=list_id)
 
-        for attr, value in kwargs.items():
-            setattr(list, attr, value)
+        if name:
+            list.name = name
+
+        if emoji_id:
+            list.emoji_id = emoji_id
+
         list.save()
+        return list
 
     def get_list_with_id(self, list_id):
         self._check_can_get_list_with_id(list_id)
@@ -838,8 +843,7 @@ class User(AbstractUser):
         if circles_ids:
             self._check_has_circles_with_ids(circles_ids)
 
-    def _check_list_data(self, data):
-        name = data.get('name')
+    def _check_list_data(self, name, emoji_id):
         if name:
             self._check_list_name_not_taken(name)
 
