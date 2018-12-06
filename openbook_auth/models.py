@@ -28,6 +28,7 @@ class User(AbstractUser):
                                            null=True, blank=True)
 
     username_validator = UnicodeUsernameValidator() if six.PY3 else ASCIIUsernameValidator()
+    is_email_verified = models.BooleanField(default=False)
 
     username = models.CharField(
         _('username'),
@@ -153,16 +154,22 @@ class User(AbstractUser):
         self.username = username
         self.save()
 
+    def update_password(self, password):
+        self.set_password(password)
+        self.save()
+
     def update_email(self, email):
         self._check_email_not_taken(email)
         self.email = email
+        self.is_email_verified = False
         self.save()
+
+    def set_email_verified(self):
+        self.is_email_verified = True
 
     def update(self,
                username=None,
-               password=None,
                name=None,
-               email=None,
                location=None,
                birth_date=None,
                bio=None,
@@ -174,12 +181,6 @@ class User(AbstractUser):
 
         if username:
             self.update_username(username)
-
-        if email:
-            self.update_email(email)
-
-        if password:
-            self.set_password(password)
 
         if url is not None:
             if len(url) == 0:
