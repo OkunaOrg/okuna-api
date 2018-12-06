@@ -2,8 +2,11 @@
 import tempfile
 
 from PIL import Image
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.urls import reverse
 from faker import Faker
+from unittest import mock
+from unittest.mock import patch
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -12,7 +15,9 @@ from openbook_auth.models import User, UserProfile
 import logging
 import json
 
+from openbook_auth.views import UserSettings
 from openbook_circles.models import Circle
+from rest_framework.test import force_authenticate
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_user_bio, \
     make_user_location, make_user_birth_date, make_user_avatar, make_user_cover
 
@@ -431,7 +436,7 @@ class AuthenticatedUserAPITests(APITestCase):
     AuthenticatedUserAPI
     """
 
-    def test_cat_retrieve_user(self):
+    def test_can_retrieve_user(self):
         """
         should return 200 and the data of the authenticated user
         """
@@ -455,31 +460,6 @@ class AuthenticatedUserAPITests(APITestCase):
         self.assertIn('username', parsed_response)
         response_username = parsed_response['username']
         self.assertEqual(response_username, username)
-
-    def test_can_update_user_password(self):
-        """
-        should be able to update the authenticated user password and return 200
-        """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
-
-        new_password = fake.password()
-
-        data = {
-            'password': new_password
-        }
-
-        url = self._get_url()
-
-        response = self.client.patch(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        user.refresh_from_db()
-
-        password_matches = user.check_password(new_password)
-
-        self.assertTrue(password_matches)
 
     def test_can_update_user_username(self):
         """
@@ -979,3 +959,150 @@ class UsersAPITests(APITestCase):
 
     def _get_url(self):
         return reverse('users')
+
+
+class UserSettingsAPITests(APITestCase):
+    """
+    User Settings API
+    """
+    url = reverse('user-settings')
+
+    def test_can_change_password_successfully(self):
+        """
+        should be able to update the authenticated user password and return 200
+        """
+        user = make_user()
+        current_raw_password = user.password
+        user.update_password(user.password)  # make sure hashed password is stored
+        headers = make_authentication_headers_for_user(user)
+
+        new_password = fake.password()
+
+        data = {
+            'new_password': new_password,
+            'current_password': current_raw_password
+        }
+
+        response = self.client.patch(self.url, data, **headers)
+        parsed_reponse = json.loads(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(parsed_reponse['username'], user.username)
+
+    def test_cannot_change_password_without_current_password(self):
+        """
+        should not be able to update the user password without supplying the current password
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        new_password = fake.password()
+
+        data = {
+            'new_password': new_password
+        }
+
+        response = self.client.patch(self.url, data, **headers)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cannot_change_password_without_correct_password(self):
+        """
+        should not be able to update the authenticated user password without the correct password
+        """
+        user = make_user()
+        user.update_password(user.password)  # make sure hashed password is stored
+        headers = make_authentication_headers_for_user(user)
+
+        new_password = fake.password()
+
+        data = {
+            'new_password': new_password,
+            'current_password': fake.password()  # use another fake password
+        }
+
+        response = self.client.patch(self.url, data, **headers)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cannot_change_password_without_new_password(self):
+        """
+        should not be able to update the authenticated user password without the new password
+        """
+        user = make_user()
+        current_raw_password = user.password
+        user.update_password(user.password)  # make sure hashed password is stored
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'current_password': current_raw_password
+        }
+
+        response = self.client.patch(self.url, data, **headers)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_can_change_email_successfully(self):
+        """
+        should be able to update the authenticated user email and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        new_email = fake.email()
+
+        data = {
+            'email': new_email
+        }
+
+        with mock.patch.object(UserSettings, 'send_confirmation_email', return_value=None):
+            response = self.client.patch(self.url, data, **headers)
+            parsed_reponse = json.loads(response.content)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(parsed_reponse['email'], new_email)
+
+    def test_cannot_change_email_to_existing_email(self):
+        """
+        should not be able to update the authenticated user email to existing email
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'email': user.email
+        }
+
+        with mock.patch.object(UserSettings, 'send_confirmation_email', return_value=None):
+            response = self.client.patch(self.url, data, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def _get_email_url(self, token):
+        return reverse('email-verify', kwargs={
+            'token': token
+        })
+
+    def test_can_verify_email_token_successfully(self):
+        """
+        should be able to verify the authenticated user email with token
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        token = PasswordResetTokenGenerator().make_token(user)
+
+        with mock.patch.object(UserSettings, 'send_confirmation_email', return_value=None):
+            response = self.client.get(self._get_email_url(token), **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_cannot_verify_invalid_email_token(self):
+        """
+        should not be able to verify the authenticated user email with incorrect token
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        token = PasswordResetTokenGenerator().make_token(user)
+        incorrect_token = fake.sha256(raw_output=False)
+
+        with mock.patch.object(UserSettings, 'send_confirmation_email', return_value=None):
+            response = self.client.get(self._get_email_url(incorrect_token), **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
