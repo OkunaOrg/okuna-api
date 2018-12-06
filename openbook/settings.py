@@ -205,6 +205,9 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+# Days after which password reset token expires
+
+PASSWORD_RESET_TIMEOUT_DAYS = 1
 
 # REST Framework config
 

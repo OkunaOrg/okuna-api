@@ -205,6 +205,8 @@ class UserSettings(APIView):
             'domain': current_site.domain,
             'token': PasswordResetTokenGenerator().make_token(user)
         })
+
+        # @todo: Update from email to reflect a generic one from Openbook
         email = EmailMessage(
             mail_subject, message, to=[user.email], from_email=user.email
         )
