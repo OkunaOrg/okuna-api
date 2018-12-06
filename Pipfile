@@ -7,25 +7,23 @@ name = "pypi"
 
 [dev-packages]
 
-hashin = "*"
 
 
 [packages]
 
-django = "*"
+Django = "*"
 python-dotenv = "*"
 djangorestframework = "*"
 sentry-sdk = "*"
 mysqlclient = "*"
-pillow = "*"
+Pillow = "*"
 django-nose = "*"
 nose = "*"
 pinocchio = "*"
 coverage = "*"
 nose-exclude = "*"
 mixer = "*"
-faker = "*"
+Faker = "*"
 "boto3" = "*"
 django-storages = "*"
 django-amazon-ses = "*"
-hashin = "*"
