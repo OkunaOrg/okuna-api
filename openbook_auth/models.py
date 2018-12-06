@@ -1,3 +1,4 @@
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
 from django.db import models
 from django.contrib.auth.models import AbstractUser
@@ -11,6 +12,7 @@ from rest_framework.exceptions import ValidationError
 from django.db.models import Q
 
 from openbook.settings import USERNAME_MAX_LENGTH
+from openbook_auth.exceptions import EmailVerificationTokenInvalid
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, get_emoji_model
 from openbook_common.validators import name_characters_validator
@@ -166,6 +168,15 @@ class User(AbstractUser):
 
     def set_email_verified(self):
         self.is_email_verified = True
+
+    def verify_email_with_token(self, token):
+        is_token_valid = PasswordResetTokenGenerator().check_token(self, token)
+        if not is_token_valid:
+            raise EmailVerificationTokenInvalid()
+        self.set_email_verified()
+
+    def make_one_time_token(self):
+        return PasswordResetTokenGenerator().make_token(self)
 
     def update(self,
                username=None,

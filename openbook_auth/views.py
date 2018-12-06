@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 from django.utils.translation import gettext as _
 from rest_framework.authtoken.models import Token
 
+from openbook_auth.exceptions import EmailVerificationTokenInvalid
 from openbook_common.responses import ApiMessageResponse
 from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheckSerializer, LoginSerializer, \
     GetAuthenticatedUserSerializer, GetUserUserSerializer, UpdateAuthenticatedUserSerializer, GetUserSerializer, \
@@ -91,12 +92,12 @@ class EmailVerify(APIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         token = serializer.validated_data.get('token')
-        is_token_valid = PasswordResetTokenGenerator().check_token(user, token)
 
-        if not is_token_valid:
+        try:
+            user.verify_email_with_token(token)
+        except EmailVerificationTokenInvalid:
             return Response(_('Verify email token invalid or expired'), status=status.HTTP_401_UNAUTHORIZED)
 
-        user.set_email_verified()
         return ApiMessageResponse(_('Email verified'), status=status.HTTP_200_OK)
 
 
@@ -203,7 +204,7 @@ class UserSettings(APIView):
             'name': user.profile.name,
             'protocol': request.scheme,
             'domain': current_site.domain,
-            'token': PasswordResetTokenGenerator().make_token(user)
+            'token': user.make_one_time_token()
         })
 
         # @todo: Update from email to reflect a generic one from Openbook
