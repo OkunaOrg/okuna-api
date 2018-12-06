@@ -29,9 +29,9 @@ class ListUserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = (
+            'id',
             'name',
             'avatar',
-            'birth_date'
         )
 
 
@@ -41,7 +41,7 @@ class ListUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            'email',
+            'id',
             'username',
             'profile',
         )
@@ -56,7 +56,7 @@ class ListEmojiSerializer(serializers.ModelSerializer):
         )
 
 
-class ListSerializer(serializers.ModelSerializer):
+class GetListsListSerializer(serializers.ModelSerializer):
     emoji = ListEmojiSerializer(many=False)
 
     class Meta:
@@ -71,3 +71,18 @@ class ListSerializer(serializers.ModelSerializer):
 
 class ListNameCheckSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=LIST_MAX_LENGTH, required=True, allow_blank=False, validators=[])
+
+
+class GetListListSerializer(serializers.ModelSerializer):
+    emoji = ListEmojiSerializer(many=False)
+    users = ListUserSerializer(many=True)
+
+    class Meta:
+        model = List
+        fields = (
+            'id',
+            'name',
+            'emoji',
+            'follows_count',
+            'users'
+        )

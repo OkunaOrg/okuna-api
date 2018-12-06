@@ -85,6 +85,24 @@ class ListItemAPITests(APITestCase):
     ListItemAPI
     """
 
+    def test_retrieve_own_list(self):
+        """
+        should be able to retrieve an own list and return 200
+        """
+        user = mixer.blend(User)
+        headers = make_authentication_headers_for_user(user)
+
+        list = mixer.blend(List, creator=user)
+        list_id = list.pk
+
+        url = self._get_url(list_id)
+        response = self.client.get(url, **headers)
+
+        response_list = json.loads(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response_list['id'] == list_id)
+
     def test_delete_own_list(self):
         """
         should be able to delete an own list and return 200

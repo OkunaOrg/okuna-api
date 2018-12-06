@@ -7,8 +7,9 @@ from rest_framework.views import APIView
 from django.utils.translation import gettext as _
 
 from openbook_common.responses import ApiMessageResponse
-from openbook_lists.serializers import CreateListSerializer, ListSerializer, DeleteListSerializer, UpdateListSerializer, \
-    ListNameCheckSerializer
+from openbook_lists.serializers import CreateListSerializer, GetListsListSerializer, DeleteListSerializer, \
+    UpdateListSerializer, \
+    ListNameCheckSerializer, GetListListSerializer
 
 
 class Lists(APIView):
@@ -25,19 +26,28 @@ class Lists(APIView):
         with transaction.atomic():
             list = user.create_list(name=name, emoji_id=emoji_id)
 
-        response_serializer = ListSerializer(list, context={"request": request})
+        response_serializer = GetListsListSerializer(list, context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
     def get(self, request):
         user = request.user
-        response_serializer = ListSerializer(user.lists, many=True, context={"request": request})
+        response_serializer = GetListsListSerializer(user.lists, many=True, context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
 class ListItem(APIView):
     permission_classes = (IsAuthenticated,)
+
+    def get(self, request, list_id):
+        user = request.user
+
+        list = user.get_list_with_id(list_id)
+
+        response_serializer = GetListListSerializer(list, context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request, list_id):
         serializer = DeleteListSerializer(data={'list_id': list_id})
