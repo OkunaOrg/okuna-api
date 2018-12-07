@@ -34,7 +34,7 @@ class Lists(APIView):
 
     def get(self, request):
         user = request.user
-        response_serializer = GetListsListSerializer(user.lists, many=True, context={"request": request})
+        response_serializer = GetListsListSerializer(user.lists.order_by('-created'), many=True, context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
