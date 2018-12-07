@@ -167,6 +167,70 @@ class ListItemAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(List.objects.filter(name=new_list_name, id=list_id, emoji_id=new_emoji.pk).count() == 1)
 
+    def test_can_update_own_list_users(self):
+        """
+        should be able to update an own list and return 200
+        """
+        user = make_user()
+
+        list = mixer.blend(List, creator=user)
+        list_id = list.pk
+
+        users_to_follow_in_list = 4
+
+        for i in range(users_to_follow_in_list):
+            user_to_follow = make_user()
+            user.follow_user_with_id(user_to_follow.pk, lists_ids=[list_id])
+
+        new_users_to_follow_in_list_amount = 2
+        new_users_to_follow_in_list = []
+        new_users_to_follow_in_list_usernames = []
+
+        for i in range(new_users_to_follow_in_list_amount):
+            user_to_follow = make_user()
+            new_users_to_follow_in_list.append(user_to_follow)
+            new_users_to_follow_in_list_usernames.append(user_to_follow.username)
+
+        data = {
+            'usernames': ','.join(map(str, new_users_to_follow_in_list_usernames))
+        }
+
+        url = self._get_url(list_id)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        for new_user_to_follow in new_users_to_follow_in_list:
+            self.assertTrue(user.is_following_user_with_id_in_list_with_id(new_user_to_follow.pk, list_id))
+
+    def test_can_update_own_list_users_to_none(self):
+        """
+        should be able to update an own list and return 200
+        """
+        user = make_user()
+
+        list = mixer.blend(List, creator=user)
+        list_id = list.pk
+
+        users_to_follow_in_list = 4
+
+        for i in range(users_to_follow_in_list):
+            user_to_follow = make_user()
+            user.follow_user_with_id(user_to_follow.pk, lists_ids=[list_id])
+
+        data = {
+            'usernames': ''
+        }
+
+        url = self._get_url(list_id)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(len(list.users), 0)
+
     def test_cannot_update_other_user_list(self):
         """
         should not be able update another user list and return 400

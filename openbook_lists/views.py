@@ -110,4 +110,7 @@ def _prepare_request_data_usernames_for_validation(request_data):
     usernames = request_data.get('usernames', None)
     if isinstance(usernames, str):
         usernames = usernames.split(',')
+        usernames_count = len(usernames)
+        if usernames_count == 1 and usernames[0] == '':
+            usernames = []
         request_data['usernames'] = usernames

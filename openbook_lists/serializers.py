@@ -25,8 +25,10 @@ class UpdateListSerializer(serializers.Serializer):
     emoji_id = serializers.IntegerField(validators=[emoji_id_exists], required=False)
     usernames = serializers.ListSerializer(
         required=False,
+        allow_empty=True,
         child=serializers.CharField(max_length=settings.USERNAME_MAX_LENGTH,
                                     allow_blank=False,
+                                    required=False,
                                     validators=[username_characters_validator, user_username_exists])
     )
 

@@ -506,7 +506,10 @@ class User(AbstractUser):
 
             for new_list_user in new_list_users:
                 if not self.is_following_user_with_id_in_list_with_id(new_list_user.pk, list_to_update.pk):
-                    self.add_list_with_id_to_follow_for_user_with_id(new_list_user.pk, list_to_update.pk)
+                    if self.is_following_user_with_id(new_list_user.pk):
+                        self.add_list_with_id_to_follow_for_user_with_id(new_list_user.pk, list_to_update.pk)
+                    else:
+                        self.follow_user_with_id(new_list_user.pk, lists_ids=[list_to_update.pk])
 
         list_to_update.save()
         return list_to_update
