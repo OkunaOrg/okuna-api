@@ -1,23 +1,29 @@
 [[source]]
+
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
+
 [dev-packages]
 
+
+
 [packages]
-django = "*"
+
+Django = "*"
 python-dotenv = "*"
 djangorestframework = "*"
 sentry-sdk = "*"
 mysqlclient = "*"
-pillow = "*"
+Pillow = "*"
 django-nose = "*"
 nose = "*"
 pinocchio = "*"
 coverage = "*"
 nose-exclude = "*"
 mixer = "*"
-faker = "*"
+Faker = "*"
 "boto3" = "*"
 django-storages = "*"
+django-amazon-ses = "*"

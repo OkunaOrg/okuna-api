@@ -21,7 +21,7 @@ from django.conf.urls.static import static
 
 from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups
-from openbook_auth.views import Register, UsernameCheck, EmailCheck, Login, AuthenticatedUser, User, Users
+from openbook_auth.views import Register, UsernameCheck, EmailCheck, EmailVerify, Login, AuthenticatedUser, User, Users, UserSettings
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
@@ -35,6 +35,8 @@ auth_patterns = [
     path('login/', Login.as_view(), name='login-user'),
     path('username-check/', UsernameCheck.as_view(), name='username-check'),
     path('email-check/', EmailCheck.as_view(), name='email-check'),
+    path('email/verify/<str:token>/', EmailVerify.as_view(), name='email-verify'),
+    path('user/settings/', UserSettings.as_view(), name='user-settings'),
     path('user/', AuthenticatedUser.as_view(), name='authenticated-user'),
     path('users/<str:user_username>/', User.as_view(), name='user'),
     path('users/', Users.as_view(), name='users'),

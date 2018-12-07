@@ -1,3 +1,4 @@
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
 from django.db import models
 from django.contrib.auth.models import AbstractUser
@@ -11,6 +12,7 @@ from rest_framework.exceptions import ValidationError
 from django.db.models import Q
 
 from openbook.settings import USERNAME_MAX_LENGTH
+from openbook_auth.exceptions import EmailVerificationTokenInvalid
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, get_emoji_model
 from openbook_common.validators import name_characters_validator
@@ -28,6 +30,7 @@ class User(AbstractUser):
                                            null=True, blank=True)
 
     username_validator = UnicodeUsernameValidator() if six.PY3 else ASCIIUsernameValidator()
+    is_email_verified = models.BooleanField(default=False)
 
     username = models.CharField(
         _('username'),
@@ -153,16 +156,31 @@ class User(AbstractUser):
         self.username = username
         self.save()
 
+    def update_password(self, password):
+        self.set_password(password)
+        self.save()
+
     def update_email(self, email):
         self._check_email_not_taken(email)
         self.email = email
+        self.is_email_verified = False
         self.save()
+
+    def set_email_verified(self):
+        self.is_email_verified = True
+
+    def verify_email_with_token(self, token):
+        is_token_valid = PasswordResetTokenGenerator().check_token(self, token)
+        if not is_token_valid:
+            raise EmailVerificationTokenInvalid()
+        self.set_email_verified()
+
+    def make_email_verification_token(self):
+        return PasswordResetTokenGenerator().make_token(self)
 
     def update(self,
                username=None,
-               password=None,
                name=None,
-               email=None,
                location=None,
                birth_date=None,
                bio=None,
@@ -174,12 +192,6 @@ class User(AbstractUser):
 
         if username:
             self.update_username(username)
-
-        if email:
-            self.update_email(email)
-
-        if password:
-            self.set_password(password)
 
         if url is not None:
             if len(url) == 0:

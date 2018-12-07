@@ -1,7 +1,11 @@
 from django.contrib.auth import get_user_model, authenticate
 from django.db import transaction
+from django.core.mail import EmailMessage
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.template.loader import render_to_string
+from django.contrib.sites.shortcuts import get_current_site
 from rest_framework import status
-from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.exceptions import AuthenticationFailed, ValidationError, APIException
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -9,10 +13,11 @@ from rest_framework.views import APIView
 from django.utils.translation import gettext as _
 from rest_framework.authtoken.models import Token
 
+from openbook_auth.exceptions import EmailVerificationTokenInvalid
 from openbook_common.responses import ApiMessageResponse
 from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheckSerializer, LoginSerializer, \
     GetAuthenticatedUserSerializer, GetUserUserSerializer, UpdateAuthenticatedUserSerializer, GetUserSerializer, \
-    GetUsersSerializer, GetUsersUserSerializer
+    GetUsersSerializer, GetUsersUserSerializer, UpdateUserSettingsSerializer, EmailVerifySerializer
 from .models import UserProfile
 
 
@@ -74,6 +79,28 @@ class EmailCheck(APIView):
         return ApiMessageResponse(_('Email available'), status=status.HTTP_202_ACCEPTED)
 
 
+class EmailVerify(APIView):
+    """
+    The API to verify if a email is valid.
+    """
+    permission_classes = (IsAuthenticated,)
+    serializer_class = EmailVerifySerializer
+
+    def get(self, request, token):
+        user = request.user
+        request.data['token'] = token
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        token = serializer.validated_data.get('token')
+
+        try:
+            user.verify_email_with_token(token)
+        except EmailVerificationTokenInvalid:
+            return Response(_('Verify email token invalid or expired'), status=status.HTTP_401_UNAUTHORIZED)
+
+        return ApiMessageResponse(_('Email verified'), status=status.HTTP_200_OK)
+
+
 class Login(APIView):
     serializer_class = LoginSerializer
 
@@ -110,7 +137,6 @@ class AuthenticatedUser(APIView):
         with transaction.atomic():
             user.update(
                 username=data.get('username'),
-                password=data.get('password'),
                 name=data.get('name'),
                 location=data.get('location'),
                 birth_date=data.get('birth_date'),
@@ -141,6 +167,51 @@ class AuthenticatedUser(APIView):
 
         user_serializer = GetAuthenticatedUserSerializer(user, context={"request": request})
         return Response(user_serializer.data, status=status.HTTP_200_OK)
+
+
+class UserSettings(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def patch(self, request):
+        serializer = UpdateUserSettingsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user = request.user
+
+        with transaction.atomic():
+            has_password = 'new_password' in data
+            if has_password:
+                current_password = data.get('current_password')
+                new_password = data.get('new_password')
+                if user.check_password(current_password):
+                    user.update_password(password=new_password)
+                else:
+                    return Response(_('Password is not valid'), status=status.HTTP_400_BAD_REQUEST)
+            has_email = 'email' in data
+            if has_email:
+                new_email = data.get('email')
+                user.update_email(new_email)
+                self.send_confirmation_email(request, user)
+
+        user_serializer = GetAuthenticatedUserSerializer(user, context={"request": request})
+        return Response(user_serializer.data, status=status.HTTP_200_OK)
+
+    def send_confirmation_email(self, request, user):
+        mail_subject = _('Confirm your email for Openbook')
+        current_site = get_current_site(request)
+        message = render_to_string('change_email.txt', {
+            'name': user.profile.name,
+            'protocol': request.scheme,
+            'domain': current_site.domain,
+            'token': user.make_email_verification_token()
+        })
+
+        # @todo: Update from email to reflect a generic one from Openbook
+        email = EmailMessage(
+            mail_subject, message, to=[user.email], from_email=user.email
+        )
+        email.send()
 
 
 class Users(APIView):
