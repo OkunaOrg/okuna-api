@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 # Create your models here.
 from openbook_auth.models import User
@@ -15,6 +16,7 @@ class List(models.Model):
     emoji = models.ForeignKey(Emoji, on_delete=models.SET_NULL, related_name='lists', null=True)
     name = models.CharField(_('name'), max_length=settings.LIST_MAX_LENGTH, blank=False, null=False)
     follows = models.ManyToManyField(Follow, related_name='lists')
+    created = models.DateTimeField(editable=False)
 
     class Meta:
         unique_together = ('creator', 'name',)
@@ -45,3 +47,9 @@ class List(models.Model):
     @property
     def follows_count(self):
         return self.follows.count()
+
+    def save(self, *args, **kwargs):
+        ''' On save, update timestamps '''
+        if not self.id:
+            self.created = timezone.now()
+        return super(List, self).save(*args, **kwargs)
