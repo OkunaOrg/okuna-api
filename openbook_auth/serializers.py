@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.conf import settings
+from django.utils.translation import gettext as _
 
 from openbook.settings import USERNAME_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, PROFILE_NAME_MAX_LENGTH
 from openbook_auth.models import User, UserProfile
@@ -31,6 +32,10 @@ class UsernameCheckSerializer(serializers.Serializer):
 
 class EmailCheckSerializer(serializers.Serializer):
     email = serializers.EmailField(validators=[email_not_taken_validator])
+
+
+class EmailVerifySerializer(serializers.Serializer):
+    token = serializers.CharField()
 
 
 class LoginSerializer(serializers.Serializer):
@@ -106,6 +111,23 @@ class UpdateAuthenticatedUserSerializer(serializers.Serializer):
                                allow_blank=True)
     location = serializers.CharField(max_length=settings.PROFILE_LOCATION_MAX_LENGTH, required=False,
                                      allow_blank=True)
+
+
+class UpdateUserSettingsSerializer(serializers.Serializer):
+    new_password = serializers.CharField(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH,
+                                     validators=[validate_password], required=False, allow_blank=False)
+    current_password = serializers.CharField(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH,
+                                     validators=[validate_password], required=False, allow_blank=False)
+    email = serializers.EmailField(validators=[email_not_taken_validator], required=False)
+
+    def validate(self, data):
+        if 'new_password' not in data and 'current_password' in data:
+            raise serializers.ValidationError(_('New password must be supplied together with the current password'))
+
+        if 'new_password' in data and 'current_password' not in data:
+            raise serializers.ValidationError(_('Current password must be supplied together with the new password'))
+
+        return data
 
 
 class GetUserSerializer(serializers.Serializer):

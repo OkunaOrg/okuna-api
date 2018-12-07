@@ -142,12 +142,12 @@ else:
         '--cover-package=.',
         '--with-spec', '--spec-color',
         '--with-coverage', '--cover-html',
-        '--cover-html-dir=reports/cover', '--verbosity=1', '--nologcapture']
+        '--cover-html-dir=reports/cover', '--verbosity=1', '--nologcapture', '--nocapture']
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': ['openbook_auth/email_templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -205,6 +205,9 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+# Days after which password reset token expires
+
+PASSWORD_RESET_TIMEOUT_DAYS = 1
 
 # REST Framework config
 
@@ -282,6 +285,13 @@ PROFILE_NAME_MAX_LENGTH = 192
 PROFILE_LOCATION_MAX_LENGTH = 64
 PROFILE_BIO_MAX_LENGTH = 150
 WORLD_CIRCLE_ID = 1
+
+# Email Config
+
+EMAIL_BACKEND = 'django_amazon_ses.EmailBackend'
+AWS_SES_REGION = os.environ.get('AWS_SES_REGION')
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 
 # AWS Storage config
 
