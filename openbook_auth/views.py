@@ -204,7 +204,7 @@ class UserSettings(APIView):
             'name': user.profile.name,
             'protocol': request.scheme,
             'domain': current_site.domain,
-            'token': user.make_one_time_token()
+            'token': user.make_verify_email_token()
         })
 
         # @todo: Update from email to reflect a generic one from Openbook

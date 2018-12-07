@@ -175,7 +175,7 @@ class User(AbstractUser):
             raise EmailVerificationTokenInvalid()
         self.set_email_verified()
 
-    def make_one_time_token(self):
+    def make_verify_email_token(self):
         return PasswordResetTokenGenerator().make_token(self)
 
     def update(self,
