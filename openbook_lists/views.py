@@ -1,5 +1,6 @@
 # Create your views here.
 from django.db import transaction
+from django.http import QueryDict
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -7,6 +8,7 @@ from rest_framework.views import APIView
 from django.utils.translation import gettext as _
 
 from openbook_common.responses import ApiMessageResponse
+from openbook_common.utils.helpers import normalise_request_data
 from openbook_lists.serializers import CreateListSerializer, GetListsListSerializer, DeleteListSerializer, \
     UpdateListSerializer, \
     ListNameCheckSerializer, GetListListSerializer
@@ -61,7 +63,7 @@ class ListItem(APIView):
         return Response(status=status.HTTP_200_OK)
 
     def patch(self, request, list_id):
-        request_data = request.data.dict()
+        request_data = normalise_request_data(request.data)
         request_data['list_id'] = list_id
         _prepare_request_data_usernames_for_validation(request_data)
 

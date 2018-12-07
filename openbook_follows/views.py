@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from openbook_common.utils.helpers import normalise_request_data
 from openbook_follows.serializers import FollowUserRequestSerializer, FollowSerializer, \
     DeleteFollowSerializer, UpdateFollowSerializer, FollowUserSerializer
 
@@ -93,7 +94,7 @@ class UpdateFollowUser(APIView):
 
 
 def _prepare_request_data_for_validation(request_data):
-    request_data_copy = request_data.dict()
+    request_data_copy = normalise_request_data(request_data)
     lists_ids = request_data_copy.get('lists_ids', None)
     if isinstance(lists_ids, str):
         lists_ids = lists_ids.split(',')

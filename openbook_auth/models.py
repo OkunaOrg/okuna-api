@@ -471,19 +471,19 @@ class User(AbstractUser):
     def update_list_with_id(self, list_id, name=None, emoji_id=None, usernames=None):
         self._check_can_update_list_with_id(list_id)
         self._check_list_data(name, emoji_id)
-        list = self.lists.get(id=list_id)
+        list_to_update = self.lists.get(id=list_id)
 
         if name:
-            list.name = name
+            list_to_update.name = name
 
         if emoji_id:
-            list.emoji_id = emoji_id
+            list_to_update.emoji_id = emoji_id
 
-        if usernames:
+        if isinstance(usernames, list):
             # TODO This is a goddamn expensive operation. Improve.
             new_list_users = []
 
-            list_users = list.users
+            list_users = list_to_update.users
             list_users_by_username = {}
 
             for list_user in list_users:
@@ -502,14 +502,14 @@ class User(AbstractUser):
             list_users_to_remove = filter(lambda list_user: list_user not in new_list_users, list_users)
 
             for user_to_remove in list_users_to_remove:
-                self.remove_list_with_id_from_follow_for_user_with_id(user_to_remove.pk, list.pk)
+                self.remove_list_with_id_from_follow_for_user_with_id(user_to_remove.pk, list_to_update.pk)
 
             for new_list_user in new_list_users:
-                if not self.is_following_user_with_id_in_list_with_id(new_list_user.pk, list.pk):
-                    self.add_list_with_id_to_follow_for_user_with_id(new_list_user.pk, list.pk)
+                if not self.is_following_user_with_id_in_list_with_id(new_list_user.pk, list_to_update.pk):
+                    self.add_list_with_id_to_follow_for_user_with_id(new_list_user.pk, list_to_update.pk)
 
-        list.save()
-        return list
+        list_to_update.save()
+        return list_to_update
 
     def get_list_with_id(self, list_id):
         self._check_can_get_list_with_id(list_id)
