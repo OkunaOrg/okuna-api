@@ -468,7 +468,7 @@ class User(AbstractUser):
     def update_list(self, list, **kwargs):
         return self.update_list_with_id(list.pk, **kwargs)
 
-    def update_list_with_id(self, list_id, name=None, emoji_id=None):
+    def update_list_with_id(self, list_id, name=None, emoji_id=None, usernames=None):
         self._check_can_update_list_with_id(list_id)
         self._check_list_data(name, emoji_id)
         list = self.lists.get(id=list_id)
@@ -478,6 +478,35 @@ class User(AbstractUser):
 
         if emoji_id:
             list.emoji_id = emoji_id
+
+        if usernames:
+            # TODO This is a goddamn expensive operation. Improve.
+            new_list_users = []
+
+            list_users = list.users
+            list_users_by_username = {}
+
+            for list_user in list_users:
+                list_user_username = list_user.username
+                list_users_by_username[list_user_username] = list_user
+
+            for username in usernames:
+                user = User.objects.get(username=username)
+                user_exists_in_list = username in list_users_by_username
+                if user_exists_in_list:
+                    # The username added might not be same person we had before
+                    new_list_users.append(list_users_by_username[username])
+                else:
+                    new_list_users.append(user)
+
+            list_users_to_remove = filter(lambda list_user: list_user not in new_list_users, list_users)
+
+            for user_to_remove in list_users_to_remove:
+                self.remove_list_with_id_from_follow_for_user_with_id(user_to_remove.pk, list.pk)
+
+            for new_list_user in new_list_users:
+                if not self.is_following_user_with_id_in_list_with_id(new_list_user.pk, list.pk):
+                    self.add_list_with_id_to_follow_for_user_with_id(new_list_user.pk, list.pk)
 
         list.save()
         return list
@@ -654,6 +683,20 @@ class User(AbstractUser):
         follow.lists.add(*lists_ids)
         follow.save()
 
+        return follow
+
+    def remove_list_with_id_from_follow_for_user_with_id(self, user_id, list_id):
+        self._check_is_following_user_with_id(user_id)
+        self._check_is_following_user_with_id_in_list_with_id(user_id, list_id)
+        follow = self.get_follow_for_user_with_id(user_id)
+        follow.lists.remove(list_id)
+        return follow
+
+    def add_list_with_id_to_follow_for_user_with_id(self, user_id, list_id):
+        self._check_is_following_user_with_id(user_id)
+        self._check_is_not_following_user_with_id_in_list_with_id(user_id, list_id)
+        follow = self.get_follow_for_user_with_id(user_id)
+        follow.lists.add(list_id)
         return follow
 
     def connect_with_user_with_id(self, user_id, circles_ids=None):
@@ -856,6 +899,22 @@ class User(AbstractUser):
         if self.is_following_user_with_id(user_id):
             raise ValidationError(
                 _('Already following user.'),
+            )
+
+    def _check_is_not_following_user_with_id_in_list_with_id(self, user_id, list_id):
+        self._check_is_following_user_with_id(user_id)
+
+        if self.is_following_user_with_id_in_list_with_id(user_id, list_id):
+            raise ValidationError(
+                _('Already following user in list.'),
+            )
+
+    def _check_is_following_user_with_id_in_list_with_id(self, user_id, list_id):
+        self._check_is_following_user_with_id(user_id)
+
+        if not self.is_following_user_with_id_in_list_with_id(user_id, list_id):
+            raise ValidationError(
+                _('Not following user in list.'),
             )
 
     def _check_is_following_user_with_id(self, user_id):

@@ -61,17 +61,23 @@ class ListItem(APIView):
         return Response(status=status.HTTP_200_OK)
 
     def patch(self, request, list_id):
-        request_data = request.data.copy()
+        request_data = request.data.dict()
         request_data['list_id'] = list_id
+        _prepare_request_data_usernames_for_validation(request_data)
 
         serializer = UpdateListSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
+        list_id = data.get('list_id')
+        emoji_id = data.get('emoji_id')
+        usernames = data.get('usernames')
+        name = data.get('name')
+
         user = request.user
 
         with transaction.atomic():
-            list = user.update_list_with_id(**data)
+            list = user.update_list_with_id(list_id, emoji_id=emoji_id, usernames=usernames, name=name)
 
         response_serializer = GetListListSerializer(list, context={"request": request})
 
@@ -96,3 +102,10 @@ class ListNameCheck(APIView):
             return ApiMessageResponse(_('List name available'), status=status.HTTP_202_ACCEPTED)
 
         return ApiMessageResponse(_('List name not available'), status=status.HTTP_400_BAD_REQUEST)
+
+
+def _prepare_request_data_usernames_for_validation(request_data):
+    usernames = request_data.get('usernames', None)
+    if isinstance(usernames, str):
+        usernames = usernames.split(',')
+        request_data['usernames'] = usernames

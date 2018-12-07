@@ -37,6 +37,11 @@ class List(models.Model):
             users.append(follow.followed_user)
         return users
 
+    def clear_users(self):
+        follows = self.follows.all()
+        for follow in follows:
+            follow.lists.delete(self)
+
     @property
     def follows_count(self):
         return self.follows.count()
