@@ -19,13 +19,13 @@ from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 
-from openbook_circles.views import Circles, CircleItem
+from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, EmailVerify, Login, AuthenticatedUser, User, Users, UserSettings
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
-from openbook_lists.views import Lists, ListItem
+from openbook_lists.views import Lists, ListItem, ListNameCheck
 from openbook_posts.views.post.views import PostComments, PostCommentItem, PostItem, PostReactions, PostReactionItem, \
     PostReactionsEmojiCount
 from openbook_posts.views.posts.views import Posts, TrendingPosts
@@ -68,11 +68,13 @@ connections_patterns = [
 
 circles_patterns = [
     path('', Circles.as_view(), name='circles'),
+    path('name-check/', CircleNameCheck.as_view(), name='circle-name-check'),
     path('<int:circle_id>/', CircleItem.as_view(), name='circle'),
 ]
 
 lists_patterns = [
     path('', Lists.as_view(), name='lists'),
+    path('name-check/', ListNameCheck.as_view(), name='list-name-check'),
     path('<int:list_id>/', ListItem.as_view(), name='list'),
 ]
 

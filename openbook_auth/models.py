@@ -99,7 +99,7 @@ class User(AbstractUser):
         Count how many public posts has the user created
         :return:
         """
-        world_circle_id = self.get_world_circle_id()
+        world_circle_id = self._get_world_circle_id()
 
         return self.posts.filter(circles__id=world_circle_id).count()
 
@@ -228,11 +228,13 @@ class User(AbstractUser):
         if not self.is_connected_with_user_with_id(user_id):
             return False
 
-        connection = self.connections.select_related('target_connection__circle').filter(
+        connection = self.connections.filter(
             target_connection__user_id=user_id).get()
+
         target_connection = connection.target_connection
 
-        if target_connection.circle and connection.circle:
+        # If both connections have circles on them, we're fully connected
+        if target_connection.circles.all().exists() and connection.circles.all().exists():
             return True
 
         return False
@@ -256,16 +258,16 @@ class User(AbstractUser):
     def is_connected_with_user_with_id_in_circle_with_id(self, user_id, circle_id):
         return self.connections.select_related('target_connection__user_id').filter(
             target_connection__user_id=user_id,
-            circle_id=circle_id).count() == 1
+            circles__id=circle_id).count() == 1
 
     def is_connected_with_user_in_circles(self, user, circles):
         circles_ids = [circle.pk for circle in circles]
         return self.is_connected_with_user_with_id_in_circles_with_ids(user.pk, circles_ids)
 
     def is_connected_with_user_with_id_in_circles_with_ids(self, user_id, circles_ids):
-        count = self.connections.select_related('target_connection__user_id').filter(
+        count = self.connections.filter(
             target_connection__user_id=user_id,
-            circle_id__in=circles_ids).count()
+            circles__id__in=circles_ids).count()
         return count > 0
 
     def is_following_user(self, user):
@@ -280,10 +282,10 @@ class User(AbstractUser):
     def is_following_user_with_id_in_list_with_id(self, user_id, list_id):
         return self.follows.filter(
             followed_user_id=user_id,
-            list_id=list_id).count() == 1
+            lists__id=list_id).count() == 1
 
     def is_world_circle_id(self, id):
-        world_circle_id = self.get_world_circle_id()
+        world_circle_id = self._get_world_circle_id()
         return world_circle_id == id
 
     def is_connections_circle_id(self, id):
@@ -478,14 +480,51 @@ class User(AbstractUser):
     def update_list(self, list, **kwargs):
         return self.update_list_with_id(list.pk, **kwargs)
 
-    def update_list_with_id(self, list_id, **kwargs):
+    def update_list_with_id(self, list_id, name=None, emoji_id=None, usernames=None):
         self._check_can_update_list_with_id(list_id)
-        self._check_list_data(kwargs)
-        list = self.lists.get(id=list_id)
+        self._check_list_data(name, emoji_id)
+        list_to_update = self.lists.get(id=list_id)
 
-        for attr, value in kwargs.items():
-            setattr(list, attr, value)
-        list.save()
+        if name:
+            list_to_update.name = name
+
+        if emoji_id:
+            list_to_update.emoji_id = emoji_id
+
+        if isinstance(usernames, list):
+            # TODO This is a goddamn expensive operation. Improve.
+            new_list_users = []
+
+            list_users = list_to_update.users
+            list_users_by_username = {}
+
+            for list_user in list_users:
+                list_user_username = list_user.username
+                list_users_by_username[list_user_username] = list_user
+
+            for username in usernames:
+                user = User.objects.get(username=username)
+                user_exists_in_list = username in list_users_by_username
+                if user_exists_in_list:
+                    # The username added might not be same person we had before
+                    new_list_users.append(list_users_by_username[username])
+                else:
+                    new_list_users.append(user)
+
+            list_users_to_remove = filter(lambda list_user: list_user not in new_list_users, list_users)
+
+            for user_to_remove in list_users_to_remove:
+                self.remove_list_with_id_from_follow_for_user_with_id(user_to_remove.pk, list_to_update.pk)
+
+            for new_list_user in new_list_users:
+                if not self.is_following_user_with_id_in_list_with_id(new_list_user.pk, list_to_update.pk):
+                    if self.is_following_user_with_id(new_list_user.pk):
+                        self.add_list_with_id_to_follow_for_user_with_id(new_list_user.pk, list_to_update.pk)
+                    else:
+                        self.follow_user_with_id(new_list_user.pk, lists_ids=[list_to_update.pk])
+
+        list_to_update.save()
+        return list_to_update
 
     def get_list_with_id(self, list_id):
         self._check_can_get_list_with_id(list_id)
@@ -496,7 +535,7 @@ class User(AbstractUser):
         return User.get_public_users_with_query(query)
 
     def create_public_post(self, text=None, image=None):
-        world_circle_id = self.get_world_circle_id()
+        world_circle_id = self._get_world_circle_id()
         return self.create_post(text=text, image=image, circle_id=world_circle_id)
 
     def create_encircled_post(self, circles_ids, text=None, image=None):
@@ -517,7 +556,7 @@ class User(AbstractUser):
 
         if len(circles_ids) == 0:
             # If no circle, add post to world circle
-            world_circle_id = self.get_world_circle_id()
+            world_circle_id = self._get_world_circle_id()
             circles_ids.append(world_circle_id)
 
         Post = get_post_model()
@@ -544,10 +583,10 @@ class User(AbstractUser):
         queries = []
 
         follows = None
-        world_circle_id = self.get_world_circle_id()
+        world_circle_id = self._get_world_circle_id()
 
         if lists_ids:
-            follows = self.follows.filter(list_id__in=lists_ids)
+            follows = self.follows.filter(lists__id__in=lists_ids)
         else:
             follows = self.follows.all()
 
@@ -587,13 +626,15 @@ class User(AbstractUser):
                                                                   circles__id=target_connection.user.connections_circle.pk)
                 queries.append(connected_user_connections_circle_posts_query)
 
-                # Add the connected user circle posts we might be in
-                target_connection_circle = connection.target_connection.circle
+                # Get the circles we're part of
+                target_connection_circles = connection.target_connection.circles.all()
+
                 # The other user might not have the user in a circle yet
-                if target_connection_circle:
-                    connected_user_circle_posts_query = Q(creator_id=target_connection.user_id,
-                                                          circles__id=target_connection.circle_id)
-                    queries.append(connected_user_circle_posts_query)
+                if target_connection_circles:
+                    target_connection_circles_ids = [circle.pk for circle in target_connection_circles]
+                    connected_user_circles_posts_query = Q(creator_id=target_connection.user_id,
+                                                           circles__id__in=target_connection_circles_ids)
+                    queries.append(connected_user_circles_posts_query)
 
         final_query = Q(creator_id=self.pk)
 
@@ -613,10 +654,10 @@ class User(AbstractUser):
 
         return result
 
-    def follow_user(self, user, **kwargs):
-        return self.follow_user_with_id(user.pk, **kwargs)
+    def follow_user(self, user, lists_ids=None):
+        return self.follow_user_with_id(user.pk, lists_ids)
 
-    def follow_user_with_id(self, user_id, **kwargs):
+    def follow_user_with_id(self, user_id, lists_ids=None):
         self._check_is_not_following_user_with_id(user_id)
 
         if self.pk == user_id:
@@ -624,10 +665,13 @@ class User(AbstractUser):
                 _('A user cannot follow itself.'),
             )
 
-        self._check_follow_data(kwargs)
+        if not lists_ids:
+            lists_ids = self._get_default_follow_lists()
+
+        self._check_follow_lists_ids(lists_ids)
 
         Follow = get_follow_model()
-        return Follow.create_follow(user_id=self.pk, followed_user_id=user_id, **kwargs)
+        return Follow.create_follow(user_id=self.pk, followed_user_id=user_id, lists_ids=lists_ids)
 
     def unfollow_user(self, user):
         return self.unfollow_user_with_id(user.pk)
@@ -637,68 +681,87 @@ class User(AbstractUser):
         follow = self.follows.get(followed_user_id=user_id)
         follow.delete()
 
-    def update_follow_for_user(self, user, **kwargs):
-        return self.update_follow_for_user_with_id(user.pk, **kwargs)
+    def update_follow_for_user(self, user, lists_ids=None):
+        return self.update_follow_for_user_with_id(user.pk, lists_ids=lists_ids)
 
-    def update_follow_for_user_with_id(self, user_id, **kwargs):
+    def update_follow_for_user_with_id(self, user_id, lists_ids=None):
         self._check_is_following_user_with_id(user_id)
-        self._check_follow_data(kwargs)
+
+        if not lists_ids:
+            lists_ids = self._get_default_follow_lists()
+
+        self._check_follow_lists_ids(lists_ids)
+
         follow = self.get_follow_for_user_with_id(user_id)
-        for attr, value in kwargs.items():
-            setattr(follow, attr, value)
+
+        follow.lists.clear()
+        follow.lists.add(*lists_ids)
         follow.save()
+
         return follow
 
-    def connect_with_user_with_id(self, user_id, circle_id=None):
+    def remove_list_with_id_from_follow_for_user_with_id(self, user_id, list_id):
+        self._check_is_following_user_with_id(user_id)
+        self._check_is_following_user_with_id_in_list_with_id(user_id, list_id)
+        follow = self.get_follow_for_user_with_id(user_id)
+        follow.lists.remove(list_id)
+        return follow
+
+    def add_list_with_id_to_follow_for_user_with_id(self, user_id, list_id):
+        self._check_is_following_user_with_id(user_id)
+        self._check_is_not_following_user_with_id_in_list_with_id(user_id, list_id)
+        follow = self.get_follow_for_user_with_id(user_id)
+        follow.lists.add(list_id)
+        return follow
+
+    def connect_with_user_with_id(self, user_id, circles_ids=None):
         self._check_is_not_connected_with_user_with_id(user_id)
 
-        if not circle_id:
-            circle_id = self.connections_circle_id
+        if not circles_ids:
+            circles_ids = self._get_default_connection_circles()
 
-        self.check_connection_circle_id(circle_id)
+        self._check_connection_circles_ids(circles_ids)
 
         if self.pk == user_id:
             raise ValidationError(
                 _('A user cannot connect with itself.'),
             )
+
         Connection = get_connection_model()
-        connection = Connection.create_connection(user_id=self.pk, target_user_id=user_id, circle_id=circle_id)
+        connection = Connection.create_connection(user_id=self.pk, target_user_id=user_id, circles_ids=circles_ids)
+
         # Automatically follow user
         if not self.is_following_user_with_id(user_id):
             self.follow_user_with_id(user_id)
 
         return connection
 
-    def confirm_connection_with_user_with_id(self, user_id, circle_id=None):
+    def confirm_connection_with_user_with_id(self, user_id, circles_ids=None):
         self._check_is_not_fully_connected_with_user_with_id(user_id)
 
-        if not circle_id:
-            circle_id = self.connections_circle_id
-        self.check_connection_circle_id(circle_id)
+        if not circles_ids:
+            circles_ids = self._get_default_connection_circles()
 
-        return self.update_connection_with_user_with_id(user_id, circle_id=circle_id)
+        self._check_connection_circles_ids(circles_ids)
 
-    def update_connection_with_user_with_id(self, user_id, circle_id=None):
+        return self.update_connection_with_user_with_id(user_id, circles_ids=circles_ids)
+
+    def update_connection_with_user_with_id(self, user_id, circles_ids=None):
         self._check_is_connected_with_user_with_id(user_id)
 
-        if not circle_id:
+        if not circles_ids:
             raise ValidationError(
                 _('No data to update the connection with.'),
             )
 
-        self.check_connection_circle_id(circle_id)
+        self._check_connection_circles_ids(circles_ids)
+
         connection = self.get_connection_for_user_with_id(user_id)
-        connection.circle_id = circle_id
+        connection.circles.clear()
+        connection.circles.add(*circles_ids)
         connection.save()
+
         return connection
-
-    def check_connection_circle_id(self, circle_id):
-        self._check_has_circle_with_id(circle_id)
-
-        if self.is_world_circle_id(circle_id):
-            raise ValidationError(
-                _('Can\'t connect in the world circle.'),
-            )
 
     def disconnect_from_user(self, user):
         return self.disconnect_from_user_with_id(user.pk)
@@ -718,6 +781,38 @@ class User(AbstractUser):
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
 
+    def _get_world_circle_id(self):
+        Circle = get_circle_model()
+        return Circle.get_world_circle().pk
+
+    def _get_default_connection_circles(self):
+        """
+        If no circles were given on a connection request or confirm,
+        these will be the ones used.
+        :return:
+        """
+        return [self.connections_circle_id]
+
+    def _get_default_follow_lists(self):
+        """
+        If no list were given on follow,
+        these will be the ones used.
+        :return:
+        """
+        return []
+
+    def _check_connection_circles_ids(self, circles_ids):
+        for circle_id in circles_ids:
+            self._check_connection_circle_id(circle_id)
+
+    def _check_connection_circle_id(self, circle_id):
+        self._check_has_circle_with_id(circle_id)
+
+        if self.is_world_circle_id(circle_id):
+            raise ValidationError(
+                _('Can\'t connect in the world circle.'),
+            )
+
     def _check_email_not_taken(self, email):
         if email == self.email:
             return
@@ -726,10 +821,6 @@ class User(AbstractUser):
             raise ValidationError(
                 _('The email is already taken.')
             )
-
-    def get_world_circle_id(self):
-        Circle = get_circle_model()
-        return Circle.get_world_circle().pk
 
     def _check_username_not_taken(self, username):
         if username == self.username:
@@ -797,16 +888,12 @@ class User(AbstractUser):
                 _('This post is private.'),
             )
 
-    def _check_follow_data(self, data):
-        list_id = data.get('list_id')
+    def _check_follow_lists_ids(self, lists_ids):
+        for list_id in lists_ids:
+            self._check_follow_list_id(list_id)
 
-        if not list_id:
-            list = data.get('list')
-            if list:
-                list_id = list.pk
-
-        if list_id:
-            self._check_has_list_with_id(list_id)
+    def _check_follow_list_id(self, list_id):
+        self._check_has_list_with_id(list_id)
 
     def _check_post_data(self, data):
         circles_ids = data.get('circles_ids')
@@ -814,8 +901,7 @@ class User(AbstractUser):
         if circles_ids:
             self._check_has_circles_with_ids(circles_ids)
 
-    def _check_list_data(self, data):
-        name = data.get('name')
+    def _check_list_data(self, name, emoji_id):
         if name:
             self._check_list_name_not_taken(name)
 
@@ -828,6 +914,22 @@ class User(AbstractUser):
         if self.is_following_user_with_id(user_id):
             raise ValidationError(
                 _('Already following user.'),
+            )
+
+    def _check_is_not_following_user_with_id_in_list_with_id(self, user_id, list_id):
+        self._check_is_following_user_with_id(user_id)
+
+        if self.is_following_user_with_id_in_list_with_id(user_id, list_id):
+            raise ValidationError(
+                _('Already following user in list.'),
+            )
+
+    def _check_is_following_user_with_id_in_list_with_id(self, user_id, list_id):
+        self._check_is_following_user_with_id(user_id)
+
+        if not self.is_following_user_with_id_in_list_with_id(user_id, list_id):
+            raise ValidationError(
+                _('Not following user in list.'),
             )
 
     def _check_is_following_user_with_id(self, user_id):
@@ -969,7 +1071,7 @@ def bootstrap_circles(sender, instance=None, created=False, **kwargs):
 class UserProfile(models.Model):
     name = models.CharField(_('name'), max_length=settings.PROFILE_NAME_MAX_LENGTH, blank=False, null=False,
                             validators=[name_characters_validator])
-    location = models.CharField(_('name'), max_length=settings.PROFILE_LOCATION_MAX_LENGTH, blank=False, null=True)
+    location = models.CharField(_('location'), max_length=settings.PROFILE_LOCATION_MAX_LENGTH, blank=False, null=True)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     birth_date = models.DateField(_('birth date'), null=False, blank=False)
     avatar = models.ImageField(_('avatar'), blank=False, null=True)
