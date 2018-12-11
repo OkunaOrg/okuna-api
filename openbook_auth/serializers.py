@@ -8,9 +8,12 @@ from openbook_auth.validators import username_characters_validator, \
     username_not_taken_validator, email_not_taken_validator, user_username_exists
 from django.contrib.auth.password_validation import validate_password
 
+from openbook_circles.models import Circle
+from openbook_common.models import Emoji
 from openbook_common.serializers_fields.user import IsFollowingField, IsConnectedField, FollowersCountField, \
-    FollowingCountField, PostsCountField
+    FollowingCountField, PostsCountField, ConnectedCirclesField, FollowListsField
 from openbook_common.validators import name_characters_validator
+from openbook_lists.models import List
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -67,18 +70,9 @@ class GetAuthenticatedUserProfileSerializer(serializers.ModelSerializer):
 
 class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
     profile = GetAuthenticatedUserProfileSerializer(many=False)
-    posts_count = serializers.SerializerMethodField()
-    followers_count = serializers.SerializerMethodField()
-    following_count = serializers.SerializerMethodField()
-
-    def get_following_count(self, obj):
-        return obj.count_following()
-
-    def get_followers_count(self, obj):
-        return obj.count_followers()
-
-    def get_posts_count(self, obj):
-        return obj.count_posts()
+    posts_count = PostsCountField()
+    followers_count = FollowersCountField()
+    following_count = FollowingCountField()
 
     class Meta:
         model = User
@@ -89,7 +83,7 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
             'profile',
             'posts_count',
             'followers_count',
-            'following_count'
+            'following_count',
         )
 
 
@@ -152,6 +146,37 @@ class GetUserUserProfileSerializer(serializers.ModelSerializer):
         )
 
 
+class GetUserUserCircleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Circle
+        fields = (
+            'id',
+            'name',
+            'color'
+        )
+
+
+class GetUserUserListEmojiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Emoji
+        fields = (
+            'id',
+            'image',
+        )
+
+
+class GetUserUserListSerializer(serializers.ModelSerializer):
+    emoji = GetUserUserListEmojiSerializer(many=False)
+
+    class Meta:
+        model = List
+        fields = (
+            'id',
+            'name',
+            'emoji'
+        )
+
+
 class GetUserUserSerializer(serializers.ModelSerializer):
     profile = GetUserUserProfileSerializer(many=False)
     followers_count = FollowersCountField()
@@ -159,6 +184,8 @@ class GetUserUserSerializer(serializers.ModelSerializer):
     posts_count = PostsCountField()
     is_following = IsFollowingField()
     is_connected = IsConnectedField()
+    connected_circles = ConnectedCirclesField(circle_serializer=GetUserUserCircleSerializer)
+    follow_lists = FollowListsField(list_serializer=GetUserUserListSerializer)
 
     class Meta:
         model = User
@@ -170,7 +197,9 @@ class GetUserUserSerializer(serializers.ModelSerializer):
             'following_count',
             'posts_count',
             'is_following',
-            'is_connected'
+            'is_connected',
+            'connected_circles',
+            'follow_lists'
         )
 
 

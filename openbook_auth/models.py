@@ -243,9 +243,8 @@ class User(AbstractUser):
         return self.is_connected_with_user_with_id(user.pk)
 
     def is_connected_with_user_with_id(self, user_id):
-        count = self.connections.select_related('target_connection__user_id').filter(
-            target_connection__user_id=user_id).count()
-        return count > 0
+        return self.connections.select_related('target_connection__user_id').filter(
+            target_connection__user_id=user_id).exists()
 
     def is_connected_with_user_with_username(self, username):
         count = self.connections.select_related('target_connection__user__username').filter(
@@ -274,7 +273,7 @@ class User(AbstractUser):
         return self.is_following_user_with_id(user.pk)
 
     def is_following_user_with_id(self, user_id):
-        return self.follows.filter(followed_user__id=user_id).count() > 0
+        return self.follows.filter(followed_user__id=user_id).exists()
 
     def is_following_user_with_username(self, user_username):
         return self.follows.filter(followed_user__username=user_username).exists()
@@ -325,6 +324,16 @@ class User(AbstractUser):
 
     def has_commented_post_with_id(self, post_id):
         return self.posts_comments.filter(post_id=post_id).count() > 0
+
+    def get_lists_for_follow_for_user_with_id(self, user_id):
+        self._check_is_following_user_with_id(user_id)
+        follow = self.get_follow_for_user_with_id(user_id)
+        return follow.lists
+
+    def get_circles_for_connection_with_user_with_id(self, user_id):
+        self._check_is_connected_with_user_with_id(user_id)
+        connection = self.get_connection_for_user_with_id(user_id)
+        return connection.circles
 
     def get_reaction_for_post_with_id(self, post_id):
         return self.post_reactions.filter(post_id=post_id).get()
