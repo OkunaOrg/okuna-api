@@ -8,7 +8,7 @@ from openbook_auth.validators import username_characters_validator, \
     username_not_taken_validator, email_not_taken_validator, user_username_exists
 from django.contrib.auth.password_validation import validate_password
 
-from openbook_common.serializers_fields import IsFollowingField, IsConnectedField, FollowersCountField, \
+from openbook_common.serializers_fields.user import IsFollowingField, IsConnectedField, FollowersCountField, \
     FollowingCountField, PostsCountField
 from openbook_common.validators import name_characters_validator
 
