@@ -80,9 +80,6 @@ class PostsCountField(Field):
 
 class ConnectedCirclesField(Field):
     def __init__(self, circle_serializer=None, **kwargs):
-        assert circle_serializer is not None, (
-            'A circle_serializer is required'
-        )
         self.circle_serializer = circle_serializer
         kwargs['source'] = '*'
         kwargs['read_only'] = True
@@ -103,9 +100,6 @@ class ConnectedCirclesField(Field):
 
 class FollowListsField(Field):
     def __init__(self, list_serializer=None, **kwargs):
-        assert list_serializer is not None, (
-            'A list_serializer is required'
-        )
         self.list_serializer = list_serializer
         kwargs['source'] = '*'
         kwargs['read_only'] = True
