@@ -268,7 +268,7 @@ class User(AbstractUser):
         count = self.connections.filter(
             target_connection__user_id=user_id,
             circles__id__in=circles_ids).count()
-        return count == len(circles_ids)
+        return count > 0
 
     def is_following_user(self, user):
         return self.is_following_user_with_id(user.pk)
@@ -620,6 +620,7 @@ class User(AbstractUser):
         :return:
         """
         # Add all own posts
+
         timeline_posts_query = Q(creator_id=self.pk)
 
         follows_related_query = self.follows.select_related('followed_user')
@@ -631,9 +632,17 @@ class User(AbstractUser):
 
         for follow in follows:
             followed_user = follow.followed_user
-            followed_user_posts_query = self._make_get_posts_query_for_user(followed_user, circles_ids=circles_ids,
-                                                                            max_id=max_id)
-            timeline_posts_query.add(followed_user_posts_query, Q.OR)
+            if circles_ids:
+                # Check that the user belongs to the filtered circles
+                if self.is_connected_with_user_with_id_in_circles_with_ids(followed_user.pk, circles_ids):
+                    followed_user_posts_query = self._make_get_posts_query_for_user(followed_user, )
+                    timeline_posts_query.add(followed_user_posts_query, Q.OR)
+            else:
+                followed_user_posts_query = self._make_get_posts_query_for_user(followed_user, )
+                timeline_posts_query.add(followed_user_posts_query, Q.OR)
+
+        if max_id:
+            timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
 
         Post = get_post_model()
         timeline_posts = Post.objects.filter(timeline_posts_query)
@@ -772,7 +781,7 @@ class User(AbstractUser):
         posts_query.add(Q(id=post_id), Q.AND)
         return posts_query
 
-    def _make_get_posts_query_for_user(self, user, max_id=None, circles_ids=None):
+    def _make_get_posts_query_for_user(self, user, max_id=None):
         posts_query = Q()
 
         # Add the user world circle posts
@@ -784,36 +793,29 @@ class User(AbstractUser):
         is_connected_with_user = self.is_connected_with_user(user)
 
         if is_connected_with_user:
-            if circles_ids:
-                is_connected_in_requested_circles = self.is_connected_with_user_with_id_in_circles_with_ids(user,
-                                                                                                            circles_ids)
-                if is_connected_in_requested_circles:
-                    user_encircled_posts_query = Q(creator_id=user.pk, circles__id__in=circles_ids)
-                    posts_query.add(user_encircled_posts_query, Q.OR)
-            else:
-                # Add the user connections circle posts
-                user_connections_circle_query = Q(creator_id=user.pk,
-                                                  circles__id=user.connections_circle_id)
+            # Add the user connections circle posts
+            user_connections_circle_query = Q(creator_id=user.pk,
+                                              circles__id=user.connections_circle_id)
 
-                posts_query.add(user_connections_circle_query, Q.OR)
+            posts_query.add(user_connections_circle_query, Q.OR)
 
-                # Add the user circled posts we're part of
-                Connection = get_connection_model()
+            # Add the user circled posts we're part of
+            Connection = get_connection_model()
 
-                connection = Connection.objects.prefetch_related(
-                    'target_connection__circles'
-                ).filter(
-                    user_id=self.pk,
-                    target_connection__user_id=user.pk).get()
+            connection = Connection.objects.prefetch_related(
+                'target_connection__circles'
+            ).filter(
+                user_id=self.pk,
+                target_connection__user_id=user.pk).get()
 
-                target_connection_circles = connection.target_connection.circles.all()
+            target_connection_circles = connection.target_connection.circles.all()
 
-                if target_connection_circles:
-                    target_connection_circles_ids = [target_connection_circle.pk for target_connection_circle in
-                                                     target_connection_circles]
+            if target_connection_circles:
+                target_connection_circles_ids = [target_connection_circle.pk for target_connection_circle in
+                                                 target_connection_circles]
 
-                    user_encircled_posts_query = Q(creator_id=user.pk, circles__id__in=target_connection_circles_ids)
-                    posts_query.add(user_encircled_posts_query, Q.OR)
+                user_encircled_posts_query = Q(creator_id=user.pk, circles__id__in=target_connection_circles_ids)
+                posts_query.add(user_encircled_posts_query, Q.OR)
 
         if max_id:
             posts_query.add(Q(id__lt=max_id), Q.AND)
@@ -918,7 +920,7 @@ class User(AbstractUser):
         # Check if post is public
         Post = get_post_model()
         post = Post.objects.select_related('creator').filter(pk=post_id).get()
-        if post.is_public_post():
+        if post.creator_id == self.pk or post.is_public_post():
             return
 
         post_creator = post.creator
@@ -928,7 +930,6 @@ class User(AbstractUser):
             raise ValidationError(
                 _('This post is private.'),
             )
-        print('HEYYA')
 
     def _check_follow_lists_ids(self, lists_ids):
         for list_id in lists_ids:
