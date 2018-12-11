@@ -593,6 +593,22 @@ class User(AbstractUser):
 
         return profile_posts
 
+    def get_posts(self, max_id=None):
+        """
+        Get all the posts for ourselves
+        :param max_id:
+        :return:
+        """
+        posts_query = Q(creator_id=self.id)
+
+        if max_id:
+            posts_query.add(Q(id__lt=max_id), Q.AND)
+
+        Post = get_post_model()
+        posts = Post.objects.filter(posts_query)
+
+        return posts
+
     def get_posts_for_user_with_username(self, username, max_id=None):
         """
         Get all the posts for the given user with username
