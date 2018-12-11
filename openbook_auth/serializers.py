@@ -8,6 +8,8 @@ from openbook_auth.validators import username_characters_validator, \
     username_not_taken_validator, email_not_taken_validator, user_username_exists
 from django.contrib.auth.password_validation import validate_password
 
+from openbook_common.serializers_fields import IsFollowingField, IsConnectedField, FollowersCountField, \
+    FollowingCountField, PostsCountField
 from openbook_common.validators import name_characters_validator
 
 
@@ -115,9 +117,9 @@ class UpdateAuthenticatedUserSerializer(serializers.Serializer):
 
 class UpdateUserSettingsSerializer(serializers.Serializer):
     new_password = serializers.CharField(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH,
-                                     validators=[validate_password], required=False, allow_blank=False)
+                                         validators=[validate_password], required=False, allow_blank=False)
     current_password = serializers.CharField(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH,
-                                     validators=[validate_password], required=False, allow_blank=False)
+                                             validators=[validate_password], required=False, allow_blank=False)
     email = serializers.EmailField(validators=[email_not_taken_validator], required=False)
 
     def validate(self, data):
@@ -152,49 +154,11 @@ class GetUserUserProfileSerializer(serializers.ModelSerializer):
 
 class GetUserUserSerializer(serializers.ModelSerializer):
     profile = GetUserUserProfileSerializer(many=False)
-    followers_count = serializers.SerializerMethodField()
-    following_count = serializers.SerializerMethodField()
-    posts_count = serializers.SerializerMethodField()
-    is_following = serializers.SerializerMethodField()
-    is_connected = serializers.SerializerMethodField()
-
-    def get_is_following(self, obj):
-        request = self.context.get('request')
-
-        if not request.user.is_anonymous:
-            if request.user.pk == obj.pk:
-                return False
-            return request.user.is_following_user_with_id(obj.pk)
-
-        return False
-
-    def get_is_connected(self, obj):
-        request = self.context.get('request')
-
-        if not request.user.is_anonymous:
-            if request.user.pk == obj.pk:
-                return False
-            return request.user.is_connected_with_user_with_id(obj.pk)
-
-        return False
-
-    def get_following_count(self, obj):
-        return obj.count_following()
-
-    def get_followers_count(self, obj):
-        if obj.profile.followers_count_visible:
-            return obj.count_followers()
-        return None
-
-    def get_posts_count(self, obj):
-        request = self.context.get('request')
-
-        if not request.user.is_anonymous:
-            if request.user.pk == obj.pk:
-                return obj.count_posts()
-            return obj.count_posts_for_user_with_id(request.user.pk)
-
-        return obj.count_public_posts()
+    followers_count = FollowersCountField()
+    following_count = FollowingCountField()
+    posts_count = PostsCountField()
+    is_following = IsFollowingField()
+    is_connected = IsConnectedField()
 
     class Meta:
         model = User
@@ -230,28 +194,8 @@ class GetUsersUserProfileSerializer(serializers.ModelSerializer):
 
 class GetUsersUserSerializer(serializers.ModelSerializer):
     profile = GetUsersUserProfileSerializer(many=False)
-    is_following = serializers.SerializerMethodField()
-    is_connected = serializers.SerializerMethodField()
-
-    def get_is_following(self, obj):
-        request = self.context.get('request')
-
-        if not request.user.is_anonymous:
-            if request.user.pk == obj.pk:
-                return False
-            return request.user.is_following_user_with_id(obj.pk)
-
-        return False
-
-    def get_is_connected(self, obj):
-        request = self.context.get('request')
-
-        if not request.user.is_anonymous:
-            if request.user.pk == obj.pk:
-                return False
-            return request.user.is_connected_with_user_with_id(obj.pk)
-
-        return False
+    is_following = IsFollowingField()
+    is_connected = IsConnectedField()
 
     class Meta:
         model = User
