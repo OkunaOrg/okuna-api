@@ -3,8 +3,10 @@ from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import username_characters_validator, user_username_exists
+from openbook_common.serializers_fields.user import IsFollowingField, FollowListsField
 
 from openbook_follows.models import Follow
+from openbook_lists.models import List
 from openbook_lists.validators import list_id_exists
 
 
@@ -34,12 +36,18 @@ class UserProfileSerializer(serializers.ModelSerializer):
         )
 
 
-class FollowUserSerializer(serializers.ModelSerializer):
-    is_following = serializers.SerializerMethodField()
+class FollowUserListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = List
+        fields = (
+            'id',
+            'name',
+        )
 
-    def get_is_following(self, obj):
-        request = self.context.get('request')
-        return request.user.is_following_user_with_id(obj.pk)
+
+class FollowUserSerializer(serializers.ModelSerializer):
+    is_following = IsFollowingField()
+    follow_lists = FollowListsField(list_serializer=FollowUserListSerializer)
 
     class Meta:
         model = User
@@ -47,6 +55,7 @@ class FollowUserSerializer(serializers.ModelSerializer):
             'id',
             'username',
             'is_following',
+            'follow_lists'
         )
 
 
