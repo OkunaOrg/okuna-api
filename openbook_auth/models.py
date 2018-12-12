@@ -239,6 +239,15 @@ class User(AbstractUser):
 
         return False
 
+    def is_pending_confirm_connection_for_user_with_id(self, user_id):
+        if not self.is_connected_with_user_with_id(user_id):
+            return False
+
+        connection = self.connections.filter(
+            target_connection__user_id=user_id).get()
+
+        return not connection.circles.exists()
+
     def is_connected_with_user(self, user):
         return self.is_connected_with_user_with_id(user.pk)
 

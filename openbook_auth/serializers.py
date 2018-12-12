@@ -11,7 +11,8 @@ from django.contrib.auth.password_validation import validate_password
 from openbook_circles.models import Circle
 from openbook_common.models import Emoji
 from openbook_common.serializers_fields.user import IsFollowingField, IsConnectedField, FollowersCountField, \
-    FollowingCountField, PostsCountField, ConnectedCirclesField, FollowListsField, IsFullyConnectedField
+    FollowingCountField, PostsCountField, ConnectedCirclesField, FollowListsField, IsFullyConnectedField, \
+    IsPendingConnectionConfirmation
 from openbook_common.validators import name_characters_validator
 from openbook_lists.models import List
 
@@ -189,6 +190,7 @@ class GetUserUserSerializer(serializers.ModelSerializer):
     is_fully_connected = IsFullyConnectedField()
     connected_circles = ConnectedCirclesField(circle_serializer=GetUserUserCircleSerializer)
     follow_lists = FollowListsField(list_serializer=GetUserUserListSerializer)
+    is_pending_connection_confirmation = IsPendingConnectionConfirmation()
 
     class Meta:
         model = User
@@ -203,7 +205,8 @@ class GetUserUserSerializer(serializers.ModelSerializer):
             'is_connected',
             'is_fully_connected',
             'connected_circles',
-            'follow_lists'
+            'follow_lists',
+            'is_pending_connection_confirmation'
         )
 
 
