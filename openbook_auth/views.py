@@ -194,6 +194,9 @@ class UserSettings(APIView):
                 user.update_email(new_email)
                 self.send_confirmation_email(request, user)
 
+            if not has_email and not has_password:
+                return Response(_('Please specify email or password to update'), status=status.HTTP_400_BAD_REQUEST)
+
         user_serializer = GetAuthenticatedUserSerializer(user, context={"request": request})
         return Response(user_serializer.data, status=status.HTTP_200_OK)
 
@@ -209,7 +212,7 @@ class UserSettings(APIView):
 
         # @todo: Update from email to reflect a generic one from Openbook
         email = EmailMessage(
-            mail_subject, message, to=[user.email], from_email=user.email
+            mail_subject, message, to=['shantanu@open-book.org'], from_email='shantanu@open-book.org'
         )
         email.send()
 
