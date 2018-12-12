@@ -210,9 +210,8 @@ class UserSettings(APIView):
             'token': user.make_email_verification_token()
         })
 
-        # @todo: Update from email to reflect a generic one from Openbook
         email = EmailMessage(
-            mail_subject, message, to=['shantanu@open-book.org'], from_email='shantanu@open-book.org'
+            mail_subject, message, to=[user.email], from_email='info@open-book.org'
         )
         email.send()
 
