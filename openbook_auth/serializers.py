@@ -11,7 +11,7 @@ from django.contrib.auth.password_validation import validate_password
 from openbook_circles.models import Circle
 from openbook_common.models import Emoji
 from openbook_common.serializers_fields.user import IsFollowingField, IsConnectedField, FollowersCountField, \
-    FollowingCountField, PostsCountField, ConnectedCirclesField, FollowListsField
+    FollowingCountField, PostsCountField, ConnectedCirclesField, FollowListsField, IsFullyConnectedField
 from openbook_common.validators import name_characters_validator
 from openbook_lists.models import List
 
@@ -64,7 +64,7 @@ class GetAuthenticatedUserProfileSerializer(serializers.ModelSerializer):
             'location',
             'cover',
             'birth_date',
-            'followers_count_visible'
+            'followers_count_visible',
         )
 
 
@@ -84,6 +84,7 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
             'posts_count',
             'followers_count',
             'following_count',
+            'connections_circle_id'
         )
 
 
@@ -152,7 +153,8 @@ class GetUserUserCircleSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'name',
-            'color'
+            'color',
+            'users_count'
         )
 
 
@@ -184,6 +186,7 @@ class GetUserUserSerializer(serializers.ModelSerializer):
     posts_count = PostsCountField()
     is_following = IsFollowingField()
     is_connected = IsConnectedField()
+    is_fully_connected = IsFullyConnectedField()
     connected_circles = ConnectedCirclesField(circle_serializer=GetUserUserCircleSerializer)
     follow_lists = FollowListsField(list_serializer=GetUserUserListSerializer)
 
@@ -198,6 +201,7 @@ class GetUserUserSerializer(serializers.ModelSerializer):
             'posts_count',
             'is_following',
             'is_connected',
+            'is_fully_connected',
             'connected_circles',
             'follow_lists'
         )

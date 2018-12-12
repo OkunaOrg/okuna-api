@@ -58,8 +58,10 @@ class CircleSerializer(serializers.ModelSerializer):
             'id',
             'name',
             'color',
-            'users'
+            'users',
+            'users_count'
         )
+
 
 class CircleNameCheckSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=CIRCLE_MAX_LENGTH, required=True, allow_blank=False, validators=[])

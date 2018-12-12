@@ -5,7 +5,7 @@ from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import user_username_exists, username_characters_validator
 from openbook_circles.models import Circle
 from openbook_circles.validators import circle_id_exists
-from openbook_common.serializers_fields.user import IsConnectedField, ConnectedCirclesField
+from openbook_common.serializers_fields.user import IsConnectedField, ConnectedCirclesField, IsFollowingField
 
 from openbook_connections.models import Connection
 
@@ -41,13 +41,15 @@ class ConnectionUserCircleSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'name',
-            'color'
+            'color',
+            'users_count'
         )
 
 
 class ConnectionUserSerializer(serializers.ModelSerializer):
     profile = ConnectionUserProfileSerializer(many=False)
     is_connected = IsConnectedField()
+    is_following = IsFollowingField()
     connected_circles = ConnectedCirclesField(circle_serializer=ConnectionUserCircleSerializer)
 
     class Meta:
@@ -57,6 +59,7 @@ class ConnectionUserSerializer(serializers.ModelSerializer):
             'username',
             'profile',
             'is_connected',
+            'is_following',
             'connected_circles'
         )
 

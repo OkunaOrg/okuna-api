@@ -739,6 +739,8 @@ class User(AbstractUser):
 
         if not circles_ids:
             circles_ids = self._get_default_connection_circles()
+        elif self.connections_circle_id not in circles_ids:
+            circles_ids.append(self.connections_circle_id)
 
         self._check_connection_circles_ids(circles_ids)
 
@@ -761,6 +763,8 @@ class User(AbstractUser):
 
         if not circles_ids:
             circles_ids = self._get_default_connection_circles()
+        elif self.connections_circle_id not in circles_ids:
+            circles_ids.append(self.connections_circle_id)
 
         self._check_connection_circles_ids(circles_ids)
 
@@ -773,6 +777,8 @@ class User(AbstractUser):
             raise ValidationError(
                 _('No data to update the connection with.'),
             )
+        elif self.connections_circle_id not in circles_ids:
+            circles_ids.append(self.connections_circle_id)
 
         self._check_connection_circles_ids(circles_ids)
 
