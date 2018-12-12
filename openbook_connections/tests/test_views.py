@@ -96,6 +96,28 @@ class ConnectAPITests(APITestCase):
         self.assertTrue(
             user.is_connected_with_user_with_id_in_circle_with_id(user_to_connect.pk, user.connections_circle_id))
 
+    def test_connect_autofollows(self):
+        """
+        should autofollow the user it attempts to connect with
+        """
+        user = make_user()
+
+        circle_to_connect = mixer.blend(Circle, creator=user)
+        user_to_connect = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'username': user_to_connect.username,
+            'circles_ids': circle_to_connect.pk
+        }
+
+        url = self._get_url()
+
+        self.client.post(url, data, **headers, format='multipart')
+
+        self.assertTrue(user.is_following_user_with_id(user_to_connect.pk))
+
     def test_connect_in_multiple_circles(self):
         """
         should be able to connect another user on multiple circles and return 200
@@ -218,6 +240,29 @@ class DisconnectAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         self.assertFalse(user.is_connected_with_user_in_circle(user_to_connect, circle_to_connect))
+
+    def test_disconnect_unfollows(self):
+        """
+        should automatically unfollow a user it disconnects from
+        """
+        user = make_user()
+
+        circle_to_connect = mixer.blend(Circle, creator=user)
+        user_to_connect = make_user()
+
+        user.connect_with_user_with_id(user_to_connect.pk, circles_ids=[circle_to_connect.pk])
+
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'username': user_to_connect.username
+        }
+
+        url = self._get_url()
+
+        self.client.post(url, data, **headers, format='multipart')
+
+        self.assertFalse(user.is_following_user_with_id(user_to_connect.pk))
 
     def test_cannot_disconnect_from_unexisting_connection(self):
         """
@@ -394,6 +439,28 @@ class ConfirmConnectionAPITest(APITestCase):
         # Check user got automatically added to connections circle
         connection = user_to_connect.get_connection_for_user_with_id(user.pk)
         self.assertTrue(connection.circles.filter(id=user_to_connect.connections_circle_id).exists())
+
+    def test_confirm_connection_autofollows(self):
+        """
+        should autofollow the user it confirms the connection with
+        """
+        user = make_user()
+
+        user_to_connect = make_user()
+
+        user.connect_with_user_with_id(user_to_connect.pk)
+
+        headers = make_authentication_headers_for_user(user_to_connect)
+
+        data = {
+            'username': user.username
+        }
+
+        url = self._get_url()
+
+        self.client.post(url, data, **headers, format='multipart')
+
+        self.assertTrue(user.is_following_user_with_id(user_to_connect.pk))
 
     def test_confirm_connection_in_circle(self):
         """

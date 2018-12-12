@@ -776,8 +776,13 @@ class User(AbstractUser):
             circles_ids.append(self.connections_circle_id)
 
         self._check_connection_circles_ids(circles_ids)
+        connection = self.update_connection_with_user_with_id(user_id, circles_ids=circles_ids)
 
-        return self.update_connection_with_user_with_id(user_id, circles_ids=circles_ids)
+        # Automatically follow user
+        if not self.is_following_user_with_id(user_id):
+            self.follow_user_with_id(user_id)
+
+        return connection
 
     def update_connection_with_user_with_id(self, user_id, circles_ids=None):
         self._check_is_connected_with_user_with_id(user_id)
@@ -810,6 +815,8 @@ class User(AbstractUser):
         if self.is_following_user_with_id(user_id):
             self.unfollow_user_with_id(user_id)
 
+        return connection
+
     def get_connection_for_user_with_id(self, user_id):
         return self.connections.get(target_connection__user_id=user_id)
 
@@ -830,9 +837,9 @@ class User(AbstractUser):
                                           circles__id=world_circle_id)
         posts_query.add(user_world_circle_posts_query, Q.OR)
 
-        is_connected_with_user = self.is_connected_with_user(user)
+        is_fully_connected_with_user = self.is_fully_connected_with_user_with_id(user.pk)
 
-        if is_connected_with_user:
+        if is_fully_connected_with_user:
             # Add the user connections circle posts
             user_connections_circle_query = Q(creator_id=user.pk,
                                               circles__id=user.connections_circle_id)
