@@ -292,6 +292,7 @@ EMAIL_BACKEND = 'django_amazon_ses.EmailBackend'
 AWS_SES_REGION = os.environ.get('AWS_SES_REGION')
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
+SERVICE_EMAIL_ADDRESS = os.environ.get('SERVICE_EMAIL_ADDRESS')
 
 # AWS Storage config
 
