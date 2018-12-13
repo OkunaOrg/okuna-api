@@ -510,7 +510,7 @@ class PostCommentItemAPITests(APITestCase):
 
         foreign_user = make_user()
         foreign_user.connect_with_user_with_id(user_to_follow.pk)
-        user_to_follow.confirm_connection_with_user_with_id(foreign_user, circles_ids=[circle.pk])
+        user_to_follow.confirm_connection_with_user_with_id(foreign_user.pk, circles_ids=[circle.pk])
 
         post = user_to_follow.create_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
@@ -1019,7 +1019,7 @@ class PostReactionItemAPITests(APITestCase):
 
         foreign_user = make_user()
         foreign_user.connect_with_user_with_id(user_to_follow.pk)
-        user_to_follow.confirm_connection_with_user_with_id(foreign_user, circles_ids=[circle.pk])
+        user_to_follow.confirm_connection_with_user_with_id(foreign_user.pk, circles_ids=[circle.pk])
 
         post = user_to_follow.create_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 

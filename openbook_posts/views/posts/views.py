@@ -39,7 +39,6 @@ class Posts(APIView):
         return Response(post_serializer.data, status=status.HTTP_201_CREATED)
 
     def get(self, request):
-
         if request.user.is_authenticated:
             return self.get_posts_for_authenticated_user(request)
         return self.get_posts_for_unauthenticated_user(request)
@@ -67,18 +66,22 @@ class Posts(APIView):
 
         user = request.user
 
-        if username and not user.is_connected_with_user_with_username(username):
-            User = get_user_model()
-            posts = User.get_public_posts_for_user_with_username(
-                max_id=max_id,
-                username=username
-            )
+        if username:
+            if username == user.username:
+                posts = user.get_posts(max_id=max_id)
+            elif not user.is_connected_with_user_with_username(username):
+                User = get_user_model()
+                posts = User.get_public_posts_for_user_with_username(
+                    max_id=max_id,
+                    username=username
+                )
+            else:
+                posts = user.get_posts_for_user_with_username(username, max_id=max_id)
         else:
             posts = user.get_timeline_posts(
                 circles_ids=circles_ids,
                 lists_ids=lists_ids,
-                max_id=max_id,
-                username=username
+                max_id=max_id
             )
 
         posts = posts.order_by('-created')[:count]

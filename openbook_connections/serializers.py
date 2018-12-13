@@ -3,7 +3,10 @@ from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import user_username_exists, username_characters_validator
+from openbook_circles.models import Circle
 from openbook_circles.validators import circle_id_exists
+from openbook_common.serializers_fields.user import IsConnectedField, ConnectedCirclesField, IsFollowingField, \
+    IsPendingConnectionConfirmation, IsFullyConnectedField
 
 from openbook_connections.models import Connection
 
@@ -33,19 +36,24 @@ class ConnectionUserProfileSerializer(serializers.ModelSerializer):
         )
 
 
+class ConnectionUserCircleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Circle
+        fields = (
+            'id',
+            'name',
+            'color',
+            'users_count'
+        )
+
+
 class ConnectionUserSerializer(serializers.ModelSerializer):
     profile = ConnectionUserProfileSerializer(many=False)
-    is_connected = serializers.SerializerMethodField()
-
-    def get_is_connected(self, obj):
-        request = self.context.get('request')
-
-        if not request.user.is_anonymous:
-            if request.user.pk == obj.pk:
-                return False
-            return request.user.is_connected_with_user_with_id(obj.pk)
-
-        return False
+    is_connected = IsConnectedField()
+    is_following = IsFollowingField()
+    connected_circles = ConnectedCirclesField(circle_serializer=ConnectionUserCircleSerializer)
+    is_pending_connection_confirmation = IsPendingConnectionConfirmation()
+    is_fully_connected = IsFullyConnectedField()
 
     class Meta:
         model = User
@@ -53,7 +61,11 @@ class ConnectionUserSerializer(serializers.ModelSerializer):
             'id',
             'username',
             'profile',
-            'is_connected'
+            'is_connected',
+            'is_fully_connected',
+            'is_following',
+            'connected_circles',
+            'is_pending_connection_confirmation'
         )
 
 

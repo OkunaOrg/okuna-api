@@ -440,10 +440,7 @@ class AuthenticatedUserAPITests(APITestCase):
         """
         should return 200 and the data of the authenticated user
         """
-        username = 'another_user'
-        password = 'yap!oansid_'
-
-        user = User.objects.create_user(username=username, password=password, email='lifenautjoe@mail.com')
+        user = make_user()
 
         auth_token = user.auth_token.key
 
@@ -459,7 +456,7 @@ class AuthenticatedUserAPITests(APITestCase):
 
         self.assertIn('username', parsed_response)
         response_username = parsed_response['username']
-        self.assertEqual(response_username, username)
+        self.assertEqual(response_username, user.username)
 
     def test_can_update_user_username(self):
         """

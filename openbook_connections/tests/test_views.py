@@ -25,6 +25,10 @@ class ConnectionsAPITests(APITestCase):
     ConnectionsAPI
     """
 
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
     def test_retrieve_own_connections(self):
         """
         should be able to retrieve own connections and return 200
@@ -66,7 +70,7 @@ class ConnectAPITests(APITestCase):
 
     def test_connect(self):
         """
-        should be able to connect with another user on an specific circle and return 200
+        should be able to connect with another user on an specific circle, add the connections circle and return 200
         """
         user = mixer.blend(User)
 
@@ -89,6 +93,30 @@ class ConnectAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         self.assertTrue(user.is_connected_with_user_in_circle(user_to_connect, circle_to_connect))
+        self.assertTrue(
+            user.is_connected_with_user_with_id_in_circle_with_id(user_to_connect.pk, user.connections_circle_id))
+
+    def test_connect_autofollows(self):
+        """
+        should autofollow the user it attempts to connect with
+        """
+        user = make_user()
+
+        circle_to_connect = mixer.blend(Circle, creator=user)
+        user_to_connect = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'username': user_to_connect.username,
+            'circles_ids': circle_to_connect.pk
+        }
+
+        url = self._get_url()
+
+        self.client.post(url, data, **headers, format='multipart')
+
+        self.assertTrue(user.is_following_user_with_id(user_to_connect.pk))
 
     def test_connect_in_multiple_circles(self):
         """
@@ -124,6 +152,9 @@ class ConnectAPITests(APITestCase):
 
         for circle_id in circles_to_connect_ids:
             self.assertTrue(user.is_connected_with_user_with_id_in_circle_with_id(user_to_connect, circle_id))
+
+        self.assertTrue(
+            user.is_connected_with_user_with_id_in_circle_with_id(user_to_connect.pk, user.connections_circle_id))
 
     def test_cannot_connect_with_existing_connection(self):
         """
@@ -179,6 +210,10 @@ class ConnectAPITests(APITestCase):
 
 
 class DisconnectAPITest(APITestCase):
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
     def test_disconnect(self):
         """
         should be able to disconnect from a user and return 200
@@ -205,6 +240,29 @@ class DisconnectAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         self.assertFalse(user.is_connected_with_user_in_circle(user_to_connect, circle_to_connect))
+
+    def test_disconnect_unfollows(self):
+        """
+        should automatically unfollow a user it disconnects from
+        """
+        user = make_user()
+
+        circle_to_connect = mixer.blend(Circle, creator=user)
+        user_to_connect = make_user()
+
+        user.connect_with_user_with_id(user_to_connect.pk, circles_ids=[circle_to_connect.pk])
+
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'username': user_to_connect.username
+        }
+
+        url = self._get_url()
+
+        self.client.post(url, data, **headers, format='multipart')
+
+        self.assertFalse(user.is_following_user_with_id(user_to_connect.pk))
 
     def test_cannot_disconnect_from_unexisting_connection(self):
         """
@@ -235,6 +293,10 @@ class DisconnectAPITest(APITestCase):
 
 
 class UpdateConnectionAPITest(APITestCase):
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
     def test_update_connection(self):
         """
         should be able to update an own connection and return 200
@@ -265,6 +327,8 @@ class UpdateConnectionAPITest(APITestCase):
 
         self.assertTrue(user.is_connected_with_user_in_circle(user_to_connect, new_circle))
         self.assertFalse(user.is_connected_with_user_in_circle(user_to_connect, circle_to_connect))
+        self.assertTrue(
+            user.is_connected_with_user_with_id_in_circle_with_id(user_to_connect.pk, user.connections_circle_id))
 
     def test_update_connect_multiple_circles(self):
         """
@@ -304,10 +368,14 @@ class UpdateConnectionAPITest(APITestCase):
         connection = user.get_connection_for_user_with_id(user_to_connect.pk)
         connection_circles_ids = [circle.pk for circle in connection.circles.all()]
 
-        self.assertEqual(len(new_circles_to_connect_ids), len(connection_circles_ids))
+        # Plus one because the connections circle will be there
+        self.assertEqual(len(new_circles_to_connect_ids) + 1, len(connection_circles_ids))
 
         for circle_id in new_circles_to_connect_ids:
             self.assertIn(circle_id, connection_circles_ids)
+
+        self.assertTrue(
+            user.is_connected_with_user_with_id_in_circle_with_id(user_to_connect.pk, user.connections_circle_id))
 
     def test_cannot_update_unexisting_connection(self):
         """
@@ -371,6 +439,28 @@ class ConfirmConnectionAPITest(APITestCase):
         # Check user got automatically added to connections circle
         connection = user_to_connect.get_connection_for_user_with_id(user.pk)
         self.assertTrue(connection.circles.filter(id=user_to_connect.connections_circle_id).exists())
+
+    def test_confirm_connection_autofollows(self):
+        """
+        should autofollow the user it confirms the connection with
+        """
+        user = make_user()
+
+        user_to_connect = make_user()
+
+        user.connect_with_user_with_id(user_to_connect.pk)
+
+        headers = make_authentication_headers_for_user(user_to_connect)
+
+        data = {
+            'username': user.username
+        }
+
+        url = self._get_url()
+
+        self.client.post(url, data, **headers, format='multipart')
+
+        self.assertTrue(user.is_following_user_with_id(user_to_connect.pk))
 
     def test_confirm_connection_in_circle(self):
         """

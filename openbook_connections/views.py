@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from openbook_common.utils.helpers import normalise_request_data
 from openbook_connections.serializers import ConnectWithUserSerializer, ConnectionSerializer, \
     DisconnectFromUserSerializer, UpdateConnectionSerializer, ConfirmConnectionSerializer, ConnectionUserSerializer
 
@@ -118,7 +119,7 @@ class ConfirmConnection(APIView):
 
 
 def _prepare_request_data_for_validation(request_data):
-    request_data_copy = request_data.dict()
+    request_data_copy = normalise_request_data(request_data)
     circles_ids = request_data_copy.get('circles_ids', None)
     if isinstance(circles_ids, str):
         circles_ids = circles_ids.split(',')

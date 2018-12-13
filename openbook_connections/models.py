@@ -6,12 +6,18 @@ from openbook_auth.models import User
 
 class Connection(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='connections')
+    target_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='targeted_connections', null=False)
     target_connection = models.OneToOneField('self', on_delete=models.CASCADE, null=True)
+
+    class Meta:
+        unique_together = ('user', 'target_user')
 
     @classmethod
     def create_connection(cls, user_id, target_user_id, circles_ids):
-        target_connection = cls.objects.create(user_id=target_user_id)
-        connection = cls.objects.create(user_id=user_id, target_connection=target_connection)
+        target_connection = cls.objects.create(user_id=target_user_id, target_user_id=user_id)
+
+        connection = cls.objects.create(user_id=user_id, target_user_id=target_user_id,
+                                        target_connection=target_connection)
 
         connection.circles.add(*circles_ids)
 
@@ -50,7 +56,3 @@ class Connection(models.Model):
             return True
 
         return False
-
-    @property
-    def target_user(self):
-        return self.target_connection.user
