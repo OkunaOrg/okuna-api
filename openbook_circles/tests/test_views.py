@@ -11,6 +11,7 @@ import logging
 import json
 
 from openbook_circles.models import Circle
+from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_fake_circle_name
 
 logger = logging.getLogger(__name__)
 
@@ -269,3 +270,46 @@ class CircleItemAPITests(APITestCase):
         return reverse('circle', kwargs={
             'circle_id': circle_id
         })
+
+
+class CircleNameCheckAPITests(APITestCase):
+    """
+    CircleNameCheckAPI
+    """
+
+    def test_circle_name_not_taken(self):
+        """
+        should return status 202 if circle name is not taken.
+        """
+
+        user = make_user()
+
+        circle_name = make_fake_circle_name()
+        request_data = {'name': circle_name}
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.post(url, request_data, format='json', **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+
+    def test_circle_name_taken(self):
+        """
+        should return status 400 if the circleName is taken
+        """
+        user = make_user()
+        color = fake.hex_color()
+
+        circle = user.create_circle(name=make_fake_circle_name(), color=color)
+
+        request_data = {'name': circle.name}
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.post(url, request_data, format='json', **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def _get_url(self):
+        return reverse('circle-name-check')

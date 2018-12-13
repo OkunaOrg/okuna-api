@@ -10,10 +10,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='user',
-            name='world_circle',
-        ),
         migrations.AddField(
             model_name='user',
             name='is_email_verified',

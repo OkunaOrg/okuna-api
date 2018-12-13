@@ -4,7 +4,8 @@
     "pk": 1,
     "fields": {
       "name": "World",
-      "color": "#f1b01b"
+      "color": "#f1b01b",
+      "created" : "2018-12-01 19:00:18.414069"
     }
   }
 ]

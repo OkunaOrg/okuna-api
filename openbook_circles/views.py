@@ -4,9 +4,11 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.utils.translation import gettext as _
 
 from openbook_circles.serializers import CreateCircleSerializer, CircleSerializer, DeleteCircleSerializer, \
-    UpdateCircleSerializer
+    UpdateCircleSerializer, CircleNameCheckSerializer
+from openbook_common.responses import ApiMessageResponse
 
 
 class Circles(APIView):
@@ -61,3 +63,23 @@ class CircleItem(APIView):
             user.update_circle_with_id(**data)
 
         return Response(status=status.HTTP_200_OK)
+
+
+class CircleNameCheck(APIView):
+    """
+    The API to check if a circleName is both valid and not taken.
+    """
+    serializer_class = CircleNameCheckSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        name = serializer.validated_data.get('name')
+
+        user = request.user
+
+        if not user.has_circle_with_name(name):
+            return ApiMessageResponse(_('Circle name available'), status=status.HTTP_202_ACCEPTED)
+
+        return ApiMessageResponse(_('Circle name not available'), status=status.HTTP_400_BAD_REQUEST)

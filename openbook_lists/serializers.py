@@ -1,7 +1,10 @@
+from django.conf import settings
 from rest_framework import serializers
 
 from openbook.settings import LIST_MAX_LENGTH
 from openbook_auth.models import UserProfile, User
+from openbook_auth.validators import username_characters_validator, user_username_exists
+from openbook_common.models import Emoji
 from openbook_lists.models import List
 from openbook_common.validators import emoji_id_exists
 from openbook_lists.validators import list_id_exists
@@ -17,9 +20,17 @@ class DeleteListSerializer(serializers.Serializer):
 
 
 class UpdateListSerializer(serializers.Serializer):
-    list_id = serializers.IntegerField(required=True, validators=[list_id_exists])
-    name = serializers.CharField(max_length=LIST_MAX_LENGTH, required=True, allow_blank=False)
-    emoji_id = serializers.IntegerField(validators=[emoji_id_exists])
+    list_id = serializers.IntegerField(required=False, validators=[list_id_exists])
+    name = serializers.CharField(max_length=LIST_MAX_LENGTH, required=False, allow_blank=False)
+    emoji_id = serializers.IntegerField(validators=[emoji_id_exists], required=False)
+    usernames = serializers.ListSerializer(
+        required=False,
+        allow_empty=True,
+        child=serializers.CharField(max_length=settings.USERNAME_MAX_LENGTH,
+                                    allow_blank=False,
+                                    required=False,
+                                    validators=[username_characters_validator, user_username_exists])
+    )
 
 
 class ListUserProfileSerializer(serializers.ModelSerializer):
@@ -28,9 +39,9 @@ class ListUserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = (
+            'id',
             'name',
             'avatar',
-            'birth_date'
         )
 
 
@@ -40,13 +51,41 @@ class ListUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
-            'email',
+            'id',
             'username',
             'profile',
         )
 
 
-class ListSerializer(serializers.ModelSerializer):
+class ListEmojiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Emoji
+        fields = (
+            'id',
+            'color',
+            'image',
+        )
+
+
+class GetListsListSerializer(serializers.ModelSerializer):
+    emoji = ListEmojiSerializer(many=False)
+
+    class Meta:
+        model = List
+        fields = (
+            'id',
+            'name',
+            'emoji',
+            'follows_count'
+        )
+
+
+class ListNameCheckSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=LIST_MAX_LENGTH, required=True, allow_blank=False, validators=[])
+
+
+class GetListListSerializer(serializers.ModelSerializer):
+    emoji = ListEmojiSerializer(many=False)
     users = ListUserSerializer(many=True)
 
     class Meta:
@@ -55,5 +94,6 @@ class ListSerializer(serializers.ModelSerializer):
             'id',
             'name',
             'emoji',
+            'follows_count',
             'users'
         )
