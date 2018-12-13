@@ -11,8 +11,10 @@ class Connection(models.Model):
 
     @classmethod
     def create_connection(cls, user_id, target_user_id, circles_ids):
-        target_connection = cls.objects.create(user_id=target_user_id)
-        connection = cls.objects.create(user_id=user_id, target_connection=target_connection)
+        target_connection = cls.objects.create(user_id=target_user_id, target_user_id=user_id)
+
+        connection = cls.objects.create(user_id=user_id, target_user_id=target_user_id,
+                                        target_connection=target_connection)
 
         connection.circles.add(*circles_ids)
 
