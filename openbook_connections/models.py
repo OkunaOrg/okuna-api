@@ -9,6 +9,9 @@ class Connection(models.Model):
     target_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='targeted_connections', null=False)
     target_connection = models.OneToOneField('self', on_delete=models.CASCADE, null=True)
 
+    class Meta:
+        unique_together = ('user', 'target_user')
+
     @classmethod
     def create_connection(cls, user_id, target_user_id, circles_ids):
         target_connection = cls.objects.create(user_id=target_user_id, target_user_id=user_id)
