@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model, authenticate
 from django.db import transaction
+from django.conf import settings
 from django.core.mail import EmailMessage
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.template.loader import render_to_string
@@ -211,8 +212,7 @@ class UserSettings(APIView):
         })
 
         email = EmailMessage(
-            mail_subject, message, to=[user.email], from_email='info@open-book.org'
-        )
+            mail_subject, message, to=[user.email], from_email=settings.SERVICE_EMAIL_ADDRESS)
         email.send()
 
 
