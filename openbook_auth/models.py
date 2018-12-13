@@ -519,16 +519,16 @@ class User(AbstractUser):
     def remove_circle_with_id_from_connection_with_user_with_id(self, user_id, circle_id):
         self._check_is_following_user_with_id(user_id)
         self._check_is_connected_with_user_with_id_in_circle_with_id(user_id, circle_id)
-        follow = self.get_follow_for_user_with_id(user_id)
-        follow.circles.remove(circle_id)
-        return follow
+        connection = self.get_connection_for_user_with_id(user_id)
+        connection.circles.remove(circle_id)
+        return connection
 
     def add_circle_with_id_to_connection_with_user_with_id(self, user_id, circle_id):
         self._check_is_following_user_with_id(user_id)
         self._check_is_not_connected_with_user_with_id_in_circle_with_id(user_id, circle_id)
-        follow = self.get_follow_for_user_with_id(user_id)
-        follow.circles.add(circle_id)
-        return follow
+        connection = self.get_connection_for_user_with_id(user_id)
+        connection.circles.add(circle_id)
+        return connection
 
     def get_circle_with_id(self, circle_id):
         self._check_can_get_circle_with_id(circle_id)

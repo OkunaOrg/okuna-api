@@ -187,6 +187,73 @@ class CircleItemAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(Circle.objects.filter(name=new_circle_name, id=circle_id, color=new_circle_color).count() == 1)
 
+    def test_can_update_own_circle_users(self):
+        """
+        should be able to update an own circle and return 200
+        """
+        user = make_user()
+
+        circle = mixer.blend(Circle, creator=user)
+        circle_id = circle.pk
+
+        users_to_connect_with_in_circle = 4
+
+        for i in range(users_to_connect_with_in_circle):
+            user_to_connect_with = make_user()
+            user.connect_with_user_with_id(user_to_connect_with.pk, circles_ids=[circle_id])
+
+        new_users_to_connect_with_in_circle_amount = 2
+        new_users_to_connect_with_in_circle = []
+        new_users_to_connect_with_in_circle_usernames = []
+
+        for i in range(new_users_to_connect_with_in_circle_amount):
+            user_to_connect_with = make_user()
+            new_users_to_connect_with_in_circle.append(user_to_connect_with)
+            new_users_to_connect_with_in_circle_usernames.append(user_to_connect_with.username)
+
+        data = {
+            'usernames': ','.join(map(str, new_users_to_connect_with_in_circle_usernames))
+        }
+
+        url = self._get_url(circle_id)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        for new_user_to_connect_with in new_users_to_connect_with_in_circle:
+            self.assertTrue(
+                user.is_connected_with_user_with_id_in_circle_with_id(new_user_to_connect_with.pk, circle_id))
+
+    def test_can_update_own_circle_users_to_none(self):
+        """
+        should be able to update an own circle and return 200
+        """
+        user = make_user()
+
+        circle = mixer.blend(Circle, creator=user)
+        circle_id = circle.pk
+
+        users_to_connect_with_in_circle = 4
+
+        for i in range(users_to_connect_with_in_circle):
+            user_to_connect_with = make_user()
+            user.connect_with_user_with_id(user_to_connect_with.pk, circles_ids=[circle_id])
+
+        data = {
+            'usernames': ''
+        }
+
+        url = self._get_url(circle_id)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        circle.refresh_from_db()
+
+        self.assertEqual(len(circle.users), 0)
+
     def test_cannot_update_other_user_circle(self):
         """
         should not be able to update the circle of another user and return 400
