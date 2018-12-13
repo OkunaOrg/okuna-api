@@ -6,6 +6,7 @@ from openbook_auth.models import User
 
 class Connection(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='connections')
+    target_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='targeted_connections', null=True)
     target_connection = models.OneToOneField('self', on_delete=models.CASCADE, null=True)
 
     @classmethod
@@ -50,7 +51,3 @@ class Connection(models.Model):
             return True
 
         return False
-
-    @property
-    def target_user(self):
-        return self.target_connection.user
