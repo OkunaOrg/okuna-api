@@ -1,0 +1,3 @@
+[submodule "openbook_importer/facebook_archive_parser"]
+	path = openbook_importer/facebook_archive_parser
+	url = git@github.com:OpenbookOrg/facebook-archive-parser.git
