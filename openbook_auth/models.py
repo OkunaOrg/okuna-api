@@ -562,7 +562,7 @@ class User(AbstractUser):
     def create_encircled_post(self, circles_ids, text=None, image=None):
         return self.create_post(text=text, image=image, circles_ids=circles_ids)
 
-    def create_post(self, text, circles_ids=None, circles=None, circle=None, circle_id=None, **kwargs):
+    def create_post(self, text, created=None, circles_ids=None, circles=None, circle=None, circle_id=None, image=None):
         if circles:
             circles_ids = [circle.pk for circle in circles]
         elif not circles_ids:
@@ -573,7 +573,7 @@ class User(AbstractUser):
             if circle_id:
                 circles_ids.append(circle_id)
 
-        self._check_post_data(kwargs)
+        self._check_post_data(circles_ids)
 
         if len(circles_ids) == 0:
             # If no circle, add post to world circle
@@ -581,7 +581,7 @@ class User(AbstractUser):
             circles_ids.append(world_circle_id)
 
         Post = get_post_model()
-        post = Post.create_post(text=text, creator=self, circles_ids=circles_ids, **kwargs)
+        post = Post.create_post(text=text, creator=self, created=created, circles_ids=circles_ids)
 
         return post
 
@@ -985,9 +985,7 @@ class User(AbstractUser):
     def _check_follow_list_id(self, list_id):
         self._check_has_list_with_id(list_id)
 
-    def _check_post_data(self, data):
-        circles_ids = data.get('circles_ids')
-
+    def _check_post_data(self, circles_ids):
         if circles_ids:
             self._check_has_circles_with_ids(circles_ids)
 

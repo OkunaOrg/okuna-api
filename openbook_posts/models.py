@@ -38,7 +38,7 @@ class Post(models.Model):
         if not text and not image:
             raise ValidationError(_('A post requires must have text or an image.'))
 
-        post = Post.objects.create(creator=creator)
+        post = Post.objects.create(creator=creator, created=created)
 
         if text:
             post.text = text

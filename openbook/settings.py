@@ -107,9 +107,9 @@ INSTALLED_APPS = [
     'openbook_posts',
     'openbook_circles',
     'openbook_connections',
+    'openbook_importer',
     'openbook_lists',
     'openbook_follows',
-    'openbook_importer',
 ]
 
 MIDDLEWARE = [

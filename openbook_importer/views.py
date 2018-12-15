@@ -1,16 +1,19 @@
+from datetime import datetime
+
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-# from rest_framework.permissions import IsAuthenticated
+from django.utils.dateparse import parse_datetime
+from rest_framework.permissions import IsAuthenticated
 from django.utils.translation import ugettext_lazy as _
-from rest_framework.parsers import FileUploadParser
 
-from .models import Posts
 from openbook_importer.serializers import ZipfileSerializer
 from openbook_importer.facebook_archive_parser.zipparser import zip_parser
 
 
 class ImportItem(APIView):
+
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request):
         serializer = ZipfileSerializer(data=request.FILES)
@@ -19,23 +22,23 @@ class ImportItem(APIView):
         zipfile = request.FILES['file']
 
         p = zip_parser(zipfile)
-        self.save_posts(p.profile.posts)
+        self.save_posts(p.profile.posts, request.user)
 
         return Response({
             'message': _('done')
         }, status=status.HTTP_200_OK)
 
-    def save_posts(self, posts):
+    def save_posts(self, posts, user):
 
         for post in posts:
-            posts_db = Posts()
-            posts_db.timestamp = post['timestamp']
+            timestamp = post['timestamp']
+            created = datetime.fromtimestamp(timestamp)
+            created = parse_datetime(created.strftime('%Y-%m-%d %T'))
 
             if len(post['data']) == 1:
-                posts_db.post = post['data'][0]['post']
+                text = post['data'][0]['post']
 
             else:
                 raise ValueError('data is not the expected length')
-            posts_db.title = post['title']
 
-            posts_db.save()
+            user.create_post(text, created=created)
