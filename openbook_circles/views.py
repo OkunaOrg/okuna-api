@@ -32,7 +32,8 @@ class Circles(APIView):
 
     def get(self, request):
         user = request.user
-        response_serializer = GetCirclesCircleSerializer(user.circles, many=True, context={"request": request})
+        circles = user.circles.order_by('-id')
+        response_serializer = GetCirclesCircleSerializer(circles, many=True, context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
