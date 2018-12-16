@@ -266,7 +266,7 @@ class User(AbstractUser):
     def is_connected_with_user_with_id_in_circle_with_id(self, user_id, circle_id):
         return self.connections.select_related('target_connection__user_id').filter(
             target_connection__user_id=user_id,
-            circles__id=circle_id).count() == 1
+            circles__id=circle_id).exists()
 
     def is_connected_with_user_in_circles(self, user, circles):
         circles_ids = [circle.pk for circle in circles]
@@ -303,7 +303,7 @@ class User(AbstractUser):
         return self.connections_circle_id == id
 
     def has_circle_with_id(self, circle_id):
-        return self.circles.filter(id=circle_id).count() > 0
+        return self.circles.filter(id=circle_id).exists()
 
     def has_circle_with_name(self, circle_name):
         return self.circles.filter(name=circle_name).count() > 0
@@ -470,14 +470,65 @@ class User(AbstractUser):
     def update_circle(self, circle, **kwargs):
         return self.update_circle_with_id(circle.pk, **kwargs)
 
-    def update_circle_with_id(self, circle_id, **kwargs):
+    def update_circle_with_id(self, circle_id, name=None, color=None, usernames=None):
         self._check_can_update_circle_with_id(circle_id)
-        self._check_circle_data(kwargs)
-        circle = self.circles.get(id=circle_id)
+        self._check_circle_data(name, color)
+        circle_to_update = self.circles.get(id=circle_id)
 
-        for attr, value in kwargs.items():
-            setattr(circle, attr, value)
-        circle.save()
+        if name:
+            circle_to_update.name = name
+
+        if color:
+            circle_to_update.color = color
+
+        if isinstance(usernames, list):
+            # TODO This is a goddamn expensive operation. Improve.
+            new_circle_users = []
+
+            circle_users = circle_to_update.users
+            circle_users_by_username = {}
+
+            for circle_user in circle_users:
+                circle_user_username = circle_user.username
+                circle_users_by_username[circle_user_username] = circle_user
+
+            for username in usernames:
+                user = User.objects.get(username=username)
+                user_exists_in_circle = username in circle_users_by_username
+                if user_exists_in_circle:
+                    # The username added might not be same person we had before
+                    new_circle_users.append(circle_users_by_username[username])
+                else:
+                    new_circle_users.append(user)
+
+            circle_users_to_remove = filter(lambda circle_user: circle_user not in new_circle_users, circle_users)
+
+            for user_to_remove in circle_users_to_remove:
+                self.remove_circle_with_id_from_connection_with_user_with_id(user_to_remove.pk, circle_to_update.pk)
+
+            for new_circle_user in new_circle_users:
+                if not self.is_connected_with_user_with_id_in_circle_with_id(new_circle_user.pk, circle_to_update.pk):
+                    if self.is_connected_with_user_with_id(new_circle_user.pk):
+                        self.add_circle_with_id_to_connection_with_user_with_id(new_circle_user.pk, circle_to_update.pk)
+                    else:
+                        self.connect_with_user_with_id(new_circle_user.pk, circles_ids=[circle_to_update.pk])
+
+        circle_to_update.save()
+        return circle_to_update
+
+    def remove_circle_with_id_from_connection_with_user_with_id(self, user_id, circle_id):
+        self._check_is_following_user_with_id(user_id)
+        self._check_is_connected_with_user_with_id_in_circle_with_id(user_id, circle_id)
+        connection = self.get_connection_for_user_with_id(user_id)
+        connection.circles.remove(circle_id)
+        return connection
+
+    def add_circle_with_id_to_connection_with_user_with_id(self, user_id, circle_id):
+        self._check_is_following_user_with_id(user_id)
+        self._check_is_not_connected_with_user_with_id_in_circle_with_id(user_id, circle_id)
+        connection = self.get_connection_for_user_with_id(user_id)
+        connection.circles.add(circle_id)
+        return connection
 
     def get_circle_with_id(self, circle_id):
         self._check_can_get_circle_with_id(circle_id)
@@ -995,8 +1046,7 @@ class User(AbstractUser):
         if name:
             self._check_list_name_not_taken(name)
 
-    def _check_circle_data(self, data):
-        name = data.get('name')
+    def _check_circle_data(self, name, color):
         if name:
             self._check_circle_name_not_taken(name)
 
@@ -1044,6 +1094,18 @@ class User(AbstractUser):
         if not self.is_connected_with_user_with_id(user_id):
             raise ValidationError(
                 _('Not connected with user.'),
+            )
+
+    def _check_is_connected_with_user_with_id_in_circle_with_id(self, user_id, circle_id):
+        if not self.is_connected_with_user_with_id_in_circle_with_id(user_id, circle_id):
+            raise ValidationError(
+                _('Not connected with user in given circle.'),
+            )
+
+    def _check_is_not_connected_with_user_with_id_in_circle_with_id(self, user_id, circle_id):
+        if self.is_connected_with_user_with_id_in_circle_with_id(user_id, circle_id):
+            raise ValidationError(
+                _('Already connected with user in given circle.'),
             )
 
     def _check_has_list_with_id(self, list_id):

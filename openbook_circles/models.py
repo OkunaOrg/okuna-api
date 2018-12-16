@@ -56,6 +56,7 @@ class Circle(models.Model):
         users = []
         for connection in circle_connections:
             users.append(connection.target_connection.user)
+
         return users
 
     @property

@@ -50,7 +50,7 @@ logging.config.dictConfig({
 logger = logging.getLogger(__name__)
 
 # Load dotenv
-load_dotenv(verbose=False, dotenv_path=find_dotenv())
+load_dotenv(verbose=True, dotenv_path=find_dotenv())
 
 # The current execution environment
 ENVIRONMENT = os.environ.get('ENVIRONMENT')
@@ -187,6 +187,7 @@ else:
             },
         }
     }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators

@@ -1,9 +1,12 @@
+from django.conf import settings
 from rest_framework import serializers
 
 from openbook.settings import CIRCLE_MAX_LENGTH, COLOR_ATTR_MAX_LENGTH
 from openbook_auth.models import UserProfile, User
+from openbook_auth.validators import username_characters_validator, user_username_exists
 from openbook_circles.models import Circle
 from openbook_circles.validators import circle_id_exists
+from openbook_common.serializers_fields.user import IsFullyConnectedField
 from openbook_common.validators import hex_color_validator
 
 
@@ -19,9 +22,17 @@ class DeleteCircleSerializer(serializers.Serializer):
 
 class UpdateCircleSerializer(serializers.Serializer):
     circle_id = serializers.IntegerField(required=True, validators=[circle_id_exists])
-    name = serializers.CharField(max_length=CIRCLE_MAX_LENGTH, required=True, allow_blank=False)
-    color = serializers.CharField(max_length=COLOR_ATTR_MAX_LENGTH, required=True, allow_blank=False,
+    name = serializers.CharField(max_length=CIRCLE_MAX_LENGTH, required=False, allow_blank=False)
+    color = serializers.CharField(max_length=COLOR_ATTR_MAX_LENGTH, required=False, allow_blank=False,
                                   validators=[hex_color_validator])
+    usernames = serializers.ListSerializer(
+        required=False,
+        allow_empty=True,
+        child=serializers.CharField(max_length=settings.USERNAME_MAX_LENGTH,
+                                    allow_blank=False,
+                                    required=False,
+                                    validators=[username_characters_validator, user_username_exists])
+    )
 
 
 class CircleUserProfileSerializer(serializers.ModelSerializer):
@@ -38,6 +49,7 @@ class CircleUserProfileSerializer(serializers.ModelSerializer):
 
 class CircleUserSerializer(serializers.ModelSerializer):
     profile = CircleUserProfileSerializer(many=False)
+    is_fully_connected_field = IsFullyConnectedField()
 
     class Meta:
         model = User
@@ -46,10 +58,22 @@ class CircleUserSerializer(serializers.ModelSerializer):
             'email',
             'username',
             'profile',
+            'is_fully_connected_field'
         )
 
 
-class CircleSerializer(serializers.ModelSerializer):
+class GetCirclesCircleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Circle
+        fields = (
+            'id',
+            'name',
+            'color',
+            'users_count'
+        )
+
+
+class GetCircleCircleSerializer(serializers.ModelSerializer):
     users = CircleUserSerializer(many=True)
 
     class Meta:
