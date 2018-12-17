@@ -730,7 +730,7 @@ class User(AbstractUser):
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
 
         Post = get_post_model()
-        timeline_posts = Post.objects.filter(timeline_posts_query)
+        timeline_posts = Post.objects.filter(timeline_posts_query).distinct()
 
         return timeline_posts
 
