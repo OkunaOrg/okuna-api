@@ -432,6 +432,7 @@ class User(AbstractUser):
         Post = get_post_model()
 
         # If comments are private, count only own comments
+        # TODO If its our post we need to circumvent this too
         if not Post.post_with_id_has_public_comments(post_id):
             commenter_id = self.pk
 
