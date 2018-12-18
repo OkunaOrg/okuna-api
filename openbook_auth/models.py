@@ -608,8 +608,8 @@ class User(AbstractUser):
         return User.get_public_users_with_query(query)
 
     def create_public_post(self, text=None, image=None):
-        world_circle_id = self._get_world_circle_id()
-        return self.create_post(text=text, image=image, circle_id=world_circle_id)
+        # If no circle ids are given, will be public
+        return self.create_post(text=text, image=image)
 
     def create_encircled_post(self, circles_ids, text=None, image=None):
         return self.create_post(text=text, image=image, circles_ids=circles_ids)
