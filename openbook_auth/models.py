@@ -432,6 +432,7 @@ class User(AbstractUser):
         Post = get_post_model()
 
         # If comments are private, count only own comments
+        # TODO If its our post we need to circumvent this too
         if not Post.post_with_id_has_public_comments(post_id):
             commenter_id = self.pk
 
@@ -607,13 +608,13 @@ class User(AbstractUser):
         return User.get_public_users_with_query(query)
 
     def create_public_post(self, text=None, image=None):
-        world_circle_id = self._get_world_circle_id()
-        return self.create_post(text=text, image=image, circle_id=world_circle_id)
+        # If no circle ids are given, will be public
+        return self.create_post(text=text, image=image)
 
     def create_encircled_post(self, circles_ids, text=None, image=None):
         return self.create_post(text=text, image=image, circles_ids=circles_ids)
 
-    def create_post(self, text, circles_ids=None, circles=None, circle=None, circle_id=None, **kwargs):
+    def create_post(self, text=None, image=None, circles_ids=None, circles=None, circle=None, circle_id=None):
         if circles:
             circles_ids = [circle.pk for circle in circles]
         elif not circles_ids:
@@ -624,7 +625,7 @@ class User(AbstractUser):
             if circle_id:
                 circles_ids.append(circle_id)
 
-        self._check_post_data(kwargs)
+        self._check_post_data(circles_ids=circles_ids)
 
         if len(circles_ids) == 0:
             # If no circle, add post to world circle
@@ -632,7 +633,7 @@ class User(AbstractUser):
             circles_ids.append(world_circle_id)
 
         Post = get_post_model()
-        post = Post.create_post(text=text, creator=self, circles_ids=circles_ids, **kwargs)
+        post = Post.create_post(text=text, creator=self, circles_ids=circles_ids, image=image)
 
         return post
 
@@ -690,7 +691,7 @@ class User(AbstractUser):
         posts_query = self._make_get_posts_query_for_user(user, max_id)
 
         Post = get_post_model()
-        profile_posts = Post.objects.filter(posts_query)
+        profile_posts = Post.objects.filter(posts_query).distinct()
 
         return profile_posts
 
@@ -730,7 +731,7 @@ class User(AbstractUser):
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
 
         Post = get_post_model()
-        timeline_posts = Post.objects.filter(timeline_posts_query)
+        timeline_posts = Post.objects.filter(timeline_posts_query).distinct()
 
         return timeline_posts
 
@@ -1036,8 +1037,7 @@ class User(AbstractUser):
     def _check_follow_list_id(self, list_id):
         self._check_has_list_with_id(list_id)
 
-    def _check_post_data(self, data):
-        circles_ids = data.get('circles_ids')
+    def _check_post_data(self, circles_ids=None):
 
         if circles_ids:
             self._check_has_circles_with_ids(circles_ids)

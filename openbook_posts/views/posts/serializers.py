@@ -4,9 +4,11 @@ from rest_framework import serializers
 from django.conf import settings
 from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import user_username_exists, username_characters_validator
+from openbook_circles.models import Circle
 from openbook_circles.validators import circle_id_exists
 from openbook_common.models import Emoji
-from openbook_common.utils.model_loaders import get_post_model
+from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, ReactionsEmojiCountField, \
+    CirclesField
 from openbook_lists.validators import list_id_exists
 from openbook_posts.models import PostImage, Post, PostReaction
 
@@ -112,35 +114,23 @@ class PostEmojiCountSerializer(serializers.Serializer):
     count = serializers.IntegerField(required=True, )
 
 
+class PostCircleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Circle
+        fields = (
+            'id',
+            'name',
+            'color',
+        )
+
+
 class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     image = PostImageSerializer(many=False)
     creator = PostCreatorSerializer(many=False)
-    reactions_emoji_counts = serializers.SerializerMethodField()
-    reaction = serializers.SerializerMethodField()
-    comments_count = serializers.SerializerMethodField()
-
-    def get_reaction(self, obj):
-        request = self.context['request']
-        user = request.user
-
-        try:
-            reaction = user.get_reaction_for_post_with_id(obj.pk)
-            return PostReactionSerializer(reaction, context={'request': request}).data
-        except PostReaction.DoesNotExist:
-            return None
-
-    def get_reactions_emoji_counts(self, obj):
-        request = self.context['request']
-        user = request.user
-        post_emoji_counts = user.get_emoji_counts_for_post_with_id(obj.pk)
-        post_reactions_serializer = PostEmojiCountSerializer(post_emoji_counts, many=True,
-                                                             context={"request": request, 'post': obj})
-        return post_reactions_serializer.data
-
-    def get_comments_count(self, obj):
-        request = self.context['request']
-        user = request.user
-        return user.get_comments_count_for_post_with_id(obj.pk)
+    reactions_emoji_counts = ReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
+    reaction = ReactionField(reaction_serializer=PostReactionSerializer)
+    comments_count = CommentsCountField()
+    circles = CirclesField(circle_serializer=PostCircleSerializer)
 
     class Meta:
         model = Post
@@ -154,31 +144,16 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'creator',
             'reaction',
             'public_comments',
-            'public_reactions'
+            'public_reactions',
+            'circles'
         )
 
 
 class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
     image = PostImageSerializer(many=False)
     creator = PostCreatorSerializer(many=False)
-    reactions_emoji_counts = serializers.SerializerMethodField()
-    comments_count = serializers.SerializerMethodField()
-
-    def get_reactions_emoji_counts(self, obj):
-        if not obj.public_reactions:
-            return []
-
-        request = self.context['request']
-        Post = get_post_model()
-        post_emoji_counts = Post.get_emoji_counts_for_post_with_id(obj.pk)
-        post_reactions_serializer = PostEmojiCountSerializer(post_emoji_counts, many=True,
-                                                             context={"request": request, 'post': obj})
-        return post_reactions_serializer.data
-
-    def get_comments_count(self, obj):
-        if not obj.public_comments:
-            return 0
-        return obj.count_comments()
+    reactions_emoji_counts = ReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
+    comments_count = CommentsCountField()
 
     class Meta:
         model = Post
