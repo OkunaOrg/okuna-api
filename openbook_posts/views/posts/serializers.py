@@ -4,9 +4,11 @@ from rest_framework import serializers
 from django.conf import settings
 from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import user_username_exists, username_characters_validator
+from openbook_circles.models import Circle
 from openbook_circles.validators import circle_id_exists
 from openbook_common.models import Emoji
-from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, ReactionsEmojiCountField
+from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, ReactionsEmojiCountField, \
+    CirclesField
 from openbook_lists.validators import list_id_exists
 from openbook_posts.models import PostImage, Post, PostReaction
 
@@ -112,12 +114,23 @@ class PostEmojiCountSerializer(serializers.Serializer):
     count = serializers.IntegerField(required=True, )
 
 
+class PostCircleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Circle
+        fields = (
+            'id',
+            'name',
+            'color',
+        )
+
+
 class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     image = PostImageSerializer(many=False)
     creator = PostCreatorSerializer(many=False)
     reactions_emoji_counts = ReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
     reaction = ReactionField(reaction_serializer=PostReactionSerializer)
     comments_count = CommentsCountField()
+    circles = CirclesField(circle_serializer=PostCircleSerializer)
 
     class Meta:
         model = Post
@@ -131,7 +144,8 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'creator',
             'reaction',
             'public_comments',
-            'public_reactions'
+            'public_reactions',
+            'circles'
         )
 
 

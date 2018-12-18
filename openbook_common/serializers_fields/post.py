@@ -47,6 +47,7 @@ class CommentsCountField(Field):
 
         return comments_count
 
+
 class ReactionsEmojiCountField(Field):
     def __init__(self, emoji_count_serializer=None, **kwargs):
         kwargs['source'] = '*'
@@ -68,6 +69,23 @@ class ReactionsEmojiCountField(Field):
             reaction_emoji_count = request_user.get_emoji_counts_for_post_with_id(post.pk)
 
         post_reactions_serializer = self.emoji_count_serializer(reaction_emoji_count, many=True,
-                                                                     context={"request": request, 'post': post})
+                                                                context={"request": request, 'post': post})
 
         return post_reactions_serializer.data
+
+
+class CirclesField(Field):
+    def __init__(self, circle_serializer=None, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        self.circle_serializer = circle_serializer
+        super(CirclesField, self).__init__(**kwargs)
+
+    def to_representation(self, post):
+        request = self.context.get('request')
+        request_user = request.user
+        circles = []
+        if request_user.has_post_with_id(post.pk):
+            circles = post.circles
+
+        return self.circle_serializer(circles, many=True, context={"request": request, 'post': post}).data
