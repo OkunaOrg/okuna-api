@@ -117,6 +117,61 @@ class PostsAPITests(APITestCase):
 
         self.assertTrue(circle.posts.filter(text=post_text).count() == 1)
 
+    def test_cannot_create_post_in_foreign_circle(self):
+        """
+        should NOT be able to create a text post in an foreign circle and return 400
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        circle = mixer.blend(Circle, creator=foreign_user)
+
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'text': post_text,
+            'circle_id': circle.pk
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(user.posts.filter(text=post_text).count() == 0)
+
+        self.assertTrue(circle.posts.filter(text=post_text).count() == 0)
+
+    def test_cannot_create_post_in_world_circle(self):
+        """
+        should NOT be able to create a post in the world circle and return 400
+        """
+        user = make_user()
+
+        circle = Circle.get_world_circle()
+
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'text': post_text,
+            'circle_id': circle.pk
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(user.posts.filter(text=post_text).count() == 0)
+
+        self.assertTrue(circle.posts.filter(text=post_text).count() == 0)
+
     def test_create_image_post(self):
         """
         should be able to create an image post and return 201
