@@ -691,7 +691,7 @@ class User(AbstractUser):
         posts_query = self._make_get_posts_query_for_user(user, max_id)
 
         Post = get_post_model()
-        profile_posts = Post.objects.filter(posts_query)
+        profile_posts = Post.objects.filter(posts_query).distinct()
 
         return profile_posts
 
