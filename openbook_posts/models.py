@@ -34,10 +34,7 @@ class Post(models.Model):
         return Post.objects.filter(pk=post_id, public_reactions=True).count() == 1
 
     @classmethod
-    def create_post(cls, creator, circles_ids, **kwargs):
-        text = kwargs.get('text')
-        image = kwargs.get('image')
-
+    def create_post(cls, creator, circles_ids, image=None, text=None):
         if not text and not image:
             raise ValidationError(_('A post requires must have text or an image.'))
 
@@ -89,7 +86,8 @@ class Post(models.Model):
     def get_trending_posts(cls):
         Circle = get_circle_model()
         world_circle_id = Circle.get_world_circle_id()
-        return cls.objects.annotate(Count('reactions')).filter(circles__id=world_circle_id).order_by('-reactions__count', '-created')
+        return cls.objects.annotate(Count('reactions')).filter(circles__id=world_circle_id).order_by(
+            '-reactions__count', '-created')
 
     def count_comments(self, commenter_id=None):
         return PostComment.count_comments_for_post_with_id(self.pk, commenter_id=commenter_id)
