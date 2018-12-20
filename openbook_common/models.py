@@ -26,6 +26,9 @@ class EmojiGroup(models.Model):
             self.created = timezone.now()
         return super(EmojiGroup, self).save(*args, **kwargs)
 
+    def has_emoji_with_id(self, emoji_id):
+        return self.emojis.filter(pk=emoji_id).exists()
+
 
 class Emoji(models.Model):
     group = models.ForeignKey(EmojiGroup, on_delete=models.CASCADE, related_name='emojis', null=True)

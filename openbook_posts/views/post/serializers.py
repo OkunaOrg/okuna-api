@@ -3,7 +3,7 @@ from django.conf import settings
 
 from openbook_auth.models import UserProfile, User
 from openbook_common.models import Emoji, EmojiGroup
-from openbook_common.validators import emoji_id_exists
+from openbook_common.validators import emoji_id_exists, emoji_group_id_exists
 from openbook_posts.models import PostComment, PostReaction
 from openbook_posts.validators import post_id_exists, post_comment_id_exists, post_reaction_id_exists
 
@@ -139,6 +139,10 @@ class ReactToPostSerializer(serializers.Serializer):
     )
     emoji_id = serializers.IntegerField(
         validators=[emoji_id_exists],
+        required=True,
+    )
+    group_id = serializers.IntegerField(
+        validators=[emoji_group_id_exists],
         required=True,
     )
 

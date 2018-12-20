@@ -143,11 +143,13 @@ class PostReactions(APIView):
 
         data = serializer.validated_data
         emoji_id = data.get('emoji_id')
+        emoji_group_id = data.get('group_id')
         post_id = data.get('post_id')
         user = request.user
 
         with transaction.atomic():
-            post_reaction = user.react_to_post_with_id(post_id=post_id, emoji_id=emoji_id)
+            post_reaction = user.react_to_post_with_id(post_id=post_id, emoji_id=emoji_id,
+                                                       emoji_group_id=emoji_group_id)
 
         post_reaction_serializer = PostReactionSerializer(post_reaction, context={"request": request})
         return Response(post_reaction_serializer.data, status=status.HTTP_201_CREATED)

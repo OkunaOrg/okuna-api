@@ -50,6 +50,10 @@ def make_emoji_group(is_reaction_group=None):
     return mixer.blend(EmojiGroup, is_reaction_group=is_reaction_group)
 
 
+def make_reactions_emoji_group():
+    return mixer.blend(EmojiGroup, is_reaction_group=True)
+
+
 def make_circle(creator):
     return mixer.blend(Circle, creator=creator)
 
