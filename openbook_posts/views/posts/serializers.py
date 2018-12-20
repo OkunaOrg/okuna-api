@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import user_username_exists, username_characters_validator
 from openbook_circles.models import Circle
@@ -48,6 +49,11 @@ class CreatePostSerializer(serializers.Serializer):
         required=False,
         child=serializers.IntegerField(validators=[circle_id_exists]),
     )
+
+    def validate(self, data):
+        if 'image' in data.keys() and 'video' in data.keys():
+            raise serializers.ValidationError(_('Either an image or video can be posted, not both'))
+        return data
 
 
 class PostCreatorProfileSerializer(serializers.ModelSerializer):
