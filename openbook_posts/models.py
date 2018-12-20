@@ -38,6 +38,9 @@ class Post(models.Model):
         if not text and not image and not video:
             raise ValidationError(_('A post requires text or an image/video.'))
 
+        if image and video:
+            raise ValidationError(_('A post must have an image or a video, not both.'))
+
         post = Post.objects.create(creator=creator)
 
         if text:

@@ -50,11 +50,6 @@ class CreatePostSerializer(serializers.Serializer):
         child=serializers.IntegerField(validators=[circle_id_exists]),
     )
 
-    def validate(self, data):
-        if 'image' in data.keys() and 'video' in data.keys():
-            raise serializers.ValidationError(_('Either an image or video can be posted, not both'))
-        return data
-
 
 class PostCreatorProfileSerializer(serializers.ModelSerializer):
     class Meta:
