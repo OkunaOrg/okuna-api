@@ -7,7 +7,7 @@
       "group_id": 2,
       "keyword": "doge",
       "color": "#f1b01b",
-      "image": "/fixtures/emojis/doge.png",
+      "image": "/openbook_common/emojis/doge.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -19,7 +19,7 @@
       "order": 8,
       "keyword": "parrot",
       "color": "#000000",
-      "image": "/fixtures/emojis/dancing_parrot.gif",
+      "image": "/openbook_common/emojis/dancing_parrot.gif",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -31,7 +31,7 @@
       "order": 1,
       "keyword": "heart",
       "color": "#bd0043",
-      "image": "/fixtures/emojis/like.png",
+      "image": "/openbook_common/emojis/like.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -43,7 +43,7 @@
       "order": 4,
       "keyword": "sad",
       "color": "#505050",
-      "image": "/fixtures/emojis/sad.png",
+      "image": "/openbook_common/emojis/sad.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -55,7 +55,7 @@
       "order": 7,
       "keyword": "fire",
       "color": "#e48200",
-      "image": "/fixtures/emojis/fire.png",
+      "image": "/openbook_common/emojis/fire.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -67,7 +67,7 @@
       "order": 6,
       "keyword": "party",
       "color": "#5200d4",
-      "image": "/fixtures/emojis/party.png",
+      "image": "/openbook_common/emojis/party.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -79,7 +79,7 @@
       "order": 5,
       "keyword": "upset",
       "color": "#1b1b1b",
-      "image": "/fixtures/emojis/upset.png",
+      "image": "/openbook_common/emojis/upset.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -91,7 +91,7 @@
       "order": 3,
       "keyword": "wow",
       "color": "#00d546",
-      "image": "/fixtures/emojis/wow.png",
+      "image": "/openbook_common/emojis/wow.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -103,7 +103,7 @@
       "order": 2,
       "keyword": "haha",
       "color": "#0089f2",
-      "image": "/fixtures/emojis/haha.png",
+      "image": "/openbook_common/emojis/haha.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   }
