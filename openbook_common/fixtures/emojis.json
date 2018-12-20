@@ -29,9 +29,9 @@
     "fields": {
       "group_id": 1,
       "order": 1,
-      "keyword": "heart",
+      "keyword": "love",
       "color": "#bd0043",
-      "image": "/openbook_common/emojis/like.png",
+      "image": "/openbook_common/emojis/love.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -104,6 +104,390 @@
       "keyword": "haha",
       "color": "#0089f2",
       "image": "/openbook_common/emojis/haha.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 11,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "alarm",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/alarm.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 12,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "computer",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/computer.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 13,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "game",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/game.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 14,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "football",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/football.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 15,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "lighting",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/lighting.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 16,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "lock",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/lock.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 17,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "money",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/money.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 18,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "pencil",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/pencil.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 19,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "speaker",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/speaker.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 20,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "camera",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/camera.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 21,
+    "fields": {
+      "group_id": 2,
+      "order": 2,
+      "keyword": "bravo",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/bravo.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 22,
+    "fields": {
+      "group_id": 2,
+      "order": 2,
+      "keyword": "cool",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/cool.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 23,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "news",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/news.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 24,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "earth",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/earth.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 25,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "book",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/book.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 26,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "science",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/science.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 27,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "bulb",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/bulb.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 28,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "fancy hat",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/fancy_hat.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 29,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "heart",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/heart.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 30,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "star",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/star.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 31,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "trophy",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/trophy.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 32,
+    "fields": {
+      "group_id": 2,
+      "order": 2,
+      "keyword": "omg",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/omg.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 33,
+    "fields": {
+      "group_id": 2,
+      "order": 2,
+      "keyword": "thanks",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/thanks.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 34,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "music",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/music.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 35,
+    "fields": {
+      "group_id": 2,
+      "order": 2,
+      "keyword": "wohoo",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/wohoo.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 36,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "palette",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/palette.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 37,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "alien",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/alien.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 38,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "airplane",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/airplane.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 39,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "rocket",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/rocket.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 40,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "lipstick",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/lipstick.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 41,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "crown",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/crown.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 42,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "map",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/map.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   }
