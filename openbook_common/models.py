@@ -15,6 +15,7 @@ class EmojiGroup(models.Model):
                              validators=[hex_color_validator], unique=False)
     order = models.IntegerField(unique=False, default=100)
     created = models.DateTimeField(editable=False)
+    is_reaction_group = models.BooleanField(_('is reaction group'), default=False)
 
     def __str__(self):
         return 'EmojiGroup: ' + self.keyword

@@ -9,7 +9,7 @@ from rest_framework.test import APITestCase
 import logging
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
-    make_fake_post_comment_text, make_user, make_circle, make_emoji
+    make_fake_post_comment_text, make_user, make_circle, make_emoji, make_emoji_group
 from openbook_posts.models import Post, PostComment, PostReaction
 
 logger = logging.getLogger(__name__)
@@ -1105,3 +1105,60 @@ class PostReactionsEmojiCountAPITests(APITestCase):
         return reverse('post-reactions-emoji-count', kwargs={
             'post_id': post.pk
         })
+
+
+class TestPostReactionEmojiGroups(APITestCase):
+    """
+    PostReactionEmojiGroups API
+    """
+
+    def test_can_retrieve_reactions_emoji_groups(self):
+        """
+         should be able to retrieve post reaction emoji groups
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        group_ids = []
+        amount_of_groups = 4
+
+        for x in range(amount_of_groups):
+            group = make_emoji_group(is_reaction_group=True)
+            group_ids.append(group.pk)
+
+        url = self._get_url()
+        response = self.client.get(url, **headers)
+        self.assertTrue(response.status_code, status.HTTP_200_OK)
+
+        response_groups = json.loads(response.content)
+        response_groups_ids = [group['id'] for group in response_groups]
+
+        self.assertEqual(len(response_groups), len(group_ids))
+
+        for group_id in group_ids:
+            self.assertIn(group_id, response_groups_ids)
+
+    def test_cannot_retrieve_non_reactions_emoji_groups(self):
+        """
+         should not able to retrieve non post reaction emoji groups
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        group_ids = []
+        amount_of_groups = 4
+
+        for x in range(amount_of_groups):
+            group = make_emoji_group(is_reaction_group=False)
+            group_ids.append(group.pk)
+
+        url = self._get_url()
+        response = self.client.get(url, **headers)
+        self.assertTrue(response.status_code, status.HTTP_200_OK)
+
+        response_groups = json.loads(response.content)
+
+        self.assertEqual(len(response_groups), 0)
+
+    def _get_url(self):
+        return reverse('posts-emoji-groups')

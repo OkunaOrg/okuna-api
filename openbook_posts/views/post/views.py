@@ -5,10 +5,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.translation import ugettext_lazy as _
 
+from openbook_common.utils.model_loaders import get_emoji_group_model
 from openbook_posts.views.post.serializers import GetPostCommentsSerializer, PostCommentSerializer, \
     CommentPostSerializer, DeletePostCommentSerializer, DeletePostSerializer, DeletePostReactionSerializer, \
     ReactToPostSerializer, PostReactionSerializer, GetPostReactionsSerializer, PostEmojiCountSerializer, \
-    GetPostReactionsEmojiCountSerializer
+    GetPostReactionsEmojiCountSerializer, PostReactionEmojiGroupSerializer
 
 
 class PostItem(APIView):
@@ -210,3 +211,14 @@ class PostReactionItem(APIView):
         request_data['post_id'] = post_id
         request_data['post_reaction_id'] = post_reaction_id
         return request_data
+
+
+class PostReactionEmojiGroups(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        EmojiGroup = get_emoji_group_model()
+        emoji_groups = EmojiGroup.objects.filter(is_reaction_group=True).all().order_by('order')
+        serializer = PostReactionEmojiGroupSerializer(emoji_groups, many=True, context={'request': request})
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
