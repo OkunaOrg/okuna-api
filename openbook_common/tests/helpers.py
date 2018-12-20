@@ -46,7 +46,7 @@ def make_emoji(group=None):
     return mixer.blend(Emoji, group=group)
 
 
-def make_emoji_group(is_reaction_group=None):
+def make_emoji_group(is_reaction_group=False):
     return mixer.blend(EmojiGroup, is_reaction_group=is_reaction_group)
 
 

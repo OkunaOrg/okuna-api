@@ -1017,7 +1017,7 @@ class User(AbstractUser):
     def _check_can_react_with_emoji_id_and_emoji_group_id(self, emoji_id, emoji_group_id):
         EmojiGroup = get_emoji_group_model()
         try:
-            emoji_group = EmojiGroup.objects.get(pk=emoji_group_id)
+            emoji_group = EmojiGroup.objects.get(pk=emoji_group_id, is_reaction_group=True)
             if not emoji_group.has_emoji_with_id(emoji_id):
                 raise ValidationError(
                     _('Emoji does not belong to given emoji group.'),

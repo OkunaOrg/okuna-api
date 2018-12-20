@@ -587,6 +587,27 @@ class PostReactionsAPITests(APITestCase):
         self.assertTrue(PostReaction.objects.filter(post_id=post.pk, emoji_id=post_reaction_emoji_id,
                                                     reactor_id=user.pk).count() == 0)
 
+    def test_cannot_react_to_foreign_post_with_non_reaction_emoji(self):
+        """
+         should not be able to reaction in a post with a non reaction emoji group and return 400
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_post(text=make_fake_post_text())
+
+        emoji_group = make_emoji_group()
+
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id, emoji_group.pk)
+
+        url = self._get_url(post)
+        response = self.client.put(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(PostReaction.objects.filter(post_id=post.pk, emoji_id=post_reaction_emoji_id,
+                                                    reactor_id=user.pk).count() == 0)
+
     def test_can_react_to_connected_user_public_post(self):
         """
          should be able to reaction in the public post of a connected user post and return 201
