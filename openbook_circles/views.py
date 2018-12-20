@@ -6,9 +6,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.translation import gettext as _
 
-from openbook_circles.serializers import CreateCircleSerializer, CircleSerializer, DeleteCircleSerializer, \
-    UpdateCircleSerializer, CircleNameCheckSerializer
+from openbook_circles.serializers import CreateCircleSerializer, GetCirclesCircleSerializer, DeleteCircleSerializer, \
+    UpdateCircleSerializer, CircleNameCheckSerializer, GetCircleCircleSerializer
 from openbook_common.responses import ApiMessageResponse
+from openbook_common.utils.helpers import normalise_request_data, nomalize_usernames_in_request_data
 
 
 class Circles(APIView):
@@ -25,19 +26,29 @@ class Circles(APIView):
         with transaction.atomic():
             circle = user.create_circle(name=name, color=color)
 
-        response_serializer = CircleSerializer(circle, context={"request": request})
+        response_serializer = GetCirclesCircleSerializer(circle, context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
     def get(self, request):
         user = request.user
-        response_serializer = CircleSerializer(user.circles, many=True, context={"request": request})
+        circles = user.circles.order_by('-id')
+        response_serializer = GetCirclesCircleSerializer(circles, many=True, context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
 class CircleItem(APIView):
     permission_classes = (IsAuthenticated,)
+
+    def get(self, request, circle_id):
+        user = request.user
+
+        circle = user.get_circle_with_id(circle_id)
+
+        response_serializer = GetCircleCircleSerializer(circle, context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request, circle_id):
         user = request.user
@@ -50,19 +61,27 @@ class CircleItem(APIView):
         return Response(status=status.HTTP_200_OK)
 
     def patch(self, request, circle_id):
-        request_data = request.data.copy()
+        request_data = normalise_request_data(request.data)
         request_data['circle_id'] = circle_id
+        nomalize_usernames_in_request_data(request_data)
 
         serializer = UpdateCircleSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
+        circle_id = data.get('circle_id')
+        color = data.get('color')
+        usernames = data.get('usernames')
+        name = data.get('name')
+
         user = request.user
 
         with transaction.atomic():
-            user.update_circle_with_id(**data)
+            circle = user.update_circle_with_id(circle_id, color=color, usernames=usernames, name=name)
 
-        return Response(status=status.HTTP_200_OK)
+        response_serializer = GetCircleCircleSerializer(circle, context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
 class CircleNameCheck(APIView):

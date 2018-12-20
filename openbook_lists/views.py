@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from django.utils.translation import gettext as _
 
 from openbook_common.responses import ApiMessageResponse
-from openbook_common.utils.helpers import normalise_request_data
+from openbook_common.utils.helpers import normalise_request_data, nomalize_usernames_in_request_data
 from openbook_lists.serializers import CreateListSerializer, GetListsListSerializer, DeleteListSerializer, \
     UpdateListSerializer, \
     ListNameCheckSerializer, GetListListSerializer
@@ -65,7 +65,7 @@ class ListItem(APIView):
     def patch(self, request, list_id):
         request_data = normalise_request_data(request.data)
         request_data['list_id'] = list_id
-        _prepare_request_data_usernames_for_validation(request_data)
+        nomalize_usernames_in_request_data(request_data)
 
         serializer = UpdateListSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
@@ -104,13 +104,3 @@ class ListNameCheck(APIView):
             return ApiMessageResponse(_('List name available'), status=status.HTTP_202_ACCEPTED)
 
         return ApiMessageResponse(_('List name not available'), status=status.HTTP_400_BAD_REQUEST)
-
-
-def _prepare_request_data_usernames_for_validation(request_data):
-    usernames = request_data.get('usernames', None)
-    if isinstance(usernames, str):
-        usernames = usernames.split(',')
-        usernames_count = len(usernames)
-        if usernames_count == 1 and usernames[0] == '':
-            usernames = []
-        request_data['usernames'] = usernames

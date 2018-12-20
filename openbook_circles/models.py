@@ -56,19 +56,13 @@ class Circle(models.Model):
         users = []
         for connection in circle_connections:
             users.append(connection.target_connection.user)
+
         return users
 
     @property
     def users_count(self):
-        connections = Connection.objects.filter(
-            circles__id=self.id, )
-        target_connections = [connection.target_connection for connection in connections]
-        connected_users = 0
-        for target_connection in target_connections:
-            if target_connection.circles.exists():
-                connected_users += 1
-
-        return connected_users
+        return Connection.objects.filter(
+            circles__id=self.id).count()
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
