@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import user_username_exists, username_characters_validator
 from openbook_circles.models import Circle
@@ -10,7 +11,7 @@ from openbook_common.models import Emoji
 from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, ReactionsEmojiCountField, \
     CirclesField
 from openbook_lists.validators import list_id_exists
-from openbook_posts.models import PostImage, Post, PostReaction
+from openbook_posts.models import PostImage, Post, PostReaction, PostVideo
 
 
 class GetPostsSerializer(serializers.Serializer):
@@ -43,6 +44,7 @@ class GetPostsSerializer(serializers.Serializer):
 class CreatePostSerializer(serializers.Serializer):
     text = serializers.CharField(max_length=settings.POST_MAX_LENGTH, required=False, allow_blank=False)
     image = serializers.ImageField(allow_empty_file=False, required=False)
+    video = serializers.FileField(allow_empty_file=False, required=False)
     circle_id = serializers.ListField(
         required=False,
         child=serializers.IntegerField(validators=[circle_id_exists]),
@@ -74,6 +76,14 @@ class PostImageSerializer(serializers.ModelSerializer):
         model = PostImage
         fields = (
             'image',
+        )
+
+
+class PostVideoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostVideo
+        fields = (
+            'video',
         )
 
 
@@ -125,6 +135,7 @@ class PostCircleSerializer(serializers.ModelSerializer):
 
 class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     image = PostImageSerializer(many=False)
+    video = PostVideoSerializer(many=False)
     creator = PostCreatorSerializer(many=False)
     reactions_emoji_counts = ReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
     reaction = ReactionField(reaction_serializer=PostReactionSerializer)
@@ -140,6 +151,7 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'created',
             'text',
             'image',
+            'video',
             'creator',
             'reaction',
             'public_comments',
@@ -150,6 +162,7 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
 
 class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
     image = PostImageSerializer(many=False)
+    video = PostVideoSerializer(many=False)
     creator = PostCreatorSerializer(many=False)
     reactions_emoji_counts = ReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
     comments_count = CommentsCountField()
@@ -163,6 +176,7 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
             'created',
             'text',
             'image',
+            'video',
             'creator',
             'public_comments',
             'public_reactions'

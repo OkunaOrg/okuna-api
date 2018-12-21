@@ -616,7 +616,7 @@ class User(AbstractUser):
     def create_encircled_post(self, circles_ids, text=None, image=None):
         return self.create_post(text=text, image=image, circles_ids=circles_ids)
 
-    def create_post(self, text=None, image=None, circles_ids=None, circles=None, circle=None, circle_id=None):
+    def create_post(self, text=None, image=None, video=None, circles_ids=None, circles=None, circle=None, circle_id=None):
         if circles:
             circles_ids = [circle.pk for circle in circles]
         elif not circles_ids:
@@ -635,7 +635,7 @@ class User(AbstractUser):
             circles_ids.append(world_circle_id)
 
         Post = get_post_model()
-        post = Post.create_post(text=text, creator=self, circles_ids=circles_ids, image=image)
+        post = Post.create_post(text=text, creator=self, circles_ids=circles_ids, image=image, video=video)
 
         return post
 
