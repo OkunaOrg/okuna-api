@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "70f04c06112d8cc7cfe44dd4031c52e9f44a361d8d97cdd9f65f224300bc1b9c"
+            "sha256": "ee4ef41acf6c91c74c0b8782e61ba0759ea7ff1e208035131a141ebec101c0c1"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -104,11 +104,7 @@
             "version": "==0.0.3"
         },
         "django-modeltranslation": {
-            "hashes": [
-                "sha256:40149f959edefc9ab0824e8a7437298e8ca232b0aaa4762224c580ced3f1db17"
-            ],
-            "index": "pypi",
-            "version": "==0.12.2"
+            "file": "https://github.com/lifenautjoe/django-modeltranslation/archive/patch-the-issue-with-django2.zip"
         },
         "django-nose": {
             "hashes": [

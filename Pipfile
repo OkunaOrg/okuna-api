@@ -23,4 +23,4 @@ Faker = "*"
 django-storages = "*"
 django-amazon-ses = "*"
 django-media-fixtures = "==0.0.3"
-django-modeltranslation = "*"
+django-modeltranslation = {file = "https://github.com/lifenautjoe/django-modeltranslation/archive/patch-the-issue-with-django2.zip"}

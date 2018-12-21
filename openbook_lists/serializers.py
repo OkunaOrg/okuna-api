@@ -62,7 +62,7 @@ class ListEmojiSerializer(serializers.ModelSerializer):
         model = Emoji
         fields = (
             'id',
-            'color',
+            'keyword',
             'image',
         )
 

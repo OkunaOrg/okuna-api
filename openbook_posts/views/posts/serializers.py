@@ -82,7 +82,7 @@ class PostReactionEmojiSerializer(serializers.ModelSerializer):
         model = Emoji
         fields = (
             'id',
-            'color',
+            'keyword',
             'image'
         )
 
@@ -103,9 +103,8 @@ class PostReactionEmojiSerializer(serializers.ModelSerializer):
         model = Emoji
         fields = (
             'id',
-            'color',
             'image',
-            'order'
+            'keyword'
         )
 
 
