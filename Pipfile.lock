@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "b10e5b0f5ae0a169a294ad3439d49e43e5aedcdd56337e5083ff592c0eb35007"
+            "sha256": "cf74266cf4e255b6699be9b0c93984e466537bd0732f4360d2171b121ad789ac"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -112,7 +112,8 @@
             "version": "==0.0.3"
         },
         "django-modeltranslation": {
-            "git": "git://github.com/lifenautjoe/django-modeltranslation.git",
+            "editable": true,
+            "git": "https://github.com/lifenautjoe/django-modeltranslation.git",
             "ref": "551af9905961038badad9d9a16b2f47996f7685b"
         },
         "django-nose": {
