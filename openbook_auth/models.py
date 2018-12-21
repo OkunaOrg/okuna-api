@@ -14,7 +14,8 @@ from django.db.models import Q
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.exceptions import EmailVerificationTokenInvalid
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
-    get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, get_emoji_model
+    get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, get_emoji_model, \
+    get_emoji_group_model
 from openbook_common.validators import name_characters_validator
 
 
@@ -390,8 +391,9 @@ class User(AbstractUser):
 
         return Post.get_emoji_counts_for_post_with_id(post_id, emoji_id=emoji_id, reactor_id=reactor_id)
 
-    def react_to_post_with_id(self, post_id, emoji_id):
+    def react_to_post_with_id(self, post_id, emoji_id, emoji_group_id):
         self._check_can_react_to_post_with_id(post_id)
+        self._check_can_react_with_emoji_id_and_emoji_group_id(emoji_id, emoji_group_id)
 
         if self.has_reacted_to_post_with_id(post_id):
             post_reaction = self.post_reactions.get(post_id=post_id)
@@ -1011,6 +1013,19 @@ class User(AbstractUser):
 
     def _check_can_get_reactions_for_post_with_id(self, post_id):
         self._check_can_see_post_with_id(post_id)
+
+    def _check_can_react_with_emoji_id_and_emoji_group_id(self, emoji_id, emoji_group_id):
+        EmojiGroup = get_emoji_group_model()
+        try:
+            emoji_group = EmojiGroup.objects.get(pk=emoji_group_id, is_reaction_group=True)
+            if not emoji_group.has_emoji_with_id(emoji_id):
+                raise ValidationError(
+                    _('Emoji does not belong to given emoji group.'),
+                )
+        except EmojiGroup.DoesNotExist:
+            raise ValidationError(
+                _('Emoji group does not exist or is not a reaction group.'),
+            )
 
     def _check_can_react_to_post_with_id(self, post_id):
         self._check_can_see_post_with_id(post_id)

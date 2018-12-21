@@ -102,6 +102,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'django_nose',
     'storages',
+    'django_media_fixtures',
     'openbook_common',
     'openbook_auth',
     'openbook_posts',
@@ -187,7 +188,6 @@ else:
             },
         }
     }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
