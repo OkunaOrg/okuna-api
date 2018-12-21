@@ -10,7 +10,7 @@ Django==2.1.4
 django-amazon-ses==2.0.0
 django-debug-toolbar==1.10.1
 django-media-fixtures==0.0.3
--e git://github.com/lifenautjoe/django-modeltranslation.git@551af9905961038badad9d9a16b2f47996f7685b#egg=django_modeltranslation
+-e git+https://github.com/lifenautjoe/django-modeltranslation.git@551af9905961038badad9d9a16b2f47996f7685b#egg=django_modeltranslation
 django-nose==1.4.6
 django-storages==1.7.1
 djangorestframework==3.9.0
