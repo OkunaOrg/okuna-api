@@ -28,11 +28,12 @@ class Posts(APIView):
         data = serializer.validated_data
         text = data.get('text')
         image = data.get('image')
+        video = data.get('video')
         circles_ids = data.get('circle_id')
         user = request.user
 
         with transaction.atomic():
-            post = user.create_post(text=text, circles_ids=circles_ids, image=image)
+            post = user.create_post(text=text, circles_ids=circles_ids, image=image, video=video)
 
         post_serializer = AuthenticatedUserPostSerializer(post, context={"request": request})
 
