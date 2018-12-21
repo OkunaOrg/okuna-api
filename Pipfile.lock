@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "ee4ef41acf6c91c74c0b8782e61ba0759ea7ff1e208035131a141ebec101c0c1"
+            "sha256": "7d64440d44bb2d96b9a3bbff98b16abc1070888d33c68f13ea484484cb825a5e"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -104,7 +104,9 @@
             "version": "==0.0.3"
         },
         "django-modeltranslation": {
-            "file": "https://github.com/lifenautjoe/django-modeltranslation/archive/patch-the-issue-with-django2.zip"
+            "editable": true,
+            "git": "https://github.com/lifenautjoe/django-modeltranslation.git",
+            "ref": "551af9905961038badad9d9a16b2f47996f7685b"
         },
         "django-nose": {
             "hashes": [
