@@ -96,6 +96,12 @@ pipenv shell
 python manage.py migrate
 ```
 
+#### Collect the media fixtures
+
+```bash
+python manage.py collectmedia
+```
+
 #### Load the fixtures
 ```bash
 python manage.py loaddata circles.json emoji-groups.json emojis.json

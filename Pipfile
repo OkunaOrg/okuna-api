@@ -1,16 +1,11 @@
 [[source]]
-
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
-
 [dev-packages]
 
-
-
 [packages]
-
 Django = "*"
 python-dotenv = "*"
 djangorestframework = "*"
@@ -27,3 +22,4 @@ Faker = "*"
 "boto3" = "*"
 django-storages = "*"
 django-amazon-ses = "*"
+django-media-fixtures = "==0.0.3"
