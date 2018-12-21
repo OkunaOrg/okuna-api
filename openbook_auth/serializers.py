@@ -165,6 +165,7 @@ class GetUserUserListEmojiSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'image',
+            'keyword'
         )
 
 

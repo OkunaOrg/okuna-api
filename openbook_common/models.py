@@ -10,7 +10,7 @@ from openbook_common.validators import hex_color_validator
 
 
 class EmojiGroup(models.Model):
-    keyword = models.CharField(_('keyword'), max_length=32, blank=False, null=False, unique=True)
+    keyword = models.CharField(_('keyword'), max_length=32, blank=False, null=False)
     color = models.CharField(_('color'), max_length=COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
                              validators=[hex_color_validator], unique=False)
     order = models.IntegerField(unique=False, default=100)
@@ -32,7 +32,7 @@ class EmojiGroup(models.Model):
 
 class Emoji(models.Model):
     group = models.ForeignKey(EmojiGroup, on_delete=models.CASCADE, related_name='emojis', null=True)
-    keyword = models.CharField(_('keyword'), max_length=16, blank=False, null=False, unique=True)
+    keyword = models.CharField(_('keyword'), max_length=16, blank=False, null=False)
     # Hex colour. #FFFFFF
     color = models.CharField(_('color'), max_length=COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
                              validators=[hex_color_validator], unique=False)

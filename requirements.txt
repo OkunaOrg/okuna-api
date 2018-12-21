@@ -1,5 +1,5 @@
-boto3==1.9.69
-botocore==1.12.69
+boto3==1.9.70
+botocore==1.12.70
 certifi==2018.11.29
 chardet==3.0.4
 Click==7.0
@@ -9,6 +9,7 @@ Django==2.1.4
 django-amazon-ses==2.0.0
 django-debug-toolbar==1.10.1
 django-media-fixtures==0.0.3
+-e git+https://github.com/lifenautjoe/django-modeltranslation.git@551af9905961038badad9d9a16b2f47996f7685b#egg=django_modeltranslation
 django-nose==1.4.6
 django-storages==1.7.1
 djangorestframework==3.9.0
@@ -35,7 +36,7 @@ PyYAML==3.13
 requests==2.20.1
 s3transfer==0.1.13
 safety==1.8.4
-sentry-sdk==0.6.4
+sentry-sdk==0.6.5
 six==1.12.0
 sqlparse==0.2.4
 text-unidecode==1.2

@@ -92,6 +92,9 @@ else:
 # Application definition
 
 INSTALLED_APPS = [
+    # Has to be before contrib admin
+    # See https://django-modeltranslation.readthedocs.io/en/latest/installation.html#required-settings
+    'modeltranslation',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
