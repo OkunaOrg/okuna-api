@@ -47,6 +47,5 @@ sqlparse==0.2.4
 stevedore==1.30.0
 text-unidecode==1.2
 urllib3==1.24.1
-uuid==1.30
 virtualenv==16.1.0
 virtualenv-clone==0.4.0
