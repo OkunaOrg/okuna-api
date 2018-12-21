@@ -23,4 +23,5 @@ Faker = "*"
 django-storages = "*"
 django-amazon-ses = "*"
 django-media-fixtures = "==0.0.3"
-django-modeltranslation = {editable = true, git = "https://github.com/lifenautjoe/django-modeltranslation.git"}
+django-modeltranslation = {git = "git://github.com/lifenautjoe/django-modeltranslation.git"}
+bandit = "*"
