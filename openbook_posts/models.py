@@ -34,7 +34,7 @@ class Post(models.Model):
         return Post.objects.filter(pk=post_id, public_reactions=True).count() == 1
 
     @classmethod
-    def create_post(cls, creator, circles_ids, image=None, text=None, video=None):
+    def create_post(cls, creator, circles_ids, image=None, text=None, video=None, created=None):
         if not text and not image and not video:
             raise ValidationError(_('A post requires text or an image/video.'))
 

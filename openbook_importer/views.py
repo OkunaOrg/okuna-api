@@ -3,6 +3,7 @@ from datetime import datetime
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django.core.files.images import ImageFile
 from django.utils.dateparse import parse_datetime
 from rest_framework.permissions import IsAuthenticated
 from django.utils.translation import ugettext_lazy as _
@@ -22,23 +23,53 @@ class ImportItem(APIView):
         zipfile = request.FILES['file']
 
         p = zip_parser(zipfile)
-        self.save_posts(p.profile.posts, request.user)
+
+        if p.profile.posts:
+            self.save_posts(p.profile.posts, request.user)
 
         return Response({
             'message': _('done')
         }, status=status.HTTP_200_OK)
 
+    def _get_media_content(self, post):
+
+        images = []
+        image = {}
+
+        for attachment in post['attachments']:
+            for data in attachment['data']:
+                image['file'] = data['media']['uri'][1]
+
+                if 'description' in data['media'].keys():
+                    image['text'] = data['media']['description']
+
+                images.append(image)
+                image = {}
+
+        return images
+
     def save_posts(self, posts, user):
 
         for post in posts:
+            image = None
+            images = None
+            text = None
             timestamp = post['timestamp']
             created = datetime.fromtimestamp(timestamp)
             created = parse_datetime(created.strftime('%Y-%m-%d %T'))
 
-            if len(post['data']) == 1:
+            if 'attachments' in post.keys():
+                images = self._get_media_content(post)
+
+            if 'data' in post.keys() and len(post['data']) != 0:
                 text = post['data'][0]['post']
 
-            else:
-                raise ValueError('data is not the expected length')
+            if images:
+                image = images[0]
 
-            user.create_post(text, created=created)
+                if 'text' in image.keys():
+                    text = image['text']
+
+                image = ImageFile(image['file'])
+
+            user.create_post(text=text, image=image, created=created)
