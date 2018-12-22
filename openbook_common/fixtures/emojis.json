@@ -5,9 +5,11 @@
     "fields": {
       "order": 9,
       "group_id": 2,
-      "keyword": "doge",
+      "keyword": "waw",
+      "keyword_es": "Waw",
+      "keyword_en": "Waw",
       "color": "#f1b01b",
-      "image": "/fixtures/emojis/doge.png",
+      "image": "/openbook_common/emojis/doge.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -17,9 +19,11 @@
     "fields": {
       "group_id": 2,
       "order": 8,
-      "keyword": "parrot",
+      "keyword": "party",
+      "keyword_es": "Fiesta!",
+      "keyword_en": "Party!",
       "color": "#000000",
-      "image": "/fixtures/emojis/dancing_parrot.gif",
+      "image": "/openbook_common/emojis/dancing_parrot.gif",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -29,9 +33,11 @@
     "fields": {
       "group_id": 1,
       "order": 1,
-      "keyword": "heart",
+      "keyword": "love",
+      "keyword_es": "Me gusta",
+      "keyword_en": "Love it",
       "color": "#bd0043",
-      "image": "/fixtures/emojis/like.png",
+      "image": "/openbook_common/emojis/love.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -42,8 +48,10 @@
       "group_id": 1,
       "order": 4,
       "keyword": "sad",
+      "keyword_es": "Triste",
+      "keyword_en": "Sad",
       "color": "#505050",
-      "image": "/fixtures/emojis/sad.png",
+      "image": "/openbook_common/emojis/sad.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -53,9 +61,11 @@
     "fields": {
       "group_id": 2,
       "order": 7,
-      "keyword": "fire",
+      "keyword": "lit",
+      "keyword_es": "Prendido",
+      "keyword_en": "Lit",
       "color": "#e48200",
-      "image": "/fixtures/emojis/fire.png",
+      "image": "/openbook_common/emojis/fire.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -63,11 +73,13 @@
     "model": "openbook_common.Emoji",
     "pk": 7,
     "fields": {
-      "group_id": 1,
+      "group_id": 2,
       "order": 6,
-      "keyword": "party",
+      "keyword": "hooray",
+      "keyword_es": "Hurra!",
+      "keyword_en": "Hooray!",
       "color": "#5200d4",
-      "image": "/fixtures/emojis/party.png",
+      "image": "/openbook_common/emojis/party.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -78,8 +90,10 @@
       "group_id": 1,
       "order": 5,
       "keyword": "upset",
+      "keyword_es": "Enojadx",
+      "keyword_en": "Upset",
       "color": "#1b1b1b",
-      "image": "/fixtures/emojis/upset.png",
+      "image": "/openbook_common/emojis/upset.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -87,11 +101,13 @@
     "model": "openbook_common.Emoji",
     "pk": 3,
     "fields": {
-      "group_id": 2,
+      "group_id": 1,
       "order": 3,
       "keyword": "wow",
+      "keyword_es": "Wow",
+      "keyword_en": "Wow",
       "color": "#00d546",
-      "image": "/fixtures/emojis/wow.png",
+      "image": "/openbook_common/emojis/wow.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -102,8 +118,458 @@
       "group_id": 1,
       "order": 2,
       "keyword": "haha",
+      "keyword_es": "Jaja",
+      "keyword_en": "Haha",
       "color": "#0089f2",
-      "image": "/fixtures/emojis/haha.png",
+      "image": "/openbook_common/emojis/haha.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 11,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "alarm",
+      "keyword_es": "Alarma",
+      "keyword_en": "Alarm",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/alarm.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 12,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "computer",
+      "keyword_es": "Computadora",
+      "keyword_en": "Computer",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/computer.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 13,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "game",
+      "keyword_es": "Juego",
+      "keyword_en": "Game",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/game.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 14,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "football",
+      "keyword_es": "Balón",
+      "keyword_en": "Football",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/football.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 15,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "lighting",
+      "keyword_es": "Rayo",
+      "keyword_en": "Lighting",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/lighting.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 16,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "lock",
+      "keyword_es": "Candado",
+      "keyword_en": "Lock",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/lock.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 17,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "money",
+      "keyword_es": "Dinero",
+      "keyword_en": "Money",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/money.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 18,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "pencil",
+      "keyword_es": "Lapiz",
+      "keyword_en": "Pencil",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/pencil.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 19,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "speaker",
+      "keyword_es": "Altavoz",
+      "keyword_en": "Speaker",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/speaker.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 20,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "camera",
+      "keyword_es": "Camara",
+      "keyword_en": "Camera",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/camera.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 21,
+    "fields": {
+      "group_id": 2,
+      "order": 2,
+      "keyword": "bravo",
+      "keyword_es": "Bravo!",
+      "keyword_en": "Bravo!",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/bravo.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 22,
+    "fields": {
+      "group_id": 2,
+      "order": 2,
+      "keyword": "cool",
+      "keyword_es": "Cool",
+      "keyword_en": "Cool",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/cool.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 23,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "news",
+      "keyword_es": "Noticias",
+      "keyword_en": "News",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/news.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 24,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "earth",
+      "keyword_es": "Tierra",
+      "keyword_en": "Earth",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/earth.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 25,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "book",
+      "keyword_es": "Libro",
+      "keyword_en": "Book",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/book.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 26,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "science",
+      "keyword_es": "Ciencia",
+      "keyword_en": "Science",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/science.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 27,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "bulb",
+      "keyword_es": "Bulbo",
+      "keyword_en": "Bulb",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/bulb.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 28,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "fancyhat",
+      "keyword_es": "Sombrero",
+      "keyword_en": "Fancy hat",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/fancy_hat.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 29,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "heart",
+      "keyword_es": "Corazón",
+      "keyword_en": "Heart",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/heart.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 30,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "star",
+      "keyword_es": "Estrella",
+      "keyword_en": "Star",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/star.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 31,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "trophy",
+      "keyword_es": "Trofeo",
+      "keyword_en": "Trophy",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/trophy.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 32,
+    "fields": {
+      "group_id": 2,
+      "order": 2,
+      "keyword": "omg",
+      "keyword_es": "OMG",
+      "keyword_en": "OMG",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/omg.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 33,
+    "fields": {
+      "group_id": 2,
+      "order": 2,
+      "keyword": "thankful",
+      "keyword_es": "Agradecido",
+      "keyword_en": "Thankful",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/thanks.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 34,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "music",
+      "keyword_es": "Musica",
+      "keyword_en": "Music",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/music.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 35,
+    "fields": {
+      "group_id": 2,
+      "order": 2,
+      "keyword": "wohoo",
+      "keyword_es": "Wuju!",
+      "keyword_en": "Wohoo!",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/wohoo.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 36,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "palette",
+      "keyword_es": "Paleta",
+      "keyword_en": "Palette",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/palette.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 37,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "alien",
+      "keyword_es": "Alien",
+      "keyword_en": "Alien",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/alien.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 38,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "airplane",
+      "keyword_es": "Avión",
+      "keyword_en": "Airplane",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/airplane.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 39,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "rocket",
+      "keyword_es": "Cohete",
+      "keyword_en": "Rocket",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/rocket.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 40,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "lipstick",
+      "keyword_es": "Lápiz Labial",
+      "keyword_en": "Lipstick",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/lipstick.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 41,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "crown",
+      "keyword_es": "Corona",
+      "keyword_en": "Crown",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/crown.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 42,
+    "fields": {
+      "group_id": 3,
+      "order": 2,
+      "keyword": "map",
+      "keyword_es": "Mapa",
+      "keyword_en": "Map",
+      "color": "#0089f2",
+      "image": "/openbook_common/emojis/map.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   }

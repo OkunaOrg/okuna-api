@@ -9,7 +9,7 @@ from rest_framework.test import APITestCase
 import logging
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
-    make_fake_post_comment_text, make_user, make_circle, make_emoji
+    make_fake_post_comment_text, make_user, make_circle, make_emoji, make_emoji_group, make_reactions_emoji_group
 from openbook_posts.models import Post, PostComment, PostReaction
 
 logger = logging.getLogger(__name__)
@@ -550,9 +550,11 @@ class PostReactionsAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
         post = user.create_post(text=make_fake_post_text())
 
-        post_reaction_emoji_id = make_emoji().pk
+        emoji_group = make_reactions_emoji_group()
 
-        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id)
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id, emoji_group.pk)
 
         url = self._get_url(post)
         response = self.client.put(url, data, **headers)
@@ -572,9 +574,32 @@ class PostReactionsAPITests(APITestCase):
         circle = make_circle(creator=foreign_user)
         post = foreign_user.create_post(text=make_fake_post_text(), circle=circle)
 
-        post_reaction_emoji_id = make_emoji().pk
+        emoji_group = make_reactions_emoji_group()
 
-        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id)
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id, emoji_group.pk)
+
+        url = self._get_url(post)
+        response = self.client.put(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(PostReaction.objects.filter(post_id=post.pk, emoji_id=post_reaction_emoji_id,
+                                                    reactor_id=user.pk).count() == 0)
+
+    def test_cannot_react_to_foreign_post_with_non_reaction_emoji(self):
+        """
+         should not be able to reaction in a post with a non reaction emoji group and return 400
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_post(text=make_fake_post_text())
+
+        emoji_group = make_emoji_group()
+
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id, emoji_group.pk)
 
         url = self._get_url(post)
         response = self.client.put(url, data, **headers)
@@ -596,9 +621,11 @@ class PostReactionsAPITests(APITestCase):
 
         connected_user_post = user_to_connect.create_post(text=make_fake_post_text())
 
-        post_reaction_emoji_id = make_emoji().pk
+        emoji_group = make_reactions_emoji_group()
 
-        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id)
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id, emoji_group.pk)
 
         url = self._get_url(connected_user_post)
         response = self.client.put(url, data, **headers)
@@ -623,9 +650,11 @@ class PostReactionsAPITests(APITestCase):
 
         connected_user_post = user_to_connect.create_post(text=make_fake_post_text(), circle=circle)
 
-        post_reaction_emoji_id = make_emoji().pk
+        emoji_group = make_reactions_emoji_group()
 
-        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id)
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id, emoji_group.pk)
 
         url = self._get_url(connected_user_post)
         response = self.client.put(url, data, **headers)
@@ -650,9 +679,11 @@ class PostReactionsAPITests(APITestCase):
 
         connected_user_post = user_to_connect.create_post(text=make_fake_post_text(), circle=circle)
 
-        post_reaction_emoji_id = make_emoji().pk
+        emoji_group = make_reactions_emoji_group()
 
-        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id)
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id, emoji_group.pk)
 
         url = self._get_url(connected_user_post)
         response = self.client.put(url, data, **headers)
@@ -674,9 +705,11 @@ class PostReactionsAPITests(APITestCase):
 
         foreign_user_post = foreign_user.create_public_post(text=make_fake_post_text())
 
-        post_reaction_emoji_id = make_emoji().pk
+        emoji_group = make_reactions_emoji_group()
 
-        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id)
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id, emoji_group.pk)
 
         url = self._get_url(foreign_user_post)
         response = self.client.put(url, data, **headers)
@@ -700,9 +733,11 @@ class PostReactionsAPITests(APITestCase):
 
         followed_user_post = user_to_follow.create_post(text=make_fake_post_text(), circle=circle)
 
-        post_reaction_emoji_id = make_emoji().pk
+        emoji_group = make_reactions_emoji_group()
 
-        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id)
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id, emoji_group.pk)
 
         url = self._get_url(followed_user_post)
         response = self.client.put(url, data, **headers)
@@ -720,24 +755,27 @@ class PostReactionsAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
         post = user.create_post(text=make_fake_post_text())
 
-        post_reaction_emoji_id = make_emoji().pk
+        emoji_group = make_reactions_emoji_group()
 
-        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id)
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id, emoji_group.pk)
 
         url = self._get_url(post)
         self.client.put(url, data, **headers)
 
-        new_post_reaction_emoji_id = make_emoji().pk
+        new_post_reaction_emoji_id = make_emoji(group=emoji_group).pk
 
-        data = self._get_create_post_reaction_request_data(new_post_reaction_emoji_id)
+        data = self._get_create_post_reaction_request_data(new_post_reaction_emoji_id, emoji_group.pk)
         response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(PostReaction.objects.filter(post_id=post.pk, reactor_id=user.pk).count() == 1)
 
-    def _get_create_post_reaction_request_data(self, emoji_id):
+    def _get_create_post_reaction_request_data(self, emoji_id, emoji_group_id):
         return {
-            'emoji_id': emoji_id
+            'emoji_id': emoji_id,
+            'group_id': emoji_group_id
         }
 
     def _get_url(self, post):
@@ -765,9 +803,12 @@ class PostReactionItemAPITests(APITestCase):
 
         post = user.create_public_post(text=make_fake_post_text())
 
-        post_reaction_emoji_id = make_emoji().pk
+        emoji_group = make_reactions_emoji_group()
 
-        post_reaction = reactioner.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id)
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        post_reaction = reactioner.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id,
+                                                         emoji_group_id=emoji_group.pk)
 
         url = self._get_url(post_reaction=post_reaction, post=post)
 
@@ -787,9 +828,12 @@ class PostReactionItemAPITests(APITestCase):
 
         post = foreign_user.create_public_post(text=make_fake_post_text())
 
-        post_reaction_emoji_id = make_emoji().pk
+        emoji_group = make_reactions_emoji_group()
 
-        post_reaction = user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id)
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        post_reaction = user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id,
+                                                   emoji_group_id=emoji_group.pk)
 
         url = self._get_url(post_reaction=post_reaction, post=post)
 
@@ -809,9 +853,12 @@ class PostReactionItemAPITests(APITestCase):
 
         post = foreign_user.create_public_post(text=make_fake_post_text())
 
-        post_reaction_emoji_id = make_emoji().pk
+        emoji_group = make_reactions_emoji_group()
 
-        post_reaction = foreign_user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id)
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        post_reaction = foreign_user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id,
+                                                           emoji_group_id=emoji_group.pk)
 
         url = self._get_url(post_reaction=post_reaction, post=post)
 
@@ -834,9 +881,12 @@ class PostReactionItemAPITests(APITestCase):
 
         post = user_to_connect.create_public_post(text=make_fake_post_text())
 
-        post_reaction_emoji_id = make_emoji().pk
+        emoji_group = make_reactions_emoji_group()
 
-        post_reaction = user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id)
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        post_reaction = user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id,
+                                                   emoji_group_id=emoji_group.pk)
 
         url = self._get_url(post_reaction=post_reaction, post=post)
 
@@ -861,9 +911,12 @@ class PostReactionItemAPITests(APITestCase):
 
         post = user_to_connect.create_public_post(text=make_fake_post_text())
 
-        post_reaction_emoji_id = make_emoji().pk
+        emoji_group = make_reactions_emoji_group()
 
-        post_reaction = foreign_user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id)
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        post_reaction = foreign_user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id,
+                                                           emoji_group_id=emoji_group.pk)
 
         url = self._get_url(post_reaction=post_reaction, post=post)
 
@@ -887,9 +940,12 @@ class PostReactionItemAPITests(APITestCase):
 
         post = user_to_connect.create_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
-        post_reaction_emoji_id = make_emoji().pk
+        emoji_group = make_reactions_emoji_group()
 
-        post_reaction = user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id)
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        post_reaction = user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id,
+                                                   emoji_group_id=emoji_group.pk)
 
         url = self._get_url(post_reaction=post_reaction, post=post)
 
@@ -917,9 +973,12 @@ class PostReactionItemAPITests(APITestCase):
 
         post = user_to_connect.create_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
-        post_reaction_emoji_id = make_emoji().pk
+        emoji_group = make_reactions_emoji_group()
 
-        post_reaction = foreign_user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id)
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        post_reaction = foreign_user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id,
+                                                           emoji_group_id=emoji_group.pk)
 
         url = self._get_url(post_reaction=post_reaction, post=post)
 
@@ -944,9 +1003,12 @@ class PostReactionItemAPITests(APITestCase):
 
         post = user_to_connect.create_post(text=make_fake_post_text(), circle_id=circle.pk)
 
-        post_reaction_emoji_id = make_emoji().pk
+        emoji_group = make_reactions_emoji_group()
 
-        post_reaction = foreign_user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id)
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        post_reaction = foreign_user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id,
+                                                           emoji_group_id=emoji_group.pk)
 
         url = self._get_url(post_reaction=post_reaction, post=post)
 
@@ -968,9 +1030,12 @@ class PostReactionItemAPITests(APITestCase):
 
         post = user_to_follow.create_public_post(text=make_fake_post_text())
 
-        post_reaction_emoji_id = make_emoji().pk
+        emoji_group = make_reactions_emoji_group()
 
-        post_reaction = user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id)
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        post_reaction = user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id,
+                                                   emoji_group_id=emoji_group.pk)
 
         url = self._get_url(post_reaction=post_reaction, post=post)
 
@@ -994,9 +1059,12 @@ class PostReactionItemAPITests(APITestCase):
 
         post = user_to_follow.create_public_post(text=make_fake_post_text())
 
-        post_reaction_emoji_id = make_emoji().pk
+        emoji_group = make_reactions_emoji_group()
 
-        post_reaction = foreign_user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id)
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        post_reaction = foreign_user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id,
+                                                           emoji_group_id=emoji_group.pk)
 
         url = self._get_url(post_reaction=post_reaction, post=post)
 
@@ -1023,9 +1091,12 @@ class PostReactionItemAPITests(APITestCase):
 
         post = user_to_follow.create_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
-        post_reaction_emoji_id = make_emoji().pk
+        emoji_group = make_reactions_emoji_group()
 
-        post_reaction = foreign_user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id)
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        post_reaction = foreign_user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id,
+                                                           emoji_group_id=emoji_group.pk)
 
         url = self._get_url(post_reaction=post_reaction, post=post)
 
@@ -1054,18 +1125,19 @@ class PostReactionsEmojiCountAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
         post = user.create_public_post(text=make_fake_post_text())
+        emoji_group = make_reactions_emoji_group()
 
         emojis_to_react_with = [
             {
-                'emoji': make_emoji(),
+                'emoji': make_emoji(group=emoji_group),
                 'count': 3
             },
             {
-                'emoji': make_emoji(),
+                'emoji': make_emoji(group=emoji_group),
                 'count': 7
             },
             {
-                'emoji': make_emoji(),
+                'emoji': make_emoji(group=emoji_group),
                 'count': 2
             }
         ]
@@ -1080,7 +1152,7 @@ class PostReactionsEmojiCountAPITests(APITestCase):
             for count in range(reaction['count']):
                 reactor = make_user()
                 emoji = reaction.get('emoji')
-                reactor.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+                reactor.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, emoji_group_id=emoji_group.pk)
 
         url = self._get_url(post)
 
@@ -1105,3 +1177,60 @@ class PostReactionsEmojiCountAPITests(APITestCase):
         return reverse('post-reactions-emoji-count', kwargs={
             'post_id': post.pk
         })
+
+
+class TestPostReactionEmojiGroups(APITestCase):
+    """
+    PostReactionEmojiGroups API
+    """
+
+    def test_can_retrieve_reactions_emoji_groups(self):
+        """
+         should be able to retrieve post reaction emoji groups
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        group_ids = []
+        amount_of_groups = 4
+
+        for x in range(amount_of_groups):
+            group = make_emoji_group(is_reaction_group=True)
+            group_ids.append(group.pk)
+
+        url = self._get_url()
+        response = self.client.get(url, **headers)
+        self.assertTrue(response.status_code, status.HTTP_200_OK)
+
+        response_groups = json.loads(response.content)
+        response_groups_ids = [group['id'] for group in response_groups]
+
+        self.assertEqual(len(response_groups), len(group_ids))
+
+        for group_id in group_ids:
+            self.assertIn(group_id, response_groups_ids)
+
+    def test_cannot_retrieve_non_reactions_emoji_groups(self):
+        """
+         should not able to retrieve non post reaction emoji groups
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        group_ids = []
+        amount_of_groups = 4
+
+        for x in range(amount_of_groups):
+            group = make_emoji_group(is_reaction_group=False)
+            group_ids.append(group.pk)
+
+        url = self._get_url()
+        response = self.client.get(url, **headers)
+        self.assertTrue(response.status_code, status.HTTP_200_OK)
+
+        response_groups = json.loads(response.content)
+
+        self.assertEqual(len(response_groups), 0)
+
+    def _get_url(self):
+        return reverse('posts-emoji-groups')

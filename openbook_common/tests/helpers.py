@@ -46,8 +46,12 @@ def make_emoji(group=None):
     return mixer.blend(Emoji, group=group)
 
 
-def make_emoji_group():
-    return mixer.blend(EmojiGroup)
+def make_emoji_group(is_reaction_group=False):
+    return mixer.blend(EmojiGroup, is_reaction_group=is_reaction_group)
+
+
+def make_reactions_emoji_group():
+    return mixer.blend(EmojiGroup, is_reaction_group=True)
 
 
 def make_circle(creator):

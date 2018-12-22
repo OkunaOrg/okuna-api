@@ -34,9 +34,12 @@ class Post(models.Model):
         return Post.objects.filter(pk=post_id, public_reactions=True).count() == 1
 
     @classmethod
-    def create_post(cls, creator, circles_ids, text=None, image=None, created=None):
-        if not text and not image:
-            raise ValidationError(_('A post requires must have text or an image.'))
+    def create_post(cls, creator, circles_ids, image=None, text=None, video=None):
+        if not text and not image and not video:
+            raise ValidationError(_('A post requires text or an image/video.'))
+
+        if image and video:
+            raise ValidationError(_('A post must have an image or a video, not both.'))
 
         post = Post.objects.create(creator=creator, created=created)
 
@@ -45,6 +48,9 @@ class Post(models.Model):
 
         if image:
             PostImage.objects.create(image=image, post_id=post.pk)
+
+        if video:
+            PostVideo.objects.create(video=video, post_id=post.pk)
 
         post.circles.add(*circles_ids)
 
@@ -86,7 +92,8 @@ class Post(models.Model):
     def get_trending_posts(cls):
         Circle = get_circle_model()
         world_circle_id = Circle.get_world_circle_id()
-        return cls.objects.annotate(Count('reactions')).filter(circles__id=world_circle_id).order_by('-reactions__count', '-created')
+        return cls.objects.annotate(Count('reactions')).filter(circles__id=world_circle_id).order_by(
+            '-reactions__count', '-created')
 
     def count_comments(self, commenter_id=None):
         return PostComment.count_comments_for_post_with_id(self.pk, commenter_id=commenter_id)
@@ -101,6 +108,11 @@ class Post(models.Model):
 
     def has_image(self):
         if self.image:
+            return True
+        return False
+
+    def has_video(self):
+        if self.video:
             return True
         return False
 
@@ -136,6 +148,11 @@ post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else defa
 class PostImage(models.Model):
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='image')
     image = models.ImageField(_('image'), blank=False, null=False, storage=post_image_storage)
+
+
+class PostVideo(models.Model):
+    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='video')
+    video = models.FileField(_('video'), blank=False, null=False, storage=post_image_storage)
 
 
 class PostComment(models.Model):

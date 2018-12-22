@@ -14,7 +14,8 @@ from django.db.models import Q
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.exceptions import EmailVerificationTokenInvalid
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
-    get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, get_emoji_model
+    get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, get_emoji_model, \
+    get_emoji_group_model
 from openbook_common.validators import name_characters_validator
 
 
@@ -266,7 +267,7 @@ class User(AbstractUser):
     def is_connected_with_user_with_id_in_circle_with_id(self, user_id, circle_id):
         return self.connections.select_related('target_connection__user_id').filter(
             target_connection__user_id=user_id,
-            circles__id=circle_id).count() == 1
+            circles__id=circle_id).exists()
 
     def is_connected_with_user_in_circles(self, user, circles):
         circles_ids = [circle.pk for circle in circles]
@@ -303,7 +304,7 @@ class User(AbstractUser):
         return self.connections_circle_id == id
 
     def has_circle_with_id(self, circle_id):
-        return self.circles.filter(id=circle_id).count() > 0
+        return self.circles.filter(id=circle_id).exists()
 
     def has_circle_with_name(self, circle_name):
         return self.circles.filter(name=circle_name).count() > 0
@@ -390,8 +391,9 @@ class User(AbstractUser):
 
         return Post.get_emoji_counts_for_post_with_id(post_id, emoji_id=emoji_id, reactor_id=reactor_id)
 
-    def react_to_post_with_id(self, post_id, emoji_id):
+    def react_to_post_with_id(self, post_id, emoji_id, emoji_group_id):
         self._check_can_react_to_post_with_id(post_id)
+        self._check_can_react_with_emoji_id_and_emoji_group_id(emoji_id, emoji_group_id)
 
         if self.has_reacted_to_post_with_id(post_id):
             post_reaction = self.post_reactions.get(post_id=post_id)
@@ -432,6 +434,7 @@ class User(AbstractUser):
         Post = get_post_model()
 
         # If comments are private, count only own comments
+        # TODO If its our post we need to circumvent this too
         if not Post.post_with_id_has_public_comments(post_id):
             commenter_id = self.pk
 
@@ -470,14 +473,65 @@ class User(AbstractUser):
     def update_circle(self, circle, **kwargs):
         return self.update_circle_with_id(circle.pk, **kwargs)
 
-    def update_circle_with_id(self, circle_id, **kwargs):
+    def update_circle_with_id(self, circle_id, name=None, color=None, usernames=None):
         self._check_can_update_circle_with_id(circle_id)
-        self._check_circle_data(kwargs)
-        circle = self.circles.get(id=circle_id)
+        self._check_circle_data(name, color)
+        circle_to_update = self.circles.get(id=circle_id)
 
-        for attr, value in kwargs.items():
-            setattr(circle, attr, value)
-        circle.save()
+        if name:
+            circle_to_update.name = name
+
+        if color:
+            circle_to_update.color = color
+
+        if isinstance(usernames, list):
+            # TODO This is a goddamn expensive operation. Improve.
+            new_circle_users = []
+
+            circle_users = circle_to_update.users
+            circle_users_by_username = {}
+
+            for circle_user in circle_users:
+                circle_user_username = circle_user.username
+                circle_users_by_username[circle_user_username] = circle_user
+
+            for username in usernames:
+                user = User.objects.get(username=username)
+                user_exists_in_circle = username in circle_users_by_username
+                if user_exists_in_circle:
+                    # The username added might not be same person we had before
+                    new_circle_users.append(circle_users_by_username[username])
+                else:
+                    new_circle_users.append(user)
+
+            circle_users_to_remove = filter(lambda circle_user: circle_user not in new_circle_users, circle_users)
+
+            for user_to_remove in circle_users_to_remove:
+                self.remove_circle_with_id_from_connection_with_user_with_id(user_to_remove.pk, circle_to_update.pk)
+
+            for new_circle_user in new_circle_users:
+                if not self.is_connected_with_user_with_id_in_circle_with_id(new_circle_user.pk, circle_to_update.pk):
+                    if self.is_connected_with_user_with_id(new_circle_user.pk):
+                        self.add_circle_with_id_to_connection_with_user_with_id(new_circle_user.pk, circle_to_update.pk)
+                    else:
+                        self.connect_with_user_with_id(new_circle_user.pk, circles_ids=[circle_to_update.pk])
+
+        circle_to_update.save()
+        return circle_to_update
+
+    def remove_circle_with_id_from_connection_with_user_with_id(self, user_id, circle_id):
+        self._check_is_following_user_with_id(user_id)
+        self._check_is_connected_with_user_with_id_in_circle_with_id(user_id, circle_id)
+        connection = self.get_connection_for_user_with_id(user_id)
+        connection.circles.remove(circle_id)
+        return connection
+
+    def add_circle_with_id_to_connection_with_user_with_id(self, user_id, circle_id):
+        self._check_is_following_user_with_id(user_id)
+        self._check_is_not_connected_with_user_with_id_in_circle_with_id(user_id, circle_id)
+        connection = self.get_connection_for_user_with_id(user_id)
+        connection.circles.add(circle_id)
+        return connection
 
     def get_circle_with_id(self, circle_id):
         self._check_can_get_circle_with_id(circle_id)
@@ -556,13 +610,13 @@ class User(AbstractUser):
         return User.get_public_users_with_query(query)
 
     def create_public_post(self, text=None, image=None):
-        world_circle_id = self._get_world_circle_id()
-        return self.create_post(text=text, image=image, circle_id=world_circle_id)
+        # If no circle ids are given, will be public
+        return self.create_post(text=text, image=image)
 
     def create_encircled_post(self, circles_ids, text=None, image=None):
         return self.create_post(text=text, image=image, circles_ids=circles_ids)
 
-    def create_post(self, text, created=None, circles_ids=None, circles=None, circle=None, circle_id=None, image=None):
+    def create_post(self, text=None, image=None, video=None, circles_ids=None, circles=None, circle=None, circle_id=None):
         if circles:
             circles_ids = [circle.pk for circle in circles]
         elif not circles_ids:
@@ -573,7 +627,7 @@ class User(AbstractUser):
             if circle_id:
                 circles_ids.append(circle_id)
 
-        self._check_post_data(circles_ids)
+        self._check_post_data(circles_ids=circles_ids)
 
         if len(circles_ids) == 0:
             # If no circle, add post to world circle
@@ -581,7 +635,7 @@ class User(AbstractUser):
             circles_ids.append(world_circle_id)
 
         Post = get_post_model()
-        post = Post.create_post(text=text, creator=self, created=created, circles_ids=circles_ids)
+        post = Post.create_post(text=text, creator=self, circles_ids=circles_ids, image=image, video=video)
 
         return post
 
@@ -639,7 +693,7 @@ class User(AbstractUser):
         posts_query = self._make_get_posts_query_for_user(user, max_id)
 
         Post = get_post_model()
-        profile_posts = Post.objects.filter(posts_query)
+        profile_posts = Post.objects.filter(posts_query).distinct()
 
         return profile_posts
 
@@ -679,7 +733,7 @@ class User(AbstractUser):
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
 
         Post = get_post_model()
-        timeline_posts = Post.objects.filter(timeline_posts_query)
+        timeline_posts = Post.objects.filter(timeline_posts_query).distinct()
 
         return timeline_posts
 
@@ -960,6 +1014,19 @@ class User(AbstractUser):
     def _check_can_get_reactions_for_post_with_id(self, post_id):
         self._check_can_see_post_with_id(post_id)
 
+    def _check_can_react_with_emoji_id_and_emoji_group_id(self, emoji_id, emoji_group_id):
+        EmojiGroup = get_emoji_group_model()
+        try:
+            emoji_group = EmojiGroup.objects.get(pk=emoji_group_id, is_reaction_group=True)
+            if not emoji_group.has_emoji_with_id(emoji_id):
+                raise ValidationError(
+                    _('Emoji does not belong to given emoji group.'),
+                )
+        except EmojiGroup.DoesNotExist:
+            raise ValidationError(
+                _('Emoji group does not exist or is not a reaction group.'),
+            )
+
     def _check_can_react_to_post_with_id(self, post_id):
         self._check_can_see_post_with_id(post_id)
 
@@ -985,7 +1052,8 @@ class User(AbstractUser):
     def _check_follow_list_id(self, list_id):
         self._check_has_list_with_id(list_id)
 
-    def _check_post_data(self, circles_ids):
+    def _check_post_data(self, circles_ids=None):
+
         if circles_ids:
             self._check_has_circles_with_ids(circles_ids)
 
@@ -993,8 +1061,7 @@ class User(AbstractUser):
         if name:
             self._check_list_name_not_taken(name)
 
-    def _check_circle_data(self, data):
-        name = data.get('name')
+    def _check_circle_data(self, name, color):
         if name:
             self._check_circle_name_not_taken(name)
 
@@ -1042,6 +1109,18 @@ class User(AbstractUser):
         if not self.is_connected_with_user_with_id(user_id):
             raise ValidationError(
                 _('Not connected with user.'),
+            )
+
+    def _check_is_connected_with_user_with_id_in_circle_with_id(self, user_id, circle_id):
+        if not self.is_connected_with_user_with_id_in_circle_with_id(user_id, circle_id):
+            raise ValidationError(
+                _('Not connected with user in given circle.'),
+            )
+
+    def _check_is_not_connected_with_user_with_id_in_circle_with_id(self, user_id, circle_id):
+        if self.is_connected_with_user_with_id_in_circle_with_id(user_id, circle_id):
+            raise ValidationError(
+                _('Already connected with user in given circle.'),
             )
 
     def _check_has_list_with_id(self, list_id):

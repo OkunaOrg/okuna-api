@@ -50,7 +50,7 @@ logging.config.dictConfig({
 logger = logging.getLogger(__name__)
 
 # Load dotenv
-load_dotenv(verbose=False, dotenv_path=find_dotenv())
+load_dotenv(verbose=True, dotenv_path=find_dotenv())
 
 # The current execution environment
 ENVIRONMENT = os.environ.get('ENVIRONMENT')
@@ -92,6 +92,9 @@ else:
 # Application definition
 
 INSTALLED_APPS = [
+    # Has to be before contrib admin
+    # See https://django-modeltranslation.readthedocs.io/en/latest/installation.html#required-settings
+    'modeltranslation',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -102,6 +105,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'django_nose',
     'storages',
+    'django_media_fixtures',
     'openbook_common',
     'openbook_auth',
     'openbook_posts',

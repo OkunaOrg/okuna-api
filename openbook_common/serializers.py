@@ -10,7 +10,6 @@ class EmojiSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'keyword',
-            'color',
             'image',
             'created',
             'order',

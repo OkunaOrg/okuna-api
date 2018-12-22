@@ -2,8 +2,8 @@ from rest_framework import serializers
 from django.conf import settings
 
 from openbook_auth.models import UserProfile, User
-from openbook_common.models import Emoji
-from openbook_common.validators import emoji_id_exists
+from openbook_common.models import Emoji, EmojiGroup
+from openbook_common.validators import emoji_id_exists, emoji_group_id_exists
 from openbook_posts.models import PostComment, PostReaction
 from openbook_posts.validators import post_id_exists, post_comment_id_exists, post_reaction_id_exists
 
@@ -107,7 +107,6 @@ class PostReactionEmojiSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'keyword',
-            'color',
             'image',
             'created',
         )
@@ -139,6 +138,10 @@ class ReactToPostSerializer(serializers.Serializer):
     )
     emoji_id = serializers.IntegerField(
         validators=[emoji_id_exists],
+        required=True,
+    )
+    group_id = serializers.IntegerField(
+        validators=[emoji_group_id_exists],
         required=True,
     )
 
@@ -177,3 +180,36 @@ class DeletePostReactionSerializer(serializers.Serializer):
         validators=[post_reaction_id_exists],
         required=True,
     )
+
+
+class PostReactionEmojiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Emoji
+
+        fields = (
+            'id',
+            'keyword',
+            'image',
+            'order',
+        )
+
+
+class PostReactionEmojiGroupSerializer(serializers.ModelSerializer):
+    emojis = serializers.SerializerMethodField()
+
+    def get_emojis(self, obj):
+        emojis = obj.emojis.all().order_by('order')
+
+        request = self.context['request']
+        return PostReactionEmojiSerializer(emojis, many=True, context={'request': request}).data
+
+    class Meta:
+        model = EmojiGroup
+
+        fields = (
+            'id',
+            'keyword',
+            'color',
+            'order',
+            'emojis',
+        )

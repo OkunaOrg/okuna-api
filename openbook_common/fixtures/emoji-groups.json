@@ -5,8 +5,11 @@
     "fields": {
       "order": 1,
       "keyword": "primary",
+      "keyword_es": "Primarias",
+      "keyword_en": "Primary",
       "color": "#FFFFFF",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "is_reaction_group": true
     }
   },
   {
@@ -14,9 +17,25 @@
     "pk": 2,
     "fields": {
       "order": 2,
-      "keyword": "gold",
+      "keyword": "obgold",
+      "keyword_es": "Premium",
+      "keyword_en": "Premium",
       "color": "#FFFFFF",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "is_reaction_group": true
+    }
+  },
+  {
+    "model": "openbook_common.EmojiGroup",
+    "pk": 3,
+    "fields": {
+      "order": 2,
+      "keyword": "objects",
+      "keyword_es": "Objectos",
+      "keyword_en": "Objects",
+      "color": "#FFFFFF",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "is_reaction_group": false
     }
   }
 ]

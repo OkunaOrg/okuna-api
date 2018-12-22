@@ -2,6 +2,7 @@
 import tempfile
 
 from PIL import Image
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
@@ -117,6 +118,61 @@ class PostsAPITests(APITestCase):
 
         self.assertTrue(circle.posts.filter(text=post_text).count() == 1)
 
+    def test_cannot_create_post_in_foreign_circle(self):
+        """
+        should NOT be able to create a text post in an foreign circle and return 400
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        circle = mixer.blend(Circle, creator=foreign_user)
+
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'text': post_text,
+            'circle_id': circle.pk
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(user.posts.filter(text=post_text).count() == 0)
+
+        self.assertTrue(circle.posts.filter(text=post_text).count() == 0)
+
+    def test_cannot_create_post_in_world_circle(self):
+        """
+        should NOT be able to create a post in the world circle and return 400
+        """
+        user = make_user()
+
+        circle = Circle.get_world_circle()
+
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'text': post_text,
+            'circle_id': circle.pk
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(user.posts.filter(text=post_text).count() == 0)
+
+        self.assertTrue(circle.posts.filter(text=post_text).count() == 0)
+
     def test_create_image_post(self):
         """
         should be able to create an image post and return 201
@@ -191,6 +247,96 @@ class PostsAPITests(APITestCase):
         self.assertEqual(created_post.text, post_text)
 
         self.assertTrue(hasattr(created_post, 'image'))
+
+    def test_create_video_post(self):
+        """
+        should be able to create a video post and return 201
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        video = SimpleUploadedFile("file.mp4", b"video_file_content", content_type="video/mp4")
+
+        data = {
+            'video': video
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        response_post = json.loads(response.content)
+
+        response_post_id = response_post.get('id')
+
+        self.assertTrue(user.posts.count() == 1)
+
+        created_post = user.posts.filter(pk=response_post_id).get()
+
+        self.assertTrue(hasattr(created_post, 'video'))
+
+    def test_create_video_and_text_post(self):
+        """
+        should be able to create a video and text post and return 201
+        """
+
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+
+        video = SimpleUploadedFile("file.mp4", b"video_file_content", content_type="video/mp4")
+
+        data = {
+            'text': post_text,
+            'video': video
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        response_post = json.loads(response.content)
+
+        response_post_id = response_post.get('id')
+
+        self.assertTrue(user.posts.count() == 1)
+
+        created_post = user.posts.filter(pk=response_post_id).get()
+
+        self.assertEqual(created_post.text, post_text)
+
+        self.assertTrue(hasattr(created_post, 'video'))
+
+    def test_cannot_create_both_video_and_image_post(self):
+        """
+        should not be able to create both a video and image
+        """
+
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        video = SimpleUploadedFile("file.mp4", b"video_file_content", content_type="video/mp4")
+        image = Image.new('RGB', (100, 100))
+        tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
+        image.save(tmp_file)
+        tmp_file.seek(0)
+
+        data = {
+            'image': tmp_file,
+            'video': video
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
 
     def test_get_all_posts(self):
         """
