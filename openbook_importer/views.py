@@ -31,23 +31,6 @@ class ImportItem(APIView):
             'message': _('done')
         }, status=status.HTTP_200_OK)
 
-    def _get_media_content(self, post):
-
-        images = []
-        image = {}
-
-        for attachment in post['attachments']:
-            for data in attachment['data']:
-                image['file'] = data['media']['uri'][1]
-
-                if 'description' in data['media'].keys():
-                    image['text'] = data['media']['description']
-
-                images.append(image)
-                image = {}
-
-        return images
-
     def save_posts(self, posts, user):
 
         for post in posts:
@@ -73,3 +56,20 @@ class ImportItem(APIView):
                 image = ImageFile(image['file'])
 
             user.create_post(text=text, image=image, created=created)
+
+    def _get_media_content(self, post):
+
+        images = []
+        image = {}
+
+        for attachment in post['attachments']:
+            for data in attachment['data']:
+                image['file'] = data['media']['uri'][1]
+
+                if 'description' in data['media'].keys():
+                    image['text'] = data['media']['description']
+
+                images.append(image)
+                image = {}
+
+        return images
