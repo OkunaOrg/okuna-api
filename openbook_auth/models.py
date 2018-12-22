@@ -635,7 +635,7 @@ class User(AbstractUser):
             circles_ids.append(world_circle_id)
 
         Post = get_post_model()
-        post = Post.create_post(text=text, creator=self, circles_ids=circles_ids, image=image, video=video, created=None)
+        post = Post.create_post(text=text, creator=self, circles_ids=circles_ids, image=image, video=video, created)
 
         return post
 
