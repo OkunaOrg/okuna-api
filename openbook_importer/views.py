@@ -39,7 +39,7 @@ class ImportItem(APIView):
             text = None
             timestamp = post['timestamp']
             created = datetime.fromtimestamp(timestamp)
-            created = parse_datetime(created.strftime('%Y-%m-%d %T'))
+            created = parse_datetime(created.strftime('%Y-%m-%d %T+00:00'))
 
             if 'attachments' in post.keys():
                 images = self._get_media_content(post)

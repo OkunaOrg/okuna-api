@@ -47,10 +47,10 @@ class Post(models.Model):
             post.text = text
 
         if image:
-            PostImage.objects.create(image=image, post_id=post.pk)
+            PostImage.objects.create(image=image, post_id=post.pk, created=created)
 
         if video:
-            PostVideo.objects.create(video=video, post_id=post.pk)
+            PostVideo.objects.create(video=video, post_id=post.pk, created=created)
 
         post.circles.add(*circles_ids)
 
@@ -139,6 +139,7 @@ class Post(models.Model):
         ''' On save, update timestamps '''
         if not self.id and not self.created:
             self.created = timezone.now()
+
         return super(Post, self).save(*args, **kwargs)
 
 
