@@ -8,7 +8,7 @@ class UploadFileTests(APITestCase):
 
     def test_upload_file_success(self):
         """
-        upload file should return 200
+        Upload valid archive should return 200
         """
 
         user = make_user()
@@ -21,7 +21,7 @@ class UploadFileTests(APITestCase):
 
     def test_upload_file_malicious(self):
         """
-        should return a 400
+        should return a 400 when the file is malicious (unkown file magic)
         """
 
         user = make_user()
@@ -34,7 +34,7 @@ class UploadFileTests(APITestCase):
 
     def test_upload_file_invalid(self):
         """
-        should return a 400
+        should return a 400 when the file is invalid
         """
 
         user = make_user()
