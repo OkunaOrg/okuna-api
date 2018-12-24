@@ -1,6 +1,9 @@
 from datetime import datetime
+from json import JSONDecodeError
 
 from rest_framework import status
+from openbook_auth.models import User
+from openbook_posts.models import Post
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.files.images import ImageFile
@@ -22,7 +25,17 @@ class ImportItem(APIView):
 
         zipfile = request.FILES['file']
 
-        p = zip_parser(zipfile)
+        try:
+            p = zip_parser(zipfile)
+
+        except FileNotFoundError:
+            return self._return_invalid()
+
+        except JSONDecodeError:
+            return self._return_invalid()
+
+        except TypeError:
+            return self._return_malicious()
 
         if p.profile.posts:
             self.save_posts(p.profile.posts, request.user)
@@ -55,7 +68,8 @@ class ImportItem(APIView):
 
                 image = ImageFile(image['file'])
 
-            user.create_post(text=text, image=image, created=created)
+            if Post.objects.filter(creator=user.pk, text=text, created=created).exists():
+                user.create_post(text=text, image=image, created=created)
 
     def _get_media_content(self, post):
 
@@ -73,3 +87,17 @@ class ImportItem(APIView):
                 image = {}
 
         return images
+
+    def _return_invalid(self):
+
+        return Response({
+            'message':_('invalid archive')
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    def _return_malicious(self):
+        # TODO LOG MALICIOUS ATTEMPT
+        print('---- POTENTIALLY MALICIOUS UPLOAD!!!')
+
+        return Response({
+            'message':_('invalid archive')
+        }, status=status.HTTP_400_BAD_REQUEST)

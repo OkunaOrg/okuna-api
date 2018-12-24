@@ -47,10 +47,10 @@ class Post(models.Model):
             post.text = text
 
         if image:
-            PostImage.objects.create(image=image, post_id=post.pk, created=created)
+            PostImage.objects.create(image=image, post_id=post.pk)
 
         if video:
-            PostVideo.objects.create(video=video, post_id=post.pk, created=created)
+            PostVideo.objects.create(video=video, post_id=post.pk)
 
         post.circles.add(*circles_ids)
 
