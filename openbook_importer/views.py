@@ -68,7 +68,7 @@ class ImportItem(APIView):
 
                 image = ImageFile(image['file'])
 
-            if Post.objects.filter(creator=user.pk, text=text, created=created).exists():
+            if not Post.objects.filter(creator=user.pk, text=text, created=created).exists():
                 user.create_post(text=text, image=image, created=created)
 
     def _get_media_content(self, post):
