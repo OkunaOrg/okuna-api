@@ -1,6 +1,7 @@
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
 from django.db import models
 from django.utils import six
+from django.utils.translation import ugettext_lazy as _
 from openbook_auth.models import User
 
 # Create your models here.
@@ -27,7 +28,7 @@ class InviteUser(models.Model):
         },
     )
     reward_tier_id = models.IntegerField(blank=True, null=True)
-    token = models.CharField()
+    token = models.CharField(max_length=256)
     token_was_used = models.BooleanField(default=False)
 
     def send_invite_email(self):
