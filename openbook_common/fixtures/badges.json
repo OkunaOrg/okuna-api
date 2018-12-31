@@ -1,0 +1,68 @@
+[
+  {
+    "model": "openbook_common.Badge",
+    "pk": 1,
+    "fields": {
+      "keyword": "VERIFIED",
+      "keyword_es": "Verified",
+      "keyword_en": "Verified",
+      "image": "/openbook_common/badges/verified.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Badge",
+    "pk": 2,
+    "fields": {
+      "keyword": "DIAMOND",
+      "keyword_es": "Diamond Founder",
+      "keyword_en": "Diamond Founder",
+      "image": "/openbook_common/badges/diamond_founder.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Badge",
+    "pk": 3,
+    "fields": {
+      "keyword": "GOLD",
+      "keyword_es": "Gold Founder",
+      "keyword_en": "Gold Founder",
+      "image": "/openbook_common/badges/gold_founder.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Badge",
+    "pk": 4,
+    "fields": {
+      "keyword": "SILVER",
+      "keyword_es": "Silver Founder",
+      "keyword_en": "Silver Founder",
+      "image": "/openbook_common/badges/silver_founder.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Badge",
+    "pk": 5,
+    "fields": {
+      "keyword": "BRONZE",
+      "keyword_es": "Bronze Founder",
+      "keyword_en": "Bronze Founder",
+      "image": "/openbook_common/badges/bronze_founder.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Badge",
+    "pk": 6,
+    "fields": {
+      "keyword": "FOUNDER",
+      "keyword_es": "Founder",
+      "keyword_en": "Founder",
+      "image": "/openbook_common/badges/founder.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  }
+]

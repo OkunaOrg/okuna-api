@@ -13,6 +13,7 @@ from django.db.models import Q
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.exceptions import EmailVerificationTokenInvalid
+from openbook_common.models import Badge
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, get_emoji_model, \
     get_emoji_group_model
@@ -1256,11 +1257,6 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.username
-
-
-class Badge(models.Model):
-    keyword = models.CharField(_('keyword'), max_length=16, blank=False, null=False)
-    type = models.CharField(max_length=16, blank=False, null=False)
 
 
 class UserProfileBadge(models.Model):
