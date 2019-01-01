@@ -8,7 +8,7 @@ from openbook_auth.models import User
 from openbook.settings import USERNAME_MAX_LENGTH
 
 
-class InviteUser(models.Model):
+class UserInvite(models.Model):
     invited_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invited_users')
     invited_date = models.DateField(_('invited date'), null=False, blank=False)
     name = models.CharField(max_length=256, null=True, blank=True)
@@ -27,14 +27,13 @@ class InviteUser(models.Model):
             'unique': _("A user with that username already exists."),
         },
     )
-    reward_tier_id = models.IntegerField(blank=True, null=True)
+    badge_keyword = models.CharField(max_length=16, blank=True, null=True)
     token = models.CharField(max_length=256)
-    token_was_used = models.BooleanField(default=False)
 
     def send_invite_email(self):
         pass
 
-    def generate_user_token_with_expiry(self):
+    def generate_user_token(self):
         pass
 
     def check_token_is_valid(self):
@@ -43,35 +42,5 @@ class InviteUser(models.Model):
         """
         pass
 
-    def request_new_invite_link(self):
-        """
-        If a user forgets to use the invite for a long time, maybe we can
-        let them request a new email
-        """
-        self.reset_token()
-        self.send_invite_email()
-        pass
-
     def reset_token(self):
-        pass
-
-    def set_token_was_used(self):
-        """
-        (optional field) Once a token is used to create account, we should set a flag
-        to know how many people created accounts
-        """
-        pass
-
-    def is_token_expired(self):
-        pass
-
-    def generate_invitation_link(self):
-        pass
-
-    def get_user_profile_badge(self):
-        """
-        Checks reward tier id and returns appropriate UserProfileBadge model
-        during create account
-        :return: UserProfileBadge
-        """
         pass
