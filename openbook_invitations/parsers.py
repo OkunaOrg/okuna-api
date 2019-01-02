@@ -5,8 +5,7 @@ from django.db import IntegrityError
 from openbook_invitations.models import UserInvite
 
 
-def kickstarter_csv_parser(filepath):
-
+def parse_kickstarter_csv(filepath):
     try:
         with open(filepath, newline='') as csvfile:
             backer_data_reader = csv.reader(csvfile, delimiter=',')

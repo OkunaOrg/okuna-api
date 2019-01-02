@@ -1,7 +1,6 @@
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.db import transaction, IntegrityError
-from openbook_invitations.models import UserInvite
-from openbook_invitations.parsers import kickstarter_csv_parser
+from openbook_invitations.parsers import parse_kickstarter_csv
 
 
 class Command(BaseCommand):
@@ -16,7 +15,7 @@ class Command(BaseCommand):
             filepath = options['kickstarter']
             try:
                 with transaction.atomic():
-                    kickstarter_csv_parser(filepath)
+                    parse_kickstarter_csv(filepath)
             except IntegrityError as e:
                 print('IntegrityError %s ' % e)
             self.stdout.write(self.style.SUCCESS('Successfully imported data'))
