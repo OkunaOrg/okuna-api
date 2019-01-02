@@ -9,10 +9,9 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--kickstarter', type=str, help='Import from kickstarter csv')
-        parser.add_argument('--indiegogo', type=str, help='Import from indiegog typeform')
+        parser.add_argument('--indiegogo', type=str, help='Import from indiegogo typeform')
 
     def handle(self, *args, **options):
-
         if options['kickstarter']:
             filepath = options['kickstarter']
             try:
