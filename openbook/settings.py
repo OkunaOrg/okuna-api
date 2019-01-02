@@ -152,7 +152,7 @@ else:
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['openbook_auth/email_templates'],
+        'DIRS': ['openbook_auth/email_templates', 'openbook_invitations/email_templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -298,6 +298,7 @@ AWS_SES_REGION = os.environ.get('AWS_SES_REGION')
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 SERVICE_EMAIL_ADDRESS = os.environ.get('SERVICE_EMAIL_ADDRESS')
+EMAIL_HOST = os.environ.get('EMAIL_HOST')
 
 # AWS Storage config
 
