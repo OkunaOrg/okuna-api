@@ -1,16 +1,18 @@
+import uuid
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
 from django.db import models
 from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from openbook_auth.models import User
 
+
 # Create your models here.
 from openbook.settings import USERNAME_MAX_LENGTH
 
 
 class UserInvite(models.Model):
-    invited_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invited_users')
-    invited_date = models.DateField(_('invited date'), null=False, blank=False)
+    invited_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invited_users', null=True, blank=True)
+    invited_date = models.DateField(_('invited date'), null=False, blank=False, auto_now_add=True)
     name = models.CharField(max_length=256, null=True, blank=True)
     email = models.EmailField(_('email address'), unique=True)
     username_validator = UnicodeUsernameValidator() if six.PY3 else ASCIIUsernameValidator()
@@ -28,19 +30,17 @@ class UserInvite(models.Model):
         },
     )
     badge_keyword = models.CharField(max_length=16, blank=True, null=True)
-    token = models.CharField(max_length=256)
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+
+    def __str__(self):
+        return 'UserInvite: ' + self.username
 
     def send_invite_email(self):
         pass
 
-    def generate_user_token(self):
+    def generate_one_time_link(self):
         pass
 
-    def check_token_is_valid(self):
-        """
-        Check provided token and username combination must match
-        """
-        pass
+    def check_token_is_valid(self, token):
+        return self.token == token
 
-    def reset_token(self):
-        pass
