@@ -1,6 +1,9 @@
 import uuid
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
+from django.core.mail import EmailMessage
 from django.db import models
+from django.conf import settings
+from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from openbook_auth.models import User
@@ -31,15 +34,30 @@ class UserInvite(models.Model):
     )
     badge_keyword = models.CharField(max_length=16, blank=True, null=True)
     token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    invite_email_sent = models.BooleanField(default=False)
 
     def __str__(self):
         return 'UserInvite: ' + self.username
 
     def send_invite_email(self):
-        pass
+        if self.invited_by:
+            mail_subject = _('You\'ve been invited by {0} to join Openbook').format(self.invited_by.profile.name)
+            message = render_to_string('user_invite.html', {
+                'name': self.name,
+                'invited_by_name': self.invited_by.profile.name,
+                'invite_link': self.generate_one_time_link()
+            })
+        else:
+            mail_subject = _('You\'ve been invited to join Openbook')
+            message = render_to_string('backer_onboard.html', {
+                'name': self.name,
+                'invite_link': self.generate_one_time_link()
+            })
+        email = EmailMessage(mail_subject, message, to=[self.email], from_email=settings.SERVICE_EMAIL_ADDRESS)
+        email.send()
 
     def generate_one_time_link(self):
-        pass
+        return '{0}/api/invite?token={1}'.format(settings.EMAIL_HOST, self.token)
 
     def check_token_is_valid(self, token):
         return self.token == token
