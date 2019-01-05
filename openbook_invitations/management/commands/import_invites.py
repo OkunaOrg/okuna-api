@@ -18,4 +18,6 @@ class Command(BaseCommand):
                     parse_kickstarter_csv(filepath)
             except IntegrityError as e:
                 print('IntegrityError %s ' % e)
+                self.stderr.write('Aborting import of file..')
+                return
             self.stdout.write(self.style.SUCCESS('Successfully imported data'))

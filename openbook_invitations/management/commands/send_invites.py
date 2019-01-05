@@ -15,5 +15,5 @@ class Command(BaseCommand):
                 # user.invite_email_sent = True
                 # user.save()
             except SMTPException as e:
-                print('Exception occurred during send_invite_email', e)
+                self.stderr.write('Exception occurred during send_invite_email', e)
         self.stdout.write(self.style.SUCCESS('Successfully sent invitation emails'))
