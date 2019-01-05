@@ -1,0 +1,18 @@
+mimetypes:
+    mp4:
+        - "video/mp4"
+    png: 
+        - "image/png"
+    jpg: 
+        - 'image/jpg'
+        - 'image/jpeg'
+    gif: 
+        - "image/gif"
+    txt: 
+        - "text/plain"
+    json: 
+        - "text/plain"
+        - "application/json"
+    html:
+        - "text/plain"
+        - "text/html"
