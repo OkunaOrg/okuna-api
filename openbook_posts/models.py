@@ -34,14 +34,14 @@ class Post(models.Model):
         return Post.objects.filter(pk=post_id, public_reactions=True).count() == 1
 
     @classmethod
-    def create_post(cls, creator, circles_ids, image=None, text=None, video=None):
+    def create_post(cls, creator, circles_ids, image=None, text=None, video=None, created=None):
         if not text and not image and not video:
             raise ValidationError(_('A post requires text or an image/video.'))
 
         if image and video:
             raise ValidationError(_('A post must have an image or a video, not both.'))
 
-        post = Post.objects.create(creator=creator)
+        post = Post.objects.create(creator=creator, created=created)
 
         if text:
             post.text = text
@@ -137,8 +137,9 @@ class Post(models.Model):
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
-        if not self.id:
+        if not self.id and not self.created:
             self.created = timezone.now()
+
         return super(Post, self).save(*args, **kwargs)
 
 
