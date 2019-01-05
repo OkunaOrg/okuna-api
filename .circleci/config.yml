@@ -19,11 +19,6 @@ jobs:
 
     steps:
     - checkout
-
-    post:
-    - git submodule sync --recursive
-    - git submodule update --recursive --init
-
     # Download and cache dependencies
     - restore_cache:
         keys:
@@ -78,9 +73,6 @@ jobs:
     - image: circleci/python:3.7.0
     steps:
     - checkout
-    post:
-    - git submodule sync --recursive
-    - git submodule update --recursive --init
     - run:
         name: Install utils dependencies
         command: |
