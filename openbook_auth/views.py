@@ -3,6 +3,7 @@ from django.db import transaction
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.db.models import Q
 from django.template.loader import render_to_string
 from django.contrib.sites.shortcuts import get_current_site
 from rest_framework import status
@@ -16,6 +17,7 @@ from rest_framework.authtoken.models import Token
 
 from openbook_auth.exceptions import EmailVerificationTokenInvalid
 from openbook_common.responses import ApiMessageResponse
+from openbook_invitations.models import UserInvite
 from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheckSerializer, LoginSerializer, \
     GetAuthenticatedUserSerializer, GetUserUserSerializer, UpdateAuthenticatedUserSerializer, GetUserSerializer, \
     GetUsersSerializer, GetUsersUserSerializer, UpdateUserSettingsSerializer, EmailVerifySerializer
@@ -36,16 +38,28 @@ class Register(APIView):
 
     def on_valid_request_data(self, data):
         email = data.get('email')
-        username = data.get('username')
         password = data.get('password')
-        birth_date = data.get('birth_date')
+        legal_age_confirmation = data.get('legal_age_confirmation')
         name = data.get('name')
         avatar = data.get('avatar')
+        token = data.get('token')
         User = get_user_model()
+
+        user_invites = UserInvite.objects.filter(token=token, created_user=None)
+        if not user_invites.count():
+            return Response(_('Token is not valid'), status=status.HTTP_401_UNAUTHORIZED)
+        user_invite = user_invites.first()
+        username = user_invite.username
+
+        if not user_invite.username:
+            username = User.get_temporary_username(email)
 
         with transaction.atomic():
             new_user = User.objects.create_user(email=email, username=username, password=password)
-            UserProfile.objects.create(name=name, user=new_user, birth_date=birth_date, avatar=avatar)
+            UserProfile.objects.create(name=name, user=new_user, avatar=avatar,
+                                       legal_age_confirmation=legal_age_confirmation)
+            user_invite.created_user = new_user
+            user_invite.save()
 
         user_auth_token = new_user.auth_token
 
@@ -140,7 +154,6 @@ class AuthenticatedUser(APIView):
                 username=data.get('username'),
                 name=data.get('name'),
                 location=data.get('location'),
-                birth_date=data.get('birth_date'),
                 bio=data.get('bio'),
                 url=data.get('url'),
                 followers_count_visible=data.get('followers_count_visible'),

@@ -20,14 +20,21 @@ from openbook_lists.models import List
 class RegisterSerializer(serializers.Serializer):
     password = serializers.CharField(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH,
                                      validators=[validate_password])
-    birth_date = serializers.DateField(input_formats=["%d-%m-%Y"])
-    username = serializers.CharField(max_length=USERNAME_MAX_LENGTH,
-                                     validators=[username_characters_validator, username_not_taken_validator],
-                                     allow_blank=False)
+    legal_age_confirmation = serializers.BooleanField()
+    # username = serializers.CharField(max_length=USERNAME_MAX_LENGTH,
+    #                                  validators=[username_characters_validator, username_not_taken_validator],
+    #                                  allow_blank=False)
     name = serializers.CharField(max_length=PROFILE_NAME_MAX_LENGTH,
                                  allow_blank=False, validators=[name_characters_validator])
     avatar = serializers.ImageField(allow_empty_file=True, required=False)
     email = serializers.EmailField(validators=[email_not_taken_validator])
+    token = serializers.UUIDField()
+
+    def validate(self, data):
+        if 'legal_age_confirmation' not in data:
+            raise serializers.ValidationError(_('You must confirm you are over 16 years old to make an account'))
+
+        return data
 
 
 class UsernameCheckSerializer(serializers.Serializer):
@@ -64,7 +71,7 @@ class GetAuthenticatedUserProfileSerializer(serializers.ModelSerializer):
             'url',
             'location',
             'cover',
-            'birth_date',
+            'legal_age_confirmation',
             'followers_count_visible',
         )
 
@@ -98,7 +105,6 @@ class UpdateAuthenticatedUserSerializer(serializers.Serializer):
     cover = serializers.ImageField(allow_empty_file=False, required=False, allow_null=True)
     password = serializers.CharField(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH,
                                      validators=[validate_password], required=False, allow_blank=False)
-    birth_date = serializers.DateField(input_formats=["%d-%m-%Y"], required=False, allow_null=False)
     name = serializers.CharField(max_length=PROFILE_NAME_MAX_LENGTH,
                                  required=False,
                                  allow_blank=False, validators=[name_characters_validator])
