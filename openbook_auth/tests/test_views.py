@@ -20,6 +20,7 @@ from openbook_circles.models import Circle
 from rest_framework.test import force_authenticate
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_user_bio, \
     make_user_location, make_user_birth_date, make_user_avatar, make_user_cover
+from openbook_invitations.models import UserInvite
 
 fake = Faker()
 
@@ -40,13 +41,15 @@ class RegistrationAPITests(APITestCase):
         """
         url = self._get_url()
         invalid_usernames = ('lifenautjoe!', 'lifenautjo@', 'lifenautpoe🔒', 'lifenaut-joe', '字kasmndikasm')
+        token = self._get_user_invite_token()
         for username in invalid_usernames:
             data = {
                 'username': username,
                 'name': 'Miguel',
                 'email': 'user@mail.com',
                 'password': 'secretPassword123',
-                'birth_date': '27-1-1996'
+                'legal_age_confirmation': 'true',
+                'token': token
             }
             response = self.client.post(url, data, format='multipart')
             parsed_response = json.loads(response.content)
@@ -59,13 +62,15 @@ class RegistrationAPITests(APITestCase):
         """
         url = self._get_url()
         invalid_names = ('Joel<', '<>', '',)
+        token = self._get_user_invite_token()
         for name in invalid_names:
             data = {
                 'username': 'lifenautjoe',
                 'name': name,
                 'email': 'user@mail.com',
                 'password': 'secretPassword123',
-                'birth_date': '27-1-1996'
+                'legal_age_confirmation': 'true',
+                'token': token
             }
             response = self.client.post(url, data, format='multipart')
             parsed_response = json.loads(response.content)
@@ -77,7 +82,8 @@ class RegistrationAPITests(APITestCase):
         should return 400 if the username is not present
         """
         url = self._get_url()
-        data = {'name': 'Joel', 'email': 'user@mail.com', 'password': 'secretPassword123', 'birth_date': '27-1-1996'}
+        data = {'name': 'Joel', 'email': 'user@mail.com', 'password': 'secretPassword123', 
+                'legal_age_confirmation': 'true'}
         response = self.client.post(url, data, format='multipart')
         parsed_response = json.loads(response.content)
         self.assertIn('username', parsed_response)
@@ -89,7 +95,7 @@ class RegistrationAPITests(APITestCase):
         """
         url = self._get_url()
         data = {'username': 'lifenautjoe', 'email': 'user@mail.com', 'password': 'secretPassword123',
-                'birth_date': '27-1-1996'}
+                'legal_age_confirmation': 'true'}
         response = self.client.post(url, data, format='multipart')
         parsed_response = json.loads(response.content)
         self.assertIn('name', parsed_response)
@@ -101,22 +107,34 @@ class RegistrationAPITests(APITestCase):
         """
         url = self._get_url()
         data = {'username': 'lifenautjoe', 'name': 'Joel Hernandez', 'password': 'secretPassword123',
-                'birth_date': '27-1-1996'}
+                'legal_age_confirmation': 'true'}
         response = self.client.post(url, data, format='multipart')
         parsed_response = json.loads(response.content)
         self.assertIn('email', parsed_response)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_birth_date_required(self):
+    def test_legal_age_confirmation_required(self):
         """
-        should return 400 if the birth_date is not present
+        should return 400 if the legal_age_confirmation is not present
         """
         url = self._get_url()
         data = {'username': 'lifenautjoe', 'name': 'Joel Hernandez', 'email': 'user@mail.com',
                 'password': 'secretPassword123'}
         response = self.client.post(url, data, format='multipart')
         parsed_response = json.loads(response.content)
-        self.assertIn('birth_date', parsed_response)
+        self.assertIn('legal_age_confirmation', parsed_response)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_legal_age_confirmation_true_required(self):
+        """
+        should return 400 if the legal_age_confirmation is false
+        """
+        url = self._get_url()
+        data = {'username': 'lifenautjoe', 'name': 'Joel Hernandez', 'email': 'user@mail.com',
+                'password': 'secretPassword123', 'legal_age_confirmation': 'false'}
+        response = self.client.post(url, data, format='multipart')
+        parsed_response = json.loads(response.content)
+        self.assertIn('legal_age_confirmation', parsed_response)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_username_taken(self):
@@ -126,10 +144,10 @@ class RegistrationAPITests(APITestCase):
         url = self._get_url()
         username = 'lifenautjoe'
         first_request_data = {'username': username, 'name': 'Joel Hernandez', 'email': 'user@mail.com',
-                              'password': 'secretPassword123', 'birth_date': '27-1-1996'}
+                              'password': 'secretPassword123', 'legal_age_confirmation': 'true'}
         self.client.post(url, first_request_data, format='multipart')
         second_request_data = {'username': username, 'name': 'Juan Taramera', 'email': 'juan@mail.com',
-                               'password': 'woahpassword123', 'birth_date': '27-1-1996'}
+                               'password': 'woahpassword123', 'legal_age_confirmation': 'true'}
         response = self.client.post(url, second_request_data, format='multipart')
 
         parsed_response = json.loads(response.content)
@@ -144,10 +162,10 @@ class RegistrationAPITests(APITestCase):
         url = self._get_url()
         email = 'joel@open-book.org'
         first_request_data = {'username': 'lifenautjoe1', 'name': 'Joel Hernandez', 'email': email,
-                              'password': 'secretPassword123', 'birth_date': '27-1-1996'}
+                              'password': 'secretPassword123', 'legal_age_confirmation': 'true'}
         self.client.post(url, first_request_data, format='multipart')
         second_request_data = {'username': 'lifenautjoe2', 'name': 'Juan Taramera', 'email': email,
-                               'password': 'woahpassword123', 'birth_date': '27-1-1996'}
+                               'password': 'woahpassword123', 'legal_age_confirmation': 'true'}
         response = self.client.post(url, second_request_data, format='multipart')
         parsed_response = json.loads(response.content)
 
@@ -161,7 +179,7 @@ class RegistrationAPITests(APITestCase):
         url = self._get_url()
         username = 'potato123'
         first_request_data = {'username': username, 'name': 'Joel Hernandez', 'email': 'test@email.com',
-                              'password': 'secretPassword123', 'birth_date': '27-1-1996'}
+                              'password': 'secretPassword123', 'legal_age_confirmation': 'true'}
         response = self.client.post(url, first_request_data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(User.objects.count(), 1)
@@ -174,7 +192,7 @@ class RegistrationAPITests(APITestCase):
         url = self._get_url()
         username = 'vegueta968'
         request_data = {'username': username, 'name': 'Joel Hernandez', 'email': 'test@email.com',
-                        'password': 'secretPassword123', 'birth_date': '27-1-1996'}
+                        'password': 'secretPassword123', 'legal_age_confirmation': 'true'}
         response = self.client.post(url, request_data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(UserProfile.objects.count(), 1)
@@ -188,7 +206,7 @@ class RegistrationAPITests(APITestCase):
         url = self._get_url()
         username = fake.user_name()
         request_data = {'username': username, 'name': 'Joel Hernandez', 'email': 'test@email.com',
-                        'password': 'secretPassword123', 'birth_date': '27-1-1996'}
+                        'password': 'secretPassword123', 'legal_age_confirmation': 'true'}
         response = self.client.post(url, request_data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Circle.objects.count(), 1)
@@ -211,7 +229,7 @@ class RegistrationAPITests(APITestCase):
         tmp_file.seek(0)
         username = 'testusername'
         request_data = {'username': username, 'name': 'Joel Hernandez', 'email': 'test@email.com',
-                        'password': 'secretPassword123', 'birth_date': '27-1-1996', 'avatar': tmp_file}
+                        'password': 'secretPassword123', 'legal_age_confirmation': 'true', 'avatar': tmp_file}
         url = self._get_url()
         response = self.client.post(url, request_data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -225,15 +243,15 @@ class RegistrationAPITests(APITestCase):
         users_data = (
             {
                 'username': 'a_valid_username', 'name': 'Joel Hernandez', 'email': 'hi@ohmy.com',
-                'password': 'askdnaoisd!', 'birth_date': '27-1-1991'
+                'password': 'askdnaoisd!', 'legal_age_confirmation': 'true'
             },
             {
                 'username': 'terry_crews', 'name': 'Terry Crews', 'email': 'terry@oldsp.ie',
-                'password': 'secretPassword123', 'birth_date': '27-1-1996'
+                'password': 'secretPassword123', 'legal_age_confirmation': 'true'
             },
             {
                 'username': 'mike_chowder___', 'name': 'Mike Johnson', 'email': 'mike@chowchow.com',
-                'password': 'OhGoDwEnEEdFixTurES!', 'birth_date': '27-01-1991'
+                'password': 'OhGoDwEnEEdFixTurES!', 'legal_age_confirmation': 'true'
             }
         )
         url = self._get_url()
@@ -248,6 +266,10 @@ class RegistrationAPITests(APITestCase):
 
     def _get_url(self):
         return reverse('register-user')
+
+    def _get_user_invite_token(self):
+        user_invite = UserInvite.objects.create(email='shantanu@shantanu.com')
+        return user_invite.token
 
 
 class UsernameCheckAPITests(APITestCase):
@@ -616,30 +638,6 @@ class AuthenticatedUserAPITests(APITestCase):
         user.refresh_from_db()
 
         self.assertEqual(user.profile.followers_count_visible, new_followers_count_visible)
-
-    def test_can_update_user_birth_date(self):
-        """
-        should be able to update the authenticated user birth date and return 200
-        """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
-
-        new_birth_date = make_user_birth_date()
-        stringified_birth_date = new_birth_date.strftime('%d-%m-%Y')
-
-        data = {
-            'birth_date': stringified_birth_date
-        }
-
-        url = self._get_url()
-
-        response = self.client.patch(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        user.refresh_from_db()
-
-        self.assertEqual(user.profile.birth_date, new_birth_date)
 
     def test_can_update_user_avatar(self):
         """
