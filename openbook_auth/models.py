@@ -617,6 +617,7 @@ class User(AbstractUser):
         return self.create_post(text=text, image=image, circles_ids=circles_ids)
 
     def create_post(self, text=None, image=None, video=None, circles_ids=None, circles=None, circle=None, circle_id=None, created=None):
+
         if circles:
             circles_ids = [circle.pk for circle in circles]
         elif not circles_ids:
@@ -708,8 +709,10 @@ class User(AbstractUser):
         :return:
         """
         # Add all own posts
-
-        timeline_posts_query = Q(creator_id=self.pk)
+        if circles_ids or lists_ids:
+            timeline_posts_query = Q()
+        else:
+            timeline_posts_query = Q(creator_id=self.pk)
 
         follows_related_query = self.follows.select_related('followed_user')
 
