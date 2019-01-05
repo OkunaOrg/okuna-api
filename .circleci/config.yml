@@ -27,6 +27,12 @@ jobs:
         # fallback to using the latest cache if no exact match is found
         - $CACHE_VERSION-dependencies-
 
+    - run: 
+        name: Synchronize submodules
+        command: |
+          git submodule sync --recursive
+          git submodule update --recursive --init
+
     - run:
         name: install dependencies
         command: |
