@@ -33,9 +33,7 @@ jobs:
     - run: 
         name: Synchronize submodules
         command: |
-          git submodule sync --recursive
-          git submodule update --recursive --init
-
+            git submodule update --init --recursive
     - run:
         name: install dependencies
         command: |
@@ -83,11 +81,13 @@ jobs:
     - image: circleci/python:3.7.0
     steps:
     - checkout
+    - add_ssh_keys:
+        fingerprints:
+          - "f1:eb:7d:b8:02:96:ed:48:27:e2:64:fb:0c:00:aa:69"
     - run: 
         name: Synchronize submodules
         command: |
-          git submodule sync --recursive
-          git submodule update --recursive --init
+            git submodule update --init --recursive
     - run:
         name: Install utils dependencies
         command: |
