@@ -6,16 +6,15 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.translation import ugettext_lazy as _
-from openbook_auth.models import User
-
 
 # Create your models here.
 from openbook.settings import USERNAME_MAX_LENGTH
 
 
 class UserInvite(models.Model):
-    invited_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invited_users', null=True, blank=True)
+    invited_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='invited_users', null=True, blank=True)
     invited_date = models.DateField(_('invited date'), null=False, blank=False, auto_now_add=True)
+    created_user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=256, null=True, blank=True)
     email = models.EmailField(_('email address'), unique=True)
     username_validator = UnicodeUsernameValidator() if six.PY3 else ASCIIUsernameValidator()
@@ -57,7 +56,7 @@ class UserInvite(models.Model):
         email.send()
 
     def generate_one_time_link(self):
-        return '{0}/api/invite?token={1}'.format(settings.EMAIL_HOST, self.token)
+        return '{0}/api/auth/invite?token={1}'.format(settings.EMAIL_HOST, self.token)
 
     def check_token_is_valid(self, token):
         return self.token == token
