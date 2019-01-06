@@ -66,10 +66,6 @@ def make_user_location():
     return fake.text(max_nb_chars=settings.PROFILE_LOCATION_MAX_LENGTH)
 
 
-def make_user_birth_date():
-    return fake.date_of_birth(minimum_age=16)
-
-
 def make_user_avatar():
     image = Image.new('RGB', (100, 100))
     tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')

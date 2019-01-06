@@ -48,6 +48,7 @@ class Register(APIView):
         user_invites = UserInvite.objects.filter(token=token, created_user=None)
         if not user_invites.count():
             return Response(_('Token is not valid'), status=status.HTTP_401_UNAUTHORIZED)
+
         user_invite = user_invites.first()
         username = user_invite.username
 
@@ -64,7 +65,8 @@ class Register(APIView):
         user_auth_token = new_user.auth_token
 
         return Response({
-            'token': user_auth_token.key
+            'token': user_auth_token.key,
+            'username': new_user.username
         }, status=status.HTTP_201_CREATED)
 
 

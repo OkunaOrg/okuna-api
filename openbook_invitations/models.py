@@ -16,7 +16,9 @@ class UserInvite(models.Model):
     invited_date = models.DateField(_('invited date'), null=False, blank=False, auto_now_add=True)
     created_user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=256, null=True, blank=True)
-    email = models.EmailField(_('email address'), unique=True)
+    email = models.EmailField(_('email address'), unique=True, error_messages={
+        'unique': _("The specified email has already been invited."),
+    })
     username_validator = UnicodeUsernameValidator() if six.PY3 else ASCIIUsernameValidator()
     username = models.CharField(
         _('username'),
