@@ -1,4 +1,4 @@
-import random
+import secrets
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
 from django.db import models
@@ -94,7 +94,7 @@ class User(AbstractUser):
         username = email.split('@')[0]
         temp_username = username
         while cls.is_username_taken(temp_username):
-            temp_username = username + str(random.randint(1000, 9999))
+            temp_username = username + str(secrets.randbelow(9999))
 
         return temp_username
 
