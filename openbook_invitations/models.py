@@ -16,9 +16,7 @@ class UserInvite(models.Model):
     invited_date = models.DateField(_('invited date'), null=False, blank=False, auto_now_add=True)
     created_user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=256, null=True, blank=True)
-    email = models.EmailField(_('email address'), unique=True, error_messages={
-        'unique': _("The specified email has already been invited."),
-    })
+    email = models.EmailField(_('email address'),  null=True, blank=True)
     username_validator = UnicodeUsernameValidator() if six.PY3 else ASCIIUsernameValidator()
     username = models.CharField(
         _('username'),
@@ -36,6 +34,9 @@ class UserInvite(models.Model):
     badge_keyword = models.CharField(max_length=16, blank=True, null=True)
     token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     invite_email_sent = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('invited_by', 'email',)
 
     def __str__(self):
         return 'UserInvite: ' + self.username
