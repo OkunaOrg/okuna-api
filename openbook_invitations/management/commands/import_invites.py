@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
-from django.db import transaction, IntegrityError
-from openbook_invitations.parsers import parse_kickstarter_csv
+from django.db import transaction, IntegrityError, DatabaseError
+from openbook_invitations.parsers import parse_kickstarter_csv, parse_indiegogo_csv
 
 
 class Command(BaseCommand):
@@ -18,6 +18,25 @@ class Command(BaseCommand):
                     parse_kickstarter_csv(filepath)
             except IntegrityError as e:
                 print('IntegrityError %s ' % e)
+                self.stderr.write('Aborting import of file..')
+                return
+            except DatabaseError as e:
+                print('DatabaseError %s ' % e)
+                self.stderr.write('Aborting import of file..')
+                return
+            self.stdout.write(self.style.SUCCESS('Successfully imported data'))
+
+        if options['indiegogo']:
+            filepath = options['indiegogo']
+            try:
+                with transaction.atomic():
+                    parse_indiegogo_csv(filepath)
+            except IntegrityError as e:
+                print('IntegrityError %s ' % e)
+                self.stderr.write('Aborting import of file..')
+                return
+            except DatabaseError as e:
+                print('DatabaseError %s ' % e)
                 self.stderr.write('Aborting import of file..')
                 return
             self.stdout.write(self.style.SUCCESS('Successfully imported data'))
