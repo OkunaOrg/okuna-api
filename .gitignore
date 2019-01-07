@@ -6,3 +6,4 @@
 reports
 .coverage
 coverage.xml
+src/

@@ -30,3 +30,8 @@ django-amazon-ses = "*"
 django-media-fixtures = "==0.0.3"
 django-modeltranslation = {editable = true, git = "https://github.com/lifenautjoe/django-modeltranslation.git"}
 bandit = "*"
+pyyaml = "*"
+python-magic = "*"
+
+[pipenv]
+allow_prereleases = true

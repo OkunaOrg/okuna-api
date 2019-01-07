@@ -19,7 +19,6 @@ jobs:
 
     steps:
     - checkout
-
     # Download and cache dependencies
     - restore_cache:
         keys:
