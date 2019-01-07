@@ -13,30 +13,36 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if options['kickstarter']:
             filepath = options['kickstarter']
-            try:
-                with transaction.atomic():
-                    parse_kickstarter_csv(filepath)
-            except IntegrityError as e:
-                print('IntegrityError %s ' % e)
-                self.stderr.write('Aborting import of file..')
-                return
-            except DatabaseError as e:
-                print('DatabaseError %s ' % e)
-                self.stderr.write('Aborting import of file..')
-                return
-            self.stdout.write(self.style.SUCCESS('Successfully imported data'))
+            self.handle_kickstarter(filepath)
 
         if options['indiegogo']:
             filepath = options['indiegogo']
-            try:
-                with transaction.atomic():
-                    parse_indiegogo_csv(filepath)
-            except IntegrityError as e:
-                print('IntegrityError %s ' % e)
-                self.stderr.write('Aborting import of file..')
-                return
-            except DatabaseError as e:
-                print('DatabaseError %s ' % e)
-                self.stderr.write('Aborting import of file..')
-                return
-            self.stdout.write(self.style.SUCCESS('Successfully imported data'))
+            self.handle_indiegogo(filepath)
+
+    def handle_kickstarter(self, filepath):
+        try:
+            with transaction.atomic():
+                parse_kickstarter_csv(filepath)
+        except IntegrityError as e:
+            print('IntegrityError %s ' % e)
+            self.stderr.write('Aborting import of file..')
+            return
+        except DatabaseError as e:
+            print('DatabaseError %s ' % e)
+            self.stderr.write('Aborting import of file..')
+            return
+        self.stdout.write(self.style.SUCCESS('Successfully imported data'))
+
+    def handle_indiegogo(self, filepath):
+        try:
+            with transaction.atomic():
+                parse_indiegogo_csv(filepath)
+        except IntegrityError as e:
+            print('IntegrityError %s ' % e)
+            self.stderr.write('Aborting import of file..')
+            return
+        except DatabaseError as e:
+            print('DatabaseError %s ' % e)
+            self.stderr.write('Aborting import of file..')
+            return
+        self.stdout.write(self.style.SUCCESS('Successfully imported data'))
