@@ -338,7 +338,7 @@
                 "sha256:aa7dd4a6a427aed7df6fb7f08a580d68d9b118d90310374716ae90b710280af1",
                 "sha256:3ef3092145e9b70e3ddd2c7ad59bdd0252a94dfe3949721633e41344de00a6bf"
             ],
-            "version": "==3.13"
+            "version": "==4.2b4"
         },
         "s3transfer": {
             "hashes": [
