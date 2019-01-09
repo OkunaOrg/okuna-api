@@ -32,6 +32,9 @@ django-modeltranslation = {editable = true, git = "https://github.com/lifenautjo
 bandit = "*"
 pyyaml = "*"
 python-magic = "*"
+pyjwt = "*"
+
 
 [pipenv]
+
 allow_prereleases = true

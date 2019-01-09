@@ -135,6 +135,8 @@ AUTH_USER_MODEL = 'openbook_auth.User'
 
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
+JWT_ALGORITHM = os.environ.get('JWT_ALGORITHM', 'HS256')
+
 if IS_BUILD:
     NOSE_ARGS = [
         '--cover-erase',
