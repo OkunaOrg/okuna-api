@@ -1,4 +1,6 @@
 import secrets
+
+from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
 from django.db import models
@@ -17,7 +19,7 @@ from openbook_auth.exceptions import EmailVerificationTokenInvalid
 from openbook_common.models import Badge
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, get_emoji_model, \
-    get_emoji_group_model
+    get_emoji_group_model, get_user_invite_model
 from openbook_common.validators import name_characters_validator
 from openbook_invitations.models import UserInvite
 
@@ -55,10 +57,18 @@ class User(AbstractUser):
         verbose_name_plural = _('users')
 
     @classmethod
+    def create_user(cls, username, email=None, password=None, name=None, avatar=None, is_of_legal_age=None, **extra_fields):
+        new_user = cls.objects.create_user(username, email=email, password=password, **extra_fields)
+        UserProfile.objects.create(name=name, user=new_user, avatar=avatar,
+                                   is_of_legal_age=is_of_legal_age)
+        return new_user
+
+    @classmethod
     def is_username_taken(cls, username):
+        UserInvite = get_user_invite_model()
         user_invites = UserInvite.objects.filter(username=username)
         users = cls.objects.filter(username=username)
-        if not user_invites.count() and not users.count():
+        if not user_invites.exists() and not users.exists():
             return False
         return True
 
@@ -1251,7 +1261,7 @@ class UserProfile(models.Model):
                             validators=[name_characters_validator])
     location = models.CharField(_('location'), max_length=settings.PROFILE_LOCATION_MAX_LENGTH, blank=False, null=True)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
-    legal_age_confirmation = models.BooleanField(default=False)
+    is_of_legal_age = models.BooleanField(default=False)
     avatar = models.ImageField(_('avatar'), blank=False, null=True)
     cover = models.ImageField(_('cover'), blank=False, null=True)
     bio = models.CharField(_('bio'), max_length=settings.PROFILE_BIO_MAX_LENGTH, blank=False, null=True)

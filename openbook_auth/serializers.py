@@ -5,7 +5,8 @@ from django.utils.translation import gettext as _
 from openbook.settings import USERNAME_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, PROFILE_NAME_MAX_LENGTH
 from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import username_characters_validator, \
-    username_not_taken_validator, email_not_taken_validator, user_username_exists
+    username_not_taken_validator, email_not_taken_validator, user_username_exists, jwt_token_validator, \
+    is_of_legal_age_validator
 from django.contrib.auth.password_validation import validate_password
 
 from openbook_circles.models import Circle
@@ -13,19 +14,19 @@ from openbook_common.models import Emoji
 from openbook_common.serializers_fields.user import IsFollowingField, IsConnectedField, FollowersCountField, \
     FollowingCountField, PostsCountField, ConnectedCirclesField, FollowListsField, IsFullyConnectedField, \
     IsPendingConnectionConfirmation
-from openbook_common.validators import name_characters_validator, legal_age_confirmation_validator
+from openbook_common.validators import name_characters_validator
 from openbook_lists.models import List
 
 
 class RegisterSerializer(serializers.Serializer):
     password = serializers.CharField(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH,
                                      validators=[validate_password])
-    legal_age_confirmation = serializers.BooleanField(validators=[legal_age_confirmation_validator])
+    is_of_legal_age = serializers.BooleanField(validators=[is_of_legal_age_validator])
     name = serializers.CharField(max_length=PROFILE_NAME_MAX_LENGTH,
                                  allow_blank=False, validators=[name_characters_validator])
     avatar = serializers.ImageField(allow_empty_file=True, required=False)
     email = serializers.EmailField(validators=[email_not_taken_validator])
-    token = serializers.UUIDField()
+    token = serializers.CharField(validators=[jwt_token_validator])
 
 
 class UsernameCheckSerializer(serializers.Serializer):
@@ -62,7 +63,7 @@ class GetAuthenticatedUserProfileSerializer(serializers.ModelSerializer):
             'url',
             'location',
             'cover',
-            'legal_age_confirmation',
+            'is_of_legal_age',
             'followers_count_visible',
         )
 

@@ -6,6 +6,7 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.db.models import Q
 from django.template.loader import render_to_string
 from django.contrib.sites.shortcuts import get_current_site
+from jwt import InvalidSignatureError
 from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed, ValidationError, APIException
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -17,6 +18,7 @@ from rest_framework.authtoken.models import Token
 
 from openbook_auth.exceptions import EmailVerificationTokenInvalid
 from openbook_common.responses import ApiMessageResponse
+from openbook_common.utils.model_loaders import get_user_invite_model
 from openbook_invitations.models import UserInvite
 from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheckSerializer, LoginSerializer, \
     GetAuthenticatedUserSerializer, GetUserUserSerializer, UpdateAuthenticatedUserSerializer, GetUserSerializer, \
@@ -39,26 +41,27 @@ class Register(APIView):
     def on_valid_request_data(self, data):
         email = data.get('email')
         password = data.get('password')
-        legal_age_confirmation = data.get('legal_age_confirmation')
+        is_of_legal_age = data.get('is_of_legal_age')
         name = data.get('name')
         avatar = data.get('avatar')
         token = data.get('token')
         User = get_user_model()
-
-        user_invites = UserInvite.objects.filter(token=token, created_user=None)
-        if not user_invites.count():
+        UserInvite = get_user_invite_model()
+        try:
+            user_invite = UserInvite.get_invite_if_valid(token=token)
+        except InvalidSignatureError:
             return Response(_('Token is not valid'), status=status.HTTP_401_UNAUTHORIZED)
+        except UserInvite.DoesNotExist:
+            return Response(_('No invite found with this token'), status=status.HTTP_404_NOT_FOUND)
 
-        user_invite = user_invites.first()
         username = user_invite.username
 
         if not user_invite.username:
             username = User.get_temporary_username(email)
 
         with transaction.atomic():
-            new_user = User.objects.create_user(email=email, username=username, password=password)
-            UserProfile.objects.create(name=name, user=new_user, avatar=avatar,
-                                       legal_age_confirmation=legal_age_confirmation)
+            new_user = User.create_user(username=username, email=email, password=password, name=name, avatar=avatar,
+                                        is_of_legal_age=is_of_legal_age)
             user_invite.created_user = new_user
             user_invite.save()
 
