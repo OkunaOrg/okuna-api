@@ -5,10 +5,13 @@ from django.db import models
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils import six
+from jwt import InvalidSignatureError
+from rest_framework.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
-
+import jwt
 # Create your models here.
 from openbook.settings import USERNAME_MAX_LENGTH
+from openbook_common.utils.model_loaders import get_user_invite_model
 
 
 class UserInvite(models.Model):
@@ -32,14 +35,31 @@ class UserInvite(models.Model):
         },
     )
     badge_keyword = models.CharField(max_length=16, blank=True, null=True)
-    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
-    invite_email_sent = models.BooleanField(default=False)
+    token = models.CharField(max_length=255, unique=True)
+    is_invite_email_sent = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('invited_by', 'email',)
 
     def __str__(self):
         return 'UserInvite: ' + self.username
+
+    @classmethod
+    def create_invite(cls, **kwargs):
+        UserInvite = get_user_invite_model()
+        invite = UserInvite.objects.create(**kwargs)
+        token = invite.generate_jwt_token(invite.pk)
+        invite.token = token
+        invite.save()
+        return invite
+
+    @classmethod
+    def get_invite_if_valid(cls, token):
+        UserInvite = get_user_invite_model()
+        data = UserInvite.verify_jwt_token(cls, encoded_token=token)
+        user_invite = UserInvite.objects.get(pk=data['id'], token=token, created_user=None)
+
+        return user_invite
 
     def send_invite_email(self):
         if self.invited_by:
@@ -58,9 +78,15 @@ class UserInvite(models.Model):
         email = EmailMessage(mail_subject, message, to=[self.email], from_email=settings.SERVICE_EMAIL_ADDRESS)
         email.send()
 
+    def generate_jwt_token(self, user_id):
+        token_bytes = jwt.encode({'id': user_id}, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+        return token_bytes.decode('UTF-8')
+
+    def verify_jwt_token(self, encoded_token):
+        return jwt.decode(encoded_token, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
     def generate_one_time_link(self):
         return '{0}/api/auth/invite?token={1}'.format(settings.EMAIL_HOST, self.token)
 
-    def check_token_is_valid(self, token):
-        return self.token == token
+
 

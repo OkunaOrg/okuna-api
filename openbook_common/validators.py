@@ -34,10 +34,3 @@ def name_characters_validator(name):
         raise ValidationError(
             _('Names cant contain < or >.'),
         )
-
-
-def legal_age_confirmation_validator(is_confirmed):
-    if is_confirmed is False:
-        raise ValidationError(
-            _('You must confirm you are over 16 years old to make an account'),
-        )

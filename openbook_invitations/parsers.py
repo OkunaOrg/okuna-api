@@ -2,6 +2,8 @@ import csv
 import getopt
 import sys
 from django.db import DatabaseError
+
+from openbook_common.utils.model_loaders import get_user_invite_model
 from openbook_invitations.models import UserInvite
 
 
@@ -15,7 +17,9 @@ def parse_kickstarter_csv(filepath):
                 email = row[3]
                 username = row[17]
                 badge_keyword = row[29]
-                invited_user = UserInvite(name=name, email=email, username=username, badge_keyword=badge_keyword)
+                UserInvite = get_user_invite_model()
+
+                invited_user = UserInvite.create_invite(name=name, email=email, username=username, badge_keyword=badge_keyword)
                 invited_user.save()
     except IOError as e:
         print('Unable to read file')
@@ -32,9 +36,11 @@ def parse_indiegogo_csv(filepath):
                 email = row[8]
                 username = row[41]
                 badge_keyword = row[36]
+                UserInvite = get_user_invite_model()
+
                 if username == '0':
                     username = None
-                invited_user = UserInvite(name=name, email=email, username=username, badge_keyword=badge_keyword)
+                invited_user = UserInvite.create_invite(name=name, email=email, username=username, badge_keyword=badge_keyword)
                 invited_user.save()
     except IOError as e:
         print('Unable to read file')
