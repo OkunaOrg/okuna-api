@@ -1,8 +1,8 @@
+import logging
 from datetime import datetime
 from json import JSONDecodeError
 
 from rest_framework import status
-from openbook_auth.models import User
 from openbook_posts.models import Post
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -11,8 +11,11 @@ from django.utils.dateparse import parse_datetime
 from rest_framework.permissions import IsAuthenticated
 from django.utils.translation import ugettext_lazy as _
 
+from openbook_importer.models import Import, ImportedPost
 from openbook_importer.serializers import ZipfileSerializer
 from openbook_importer.facebook_archive_parser.zipparser import zip_parser
+
+log = logging.getLogger('security')
 
 
 class ImportItem(APIView):
@@ -35,32 +38,48 @@ class ImportItem(APIView):
             return self._return_invalid()
 
         except TypeError:
-            return self._return_malicious()
+            return self._return_malicious(request.user.pk)
 
         if p.profile.posts:
-            self.save_posts(p.profile.posts, request.user)
+            data_import = Import.create_import()
+            new_posts = self._create_posts(p.profile.posts, request.user)
+
+        if new_posts:
+            self.save_posts(new_posts, request.user, data_import)
 
         return Response({
             'message': _('done')
         }, status=status.HTTP_200_OK)
 
-    def save_posts(self, posts, user):
+    def save_posts(self, new_posts, user, data_import):
 
-        for post in posts:
+        for new_post in new_posts:
+            text, image, created = new_post
+
+            post = user.create_post(text=text, image=image,
+                                    created=created)
+            ImportedPost.create_imported_post(post, data_import)
+
+    def _create_posts(self, posts_data, user):
+
+        new_posts = []
+
+        for post_data in posts_data:
             image = None
             images = None
             text = None
-            timestamp = post['timestamp']
+            timestamp = post_data['timestamp']
             created = datetime.fromtimestamp(timestamp)
             created = parse_datetime(created.strftime('%Y-%m-%d %T+00:00'))
 
-            if 'attachments' in post.keys():
-                images = self._get_media_content(post)
+            if 'attachments' in post_data.keys():
+                images = self._get_media_content(post_data)
 
-            if 'data' in post.keys() and len(post['data']) != 0:
-                text = post['data'][0]['post']
+            if 'data' in post_data.keys() and len(post_data['data']) != 0:
+                text = post_data['data'][0]['post']
 
             if images:
+                # Currently we only support having one post per image
                 image = images[0]
 
                 if 'text' in image.keys():
@@ -68,8 +87,15 @@ class ImportItem(APIView):
 
                 image = ImageFile(image['file'])
 
-            if not Post.objects.filter(creator=user.pk, text=text, created=created).exists():
-                user.create_post(text=text, image=image, created=created)
+            if not self._post_exists(user.pk, text=text,
+                                     created=created):
+                new_posts.append((text, image, created))
+
+        return new_posts
+
+    def _post_exists(self, creator, text, created):
+        return Post.objects.filter(creator=creator, text=text,
+                                   created=created).exists()
 
     def _get_media_content(self, post):
 
@@ -91,13 +117,12 @@ class ImportItem(APIView):
     def _return_invalid(self):
 
         return Response({
-            'message':_('invalid archive')
+            'message': _('invalid archive')
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    def _return_malicious(self):
-        # TODO LOG MALICIOUS ATTEMPT
-        print('---- POTENTIALLY MALICIOUS UPLOAD!!!')
+    def _return_malicious(self, pk):
+        log.info(f"Potentially malicious import prevented {pk}")
 
         return Response({
-            'message':_('invalid archive')
+            'message':  _('invalid archive')
         }, status=status.HTTP_400_BAD_REQUEST)
