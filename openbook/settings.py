@@ -30,12 +30,20 @@ logging.config.dictConfig({
         'console': {
             # exact format is not important, this is the minimum information
             'format': '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-        }
+        },
+        'security': {
+            'format': '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+        },
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'console',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': '/var/log/django_security.log',
+            'formatter': 'security',
         }
     },
     'loggers': {
@@ -43,6 +51,10 @@ logging.config.dictConfig({
         '': {
             'level': 'INFO',
             'handlers': ['console'],
+        },
+        'security': {
+            'level': 'INFO',
+            'handlers': ['file'],
         },
     },
 })
