@@ -56,6 +56,7 @@ class PostCreatorProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'avatar',
+            'cover'
         )
 
 
