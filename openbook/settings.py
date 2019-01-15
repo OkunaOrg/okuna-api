@@ -181,11 +181,11 @@ else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'NAME': os.environ.get('MYSQL_DATABASE'),
-            'USER': os.environ.get('MYSQL_USER'),
-            'PASSWORD': os.environ.get('MYSQL_PASSWORD'),
-            'HOST': os.environ.get('MYSQL_HOST'),  # Or an IP Address that your DB is hosted on
-            'PORT': os.environ.get('MYSQL_PORT'),
+            'NAME': os.environ.get('RDS_DB_NAME'),
+            'USER': os.environ.get('RDS_USERNAME'),
+            'PASSWORD': os.environ.get('RDS_PASSWORD'),
+            'HOST': os.environ.get('RDS_HOSTNAME'),  # Or an IP Address that your DB is hosted on
+            'PORT': os.environ.get('RDS_PORT'),
             'OPTIONS': {
                 'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
                 'charset': 'utf8mb4'
@@ -210,9 +210,6 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-# Days after which password reset token expires
-
-PASSWORD_RESET_TIMEOUT_DAYS = 1
 
 # REST Framework config
 
@@ -290,6 +287,7 @@ PROFILE_NAME_MAX_LENGTH = 192
 PROFILE_LOCATION_MAX_LENGTH = 64
 PROFILE_BIO_MAX_LENGTH = 150
 WORLD_CIRCLE_ID = 1
+PASSWORD_RESET_TIMEOUT_DAYS = 1
 
 # Email Config
 
