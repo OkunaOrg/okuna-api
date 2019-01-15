@@ -20,8 +20,6 @@ class Command(BaseCommand):
             if user.email is not None:
                 try:
                     user.send_invite_email()
-                    user.is_invite_email_sent = True
-                    user.save()
                 except SMTPException as e:
                     self.stderr.write('Exception occurred during send_invite_email', e)
         self.stdout.write(self.style.SUCCESS('Successfully sent invitation emails'))

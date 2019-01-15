@@ -77,6 +77,8 @@ class UserInvite(models.Model):
             })
         email = EmailMessage(mail_subject, message, to=[self.email], from_email=settings.SERVICE_EMAIL_ADDRESS)
         email.send()
+        self.is_invite_email_sent = True
+        self.save()
 
     def generate_jwt_token(self, user_id):
         token_bytes = jwt.encode({'id': user_id}, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
