@@ -324,7 +324,3 @@ if IS_PRODUCTION:
     DEFAULT_FILE_STORAGE = 'openbook.storage_backends.S3PublicMediaStorage'
 
     PRIVATE_FILE_STORAGE = 'openbook.storage_backends.S3PrivateMediaStorage'
-else:
-    STATICFILES_DIRS = [
-        os.path.join(BASE_DIR, 'openbook/static'),
-    ]
