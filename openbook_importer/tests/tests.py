@@ -3,6 +3,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from openbook_common.tests.helpers import make_user
+from openbook_importer.models import ImportedPost, Import, ImportedFriend
 from openbook_common.tests.helpers import make_authentication_headers_for_user
 
 
@@ -78,3 +79,102 @@ class UploadFileTests(APITestCase):
 
         response = self.client.get(reverse('posts'), **headers)
         self.assertEqual(len(response.json()), number_of_posts)
+
+    def test_postimport_entries(self):
+        """
+        Uploading archive test ImportedPost table should contain 9 entries
+        """
+
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        with open('openbook_importer/tests/facebook-jaybeenote5.zip',
+                  'rb') as fd:
+            for i in range(0, 2):
+                response = self.client.post(reverse('uploads'), {'file': fd},
+                                            **headers)
+                fd.seek(0)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        number_of_entries = 9
+
+        self.assertEqual(len(ImportedPost.objects.all()), number_of_entries)
+
+    def test_import_entries(self):
+        """
+        Uploading archive Import table should contain 1 zip entry
+        """
+
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        with open('openbook_importer/tests/facebook-jaybeenote5.zip',
+                  'rb') as fd:
+            for i in range(0, 2):
+                response = self.client.post(reverse('uploads'), {'file': fd},
+                                            **headers)
+                fd.seek(0)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        number_of_entries = 1
+
+        self.assertEqual(len(Import.objects.all()), number_of_entries)
+
+    def test_friendimport_entries(self):
+        """
+        Uploading archive Friend table should contain 2 zip entries
+        """
+
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        with open('openbook_importer/tests/facebook-jaybeenote5.zip',
+                  'rb') as fd:
+            for i in range(0, 2):
+                response = self.client.post(reverse('uploads'), {'file': fd},
+                                            **headers)
+                fd.seek(0)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        number_of_entries = 2
+
+        self.assertEqual(len(ImportedFriend.objects.all()), number_of_entries)
+
+    def test_findfriend_entries(self):
+        """
+        Uploading athe archive as a new user, would lead to a connection
+        between user1 and user2
+        """
+
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        with open('openbook_importer/tests/facebook-jaybeenote5.zip',
+                  'rb') as fd:
+            response = self.client.post(reverse('uploads'), {'file': fd},
+                                        **headers)
+            fd.seek(0)
+
+
+        user2 = make_user()
+        headers = make_authentication_headers_for_user(user2)
+
+        with open('openbook_importer/tests/facebook-jayjay6.zip',
+                  'rb') as fd:
+            response = self.client.post(reverse('uploads'), {'file': fd},
+                                        **headers)
+            fd.seek(0)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        number_of_entries = 2
+
+        friend_objects = ImportedFriend.objects.all()
+        self.assertEqual(len(friend_objects), number_of_entries)
+
+        for friend_object in friend_objects:
+            self.assertTrue(friend_object.user1_id == 1)
+            self.assertTrue(friend_object.user2_id == 2)
