@@ -1,6 +1,6 @@
 import uuid
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.db import models
 from django.conf import settings
 from django.template.loader import render_to_string
@@ -71,11 +71,16 @@ class UserInvite(models.Model):
             })
         else:
             mail_subject = _('You\'ve been invited to join Openbook')
-            message = render_to_string('backer_onboard.html', {
+            text_message_content = render_to_string('backer_onboard.txt', {
                 'name': self.name,
                 'invite_link': self.generate_one_time_link()
             })
-        email = EmailMessage(mail_subject, message, to=[self.email], from_email=settings.SERVICE_EMAIL_ADDRESS)
+            html_message_content = render_to_string('backer_onboard.html', {
+                'name': self.name,
+                'invite_link': self.generate_one_time_link()
+            })
+        email = EmailMultiAlternatives(mail_subject, text_message_content, to=[self.email], from_email=settings.SERVICE_EMAIL_ADDRESS)
+        email.attach_alternative(html_message_content, 'text/html')
         email.send()
         self.is_invite_email_sent = True
         self.save()
