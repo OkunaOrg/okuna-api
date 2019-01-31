@@ -101,31 +101,7 @@
     <tr>
         <td align="center" valign="top">
             <!-- Header -->
-            <table width="100%" border="0" cellspacing="0" cellpadding="0">
-                <tr>
-                    <td align="center" class="p30-15" style="padding: 30px;">
-                        <table width="650" border="0" cellspacing="0" cellpadding="0" class="mobile-shell">
-                            <tr>
-                                <td class="td" style="width:650px; min-width:650px; font-size:0pt; line-height:0pt; padding:0; margin:0; font-weight:normal;">
-                                    <!-- Header -->
-                                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
-                                        <tr>
-                                            <th class="column" width="145" style="font-size:0pt; line-height:0pt; padding:0; margin:0; font-weight:normal;">
-                                                <table width="100%" border="0" cellspacing="0" cellpadding="0">
-                                                    <tr>
-                                                        <td class="img m-center" style="font-size:0pt; line-height:0pt; text-align:left;"><img src="{% static 'openbook_common/new-ob-logo.png' %}" height="50" border="0" alt="" /></td>
-                                                    </tr>
-                                                </table>
-                                            </th>
-                                        </tr>
-                                    </table>
-                                    <!-- END Header -->
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
+            {% include 'openbook_common/email/header.html'%}
             <!-- END Header -->
 
             <!-- Intro -->
@@ -235,7 +211,7 @@
             <!-- END Stores -->
 
             <!-- Footer -->
-            {% include 'openbook_common/email_templates/footer.html' %}
+            {% include 'openbook_common/email/footer.html' %}
             <!-- END Footer -->
         </td>
     </tr>

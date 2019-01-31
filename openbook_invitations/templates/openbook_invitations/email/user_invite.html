@@ -101,31 +101,7 @@
     <tr>
         <td align="center" valign="top">
             <!-- Header -->
-            <table width="100%" border="0" cellspacing="0" cellpadding="0">
-                <tr>
-                    <td align="center" class="p30-15" style="padding: 30px;">
-                        <table width="650" border="0" cellspacing="0" cellpadding="0" class="mobile-shell">
-                            <tr>
-                                <td class="td" style="width:650px; min-width:650px; font-size:0pt; line-height:0pt; padding:0; margin:0; font-weight:normal;">
-                                    <!-- Header -->
-                                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
-                                        <tr>
-                                            <th class="column" width="145" style="font-size:0pt; line-height:0pt; padding:0; margin:0; font-weight:normal;">
-                                                <table width="100%" border="0" cellspacing="0" cellpadding="0">
-                                                    <tr>
-                                                        <td class="img m-center" style="font-size:0pt; line-height:0pt; text-align:left;"><img src="{% static 'openbook_common/new-ob-logo.png' %}" height="50" border="0" alt="" /></td>
-                                                    </tr>
-                                                </table>
-                                            </th>
-                                        </tr>
-                                    </table>
-                                    <!-- END Header -->
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
+            {% include 'openbook_common/email/header.html'%}
             <!-- END Header -->
 
             <!-- Intro -->
@@ -137,7 +113,7 @@
                                 <td class="td" style="width:650px; min-width:650px; font-size:0pt; line-height:0pt; padding:0; margin:0; font-weight:normal;">
                                     <table width="100%" border="0" cellspacing="0" cellpadding="0">
                                         <tr>
-                                            <td class="fluid-img" style="border-bottom: 7px solid #379eff; font-size:0pt; line-height:0pt; text-align:left;"><img src="{% static 'openbook_invitations/email-banner.png' %}" width="650" border="0" alt="" /></td>
+                                            <td class="fluid-img" style="border-bottom: 7px solid #379eff; font-size:0pt; line-height:0pt; text-align:left;"><img src="{% static 'openbook_invitations/email-banner.png' %}" width="650" border="0" alt="Banner Image" /></td>
                                         </tr>
                                         <tr>
                                             <td class="bbrr" bgcolor="#ffffff" style="border-radius:0px 0px 12px 12px;">
@@ -202,7 +178,7 @@
                                                                     <td style="padding: 15px;">
                                                                         <table width="100%" border="0" cellspacing="0" cellpadding="0">
                                                                             <tr>
-                                                                                <td class="img-center pb25" style="font-size:0pt; line-height:0pt; text-align:center; padding-bottom:25px;"><img src="{% static 'openbook_invitations/apple-store.png' %}" width="230" border="0" alt="" /></td>
+                                                                                <td class="img-center pb25" style="font-size:0pt; line-height:0pt; text-align:center; padding-bottom:25px;"><img src="{% static 'openbook_invitations/apple-store.png' %}" width="230" border="0" alt="Apple Store" /></td>
                                                                             </tr>
                                                                         </table>
                                                                     </td>
@@ -216,7 +192,7 @@
                                                                         <table width="100%" border="0" cellspacing="0" cellpadding="0">
                                                                             <tr>
                                                                                 <td class="img-center pb25" style="font-size:0pt; line-height:0pt; text-align:center; padding-bottom:25px;">
-                                                                                    <img src="{% static 'openbook_invitations/play-store.png' %}" height="70" border="0" alt="" /></td>
+                                                                                    <img src="{% static 'openbook_invitations/play-store.png' %}" height="70" border="0" alt="Google Play Store" /></td>
                                                                             </tr>
                                                                         </table>
                                                                     </td>
@@ -237,43 +213,7 @@
             <!-- END Stores -->
 
             <!-- Footer -->
-            <table width="100%" border="0" cellspacing="0" cellpadding="0" bgcolor="#f4f4f4">
-                <tr>
-                    <td valign="top" align="center" class="p30-15" style="padding: 50px 0px 50px 0px;">
-                        <table width="650" border="0" cellspacing="0" cellpadding="0" class="mobile-shell">
-                            <tr>
-                                <td class="td" style="width:650px; min-width:650px; font-size:0pt; line-height:0pt; padding:0; margin:0; font-weight:normal;">
-                                    <table width="100%" border="0" cellspacing="0" cellpadding="0">
-                                        <tr>
-                                            <td align="center" style="padding-bottom: 30px;">
-                                                <table border="0" cellspacing="0" cellpadding="0" style="opacity: 0.3">
-                                                    <tr>
-                                                        <td class="img" width="55" style="font-size:0pt; line-height:0pt; text-align:center;"><a href="https://twitter.com/OpenbookSocial" target="_blank"><img src="{% static 'openbook_common/twitter-logo.png' %}" height="20" border="0" alt="Twitter" /></a></td>
-                                                        <td class="img" width="55" style="font-size:0pt; line-height:0pt; text-align:center;"><a href="https://openbookorg.slack.com/" target="_blank"><img src="{% static 'openbook_common/slack-icon-black.png' %}" height="20" border="0" alt="Join us on Slack" /></a></td>
-                                                        <td class="img" width="55" style="font-size:0pt; line-height:0pt; text-align:center;"><a href="https://www.linkedin.com/company/openbook-org/" target="_blank"><img src="{% static 'openbook_common/linkedin-logo.png' %}" height="20" border="0" alt="LinkedIn" /></a></td>
-                                                        <td class="img" width="55" style="font-size:0pt; line-height:0pt; text-align:center;"><a href="https://www.openbook.social/" target="_blank"><img src="{% static 'openbook_common/internet-logo.png' %}" height="20" border="0" alt="Website" /></a></td>
-                                                    </tr>
-                                                </table>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-footer1 pb10" style="color:#999999; font-family:'Nunito Sans', Arial,sans-serif; font-size:14px; line-height:20px; text-align:center; padding-bottom:10px;">Made with <img src="{% static 'openbook_common/heart.png' %}" style="vertical-align: middle; padding: 0 5px;" height="15" border="0" alt="heart" /> in Europe</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-footer2 pb20" style="color:#999999; font-family:'Nunito Sans', Arial,sans-serif; font-size:14px; line-height:20px; text-align:center; padding-bottom:20px;">The Hague Tech, Juliana van Stolberglaan 10, 2595 CL The Hague
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-footer2" style="color:#999999; font-family:'Nunito Sans', Arial,sans-serif; font-size:12px; line-height:26px; text-align:center;"> If you're not the intended recipient of this email, you can
-                                                <a href="#" target="_blank" class="link-grey-u" style="color:#999999; text-decoration:underline;"><span class="link-grey-u" style="color:#999999; text-decoration:underline;">unsubscribe</span></a> from this mailing list.</td>
-                                        </tr>
-                                    </table>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
+            {% include 'openbook_common/email/footer.html' %}
             <!-- END Footer -->
         </td>
     </tr>
