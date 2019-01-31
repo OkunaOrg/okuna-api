@@ -155,7 +155,7 @@ else:
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['openbook_auth/email_templates', 'openbook_invitations/email_templates'],
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -274,6 +274,7 @@ LANGUAGE_CODE = 'en'
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 STATIC_URL = '/static/'
+STATIC_ROOT = os.environ.get('STATIC_ROOT', './static')
 
 MEDIA_ROOT = os.environ.get('MEDIA_ROOT', './media')
 
@@ -312,7 +313,7 @@ AWS_DEFAULT_ACL = None
 
 if IS_PRODUCTION:
     STATICFILES_DIRS = [
-        os.path.join(BASE_DIR, 'openbook/static'),
+        os.path.join(BASE_DIR, 'openbook/static', 'openbook_common/static', 'openbook_invitations/static'),
     ]
 
     AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
