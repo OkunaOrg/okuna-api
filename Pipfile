@@ -1,13 +1,9 @@
 [[source]]
-
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
-
 [dev-packages]
-
-
 
 [packages]
 
@@ -28,13 +24,12 @@ faker = "*"
 django-storages = "*"
 django-amazon-ses = "*"
 django-media-fixtures = "==0.0.3"
-django-modeltranslation = {editable = true, git = "https://github.com/lifenautjoe/django-modeltranslation.git"}
+django-modeltranslation = {editable = true,git = "https://github.com/lifenautjoe/django-modeltranslation.git"}
 bandit = "*"
 pyyaml = "*"
 python-magic = "*"
 pyjwt = "*"
-
+safety = "*"
 
 [pipenv]
-
 allow_prereleases = true
