@@ -1,0 +1,52 @@
+[
+  {
+    "model": "openbook_common.Badge",
+    "pk": 1,
+    "fields": {
+      "keyword": "VERIFIED",
+      "keyword_es": "Verified",
+      "keyword_en": "Verified",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Badge",
+    "pk": 2,
+    "fields": {
+      "keyword": "SUPER",
+      "keyword_es": "Openbook Super Founder",
+      "keyword_en": "Openbook Super Founder",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Badge",
+    "pk": 3,
+    "fields": {
+      "keyword": "DIAMOND",
+      "keyword_es": "Openbook Diamond Founder",
+      "keyword_en": "Openbook Diamond Founder",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Badge",
+    "pk": 4,
+    "fields": {
+      "keyword": "GOLDEN",
+      "keyword_es": "Openbook Golden Founder",
+      "keyword_en": "Openbook Golden Founder",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Badge",
+    "pk": 5,
+    "fields": {
+      "keyword": "FOUNDER",
+      "keyword_es": "Openbook Founder",
+      "keyword_en": "Openbook Founder",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  }
+]

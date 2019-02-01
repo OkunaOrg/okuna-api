@@ -1,12 +1,12 @@
 # Create your tests here.
 import tempfile
+import uuid
 
 from PIL import Image
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.urls import reverse
 from faker import Faker
 from unittest import mock
-from unittest.mock import patch
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -17,9 +17,9 @@ import json
 
 from openbook_auth.views import UserSettings
 from openbook_circles.models import Circle
-from rest_framework.test import force_authenticate
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_user_bio, \
-    make_user_location, make_user_birth_date, make_user_avatar, make_user_cover
+    make_user_location, make_user_avatar, make_user_cover
+from openbook_invitations.models import UserInvite
 
 fake = Faker()
 
@@ -34,24 +34,43 @@ class RegistrationAPITests(APITestCase):
     RegistrationAPI
     """
 
-    def test_invalid_username(self):
+    def test_token_required(self):
         """
-        should return 400 if the username is not valid
+        should return 400 if the token is not present
         """
         url = self._get_url()
-        invalid_usernames = ('lifenautjoe!', 'lifenautjo@', 'lifenautpoe🔒', 'lifenaut-joe', '字kasmndikasm')
-        for username in invalid_usernames:
-            data = {
-                'username': username,
-                'name': 'Miguel',
-                'email': 'user@mail.com',
-                'password': 'secretPassword123',
-                'birth_date': '27-1-1996'
-            }
-            response = self.client.post(url, data, format='multipart')
-            parsed_response = json.loads(response.content)
-            self.assertIn('username', parsed_response)
-            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        data = {'name': 'Joel Hernandez', 'password': 'secretPassword123',
+                'is_of_legal_age': 'true', 'email': 'user@email.com'}
+        response = self.client.post(url, data, format='multipart')
+        parsed_response = json.loads(response.content)
+        self.assertIn('token', parsed_response)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_token_can_be_used_once(self):
+        """
+        should return 404 if token already has been used to create an account.
+        """
+        url = self._get_url()
+        token = self._get_user_invite_token()
+        first_request_data = {'name': 'Joel Hernandez', 'email': 'joel@open-book.org',
+                              'password': 'secretPassword123', 'is_of_legal_age': 'true', 'token': token}
+        self.client.post(url, first_request_data, format='multipart')
+        second_request_data = {'name': 'Juan Taramera', 'email': 'joel2@open-book.org',
+                               'password': 'woahpassword123', 'is_of_legal_age': 'true', 'token': token}
+        response = self.client.post(url, second_request_data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_token_should_be_valid(self):
+        """
+        should return 401 if token is invalid.
+        """
+        url = self._get_url()
+        token = uuid.uuid4()
+        first_request_data = {'name': 'Joel Hernandez', 'email': 'joel@open-book.org',
+                              'password': 'secretPassword123', 'is_of_legal_age': 'true', 'token': token}
+        response = self.client.post(url, first_request_data, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_invalid_name(self):
         """
@@ -59,37 +78,29 @@ class RegistrationAPITests(APITestCase):
         """
         url = self._get_url()
         invalid_names = ('Joel<', '<>', '',)
+        token = self._get_user_invite_token()
         for name in invalid_names:
             data = {
                 'username': 'lifenautjoe',
                 'name': name,
                 'email': 'user@mail.com',
                 'password': 'secretPassword123',
-                'birth_date': '27-1-1996'
+                'is_of_legal_age': 'true',
+                'token': token
             }
             response = self.client.post(url, data, format='multipart')
             parsed_response = json.loads(response.content)
             self.assertIn('name', parsed_response)
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_username_required(self):
-        """
-        should return 400 if the username is not present
-        """
-        url = self._get_url()
-        data = {'name': 'Joel', 'email': 'user@mail.com', 'password': 'secretPassword123', 'birth_date': '27-1-1996'}
-        response = self.client.post(url, data, format='multipart')
-        parsed_response = json.loads(response.content)
-        self.assertIn('username', parsed_response)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
     def test_name_required(self):
         """
         should return 400 if the name is not present
         """
         url = self._get_url()
-        data = {'username': 'lifenautjoe', 'email': 'user@mail.com', 'password': 'secretPassword123',
-                'birth_date': '27-1-1996'}
+        token = self._get_user_invite_token()
+        data = {'email': 'user@mail.com', 'password': 'secretPassword123',
+                'is_of_legal_age': 'true', 'token': token}
         response = self.client.post(url, data, format='multipart')
         parsed_response = json.loads(response.content)
         self.assertIn('name', parsed_response)
@@ -100,41 +111,38 @@ class RegistrationAPITests(APITestCase):
         should return 400 if the email is not present
         """
         url = self._get_url()
-        data = {'username': 'lifenautjoe', 'name': 'Joel Hernandez', 'password': 'secretPassword123',
-                'birth_date': '27-1-1996'}
+        token = self._get_user_invite_token()
+        data = {'name': 'Joel Hernandez', 'password': 'secretPassword123',
+                'is_of_legal_age': 'true', 'token': token}
         response = self.client.post(url, data, format='multipart')
         parsed_response = json.loads(response.content)
         self.assertIn('email', parsed_response)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_birth_date_required(self):
+    def test_is_of_legal_age_required(self):
         """
-        should return 400 if the birth_date is not present
+        should return 400 if the is_of_legal_age is not present
         """
         url = self._get_url()
-        data = {'username': 'lifenautjoe', 'name': 'Joel Hernandez', 'email': 'user@mail.com',
-                'password': 'secretPassword123'}
+        token = self._get_user_invite_token()
+        data = {'name': 'Joel Hernandez', 'email': 'user2@mail.com',
+                'password': 'secretPassword123', 'token': token}
         response = self.client.post(url, data, format='multipart')
         parsed_response = json.loads(response.content)
-        self.assertIn('birth_date', parsed_response)
+        self.assertIn('is_of_legal_age', parsed_response)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_username_taken(self):
+    def test_is_of_legal_age_true_required(self):
         """
-        should return 400 if username is taken.
+        should return 400 if the is_of_legal_age is false
         """
         url = self._get_url()
-        username = 'lifenautjoe'
-        first_request_data = {'username': username, 'name': 'Joel Hernandez', 'email': 'user@mail.com',
-                              'password': 'secretPassword123', 'birth_date': '27-1-1996'}
-        self.client.post(url, first_request_data, format='multipart')
-        second_request_data = {'username': username, 'name': 'Juan Taramera', 'email': 'juan@mail.com',
-                               'password': 'woahpassword123', 'birth_date': '27-1-1996'}
-        response = self.client.post(url, second_request_data, format='multipart')
-
+        token = self._get_user_invite_token()
+        data = {'name': 'Joel Hernandez', 'email': 'user@mail.com',
+                'password': 'secretPassword123', 'is_of_legal_age': 'false', 'token': token}
+        response = self.client.post(url, data, format='multipart')
         parsed_response = json.loads(response.content)
-
-        self.assertIn('username', parsed_response)
+        self.assertIn('is_of_legal_age', parsed_response)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_email_taken(self):
@@ -142,15 +150,17 @@ class RegistrationAPITests(APITestCase):
         should return 400 if email is taken.
         """
         url = self._get_url()
+        token = self._get_user_invite_token()
         email = 'joel@open-book.org'
-        first_request_data = {'username': 'lifenautjoe1', 'name': 'Joel Hernandez', 'email': email,
-                              'password': 'secretPassword123', 'birth_date': '27-1-1996'}
+        first_request_data = {'name': 'Joel Hernandez', 'email': email,
+                              'password': 'secretPassword123', 'is_of_legal_age': 'true', 'token': token}
         self.client.post(url, first_request_data, format='multipart')
-        second_request_data = {'username': 'lifenautjoe2', 'name': 'Juan Taramera', 'email': email,
-                               'password': 'woahpassword123', 'birth_date': '27-1-1996'}
+        token2 = self._get_user_invite_token()
+        second_request_data = {'name': 'Juan Taramera', 'email': email,
+                               'password': 'woahpassword123', 'is_of_legal_age': 'true', 'token': token2}
         response = self.client.post(url, second_request_data, format='multipart')
         parsed_response = json.loads(response.content)
-
+        print(parsed_response)
         self.assertIn('email', parsed_response)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -159,26 +169,31 @@ class RegistrationAPITests(APITestCase):
         should create a User model instance
         """
         url = self._get_url()
-        username = 'potato123'
-        first_request_data = {'username': username, 'name': 'Joel Hernandez', 'email': 'test@email.com',
-                              'password': 'secretPassword123', 'birth_date': '27-1-1996'}
+        token = self._get_user_invite_token()
+        email = fake.email()
+        first_request_data = {'name': 'Joel Hernandez', 'email': email,
+                              'password': 'secretPassword123', 'is_of_legal_age': 'true', 'token': token}
         response = self.client.post(url, first_request_data, format='multipart')
+        parsed_response = json.loads(response.content)
+
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIn('username', parsed_response)
         self.assertEqual(User.objects.count(), 1)
-        self.assertEqual(User.objects.filter(username=username).exists(), True)
+        self.assertEqual(User.objects.filter(email=email).exists(), True)
 
     def test_user_profile_is_created(self):
         """
         should create a UserProfile instance and associate it to the User instance
         """
         url = self._get_url()
-        username = 'vegueta968'
-        request_data = {'username': username, 'name': 'Joel Hernandez', 'email': 'test@email.com',
-                        'password': 'secretPassword123', 'birth_date': '27-1-1996'}
+        token = self._get_user_invite_token()
+        email = fake.email()
+        request_data = {'token': token, 'name': 'Joel Hernandez', 'email': email,
+                        'password': 'secretPassword123', 'is_of_legal_age': 'true'}
         response = self.client.post(url, request_data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(UserProfile.objects.count(), 1)
-        user = User.objects.get(username=username)
+        user = User.objects.get(email=email)
         self.assertTrue(hasattr(user, 'profile'))
 
     def test_user_circles_are_created(self):
@@ -186,14 +201,15 @@ class RegistrationAPITests(APITestCase):
         should create the default circles instance and associate it to the User instance
         """
         url = self._get_url()
-        username = fake.user_name()
-        request_data = {'username': username, 'name': 'Joel Hernandez', 'email': 'test@email.com',
-                        'password': 'secretPassword123', 'birth_date': '27-1-1996'}
+        token = self._get_user_invite_token()
+        email = fake.email()
+        request_data = {'token': token, 'name': 'Joel Hernandez', 'email': email,
+                        'password': 'secretPassword123', 'is_of_legal_age': 'true'}
         response = self.client.post(url, request_data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Circle.objects.count(), 1)
 
-        user = User.objects.get(username=username)
+        user = User.objects.get(email=email)
 
         # Check we created the connections circle
         self.assertTrue(Circle.objects.filter(id__in=(user.connections_circle_id,)).count() == 1)
@@ -209,31 +225,35 @@ class RegistrationAPITests(APITestCase):
         tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
         image.save(tmp_file)
         tmp_file.seek(0)
-        username = 'testusername'
-        request_data = {'username': username, 'name': 'Joel Hernandez', 'email': 'test@email.com',
-                        'password': 'secretPassword123', 'birth_date': '27-1-1996', 'avatar': tmp_file}
+        email = fake.email()
+        token = self._get_user_invite_token()
+        request_data = {'token': token, 'name': 'Joel Hernandez', 'email': email,
+                        'password': 'secretPassword123', 'is_of_legal_age': 'true', 'avatar': tmp_file}
         url = self._get_url()
         response = self.client.post(url, request_data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        user = User.objects.get(username=username)
+        user = User.objects.get(email=email)
         self.assertTrue(hasattr(user.profile, 'avatar'))
 
     def test_user_status(self):
         """
         Should return 201 when the user was created successfully and return its auth token.
         """
+        token1 = self._get_user_invite_token()
+        token2 = self._get_user_invite_token()
+        token3 = self._get_user_invite_token()
         users_data = (
             {
-                'username': 'a_valid_username', 'name': 'Joel Hernandez', 'email': 'hi@ohmy.com',
-                'password': 'askdnaoisd!', 'birth_date': '27-1-1991'
+                'token': token1, 'name': 'Joel Hernandez', 'email': 'hi@ohmy.com',
+                'password': 'askdnaoisd!', 'is_of_legal_age': 'true'
             },
             {
-                'username': 'terry_crews', 'name': 'Terry Crews', 'email': 'terry@oldsp.ie',
-                'password': 'secretPassword123', 'birth_date': '27-1-1996'
+                'token': token2, 'name': 'Terry Crews', 'email': 'terry@oldsp.ie',
+                'password': 'secretPassword123', 'is_of_legal_age': 'true'
             },
             {
-                'username': 'mike_chowder___', 'name': 'Mike Johnson', 'email': 'mike@chowchow.com',
-                'password': 'OhGoDwEnEEdFixTurES!', 'birth_date': '27-01-1991'
+                'token': token3, 'name': 'Mike Johnson', 'email': 'mike@chowchow.com',
+                'password': 'OhGoDwEnEEdFixTurES!', 'is_of_legal_age': 'true'
             }
         )
         url = self._get_url()
@@ -243,11 +263,15 @@ class RegistrationAPITests(APITestCase):
             parsed_response = json.loads(response.content)
             self.assertIn('token', parsed_response)
             response_auth_token = parsed_response['token']
-            user = User.objects.get(username=user_data_item['username'])
+            user = User.objects.get(email=user_data_item['email'])
             self.assertEqual(response_auth_token, user.auth_token.key)
 
     def _get_url(self):
         return reverse('register-user')
+
+    def _get_user_invite_token(self):
+        user_invite = UserInvite.create_invite(email=fake.email())
+        return user_invite.token
 
 
 class UsernameCheckAPITests(APITestCase):
@@ -616,30 +640,6 @@ class AuthenticatedUserAPITests(APITestCase):
         user.refresh_from_db()
 
         self.assertEqual(user.profile.followers_count_visible, new_followers_count_visible)
-
-    def test_can_update_user_birth_date(self):
-        """
-        should be able to update the authenticated user birth date and return 200
-        """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
-
-        new_birth_date = make_user_birth_date()
-        stringified_birth_date = new_birth_date.strftime('%d-%m-%Y')
-
-        data = {
-            'birth_date': stringified_birth_date
-        }
-
-        url = self._get_url()
-
-        response = self.client.patch(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        user.refresh_from_db()
-
-        self.assertEqual(user.profile.birth_date, new_birth_date)
 
     def test_can_update_user_avatar(self):
         """

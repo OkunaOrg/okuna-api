@@ -1,24 +1,29 @@
 [[source]]
+
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
+
 [dev-packages]
 
+
+
 [packages]
-Django = "*"
+
+django = "==2.1.5"
 python-dotenv = "*"
 djangorestframework = "*"
 sentry-sdk = "*"
 mysqlclient = "*"
-Pillow = "*"
+pillow = "*"
 django-nose = "*"
 nose = "*"
 pinocchio = "*"
 coverage = "*"
 nose-exclude = "*"
 mixer = "*"
-Faker = "*"
+faker = "*"
 "boto3" = "*"
 django-storages = "*"
 django-amazon-ses = "*"
@@ -27,6 +32,9 @@ django-modeltranslation = {editable = true, git = "https://github.com/lifenautjo
 bandit = "*"
 pyyaml = "*"
 python-magic = "*"
+pyjwt = "*"
+
 
 [pipenv]
+
 allow_prereleases = true
