@@ -1,15 +1,11 @@
-import uuid
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMultiAlternatives
 from django.db import models
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils import six
-from jwt import InvalidSignatureError
-from rest_framework.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 import jwt
-# Create your models here.
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_common.utils.model_loaders import get_user_invite_model
 
@@ -64,18 +60,27 @@ class UserInvite(models.Model):
     def send_invite_email(self):
         if self.invited_by:
             mail_subject = _('You\'ve been invited by {0} to join Openbook').format(self.invited_by.profile.name)
-            message = render_to_string('user_invite.html', {
+            text_message_content = render_to_string('openbook_invitations/email/user_invite.txt', {
                 'name': self.name,
                 'invited_by_name': self.invited_by.profile.name,
                 'invite_link': self.generate_one_time_link()
             })
-        else:
-            mail_subject = _('You\'ve been invited to join Openbook')
-            message = render_to_string('backer_onboard.html', {
+            html_message_content = render_to_string('openbook_invitations/email/user_invite.html', {
                 'name': self.name,
                 'invite_link': self.generate_one_time_link()
             })
-        email = EmailMessage(mail_subject, message, to=[self.email], from_email=settings.SERVICE_EMAIL_ADDRESS)
+        else:
+            mail_subject = _('You\'ve been invited to join Openbook')
+            text_message_content = render_to_string('openbook_invitations/email/backer_onboard.txt', {
+                'name': self.name,
+                'invite_link': self.generate_one_time_link()
+            })
+            html_message_content = render_to_string('openbook_invitations/email/backer_onboard.html', {
+                'name': self.name,
+                'invite_link': self.generate_one_time_link()
+            })
+        email = EmailMultiAlternatives(mail_subject, text_message_content, to=[self.email], from_email=settings.SERVICE_EMAIL_ADDRESS)
+        email.attach_alternative(html_message_content, 'text/html')
         email.send()
         self.is_invite_email_sent = True
         self.save()
