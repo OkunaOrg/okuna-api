@@ -35,3 +35,7 @@ def get_emoji_model():
 
 def get_emoji_group_model():
     return apps.get_model('openbook_common.EmojiGroup')
+
+
+def get_user_invite_model():
+    return apps.get_model('openbook_invitations.UserInvite')

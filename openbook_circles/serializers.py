@@ -42,8 +42,7 @@ class CircleUserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'name',
-            'avatar',
-            'birth_date'
+            'avatar'
         )
 
 

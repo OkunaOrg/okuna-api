@@ -114,6 +114,7 @@ INSTALLED_APPS = [
     'openbook_importer',
     'openbook_lists',
     'openbook_follows',
+    'openbook_invitations',
 ]
 
 MIDDLEWARE = [
@@ -134,6 +135,8 @@ AUTH_USER_MODEL = 'openbook_auth.User'
 
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
+JWT_ALGORITHM = os.environ.get('JWT_ALGORITHM', 'HS256')
+
 if IS_BUILD:
     NOSE_ARGS = [
         '--cover-erase',
@@ -152,7 +155,7 @@ else:
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['openbook_auth/email_templates'],
+        'DIRS': ['openbook_auth/email_templates', 'openbook_invitations/email_templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -296,6 +299,7 @@ AWS_SES_REGION = os.environ.get('AWS_SES_REGION')
 AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 SERVICE_EMAIL_ADDRESS = os.environ.get('SERVICE_EMAIL_ADDRESS')
+EMAIL_HOST = os.environ.get('EMAIL_HOST')
 
 # AWS Storage config
 

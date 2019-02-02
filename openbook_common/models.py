@@ -48,3 +48,7 @@ class Emoji(models.Model):
         if not self.id:
             self.created = timezone.now()
         return super(Emoji, self).save(*args, **kwargs)
+
+
+class Badge(models.Model):
+    keyword = models.CharField(_('keyword'), max_length=16, blank=False, null=False, unique=True)
