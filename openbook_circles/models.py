@@ -26,8 +26,13 @@ class Circle(models.Model):
         unique_together = ('creator', 'name',)
 
     @classmethod
+    def create_circle(cls, name, creator=None, color=None):
+        circle = cls.objects.create(name=name, creator=creator, color=color,)
+        return circle
+
+    @classmethod
     def bootstrap_circles_for_user(cls, user):
-        user_connections_circle = cls.objects.create(name=_('Connections'), color='#FFFFFF', creator=user)
+        user_connections_circle = cls.create_circle(name=_('Connections'), color='#FFFFFF', creator=user)
         user.connections_circle = user_connections_circle
         user.save()
 

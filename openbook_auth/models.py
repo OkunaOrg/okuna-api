@@ -15,7 +15,7 @@ from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.exceptions import EmailVerificationTokenInvalid
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, get_emoji_model, \
-    get_emoji_group_model
+    get_emoji_group_model, get_community_model
 from openbook_common.validators import name_characters_validator
 
 
@@ -318,6 +318,17 @@ class User(AbstractUser):
     def has_list_with_id(self, list_id):
         return self.lists.filter(id=list_id).count() > 0
 
+    def has_community_with_id(self, community_id):
+        return self.communities.filter(id=community_id).exists()
+
+    def is_administrator_of_community_with_id(self, community_id):
+        Community = get_community_model()
+        return Community.objects.filter(id=community_id, moderators__id=self.pk)
+
+    def is_moderator_of_community_with_id(self, community_id):
+        Community = get_community_model()
+        return Community.objects.filter(id=community_id, administrators__id=self.pk)
+
     def has_list_with_name(self, list_name):
         return self.lists.filter(name=list_name).count() > 0
 
@@ -537,6 +548,76 @@ class User(AbstractUser):
         self._check_can_get_circle_with_id(circle_id)
         return self.circles.get(id=circle_id)
 
+    def create_community(self, name, avatar=None):
+        self._check_community_name_not_taken(name)
+        Community = get_community_model()
+        community = Community.objects.create(name=name, creator=self, avatar=avatar)
+
+        return community
+
+    def delete_community(self, community):
+        return self.delete_community_with_id(community.pk)
+
+    def delete_community_with_id(self, community_id):
+        self._check_can_delete_community_with_id(community_id)
+        community = self.communities.get(id=community_id)
+        community.delete()
+
+    def update_community(self, community, name=None):
+        return self.update_community_with_id(community.pk, name=name)
+
+    def update_community_with_id(self, community_id, title=None, name=None, description=None, color=None, type=None,
+                                 user_adjective=None,
+                                 users_adjective=None, ):
+        self._check_can_update_community_with_id(community_id)
+        self._check_community_data(name)
+
+        community_to_update = self.communities.get(id=community_id)
+
+        if name:
+            community_to_update.name = name
+
+        if title:
+            community_to_update.title = title
+
+        if type:
+            community_to_update.type = type
+
+        if description is not None:
+            community_to_update.descripton = description
+
+        if color:
+            community_to_update.color = color
+
+        if user_adjective is not None:
+            community_to_update.user_adjective = user_adjective
+
+        if users_adjective is not None:
+            community_to_update.users_adjective = users_adjective
+
+        community_to_update.save()
+
+        return community_to_update
+
+    def update_community_with_id_avatar(self, community_id, avatar):
+        if not avatar:
+            raise ValidationError(_('A new avatar is required.'))
+
+        self._check_can_update_community_with_id(community_id)
+        self._check_community_data(avatar=avatar)
+
+        community_to_update_avatar_from = self.communities.get(id=community_id)
+        community_to_update_avatar_from.avatar = avatar
+
+        community_to_update_avatar_from.save()
+
+        return community_to_update_avatar_from
+
+    def delete_community_with_id_avatar(self, community_id):
+        self._check_can_update_community_with_id(community_id)
+        community_to_delete_avatar_from = self.communities.get(id=community_id)
+        community_to_delete_avatar_from.avatar.delete()
+
     def create_list(self, name, emoji_id):
         self._check_list_name_not_taken(name)
         List = get_list_model()
@@ -616,7 +697,8 @@ class User(AbstractUser):
     def create_encircled_post(self, circles_ids, text=None, image=None):
         return self.create_post(text=text, image=image, circles_ids=circles_ids)
 
-    def create_post(self, text=None, image=None, video=None, circles_ids=None, circles=None, circle=None, circle_id=None, created=None):
+    def create_post(self, text=None, image=None, video=None, circles_ids=None, circles=None, circle=None,
+                    circle_id=None, created=None):
 
         if circles:
             circles_ids = [circle.pk for circle in circles]
@@ -636,7 +718,8 @@ class User(AbstractUser):
             circles_ids.append(world_circle_id)
 
         Post = get_post_model()
-        post = Post.create_post(text=text, creator=self, circles_ids=circles_ids, image=image, video=video, created=created)
+        post = Post.create_post(text=text, creator=self, circles_ids=circles_ids, image=image, video=video,
+                                created=created)
 
         return post
 
@@ -1064,6 +1147,10 @@ class User(AbstractUser):
         if name:
             self._check_list_name_not_taken(name)
 
+    def _check_community_data(self, name=None, avatar=None):
+        if name:
+            self._check_community_name_not_taken(name)
+
     def _check_circle_data(self, name, color):
         if name:
             self._check_circle_name_not_taken(name)
@@ -1162,6 +1249,18 @@ class User(AbstractUser):
                 _('Can\'t update a list that does not belong to you.'),
             )
 
+    def _check_can_delete_community_with_id(self, community_id):
+        if not self.has_community_with_id(community_id):
+            raise ValidationError(
+                _('Can\'t delete a community that you did not create.'),
+            )
+
+    def _check_can_update_community_with_id(self, community_id):
+        if not self.is_administrator_of_community_with_id(community_id):
+            raise ValidationError(
+                _('Can\'t update a community that you do not administrate.'),
+            )
+
     def _check_can_update_circle_with_id(self, circle_id):
         if not self.has_circle_with_id(circle_id):
             raise ValidationError(
@@ -1216,6 +1315,13 @@ class User(AbstractUser):
         if self.has_list_with_name(list_name):
             raise ValidationError(
                 _('You already have a list with that name.'),
+            )
+
+    def _check_community_name_not_taken(self, community_name):
+        Community = get_community_model()
+        if Community.is_name_taken(community_name):
+            raise ValidationError(
+                _('A community with that name already exists.'),
             )
 
 
