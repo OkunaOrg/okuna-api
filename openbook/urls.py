@@ -30,7 +30,7 @@ from openbook_lists.views import Lists, ListItem, ListNameCheck
 from openbook_posts.views.post.views import PostComments, PostCommentItem, PostItem, PostReactions, PostReactionItem, \
     PostReactionsEmojiCount, PostReactionEmojiGroups
 from openbook_posts.views.posts.views import Posts, TrendingPosts
-from openbook_importer.views import ImportItem
+from openbook_importer.views import ImportItem, ImportedItem, ImportedItems
 
 auth_patterns = [
     path('register/', Register.as_view(), name='register-user'),
@@ -88,7 +88,9 @@ follows_patterns = [
 ]
 
 importer_patterns = [
-    path('upload/', ImportItem.as_view(), name='uploads')
+    path('upload/', ImportItem.as_view(), name='uploads'),
+    path('archives/', ImportedItems.as_view(), name='imported-archives'),
+    path('archives/<int:archive_id>', ImportedItem.as_view(), name='imported-archive'),
 ]
 
 api_patterns = [
