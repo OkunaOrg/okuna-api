@@ -276,6 +276,10 @@ MEDIA_ROOT = os.environ.get('MEDIA_ROOT', './media')
 
 MEDIA_URL = os.environ.get('MEDIA_URL', '/media/')
 
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, 'static'),
+)
+
 # Openbook config
 
 USERNAME_MAX_LENGTH = 30
