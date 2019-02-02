@@ -1,9 +1,13 @@
 [[source]]
+
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
+
 [dev-packages]
+
+
 
 [packages]
 
@@ -28,8 +32,8 @@ django-modeltranslation = {editable = true,git = "https://github.com/lifenautjoe
 bandit = "*"
 pyyaml = "*"
 python-magic = "*"
-pyjwt = "*"
 safety = "*"
-
+pyjwt = "*"
 [pipenv]
+
 allow_prereleases = true
