@@ -61,10 +61,14 @@ class User(AbstractUser):
                     badge_keyword=None, **extra_fields):
         new_user = cls.objects.create_user(username, email=email, password=password, **extra_fields)
         new_user_profile = UserProfile.objects.create(name=name, user=new_user, avatar=avatar,
-                                   is_of_legal_age=is_of_legal_age)
+                                                      is_of_legal_age=is_of_legal_age)
         if badge_keyword:
-            badge = Badge.objects.create(keyword=badge_keyword)
+            try:
+                badge = Badge.objects.get(keyword=badge_keyword)
+            except Badge.DoesNotExist:
+                raise ValidationError(_('The provided badge keyword is invalid'))
             UserProfileBadge.objects.create(user_profile=new_user_profile, badge=badge)
+
         return new_user
 
     @classmethod
