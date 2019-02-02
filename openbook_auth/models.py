@@ -57,10 +57,14 @@ class User(AbstractUser):
         verbose_name_plural = _('users')
 
     @classmethod
-    def create_user(cls, username, email=None, password=None, name=None, avatar=None, is_of_legal_age=None, **extra_fields):
+    def create_user(cls, username, email=None, password=None, name=None, avatar=None, is_of_legal_age=None,
+                    badge_keyword=None, **extra_fields):
         new_user = cls.objects.create_user(username, email=email, password=password, **extra_fields)
-        UserProfile.objects.create(name=name, user=new_user, avatar=avatar,
+        new_user_profile = UserProfile.objects.create(name=name, user=new_user, avatar=avatar,
                                    is_of_legal_age=is_of_legal_age)
+        if badge_keyword:
+            badge = Badge.objects.create(keyword=badge_keyword)
+            UserProfileBadge.objects.create(user_profile=new_user_profile, badge=badge)
         return new_user
 
     @classmethod
@@ -1280,5 +1284,5 @@ class UserProfile(models.Model):
 
 
 class UserProfileBadge(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='badges')
+    user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='badges')
     badge = models.ForeignKey(Badge, on_delete=models.CASCADE)

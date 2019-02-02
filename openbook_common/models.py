@@ -51,4 +51,6 @@ class Emoji(models.Model):
 
 
 class Badge(models.Model):
-    keyword = models.CharField(_('keyword'), max_length=16, blank=False, null=False, unique=True)
+    keyword = models.CharField(max_length=16, blank=False, null=False, unique=True)
+    keyword_description = models.CharField(_('keyword_description'), max_length=64, blank=True, null=True, unique=True)
+    created = models.DateTimeField(editable=False)
