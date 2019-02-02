@@ -280,6 +280,8 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'openbook/static'),
 )
 
+STATIC_ROOT = os.environ.get('STATIC_ROOT', './static')
+
 # Openbook config
 
 USERNAME_MAX_LENGTH = 30
