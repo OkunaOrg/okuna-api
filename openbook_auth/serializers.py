@@ -3,14 +3,14 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 
 from openbook.settings import USERNAME_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, PROFILE_NAME_MAX_LENGTH
-from openbook_auth.models import User, UserProfile
+from openbook_auth.models import User, UserProfile, UserProfileBadge
 from openbook_auth.validators import username_characters_validator, \
     username_not_taken_validator, email_not_taken_validator, user_username_exists, jwt_token_validator, \
     is_of_legal_age_validator
 from django.contrib.auth.password_validation import validate_password
 
 from openbook_circles.models import Circle
-from openbook_common.models import Emoji
+from openbook_common.models import Emoji, Badge
 from openbook_common.serializers_fields.user import IsFollowingField, IsConnectedField, FollowersCountField, \
     FollowingCountField, PostsCountField, ConnectedCirclesField, FollowListsField, IsFullyConnectedField, \
     IsPendingConnectionConfirmation
@@ -133,7 +133,40 @@ class GetUserSerializer(serializers.Serializer):
                                      required=True)
 
 
+class BadgeSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Badge
+        fields = (
+            'keyword',
+            'keyword_description_en',
+            'keyword_description_es',
+        )
+
+
+class GetUserProfileBadgeSerializer(serializers.ModelSerializer):
+    badge = BadgeSerializer()
+
+    class Meta:
+        model = UserProfileBadge
+        fields = (
+            'badge',
+        )
+
+    def to_representation(self, obj):
+        """Move fields from badge serializer to user profile badge representation."""
+
+        representation = super().to_representation(obj)
+        badge_representation = representation.pop('badge')
+        for key in badge_representation:
+            representation[key] = badge_representation[key]
+
+        return representation
+
+
 class GetUserUserProfileSerializer(serializers.ModelSerializer):
+    badges = GetUserProfileBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
@@ -142,7 +175,8 @@ class GetUserUserProfileSerializer(serializers.ModelSerializer):
             'location',
             'cover',
             'bio',
-            'url'
+            'url',
+            'badges'
         )
 
 
