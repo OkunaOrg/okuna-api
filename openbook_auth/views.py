@@ -55,13 +55,14 @@ class Register(APIView):
             return Response(_('No invite found with this token'), status=status.HTTP_404_NOT_FOUND)
 
         username = user_invite.username
+        badge_keyword = user_invite.badge_keyword
 
         if not user_invite.username:
             username = User.get_temporary_username(email)
 
         with transaction.atomic():
             new_user = User.create_user(username=username, email=email, password=password, name=name, avatar=avatar,
-                                        is_of_legal_age=is_of_legal_age)
+                                        is_of_legal_age=is_of_legal_age, badge_keyword=badge_keyword)
             user_invite.created_user = new_user
             user_invite.save()
 
