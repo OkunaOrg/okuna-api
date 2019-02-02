@@ -8,10 +8,12 @@ from openbook_posts.models import Post
 class Import(models.Model):
 
     created = models.DateTimeField(editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE,
+                             related_name='imports', null=True)
 
     @classmethod
-    def create_import(cls):
-        imported = Import.objects.create()
+    def create_import(cls, user):
+        imported = Import.objects.create(user=user)
 
         return imported
 
@@ -56,25 +58,32 @@ class ImportedFriend(models.Model):
         if friend.exists():
             friend = friend[0]
 
-            if friend.user1 == user.pk and friend.user2:
+            if friend.user1_id == user.pk and friend.user2_id:
                 return True
 
-            elif friend.user2 == user.pk and friend.user1:
+            elif friend.user2_id == user.pk and friend.user1_id:
                 return True
 
-            elif not friend.user1 and friend.user2 != user.pk:
+            elif friend.user1_id == user.pk and not friend.user2_id:
+                return True
+
+            elif friend.user2_id == user.pk and not friend.user1_id:
+                return True
+
+            elif not friend.user1_id and friend.user2_id != user.pk:
                 friend.user1 = user
                 friend.save()
 
                 return True
 
-            elif not friend.user2 and friend.user1 != user.pk:
+            elif not friend.user2_id and friend.user1_id != user.pk:
                 friend.user2 = user
                 friend.save()
 
                 return True
 
-        return False
+            else:
+                return False
 
     @classmethod
     def create_imported_friend(cls, friend_hash, user1):

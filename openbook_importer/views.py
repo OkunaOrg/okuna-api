@@ -2,18 +2,20 @@ import logging
 from datetime import datetime
 from json import JSONDecodeError
 
+from django.db import transaction
 from rest_framework import status
 from openbook_posts.models import Post
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.files.images import ImageFile
 from django.utils.dateparse import parse_datetime
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from django.utils.translation import ugettext_lazy as _
 
-from openbook_importer.serializers import ZipfileSerializer
 from openbook_importer.models import Import, ImportedPost, ImportedFriend
 from openbook_importer.facebook_archive_parser.zipparser import zip_parser
+from openbook_importer.serializers import ZipfileSerializer, ImportSerializer
 
 log = logging.getLogger('security')
 
@@ -34,13 +36,21 @@ class ImportItem(APIView):
             p = zip_parser(zipfile)
 
         except FileNotFoundError:
-            return self._return_invalid()
+            raise ValidationError(
+                _('Invalid archive!'),
+            )
 
         except JSONDecodeError:
-            return self._return_invalid()
+            raise ValidationError(
+                _('Invalid archive!'),
+            )
 
         except TypeError:
-            return self._return_malicious(request.user.pk)
+            log.info("Potentially malicious import prevented: "
+                     f"{request.user.pk}")
+            raise ValidationError(
+                _('Invalid archive!'),
+            )
 
         if p.profile.posts:
             new_posts = self._create_posts(p.profile.posts, request.user)
@@ -50,14 +60,12 @@ class ImportItem(APIView):
 
         self.process_imports(new_posts, new_friends, request.user)
 
-        return Response({
-            'message': _('done')
-        }, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_200_OK)
 
     def process_imports(self, new_posts, new_friends, user):
 
         if new_posts or new_friends:
-            data_import = Import.create_import()
+            data_import = Import.create_import(user)
 
         if new_posts:
             self.save_posts(new_posts, user, data_import)
@@ -70,14 +78,16 @@ class ImportItem(APIView):
         for new_post in new_posts:
             text, image, created = new_post
 
-            post = user.create_post(text=text, image=image,
-                                    created=created)
-            ImportedPost.create_imported_post(post, data_import)
+            with transaction.atomic():
+                post = user.create_post(text=text, image=image,
+                                        created=created)
+                ImportedPost.create_imported_post(post, data_import)
 
     def save_friends(self, new_hashes, user, data_import):
 
         for friend_hash in new_hashes:
-            ImportedFriend.create_imported_friend(friend_hash, user)
+            with transaction.atomic():
+                ImportedFriend.create_imported_friend(friend_hash, user)
 
     def _create_posts(self, posts_data, user):
 
@@ -155,15 +165,37 @@ class ImportItem(APIView):
 
         return images
 
-    def _return_invalid(self):
 
-        return Response({
-            'message': _('invalid archive')
-        }, status=status.HTTP_400_BAD_REQUEST)
+class ImportedItem(APIView):
 
-    def _return_malicious(self, pk):
-        log.info(f"Potentially malicious import prevented {pk}")
+    permission_classes = (IsAuthenticated,)
 
-        return Response({
-            'message':  _('invalid archive')
-        }, status=status.HTTP_400_BAD_REQUEST)
+    def get(self, request, archive_id):
+
+        archive = request.user.imports.filter(id=archive_id)
+        if archive.exists():
+            serialized = ImportSerializer(archive, many=False)
+
+        else:
+            raise ValidationError(
+                _('Archive does not exist!'),
+            )
+
+        return Response(serialized.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, archive_id):
+
+        request.user.delete_archive_with_id(archive_id)
+
+        return Response({'Message': 'done'}, status=status.HTTP_200_OK)
+
+
+class ImportedItems(APIView):
+
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        archives = request.user.imports.all()
+        serialized = ImportSerializer(archives, many=True)
+
+        return Response(serialized.data, status=status.HTTP_200_OK)
