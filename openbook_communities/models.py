@@ -19,14 +19,17 @@ class Community(models.Model):
                             unique=True)
     title = models.CharField(_('title'), max_length=settings.COMMUNITY_TITLE_MAX_LENGTH, blank=False, null=False, )
     description = models.CharField(_('description'), max_length=settings.COMMUNITY_DESCRIPTION_MAX_LENGTH, blank=False,
-                                   null=True,
-                                   unique=True)
+                                   null=True, )
+    rules = models.CharField(_('rules'), max_length=settings.COMMUNITY_RULES_MAX_LENGTH, blank=False,
+                             null=True)
     circle = models.OneToOneField(Circle, on_delete=models.CASCADE, null=False, blank=False)
     avatar = models.ImageField(_('avatar'), blank=False, null=True)
+    cover = models.ImageField(_('cover'), blank=False, null=True)
     created = models.DateTimeField(editable=False)
     users = models.ManyToManyField(User, related_name='communities')
     moderators = models.ManyToManyField(User, related_name='moderated_communities')
     administrators = models.ManyToManyField(User, related_name='administrated_communities')
+    banned_users = models.ManyToManyField(User, related_name='banned_of_communities')
     COMMUNITY_TYPES = (
         ('P', 'Public'),
         ('T', 'Private'),
