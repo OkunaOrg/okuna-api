@@ -1,3 +1,4 @@
+import secrets
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
 from django.db import models
@@ -13,9 +14,10 @@ from django.db.models import Q
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.exceptions import EmailVerificationTokenInvalid
+from openbook_common.models import Badge
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, get_emoji_model, \
-    get_emoji_group_model, get_community_model
+    get_emoji_group_model, get_user_invite_model, get_community_model
 from openbook_common.validators import name_characters_validator
 
 
@@ -52,12 +54,20 @@ class User(AbstractUser):
         verbose_name_plural = _('users')
 
     @classmethod
+    def create_user(cls, username, email=None, password=None, name=None, avatar=None, is_of_legal_age=None, **extra_fields):
+        new_user = cls.objects.create_user(username, email=email, password=password, **extra_fields)
+        UserProfile.objects.create(name=name, user=new_user, avatar=avatar,
+                                   is_of_legal_age=is_of_legal_age)
+        return new_user
+
+    @classmethod
     def is_username_taken(cls, username):
-        try:
-            cls.objects.get(username=username)
-            return True
-        except User.DoesNotExist:
+        UserInvite = get_user_invite_model()
+        user_invites = UserInvite.objects.filter(username=username)
+        users = cls.objects.filter(username=username)
+        if not user_invites.exists() and not users.exists():
             return False
+        return True
 
     @classmethod
     def is_email_taken(cls, email):
@@ -85,6 +95,15 @@ class User(AbstractUser):
     @classmethod
     def get_user_with_username(cls, user_username):
         return cls.objects.get(username=user_username)
+
+    @classmethod
+    def get_temporary_username(cls, email):
+        username = email.split('@')[0]
+        temp_username = username
+        while cls.is_username_taken(temp_username):
+            temp_username = username + str(secrets.randbelow(9999))
+
+        return temp_username
 
     @classmethod
     def get_public_users_with_query(cls, query):
@@ -183,7 +202,6 @@ class User(AbstractUser):
                username=None,
                name=None,
                location=None,
-               birth_date=None,
                bio=None,
                url=None,
                followers_count_visible=None,
@@ -208,9 +226,6 @@ class User(AbstractUser):
                 profile.location = None
             else:
                 profile.location = location
-
-        if birth_date:
-            profile.birth_date = birth_date
 
         if bio is not None:
             if len(bio) == 0:
@@ -1349,7 +1364,7 @@ class UserProfile(models.Model):
                             validators=[name_characters_validator])
     location = models.CharField(_('location'), max_length=settings.PROFILE_LOCATION_MAX_LENGTH, blank=False, null=True)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
-    birth_date = models.DateField(_('birth date'), null=False, blank=False)
+    is_of_legal_age = models.BooleanField(default=False)
     avatar = models.ImageField(_('avatar'), blank=False, null=True)
     cover = models.ImageField(_('cover'), blank=False, null=True)
     bio = models.CharField(_('bio'), max_length=settings.PROFILE_BIO_MAX_LENGTH, blank=False, null=True)
@@ -1365,3 +1380,8 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.username
+
+
+class UserProfileBadge(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='badges')
+    badge = models.ForeignKey(Badge, on_delete=models.CASCADE)
