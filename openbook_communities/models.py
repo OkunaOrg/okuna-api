@@ -10,13 +10,14 @@ from openbook_circles.models import Circle
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.validators import hex_color_validator
+from openbook_communities.validators import community_name_characters_validator
 
 
 class Community(models.Model):
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_communities', null=False,
                                 blank=False)
     name = models.CharField(_('name'), max_length=settings.COMMUNITY_NAME_MAX_LENGTH, blank=False, null=False,
-                            unique=True)
+                            unique=True, validators=(community_name_characters_validator,))
     title = models.CharField(_('title'), max_length=settings.COMMUNITY_TITLE_MAX_LENGTH, blank=False, null=False, )
     description = models.CharField(_('description'), max_length=settings.COMMUNITY_DESCRIPTION_MAX_LENGTH, blank=False,
                                    null=True, )
@@ -26,7 +27,7 @@ class Community(models.Model):
     avatar = models.ImageField(_('avatar'), blank=False, null=True)
     cover = models.ImageField(_('cover'), blank=False, null=True)
     created = models.DateTimeField(editable=False)
-    users = models.ManyToManyField(User, related_name='communities')
+    members = models.ManyToManyField(User, related_name='communities')
     moderators = models.ManyToManyField(User, related_name='moderated_communities')
     administrators = models.ManyToManyField(User, related_name='administrated_communities')
     banned_users = models.ManyToManyField(User, related_name='banned_of_communities')
