@@ -16,7 +16,7 @@ from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.exceptions import EmailVerificationTokenInvalid
 from openbook_common.models import Badge
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
-    get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, get_emoji_model, \
+    get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, \
     get_emoji_group_model, get_user_invite_model, get_community_model
 from openbook_common.validators import name_characters_validator
 
@@ -54,7 +54,8 @@ class User(AbstractUser):
         verbose_name_plural = _('users')
 
     @classmethod
-    def create_user(cls, username, email=None, password=None, name=None, avatar=None, is_of_legal_age=None, **extra_fields):
+    def create_user(cls, username, email=None, password=None, name=None, avatar=None, is_of_legal_age=None,
+                    **extra_fields):
         new_user = cls.objects.create_user(username, email=email, password=password, **extra_fields)
         UserProfile.objects.create(name=name, user=new_user, avatar=avatar,
                                    is_of_legal_age=is_of_legal_age)

@@ -34,7 +34,7 @@ class Community(models.Model):
         ('P', 'Public'),
         ('T', 'Private'),
     )
-    type = models.CharField(editable=False, blank=False, null=False, choices=COMMUNITY_TYPES, default='P')
+    type = models.CharField(editable=False, blank=False, null=False, choices=COMMUNITY_TYPES, default='P', max_length=2)
     color = models.CharField(_('color'), max_length=COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
                              validators=[hex_color_validator])
     user_adjective = models.CharField(_('user adjective'), max_length=settings.COMMUNITY_USER_ADJECTIVE_MAX_LENGTH,
