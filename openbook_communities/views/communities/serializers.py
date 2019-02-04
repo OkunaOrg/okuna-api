@@ -17,6 +17,10 @@ class CreateCommunitySerializer(serializers.Serializer):
                                         allow_blank=True)
     rules = serializers.CharField(max_length=settings.COMMUNITY_RULES_MAX_LENGTH,
                                   allow_blank=True)
+    user_adjective = serializers.CharField(max_length=settings.COMMUNITY_USER_ADJECTIVE_MAX_LENGTH,
+                                           allow_blank=True)
+    users_adjective = serializers.CharField(max_length=settings.COMMUNITY_USERS_ADJECTIVE_MAX_LENGTH,
+                                            allow_blank=True)
     avatar = serializers.ImageField(required=False)
     cover = serializers.ImageField(required=False)
     color = serializers.CharField(max_length=COLOR_ATTR_MAX_LENGTH, required=True,
@@ -51,5 +55,7 @@ class GetCommunitiesCommunitySerializer(serializers.ModelSerializer):
             'avatar',
             'cover',
             'members_count',
-            'color'
+            'color',
+            'user_adjective',
+            'users_adjective'
         )

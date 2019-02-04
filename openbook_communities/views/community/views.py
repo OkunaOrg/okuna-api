@@ -6,15 +6,17 @@ from rest_framework.views import APIView
 
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_communities.views.community.serializers import GetCommunityCommunitySerializer, DeleteCommunitySerializer, \
-    UpdateCommunitySerializer, UpdateCommunityAvatarSerializer, UpdateCommunityCoverSerializer
+    UpdateCommunitySerializer, UpdateCommunityAvatarSerializer, UpdateCommunityCoverSerializer, GetCommunitySerializer
 
 
 class CommunityItem(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request, community_name):
-        user = request.user
+        serializer = GetCommunitySerializer(data={'community_name': community_name})
+        serializer.is_valid(raise_exception=True)
 
+        user = request.user
         community = user.get_community_with_name(community_name)
 
         response_serializer = GetCommunityCommunitySerializer(community, context={"request": request})
@@ -45,13 +47,16 @@ class CommunityItem(APIView):
         title = data.get('title')
         description = data.get('description')
         rules = data.get('rules')
+        user_adjective = data.get('user_adjective')
+        users_adjective = data.get('users_adjective')
 
         user = request.user
 
         with transaction.atomic():
             community = user.update_community_with_name(community_name, name=name, type=type, title=title,
                                                         description=description,
-                                                        rules=rules)
+                                                        rules=rules, user_adjective=user_adjective,
+                                                        users_adjective=users_adjective)
 
         response_serializer = GetCommunityCommunitySerializer(community, context={"request": request})
 

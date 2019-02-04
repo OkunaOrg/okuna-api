@@ -334,12 +334,11 @@ class User(AbstractUser):
     def has_list_with_id(self, list_id):
         return self.lists.filter(id=list_id).count() > 0
 
-    def has_administrated_community_with_name(self, community_name):
+    def is_administrator_of_community_with_name(self, community_name):
         return self.administrated_communities.filter(name=community_name).exists()
 
-    def is_administrator_of_community_with_id(self, community_id):
-        Community = get_community_model()
-        return Community.objects.filter(id=community_id, moderators__id=self.pk)
+    def is_creator_of_community_with_name(self, community_name):
+        return self.created_communities.filter(name=community_name).exists()
 
     def is_moderator_of_community_with_id(self, community_id):
         Community = get_community_model()
@@ -565,11 +564,12 @@ class User(AbstractUser):
         return self.circles.get(id=circle_id)
 
     def create_community(self, name, title=None, description=None, rules=None,
-                         avatar=None, cover=None, type=None, color=None):
+                         avatar=None, cover=None, type=None, color=None, user_adjective=None, users_adjective=None):
         self._check_community_name_not_taken(name)
         Community = get_community_model()
         community = Community.create_community(name=name, creator=self, title=title, description=description,
-                                               rules=rules, cover=cover, type=type, avatar=avatar, color=color)
+                                               rules=rules, cover=cover, type=type, avatar=avatar, color=color,
+                                               user_adjective=user_adjective, users_adjective=users_adjective)
 
         return community
 
@@ -581,16 +581,20 @@ class User(AbstractUser):
         community = self.administrated_communities.get(name=community_name)
         community.delete()
 
-    def update_community(self, community, name=None):
-        return self.update_community_with_id(community.pk, name=name)
+    def update_community(self, community, title=None, name=None, description=None, color=None, type=None,
+                         user_adjective=None,
+                         users_adjective=None, rules=None):
+        return self.update_community_with_name(community.name, name=name, title=title, description=description,
+                                               color=color, type=type, user_adjective=user_adjective,
+                                               users_adjective=users_adjective, rules=rules)
 
-    def update_community_with_id(self, community_id, title=None, name=None, description=None, color=None, type=None,
-                                 user_adjective=None,
-                                 users_adjective=None, ):
-        self._check_can_update_community_with_id(community_id)
+    def update_community_with_name(self, community_name, title=None, name=None, description=None, color=None, type=None,
+                                   user_adjective=None,
+                                   users_adjective=None, rules=None):
+        self._check_can_update_community_with_name(community_name)
         self._check_community_data(name)
 
-        community_to_update = self.communities.get(id=community_id)
+        community_to_update = self.communities.get(name=community_name)
 
         if name:
             community_to_update.name = name
@@ -601,11 +605,14 @@ class User(AbstractUser):
         if type:
             community_to_update.type = type
 
-        if description is not None:
-            community_to_update.descripton = description
-
         if color:
             community_to_update.color = color
+
+        if description is not None:
+            community_to_update.description = description
+
+        if rules is not None:
+            community_to_update.rules = rules
 
         if user_adjective is not None:
             community_to_update.user_adjective = user_adjective
@@ -621,7 +628,7 @@ class User(AbstractUser):
         if not avatar:
             raise ValidationError(_('A new avatar is required.'))
 
-        self._check_can_update_community_with_id(community_id)
+        self._check_can_update_community_with_name(community_id)
         self._check_community_data(avatar=avatar)
 
         community_to_update_avatar_from = self.communities.get(id=community_id)
@@ -632,7 +639,7 @@ class User(AbstractUser):
         return community_to_update_avatar_from
 
     def delete_community_with_id_avatar(self, community_id):
-        self._check_can_update_community_with_id(community_id)
+        self._check_can_update_community_with_name(community_id)
         community_to_delete_avatar_from = self.communities.get(id=community_id)
         community_to_delete_avatar_from.avatar.delete()
 
@@ -1277,13 +1284,13 @@ class User(AbstractUser):
             )
 
     def _check_can_delete_community_with_name(self, community_name):
-        if not self.has_administrated_community_with_name(community_name):
+        if not self.is_creator_of_community_with_name(community_name):
             raise ValidationError(
-                _('Can\'t delete a community that you did not create.'),
+                _('Can\'t delete a community that you do not administrate.'),
             )
 
-    def _check_can_update_community_with_id(self, community_id):
-        if not self.is_administrator_of_community_with_id(community_id):
+    def _check_can_update_community_with_name(self, community_name):
+        if not self.is_administrator_of_community_with_name(community_name):
             raise ValidationError(
                 _('Can\'t update a community that you do not administrate.'),
             )

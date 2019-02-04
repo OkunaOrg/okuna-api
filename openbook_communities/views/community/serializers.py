@@ -5,6 +5,13 @@ from openbook_communities.models import Community
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 
 
+class GetCommunitySerializer(serializers.Serializer):
+    community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
+                                           allow_blank=False,
+                                           required=True,
+                                           validators=[community_name_characters_validator, community_name_exists])
+
+
 class DeleteCommunitySerializer(serializers.Serializer):
     community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
                                            allow_blank=False,
@@ -13,16 +20,19 @@ class DeleteCommunitySerializer(serializers.Serializer):
 
 
 class UpdateCommunitySerializer(serializers.Serializer):
-    type = serializers.ChoiceField(allow_blank=False, choices=Community.COMMUNITY_TYPES)
+    # The name of the community to update
+    community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
+                                           validators=[community_name_characters_validator, community_name_exists],
+                                           required=True)
+    type = serializers.ChoiceField(choices=Community.COMMUNITY_TYPES, required=False)
     name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
-                                 allow_blank=False,
-                                 validators=[community_name_characters_validator, community_name_exists])
-    title = serializers.CharField(max_length=settings.COMMUNITY_TITLE_MAX_LENGTH,
-                                  allow_blank=False)
-    description = serializers.CharField(max_length=settings.COMMUNITY_DESCRIPTION_MAX_LENGTH,
+                                 validators=[community_name_characters_validator], required=False)
+    title = serializers.CharField(max_length=settings.COMMUNITY_TITLE_MAX_LENGTH, required=False)
+    description = serializers.CharField(max_length=settings.COMMUNITY_DESCRIPTION_MAX_LENGTH, required=False,
                                         allow_blank=True)
-    rules = serializers.CharField(max_length=settings.COMMUNITY_RULES_MAX_LENGTH,
-                                  allow_blank=True)
+    rules = serializers.CharField(max_length=settings.COMMUNITY_RULES_MAX_LENGTH, required=False, allow_blank=True)
+    user_adjective = serializers.CharField(max_length=settings.COMMUNITY_USER_ADJECTIVE_MAX_LENGTH, required=False)
+    users_adjective = serializers.CharField(max_length=settings.COMMUNITY_USERS_ADJECTIVE_MAX_LENGTH, required=False)
 
 
 class UpdateCommunityAvatarSerializer(serializers.Serializer):
@@ -46,10 +56,13 @@ class GetCommunityCommunitySerializer(serializers.ModelSerializer):
         model = Community
         fields = (
             'title',
+            'name',
             'avatar',
             'cover',
             'members_count',
             'color',
             'description',
-            'rules'
+            'rules',
+            'user_adjective',
+            'users_adjective'
         )
