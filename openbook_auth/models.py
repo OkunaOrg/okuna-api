@@ -706,6 +706,11 @@ class User(AbstractUser):
         # In the future, the user might have blocked users which should not be displayed
         return User.get_public_users_with_query(query)
 
+    def get_communities_with_query(self, query):
+        # In the future, the user might have blocked communities which should not be displayed
+        Community = get_community_model()
+        return Community.get_communities_with_query(query)
+
     def create_public_post(self, text=None, image=None):
         # If no circle ids are given, will be public
         return self.create_post(text=text, image=image)

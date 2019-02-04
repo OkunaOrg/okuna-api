@@ -40,8 +40,7 @@ def user_id_exists(user_id):
 
 
 def user_username_exists(username):
-    count = User.objects.filter(username=username).count()
-    if count == 0:
+    if not User.objects.filter(username=username).exists():
         raise ValidationError(
             _('No user with the provided username exists.'),
         )

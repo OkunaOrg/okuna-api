@@ -3,6 +3,7 @@ from django.db import models
 
 # Create your models here.
 from django.utils import timezone
+from django.db.models import Q
 
 from openbook.settings import COLOR_ATTR_MAX_LENGTH
 from openbook_auth.models import User
@@ -47,6 +48,12 @@ class Community(models.Model):
         verbose_name_plural = 'communities'
 
     @classmethod
+    def get_communities_with_query(cls, query):
+        communities_query = Q(name__icontains=query)
+        communities_query.add(Q(title__icontains=query), Q.OR)
+        return cls.objects.filter(communities_query)
+
+    @classmethod
     def create_community(cls, name, title, creator, color, user_adjective=None, users_adjective=None, avatar=None,
                          type=None, description=None):
         community = cls.objects.create(title=title, name=name, creator=creator, avatar=avatar, color=color,
@@ -64,8 +71,8 @@ class Community(models.Model):
         return cls.objects.filter(name=name).exists()
 
     @property
-    def users_count(self):
-        return self.users.all().count()
+    def members_count(self):
+        return self.members.all().count()
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
