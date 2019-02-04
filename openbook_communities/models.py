@@ -68,6 +68,7 @@ class Community(models.Model):
                                        description=description, type=type, rules=rules, circle=community_circle)
 
         community.administrators.add(creator)
+        community.members.add(creator)
         community.save()
         return community
 

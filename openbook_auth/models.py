@@ -334,8 +334,8 @@ class User(AbstractUser):
     def has_list_with_id(self, list_id):
         return self.lists.filter(id=list_id).count() > 0
 
-    def has_community_with_id(self, community_id):
-        return self.communities.filter(id=community_id).exists()
+    def has_administrated_community_with_name(self, community_name):
+        return self.administrated_communities.filter(name=community_name).exists()
 
     def is_administrator_of_community_with_id(self, community_id):
         Community = get_community_model()
@@ -574,11 +574,11 @@ class User(AbstractUser):
         return community
 
     def delete_community(self, community):
-        return self.delete_community_with_id(community.pk)
+        return self.delete_community_with_name(community.name)
 
-    def delete_community_with_id(self, community_id):
-        self._check_can_delete_community_with_id(community_id)
-        community = self.communities.get(id=community_id)
+    def delete_community_with_name(self, community_name):
+        self._check_can_delete_community_with_name(community_name)
+        community = self.administrated_communities.get(name=community_name)
         community.delete()
 
     def update_community(self, community, name=None):
@@ -712,6 +712,10 @@ class User(AbstractUser):
         # In the future, the user might have blocked communities which should not be displayed
         Community = get_community_model()
         return Community.get_communities_with_query(query)
+
+    def get_community_with_name(self, community_name):
+        Community = get_community_model()
+        return Community.objects.get(name=community_name)
 
     def create_public_post(self, text=None, image=None):
         # If no circle ids are given, will be public
@@ -1272,8 +1276,8 @@ class User(AbstractUser):
                 _('Can\'t update a list that does not belong to you.'),
             )
 
-    def _check_can_delete_community_with_id(self, community_id):
-        if not self.has_community_with_id(community_id):
+    def _check_can_delete_community_with_name(self, community_name):
+        if not self.has_administrated_community_with_name(community_name):
             raise ValidationError(
                 _('Can\'t delete a community that you did not create.'),
             )

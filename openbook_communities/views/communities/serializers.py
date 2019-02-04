@@ -45,6 +45,8 @@ class GetCommunitiesCommunitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Community
         fields = (
+            'id',
+            'name',
             'title',
             'avatar',
             'cover',

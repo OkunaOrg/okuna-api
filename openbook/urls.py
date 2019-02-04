@@ -23,7 +23,7 @@ from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, EmailVerify, Login, AuthenticatedUser, User, Users, \
     UserSettings
-from openbook_communities.views.communities.views import Communities, TrendingCommunities
+from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck
 from openbook_communities.views.community.members.views import CommunityMembers, CommunityMember
 from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
@@ -68,8 +68,8 @@ community_member_patterns = [
 ]
 
 community_members_patterns = [
-    path('<str:member_username>/', include(community_member_patterns)),
     path('', CommunityMembers.as_view(), name='community-members'),
+    path('<str:member_username>/', include(community_member_patterns)),
 ]
 
 community_patterns = [
@@ -80,9 +80,10 @@ community_patterns = [
 ]
 
 communities_patterns = [
-    path('<int:community_id>/', include(community_patterns)),
     path('', Communities.as_view(), name='communities'),
     path('trending/', TrendingCommunities.as_view(), name='trending-communities'),
+    path('name-check/', CommunityNameCheck.as_view(), name='community-name-check'),
+    path('<str:community_name>/', include(community_patterns)),
 ]
 
 connections_patterns = [
