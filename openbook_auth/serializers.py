@@ -50,8 +50,40 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH)
 
 
+class BadgeSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Badge
+        fields = (
+            'keyword',
+            'keyword_description_en',
+            'keyword_description_es',
+        )
+
+
+class GetUserProfileBadgeSerializer(serializers.ModelSerializer):
+    badge = BadgeSerializer()
+
+    class Meta:
+        model = UserProfileBadge
+        fields = (
+            'badge',
+        )
+
+    def to_representation(self, obj):
+        """Move fields from badge serializer to user profile badge representation."""
+
+        representation = super().to_representation(obj)
+        badge_representation = representation.pop('badge')
+        for key in badge_representation:
+            representation[key] = badge_representation[key]
+
+        return representation
+
+
 class GetAuthenticatedUserProfileSerializer(serializers.ModelSerializer):
     avatar = serializers.ImageField(max_length=None, use_url=True, allow_null=True, required=False)
+    badges = GetUserProfileBadgeSerializer(many=True)
 
     class Meta:
         model = UserProfile
@@ -65,6 +97,7 @@ class GetAuthenticatedUserProfileSerializer(serializers.ModelSerializer):
             'cover',
             'is_of_legal_age',
             'followers_count_visible',
+            'badges'
         )
 
 
@@ -131,37 +164,6 @@ class GetUserSerializer(serializers.Serializer):
                                      allow_blank=False,
                                      validators=[username_characters_validator, user_username_exists],
                                      required=True)
-
-
-class BadgeSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Badge
-        fields = (
-            'keyword',
-            'keyword_description_en',
-            'keyword_description_es',
-        )
-
-
-class GetUserProfileBadgeSerializer(serializers.ModelSerializer):
-    badge = BadgeSerializer()
-
-    class Meta:
-        model = UserProfileBadge
-        fields = (
-            'badge',
-        )
-
-    def to_representation(self, obj):
-        """Move fields from badge serializer to user profile badge representation."""
-
-        representation = super().to_representation(obj)
-        badge_representation = representation.pop('badge')
-        for key in badge_representation:
-            representation[key] = badge_representation[key]
-
-        return representation
 
 
 class GetUserUserProfileSerializer(serializers.ModelSerializer):
