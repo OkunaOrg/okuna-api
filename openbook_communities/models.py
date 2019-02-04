@@ -4,6 +4,7 @@ from django.db import models
 # Create your models here.
 from django.utils import timezone
 from django.db.models import Q
+from django.db.models import Count
 
 from openbook.settings import COLOR_ATTR_MAX_LENGTH
 from openbook_auth.models import User
@@ -54,15 +55,19 @@ class Community(models.Model):
         return cls.objects.filter(communities_query)
 
     @classmethod
-    def create_community(cls, name, title, creator, color, user_adjective=None, users_adjective=None, avatar=None,
-                         type=None, description=None):
-        community = cls.objects.create(title=title, name=name, creator=creator, avatar=avatar, color=color,
+    def get_trending_communities(cls):
+        return cls.objects.annotate(Count('members')).all().order_by(
+            '-members__count', '-created')
+
+    @classmethod
+    def create_community(cls, name, title, creator, color, type=None, user_adjective=None, users_adjective=None,
+                         avatar=None, cover=None, description=None, rules=None):
+        community_circle = Circle.create_circle(name=name, color=color)
+        community = cls.objects.create(title=title, name=name, creator=creator, avatar=avatar, cover=cover, color=color,
                                        user_adjective=user_adjective, users_adjective=users_adjective,
-                                       description=description, type=type, )
+                                       description=description, type=type, rules=rules, circle=community_circle)
 
         community.administrators.add(creator)
-        circle = Circle.create_circle(name=name)
-        community.circle = circle
         community.save()
         return community
 

@@ -564,10 +564,12 @@ class User(AbstractUser):
         self._check_can_get_circle_with_id(circle_id)
         return self.circles.get(id=circle_id)
 
-    def create_community(self, name, avatar=None):
+    def create_community(self, name, title=None, description=None, rules=None,
+                         avatar=None, cover=None, type=None, color=None):
         self._check_community_name_not_taken(name)
         Community = get_community_model()
-        community = Community.objects.create(name=name, creator=self, avatar=avatar)
+        community = Community.create_community(name=name, creator=self, title=title, description=description,
+                                               rules=rules, cover=cover, type=type, avatar=avatar, color=color)
 
         return community
 

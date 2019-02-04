@@ -119,6 +119,7 @@ importer_patterns = [
 api_patterns = [
     path('auth/', include(auth_patterns)),
     path('posts/', include(posts_patterns)),
+    path('communities/', include(communities_patterns)),
     path('circles/', include(circles_patterns)),
     path('connections/', include(connections_patterns)),
     path('lists/', include(lists_patterns)),

@@ -1,5 +1,8 @@
 from django.conf import settings
 from rest_framework import serializers
+
+from openbook.settings import COLOR_ATTR_MAX_LENGTH
+from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community
 from openbook_communities.validators import community_name_characters_validator, community_name_not_taken_validator
 
@@ -16,6 +19,8 @@ class CreateCommunitySerializer(serializers.Serializer):
                                   allow_blank=True)
     avatar = serializers.ImageField(required=False)
     cover = serializers.ImageField(required=False)
+    color = serializers.CharField(max_length=COLOR_ATTR_MAX_LENGTH, required=True,
+                                  validators=[hex_color_validator])
 
 
 class CommunityNameCheckSerializer(serializers.Serializer):

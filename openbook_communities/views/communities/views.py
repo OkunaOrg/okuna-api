@@ -27,13 +27,14 @@ class Communities(APIView):
         rules = data.get('rules')
         avatar = data.get('avatar')
         cover = data.get('cover')
+        color = data.get('color')
 
         user = request.user
 
         with transaction.atomic():
             community = user.create_community(name=name, title=title, description=description, rules=rules,
                                               avatar=avatar, cover=cover
-                                              , type=type)
+                                              , type=type, color=color)
 
         response_serializer = GetCommunitiesCommunitySerializer(community, context={"request": request})
 
