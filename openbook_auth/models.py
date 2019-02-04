@@ -21,7 +21,6 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, get_emoji_model, \
     get_emoji_group_model, get_user_invite_model
 from openbook_common.validators import name_characters_validator
-from openbook_invitations.models import UserInvite
 
 
 class User(AbstractUser):
@@ -57,10 +56,13 @@ class User(AbstractUser):
         verbose_name_plural = _('users')
 
     @classmethod
-    def create_user(cls, username, email=None, password=None, name=None, avatar=None, is_of_legal_age=None, **extra_fields):
+    def create_user(cls, username, email=None, password=None, name=None, avatar=None, is_of_legal_age=None,
+                    badge=None, **extra_fields):
         new_user = cls.objects.create_user(username, email=email, password=password, **extra_fields)
-        UserProfile.objects.create(name=name, user=new_user, avatar=avatar,
-                                   is_of_legal_age=is_of_legal_age)
+        UserProfile.objects.create(name=name, user=new_user, avatar=avatar, is_of_legal_age=is_of_legal_age)
+        if badge:
+            new_user.assign_badge_to_user(badge)
+
         return new_user
 
     @classmethod
@@ -113,6 +115,9 @@ class User(AbstractUser):
         users_query = Q(username__icontains=query)
         users_query.add(Q(profile__name__icontains=query), Q.OR)
         return cls.objects.filter(users_query)
+
+    def assign_badge_to_user(self, badge):
+        UserProfileBadge.objects.create(user_profile=self.profile, badge=badge)
 
     def count_posts(self):
         return self.posts.count()
@@ -1280,5 +1285,8 @@ class UserProfile(models.Model):
 
 
 class UserProfileBadge(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='badges')
+    user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='badges')
     badge = models.ForeignKey(Badge, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('user_profile', 'badge')

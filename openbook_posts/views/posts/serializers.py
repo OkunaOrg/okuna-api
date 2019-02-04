@@ -4,6 +4,7 @@ from rest_framework import serializers
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from openbook_auth.models import User, UserProfile
+from openbook_auth.serializers import GetUserProfileBadgeSerializer
 from openbook_auth.validators import user_username_exists, username_characters_validator
 from openbook_circles.models import Circle
 from openbook_circles.validators import circle_id_exists
@@ -52,11 +53,14 @@ class CreatePostSerializer(serializers.Serializer):
 
 
 class PostCreatorProfileSerializer(serializers.ModelSerializer):
+    badges = GetUserProfileBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
             'avatar',
-            'cover'
+            'cover',
+            'badges'
         )
 
 
