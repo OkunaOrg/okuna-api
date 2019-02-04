@@ -21,7 +21,6 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, get_emoji_model, \
     get_emoji_group_model, get_user_invite_model
 from openbook_common.validators import name_characters_validator
-from openbook_invitations.models import UserInvite
 
 
 class User(AbstractUser):
@@ -58,11 +57,11 @@ class User(AbstractUser):
 
     @classmethod
     def create_user(cls, username, email=None, password=None, name=None, avatar=None, is_of_legal_age=None,
-                    badge_keyword=None, **extra_fields):
+                    badge=None, **extra_fields):
         new_user = cls.objects.create_user(username, email=email, password=password, **extra_fields)
         UserProfile.objects.create(name=name, user=new_user, avatar=avatar, is_of_legal_age=is_of_legal_age)
-        if badge_keyword:
-            new_user.assign_badge(badge_keyword)
+        if badge:
+            new_user.assign_badge_to_user(badge)
 
         return new_user
 
@@ -117,12 +116,8 @@ class User(AbstractUser):
         users_query.add(Q(profile__name__icontains=query), Q.OR)
         return cls.objects.filter(users_query)
 
-    def assign_badge(self, badge_keyword):
-        try:
-            badge = Badge.objects.get(keyword=badge_keyword)
-            UserProfileBadge.objects.create(user_profile=self.profile, badge=badge)
-        except Badge.DoesNotExist:
-            raise ValidationError(_('The provided badge keyword is invalid'))
+    def assign_badge_to_user(self, badge):
+        UserProfileBadge.objects.create(user_profile=self.profile, badge=badge)
 
     def count_posts(self):
         return self.posts.count()
