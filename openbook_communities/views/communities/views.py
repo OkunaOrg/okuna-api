@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from django.utils.translation import gettext as _
 
 from openbook_common.responses import ApiMessageResponse
+from openbook_common.utils.model_loaders import get_community_model
 from openbook_communities.views.communities.serializers import CreateCommunitySerializer, \
     GetCommunitiesCommunitySerializer, GetCommunitiesSerializer, CommunityNameCheckSerializer
 
@@ -71,3 +72,13 @@ class CommunityNameCheck(APIView):
         serializer.is_valid(raise_exception=True)
 
         return ApiMessageResponse(_('Community name available'), status=status.HTTP_202_ACCEPTED)
+
+
+class TrendingCommunities(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        Community = get_community_model()
+        communities = Community.get_trending_communities()[:10]
+        posts_serializer = GetCommunitiesCommunitySerializer(communities, many=True, context={"request": request})
+        return Response(posts_serializer.data, status=status.HTTP_200_OK)

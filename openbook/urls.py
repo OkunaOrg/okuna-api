@@ -23,6 +23,9 @@ from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, EmailVerify, Login, AuthenticatedUser, User, Users, \
     UserSettings
+from openbook_communities.views.communities.views import Communities, TrendingCommunities
+from openbook_communities.views.community.members.views import CommunityMembers, CommunityMember
+from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
@@ -58,6 +61,28 @@ posts_patterns = [
     path('', Posts.as_view(), name='posts'),
     path('trending/', TrendingPosts.as_view(), name='trending-posts'),
     path('emojis/groups/', PostReactionEmojiGroups.as_view(), name='posts-emoji-groups'),
+]
+
+community_member_patterns = [
+    path('', CommunityMember.as_view(), name='community-member'),
+]
+
+community_members_patterns = [
+    path('<str:member_username>/', include(community_member_patterns)),
+    path('', CommunityMembers.as_view(), name='community-members'),
+]
+
+community_patterns = [
+    path('', CommunityItem.as_view(), name='community'),
+    path('avatar/', CommunityAvatar.as_view(), name='avatar'),
+    path('cover/', CommunityCover.as_view(), name='cover'),
+    path('members/', include(community_members_patterns)),
+]
+
+communities_patterns = [
+    path('<int:community_id>/', include(community_patterns)),
+    path('', Communities.as_view(), name='communities'),
+    path('trending/', TrendingCommunities.as_view(), name='trending-communities'),
 ]
 
 connections_patterns = [

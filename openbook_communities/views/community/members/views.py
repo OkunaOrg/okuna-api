@@ -8,7 +8,7 @@ from django.utils.translation import gettext as _
 
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import normalise_request_data
-from openbook_communities.views.community.views.members.serializers import AddCommunityMemberSerializer, \
+from openbook_communities.views.community.members.serializers import AddCommunityMemberSerializer, \
     GetCommunityMembersSerializer, GetCommunityMembersMemberSerializer, RemoveCommunityMemberSerializer
 
 
