@@ -254,12 +254,15 @@ class GetUsersSerializer(serializers.Serializer):
 
 
 class GetUsersUserProfileSerializer(serializers.ModelSerializer):
+    badges = GetUserProfileBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
             'id',
             'avatar',
-            'name'
+            'name',
+            'badges'
         )
 
 
