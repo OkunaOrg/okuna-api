@@ -60,14 +60,9 @@ class User(AbstractUser):
     def create_user(cls, username, email=None, password=None, name=None, avatar=None, is_of_legal_age=None,
                     badge_keyword=None, **extra_fields):
         new_user = cls.objects.create_user(username, email=email, password=password, **extra_fields)
-        new_user_profile = UserProfile.objects.create(name=name, user=new_user, avatar=avatar,
-                                                      is_of_legal_age=is_of_legal_age)
+        UserProfile.objects.create(name=name, user=new_user, avatar=avatar, is_of_legal_age=is_of_legal_age)
         if badge_keyword:
-            try:
-                badge = Badge.objects.get(keyword=badge_keyword)
-            except Badge.DoesNotExist:
-                raise ValidationError(_('The provided badge keyword is invalid'))
-            UserProfileBadge.objects.create(user_profile=new_user_profile, badge=badge)
+            new_user.assign_badge(badge_keyword)
 
         return new_user
 
@@ -121,6 +116,13 @@ class User(AbstractUser):
         users_query = Q(username__icontains=query)
         users_query.add(Q(profile__name__icontains=query), Q.OR)
         return cls.objects.filter(users_query)
+
+    def assign_badge(self, badge_keyword):
+        try:
+            badge = Badge.objects.get(keyword=badge_keyword)
+            UserProfileBadge.objects.create(user_profile=self.profile, badge=badge)
+        except Badge.DoesNotExist:
+            raise ValidationError(_('The provided badge keyword is invalid'))
 
     def count_posts(self):
         return self.posts.count()
@@ -1290,3 +1292,6 @@ class UserProfile(models.Model):
 class UserProfileBadge(models.Model):
     user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='badges')
     badge = models.ForeignKey(Badge, on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('user_profile', 'badge')

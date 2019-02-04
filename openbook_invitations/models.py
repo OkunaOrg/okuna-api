@@ -11,6 +11,7 @@ from django.utils.translation import ugettext_lazy as _
 import jwt
 # Create your models here.
 from openbook.settings import USERNAME_MAX_LENGTH
+from openbook_common.models import Badge
 from openbook_common.utils.model_loaders import get_user_invite_model
 
 
