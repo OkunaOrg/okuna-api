@@ -56,8 +56,7 @@ class BadgeSerializer(serializers.ModelSerializer):
         model = Badge
         fields = (
             'keyword',
-            'keyword_description_en',
-            'keyword_description_es',
+            'keyword_description'
         )
 
 
@@ -69,16 +68,6 @@ class GetUserProfileBadgeSerializer(serializers.ModelSerializer):
         fields = (
             'badge',
         )
-
-    def to_representation(self, obj):
-        """Move fields from badge serializer to user profile badge representation."""
-
-        representation = super().to_representation(obj)
-        badge_representation = representation.pop('badge')
-        for key in badge_representation:
-            representation[key] = badge_representation[key]
-
-        return representation
 
 
 class GetAuthenticatedUserProfileSerializer(serializers.ModelSerializer):
