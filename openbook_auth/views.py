@@ -1,14 +1,11 @@
 from django.contrib.auth import get_user_model, authenticate
 from django.db import transaction
 from django.conf import settings
-from django.core.mail import EmailMessage
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.db.models import Q
+from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
-from django.contrib.sites.shortcuts import get_current_site
 from jwt import InvalidSignatureError
 from rest_framework import status
-from rest_framework.exceptions import AuthenticationFailed, ValidationError, APIException
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -19,11 +16,9 @@ from rest_framework.authtoken.models import Token
 from openbook_auth.exceptions import EmailVerificationTokenInvalid
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.model_loaders import get_user_invite_model
-from openbook_invitations.models import UserInvite
 from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheckSerializer, LoginSerializer, \
     GetAuthenticatedUserSerializer, GetUserUserSerializer, UpdateAuthenticatedUserSerializer, GetUserSerializer, \
     GetUsersSerializer, GetUsersUserSerializer, UpdateUserSettingsSerializer, EmailVerifySerializer
-from .models import UserProfile
 
 
 class Register(APIView):
@@ -212,7 +207,7 @@ class UserSettings(APIView):
             if has_email:
                 new_email = data.get('email')
                 user.update_email(new_email)
-                self.send_confirmation_email(request, user)
+                self.send_confirmation_email(user)
 
             if not has_email and not has_password:
                 return Response(_('Please specify email or password to update'), status=status.HTTP_400_BAD_REQUEST)
@@ -220,19 +215,25 @@ class UserSettings(APIView):
         user_serializer = GetAuthenticatedUserSerializer(user, context={"request": request})
         return Response(user_serializer.data, status=status.HTTP_200_OK)
 
-    def send_confirmation_email(self, request, user):
+    def send_confirmation_email(self, user):
         mail_subject = _('Confirm your email for Openbook')
-        current_site = get_current_site(request)
-        message = render_to_string('change_email.txt', {
+        text_content = render_to_string('openbook_auth/email/change_email.txt', {
             'name': user.profile.name,
-            'protocol': request.scheme,
-            'domain': current_site.domain,
-            'token': user.make_email_verification_token()
+            'confirmation_link': self.generate_confirmation_link(user.make_email_verification_token())
         })
 
-        email = EmailMessage(
-            mail_subject, message, to=[user.email], from_email=settings.SERVICE_EMAIL_ADDRESS)
+        html_content = render_to_string('openbook_auth/email/change_email.html', {
+            'name': user.profile.name,
+            'confirmation_link': self.generate_confirmation_link(user.make_email_verification_token())
+        })
+
+        email = EmailMultiAlternatives(
+            mail_subject, text_content, to=[user.email], from_email=settings.SERVICE_EMAIL_ADDRESS)
+        email.attach_alternative(html_content, 'text/html')
         email.send()
+
+    def generate_confirmation_link(self, token):
+        return '{0}/api/auth/email/verify/{1}'.format(settings.EMAIL_HOST, token)
 
 
 class Users(APIView):
