@@ -8,19 +8,19 @@ from django.utils.translation import gettext as _
 
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import normalise_request_data
-from openbook_communities.views.community.administrators.serializers import GetCommunityAdministratorsSerializer, \
-    GetCommunityAdministratorsUserSerializer, RemoveCommunityAdministratorSerializer, \
-    AddCommunityAdministratorSerializer
+from openbook_communities.views.community.moderators.serializers import GetCommunityModeratorsSerializer, \
+    GetCommunityModeratorsUserSerializer, RemoveCommunityModeratorSerializer, \
+    AddCommunityModeratorSerializer
 
 
-class CommunityAdministrators(APIView):
+class CommunityModerators(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request, community_name):
         query_params = request.query_params.dict()
         query_params['community_name'] = community_name
 
-        serializer = GetCommunityAdministratorsSerializer(data=query_params)
+        serializer = GetCommunityModeratorsSerializer(data=query_params)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
@@ -30,9 +30,9 @@ class CommunityAdministrators(APIView):
 
         user = request.user
 
-        administrators = user.get_community_with_name_administrators(community_name=community_name, max_id=max_id)[:count]
+        moderators = user.get_community_with_name_moderators(community_name=community_name, max_id=max_id)[:count]
 
-        response_serializer = GetCommunityAdministratorsUserSerializer(administrators, many=True,
+        response_serializer = GetCommunityModeratorsUserSerializer(moderators, many=True,
                                                                        context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
@@ -41,7 +41,7 @@ class CommunityAdministrators(APIView):
         request_data = normalise_request_data(request.data)
         request_data['community_name'] = community_name
 
-        serializer = AddCommunityAdministratorSerializer(data=request_data)
+        serializer = AddCommunityModeratorSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
@@ -50,21 +50,21 @@ class CommunityAdministrators(APIView):
         user = request.user
 
         with transaction.atomic():
-            user.add_administrator_with_username_to_community_with_name(username=username,
+            user.add_moderator_with_username_to_community_with_name(username=username,
                                                                         community_name=community_name)
 
-        return ApiMessageResponse('Added administrator to community.', status=status.HTTP_201_CREATED)
+        return ApiMessageResponse('Added moderator to community.', status=status.HTTP_201_CREATED)
 
 
-class CommunityAdministratorItem(APIView):
+class CommunityModeratorItem(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def delete(self, request, community_name, community_administrator_username):
+    def delete(self, request, community_name, community_moderator_username):
         request_data = normalise_request_data(request.data)
         request_data['community_name'] = community_name
-        request_data['username'] = community_administrator_username
+        request_data['username'] = community_moderator_username
 
-        serializer = RemoveCommunityAdministratorSerializer(data=request_data)
+        serializer = RemoveCommunityModeratorSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
@@ -74,7 +74,7 @@ class CommunityAdministratorItem(APIView):
         user = request.user
 
         with transaction.atomic():
-            user.remove_administrator_with_username_from_community_with_name(username=username,
+            user.remove_moderator_with_username_from_community_with_name(username=username,
                                                                            community_name=community_name)
 
-        return ApiMessageResponse(_('Removed administrator'), status=status.HTTP_200_OK)
+        return ApiMessageResponse(_('Removed moderator'), status=status.HTTP_200_OK)

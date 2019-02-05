@@ -1713,6 +1713,12 @@ class User(AbstractUser):
                 _('User to remove is not an moderator.'),
             )
 
+        if Community.is_user_with_username_administrator_of_community_with_name(username=username,
+                                                                                community_name=community_name):
+            raise ValidationError(
+                _('Can\'t remove a moderator which is also an administrator.'),
+            )
+
     def _check_can_get_community_with_name_moderators(self, community_name):
         # Anyone can see community moderators
         return True
