@@ -24,6 +24,7 @@ from openbook_common.views import Time, Health, EmojiGroups
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, EmailVerify, Login, AuthenticatedUser, User, Users, \
     UserSettings
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck
+from openbook_communities.views.community.banned_users.views import BanUser, UnbanUser, CommunityBannedUsers
 from openbook_communities.views.community.members.views import CommunityMembers, JoinCommunity, \
     LeaveCommunity, InviteCommunityMember
 from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover
@@ -71,11 +72,18 @@ community_members_patterns = [
     path('invite/', InviteCommunityMember.as_view(), name='community-invite'),
 ]
 
+community_banned_users_patterns = [
+    path('', CommunityBannedUsers.as_view(), name='community-banned-users'),
+    path('ban/', BanUser.as_view(), name='community-ban-user'),
+    path('unban/', UnbanUser.as_view(), name='community-unban-user'),
+]
+
 community_patterns = [
     path('', CommunityItem.as_view(), name='community'),
     path('avatar/', CommunityAvatar.as_view(), name='community-avatar'),
     path('cover/', CommunityCover.as_view(), name='community-cover'),
     path('members/', include(community_members_patterns)),
+    path('banned-users/', include(community_banned_users_patterns)),
 ]
 
 communities_patterns = [

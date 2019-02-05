@@ -133,17 +133,20 @@ class Community(models.Model):
         CommunityInvite = get_community_invite_model()
         return CommunityInvite.create_community_invite(creator=creator, invited_user=invited_user, community=self)
 
-    def create_moderator_user_ban_log(self, moderator):
+    def create_moderator_user_ban_log(self, moderator, target_user):
         return self._create_moderator_user_action_log(action_type='B',
-                                                      moderator=moderator)
+                                                      moderator=moderator,
+                                                      target_user=target_user)
 
-    def create_moderator_user_unban_log(self, moderator):
+    def create_moderator_user_unban_log(self, moderator, target_user):
         return self._create_moderator_user_action_log(action_type='U',
-                                                      moderator=moderator)
+                                                      moderator=moderator,
+                                                      target_user=target_user)
 
-    def _create_moderator_user_action_log(self, action_type, moderator):
+    def _create_moderator_user_action_log(self, action_type, moderator, target_user):
         CommunityModeratorUserActionLog = get_community_moderator_user_action_log_model()
         return CommunityModeratorUserActionLog.create_community_moderator_user_action_log(community=self,
+                                                                                          target_user=target_user,
                                                                                           action_type=action_type,
                                                                                           moderator=moderator)
 
@@ -163,6 +166,8 @@ class CommunityModeratorUserActionLog(models.Model):
     """
     moderator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+', null=False,
                                   blank=False)
+    target_user = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='+', null=True,
+                                    blank=False)
     community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='moderators_user_actions_logs',
                                   null=False,
                                   blank=False)
@@ -174,8 +179,9 @@ class CommunityModeratorUserActionLog(models.Model):
     action_type = models.CharField(editable=False, blank=False, null=False, choices=ACTION_TYPES, max_length=2)
 
     @classmethod
-    def create_community_moderator_user_action_log(cls, community, action_type, moderator):
-        return cls.objects.create(community=community, action_type=action_type, moderator=moderator)
+    def create_community_moderator_user_action_log(cls, community, action_type, moderator, target_user):
+        return cls.objects.create(community=community, action_type=action_type, moderator=moderator,
+                                  target_user=target_user)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''

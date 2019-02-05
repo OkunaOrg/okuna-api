@@ -746,11 +746,11 @@ class User(AbstractUser):
         community_to_ban_user_from = Community.objects.get(name=community_name)
         user_to_ban = User.objects.get(username=username)
 
-        if user_to_ban.is_member_of_community_with_name():
+        if user_to_ban.is_member_of_community_with_name(community_name=community_name):
             user_to_ban.leave_community_with_name(community_name=community_name)
 
         community_to_ban_user_from.banned_users.add(user_to_ban)
-        community_to_ban_user_from.create_moderator_user_ban_log(moderator=self)
+        community_to_ban_user_from.create_moderator_user_ban_log(moderator=self, target_user=user_to_ban)
 
         return community_to_ban_user_from
 
@@ -763,7 +763,7 @@ class User(AbstractUser):
         user_to_unban = User.objects.get(username=username)
 
         community_to_unban_user_from.banned_users.remove(user_to_unban)
-        community_to_unban_user_from.create_moderator_user_unban_log(moderator=self)
+        community_to_unban_user_from.create_moderator_user_unban_log(moderator=self, target_user=user_to_unban)
 
         return community_to_unban_user_from
 
