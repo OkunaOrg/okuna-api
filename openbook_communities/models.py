@@ -1,3 +1,4 @@
+import jwt
 from django.conf import settings
 from django.db import models
 
@@ -11,6 +12,7 @@ from openbook_auth.models import User
 from openbook_circles.models import Circle
 from django.utils.translation import ugettext_lazy as _
 
+from openbook_common.utils.model_loaders import get_community_invite_model
 from openbook_common.validators import hex_color_validator
 from openbook_communities.validators import community_name_characters_validator
 
@@ -47,6 +49,12 @@ class Community(models.Model):
 
     class Meta:
         verbose_name_plural = 'communities'
+
+    @classmethod
+    def is_user_with_username_invited_to_community_with_name(cls, username, community_name):
+        CommunityInvite = get_community_invite_model()
+        return CommunityInvite.is_user_with_username_invited_to_community_with_name(username=username,
+                                                                                    community_name=community_name)
 
     @classmethod
     def get_communities_with_query(cls, query):
@@ -111,3 +119,10 @@ class CommunityInvite(models.Model):
                                      blank=False)
     community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='invites', null=False,
                                   blank=False)
+
+    class Meta:
+        unique_together = (('invited_user', 'community', 'creator'),)
+
+    @classmethod
+    def is_user_with_username_invited_to_community_with_name(cls, username, community_name):
+        return cls.objects.filter(community__name=community_name, invited_user__username=username).exists()

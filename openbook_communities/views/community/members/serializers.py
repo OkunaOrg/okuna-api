@@ -6,10 +6,7 @@ from openbook_auth.validators import username_characters_validator, user_usernam
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 
 
-class AddCommunityMemberSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length=settings.USERNAME_MAX_LENGTH,
-                                     allow_blank=False,
-                                     validators=[username_characters_validator, user_username_exists])
+class JoinCommunitySerializer(serializers.Serializer):
     community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
                                            allow_blank=False,
                                            validators=[community_name_characters_validator, community_name_exists])

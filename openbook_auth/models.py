@@ -17,7 +17,7 @@ from openbook_auth.exceptions import EmailVerificationTokenInvalid
 from openbook_common.models import Badge
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, \
-    get_emoji_group_model, get_user_invite_model, get_community_model
+    get_emoji_group_model, get_user_invite_model, get_community_model, get_community_invite_model
 from openbook_common.validators import name_characters_validator
 
 
@@ -671,6 +671,15 @@ class User(AbstractUser):
     def join_community_with_name(self, community_name):
         self._check_can_join_community_with_name(
             community_name=community_name)
+        Community = get_community_model()
+        community_to_join = Community.objects.get(name=community_name)
+        community_to_join.members.add(self)
+
+        # Clean up any invites
+        CommunityInvite = get_community_invite_model()
+        CommunityInvite.objects.filter(community__name=community_name, invited_user__username=self.username).delete()
+
+        return community_to_join
 
     def leave_community_with_name(self, community_name):
         self._check_can_leave_community_with_name(
@@ -1361,6 +1370,20 @@ class User(AbstractUser):
             if not self.is_member_of_community_with_name(community_name=community_name):
                 raise ValidationError(
                     _('Can\'t see the members of a private community.'),
+                )
+
+    def _check_can_join_community_with_name(self, community_name):
+        if self.is_member_of_community_with_name(community_name):
+            raise ValidationError(
+                _('You are already a member of the community.'),
+            )
+
+        Community = get_community_model()
+        if Community.is_community_with_name_private(community_name=community_name):
+            if not Community.is_user_with_username_invited_to_community_with_name(username=self.username,
+                                                                                  community_name=community_name):
+                raise ValidationError(
+                    _('You are not invited to join this community.'),
                 )
 
     def _check_can_update_circle_with_id(self, circle_id):

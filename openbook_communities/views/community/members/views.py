@@ -8,30 +8,12 @@ from django.utils.translation import gettext as _
 
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import normalise_request_data
-from openbook_communities.views.community.members.serializers import AddCommunityMemberSerializer, \
+from openbook_communities.views.community.members.serializers import JoinCommunitySerializer, \
     GetCommunityMembersSerializer, GetCommunityMembersMemberSerializer, RemoveCommunityMemberSerializer
 
 
 class CommunityMembers(APIView):
     permission_classes = (IsAuthenticated,)
-
-    def put(self, request, community_name):
-        request_data = normalise_request_data(request.data)
-        request_data['community_name'] = community_name
-
-        serializer = AddCommunityMemberSerializer(data=request_data)
-        serializer.is_valid(raise_exception=True)
-
-        data = serializer.validated_data
-        username = data.get('username')
-
-        user = request.user
-
-        with transaction.atomic():
-            user.add_community_member_with_username_to_community_with_name(member_username=username,
-                                                                           community_name=community_name)
-
-        return ApiMessageResponse(_('Member added.'), status=status.HTTP_201_CREATED)
 
     def get(self, request, community_name):
         query_params = request.query_params.dict()
@@ -53,6 +35,24 @@ class CommunityMembers(APIView):
                                                                   context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class JoinCommunity(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, community_name):
+        request_data = normalise_request_data(request.data)
+        request_data['community_name'] = community_name
+
+        serializer = JoinCommunitySerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+
+        with transaction.atomic():
+            user.join_community_with_name(community_name=community_name)
+
+        return ApiMessageResponse(_('Joined community!'), status=status.HTTP_201_CREATED)
 
 
 class CommunityMember(APIView):

@@ -25,6 +25,10 @@ def get_community_model():
     return apps.get_model('openbook_communities.Community')
 
 
+def get_community_invite_model():
+    return apps.get_model('openbook_communities.CommunityInvite')
+
+
 def get_post_comment_model():
     return apps.get_model('openbook_posts.PostComment')
 

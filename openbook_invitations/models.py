@@ -42,7 +42,7 @@ class UserInvite(models.Model):
         return 'UserInvite: ' + self.username
 
     @classmethod
-    def validate_token(cls, token):
+    def decode_token(cls, token):
         return jwt.decode(token, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
     @classmethod
@@ -55,7 +55,7 @@ class UserInvite(models.Model):
     @classmethod
     def get_invite_if_valid(cls, token):
         UserInvite = get_user_invite_model()
-        data = UserInvite.validate_token(encoded_token=token)
+        data = UserInvite.decode_token(encoded_token=token)
         user_invite = UserInvite.objects.get(pk=data['id'], token=token, created_user=None)
 
         return user_invite
