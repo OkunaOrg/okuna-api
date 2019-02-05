@@ -337,6 +337,9 @@ class User(AbstractUser):
     def is_administrator_of_community_with_name(self, community_name):
         return self.administrated_communities.filter(name=community_name).exists()
 
+    def is_member_of_community_with_name(self, community_name):
+        return self.communities.filter(name=community_name).exists()
+
     def is_creator_of_community_with_name(self, community_name):
         return self.created_communities.filter(name=community_name).exists()
 
@@ -657,6 +660,47 @@ class User(AbstractUser):
         community_to_delete_cover_from = self.administrated_communities.get(name=community_name)
         community_to_delete_cover_from.cover.delete()
         return community_to_delete_cover_from
+
+    def get_community_with_name_members(self, community_name, max_id):
+        self._check_can_get_community_with_name_members(
+            community_name=community_name)
+
+        Community = get_community_model()
+        return Community.get_community_with_name_members(community_name=community_name, members_max_id=max_id)
+
+    def join_community_with_name(self, community_name):
+        self._check_can_join_community_with_name(
+            community_name=community_name)
+
+    def leave_community_with_name(self, community_name):
+        self._check_can_leave_community_with_name(
+            community_name=community_name)
+
+    def add_administrator_with_username_to_community_with_name(self, username, community_name):
+        self._check_can_add_administrator_with_username_to_community_with_name(
+            username=username,
+            community_name=community_name)
+
+    def get_community_with_name_administrators(self, community_name, max_id):
+        self._check_can_get_community_with_name_administrators(
+            community_name=community_name)
+
+    def remove_administrator_with_username_from_community_with_name(self, username, community_name):
+        self._check_can_remove_administrator_with_username_to_community_with_name(
+            username=username,
+            community_name=community_name)
+
+    def get_community_with_name_banned_users(self, community_name, max_id):
+        self._check_can_get_community_with_name_banned_users(
+            community_name=community_name)
+
+    def ban_user_with_username_from_community_with_name(self, username, community_name):
+        self._check_can_ban_user_with_username_from_community_with_name(username=username,
+                                                                        community_name=community_name)
+
+    def unban_user_with_username_from_community_with_name(self, username, community_name):
+        self._check_can_unban_user_with_username_from_community_with_name(username=username,
+                                                                          community_name=community_name)
 
     def create_list(self, name, emoji_id):
         self._check_list_name_not_taken(name)
@@ -1309,6 +1353,15 @@ class User(AbstractUser):
             raise ValidationError(
                 _('Can\'t update a community that you do not administrate.'),
             )
+
+    def _check_can_get_community_with_name_members(self, community_name):
+        Community = get_community_model()
+
+        if Community.is_community_with_name_private(community_name=community_name):
+            if not self.is_member_of_community_with_name(community_name=community_name):
+                raise ValidationError(
+                    _('Can\'t see the members of a private community.'),
+                )
 
     def _check_can_update_circle_with_id(self, circle_id):
         if not self.has_circle_with_id(circle_id):

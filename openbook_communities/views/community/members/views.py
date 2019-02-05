@@ -43,11 +43,11 @@ class CommunityMembers(APIView):
         data = serializer.validated_data
 
         count = data.get('count', 10)
-        query = data.get('query')
+        max_id = data.get('max_id')
 
         user = request.user
 
-        members = user.get_community_with_name_members_with_query(community_name=community_name, query=query)[:count]
+        members = user.get_community_with_name_members(community_name=community_name, max_id=max_id)[:count]
 
         response_serializer = GetCommunityMembersMemberSerializer(members, many=True,
                                                                   context={"request": request})

@@ -60,6 +60,10 @@ class Community(models.Model):
             '-members__count', '-created')
 
     @classmethod
+    def is_community_with_name_private(cls, community_name):
+        return cls.objects.filter(name=community_name, type='T').exists()
+
+    @classmethod
     def create_community(cls, name, title, creator, color, type=None, user_adjective=None, users_adjective=None,
                          avatar=None, cover=None, description=None, rules=None):
         community_circle = Circle.create_circle(name=name, color=color)
@@ -75,6 +79,16 @@ class Community(models.Model):
     @classmethod
     def is_name_taken(cls, name):
         return cls.objects.filter(name=name).exists()
+
+    @classmethod
+    def get_community_with_name_members(cls, community_name, members_max_id):
+        community = Community.objects.get(name=community_name)
+        community_members_query = Q()
+
+        if members_max_id:
+            community_members_query.add(Q(id__lt=members_max_id), Q.AND)
+
+        return community.members.filter(community_members_query)
 
     @property
     def members_count(self):
