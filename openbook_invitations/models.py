@@ -46,7 +46,7 @@ class UserInvite(models.Model):
         return jwt.decode(token, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
     @classmethod
-    def create_invite(cls, name, email, username):
+    def create_invite(cls, email, name=None, username=None):
         UserInvite = get_user_invite_model()
         invite = UserInvite.objects.create(name=name, email=email, username=username)
         invite.save()
