@@ -57,6 +57,10 @@ class Community(models.Model):
                                                                                     community_name=community_name)
 
     @classmethod
+    def is_user_with_username_member_of_community_with_name(cls, username, community_name):
+        return cls.objects.filter(name=community_name, members__username=username).exists()
+
+    @classmethod
     def get_communities_with_query(cls, query):
         communities_query = Q(name__icontains=query)
         communities_query.add(Q(title__icontains=query), Q.OR)
@@ -102,6 +106,10 @@ class Community(models.Model):
     def members_count(self):
         return self.members.all().count()
 
+    def create_invite(self, creator, invited_user):
+        CommunityInvite = get_community_invite_model()
+        return CommunityInvite.create_community_invite(creator=creator, invited_user=invited_user, community=self)
+
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
         if not self.id:
@@ -122,6 +130,10 @@ class CommunityInvite(models.Model):
 
     class Meta:
         unique_together = (('invited_user', 'community', 'creator'),)
+
+    @classmethod
+    def create_community_invite(cls, creator, invited_user, community):
+        return cls.objects.create(creator=creator, invited_user=invited_user, community=community)
 
     @classmethod
     def is_user_with_username_invited_to_community_with_name(cls, username, community_name):

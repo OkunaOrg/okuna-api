@@ -334,6 +334,10 @@ class User(AbstractUser):
     def has_list_with_id(self, list_id):
         return self.lists.filter(id=list_id).count() > 0
 
+    def has_invited_user_with_username_to_community_with_name(self, username, community_name):
+        return self.created_communities_invites.filter(invited_user__username=username,
+                                                       community__name=community_name).exists()
+
     def is_administrator_of_community_with_name(self, community_name):
         return self.administrated_communities.filter(name=community_name).exists()
 
@@ -696,6 +700,19 @@ class User(AbstractUser):
         community_to_leave.members.remove(self)
 
         return community_to_leave
+
+    def invite_user_with_username_to_community_with_name(self, username, community_name):
+        self._check_can_invite_user_with_username_to_community_with_name(username=username,
+                                                                         community_name=community_name)
+
+        Community = get_community_model()
+
+        community_to_invite_user_to = Community.objects.get(name=community_name)
+        user_to_invite = User.objects.get(username=username)
+
+        community_to_invite_user_to.create_invite(creator=self, invited_user=user_to_invite)
+
+        return community_to_invite_user_to
 
     def add_administrator_with_username_to_community_with_name(self, username, community_name):
         self._check_can_add_administrator_with_username_to_community_with_name(
@@ -1408,6 +1425,34 @@ class User(AbstractUser):
             raise ValidationError(
                 _('You cannot leave a community you created.'),
             )
+
+    def _check_can_invite_user_with_username_to_community_with_name(self, username, community_name):
+
+        if not self.is_member_of_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('You can only invite people to a community you are member of.'),
+            )
+
+        if self.has_invited_user_with_username_to_community_with_name(username=username, community_name=community_name):
+            raise ValidationError(
+                _('You have already invited this user to join the community.'),
+            )
+
+        Community = get_community_model()
+
+        if Community.is_user_with_username_member_of_community_with_name(username=username,
+                                                                         community_name=community_name):
+            raise ValidationError(
+                _('The user is already part of the community.'),
+            )
+
+        if Community.is_community_with_name_private(community_name=community_name):
+            if not self.is_administrator_of_community_with_name(
+                    community_name=community_name) and not self.is_moderator_of_community_with_name(
+                community_name=community_name):
+                raise ValidationError(
+                    _('Only community administrators & moderators can invite users to a private community.'),
+                )
 
     def _check_can_update_circle_with_id(self, circle_id):
         if not self.has_circle_with_id(circle_id):

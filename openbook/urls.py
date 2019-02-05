@@ -25,7 +25,7 @@ from openbook_auth.views import Register, UsernameCheck, EmailCheck, EmailVerify
     UserSettings
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck
 from openbook_communities.views.community.members.views import CommunityMembers, JoinCommunity, \
-    LeaveCommunity
+    LeaveCommunity, InviteCommunityMember
 from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
@@ -68,6 +68,7 @@ community_members_patterns = [
     path('', CommunityMembers.as_view(), name='community-members'),
     path('join/', JoinCommunity.as_view(), name='community-join'),
     path('leave/', LeaveCommunity.as_view(), name='community-leave'),
+    path('invite/', InviteCommunityMember.as_view(), name='community-invite'),
 ]
 
 community_patterns = [

@@ -9,7 +9,8 @@ from django.utils.translation import gettext as _
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_communities.views.community.members.serializers import JoinCommunitySerializer, \
-    GetCommunityMembersSerializer, GetCommunityMembersMemberSerializer, LeaveCommunitySerializer
+    GetCommunityMembersSerializer, GetCommunityMembersMemberSerializer, LeaveCommunitySerializer, \
+    InviteCommunityMemberSerializer
 
 
 class CommunityMembers(APIView):
@@ -72,3 +73,26 @@ class LeaveCommunity(APIView):
                 community_name=community_name)
 
         return Response(_('Left community!'), status=status.HTTP_200_OK)
+
+
+class InviteCommunityMember(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, community_name):
+        request_data = normalise_request_data(request.data)
+        request_data['community_name'] = community_name
+
+        serializer = InviteCommunityMemberSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        username = data.get('username')
+
+        user = request.user
+
+        with transaction.atomic():
+            user.invite_user_with_username_to_community_with_name(username=username,
+                                                                  community_name=community_name)
+
+        return ApiMessageResponse(_('Invited user successfully!'), status=status.HTTP_200_OK)
