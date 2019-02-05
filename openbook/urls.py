@@ -24,6 +24,8 @@ from openbook_common.views import Time, Health, EmojiGroups
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, EmailVerify, Login, AuthenticatedUser, User, Users, \
     UserSettings
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck
+from openbook_communities.views.community.administrators.views import CommunityAdministratorItem, \
+    CommunityAdministrators
 from openbook_communities.views.community.banned_users.views import BanUser, UnbanUser, CommunityBannedUsers
 from openbook_communities.views.community.members.views import CommunityMembers, JoinCommunity, \
     LeaveCommunity, InviteCommunityMember
@@ -63,6 +65,15 @@ posts_patterns = [
     path('', Posts.as_view(), name='posts'),
     path('trending/', TrendingPosts.as_view(), name='trending-posts'),
     path('emojis/groups/', PostReactionEmojiGroups.as_view(), name='posts-emoji-groups'),
+]
+
+community_administrator_patterns = [
+    path('', CommunityAdministratorItem.as_view(), name='community-administrator'),
+]
+
+community_administrators_patterns = [
+    path('', CommunityAdministrators.as_view(), name='community-administrators'),
+    path('<str:community_administrator_username>/', include(community_administrator_patterns)),
 ]
 
 community_members_patterns = [

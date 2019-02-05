@@ -717,19 +717,88 @@ class User(AbstractUser):
 
         return community_to_invite_user_to
 
+    def get_community_with_name_administrators(self, community_name, max_id):
+        self._check_can_get_community_with_name_administrators(
+            community_name=community_name)
+
+        Community = get_community_model()
+        return Community.get_community_with_name_administrators(community_name=community_name,
+                                                                administrators_max_id=max_id)
+
     def add_administrator_with_username_to_community_with_name(self, username, community_name):
         self._check_can_add_administrator_with_username_to_community_with_name(
             username=username,
             community_name=community_name)
 
-    def get_community_with_name_administrators(self, community_name, max_id):
-        self._check_can_get_community_with_name_administrators(
-            community_name=community_name)
+        Community = get_community_model()
+
+        community_to_add_administrator_to = Community.objects.get(name=community_name)
+        user_to_add_as_administrator = User.objects.get(username=username)
+
+        community_to_add_administrator_to.administrators.add(user_to_add_as_administrator)
+        community_to_add_administrator_to.create_administrator_add_administrator_log(administrator=self,
+                                                                                     target_user=user_to_add_as_administrator)
+
+        if not user_to_add_as_administrator.is_moderator_of_community_with_name(community_name=community_name):
+            self.add_moderator_with_username_to_community_with_name(username=username, community_name=community_name)
+
+        return community_to_add_administrator_to
 
     def remove_administrator_with_username_from_community_with_name(self, username, community_name):
         self._check_can_remove_administrator_with_username_to_community_with_name(
             username=username,
             community_name=community_name)
+
+        Community = get_community_model()
+
+        community_to_remove_administrator_from = Community.objects.get(name=community_name)
+        user_to_remove_as_administrator = User.objects.get(username=username)
+
+        community_to_remove_administrator_from.administrators.remove(user_to_remove_as_administrator)
+        community_to_remove_administrator_from.create_administrator_remove_administrator_log(administrator=self,
+                                                                                             target_user=user_to_remove_as_administrator)
+
+        return community_to_remove_administrator_from
+
+    def get_community_with_name_moderators(self, community_name, max_id):
+        self._check_can_get_community_with_name_moderators(
+            community_name=community_name)
+
+        Community = get_community_model()
+        return Community.get_community_with_name_moderators(community_name=community_name,
+                                                            moderators_max_id=max_id)
+
+    def add_moderator_with_username_to_community_with_name(self, username, community_name):
+        self._check_can_add_moderator_with_username_to_community_with_name(
+            username=username,
+            community_name=community_name)
+
+        Community = get_community_model()
+
+        community_to_add_moderator_to = Community.objects.get(name=community_name)
+        user_to_add_as_moderator = User.objects.get(username=username)
+
+        community_to_add_moderator_to.moderators.add(user_to_add_as_moderator)
+        community_to_add_moderator_to.create_administrator_add_moderator_log(moderator=self,
+                                                                             target_user=user_to_add_as_moderator)
+
+        return community_to_add_moderator_to
+
+    def remove_moderator_with_username_from_community_with_name(self, username, community_name):
+        self._check_can_remove_moderator_with_username_to_community_with_name(
+            username=username,
+            community_name=community_name)
+
+        Community = get_community_model()
+
+        community_to_remove_moderator_from = Community.objects.get(name=community_name)
+        user_to_remove_as_moderator = User.objects.get(username=username)
+
+        community_to_remove_moderator_from.moderators.remove(user_to_remove_as_moderator)
+        community_to_remove_moderator_from.create_administrator_remove_moderator_log(moderator=self,
+                                                                                     target_user=user_to_remove_as_moderator)
+
+        return community_to_remove_moderator_from
 
     def get_community_with_name_banned_users(self, community_name, max_id):
         self._check_can_get_community_with_name_banned_users(
@@ -1531,6 +1600,122 @@ class User(AbstractUser):
             raise ValidationError(
                 _('Can\'t unban a not-banned user.'),
             )
+
+    def _check_can_add_administrator_with_username_to_community_with_name(self, username, community_name):
+        if not self.is_creator_of_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('Only the creator of the community can add other administrators.'),
+            )
+
+        Community = get_community_model()
+
+        if Community.is_user_with_username_administrator_of_community_with_name(username=username,
+                                                                                community_name=community_name):
+            raise ValidationError(
+                _('User is already an administrator.'),
+            )
+
+        if not Community.is_user_with_username_member_of_community_with_name(username=username,
+                                                                             community_name=community_name):
+            raise ValidationError(
+                _('Can\'t make administrator a user that is not part of the community.'),
+            )
+
+    def _check_can_remove_administrator_with_username_to_community_with_name(self, username, community_name):
+        if not self.is_creator_of_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('Only the creator of the community can remove other administrators.'),
+            )
+
+        Community = get_community_model()
+
+        if not Community.is_user_with_username_administrator_of_community_with_name(username=username,
+                                                                                    community_name=community_name):
+            raise ValidationError(
+                _('User to remove is not an administrator.'),
+            )
+
+    def _check_can_get_community_with_name_administrators(self, community_name):
+        if not self.is_moderator_of_community_with_name(
+                community_name) and not self.is_administrator_of_community_with_name(community_name):
+            raise ValidationError('Only administrators & moderators can get the list of administrators')
+
+    def _check_can_add_administrator_with_username_to_community_with_name(self, username, community_name):
+        if not self.is_creator_of_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('Only the creator of the community can add other administrators.'),
+            )
+
+        Community = get_community_model()
+
+        if Community.is_user_with_username_administrator_of_community_with_name(username=username,
+                                                                                community_name=community_name):
+            raise ValidationError(
+                _('User is already an administrator.'),
+            )
+
+        if not Community.is_user_with_username_member_of_community_with_name(username=username,
+                                                                             community_name=community_name):
+            raise ValidationError(
+                _('Can\'t make administrator a user that is not part of the community.'),
+            )
+
+    def _check_can_remove_administrator_with_username_to_community_with_name(self, username, community_name):
+        if not self.is_creator_of_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('Only the creator of the community can remove other administrators.'),
+            )
+
+        Community = get_community_model()
+
+        if not Community.is_user_with_username_administrator_of_community_with_name(username=username,
+                                                                                    community_name=community_name):
+            raise ValidationError(
+                _('User to remove is not an administrator.'),
+            )
+
+    def _check_can_get_community_with_name_administrators(self, community_name):
+        if not self.is_moderator_of_community_with_name(
+                community_name) and not self.is_administrator_of_community_with_name(community_name):
+            raise ValidationError('Only administrators & moderators can get the list of administrators')
+
+    def _check_can_add_moderator_with_username_to_community_with_name(self, username, community_name):
+        if not self.is_administrator_of_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('Only administrators of the community can add other moderators.'),
+            )
+
+        Community = get_community_model()
+
+        if Community.is_user_with_username_moderator_of_community_with_name(username=username,
+                                                                            community_name=community_name):
+            raise ValidationError(
+                _('User is already a moderator.'),
+            )
+
+        if not Community.is_user_with_username_member_of_community_with_name(username=username,
+                                                                             community_name=community_name):
+            raise ValidationError(
+                _('Can\'t make moderator a user that is not part of the community.'),
+            )
+
+    def _check_can_remove_moderator_with_username_to_community_with_name(self, username, community_name):
+        if not self.is_administrator_of_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('Only administrators of the community can remove other moderators.'),
+            )
+
+        Community = get_community_model()
+
+        if not Community.is_user_with_username_moderator_of_community_with_name(username=username,
+                                                                                community_name=community_name):
+            raise ValidationError(
+                _('User to remove is not an moderator.'),
+            )
+
+    def _check_can_get_community_with_name_moderators(self, community_name):
+        # Anyone can see community moderators
+        return True
 
     def _check_can_update_circle_with_id(self, circle_id):
         if not self.has_circle_with_id(circle_id):

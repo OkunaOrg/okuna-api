@@ -13,7 +13,7 @@ from openbook_circles.models import Circle
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.utils.model_loaders import get_community_invite_model, \
-    get_community_moderator_user_action_log_model
+    get_community_moderator_user_action_log_model, get_community_administrator_user_action_log_model
 from openbook_common.validators import hex_color_validator
 from openbook_communities.validators import community_name_characters_validator
 
@@ -116,6 +116,26 @@ class Community(models.Model):
         return community.members.filter(community_members_query)
 
     @classmethod
+    def get_community_with_name_administrators(cls, community_name, administrators_max_id):
+        community = Community.objects.get(name=community_name)
+        community_administrators_query = Q()
+
+        if administrators_max_id:
+            community_administrators_query.add(Q(id__lt=administrators_max_id), Q.AND)
+
+        return community.administrators.filter(community_administrators_query)
+
+    @classmethod
+    def get_community_with_name_moderators(cls, community_name, moderators_max_id):
+        community = Community.objects.get(name=community_name)
+        community_moderators_query = Q()
+
+        if moderators_max_id:
+            community_moderators_query.add(Q(id__lt=moderators_max_id), Q.AND)
+
+        return community.moderators.filter(community_moderators_query)
+
+    @classmethod
     def get_community_with_name_banned_users(cls, community_name, users_max_id):
         community = Community.objects.get(name=community_name)
         community_members_query = Q()
@@ -143,12 +163,39 @@ class Community(models.Model):
                                                       moderator=moderator,
                                                       target_user=target_user)
 
+    def create_administrator_add_administrator_log(self, administrator, target_user):
+        return self._create_administrator_user_action_log(action_type='AA',
+                                                          administrator=administrator,
+                                                          target_user=target_user)
+
+    def create_administrator_remove_administrator_log(self, administrator, target_user):
+        return self._create_administrator_user_action_log(action_type='RA',
+                                                          administrator=administrator,
+                                                          target_user=target_user)
+
+    def create_administrator_add_moderator_log(self, administrator, target_user):
+        return self._create_administrator_user_action_log(action_type='AM',
+                                                          administrator=administrator,
+                                                          target_user=target_user)
+
+    def create_administrator_remove_moderator_log(self, administrator, target_user):
+        return self._create_administrator_user_action_log(action_type='RM',
+                                                          administrator=administrator,
+                                                          target_user=target_user)
+
     def _create_moderator_user_action_log(self, action_type, moderator, target_user):
         CommunityModeratorUserActionLog = get_community_moderator_user_action_log_model()
         return CommunityModeratorUserActionLog.create_community_moderator_user_action_log(community=self,
                                                                                           target_user=target_user,
                                                                                           action_type=action_type,
                                                                                           moderator=moderator)
+
+    def _create_administrator_user_action_log(self, action_type, administrator, target_user):
+        CommunityAdministratorUserActionLog = get_community_administrator_user_action_log_model()
+        return CommunityAdministratorUserActionLog.create_community_administrator_user_action_log(community=self,
+                                                                                                  target_user=target_user,
+                                                                                                  action_type=action_type,
+                                                                                                  administrator=administrator)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
@@ -158,6 +205,38 @@ class Community(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class CommunityAdministratorUserActionLog(models.Model):
+    """
+    A log for community administrators user actions such as banning/unbanning
+    """
+    administrator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+', null=False,
+                                      blank=False)
+    target_user = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='+', null=True,
+                                    blank=False)
+    community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='administrators_user_actions_logs',
+                                  null=False,
+                                  blank=False)
+    created = models.DateTimeField(editable=False)
+    ACTION_TYPES = (
+        ('AM', 'Add Moderator'),
+        ('RM', 'Remove Moderator'),
+        ('AA', 'Add Administrator'),
+        ('RA', 'Remove Administrator'),
+    )
+    action_type = models.CharField(editable=False, blank=False, null=False, choices=ACTION_TYPES, max_length=2)
+
+    @classmethod
+    def create_community_administrator_user_action_log(cls, community, action_type, administrator, target_user):
+        return cls.objects.create(community=community, action_type=action_type, administrator=administrator,
+                                  target_user=target_user)
+
+    def save(self, *args, **kwargs):
+        ''' On save, update timestamps '''
+        if not self.id:
+            self.created = timezone.now()
+        return super(CommunityAdministratorUserActionLog, self).save(*args, **kwargs)
 
 
 class CommunityModeratorUserActionLog(models.Model):
@@ -175,6 +254,10 @@ class CommunityModeratorUserActionLog(models.Model):
     ACTION_TYPES = (
         ('B', 'Ban'),
         ('U', 'Unban'),
+        ('AM', 'Add Moderator'),
+        ('RM', 'Remove Moderator'),
+        ('AA', 'Add Administrator'),
+        ('RA', 'Remove Administrator'),
     )
     action_type = models.CharField(editable=False, blank=False, null=False, choices=ACTION_TYPES, max_length=2)
 
