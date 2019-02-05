@@ -49,6 +49,7 @@ class UserInvite(models.Model):
     def create_invite(cls, email, name=None, username=None):
         UserInvite = get_user_invite_model()
         invite = UserInvite.objects.create(name=name, email=email, username=username)
+        invite.token = invite.generate_token()
         invite.save()
         return invite
 
@@ -89,13 +90,8 @@ class UserInvite(models.Model):
         self.is_invite_email_sent = True
         self.save()
 
-    def save(self, *args, **kwargs):
-        if not self.id:
-            self.token = self._generate_token()
-        return super(UserInvite, self).save(*args, **kwargs)
-
-    def _generate_token(self):
-        token_bytes = jwt.encode({'id': self.pk}, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    def generate_token(self):
+        token_bytes = jwt.encode({'id': self.id}, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
         return token_bytes.decode('UTF-8')
 
     def _generate_one_time_link(self):
