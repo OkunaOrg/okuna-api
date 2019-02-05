@@ -344,6 +344,9 @@ class User(AbstractUser):
     def is_member_of_community_with_name(self, community_name):
         return self.communities.filter(name=community_name).exists()
 
+    def is_banned_from_community_with_name(self, community_name):
+        return self.banned_of_communities.filter(name=community_name).exists()
+
     def is_creator_of_community_with_name(self, community_name):
         return self.created_communities.filter(name=community_name).exists()
 
@@ -732,13 +735,37 @@ class User(AbstractUser):
         self._check_can_get_community_with_name_banned_users(
             community_name=community_name)
 
+        Community = get_community_model()
+        return Community.get_community_with_name_banned_users(community_name=community_name, users_max_id=max_id)
+
     def ban_user_with_username_from_community_with_name(self, username, community_name):
         self._check_can_ban_user_with_username_from_community_with_name(username=username,
                                                                         community_name=community_name)
+        Community = get_community_model()
+
+        community_to_ban_user_from = Community.objects.get(name=community_name)
+        user_to_ban = User.objects.get(username=username)
+
+        if user_to_ban.is_member_of_community_with_name():
+            user_to_ban.leave_community_with_name(community_name=community_name)
+
+        community_to_ban_user_from.banned_users.add(user_to_ban)
+        community_to_ban_user_from.create_moderator_user_ban_log(moderator=self)
+
+        return community_to_ban_user_from
 
     def unban_user_with_username_from_community_with_name(self, username, community_name):
         self._check_can_unban_user_with_username_from_community_with_name(username=username,
                                                                           community_name=community_name)
+        Community = get_community_model()
+
+        community_to_unban_user_from = Community.objects.get(name=community_name)
+        user_to_unban = User.objects.get(username=username)
+
+        community_to_unban_user_from.banned_users.remove(user_to_unban)
+        community_to_unban_user_from.create_moderator_user_unban_log(moderator=self)
+
+        return community_to_unban_user_from
 
     def create_list(self, name, emoji_id):
         self._check_list_name_not_taken(name)
@@ -1393,6 +1420,9 @@ class User(AbstractUser):
             )
 
     def _check_can_get_community_with_name_members(self, community_name):
+        if self.is_banned_from_community_with_name(community_name):
+            raise ValidationError('You can\'t get the members of a community you have been banned from.')
+
         Community = get_community_model()
 
         if Community.is_community_with_name_private(community_name=community_name):
@@ -1402,6 +1432,9 @@ class User(AbstractUser):
                 )
 
     def _check_can_join_community_with_name(self, community_name):
+        if self.is_banned_from_community_with_name(community_name):
+            raise ValidationError('You can\'t join a community you have been banned from.')
+
         if self.is_member_of_community_with_name(community_name):
             raise ValidationError(
                 _('You are already a member of the community.'),
@@ -1453,6 +1486,51 @@ class User(AbstractUser):
                 raise ValidationError(
                     _('Only community administrators & moderators can invite users to a private community.'),
                 )
+
+    def _check_can_get_community_with_name_banned_users(self, community_name):
+        if not self.is_administrator_of_community_with_name(
+                community_name=community_name) and not self.is_moderator_of_community_with_name(
+            community_name=community_name):
+            raise ValidationError(
+                _('Only community administrators & moderators can get banned users.'),
+            )
+
+    def _check_can_ban_user_with_username_from_community_with_name(self, username, community_name):
+        if not self.is_administrator_of_community_with_name(
+                community_name=community_name) and not self.is_moderator_of_community_with_name(
+            community_name=community_name):
+            raise ValidationError(
+                _('Only community administrators & moderators can ban community members.'),
+            )
+
+        Community = get_community_model()
+        if Community.is_user_with_username_banned_from_community_with_name(username=username,
+                                                                           community_name=community_name):
+            raise ValidationError(
+                _('User is already banned'),
+            )
+
+        if Community.is_user_with_username_moderator_of_community_with_name(username=username,
+                                                                            community_name=community_name) or Community.is_user_with_username_administrator_of_community_with_name(
+            username=username, community_name=community_name):
+            raise ValidationError(
+                _('You can\'t ban moderators or administrators of the community'),
+            )
+
+    def _check_can_unban_user_with_username_from_community_with_name(self, username, community_name):
+        if not self.is_administrator_of_community_with_name(
+                community_name=community_name) and not self.is_moderator_of_community_with_name(
+            community_name=community_name):
+            raise ValidationError(
+                _('Only community administrators & moderators can ban community members.'),
+            )
+
+        Community = get_community_model()
+        if not Community.is_user_with_username_banned_from_community_with_name(username=username,
+                                                                               community_name=community_name):
+            raise ValidationError(
+                _('Can\'t unban a not-banned user.'),
+            )
 
     def _check_can_update_circle_with_id(self, circle_id):
         if not self.has_circle_with_id(circle_id):

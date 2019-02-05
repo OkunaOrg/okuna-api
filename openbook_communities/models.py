@@ -12,7 +12,8 @@ from openbook_auth.models import User
 from openbook_circles.models import Circle
 from django.utils.translation import ugettext_lazy as _
 
-from openbook_common.utils.model_loaders import get_community_invite_model
+from openbook_common.utils.model_loaders import get_community_invite_model, \
+    get_community_moderator_user_action_log_model
 from openbook_common.validators import hex_color_validator
 from openbook_communities.validators import community_name_characters_validator
 
@@ -61,6 +62,18 @@ class Community(models.Model):
         return cls.objects.filter(name=community_name, members__username=username).exists()
 
     @classmethod
+    def is_user_with_username_administrator_of_community_with_name(cls, username, community_name):
+        return cls.objects.filter(name=community_name, administrators__username=username).exists()
+
+    @classmethod
+    def is_user_with_username_moderator_of_community_with_name(cls, username, community_name):
+        return cls.objects.filter(name=community_name, moderators__username=username).exists()
+
+    @classmethod
+    def is_user_with_username_banned_from_community_with_name(cls, username, community_name):
+        return cls.objects.filter(name=community_name, banned_users__username=username).exists()
+
+    @classmethod
     def get_communities_with_query(cls, query):
         communities_query = Q(name__icontains=query)
         communities_query.add(Q(title__icontains=query), Q.OR)
@@ -102,6 +115,16 @@ class Community(models.Model):
 
         return community.members.filter(community_members_query)
 
+    @classmethod
+    def get_community_with_name_banned_users(cls, community_name, users_max_id):
+        community = Community.objects.get(name=community_name)
+        community_members_query = Q()
+
+        if users_max_id:
+            community_members_query.add(Q(id__lt=users_max_id), Q.AND)
+
+        return community.banned_users.filter(community_members_query)
+
     @property
     def members_count(self):
         return self.members.all().count()
@@ -109,6 +132,20 @@ class Community(models.Model):
     def create_invite(self, creator, invited_user):
         CommunityInvite = get_community_invite_model()
         return CommunityInvite.create_community_invite(creator=creator, invited_user=invited_user, community=self)
+
+    def create_moderator_user_ban_log(self, moderator):
+        return self._create_moderator_user_action_log(action_type='B',
+                                                      moderator=moderator)
+
+    def create_moderator_user_unban_log(self, moderator):
+        return self._create_moderator_user_action_log(action_type='U',
+                                                      moderator=moderator)
+
+    def _create_moderator_user_action_log(self, action_type, moderator):
+        CommunityModeratorUserActionLog = get_community_moderator_user_action_log_model()
+        return CommunityModeratorUserActionLog.create_community_moderator_user_action_log(community=self,
+                                                                                          action_type=action_type,
+                                                                                          moderator=moderator)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
@@ -118,6 +155,33 @@ class Community(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class CommunityModeratorUserActionLog(models.Model):
+    """
+    A log for community moderators user actions such as banning/unbanning
+    """
+    moderator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+', null=False,
+                                  blank=False)
+    community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='moderators_user_actions_logs',
+                                  null=False,
+                                  blank=False)
+    created = models.DateTimeField(editable=False)
+    ACTION_TYPES = (
+        ('B', 'Ban'),
+        ('U', 'Unban'),
+    )
+    action_type = models.CharField(editable=False, blank=False, null=False, choices=ACTION_TYPES, max_length=2)
+
+    @classmethod
+    def create_community_moderator_user_action_log(cls, community, action_type, moderator):
+        return cls.objects.create(community=community, action_type=action_type, moderator=moderator)
+
+    def save(self, *args, **kwargs):
+        ''' On save, update timestamps '''
+        if not self.id:
+            self.created = timezone.now()
+        return super(CommunityModeratorUserActionLog, self).save(*args, **kwargs)
 
 
 class CommunityInvite(models.Model):
