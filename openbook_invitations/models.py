@@ -55,7 +55,7 @@ class UserInvite(models.Model):
     @classmethod
     def get_invite_if_valid(cls, token):
         UserInvite = get_user_invite_model()
-        data = UserInvite.decode_token(encoded_token=token)
+        data = UserInvite.decode_token(token=token)
         user_invite = UserInvite.objects.get(pk=data['id'], token=token, created_user=None)
 
         return user_invite
