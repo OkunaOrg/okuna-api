@@ -6,7 +6,7 @@ from django.conf import settings
 from mixer.backend.django import mixer
 from openbook_auth.models import User, UserProfile
 from openbook_circles.models import Circle
-from openbook_common.models import Emoji, EmojiGroup
+from openbook_common.models import Emoji, EmojiGroup, Badge
 from openbook_posts.models import Post
 
 fake = Faker()
@@ -29,6 +29,10 @@ def make_user():
     user = mixer.blend(User)
     profile = make_profile(user)
     return user
+
+
+def make_badge():
+    return mixer.blend(Badge)
 
 
 def make_users(amount):

@@ -57,9 +57,11 @@ class User(AbstractUser):
     def create_user(cls, username, email=None, password=None, name=None, avatar=None, is_of_legal_age=None,
                     badge=None, **extra_fields):
         new_user = cls.objects.create_user(username, email=email, password=password, **extra_fields)
-        UserProfile.objects.create(name=name, user=new_user, avatar=avatar, is_of_legal_age=is_of_legal_age)
+        user_profile = UserProfile.objects.create(name=name, user=new_user, avatar=avatar,
+                                                  is_of_legal_age=is_of_legal_age)
+
         if badge:
-            new_user.assign_badge_to_user(badge)
+            user_profile.badges.add(badge)
 
         return new_user
 
@@ -113,9 +115,6 @@ class User(AbstractUser):
         users_query = Q(username__icontains=query)
         users_query.add(Q(profile__name__icontains=query), Q.OR)
         return cls.objects.filter(users_query)
-
-    def assign_badge_to_user(self, badge):
-        UserProfileBadge.objects.create(user_profile=self.profile, badge=badge)
 
     def count_posts(self):
         return self.posts.count()
@@ -1822,6 +1821,7 @@ class UserProfile(models.Model):
     bio = models.CharField(_('bio'), max_length=settings.PROFILE_BIO_MAX_LENGTH, blank=False, null=True)
     url = models.URLField(_('url'), blank=False, null=True)
     followers_count_visible = models.BooleanField(_('followers count visible'), blank=False, null=False, default=False)
+    badges = models.ManyToManyField(Badge, related_name='users_profiles')
 
     class Meta:
         verbose_name = _('user profile')
@@ -1832,11 +1832,3 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.username
-
-
-class UserProfileBadge(models.Model):
-    user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='badges')
-    badge = models.ForeignKey(Badge, on_delete=models.CASCADE)
-
-    class Meta:
-        unique_together = ('user_profile', 'badge')

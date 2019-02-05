@@ -9,6 +9,7 @@ import jwt
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_common.models import Badge
 from openbook_common.utils.model_loaders import get_user_invite_model
+from rest_framework.exceptions import ValidationError
 
 
 class UserInvite(models.Model):
@@ -32,7 +33,7 @@ class UserInvite(models.Model):
             'unique': _("A user with that username already exists."),
         },
     )
-    badge_keyword = models.CharField(max_length=16, blank=True, null=True)
+    badge = models.ForeignKey(Badge, blank=True, null=True, on_delete=models.SET_NULL)
     token = models.CharField(max_length=255, unique=True)
     is_invite_email_sent = models.BooleanField(default=False)
 
@@ -43,24 +44,43 @@ class UserInvite(models.Model):
         return 'UserInvite: ' + self.username
 
     @classmethod
-    def decode_token(cls, token):
-        return jwt.decode(token, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    def is_token_valid(cls, token):
+        try:
+            jwt.decode(token, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+        except jwt.InvalidTokenError:
+            return False
+        return True
 
     @classmethod
-    def create_invite(cls, email, name=None, username=None):
+    def create_invite(cls, email, name=None, username=None, badge=None):
         UserInvite = get_user_invite_model()
-        invite = UserInvite.objects.create(name=name, email=email, username=username)
+        invite = UserInvite.objects.create(name=name, email=email, username=username, badge=badge)
         invite.token = invite.generate_token()
         invite.save()
         return invite
 
     @classmethod
-    def get_invite_if_valid(cls, token):
-        UserInvite = get_user_invite_model()
-        data = UserInvite.decode_token(token=token)
-        user_invite = UserInvite.objects.get(pk=data['id'], token=token, created_user=None)
-
+    def get_invite_for_token(cls, token):
+        cls._check_token_is_valid(token=token)
+        user_invite = UserInvite.objects.get(token=token, created_user=None)
         return user_invite
+
+    @classmethod
+    def _check_token_is_valid(cls, token):
+        if not UserInvite.is_token_valid(token=token):
+            raise ValidationError(
+                _('The token is invalid.')
+            )
+
+        if not UserInvite.objects.filter(token=token).exists():
+            raise ValidationError(
+                _('No invite exists for given token.')
+            )
+
+        if UserInvite.objects.filter(token=token, created_user__isnull=False).exists():
+            raise ValidationError(
+                _('The invite has been already used.')
+            )
 
     def send_invite_email(self):
         if self.invited_by:
