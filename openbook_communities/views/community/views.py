@@ -67,7 +67,10 @@ class CommunityAvatar(APIView):
     permission_classes = (IsAuthenticated,)
 
     def put(self, request, community_name):
-        serializer = UpdateCommunityAvatarSerializer(data={'community_name': community_name})
+        request_data = normalise_request_data(request.data)
+        request_data['community_name'] = community_name
+
+        serializer = UpdateCommunityAvatarSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         user = request.user
@@ -93,7 +96,10 @@ class CommunityCover(APIView):
     permission_classes = (IsAuthenticated,)
 
     def put(self, request, community_name):
-        serializer = UpdateCommunityCoverSerializer(data={'community_name': community_name})
+        request_data = normalise_request_data(request.data)
+        request_data['community_name'] = community_name
+
+        serializer = UpdateCommunityCoverSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         user = request.user

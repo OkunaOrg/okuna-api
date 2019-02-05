@@ -624,24 +624,39 @@ class User(AbstractUser):
 
         return community_to_update
 
-    def update_community_with_id_avatar(self, community_id, avatar):
-        if not avatar:
-            raise ValidationError(_('A new avatar is required.'))
-
-        self._check_can_update_community_with_name(community_id)
+    def update_community_with_name_avatar(self, community_name, avatar):
+        self._check_can_update_community_with_name(community_name)
         self._check_community_data(avatar=avatar)
 
-        community_to_update_avatar_from = self.communities.get(id=community_id)
+        community_to_update_avatar_from = self.administrated_communities.get(name=community_name)
         community_to_update_avatar_from.avatar = avatar
 
         community_to_update_avatar_from.save()
 
         return community_to_update_avatar_from
 
-    def delete_community_with_id_avatar(self, community_id):
-        self._check_can_update_community_with_name(community_id)
-        community_to_delete_avatar_from = self.communities.get(id=community_id)
+    def delete_community_with_name_avatar(self, community_name):
+        self._check_can_update_community_with_name(community_name)
+        community_to_delete_avatar_from = self.administrated_communities.get(name=community_name)
         community_to_delete_avatar_from.avatar.delete()
+        return community_to_delete_avatar_from
+
+    def update_community_with_name_cover(self, community_name, cover):
+        self._check_can_update_community_with_name(community_name)
+        self._check_community_data(cover=cover)
+
+        community_to_update_cover_from = self.administrated_communities.get(name=community_name)
+        community_to_update_cover_from.cover = cover
+
+        community_to_update_cover_from.save()
+
+        return community_to_update_cover_from
+
+    def delete_community_with_name_cover(self, community_name):
+        self._check_can_update_community_with_name(community_name)
+        community_to_delete_cover_from = self.administrated_communities.get(name=community_name)
+        community_to_delete_cover_from.cover.delete()
+        return community_to_delete_cover_from
 
     def create_list(self, name, emoji_id):
         self._check_list_name_not_taken(name)
@@ -1181,7 +1196,7 @@ class User(AbstractUser):
         if name:
             self._check_list_name_not_taken(name)
 
-    def _check_community_data(self, name=None, avatar=None):
+    def _check_community_data(self, name=None, avatar=None, cover=None):
         if name:
             self._check_community_name_not_taken(name)
 

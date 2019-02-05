@@ -36,7 +36,7 @@ class UpdateCommunitySerializer(serializers.Serializer):
 
 
 class UpdateCommunityAvatarSerializer(serializers.Serializer):
-    avatar = serializers.ImageField(allow_empty_file=False, required=False)
+    avatar = serializers.ImageField(allow_empty_file=False, required=True)
     community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
                                            allow_blank=False,
                                            required=True,
@@ -44,7 +44,7 @@ class UpdateCommunityAvatarSerializer(serializers.Serializer):
 
 
 class UpdateCommunityCoverSerializer(serializers.Serializer):
-    cover = serializers.ImageField(allow_empty_file=False, required=False)
+    cover = serializers.ImageField(allow_empty_file=False, required=True)
     community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
                                            allow_blank=False,
                                            required=True,
