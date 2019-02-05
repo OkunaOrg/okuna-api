@@ -343,9 +343,8 @@ class User(AbstractUser):
     def is_creator_of_community_with_name(self, community_name):
         return self.created_communities.filter(name=community_name).exists()
 
-    def is_moderator_of_community_with_id(self, community_id):
-        Community = get_community_model()
-        return Community.objects.filter(id=community_id, administrators__id=self.pk)
+    def is_moderator_of_community_with_name(self, community_name):
+        return self.moderated_communities.filter(name=community_name).exists()
 
     def has_list_with_name(self, list_name):
         return self.lists.filter(name=list_name).count() > 0
@@ -684,6 +683,19 @@ class User(AbstractUser):
     def leave_community_with_name(self, community_name):
         self._check_can_leave_community_with_name(
             community_name=community_name)
+
+        Community = get_community_model()
+        community_to_leave = Community.objects.get(name=community_name)
+
+        if self.is_moderator_of_community_with_name(community_name):
+            community_to_leave.moderators.remove(self)
+
+        if self.is_administrator_of_community_with_name(community_name):
+            community_to_leave.administrators.remove(self)
+
+        community_to_leave.members.remove(self)
+
+        return community_to_leave
 
     def add_administrator_with_username_to_community_with_name(self, username, community_name):
         self._check_can_add_administrator_with_username_to_community_with_name(
@@ -1385,6 +1397,17 @@ class User(AbstractUser):
                 raise ValidationError(
                     _('You are not invited to join this community.'),
                 )
+
+    def _check_can_leave_community_with_name(self, community_name):
+        if not self.is_member_of_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('You cannot leave a community you\'re not part of.'),
+            )
+
+        if self.is_creator_of_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('You cannot leave a community you created.'),
+            )
 
     def _check_can_update_circle_with_id(self, circle_id):
         if not self.has_circle_with_id(circle_id):

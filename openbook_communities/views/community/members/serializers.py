@@ -12,10 +12,16 @@ class JoinCommunitySerializer(serializers.Serializer):
                                            validators=[community_name_characters_validator, community_name_exists])
 
 
-class RemoveCommunityMemberSerializer(serializers.Serializer):
-    member_username = serializers.CharField(max_length=settings.USERNAME_MAX_LENGTH,
-                                            allow_blank=False,
-                                            validators=[username_characters_validator, user_username_exists])
+class LeaveCommunitySerializer(serializers.Serializer):
+    community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
+                                           allow_blank=False,
+                                           validators=[community_name_characters_validator, community_name_exists])
+
+
+class InviteCommunityMemberSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=settings.USERNAME_MAX_LENGTH,
+                                     allow_blank=False,
+                                     validators=[username_characters_validator, user_username_exists])
     community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
                                            allow_blank=False,
                                            validators=[community_name_characters_validator, community_name_exists])

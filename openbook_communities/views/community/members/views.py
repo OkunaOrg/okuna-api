@@ -9,7 +9,7 @@ from django.utils.translation import gettext as _
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_communities.views.community.members.serializers import JoinCommunitySerializer, \
-    GetCommunityMembersSerializer, GetCommunityMembersMemberSerializer, RemoveCommunityMemberSerializer
+    GetCommunityMembersSerializer, GetCommunityMembersMemberSerializer, LeaveCommunitySerializer
 
 
 class CommunityMembers(APIView):
@@ -55,21 +55,20 @@ class JoinCommunity(APIView):
         return ApiMessageResponse(_('Joined community!'), status=status.HTTP_201_CREATED)
 
 
-class CommunityMember(APIView):
+class LeaveCommunity(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def delete(self, request, community_name, member_username):
+    def post(self, request, community_name):
         request_data = normalise_request_data(request.data)
         request_data['community_name'] = community_name
-        request_data['member_username'] = member_username
 
-        serializer = RemoveCommunityMemberSerializer(data=request_data)
+        serializer = LeaveCommunitySerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         user = request.user
 
         with transaction.atomic():
-            user.remove_community_member_with_username_from_community_with_name(member_username=member_username,
-                                                                                community_name=community_name)
+            user.leave_community_with_name(
+                community_name=community_name)
 
-        return Response(status=status.HTTP_200_OK)
+        return Response(_('Left community!'), status=status.HTTP_200_OK)

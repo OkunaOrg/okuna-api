@@ -24,7 +24,8 @@ from openbook_common.views import Time, Health, EmojiGroups
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, EmailVerify, Login, AuthenticatedUser, User, Users, \
     UserSettings
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck
-from openbook_communities.views.community.members.views import CommunityMembers, CommunityMember, JoinCommunity
+from openbook_communities.views.community.members.views import CommunityMembers, JoinCommunity, \
+    LeaveCommunity
 from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
@@ -63,14 +64,10 @@ posts_patterns = [
     path('emojis/groups/', PostReactionEmojiGroups.as_view(), name='posts-emoji-groups'),
 ]
 
-community_member_patterns = [
-    path('', CommunityMember.as_view(), name='community-member'),
-]
-
 community_members_patterns = [
     path('', CommunityMembers.as_view(), name='community-members'),
     path('join/', JoinCommunity.as_view(), name='community-join'),
-    path('<str:member_username>/', include(community_member_patterns)),
+    path('leave/', LeaveCommunity.as_view(), name='community-leave'),
 ]
 
 community_patterns = [
