@@ -1,6 +1,6 @@
 from modeltranslation.translator import translator, TranslationOptions
 
-from openbook_common.models import Emoji, EmojiGroup
+from openbook_common.models import Emoji, EmojiGroup, Badge
 
 
 class EmojiGroupTranslationOptions(TranslationOptions):
@@ -15,3 +15,10 @@ class EmojiTranslationOptions(TranslationOptions):
 
 
 translator.register(Emoji, EmojiTranslationOptions)
+
+
+class BadgeTranslationOptions(TranslationOptions):
+    fields = ('keyword_description',)
+
+
+translator.register(Badge, BadgeTranslationOptions)

@@ -34,6 +34,10 @@ class RegistrationAPITests(APITestCase):
     RegistrationAPI
     """
 
+    fixtures = [
+        'openbook_common/fixtures/badges.json'
+    ]
+
     def test_token_required(self):
         """
         should return 400 if the token is not present
@@ -160,7 +164,6 @@ class RegistrationAPITests(APITestCase):
                                'password': 'woahpassword123', 'is_of_legal_age': 'true', 'token': token2}
         response = self.client.post(url, second_request_data, format='multipart')
         parsed_response = json.loads(response.content)
-        print(parsed_response)
         self.assertIn('email', parsed_response)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -195,6 +198,37 @@ class RegistrationAPITests(APITestCase):
         self.assertEqual(UserProfile.objects.count(), 1)
         user = User.objects.get(email=email)
         self.assertTrue(hasattr(user, 'profile'))
+
+    def test_user_profile_has_badges(self):
+        """
+        should send user's badges with UserProfile instance
+        """
+        url = self._get_url()
+        token = self._get_user_invite_token_with_badge('FOUNDER')
+        email = fake.email()
+        request_data = {'token': token, 'name': 'Joel Hernandez', 'email': email,
+                        'password': 'secretPassword123', 'is_of_legal_age': 'true'}
+        response = self.client.post(url, request_data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(UserProfile.objects.count(), 1)
+        user = User.objects.get(email=email)
+        self.assertTrue(hasattr(user.profile, 'badges'))
+        badges = user.profile.badges.all()
+        self.assertTrue(badges[0].badge.keyword, 'FOUNDER')
+
+    def test_user_created_only_with_correct_badge_keyword(self):
+        """
+        should create a user instance only when the right badge keyword is present on the invite
+        """
+        url = self._get_url()
+        token = self._get_user_invite_token_with_badge('WRONG_BADGE')
+        email = fake.email()
+        request_data = {'token': token, 'name': 'Joel Hernandez', 'email': email,
+                        'password': 'secretPassword123', 'is_of_legal_age': 'true'}
+        response = self.client.post(url, request_data, format='multipart')
+        parsed_response = json.loads(response.content)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(parsed_response[0], 'The provided badge keyword is invalid')
 
     def test_user_circles_are_created(self):
         """
@@ -271,6 +305,10 @@ class RegistrationAPITests(APITestCase):
 
     def _get_user_invite_token(self):
         user_invite = UserInvite.create_invite(email=fake.email())
+        return user_invite.token
+
+    def _get_user_invite_token_with_badge(self, badge_keyword):
+        user_invite = UserInvite.create_invite(email=fake.email(), badge_keyword=badge_keyword)
         return user_invite.token
 
 

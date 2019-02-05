@@ -3,14 +3,14 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 
 from openbook.settings import USERNAME_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, PROFILE_NAME_MAX_LENGTH
-from openbook_auth.models import User, UserProfile
+from openbook_auth.models import User, UserProfile, UserProfileBadge
 from openbook_auth.validators import username_characters_validator, \
     username_not_taken_validator, email_not_taken_validator, user_username_exists, jwt_token_validator, \
     is_of_legal_age_validator
 from django.contrib.auth.password_validation import validate_password
 
 from openbook_circles.models import Circle
-from openbook_common.models import Emoji
+from openbook_common.models import Emoji, Badge
 from openbook_common.serializers_fields.user import IsFollowingField, IsConnectedField, FollowersCountField, \
     FollowingCountField, PostsCountField, ConnectedCirclesField, FollowListsField, IsFullyConnectedField, \
     IsPendingConnectionConfirmation
@@ -50,8 +50,29 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH)
 
 
+class BadgeSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Badge
+        fields = (
+            'keyword',
+            'keyword_description'
+        )
+
+
+class GetUserProfileBadgeSerializer(serializers.ModelSerializer):
+    badge = BadgeSerializer()
+
+    class Meta:
+        model = UserProfileBadge
+        fields = (
+            'badge',
+        )
+
+
 class GetAuthenticatedUserProfileSerializer(serializers.ModelSerializer):
     avatar = serializers.ImageField(max_length=None, use_url=True, allow_null=True, required=False)
+    badges = GetUserProfileBadgeSerializer(many=True)
 
     class Meta:
         model = UserProfile
@@ -65,6 +86,7 @@ class GetAuthenticatedUserProfileSerializer(serializers.ModelSerializer):
             'cover',
             'is_of_legal_age',
             'followers_count_visible',
+            'badges'
         )
 
 
@@ -134,6 +156,8 @@ class GetUserSerializer(serializers.Serializer):
 
 
 class GetUserUserProfileSerializer(serializers.ModelSerializer):
+    badges = GetUserProfileBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
@@ -142,7 +166,8 @@ class GetUserUserProfileSerializer(serializers.ModelSerializer):
             'location',
             'cover',
             'bio',
-            'url'
+            'url',
+            'badges'
         )
 
 
@@ -218,12 +243,15 @@ class GetUsersSerializer(serializers.Serializer):
 
 
 class GetUsersUserProfileSerializer(serializers.ModelSerializer):
+    badges = GetUserProfileBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
             'id',
             'avatar',
-            'name'
+            'name',
+            'badges'
         )
 
 
