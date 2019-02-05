@@ -95,6 +95,7 @@ community_patterns = [
     path('cover/', CommunityCover.as_view(), name='community-cover'),
     path('members/', include(community_members_patterns)),
     path('banned-users/', include(community_banned_users_patterns)),
+    path('administrators/', include(community_administrators_patterns)),
 ]
 
 communities_patterns = [

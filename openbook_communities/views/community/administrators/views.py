@@ -38,10 +38,10 @@ class CommunityAdministrators(APIView):
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, community_name):
-        query_params = request.query_params.dict()
-        query_params['community_name'] = community_name
+        request_data = normalise_request_data(request.data)
+        request_data['community_name'] = community_name
 
-        serializer = AddCommunityAdministratorSerializer(data=query_params)
+        serializer = AddCommunityAdministratorSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
@@ -74,7 +74,7 @@ class CommunityAdministratorItem(APIView):
         user = request.user
 
         with transaction.atomic():
-            user.remove_administrator_with_username_to_community_with_name(username=username,
+            user.remove_administrator_with_username_from_community_with_name(username=username,
                                                                            community_name=community_name)
 
         return ApiMessageResponse(_('Removed administrator'), status=status.HTTP_200_OK)

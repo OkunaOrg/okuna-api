@@ -779,7 +779,7 @@ class User(AbstractUser):
         user_to_add_as_moderator = User.objects.get(username=username)
 
         community_to_add_moderator_to.moderators.add(user_to_add_as_moderator)
-        community_to_add_moderator_to.create_administrator_add_moderator_log(moderator=self,
+        community_to_add_moderator_to.create_administrator_add_moderator_log(administrator=self,
                                                                              target_user=user_to_add_as_moderator)
 
         return community_to_add_moderator_to
@@ -795,7 +795,7 @@ class User(AbstractUser):
         user_to_remove_as_moderator = User.objects.get(username=username)
 
         community_to_remove_moderator_from.moderators.remove(user_to_remove_as_moderator)
-        community_to_remove_moderator_from.create_administrator_remove_moderator_log(moderator=self,
+        community_to_remove_moderator_from.create_administrator_remove_moderator_log(administrator=self,
                                                                                      target_user=user_to_remove_as_moderator)
 
         return community_to_remove_moderator_from
