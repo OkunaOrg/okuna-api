@@ -113,6 +113,19 @@ python manage.py runserver
 
 <br>
 
+## Django Custom Commands
+
+### `manage.py create_invite`
+
+Creates a user invite and outputs its token.
+Required for creating a new account.
+
+```bash
+usage: manage.py create_invite [-h] [--email EMAIL] [--username USERNAME] [--name NAME] [--badge BADGE]
+```
+
+Create 
+
 ## FAQ
 
 ### Double logging in console
