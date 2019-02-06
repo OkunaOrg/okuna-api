@@ -55,3 +55,7 @@ def get_emoji_group_model():
 
 def get_user_invite_model():
     return apps.get_model('openbook_invitations.UserInvite')
+
+
+def get_badge_model():
+    return apps.get_model('openbook_common.Badge')
