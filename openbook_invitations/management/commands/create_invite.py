@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = 'Imports backer data into UserInvite models'
+    help = 'Creates a user invite'
 
     def add_arguments(self, parser):
         parser.add_argument('--email', type=str, help='The email to send the invite to')
