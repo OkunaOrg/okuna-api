@@ -15,7 +15,6 @@ The API server for Openbook.
     + [Other issues](#other-issues)
     + [Git commit message conventions](#git-commit-message-conventions)
 - [Getting started](#getting-started)
-  + [Docker](#docker)
 - [FAQ](#faq)
     + [Double logging in console](#double-logging-in-console)
 
@@ -114,37 +113,6 @@ python manage.py runserver
 
 <br>
 
-## Docker
-If you love containerization and you want to keep your local environment clean you can run Openbook API server inside Docker! <br>
-The `docker-compose.yml` contains two services: one mysql container and one python container. <br>
-Your local copy of Openbook API it's mirrored inside the container, this means you can work from your favourite IDE and check immediatly the results. <br>
-Add inside the `.env` file created above, the following lines in order to have the mysql container properly configured:
-```text
-MYSQL_HOST=db
-MYSQL_PORT=3306
-MYSQL_PASSWORD=changeMe
-MYSQL_USER=openbookuser
-MYSQL_ROOT_PASSWORD=changeMe
-MYSQL_DATABASE=openbook_api_db
-```
-To build/start/stop the containers use the `Makefile` corresponding task: <br>
-```makefile
-build_openbook_api
-start_openbook_api
-stop_openbook_api
-clean_openbook_api
-logs_openbook_api
-```
-Example:
-```commandline
-make build_openbook_api
-```
-**NB**: To execute any python command against the running container you should connect to the container. <br>
-Example:
-```commandline
-docker exec -i -t openbook-api_web_1 /bin/bash 
-root@c770f4607a97:/code# python manage.py migrate
-```
 ## FAQ
 
 ### Double logging in console
