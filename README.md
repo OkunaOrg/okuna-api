@@ -103,7 +103,7 @@ python manage.py collectmedia
 
 #### Load the fixtures
 ```bash
-python manage.py loaddata circles.json emoji-groups.json emojis.json
+python manage.py loaddata circles.json emoji-groups.json emojis.json badges.json tags.json
 ```
 
 #### Serve with hot reload at http://127.0.0.1:8000
