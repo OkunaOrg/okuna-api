@@ -34,7 +34,7 @@ class GetCommunityAdministratorsSerializer(serializers.Serializer):
     )
 
 
-class GetCommunityAdministratorsUserSerializerUserProfileSerializer(serializers.ModelSerializer):
+class GetCommunityAdministratorsUserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = (
@@ -43,7 +43,7 @@ class GetCommunityAdministratorsUserSerializerUserProfileSerializer(serializers.
 
 
 class GetCommunityAdministratorsUserSerializer(serializers.ModelSerializer):
-    profile = GetCommunityAdministratorsUserSerializerUserProfileSerializer(many=False)
+    profile = GetCommunityAdministratorsUserProfileSerializer(many=False)
 
     class Meta:
         model = User
