@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from django.utils.translation import gettext as _
 
 from openbook_common.responses import ApiMessageResponse
+from openbook_common.utils.helpers import normalize_list_value_in_request_data, normalise_request_data
 from openbook_common.utils.model_loaders import get_community_model
 from openbook_communities.views.communities.serializers import CreateCommunitySerializer, \
     GetCommunitiesCommunitySerializer, GetCommunitiesSerializer, CommunityNameCheckSerializer
@@ -16,6 +17,9 @@ class Communities(APIView):
     permission_classes = (IsAuthenticated,)
 
     def put(self, request):
+        request_data = normalise_request_data(request.data)
+        normalize_list_value_in_request_data(list_name='tags', request_data=request_data)
+
         serializer = CreateCommunitySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -28,13 +32,14 @@ class Communities(APIView):
         avatar = data.get('avatar')
         cover = data.get('cover')
         color = data.get('color')
+        tags = data.get('tags')
 
         user = request.user
 
         with transaction.atomic():
             community = user.create_community(name=name, title=title, description=description, rules=rules,
                                               avatar=avatar, cover=cover
-                                              , type=type, color=color)
+                                              , type=type, color=color, tags_names=tags)
 
         response_serializer = GetCommunitiesCommunitySerializer(community, context={"request": request})
 

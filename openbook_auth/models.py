@@ -17,7 +17,7 @@ from openbook_auth.exceptions import EmailVerificationTokenInvalid
 from openbook_common.models import Badge
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, \
-    get_emoji_group_model, get_user_invite_model, get_community_model, get_community_invite_model
+    get_emoji_group_model, get_user_invite_model, get_community_model, get_community_invite_model, get_tag_model
 from openbook_common.validators import name_characters_validator
 
 
@@ -577,12 +577,18 @@ class User(AbstractUser):
         return self.circles.get(id=circle_id)
 
     def create_community(self, name, title=None, description=None, rules=None,
-                         avatar=None, cover=None, type=None, color=None, user_adjective=None, users_adjective=None):
-        self._check_community_name_not_taken(name)
+                         avatar=None, cover=None, type=None, color=None, user_adjective=None, users_adjective=None,
+                         tags_names=None):
+        self._check_can_create_community_with_name(name=name)
+
+        Tag = get_tag_model()
+        Tag.get_tags_with_names_for_user()
+
         Community = get_community_model()
         community = Community.create_community(name=name, creator=self, title=title, description=description,
                                                rules=rules, cover=cover, type=type, avatar=avatar, color=color,
-                                               user_adjective=user_adjective, users_adjective=users_adjective)
+                                               user_adjective=user_adjective, users_adjective=users_adjective,
+                                               tags_names=tags_names)
 
         return community
 
@@ -1782,6 +1788,9 @@ class User(AbstractUser):
             raise ValidationError(
                 _('You already have a list with that name.'),
             )
+
+    def _check_can_create_community_with_name(self, name):
+        self._check_community_name_not_taken(name)
 
     def _check_community_name_not_taken(self, community_name):
         Community = get_community_model()

@@ -59,3 +59,7 @@ def get_user_invite_model():
 
 def get_badge_model():
     return apps.get_model('openbook_common.Badge')
+
+
+def get_tag_model():
+    return apps.get_model('openbook_tags.Tag')

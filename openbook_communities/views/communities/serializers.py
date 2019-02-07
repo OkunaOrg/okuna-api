@@ -5,6 +5,7 @@ from openbook.settings import COLOR_ATTR_MAX_LENGTH
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community
 from openbook_communities.validators import community_name_characters_validator, community_name_not_taken_validator
+from openbook_tags.validators import tag_name_exists
 
 
 class CreateCommunitySerializer(serializers.Serializer):
@@ -25,6 +26,11 @@ class CreateCommunitySerializer(serializers.Serializer):
     cover = serializers.ImageField(required=False)
     color = serializers.CharField(max_length=COLOR_ATTR_MAX_LENGTH, required=True,
                                   validators=[hex_color_validator])
+    tags = serializers.ListField(
+        required=False,
+        max_length=settings.COMMUNITY_TAGS_MAX_AMOUNT,
+        child=serializers.CharField(max_length=settings.TAG_NAME_MAX_LENGTH, validators=[tag_name_exists]),
+    )
 
 
 class CommunityNameCheckSerializer(serializers.Serializer):

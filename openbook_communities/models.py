@@ -90,14 +90,20 @@ class Community(models.Model):
 
     @classmethod
     def create_community(cls, name, title, creator, color, type=None, user_adjective=None, users_adjective=None,
-                         avatar=None, cover=None, description=None, rules=None):
+                         avatar=None, cover=None, description=None, rules=None, tags=None):
+
         community_circle = Circle.create_circle(name=name, color=color)
         community = cls.objects.create(title=title, name=name, creator=creator, avatar=avatar, cover=cover, color=color,
                                        user_adjective=user_adjective, users_adjective=users_adjective,
                                        description=description, type=type, rules=rules, circle=community_circle)
 
         community.administrators.add(creator)
+        community.moderators.add(creator)
         community.members.add(creator)
+
+        if tags:
+            community.tags.add(**tags)
+
         community.save()
         return community
 

@@ -1,0 +1,79 @@
+[
+  {
+    "model": "openbook_categories.Category",
+    "pk": 1,
+    "fields": {
+      "name": "openbook",
+      "title": "Openbook",
+      "description_en": "For everything related to Openbook.",
+      "description_es": "Para todo lo relacionado con Openbook.",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 2,
+    "fields": {
+      "name": "funny",
+      "title": "Funny",
+      "description_en": "Fun stuff!",
+      "description_es": "Cosas graciosas!",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 3,
+    "fields": {
+      "name": "tech",
+      "title": "Technology",
+      "description_en": "For all tech related wizardry.",
+      "description_es": "Para todas las cosas mágicas de la tecnología.",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 4,
+    "fields": {
+      "name": "sports",
+      "title": "Sports",
+      "description_en": "For everything related to sports.",
+      "description_es": "Para todo lo relacionado con deportes.",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 5,
+    "fields": {
+      "name": "nature",
+      "title": "Nature",
+      "description_en": "For everything related to nature.",
+      "description_es": "Para todo lo relacionado con la naturaleza.",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 5,
+    "fields": {
+      "name": "travel",
+      "title": "Travel",
+      "description_en": "For everything related to travel.",
+      "description_es": "Para todo lo relacionado con viajar.",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 5,
+    "fields": {
+      "name": "art",
+      "title": "Art",
+      "description_en": "For everything related to art.",
+      "description_es": "Para todo lo relacionado con arte.",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  }
+]
