@@ -16,13 +16,13 @@ class CreateCommunitySerializer(serializers.Serializer):
     title = serializers.CharField(max_length=settings.COMMUNITY_TITLE_MAX_LENGTH,
                                   allow_blank=False)
     description = serializers.CharField(max_length=settings.COMMUNITY_DESCRIPTION_MAX_LENGTH,
-                                        allow_blank=True)
+                                        allow_blank=True, required=False)
     rules = serializers.CharField(max_length=settings.COMMUNITY_RULES_MAX_LENGTH,
-                                  allow_blank=True)
+                                  allow_blank=True, required=False)
     user_adjective = serializers.CharField(max_length=settings.COMMUNITY_USER_ADJECTIVE_MAX_LENGTH,
-                                           allow_blank=True)
+                                           allow_blank=True, required=False)
     users_adjective = serializers.CharField(max_length=settings.COMMUNITY_USERS_ADJECTIVE_MAX_LENGTH,
-                                            allow_blank=True)
+                                            allow_blank=True, required=False)
     avatar = serializers.ImageField(required=False)
     cover = serializers.ImageField(required=False)
     color = serializers.CharField(max_length=COLOR_ATTR_MAX_LENGTH, required=True,

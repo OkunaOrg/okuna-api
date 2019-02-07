@@ -5,6 +5,7 @@ from faker import Faker
 from django.conf import settings
 from mixer.backend.django import mixer
 from openbook_auth.models import User, UserProfile
+from openbook_categories.models import Category
 from openbook_circles.models import Circle
 from openbook_common.models import Emoji, EmojiGroup, Badge
 from openbook_posts.models import Post
@@ -92,3 +93,23 @@ def make_fake_list_name():
 
 def make_fake_circle_name():
     return fake.text(max_nb_chars=settings.CIRCLE_MAX_LENGTH)
+
+
+def make_community_avatar():
+    community_avatar = Image.new('RGB', (100, 100))
+    tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
+    community_avatar.save(tmp_file)
+    tmp_file.seek(0)
+    return tmp_file
+
+
+def make_community_cover():
+    community_cover = Image.new('RGB', (100, 100))
+    tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
+    community_cover.save(tmp_file)
+    tmp_file.seek(0)
+    return tmp_file
+
+
+def make_category():
+    return mixer.blend(Category)

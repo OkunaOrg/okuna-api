@@ -31,6 +31,7 @@ from openbook_communities.views.community.banned_users.views import BanUser, Unb
 from openbook_communities.views.community.members.views import CommunityMembers, JoinCommunity, \
     LeaveCommunity, InviteCommunityMember
 from openbook_communities.views.community.moderators.views import CommunityModeratorItem, CommunityModerators
+from openbook_communities.views.community.posts.views import CommunityPosts
 from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
@@ -94,6 +95,10 @@ community_members_patterns = [
     path('invite/', InviteCommunityMember.as_view(), name='community-invite'),
 ]
 
+community_posts_patterns = [
+    path('', CommunityPosts.as_view(), name='community-posts'),
+]
+
 community_banned_users_patterns = [
     path('', CommunityBannedUsers.as_view(), name='community-banned-users'),
     path('ban/', BanUser.as_view(), name='community-ban-user'),
@@ -105,6 +110,7 @@ community_patterns = [
     path('avatar/', CommunityAvatar.as_view(), name='community-avatar'),
     path('cover/', CommunityCover.as_view(), name='community-cover'),
     path('members/', include(community_members_patterns)),
+    path('posts/', include(community_posts_patterns)),
     path('banned-users/', include(community_banned_users_patterns)),
     path('administrators/', include(community_administrators_patterns)),
     path('moderators/', include(community_moderators_patterns)),
