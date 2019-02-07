@@ -1,7 +1,8 @@
 import csv
 import re
+
+from openbook_common.models import Badge
 from openbook_common.utils.model_loaders import get_user_invite_model
-from django.db import transaction, IntegrityError, DatabaseError
 
 
 def parse_kickstarter_csv(filepath):
@@ -18,9 +19,10 @@ def parse_kickstarter_csv(filepath):
                     print('Username was empty for:', name)
                     continue
                 badge_keyword = row[badge_keyword_col]
+                badge = Badge.objects.get(keyword=badge_keyword)
                 UserInvite = get_user_invite_model()
                 UserInvite.create_invite(name=name, email=email, username=username,
-                                             badge_keyword=badge_keyword)
+                                         badge=badge)
     except IOError as e:
         print('Unable to read file')
         raise e
@@ -37,13 +39,14 @@ def parse_indiegogo_csv(filepath):
                 email = row[email_col]
                 username = row[username_col]
                 badge_keyword = row[badge_keyword_col]
+                badge = Badge.objects.get(keyword=badge_keyword)
                 UserInvite = get_user_invite_model()
 
                 if username is None or username is '0' or username is '':
                     print('Username was empty for:', name)
                     continue
                 invited_user = UserInvite.create_invite(name=name, email=email, username=username,
-                                                        badge_keyword=badge_keyword)
+                                                        badge_keyword=badge_keyword, badge=badge)
                 invited_user.save()
     except IOError as e:
         print('Unable to read file')
