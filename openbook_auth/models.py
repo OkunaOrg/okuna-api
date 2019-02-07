@@ -582,6 +582,12 @@ class User(AbstractUser):
         self._check_can_get_circle_with_id(circle_id)
         return self.circles.get(id=circle_id)
 
+    def get_circles_available_for_posting(self):
+        posting_circles_query = Q(creator__id=self.pk)
+        posting_circles_query.add(Q(community__members__id=self.pk), Q.OR)
+        Circle = get_circle_model()
+        return Circle.objects.filter(posting_circles_query)
+
     def create_community(self, name, title=None, description=None, rules=None,
                          avatar=None, cover=None, type=None, color=None, user_adjective=None, users_adjective=None,
                          categories_names=None):
@@ -1087,12 +1093,9 @@ class User(AbstractUser):
                 timeline_posts_query.add(followed_user_posts_query, Q.OR)
 
         if communities_names:
-            communities = self.communities.values_list('circle_id').filter(name__in=communities_names)
-        else:
-            communities = self.communities.values_list('circle_id').all()
+            timeline_posts_query.add(Q(circles__community__name__in=communities_names), Q.AND)
 
-        for community in communities:
-            timeline_posts_query.add(Q(circles__id=community.circle_id), Q.OR)
+        timeline_posts_query.add(Q(circles__community__members__id=self.pk), Q.OR)
 
         if max_id:
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
