@@ -148,6 +148,9 @@ class User(AbstractUser):
     def count_following(self):
         return self.follows.count()
 
+    def count_connections(self):
+        return self.connections.count()
+
     def save(self, *args, **kwargs):
         self.full_clean()
         return super(User, self).save(*args, **kwargs)
@@ -1070,7 +1073,7 @@ class User(AbstractUser):
         return self.follow_user_with_id(user.pk, lists_ids)
 
     def follow_user_with_id(self, user_id, lists_ids=None):
-        self._check_is_not_following_user_with_id(user_id)
+        self._check_can_follow_user_with_id(user_id=user_id)
 
         if self.pk == user_id:
             raise ValidationError(
@@ -1398,10 +1401,20 @@ class User(AbstractUser):
         if name:
             self._check_circle_name_not_taken(name)
 
+    def _check_can_follow_user_with_id(self, user_id):
+        self._check_is_not_following_user_with_id(user_id)
+        self._check_has_not_reached_max_follows()
+
     def _check_is_not_following_user_with_id(self, user_id):
         if self.is_following_user_with_id(user_id):
             raise ValidationError(
                 _('Already following user.'),
+            )
+
+    def _check_has_not_reached_max_follows(self):
+        if self.count_following() > settings.USER_MAX_FOLLOWS:
+            raise ValidationError(
+                _('Maximum number of follows reached.'),
             )
 
     def _check_is_not_following_user_with_id_in_list_with_id(self, user_id, list_id):
@@ -1424,6 +1437,16 @@ class User(AbstractUser):
         if not self.is_following_user_with_id(user_id):
             raise ValidationError(
                 _('Not following user.'),
+            )
+
+    def _check_can_connect_with_user_with_id(self, user_id):
+        self._check_is_not_connected_with_user_with_id(user_id)
+        self._check_has_not_reached_max_connections()
+
+    def _check_has_not_reached_max_connections(self):
+        if self.count_connections() > settings.USER_MAX_CONNECTIONS:
+            raise ValidationError(
+                _('Maximum number of connections reached.'),
             )
 
     def _check_is_not_connected_with_user_with_id(self, user_id):
