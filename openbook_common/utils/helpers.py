@@ -1,7 +1,7 @@
 from django.http import QueryDict
-import random
+import secrets
 
-r = lambda: random.randint(0, 255)
+r = lambda: secrets.randbelow(255)
 
 
 def normalise_request_data(request_data):
