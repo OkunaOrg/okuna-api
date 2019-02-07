@@ -28,7 +28,7 @@ class Community(models.Model):
                                    null=True, )
     rules = models.CharField(_('rules'), max_length=settings.COMMUNITY_RULES_MAX_LENGTH, blank=False,
                              null=True)
-    circle = models.OneToOneField(Circle, on_delete=models.CASCADE, null=False, blank=False)
+    circle = models.OneToOneField(Circle, on_delete=models.CASCADE, null=False, blank=False, related_name='community')
     avatar = models.ImageField(_('avatar'), blank=False, null=True)
     cover = models.ImageField(_('cover'), blank=False, null=True)
     created = models.DateTimeField(editable=False)

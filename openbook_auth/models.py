@@ -338,6 +338,9 @@ class User(AbstractUser):
     def has_circles_with_ids(self, circles_ids):
         return self.circles.filter(id__in=circles_ids).count() == len(circles_ids)
 
+    def has_community_circle_with_id(self, circle_id):
+        return self.communities.filter(circle__id=circle_id).exists()
+
     def has_list_with_id(self, list_id):
         return self.lists.filter(id=list_id).count() > 0
 
@@ -956,7 +959,7 @@ class User(AbstractUser):
             if circle_id:
                 circles_ids.append(circle_id)
 
-        self._check_post_data(circles_ids=circles_ids)
+        self._check_can_post_to_circles_with_ids(circles_ids=circles_ids)
 
         if len(circles_ids) == 0:
             # If no circle, add post to world circle
@@ -977,11 +980,26 @@ class User(AbstractUser):
         post = self.posts.get(id=post_id)
         post.delete()
 
-    def update_post(self, post):
-        return self.update_post_with_id(post.pk)
+    def get_posts_for_community_with_name(self, community_name, max_id=None):
+        """
+        :param community_name:
+        :param max_id:
+        :return:
+        """
+        self._check_can_get_posts_for_community_with_name(community_name=community_name)
 
-    def update_post_with_id(self, post_id):
-        pass
+        Community = get_community_model()
+        community = Community.objects.get(name=community_name)
+
+        posts_query = Q(circles__id=community.circle_id)
+
+        if max_id:
+            posts_query.add(Q(id__lt=max_id), Q.AND)
+
+        Post = get_post_model()
+        profile_posts = Post.objects.filter(posts_query).distinct()
+
+        return profile_posts
 
     def get_post_with_id_for_user_with_username(self, username, post_id):
         user = User.objects.get(username=username)
@@ -989,6 +1007,11 @@ class User(AbstractUser):
 
     def get_post_with_id_for_user(self, user, post_id):
         post_query = self._make_get_post_with_id_query_for_user(user, post_id=post_id)
+        # HERE
+        communities = self.communities.values_list('circle_id')
+
+        for community in communities:
+            post_query.add(Q(circles__id=community.circle_id), Q.OR)
 
         Post = get_post_model()
         profile_posts = Post.objects.filter(post_query)
@@ -1027,17 +1050,18 @@ class User(AbstractUser):
 
         return profile_posts
 
-    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None):
+    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None, communities_names=None):
         """
         Get the timeline posts for self. The results will be dynamic based on follows and connections.
         :param lists_ids:
         :param circles_ids:
+        :param communities_names:
         :param max_id:
         :param post_id:
         :param username:
         :return:
         """
-        # Add all own posts
+        # If there's no circles or lists filters, add all posts
         if circles_ids or lists_ids:
             timeline_posts_query = Q()
         else:
@@ -1045,6 +1069,7 @@ class User(AbstractUser):
 
         follows_related_query = self.follows.select_related('followed_user')
 
+        # If there's lists filters, filter follows with it
         if lists_ids:
             follows = follows_related_query.filter(lists__id__in=lists_ids)
         else:
@@ -1060,6 +1085,14 @@ class User(AbstractUser):
             else:
                 followed_user_posts_query = self._make_get_posts_query_for_user(followed_user, )
                 timeline_posts_query.add(followed_user_posts_query, Q.OR)
+
+        if communities_names:
+            communities = self.communities.values_list('circle_id').filter(name__in=communities_names)
+        else:
+            communities = self.communities.values_list('circle_id').all()
+
+        for community in communities:
+            timeline_posts_query.add(Q(circles__id=community.circle_id), Q.OR)
 
         if max_id:
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
@@ -1384,10 +1417,14 @@ class User(AbstractUser):
     def _check_follow_list_id(self, list_id):
         self._check_has_list_with_id(list_id)
 
-    def _check_post_data(self, circles_ids=None):
-
+    def _check_can_post_to_circles_with_ids(self, circles_ids=None):
         if circles_ids:
-            self._check_has_circles_with_ids(circles_ids)
+            for circle_id in circles_ids:
+                if not self.has_circle_with_id(circle_id) and not self.has_community_circle_with_id(
+                        circle_id=circle_id):
+                    raise ValidationError(
+                        _('You cannot post to circle with id %(id)s') % {'id': circle_id},
+                    )
 
     def _check_list_data(self, name, emoji_id):
         if name:
@@ -1525,6 +1562,16 @@ class User(AbstractUser):
         if not self.is_administrator_of_community_with_name(community_name):
             raise ValidationError(
                 _('Can\'t update a community that you do not administrate.'),
+            )
+
+    def _check_can_get_posts_for_community_with_name(self, community_name):
+
+        Community = get_community_model()
+        if Community.is_community_with_name_private(
+                community_name=community_name) and not self.is_member_of_community_with_name(
+            community_name=community_name):
+            raise ValidationError(
+                _('The community is private. You must become a member to retrieve its posts.'),
             )
 
     def _check_can_get_community_with_name_members(self, community_name):
