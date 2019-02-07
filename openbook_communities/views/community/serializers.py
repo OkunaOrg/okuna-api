@@ -1,6 +1,8 @@
 from django.conf import settings
 from rest_framework import serializers
 
+from openbook_categories.models import Category
+from openbook_categories.validators import category_name_exists
 from openbook_communities.models import Community
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 
@@ -33,6 +35,12 @@ class UpdateCommunitySerializer(serializers.Serializer):
     rules = serializers.CharField(max_length=settings.COMMUNITY_RULES_MAX_LENGTH, required=False, allow_blank=True)
     user_adjective = serializers.CharField(max_length=settings.COMMUNITY_USER_ADJECTIVE_MAX_LENGTH, required=False)
     users_adjective = serializers.CharField(max_length=settings.COMMUNITY_USERS_ADJECTIVE_MAX_LENGTH, required=False)
+    categories = serializers.ListField(
+        required=True,
+        min_length=settings.COMMUNITY_CATEGORIES_MIN_AMOUNT,
+        max_length=settings.COMMUNITY_CATEGORIES_MAX_AMOUNT,
+        child=serializers.CharField(max_length=settings.TAG_NAME_MAX_LENGTH, validators=[category_name_exists]),
+    )
 
 
 class UpdateCommunityAvatarSerializer(serializers.Serializer):
@@ -51,7 +59,19 @@ class UpdateCommunityCoverSerializer(serializers.Serializer):
                                            validators=[community_name_characters_validator, community_name_exists])
 
 
+class UpdateCommunityCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = (
+            'id',
+            'name',
+            'title',
+        )
+
+
 class GetCommunityCommunitySerializer(serializers.ModelSerializer):
+    categories = UpdateCommunityCategorySerializer(many=True)
+
     class Meta:
         model = Community
         fields = (
@@ -64,5 +84,6 @@ class GetCommunityCommunitySerializer(serializers.ModelSerializer):
             'description',
             'rules',
             'user_adjective',
-            'users_adjective'
+            'users_adjective',
+            'categories'
         )

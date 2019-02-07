@@ -18,9 +18,9 @@ class Communities(APIView):
 
     def put(self, request):
         request_data = normalise_request_data(request.data)
-        normalize_list_value_in_request_data(list_name='tags', request_data=request_data)
+        normalize_list_value_in_request_data(list_name='categories', request_data=request_data)
 
-        serializer = CreateCommunitySerializer(data=request.data)
+        serializer = CreateCommunitySerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
@@ -32,14 +32,14 @@ class Communities(APIView):
         avatar = data.get('avatar')
         cover = data.get('cover')
         color = data.get('color')
-        tags = data.get('tags')
+        categories = data.get('categories')
 
         user = request.user
 
         with transaction.atomic():
             community = user.create_community(name=name, title=title, description=description, rules=rules,
                                               avatar=avatar, cover=cover
-                                              , type=type, color=color, tags_names=tags)
+                                              , type=type, color=color, categories_names=categories)
 
         response_serializer = GetCommunitiesCommunitySerializer(community, context={"request": request})
 

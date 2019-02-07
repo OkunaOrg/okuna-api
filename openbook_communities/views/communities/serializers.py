@@ -2,10 +2,11 @@ from django.conf import settings
 from rest_framework import serializers
 
 from openbook.settings import COLOR_ATTR_MAX_LENGTH
+from openbook_categories.models import Category
+from openbook_categories.validators import category_name_exists
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community
 from openbook_communities.validators import community_name_characters_validator, community_name_not_taken_validator
-from openbook_tags.validators import tag_name_exists
 
 
 class CreateCommunitySerializer(serializers.Serializer):
@@ -26,10 +27,11 @@ class CreateCommunitySerializer(serializers.Serializer):
     cover = serializers.ImageField(required=False)
     color = serializers.CharField(max_length=COLOR_ATTR_MAX_LENGTH, required=True,
                                   validators=[hex_color_validator])
-    tags = serializers.ListField(
-        required=False,
-        max_length=settings.COMMUNITY_TAGS_MAX_AMOUNT,
-        child=serializers.CharField(max_length=settings.TAG_NAME_MAX_LENGTH, validators=[tag_name_exists]),
+    categories = serializers.ListField(
+        required=True,
+        min_length=settings.COMMUNITY_CATEGORIES_MIN_AMOUNT,
+        max_length=settings.COMMUNITY_CATEGORIES_MAX_AMOUNT,
+        child=serializers.CharField(max_length=settings.TAG_NAME_MAX_LENGTH, validators=[category_name_exists]),
     )
 
 
@@ -51,7 +53,19 @@ class GetCommunitiesSerializer(serializers.Serializer):
     )
 
 
+class GetCommunitiesCommunityCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = (
+            'id',
+            'name',
+            'title',
+        )
+
+
 class GetCommunitiesCommunitySerializer(serializers.ModelSerializer):
+    categories = GetCommunitiesCommunityCategorySerializer(many=True)
+
     class Meta:
         model = Community
         fields = (
@@ -63,5 +77,6 @@ class GetCommunitiesCommunitySerializer(serializers.ModelSerializer):
             'members_count',
             'color',
             'user_adjective',
-            'users_adjective'
+            'users_adjective',
+            'categories'
         )

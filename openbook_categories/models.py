@@ -17,7 +17,7 @@ class Category(models.Model):
     description = models.CharField(_('description'), max_length=settings.CATEGORY_DESCRIPTION_MAX_LENGTH, blank=False,
                                    null=True, )
     created = models.DateTimeField(editable=False)
-    communities = models.ManyToManyField(Community, related_name='communities')
+    communities = models.ManyToManyField(Community, related_name='categories')
     avatar = models.ImageField(_('avatar'), blank=False, null=True)
 
     @classmethod

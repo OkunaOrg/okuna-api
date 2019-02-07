@@ -13,7 +13,7 @@ from openbook_circles.models import Circle
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.utils.model_loaders import get_community_invite_model, \
-    get_community_moderator_user_action_log_model, get_community_administrator_user_action_log_model
+    get_community_moderator_user_action_log_model, get_community_administrator_user_action_log_model, get_category_model
 from openbook_common.validators import hex_color_validator
 from openbook_communities.validators import community_name_characters_validator
 
@@ -90,7 +90,7 @@ class Community(models.Model):
 
     @classmethod
     def create_community(cls, name, title, creator, color, type=None, user_adjective=None, users_adjective=None,
-                         avatar=None, cover=None, description=None, rules=None, tags=None):
+                         avatar=None, cover=None, description=None, rules=None, categories_names=None):
 
         community_circle = Circle.create_circle(name=name, color=color)
         community = cls.objects.create(title=title, name=name, creator=creator, avatar=avatar, cover=cover, color=color,
@@ -101,8 +101,8 @@ class Community(models.Model):
         community.moderators.add(creator)
         community.members.add(creator)
 
-        if tags:
-            community.tags.add(**tags)
+        if categories_names:
+            community.set_categories_with_names(categories_names=categories_names)
 
         community.save()
         return community
@@ -154,6 +154,15 @@ class Community(models.Model):
     @property
     def members_count(self):
         return self.members.all().count()
+
+    def set_categories_with_names(self, categories_names):
+        self.clear_categories()
+        Category = get_category_model()
+        categories = Category.objects.filter(name__in=categories_names)
+        self.categories.set(categories)
+
+    def clear_categories(self):
+        self.categories.clear()
 
     def create_invite(self, creator, invited_user):
         CommunityInvite = get_community_invite_model()

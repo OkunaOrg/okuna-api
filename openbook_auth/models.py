@@ -578,17 +578,14 @@ class User(AbstractUser):
 
     def create_community(self, name, title=None, description=None, rules=None,
                          avatar=None, cover=None, type=None, color=None, user_adjective=None, users_adjective=None,
-                         tags_names=None):
+                         categories_names=None):
         self._check_can_create_community_with_name(name=name)
-
-        Tag = get_tag_model()
-        Tag.get_tags_with_names_for_user()
 
         Community = get_community_model()
         community = Community.create_community(name=name, creator=self, title=title, description=description,
                                                rules=rules, cover=cover, type=type, avatar=avatar, color=color,
                                                user_adjective=user_adjective, users_adjective=users_adjective,
-                                               tags_names=tags_names)
+                                               categories_names=categories_names)
 
         return community
 
@@ -609,7 +606,7 @@ class User(AbstractUser):
 
     def update_community_with_name(self, community_name, title=None, name=None, description=None, color=None, type=None,
                                    user_adjective=None,
-                                   users_adjective=None, rules=None):
+                                   users_adjective=None, rules=None, categories_names=None):
         self._check_can_update_community_with_name(community_name)
         self._check_community_data(name)
 
@@ -638,6 +635,9 @@ class User(AbstractUser):
 
         if users_adjective is not None:
             community_to_update.users_adjective = users_adjective
+
+        if categories_names is not None:
+            community_to_update.set_categories_with_names(categories_names=categories_names)
 
         community_to_update.save()
 

@@ -63,3 +63,7 @@ def get_badge_model():
 
 def get_tag_model():
     return apps.get_model('openbook_tags.Tag')
+
+
+def get_category_model():
+    return apps.get_model('openbook_categories.Category')
