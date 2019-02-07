@@ -32,6 +32,7 @@ class Community(models.Model):
     avatar = models.ImageField(_('avatar'), blank=False, null=True)
     cover = models.ImageField(_('cover'), blank=False, null=True)
     created = models.DateTimeField(editable=False)
+    starrers = models.ManyToManyField(User, related_name='favorite_communities')
     members = models.ManyToManyField(User, related_name='communities')
     moderators = models.ManyToManyField(User, related_name='moderated_communities')
     administrators = models.ManyToManyField(User, related_name='administrated_communities')
@@ -74,7 +75,7 @@ class Community(models.Model):
         return cls.objects.filter(name=community_name, banned_users__username=username).exists()
 
     @classmethod
-    def get_communities_with_query(cls, query):
+    def search_communities_with_query(cls, query):
         communities_query = Q(name__icontains=query)
         communities_query.add(Q(title__icontains=query), Q.OR)
         return cls.objects.filter(communities_query)

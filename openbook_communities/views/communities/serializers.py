@@ -46,6 +46,26 @@ class GetCommunitiesSerializer(serializers.Serializer):
         required=False,
         max_value=20
     )
+    offset = serializers.IntegerField(
+        required=False,
+    )
+
+
+class GetFavoriteCommunitiesSerializer(serializers.Serializer):
+    count = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
+    offset = serializers.IntegerField(
+        required=False,
+    )
+
+
+class SearchCommunitiesSerializer(serializers.Serializer):
+    count = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
     query = serializers.CharField(
         max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
         allow_blank=False,

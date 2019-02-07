@@ -918,14 +918,20 @@ class User(AbstractUser):
         # In the future, the user might have blocked users which should not be displayed
         return User.get_public_users_with_query(query)
 
-    def get_communities_with_query(self, query):
+    def search_communities_with_query(self, query):
         # In the future, the user might have blocked communities which should not be displayed
         Community = get_community_model()
-        return Community.get_communities_with_query(query)
+        return Community.search_communities_with_query(query)
 
     def get_community_with_name(self, community_name):
         Community = get_community_model()
         return Community.objects.get(name=community_name)
+
+    def get_communities(self):
+        return self.communities.all()
+
+    def get_favorite_communities(self):
+        return self.favorite_communities.all()
 
     def create_public_post(self, text=None, image=None):
         # If no circle ids are given, will be public
