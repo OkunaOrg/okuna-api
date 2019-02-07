@@ -1013,11 +1013,7 @@ class User(AbstractUser):
 
     def get_post_with_id_for_user(self, user, post_id):
         post_query = self._make_get_post_with_id_query_for_user(user, post_id=post_id)
-        # HERE
-        communities = self.communities.values_list('circle_id')
-
-        for community in communities:
-            post_query.add(Q(circles__id=community.circle_id), Q.OR)
+        post_query.add(Q(circles__community__members__id=self.pk), Q.OR)
 
         Post = get_post_model()
         profile_posts = Post.objects.filter(post_query)
