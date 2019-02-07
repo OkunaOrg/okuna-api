@@ -11,7 +11,7 @@ from openbook_common.utils.helpers import normalize_list_value_in_request_data, 
 from openbook_common.utils.model_loaders import get_community_model
 from openbook_communities.views.communities.serializers import CreateCommunitySerializer, \
     GetCommunitiesCommunitySerializer, SearchCommunitiesSerializer, CommunityNameCheckSerializer, \
-    GetFavoriteCommunitiesSerializer, GetCommunitiesSerializer
+    GetFavoriteCommunitiesSerializer, GetCommunitiesSerializer, TrendingCommunitiesSerializer
 
 
 class Communities(APIView):
@@ -83,10 +83,19 @@ class CommunityNameCheck(APIView):
 
 class TrendingCommunities(APIView):
     permission_classes = (IsAuthenticated,)
+    serializer_class = TrendingCommunitiesSerializer
 
     def get(self, request):
+        query_params = request.query_params.dict()
+        serializer = self.serializer_class(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.data
+        category_name = data.get('category')
+
         Community = get_community_model()
-        communities = Community.get_trending_communities()[:10]
+        communities = Community.get_trending_communities(category_name=category_name)[:10]
+
         posts_serializer = GetCommunitiesCommunitySerializer(communities, many=True, context={"request": request})
         return Response(posts_serializer.data, status=status.HTTP_200_OK)
 

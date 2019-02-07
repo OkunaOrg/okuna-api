@@ -81,8 +81,13 @@ class Community(models.Model):
         return cls.objects.filter(communities_query)
 
     @classmethod
-    def get_trending_communities(cls):
-        return cls.objects.annotate(Count('members')).all().order_by(
+    def get_trending_communities(cls, category_name=None):
+        trending_communities_query = Q()
+
+        if category_name:
+            trending_communities_query.add(Q(categories__name=category_name), Q.AND)
+
+        return cls.objects.annotate(Count('members')).filter(trending_communities_query).order_by(
             '-members__count', '-created')
 
     @classmethod
