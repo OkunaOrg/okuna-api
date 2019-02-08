@@ -1,4 +1,3 @@
-import jwt
 from django.conf import settings
 from django.db import models
 
@@ -16,6 +15,7 @@ from openbook_common.utils.model_loaders import get_community_invite_model, \
     get_community_moderator_user_action_log_model, get_community_administrator_user_action_log_model, get_category_model
 from openbook_common.validators import hex_color_validator
 from openbook_communities.validators import community_name_characters_validator
+from openbook_posts.models import Post
 
 
 class Community(models.Model):
@@ -28,7 +28,6 @@ class Community(models.Model):
                                    null=True, )
     rules = models.CharField(_('rules'), max_length=settings.COMMUNITY_RULES_MAX_LENGTH, blank=False,
                              null=True)
-    circle = models.OneToOneField(Circle, on_delete=models.CASCADE, null=False, blank=False, related_name='community')
     avatar = models.ImageField(_('avatar'), blank=False, null=True)
     cover = models.ImageField(_('cover'), blank=False, null=True)
     created = models.DateTimeField(editable=False)
@@ -98,10 +97,9 @@ class Community(models.Model):
     def create_community(cls, name, title, creator, color, type=None, user_adjective=None, users_adjective=None,
                          avatar=None, cover=None, description=None, rules=None, categories_names=None):
 
-        community_circle = Circle.create_circle(name=name, color=color)
         community = cls.objects.create(title=title, name=name, creator=creator, avatar=avatar, cover=cover, color=color,
                                        user_adjective=user_adjective, users_adjective=users_adjective,
-                                       description=description, type=type, rules=rules, circle=community_circle)
+                                       description=description, type=type, rules=rules)
 
         community.administrators.add(creator)
         community.moderators.add(creator)

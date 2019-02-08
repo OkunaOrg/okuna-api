@@ -38,17 +38,6 @@ class Circles(APIView):
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
-class PostingCircles(APIView):
-    permission_classes = (IsAuthenticated,)
-
-    def get(self, request):
-        user = request.user
-        circles = user.get_circles_available_for_posting().order_by('-id')
-        response_serializer = GetCirclesCircleSerializer(circles, many=True, context={"request": request})
-
-        return Response(response_serializer.data, status=status.HTTP_200_OK)
-
-
 class CircleItem(APIView):
     permission_classes = (IsAuthenticated,)
 

@@ -27,7 +27,7 @@ class PostItemAPITests(APITestCase):
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
-        post = user.create_post(text=make_fake_post_text())
+        post = user.create_public_post(text=make_fake_post_text())
 
         url = self._get_url(post)
 
@@ -44,7 +44,7 @@ class PostItemAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
 
         foreign_user = make_user()
-        post = foreign_user.create_post(text=make_fake_post_text())
+        post = foreign_user.create_public_post(text=make_fake_post_text())
 
         url = self._get_url(post)
 
@@ -74,7 +74,7 @@ class PostCommentsAPITests(APITestCase):
          """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
-        post = user.create_post(text=make_fake_post_text())
+        post = user.create_public_post(text=make_fake_post_text())
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -95,7 +95,7 @@ class PostCommentsAPITests(APITestCase):
 
         foreign_user = make_user()
         circle = make_circle(creator=foreign_user)
-        post = foreign_user.create_post(text=make_fake_post_text(), circle=circle)
+        post = foreign_user.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -118,7 +118,7 @@ class PostCommentsAPITests(APITestCase):
 
         user.connect_with_user_with_id(user_to_connect.pk)
 
-        connected_user_post = user_to_connect.create_post(text=make_fake_post_text())
+        connected_user_post = user_to_connect.create_public_post(text=make_fake_post_text())
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -143,7 +143,7 @@ class PostCommentsAPITests(APITestCase):
         user.connect_with_user_with_id(user_to_connect.pk)
         user_to_connect.confirm_connection_with_user_with_id(user.pk, circles_ids=[circle.pk])
 
-        connected_user_post = user_to_connect.create_post(text=make_fake_post_text(), circle=circle)
+        connected_user_post = user_to_connect.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -168,7 +168,7 @@ class PostCommentsAPITests(APITestCase):
         user.connect_with_user_with_id(user_to_connect.pk)
         # Note there is no confirmation of the connection on the other side
 
-        connected_user_post = user_to_connect.create_post(text=make_fake_post_text(), circle=circle)
+        connected_user_post = user_to_connect.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -214,7 +214,7 @@ class PostCommentsAPITests(APITestCase):
 
         user.follow_user_with_id(user_to_follow.pk)
 
-        followed_user_post = user_to_follow.create_post(text=make_fake_post_text(), circle=circle)
+        followed_user_post = user_to_follow.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -376,7 +376,7 @@ class PostCommentItemAPITests(APITestCase):
         user.connect_with_user_with_id(user_to_connect.pk)
         user_to_connect.confirm_connection_with_user_with_id(user.pk, circles_ids=[circle.pk])
 
-        post = user_to_connect.create_post(text=make_fake_post_text(), circle_id=circle.pk)
+        post = user_to_connect.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -406,7 +406,7 @@ class PostCommentItemAPITests(APITestCase):
         foreign_user.connect_with_user_with_id(user_to_connect.pk)
         user_to_connect.confirm_connection_with_user_with_id(foreign_user.pk, circles_ids=[circle.pk])
 
-        post = user_to_connect.create_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+        post = user_to_connect.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -433,7 +433,7 @@ class PostCommentItemAPITests(APITestCase):
         foreign_user.connect_with_user_with_id(user_to_connect.pk)
         user_to_connect.confirm_connection_with_user_with_id(foreign_user.pk, circles_ids=[circle.pk])
 
-        post = user_to_connect.create_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+        post = user_to_connect.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -512,7 +512,7 @@ class PostCommentItemAPITests(APITestCase):
         foreign_user.connect_with_user_with_id(user_to_follow.pk)
         user_to_follow.confirm_connection_with_user_with_id(foreign_user.pk, circles_ids=[circle.pk])
 
-        post = user_to_follow.create_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+        post = user_to_follow.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -548,7 +548,7 @@ class PostReactionsAPITests(APITestCase):
          """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
-        post = user.create_post(text=make_fake_post_text())
+        post = user.create_public_post(text=make_fake_post_text())
 
         emoji_group = make_reactions_emoji_group()
 
@@ -572,7 +572,7 @@ class PostReactionsAPITests(APITestCase):
 
         foreign_user = make_user()
         circle = make_circle(creator=foreign_user)
-        post = foreign_user.create_post(text=make_fake_post_text(), circle=circle)
+        post = foreign_user.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         emoji_group = make_reactions_emoji_group()
 
@@ -593,7 +593,7 @@ class PostReactionsAPITests(APITestCase):
          """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
-        post = user.create_post(text=make_fake_post_text())
+        post = user.create_public_post(text=make_fake_post_text())
 
         emoji_group = make_emoji_group()
 
@@ -619,7 +619,7 @@ class PostReactionsAPITests(APITestCase):
 
         user.connect_with_user_with_id(user_to_connect.pk)
 
-        connected_user_post = user_to_connect.create_post(text=make_fake_post_text())
+        connected_user_post = user_to_connect.create_public_post(text=make_fake_post_text())
 
         emoji_group = make_reactions_emoji_group()
 
@@ -648,7 +648,7 @@ class PostReactionsAPITests(APITestCase):
         user.connect_with_user_with_id(user_to_connect.pk)
         user_to_connect.confirm_connection_with_user_with_id(user.pk, circles_ids=[circle.pk])
 
-        connected_user_post = user_to_connect.create_post(text=make_fake_post_text(), circle=circle)
+        connected_user_post = user_to_connect.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         emoji_group = make_reactions_emoji_group()
 
@@ -677,7 +677,7 @@ class PostReactionsAPITests(APITestCase):
         user.connect_with_user_with_id(user_to_connect.pk)
         # Note there is no confirmation of the connection on the other side
 
-        connected_user_post = user_to_connect.create_post(text=make_fake_post_text(), circle=circle)
+        connected_user_post = user_to_connect.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         emoji_group = make_reactions_emoji_group()
 
@@ -731,7 +731,7 @@ class PostReactionsAPITests(APITestCase):
 
         user.follow_user_with_id(user_to_follow.pk)
 
-        followed_user_post = user_to_follow.create_post(text=make_fake_post_text(), circle=circle)
+        followed_user_post = user_to_follow.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         emoji_group = make_reactions_emoji_group()
 
@@ -753,7 +753,7 @@ class PostReactionsAPITests(APITestCase):
          """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
-        post = user.create_post(text=make_fake_post_text())
+        post = user.create_public_post(text=make_fake_post_text())
 
         emoji_group = make_reactions_emoji_group()
 
@@ -938,7 +938,7 @@ class PostReactionItemAPITests(APITestCase):
         user.connect_with_user_with_id(user_to_connect.pk)
         user_to_connect.confirm_connection_with_user_with_id(user.pk, circles_ids=[circle.pk])
 
-        post = user_to_connect.create_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+        post = user_to_connect.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         emoji_group = make_reactions_emoji_group()
 
@@ -971,7 +971,7 @@ class PostReactionItemAPITests(APITestCase):
         foreign_user.connect_with_user_with_id(user_to_connect.pk)
         user_to_connect.confirm_connection_with_user_with_id(foreign_user.pk, circles_ids=[circle.pk])
 
-        post = user_to_connect.create_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+        post = user_to_connect.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         emoji_group = make_reactions_emoji_group()
 
@@ -1001,7 +1001,7 @@ class PostReactionItemAPITests(APITestCase):
         foreign_user.connect_with_user_with_id(user_to_connect.pk)
         user_to_connect.confirm_connection_with_user_with_id(foreign_user.pk, circles_ids=[circle.pk])
 
-        post = user_to_connect.create_post(text=make_fake_post_text(), circle_id=circle.pk)
+        post = user_to_connect.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         emoji_group = make_reactions_emoji_group()
 
@@ -1089,7 +1089,7 @@ class PostReactionItemAPITests(APITestCase):
         foreign_user.connect_with_user_with_id(user_to_follow.pk)
         user_to_follow.confirm_connection_with_user_with_id(foreign_user.pk, circles_ids=[circle.pk])
 
-        post = user_to_follow.create_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+        post = user_to_follow.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         emoji_group = make_reactions_emoji_group()
 

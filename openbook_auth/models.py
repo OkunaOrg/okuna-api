@@ -945,35 +945,22 @@ class User(AbstractUser):
     def get_favorite_communities(self):
         return self.favorite_communities.all()
 
-    def create_public_post(self, text=None, image=None):
-        # If no circle ids are given, will be public
-        return self.create_post(text=text, image=image)
+    def create_public_post(self, text=None, image=None, video=None, created=None):
+        world_circle_id = self._get_world_circle_id()
+        return self.create_encircled_post(text=text, image=image, video=video, circles_ids=[world_circle_id],
+                                          created=created)
 
-    def create_encircled_post(self, circles_ids, text=None, image=None):
-        return self.create_post(text=text, image=image, circles_ids=circles_ids)
-
-    def create_post(self, text=None, image=None, video=None, circles_ids=None, circles=None, circle=None,
-                    circle_id=None, created=None):
-
-        if circles:
-            circles_ids = [circle.pk for circle in circles]
-        elif not circles_ids:
-            circles_ids = []
-            if circle:
-                circle_id = circle.pk
-
-            if circle_id:
-                circles_ids.append(circle_id)
-
+    def create_encircled_post(self, circles_ids, text=None, image=None, video=None, created=None):
         self._check_can_post_to_circles_with_ids(circles_ids=circles_ids)
-
-        if len(circles_ids) == 0:
-            # If no circle, add post to world circle
-            world_circle_id = self._get_world_circle_id()
-            circles_ids.append(world_circle_id)
-
         Post = get_post_model()
         post = Post.create_post(text=text, creator=self, circles_ids=circles_ids, image=image, video=video,
+                                created=created)
+        return post
+
+    def create_community_post(self, text=None, image=None, video=None, community_name=None, created=None):
+        self._check_can_post_to_community_with_name(community_name=community_name)
+        Post = get_post_model()
+        post = Post.create_post(text=text, creator=self, community_name=community_name, image=image, video=video,
                                 created=created)
 
         return post
@@ -1013,7 +1000,7 @@ class User(AbstractUser):
 
     def get_post_with_id_for_user(self, user, post_id):
         post_query = self._make_get_post_with_id_query_for_user(user, post_id=post_id)
-        post_query.add(Q(circles__community__members__id=self.pk), Q.OR)
+        post_query.add(Q(community__members__id=self.pk), Q.OR)
 
         Post = get_post_model()
         profile_posts = Post.objects.filter(post_query)
@@ -1089,9 +1076,9 @@ class User(AbstractUser):
                 timeline_posts_query.add(followed_user_posts_query, Q.OR)
 
         if communities_names:
-            timeline_posts_query.add(Q(circles__community__name__in=communities_names), Q.AND)
+            timeline_posts_query.add(Q(community__name__in=communities_names), Q.AND)
 
-        timeline_posts_query.add(Q(circles__community__members__id=self.pk), Q.OR)
+        timeline_posts_query.add(Q(community__members__id=self.pk), Q.OR)
 
         if max_id:
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
@@ -1417,13 +1404,17 @@ class User(AbstractUser):
         self._check_has_list_with_id(list_id)
 
     def _check_can_post_to_circles_with_ids(self, circles_ids=None):
-        if circles_ids:
-            for circle_id in circles_ids:
-                if not self.has_circle_with_id(circle_id) and not self.has_community_circle_with_id(
-                        circle_id=circle_id):
-                    raise ValidationError(
-                        _('You cannot post to circle with id %(id)s') % {'id': circle_id},
-                    )
+        for circle_id in circles_ids:
+            if not self.has_circle_with_id(circle_id) and not self.is_world_circle_id(circle_id):
+                raise ValidationError(
+                    _('You cannot post to circle with id %(id)s') % {'id': circle_id},
+                )
+
+    def _check_can_post_to_community_with_name(self, community_name=None):
+        if not self.is_member_of_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('You cannot post to a community you\'re not member of '),
+            )
 
     def _check_list_data(self, name, emoji_id):
         if name:

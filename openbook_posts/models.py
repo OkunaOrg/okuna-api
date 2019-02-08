@@ -14,8 +14,8 @@ from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
 from openbook_common.models import Emoji
-from openbook_common.utils.model_loaders import get_post_reaction_model, get_emoji_model, get_post_comment_model, \
-    get_circle_model
+from openbook_common.utils.model_loaders import get_post_reaction_model, get_emoji_model, \
+    get_circle_model, get_community_model
 
 
 class Post(models.Model):
@@ -24,6 +24,9 @@ class Post(models.Model):
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
     public_comments = models.BooleanField(_('public comments'), default=True, editable=False, null=False)
     public_reactions = models.BooleanField(_('public reactions'), default=True, editable=False, null=False)
+    community = models.ForeignKey('openbook_communities.Community', on_delete=models.CASCADE, related_name='posts',
+                                  null=True,
+                                  blank=False)
 
     @classmethod
     def post_with_id_has_public_comments(cls, post_id):
@@ -34,7 +37,15 @@ class Post(models.Model):
         return Post.objects.filter(pk=post_id, public_reactions=True).count() == 1
 
     @classmethod
-    def create_post(cls, creator, circles_ids, image=None, text=None, video=None, created=None):
+    def create_post(cls, creator, circles_ids=None, community_name=None, image=None, text=None, video=None,
+                    created=None):
+
+        if not community_name and not circles_ids:
+            raise ValidationError(_('A post requires circles or a community to be posted to.'))
+
+        if community_name and circles_ids:
+            raise ValidationError(_('A post cannot be posted both to a community and to circles.'))
+
         if not text and not image and not video:
             raise ValidationError(_('A post requires text or an image/video.'))
 
@@ -52,7 +63,11 @@ class Post(models.Model):
         if video:
             PostVideo.objects.create(video=video, post_id=post.pk)
 
-        post.circles.add(*circles_ids)
+        if circles_ids:
+            post.circles.add(*circles_ids)
+        else:
+            Community = get_community_model()
+            post.community = Community.get(name=community_name)
 
         post.save()
 

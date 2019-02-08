@@ -21,6 +21,15 @@ class GetCommunityPostsSerializer(serializers.Serializer):
                                            validators=[community_name_characters_validator, community_name_exists])
 
 
+class CreateCommunityPostSerializer(serializers.Serializer):
+    text = serializers.CharField(max_length=settings.POST_MAX_LENGTH, required=False, allow_blank=False)
+    image = serializers.ImageField(allow_empty_file=False, required=False)
+    video = serializers.FileField(allow_empty_file=False, required=False)
+    community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
+                                           allow_blank=False,
+                                           validators=[community_name_characters_validator, community_name_exists])
+
+
 class CommunityPostCreatorProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile

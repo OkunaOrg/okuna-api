@@ -19,7 +19,7 @@ from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 
-from openbook_circles.views import Circles, CircleItem, CircleNameCheck, PostingCircles
+from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, EmailVerify, Login, AuthenticatedUser, User, Users, \
     UserSettings
@@ -136,7 +136,6 @@ connections_patterns = [
 circles_patterns = [
     path('', Circles.as_view(), name='circles'),
     path('name-check/', CircleNameCheck.as_view(), name='circle-name-check'),
-    path('posting/', PostingCircles.as_view(), name='posting-circles'),
     path('<int:circle_id>/', CircleItem.as_view(), name='circle'),
 ]
 

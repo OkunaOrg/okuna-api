@@ -19,7 +19,7 @@ class Tag(models.Model):
                              validators=[hex_color_validator])
     created = models.DateTimeField(editable=False)
     categories = models.ManyToManyField(Category, related_name='tags')
-    posts = models.ManyToManyField(Community, related_name='posts')
+    posts = models.ManyToManyField(Community, related_name='tags')
 
     @classmethod
     def create_tag(cls, creator, name, color=None):

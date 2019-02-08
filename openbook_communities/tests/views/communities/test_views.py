@@ -375,7 +375,7 @@ class CommunitiesAPITests(APITestCase):
         community = Community.objects.get(name=community_name)
         self.assertTrue(hasattr(community, 'cover'))
 
-    def test_retrieve_own_communities(self):
+    def retrieve_own_communities(self):
         """
         should be able to retrieve all own communities return 200
         """
