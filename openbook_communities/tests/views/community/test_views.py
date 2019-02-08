@@ -17,7 +17,7 @@ fake = Faker()
 
 class CommunityAPITests(APITestCase):
     """
-    AuthenticatedUserAPI
+    CommunityAPITests
     """
 
     def test_can_retrieve_public_community(self):
@@ -524,7 +524,7 @@ class CommunityAPITests(APITestCase):
 
 class CommunityAvatarAPITests(APITestCase):
     """
-    AuthenticatedUserAPI
+    CommunityAvatarAPITests
     """
 
     def test_can_update_administrated_community_avatar(self):
@@ -582,7 +582,7 @@ class CommunityAvatarAPITests(APITestCase):
 
 class CommunityCoverAPITests(APITestCase):
     """
-    AuthenticatedUserAPI
+    CommunityCoverAPITests
     """
 
     def test_can_update_administrated_community_cover(self):
@@ -634,5 +634,117 @@ class CommunityCoverAPITests(APITestCase):
 
     def _get_url(self, community_name):
         return reverse('community-cover', kwargs={
+            'community_name': community_name
+        })
+
+
+class FavoriteCommunityAPITests(APITestCase):
+    """
+    FavoriteCommunityAPITests
+    """
+
+    def test_cant_favorite_not_joined_community(self):
+        """
+        should not be able to favorite a community not joined
+        :return:
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_administrated_community(creator=other_user)
+
+        url = self._get_url(community_name=community.name)
+
+        response = self.client.put(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(user.has_favorite_community_with_name(community.name))
+
+    def test_can_favorite_joined_community(self):
+        """
+        should be able to favorite a joined community and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_administrated_community(creator=other_user)
+
+        user.join_community_with_name(community.name)
+
+        url = self._get_url(community_name=community.name)
+
+        response = self.client.put(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(user.has_favorite_community_with_name(community.name))
+
+    def test_cant_favorite_already_favorite_community(self):
+        """
+        should not be be able to favorite an already favorite community and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_administrated_community(creator=other_user)
+
+        user.join_community_with_name(community.name)
+        user.favorite_community_with_name(community.name)
+
+        url = self._get_url(community_name=community.name)
+
+        response = self.client.put(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(user.has_favorite_community_with_name(community.name))
+
+    def test_can_unfavorite_favorite_community(self):
+        """
+        should be able to unfavorite a favorite community and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_administrated_community(creator=other_user)
+
+        user.join_community_with_name(community.name)
+        user.favorite_community_with_name(community.name)
+
+        url = self._get_url(community_name=community.name)
+
+        response = self.client.delete(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(user.has_favorite_community_with_name(community.name))
+
+    def test_cant_unfavorite_not_favorite_community(self):
+        """
+        should not be able to unfavorite a non favorite community and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_administrated_community(creator=other_user)
+
+        user.join_community_with_name(community.name)
+
+        url = self._get_url(community_name=community.name)
+
+        response = self.client.delete(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(user.has_favorite_community_with_name(community.name))
+
+    def _get_url(self, community_name):
+        return reverse('favorite-community', kwargs={
             'community_name': community_name
         })

@@ -143,7 +143,7 @@ class FavoriteCommunity(APIView):
 
         return Response(status=status.HTTP_201_CREATED)
 
-    def DELETE(self, request, community_name):
+    def delete(self, request, community_name):
         request_data = normalise_request_data(request.data)
         request_data['community_name'] = community_name
 
@@ -155,4 +155,4 @@ class FavoriteCommunity(APIView):
         with transaction.atomic():
             user.unfavorite_community_with_name(community_name)
 
-        return Response(status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_200_OK)

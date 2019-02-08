@@ -32,7 +32,7 @@ from openbook_communities.views.community.members.views import CommunityMembers,
     LeaveCommunity, InviteCommunityMember
 from openbook_communities.views.community.moderators.views import CommunityModeratorItem, CommunityModerators
 from openbook_communities.views.community.posts.views import CommunityPosts
-from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover
+from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, FavoriteCommunity
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
@@ -109,6 +109,7 @@ community_patterns = [
     path('', CommunityItem.as_view(), name='community'),
     path('avatar/', CommunityAvatar.as_view(), name='community-avatar'),
     path('cover/', CommunityCover.as_view(), name='community-cover'),
+    path('favorite/', FavoriteCommunity.as_view(), name='favorite-community'),
     path('members/', include(community_members_patterns)),
     path('posts/', include(community_posts_patterns)),
     path('banned-users/', include(community_banned_users_patterns)),

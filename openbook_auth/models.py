@@ -1864,6 +1864,11 @@ class User(AbstractUser):
                 _('You must be member of a community before making it a favorite.'),
             )
 
+        if self.has_favorite_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('You have already marked this community as favorite.'),
+            )
+
     def _check_can_unfavorite_community_with_name(self, community_name):
         if not self.has_favorite_community_with_name(community_name=community_name):
             raise ValidationError(
