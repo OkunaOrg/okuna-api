@@ -156,8 +156,6 @@ class UploadFileTests(APITestCase):
                   'rb') as fd:
             response = self.client.post(reverse('uploads'), {'file': fd},
                                         **headers)
-            fd.seek(0)
-
 
         user2 = make_user()
         headers = make_authentication_headers_for_user(user2)
@@ -166,7 +164,6 @@ class UploadFileTests(APITestCase):
                   'rb') as fd:
             response = self.client.post(reverse('uploads'), {'file': fd},
                                         **headers)
-            fd.seek(0)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -178,3 +175,22 @@ class UploadFileTests(APITestCase):
         for friend_object in friend_objects:
             self.assertTrue(friend_object.user1_id == 1)
             self.assertTrue(friend_object.user2_id == 2)
+
+    def test_delete_importedposts(self):
+        """
+        Deleting a previously imported import, should remove all corresponding posts.
+        """
+
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        with open('openbook_importer/tests/facebook-jayjay6.zip',
+                  'rb') as fd:
+            response = self.client.post(reverse('uploads'), {'file': fd},
+                                        **headers)
+
+        self.assertTrue(user.imports.all().count() == 1)
+
+        user.imports.filter(id=1).delete()
+
+        self.assertTrue(user.imports.all().count() == 0)
