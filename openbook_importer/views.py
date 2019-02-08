@@ -174,7 +174,7 @@ class ImportedItem(APIView):
 
         archive = request.user.imports.filter(id=archive_id)
         if archive.exists():
-            serialized = ImportSerializer(archive, many=False)
+            serialized = ImportSerializer(archive, many=True)
 
         else:
             raise ValidationError(
