@@ -59,6 +59,7 @@ class ImportItem(APIView):
             new_friends = self._get_friends(p.profile.friends, request.user)
 
         self.process_imports(new_posts, new_friends, request.user)
+        p.profile.delete()
 
         return Response(status=status.HTTP_200_OK)
 
@@ -86,6 +87,7 @@ class ImportItem(APIView):
     def save_friends(self, new_hashes, user, data_import):
 
         for friend_hash in new_hashes:
+
             with transaction.atomic():
                 ImportedFriend.create_imported_friend(friend_hash, user)
 
@@ -117,7 +119,7 @@ class ImportItem(APIView):
                 if 'text' in image.keys():
                     text = image['text']
 
-                image = ImageFile(image['file'])
+                image = ImageFile(open(image['file'], 'rb'))
 
             if not self._post_exists(user.pk, text=text,
                                      created=created):

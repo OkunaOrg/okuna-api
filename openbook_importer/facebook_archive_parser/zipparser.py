@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
+from uuid import uuid4
 from json import loads
 from yaml import safe_load
 from hashlib import sha3_256
 from zipfile import PyZipFile
-from os import access, R_OK, path
-from tempfile import TemporaryDirectory
+from os import remove, rmdir
+from os import access, R_OK, path, mkdir
 
 from magic import from_buffer
 
@@ -14,15 +15,23 @@ class profile_import(object):
 
     friends = False
     albums = False
-    messages = False
     posts = False
 
-    def __init__(self, friends, albums, messages, posts):
+    def __init__(self, friends, albums, posts, files):
 
         self.friends = friends
         self.albums = albums
-        self.messages = messages
         self.posts = posts
+        self.files = files
+        self.delete = self.delete_files
+
+    def delete_files(self):
+
+        for file in self.files:
+            remove(file)
+
+        root = file.split('/')
+        rmdir(path.join(root[0], root[1]))
 
 
 class zip_parser():
@@ -32,9 +41,10 @@ class zip_parser():
     def __init__(self, filename):
 
         zipf = PyZipFile(filename)
-        # test this with corrupt zipfile
         zipf.testzip()
         size = self._get_extracted_zipsize(zipf)
+        self.files = set()
+        self.temp = self._create_temporary_directory('media')
 
         # if size > 1gb
         if size > 1000000000:
@@ -42,10 +52,16 @@ class zip_parser():
 
         friends = self._extract_friends(zipf)
         albums = self._extract_albums(zipf)
-        messages = self._extract_messages(zipf)
         posts = self._extract_posts(zipf)
 
-        self.profile = profile_import(friends, albums, messages, posts)
+        self.profile = profile_import(friends, albums, posts, self.files)
+
+    def _create_temporary_directory(self, directory):
+
+        directory_path = path.join(directory, str(uuid4()))
+        mkdir(directory_path)
+
+        return directory_path
 
     def _file_access(self, filename):
 
@@ -140,12 +156,13 @@ class zip_parser():
         with open(i_path, 'wb+') as fd:
             fd.write(zipf.read(item))
 
-    def _get_fd_from_file(self, dir_name, itype, item, zipf, mode='r'):
+    def _get_fd_from_file(self, dir_name, itype, item, zipf):
 
         self._write_file_to_dir(dir_name, item, zipf)
 
         name = item.split('/')[-1]
-        fd = open(path.join(dir_name, name), mode)
+        fd = path.join(dir_name, name)
+        self.files.add(fd)
 
         return((name, fd))
 
@@ -179,15 +196,12 @@ class zip_parser():
         for album in album_defs:
             albums.append(self._parse_album_json(album, zipf))
 
-        temp = TemporaryDirectory(dir='media')
-
         for album in albums:
             for value in album.values():
                 for file in (value['photos']):
-                    file['uri'] = self._get_fd_from_file(temp.name,
+                    file['uri'] = self._get_fd_from_file(self.temp,
                                                          'photos_and_videos',
-                                                         file['uri'], zipf,
-                                                         mode='rb')
+                                                         file['uri'], zipf)
 
         return albums
 
@@ -217,20 +231,24 @@ class zip_parser():
 
         return(friends_hash)
 
+    def _is_hypertext_link(self, uri):
+
+        return uri.startswith('http')
+
     def _parse_message(self, zipf, message):
 
         json = loads(self._read_file_from_zip(zipf, message))
-
-        temp = TemporaryDirectory(dir='media')
 
         if 'messages' in json.keys():
             for m in json['messages']:
 
                 if 'photos' in m.keys():
                     for p in m['photos']:
-                        p['uri'] = self._get_fd_from_file(temp.name,
-                                                          'messages',
-                                                          p['uri'], zipf)
+
+                        if not self._is_hypertext_link(p['uri']):
+                            p['uri'] = self._get_fd_from_file(self.temp,
+                                                              'messages',
+                                                              p['uri'], zipf)
         else:
             raise KeyError('key messages not found in json')
 
@@ -248,19 +266,16 @@ class zip_parser():
 
     def _has_attachment(self, zipf, post):
 
-        temp = TemporaryDirectory(dir='media')
-
         if 'attachments' in post.keys():
             for attachment in post['attachments']:
                 if 'data' in attachment.keys():
                     for item in attachment['data']:
                         if 'media' in item.keys():
                             media = item['media']
-                            uri = self._get_fd_from_file(temp.name,
+                            uri = self._get_fd_from_file(self.temp,
                                                          media['uri'].
                                                          split('/')[0],
-                                                         media['uri'], zipf,
-                                                         mode='rb')
+                                                         media['uri'], zipf)
                             media['uri'] = uri
 
                             if 'media_metadata' in media:

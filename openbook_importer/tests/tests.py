@@ -189,8 +189,7 @@ class UploadFileTests(APITestCase):
             response = self.client.post(reverse('uploads'), {'file': fd},
                                         **headers)
 
-        self.assertTrue(user.imports.all().count() == 1)
-
         user.imports.filter(id=1).delete()
 
-        self.assertTrue(user.imports.all().count() == 0)
+        self.assertEqual(user.imports.all().count(), 0)
+        self.assertEqual(len(ImportedPost.objects.all()), 0)

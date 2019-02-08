@@ -14,5 +14,6 @@ class ImportSerializer(serializers.ModelSerializer):
         model = Import
         fields = (
             'id',
-            'created'
+            'created',
+            'posts'
         )
