@@ -41,9 +41,8 @@ logging.config.dictConfig({
             'formatter': 'console',
         },
         'file': {
-            'class': 'logging.FileHandler',
-            'filename': '/var/log/django_security.log',
-            'formatter': 'security',
+            'class': 'logging.StreamHandler',
+            'formatter': 'console',
         }
     },
     'loggers': {
@@ -54,7 +53,7 @@ logging.config.dictConfig({
         },
         'security': {
             'level': 'INFO',
-            'handlers': ['file'],
+            'handlers': ['console'],
         },
     },
 })
