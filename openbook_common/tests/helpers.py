@@ -8,6 +8,7 @@ from openbook_auth.models import User, UserProfile
 from openbook_categories.models import Category
 from openbook_circles.models import Circle
 from openbook_common.models import Emoji, EmojiGroup, Badge
+from openbook_communities.models import Community
 from openbook_posts.models import Post
 
 fake = Faker()
@@ -111,5 +112,50 @@ def make_community_cover():
     return tmp_file
 
 
+def make_community_description():
+    return fake.text(max_nb_chars=settings.COMMUNITY_DESCRIPTION_MAX_LENGTH)
+
+
+def make_community_rules():
+    return fake.text(max_nb_chars=settings.COMMUNITY_RULES_MAX_LENGTH)
+
+
+def make_community_user_adjective():
+    return fake.word()
+
+
+def make_community_users_adjective():
+    return fake.word()
+
+
+def make_community_name():
+    return fake.user_name().lower()
+
+
+def make_community_title():
+    return fake.user_name()
+
+
+def make_public_community(creator):
+    return make_community(type='P', creator=creator)
+
+
+def make_private_community(creator):
+    return make_community(type='T', creator=creator)
+
+
+def make_community(creator, type):
+    return mixer.blend(Community, creator=creator, name=make_community_name(), type=type)
+
+
 def make_category():
     return mixer.blend(Category)
+
+
+def make_administrated_community(creator, type='P'):
+    community = creator.create_community(name=make_community_name(), title=make_community_title(), type=type,
+                                         color=fake.hex_color(), description=make_community_description(),
+                                         rules=make_community_rules(), user_adjective=make_community_user_adjective(),
+                                         users_adjective=make_community_users_adjective(),
+                                         categories_names=[make_category().name])
+    return community

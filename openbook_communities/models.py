@@ -159,9 +159,9 @@ class Community(models.Model):
     def members_count(self):
         return self.members.all().count()
 
-    def update_community(self, title=None, name=None, description=None, color=None, type=None,
-                         user_adjective=None,
-                         users_adjective=None, rules=None, categories_names=None):
+    def update(self, title=None, name=None, description=None, color=None, type=None,
+               user_adjective=None,
+               users_adjective=None, rules=None, categories_names=None):
 
         if name:
             self.name = name.lower()

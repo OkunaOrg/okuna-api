@@ -604,9 +604,8 @@ class User(AbstractUser):
 
         return community_to_unfavorite
 
-    def create_community(self, name, title=None, description=None, rules=None,
-                         avatar=None, cover=None, type=None, color=None, user_adjective=None, users_adjective=None,
-                         categories_names=None):
+    def create_community(self, name, title, type, color, categories_names, description=None, rules=None,
+                         avatar=None, cover=None, user_adjective=None, users_adjective=None):
         self._check_can_create_community_with_name(name=name)
 
         Community = get_community_model()

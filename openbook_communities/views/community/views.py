@@ -46,6 +46,7 @@ class CommunityItem(APIView):
         data = serializer.validated_data
         name = data.get('name')
         type = data.get('type')
+        color = data.get('color')
         title = data.get('title')
         description = data.get('description')
         rules = data.get('rules')
@@ -58,6 +59,7 @@ class CommunityItem(APIView):
         with transaction.atomic():
             community = user.update_community_with_name(community_name, name=name, type=type, title=title,
                                                         description=description,
+                                                        color=color,
                                                         rules=rules, user_adjective=user_adjective,
                                                         users_adjective=users_adjective, categories_names=categories)
 
