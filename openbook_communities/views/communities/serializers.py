@@ -41,7 +41,7 @@ class CommunityNameCheckSerializer(serializers.Serializer):
                                  validators=[community_name_characters_validator, community_name_not_taken_validator])
 
 
-class GetCommunitiesSerializer(serializers.Serializer):
+class GetJoinedCommunitiesSerializer(serializers.Serializer):
     count = serializers.IntegerField(
         required=False,
         max_value=20
@@ -90,7 +90,7 @@ class GetCommunitiesCommunityCategorySerializer(serializers.ModelSerializer):
         )
 
 
-class GetCommunitiesCommunitySerializer(serializers.ModelSerializer):
+class CommunitiesCommunitySerializer(serializers.ModelSerializer):
     categories = GetCommunitiesCommunityCategorySerializer(many=True)
 
     class Meta:

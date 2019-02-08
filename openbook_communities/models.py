@@ -32,7 +32,7 @@ class Community(models.Model):
     cover = models.ImageField(_('cover'), blank=False, null=True)
     created = models.DateTimeField(editable=False)
     starrers = models.ManyToManyField(User, related_name='favorite_communities')
-    members = models.ManyToManyField(User, related_name='communities')
+    members = models.ManyToManyField(User, related_name='joined_communities')
     moderators = models.ManyToManyField(User, related_name='moderated_communities')
     administrators = models.ManyToManyField(User, related_name='administrated_communities')
     banned_users = models.ManyToManyField(User, related_name='banned_of_communities')

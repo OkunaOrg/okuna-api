@@ -59,6 +59,13 @@ class UpdateCommunityCoverSerializer(serializers.Serializer):
                                            validators=[community_name_characters_validator, community_name_exists])
 
 
+class FavoriteCommunitySerializer(serializers.Serializer):
+    community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
+                                           allow_blank=False,
+                                           required=True,
+                                           validators=[community_name_characters_validator, community_name_exists])
+
+
 class UpdateCommunityCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category

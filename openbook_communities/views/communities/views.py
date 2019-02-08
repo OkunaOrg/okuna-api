@@ -10,8 +10,8 @@ from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import normalize_list_value_in_request_data, normalise_request_data
 from openbook_common.utils.model_loaders import get_community_model
 from openbook_communities.views.communities.serializers import CreateCommunitySerializer, \
-    GetCommunitiesCommunitySerializer, SearchCommunitiesSerializer, CommunityNameCheckSerializer, \
-    GetFavoriteCommunitiesSerializer, GetCommunitiesSerializer, TrendingCommunitiesSerializer
+    CommunitiesCommunitySerializer, SearchCommunitiesSerializer, CommunityNameCheckSerializer, \
+    GetFavoriteCommunitiesSerializer, GetJoinedCommunitiesSerializer, TrendingCommunitiesSerializer
 
 
 class Communities(APIView):
@@ -45,13 +45,13 @@ class Communities(APIView):
                                               , type=type, color=color, categories_names=categories,
                                               users_adjective=users_adjective, user_adjective=user_adjective)
 
-        response_serializer = GetCommunitiesCommunitySerializer(community, context={"request": request})
+        response_serializer = CommunitiesCommunitySerializer(community, context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
     def get(self, request):
         query_params = request.query_params.dict()
-        serializer = GetCommunitiesSerializer(data=query_params)
+        serializer = GetJoinedCommunitiesSerializer(data=query_params)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
@@ -61,10 +61,10 @@ class Communities(APIView):
 
         user = request.user
 
-        communities = user.get_communities()[offset:count]
+        communities = user.get_joined_communities()[offset:count]
 
-        response_serializer = GetCommunitiesCommunitySerializer(communities, many=True,
-                                                                context={"request": request})
+        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
+                                                             context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
@@ -84,6 +84,29 @@ class CommunityNameCheck(APIView):
         return ApiMessageResponse(_('Community name available'), status=status.HTTP_202_ACCEPTED)
 
 
+class JoinedCommunities(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        query_params = request.query_params.dict()
+        serializer = GetJoinedCommunitiesSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 10)
+        offset = data.get('offset', 0)
+
+        user = request.user
+
+        communities = user.get_joined_communities()[offset:count]
+
+        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
+                                                             context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
 class TrendingCommunities(APIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = TrendingCommunitiesSerializer
@@ -99,7 +122,7 @@ class TrendingCommunities(APIView):
         Community = get_community_model()
         communities = Community.get_trending_communities(category_name=category_name)[:10]
 
-        posts_serializer = GetCommunitiesCommunitySerializer(communities, many=True, context={"request": request})
+        posts_serializer = CommunitiesCommunitySerializer(communities, many=True, context={"request": request})
         return Response(posts_serializer.data, status=status.HTTP_200_OK)
 
 
@@ -120,7 +143,7 @@ class FavoriteCommunities(APIView):
 
         communities = user.get_favorite_communities()[offset:count]
 
-        posts_serializer = GetCommunitiesCommunitySerializer(communities, many=True, context={"request": request})
+        posts_serializer = CommunitiesCommunitySerializer(communities, many=True, context={"request": request})
         return Response(posts_serializer.data, status=status.HTTP_200_OK)
 
 
@@ -141,7 +164,7 @@ class SearchCommunities(APIView):
 
         communities = user.search_communities_with_query(query=query)[:count]
 
-        response_serializer = GetCommunitiesCommunitySerializer(communities, many=True,
-                                                                context={"request": request})
+        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
+                                                             context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)

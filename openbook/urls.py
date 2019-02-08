@@ -24,7 +24,7 @@ from openbook_common.views import Time, Health, EmojiGroups
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, EmailVerify, Login, AuthenticatedUser, User, Users, \
     UserSettings
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
-    FavoriteCommunities, SearchCommunities
+    FavoriteCommunities, SearchCommunities, JoinedCommunities
 from openbook_communities.views.community.administrators.views import CommunityAdministratorItem, \
     CommunityAdministrators
 from openbook_communities.views.community.banned_users.views import BanUser, UnbanUser, CommunityBannedUsers
@@ -119,6 +119,7 @@ community_patterns = [
 communities_patterns = [
     path('', Communities.as_view(), name='communities'),
     path('trending/', TrendingCommunities.as_view(), name='trending-communities'),
+    path('joined/', JoinedCommunities.as_view(), name='joined-communities'),
     path('favorites/', FavoriteCommunities.as_view(), name='favorite-communities'),
     path('name-check/', CommunityNameCheck.as_view(), name='community-name-check'),
     path('search/', SearchCommunities.as_view(), name='search-communities'),

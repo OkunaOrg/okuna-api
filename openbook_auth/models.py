@@ -338,9 +338,6 @@ class User(AbstractUser):
     def has_circles_with_ids(self, circles_ids):
         return self.circles.filter(id__in=circles_ids).count() == len(circles_ids)
 
-    def has_community_circle_with_id(self, circle_id):
-        return self.communities.filter(circle__id=circle_id).exists()
-
     def has_list_with_id(self, list_id):
         return self.lists.filter(id=list_id).count() > 0
 
@@ -352,7 +349,7 @@ class User(AbstractUser):
         return self.administrated_communities.filter(name=community_name).exists()
 
     def is_member_of_community_with_name(self, community_name):
-        return self.communities.filter(name=community_name).exists()
+        return self.joined_communities.filter(name=community_name).exists()
 
     def is_banned_from_community_with_name(self, community_name):
         return self.banned_of_communities.filter(name=community_name).exists()
@@ -362,6 +359,9 @@ class User(AbstractUser):
 
     def is_moderator_of_community_with_name(self, community_name):
         return self.moderated_communities.filter(name=community_name).exists()
+
+    def has_favorite_community_with_name(self, community_name):
+        return self.favorite_communities.filter(name=community_name).exists()
 
     def has_list_with_name(self, list_name):
         return self.lists.filter(name=list_name).count() > 0
@@ -588,6 +588,22 @@ class User(AbstractUser):
         Circle = get_circle_model()
         return Circle.objects.filter(posting_circles_query)
 
+    def favorite_community_with_name(self, community_name):
+        self._check_can_favorite_community_with_name(community_name=community_name)
+
+        community_to_favorite = self.joined_communities.get(name=community_name)
+        self.favorite_communities.add(community_to_favorite)
+
+        return community_to_favorite
+
+    def unfavorite_community_with_name(self, community_name):
+        self._check_can_unfavorite_community_with_name(community_name=community_name)
+
+        community_to_unfavorite = self.joined_communities.get(name=community_name)
+        self.favorite_communities.remove(community_to_unfavorite)
+
+        return community_to_unfavorite
+
     def create_community(self, name, title=None, description=None, rules=None,
                          avatar=None, cover=None, type=None, color=None, user_adjective=None, users_adjective=None,
                          categories_names=None):
@@ -622,7 +638,7 @@ class User(AbstractUser):
         self._check_can_update_community_with_name(community_name)
         self._check_community_data(name)
 
-        community_to_update = self.communities.get(name=community_name)
+        community_to_update = self.joined_communities.get(name=community_name)
 
         if name:
             community_to_update.name = name
@@ -721,6 +737,9 @@ class User(AbstractUser):
 
         if self.is_administrator_of_community_with_name(community_name):
             community_to_leave.administrators.remove(self)
+
+        if self.has_favorite_community_with_name(community_name):
+            self.unfavorite_community_with_name(community_name=community_name)
 
         community_to_leave.members.remove(self)
 
@@ -939,8 +958,8 @@ class User(AbstractUser):
         Community = get_community_model()
         return Community.objects.get(name=community_name)
 
-    def get_communities(self):
-        return self.communities.all()
+    def get_joined_communities(self):
+        return self.joined_communities.all()
 
     def get_favorite_communities(self):
         return self.favorite_communities.all()
@@ -1863,6 +1882,18 @@ class User(AbstractUser):
         if Community.is_name_taken(community_name):
             raise ValidationError(
                 _('A community with that name already exists.'),
+            )
+
+    def _check_can_favorite_community_with_name(self, community_name):
+        if not self.is_member_of_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('You must be member of a community before making it a favorite.'),
+            )
+
+    def _check_can_unfavorite_community_with_name(self, community_name):
+        if not self.has_favorite_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('You have not favorited the community.'),
             )
 
 
