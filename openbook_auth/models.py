@@ -640,34 +640,9 @@ class User(AbstractUser):
 
         community_to_update = self.joined_communities.get(name=community_name)
 
-        if name:
-            community_to_update.name = name
-
-        if title:
-            community_to_update.title = title
-
-        if type:
-            community_to_update.type = type
-
-        if color:
-            community_to_update.color = color
-
-        if description is not None:
-            community_to_update.description = description
-
-        if rules is not None:
-            community_to_update.rules = rules
-
-        if user_adjective is not None:
-            community_to_update.user_adjective = user_adjective
-
-        if users_adjective is not None:
-            community_to_update.users_adjective = users_adjective
-
-        if categories_names is not None:
-            community_to_update.set_categories_with_names(categories_names=categories_names)
-
-        community_to_update.save()
+        community_to_update.update(name=name, title=title, description=description,
+                                   color=color, type=type, user_adjective=user_adjective,
+                                   users_adjective=users_adjective, rules=rules, categories_names=categories_names)
 
         return community_to_update
 

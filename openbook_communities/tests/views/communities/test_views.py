@@ -1,8 +1,8 @@
 # Create your tests here.
 import random
+import secrets
 import tempfile
 
-from PIL import Image
 from django.urls import reverse
 from django.conf import settings
 from faker import Faker
@@ -537,7 +537,7 @@ class CommunityNameCheckAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
 
         url = self._get_url()
-        community_names = ('lifenau!', 'p-o-t-a-t-o', '.a!', 'dexter@', '🤷‍♂️')
+        community_names = ('lifenau!', 'p-o-t-a-t-o', '.a!', 'dexter@', '🤷‍♂️', 'hola ahi')
 
         for community_name in community_names:
             request_data = self._get_request_data(community_name)
@@ -546,7 +546,7 @@ class CommunityNameCheckAPITests(APITestCase):
             self.assertIn('name', parsed_response)
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_valid_communityName(self):
+    def test_valid_community_name(self):
         """
         should return 202 if the communityName is a valid name
         """
@@ -565,3 +565,70 @@ class CommunityNameCheckAPITests(APITestCase):
 
     def _get_url(self):
         return reverse('community-name-check')
+
+
+class SearchCommunitiesAPITests(APITestCase):
+    """
+    SearchCommunitiesAPITests
+    """
+
+    def test_can_search_communities_by_name(self):
+        """
+        should be able to search for communities by their name and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_communities_to_search_for = 5
+
+        for i in range(0, amount_of_communities_to_search_for):
+            community_name = fake.user_name().lower()
+            community = mixer.blend(Community, name=community_name)
+            amount_of_characters_to_query = random.randint(1, len(community_name))
+            query = community_name[0:amount_of_characters_to_query]
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url()
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            parsed_response = json.loads(response.content)
+            self.assertEqual(len(parsed_response), 1)
+            retrieved_community = parsed_response[0]
+            self.assertEqual(retrieved_community['name'], community_name.lower())
+            community.delete()
+
+    def test_can_search_communities_by_title(self):
+        """
+        should be able to search for communities by their title and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_communities_to_search_for = 5
+
+        for i in range(0, amount_of_communities_to_search_for):
+            community = mixer.blend(Community)
+            community_title = community.title
+            amount_of_characters_to_query = random.randint(1, len(community_title))
+            query = community_title[0:amount_of_characters_to_query]
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url()
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            parsed_response = json.loads(response.content)
+            self.assertEqual(len(parsed_response), 1)
+            retrieved_community = parsed_response[0]
+            self.assertEqual(retrieved_community['title'], community_title)
+            community.delete()
+
+    def _get_url(self):
+        return reverse('search-communities')

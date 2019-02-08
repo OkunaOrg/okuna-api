@@ -96,7 +96,7 @@ class Community(models.Model):
     @classmethod
     def create_community(cls, name, title, creator, color, type=None, user_adjective=None, users_adjective=None,
                          avatar=None, cover=None, description=None, rules=None, categories_names=None):
-
+        name = name.lower()
         community = cls.objects.create(title=title, name=name, creator=creator, avatar=avatar, cover=cover, color=color,
                                        user_adjective=user_adjective, users_adjective=users_adjective,
                                        description=description, type=type, rules=rules)
@@ -113,7 +113,7 @@ class Community(models.Model):
 
     @classmethod
     def is_name_taken(cls, name):
-        return cls.objects.filter(name=name).exists()
+        return cls.objects.filter(name__iexact=name).exists()
 
     @classmethod
     def get_community_with_name_members(cls, community_name, members_max_id):
@@ -158,6 +158,39 @@ class Community(models.Model):
     @property
     def members_count(self):
         return self.members.all().count()
+
+    def update_community(self, title=None, name=None, description=None, color=None, type=None,
+                         user_adjective=None,
+                         users_adjective=None, rules=None, categories_names=None):
+
+        if name:
+            self.name = name.lower()
+
+        if title:
+            self.title = title
+
+        if type:
+            self.type = type
+
+        if color:
+            self.color = color
+
+        if description is not None:
+            self.description = description
+
+        if rules is not None:
+            self.rules = rules
+
+        if user_adjective is not None:
+            self.user_adjective = user_adjective
+
+        if users_adjective is not None:
+            self.users_adjective = users_adjective
+
+        if categories_names is not None:
+            self.set_categories_with_names(categories_names=categories_names)
+
+        self.save()
 
     def set_categories_with_names(self, categories_names):
         self.clear_categories()
