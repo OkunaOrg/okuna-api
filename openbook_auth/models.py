@@ -1616,7 +1616,6 @@ class User(AbstractUser):
             )
 
     def _check_can_invite_user_with_username_to_community_with_name(self, username, community_name):
-
         if not self.is_member_of_community_with_name(community_name=community_name):
             raise ValidationError(
                 _('You can only invite people to a community you are member of.'),
@@ -1635,13 +1634,13 @@ class User(AbstractUser):
                 _('The user is already part of the community.'),
             )
 
-        if Community.is_community_with_name_private(community_name=community_name):
-            if not self.is_administrator_of_community_with_name(
-                    community_name=community_name) and not self.is_moderator_of_community_with_name(
-                community_name=community_name):
-                raise ValidationError(
-                    _('Only community administrators & moderators can invite users to a private community.'),
-                )
+        if not Community.is_community_with_name_invites_enabled(community_name=community_name) and not (
+                self.is_administrator_of_community_with_name(
+                    community_name=community_name) or self.is_moderator_of_community_with_name(
+            community_name=community_name)):
+            raise ValidationError(
+                _('Invites for this community are not enabled. Only administrators & moderators can invite.'),
+            )
 
     def _check_can_get_community_with_name_banned_users(self, community_name):
         if not self.is_administrator_of_community_with_name(

@@ -75,6 +75,14 @@ class Community(models.Model):
         return cls.objects.filter(name=community_name, banned_users__username=username).exists()
 
     @classmethod
+    def is_community_with_name_invites_enabled(cls, community_name):
+        return cls.objects.filter(name=community_name, members_can_invite_members=True).exists()
+
+    @classmethod
+    def is_community_with_name_private(cls, community_name):
+        return cls.objects.filter(name=community_name, type='T').exists()
+
+    @classmethod
     def search_communities_with_query(cls, query):
         communities_query = Q(name__icontains=query)
         communities_query.add(Q(title__icontains=query), Q.OR)
@@ -89,10 +97,6 @@ class Community(models.Model):
 
         return cls.objects.annotate(Count('members')).filter(trending_communities_query).order_by(
             '-members__count', '-created')
-
-    @classmethod
-    def is_community_with_name_private(cls, community_name):
-        return cls.objects.filter(name=community_name, type='T').exists()
 
     @classmethod
     def create_community(cls, name, title, creator, color, type=None, user_adjective=None, users_adjective=None,
