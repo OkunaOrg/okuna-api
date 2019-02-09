@@ -273,21 +273,21 @@ class CommunityAPITests(APITestCase):
 
         self.assertEqual(community.users_adjective, new_community_users_adjective)
 
-    def test_can_update_administrated_community_members_can_invite_members(self):
+    def test_can_update_administrated_community_invites_enabled(self):
         """
-        should be able to update an administrated community members_can_invite_members
+        should be able to update an administrated community invites_enabled
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
         community = make_community(creator=user)
-        community.members_can_invite_members = fake.boolean()
+        community.invites_enabled = fake.boolean()
         community.save()
 
-        new_community_users_adjective = not community.members_can_invite_members
+        new_community_users_adjective = not community.invites_enabled
 
         data = {
-            'members_can_invite_members': new_community_users_adjective
+            'invites_enabled': new_community_users_adjective
         }
 
         url = self._get_url(community_name=community.name)
@@ -298,7 +298,7 @@ class CommunityAPITests(APITestCase):
 
         community.refresh_from_db()
 
-        self.assertEqual(community.members_can_invite_members, new_community_users_adjective)
+        self.assertEqual(community.invites_enabled, new_community_users_adjective)
 
     def test_can_update_administrated_community_user_adjective(self):
         """

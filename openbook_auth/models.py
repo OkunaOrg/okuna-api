@@ -606,7 +606,7 @@ class User(AbstractUser):
 
     def create_community(self, name, title, type, color, categories_names, description=None, rules=None,
                          avatar=None, cover=None, user_adjective=None, users_adjective=None,
-                         members_can_invite_members=None):
+                         invites_enabled=None):
         self._check_can_create_community_with_name(name=name)
 
         Community = get_community_model()
@@ -614,7 +614,7 @@ class User(AbstractUser):
                                                rules=rules, cover=cover, type=type, avatar=avatar, color=color,
                                                user_adjective=user_adjective, users_adjective=users_adjective,
                                                categories_names=categories_names,
-                                               members_can_invite_members=members_can_invite_members)
+                                               invites_enabled=invites_enabled)
 
         return community
 
@@ -636,7 +636,7 @@ class User(AbstractUser):
     def update_community_with_name(self, community_name, title=None, name=None, description=None, color=None, type=None,
                                    user_adjective=None,
                                    users_adjective=None, rules=None, categories_names=None,
-                                   members_can_invite_members=None):
+                                   invites_enabled=None):
         self._check_can_update_community_with_name(community_name)
         self._check_community_data(name)
 
@@ -645,7 +645,7 @@ class User(AbstractUser):
         community_to_update.update(name=name, title=title, description=description,
                                    color=color, type=type, user_adjective=user_adjective,
                                    users_adjective=users_adjective, rules=rules, categories_names=categories_names,
-                                   members_can_invite_members=members_can_invite_members)
+                                   invites_enabled=invites_enabled)
 
         return community_to_update
 

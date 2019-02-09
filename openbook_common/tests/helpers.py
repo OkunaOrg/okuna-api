@@ -139,7 +139,7 @@ def make_category():
     return mixer.blend(Category)
 
 
-def make_community_members_can_invite_members():
+def make_community_invites_enabled():
     return fake.boolean()
 
 
@@ -149,5 +149,5 @@ def make_community(creator, type='P'):
                                          rules=make_community_rules(), user_adjective=make_community_user_adjective(),
                                          users_adjective=make_community_users_adjective(),
                                          categories_names=[make_category().name],
-                                         members_can_invite_members=make_community_members_can_invite_members())
+                                         invites_enabled=make_community_invites_enabled())
     return community

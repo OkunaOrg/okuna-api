@@ -315,7 +315,7 @@ class CommunitiesAPITests(APITestCase):
             Community.objects.filter(name=community_name, title=community_title, description=community_description,
                                      rules=community_rules, user_adjective=community_user_adjective,
                                      users_adjective=community_users_adjective, color=community_color,
-                                     type=community_type, members_can_invite_members=False).count() == 1)
+                                     type=community_type, invites_enabled=False).count() == 1)
 
     def test_create_public_community_should_enable_member_invites(self):
         """
@@ -360,7 +360,7 @@ class CommunitiesAPITests(APITestCase):
             Community.objects.filter(name=community_name, title=community_title, description=community_description,
                                      rules=community_rules, user_adjective=community_user_adjective,
                                      users_adjective=community_users_adjective, color=community_color,
-                                     type=community_type, members_can_invite_members=True).count() == 1)
+                                     type=community_type, invites_enabled=True).count() == 1)
 
     def test_create_public_community(self):
         """
