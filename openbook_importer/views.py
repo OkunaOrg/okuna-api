@@ -8,12 +8,12 @@ from openbook_posts.models import Post
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.files.images import ImageFile
-from django.core.files.images import ImageFile
 from django.utils.dateparse import parse_datetime
 from rest_framework.permissions import IsAuthenticated
 from django.utils.translation import ugettext_lazy as _
 from rest_framework.exceptions import ValidationError, NotFound
 
+from openbook_common.responses import ApiMessageResponse
 from openbook_importer.models import Import, ImportedPost, ImportedFriend
 from openbook_importer.facebook_archive_parser.zipparser import zip_parser
 from openbook_importer.serializers import ZipfileSerializer, ImportSerializer
@@ -192,7 +192,7 @@ class ImportedItem(APIView):
 
         request.user.delete_archive_with_id(archive_id)
 
-        return Response({'Message': 'done'}, status=status.HTTP_200_OK)
+        return ApiMessageResponse(_('Done!'))
 
 
 class ImportedItems(APIView):
