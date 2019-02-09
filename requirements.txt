@@ -7,6 +7,7 @@ certifi==2018.11.29
 colorama==0.4.1
 coverage==5.0a4
 django-amazon-ses==2.0.0
+django-imagekit==4.0.2
 django-media-fixtures==0.0.3
 django-nose==1.4.6
 django-storages==1.7.1
