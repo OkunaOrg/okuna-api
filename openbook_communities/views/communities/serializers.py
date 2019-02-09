@@ -25,6 +25,7 @@ class CreateCommunitySerializer(serializers.Serializer):
                                             allow_blank=True, required=False)
     avatar = serializers.ImageField(required=False)
     cover = serializers.ImageField(required=False)
+    members_can_invite_members = serializers.BooleanField(required=False, allow_null=False)
     color = serializers.CharField(max_length=COLOR_ATTR_MAX_LENGTH, required=True,
                                   validators=[hex_color_validator])
     categories = serializers.ListField(

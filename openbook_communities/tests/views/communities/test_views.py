@@ -1,7 +1,6 @@
 # Create your tests here.
 import random
 
-
 from django.urls import reverse
 from django.conf import settings
 from faker import Faker
@@ -73,7 +72,7 @@ class CommunitiesAPITests(APITestCase):
             'type': community_type,
             'title': community_title,
             'color': community_color,
-            'categories': community_categories
+            'categories': community_categories,
         }
 
         url = self._get_url()
@@ -108,7 +107,7 @@ class CommunitiesAPITests(APITestCase):
             'type': community_type,
             'title': community_title,
             'color': community_color,
-            'categories': community_categories
+            'categories': community_categories,
         }
 
         url = self._get_url()
@@ -272,6 +271,96 @@ class CommunitiesAPITests(APITestCase):
                                      rules=community_rules, user_adjective=community_user_adjective,
                                      users_adjective=community_users_adjective, color=community_color,
                                      type=community_type).count() == 1)
+
+    def test_create_private_community_should_disable_member_invites(self):
+        """
+        should be able to create a private community and automatically disable member invites and return 201
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_name = fake.user_name()
+        community_title = fake.name_male()
+        community_description = fake.text(max_nb_chars=settings.COMMUNITY_DESCRIPTION_MAX_LENGTH)
+        community_rules = fake.text(max_nb_chars=settings.COMMUNITY_RULES_MAX_LENGTH)
+        community_user_adjective = fake.word()
+        community_users_adjective = fake.word()
+        community_color = fake.hex_color()
+        community_categories = []
+        community_type = 'T'
+
+        for i in range(0, settings.COMMUNITY_CATEGORIES_MAX_AMOUNT):
+            category = make_category()
+            community_categories.append(category.name)
+
+        data = {
+            'name': community_name,
+            'type': community_type,
+            'title': community_title,
+            'description': community_description,
+            'rules': community_rules,
+            'user_adjective': community_user_adjective,
+            'users_adjective': community_users_adjective,
+            'color': community_color,
+            'categories': community_categories
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(
+            Community.objects.filter(name=community_name, title=community_title, description=community_description,
+                                     rules=community_rules, user_adjective=community_user_adjective,
+                                     users_adjective=community_users_adjective, color=community_color,
+                                     type=community_type, members_can_invite_members=False).count() == 1)
+
+    def test_create_public_community_should_enable_member_invites(self):
+        """
+        should be able to create a public community and automatically emnable member invites and return 201
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_name = fake.user_name()
+        community_title = fake.name_male()
+        community_description = fake.text(max_nb_chars=settings.COMMUNITY_DESCRIPTION_MAX_LENGTH)
+        community_rules = fake.text(max_nb_chars=settings.COMMUNITY_RULES_MAX_LENGTH)
+        community_user_adjective = fake.word()
+        community_users_adjective = fake.word()
+        community_color = fake.hex_color()
+        community_categories = []
+        community_type = 'P'
+
+        for i in range(0, settings.COMMUNITY_CATEGORIES_MAX_AMOUNT):
+            category = make_category()
+            community_categories.append(category.name)
+
+        data = {
+            'name': community_name,
+            'type': community_type,
+            'title': community_title,
+            'description': community_description,
+            'rules': community_rules,
+            'user_adjective': community_user_adjective,
+            'users_adjective': community_users_adjective,
+            'color': community_color,
+            'categories': community_categories
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(
+            Community.objects.filter(name=community_name, title=community_title, description=community_description,
+                                     rules=community_rules, user_adjective=community_user_adjective,
+                                     users_adjective=community_users_adjective, color=community_color,
+                                     type=community_type, members_can_invite_members=True).count() == 1)
 
     def test_create_public_community(self):
         """

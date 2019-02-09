@@ -53,6 +53,7 @@ class CommunityItem(APIView):
         user_adjective = data.get('user_adjective')
         users_adjective = data.get('users_adjective')
         categories = data.get('categories')
+        members_can_invite_members = data.get('members_can_invite_members')
 
         user = request.user
 
@@ -61,7 +62,8 @@ class CommunityItem(APIView):
                                                         description=description,
                                                         color=color,
                                                         rules=rules, user_adjective=user_adjective,
-                                                        users_adjective=users_adjective, categories_names=categories)
+                                                        users_adjective=users_adjective, categories_names=categories,
+                                                        members_can_invite_members=members_can_invite_members)
 
         response_serializer = GetCommunityCommunitySerializer(community, context={"request": request})
 

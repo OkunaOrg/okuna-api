@@ -38,6 +38,7 @@ class UpdateCommunitySerializer(serializers.Serializer):
                                            allow_blank=True)
     users_adjective = serializers.CharField(max_length=settings.COMMUNITY_USERS_ADJECTIVE_MAX_LENGTH, required=False,
                                             allow_blank=True)
+    members_can_invite_members = serializers.BooleanField(required=False, allow_null=False)
     categories = serializers.ListField(
         required=False,
         min_length=settings.COMMUNITY_CATEGORIES_MIN_AMOUNT,
@@ -46,7 +47,6 @@ class UpdateCommunitySerializer(serializers.Serializer):
     )
     color = serializers.CharField(max_length=settings.COLOR_ATTR_MAX_LENGTH, required=False,
                                   validators=[hex_color_validator])
-
 
 
 class UpdateCommunityAvatarSerializer(serializers.Serializer):

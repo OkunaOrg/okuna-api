@@ -1,11 +1,7 @@
-import random
-
 from django.urls import reverse
-from django.conf import settings
 from faker import Faker
 from rest_framework import status
 from rest_framework.test import APITestCase
-from mixer.backend.django import mixer
 
 import logging
 import json

@@ -139,10 +139,15 @@ def make_category():
     return mixer.blend(Category)
 
 
+def make_community_members_can_invite_members():
+    return fake.boolean()
+
+
 def make_community(creator, type='P'):
     community = creator.create_community(name=make_community_name(), title=make_community_title(), type=type,
                                          color=fake.hex_color(), description=make_community_description(),
                                          rules=make_community_rules(), user_adjective=make_community_user_adjective(),
                                          users_adjective=make_community_users_adjective(),
-                                         categories_names=[make_category().name])
+                                         categories_names=[make_category().name],
+                                         members_can_invite_members=make_community_members_can_invite_members())
     return community

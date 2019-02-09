@@ -47,6 +47,7 @@ class Community(models.Model):
                                       blank=False, null=True, )
     users_adjective = models.CharField(_('users adjective'), max_length=settings.COMMUNITY_USERS_ADJECTIVE_MAX_LENGTH,
                                        blank=False, null=True, )
+    members_can_invite_members = models.BooleanField(_('members can invite members'), default=True)
 
     class Meta:
         verbose_name_plural = 'communities'
@@ -95,11 +96,20 @@ class Community(models.Model):
 
     @classmethod
     def create_community(cls, name, title, creator, color, type=None, user_adjective=None, users_adjective=None,
-                         avatar=None, cover=None, description=None, rules=None, categories_names=None):
+                         avatar=None, cover=None, description=None, rules=None, categories_names=None,
+                         members_can_invite_members=None):
         name = name.lower()
+        # If its a private community and no members_can_invite_members
+        if type is 'T' and members_can_invite_members is None:
+            members_can_invite_members = False
+        else:
+            # The default for this field is not working when passed None?
+            members_can_invite_members = True
+
         community = cls.objects.create(title=title, name=name, creator=creator, avatar=avatar, cover=cover, color=color,
                                        user_adjective=user_adjective, users_adjective=users_adjective,
-                                       description=description, type=type, rules=rules)
+                                       description=description, type=type, rules=rules,
+                                       members_can_invite_members=members_can_invite_members)
 
         community.administrators.add(creator)
         community.moderators.add(creator)
@@ -161,7 +171,7 @@ class Community(models.Model):
 
     def update(self, title=None, name=None, description=None, color=None, type=None,
                user_adjective=None,
-               users_adjective=None, rules=None, categories_names=None):
+               users_adjective=None, rules=None, categories_names=None, members_can_invite_members=None):
 
         if name:
             self.name = name.lower()
@@ -186,6 +196,9 @@ class Community(models.Model):
 
         if users_adjective is not None:
             self.users_adjective = users_adjective
+
+        if members_can_invite_members is not None:
+            self.members_can_invite_members = members_can_invite_members
 
         if categories_names is not None:
             self.set_categories_with_names(categories_names=categories_names)
