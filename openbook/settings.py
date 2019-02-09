@@ -30,10 +30,17 @@ logging.config.dictConfig({
         'console': {
             # exact format is not important, this is the minimum information
             'format': '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-        }
+        },
+        'security': {
+            'format': '%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+        },
     },
     'handlers': {
         'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'console',
+        },
+        'file': {
             'class': 'logging.StreamHandler',
             'formatter': 'console',
         }
@@ -41,6 +48,10 @@ logging.config.dictConfig({
     'loggers': {
         # root logger
         '': {
+            'level': 'INFO',
+            'handlers': ['console'],
+        },
+        'security': {
             'level': 'INFO',
             'handlers': ['console'],
         },

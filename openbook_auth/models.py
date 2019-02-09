@@ -353,6 +353,9 @@ class User(AbstractUser):
     def has_commented_post_with_id(self, post_id):
         return self.posts_comments.filter(post_id=post_id).count() > 0
 
+    def has_archive_with_id(self, archive_id):
+        return self.imports.filter(id=archive_id).exists()
+
     def get_lists_for_follow_for_user_with_id(self, user_id):
         self._check_is_following_user_with_id(user_id)
         follow = self.get_follow_for_user_with_id(user_id)
@@ -898,6 +901,10 @@ class User(AbstractUser):
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
 
+    def delete_archive_with_id(self, archive_id):
+        archive = self._check_can_delete_archive_with_id(archive_id)
+        return self.imports.filter(id=archive_id).delete()
+
     def _make_get_post_with_id_query_for_user(self, user, post_id):
         posts_query = self._make_get_posts_query_for_user(user)
         posts_query.add(Q(id=post_id), Q.AND)
@@ -1234,6 +1241,12 @@ class User(AbstractUser):
         if self.has_list_with_name(list_name):
             raise ValidationError(
                 _('You already have a list with that name.'),
+            )
+
+    def _check_can_delete_archive_with_id(self, archive_id):
+        if not self.has_archive_with_id(archive_id):
+            raise ValidationError(
+                _('Can\'t delete an archive that does not belong to you.'),
             )
 
 
