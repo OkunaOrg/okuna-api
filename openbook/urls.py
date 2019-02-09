@@ -90,7 +90,7 @@ follows_patterns = [
 importer_patterns = [
     path('upload/', ImportItem.as_view(), name='uploads'),
     path('archives/', ImportedItems.as_view(), name='imported-archives'),
-    path('archives/<int:archive_id>', ImportedItem.as_view(), name='imported-archive'),
+    path('archive/<str:archive_id>', ImportedItem.as_view(), name='imported-archive'),
 ]
 
 api_patterns = [

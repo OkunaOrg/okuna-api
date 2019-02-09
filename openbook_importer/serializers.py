@@ -13,7 +13,7 @@ class ImportSerializer(serializers.ModelSerializer):
     class Meta:
         model = Import
         fields = (
-            'id',
+            'uuid',
             'created',
             'posts'
         )

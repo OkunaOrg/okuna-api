@@ -339,7 +339,7 @@ class User(AbstractUser):
         return self.posts_comments.filter(post_id=post_id).count() > 0
 
     def has_archive_with_id(self, archive_id):
-        return self.imports.filter(id=archive_id).exists()
+        return self.imports.filter(uuid=archive_id).exists()
 
     def get_lists_for_follow_for_user_with_id(self, user_id):
         self._check_is_following_user_with_id(user_id)
@@ -888,7 +888,7 @@ class User(AbstractUser):
 
     def delete_archive_with_id(self, archive_id):
         archive = self._check_can_delete_archive_with_id(archive_id)
-        return self.imports.filter(id=archive_id).delete()
+        return self.imports.filter(uuid=archive_id).delete()
 
     def _make_get_post_with_id_query_for_user(self, user, post_id):
         posts_query = self._make_get_posts_query_for_user(user)

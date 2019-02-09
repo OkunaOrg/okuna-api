@@ -10,9 +10,9 @@ from rest_framework.response import Response
 from django.core.files.images import ImageFile
 from django.core.files.images import ImageFile
 from django.utils.dateparse import parse_datetime
-from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from django.utils.translation import ugettext_lazy as _
+from rest_framework.exceptions import ValidationError, NotFound
 
 from openbook_importer.models import Import, ImportedPost, ImportedFriend
 from openbook_importer.facebook_archive_parser.zipparser import zip_parser
@@ -175,12 +175,13 @@ class ImportedItem(APIView):
 
     def get(self, request, archive_id):
 
-        archive = request.user.imports.filter(id=archive_id)
+        archive = request.user.imports.filter(uuid=archive_id)
+
         if archive.exists():
             serialized = ImportSerializer(archive, many=True)
 
         else:
-            raise ValidationError(
+            raise NotFound(
                 _('Archive does not exist!'),
             )
 
@@ -198,6 +199,7 @@ class ImportedItems(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
+
         archives = request.user.imports.all()
         serialized = ImportSerializer(archives, many=True)
 
