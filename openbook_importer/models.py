@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 from django.db import models
 from django.utils import timezone
 
@@ -10,12 +12,17 @@ class Import(models.Model):
     created = models.DateTimeField(editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE,
                              related_name='imports', null=True)
+    uuid = models.UUIDField(editable=False, default=uuid4)
 
     @classmethod
     def create_import(cls, user):
         imported = Import.objects.create(user=user)
 
         return imported
+
+    @property
+    def posts(self):
+        return ImportedPost.objects.filter(data_import_id=self.pk).count()
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
