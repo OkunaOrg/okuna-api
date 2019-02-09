@@ -4,8 +4,8 @@ from openbook_importer.models import Import
 
 class ZipfileSerializer(serializers.Serializer):
 
-    serializers.FileField(max_length=20, required=True,
-                          allow_empty_file=False)
+    file = serializers.FileField(max_length=1000000000, required=True,
+                                 allow_empty_file=False)
 
 
 class ImportSerializer(serializers.ModelSerializer):

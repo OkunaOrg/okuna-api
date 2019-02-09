@@ -26,10 +26,11 @@ class ImportItem(APIView):
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
+
         serializer = ZipfileSerializer(data=request.FILES)
         serializer.is_valid(raise_exception=True)
+        zipfile = serializer.validated_data.get('file')
 
-        zipfile = request.FILES['file']
         new_friends = False
         new_posts = False
 
