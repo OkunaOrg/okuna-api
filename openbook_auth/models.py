@@ -950,7 +950,7 @@ class User(AbstractUser):
                                 created=created)
         return post
 
-    def create_community_post(self, text=None, image=None, video=None, community_name=None, created=None):
+    def create_community_post(self, community_name, text=None, image=None, video=None, created=None):
         self._check_can_post_to_community_with_name(community_name=community_name)
         Post = get_post_model()
         post = Post.create_post(text=text, creator=self, community_name=community_name, image=image, video=video,
@@ -977,7 +977,7 @@ class User(AbstractUser):
         Community = get_community_model()
         community = Community.objects.get(name=community_name)
 
-        posts_query = Q(circles__id=community.circle_id)
+        posts_query = Q(community__id=community.pk)
 
         if max_id:
             posts_query.add(Q(id__lt=max_id), Q.AND)
@@ -993,7 +993,17 @@ class User(AbstractUser):
 
     def get_post_with_id_for_user(self, user, post_id):
         post_query = self._make_get_post_with_id_query_for_user(user, post_id=post_id)
+
+        Post = get_post_model()
+        profile_posts = Post.objects.filter(post_query)
+
+        return profile_posts
+
+    def get_community_post_with_id(self, post_id):
+        post_query = Q(id=post_id)
         post_query.add(Q(community__members__id=self.pk), Q.OR)
+        # Public type communities
+        post_query.add(Q(community__type='P'), Q.OR)
 
         Post = get_post_model()
         profile_posts = Post.objects.filter(post_query)
@@ -1381,13 +1391,17 @@ class User(AbstractUser):
         if post.creator_id == self.pk or post.is_public_post():
             return
 
-        post_creator = post.creator
-
-        # Check if we can retrieve the post
-        if not self.get_post_with_id_for_user(post_id=post_id, user=post_creator).exists():
-            raise ValidationError(
-                _('This post is private.'),
-            )
+        if post.community:
+            if not self.get_community_post_with_id(post_id=post_id).exists():
+                raise ValidationError(
+                    _('This post is from a private community.'),
+                )
+        else:
+            # Check if we can retrieve the post
+            if not self.get_post_with_id_for_user(post_id=post_id, user=post.creator).exists():
+                raise ValidationError(
+                    _('This post is private.'),
+                )
 
     def _check_follow_lists_ids(self, lists_ids):
         for list_id in lists_ids:

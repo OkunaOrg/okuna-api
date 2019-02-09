@@ -37,6 +37,10 @@ class Post(models.Model):
         return Post.objects.filter(pk=post_id, public_reactions=True).count() == 1
 
     @classmethod
+    def is_post_with_id_a_community_post(cls, post_id):
+        return Post.objects.filter(pk=post_id, community__isnull=False).exists()
+
+    @classmethod
     def create_post(cls, creator, circles_ids=None, community_name=None, image=None, text=None, video=None,
                     created=None):
 
@@ -67,7 +71,7 @@ class Post(models.Model):
             post.circles.add(*circles_ids)
         else:
             Community = get_community_model()
-            post.community = Community.get(name=community_name)
+            post.community = Community.objects.get(name=community_name)
 
         post.save()
 

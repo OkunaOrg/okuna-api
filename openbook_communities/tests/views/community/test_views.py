@@ -7,8 +7,8 @@ from faker import Faker
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_community, \
-    make_community_name, make_administrated_community, make_public_community, make_private_community, \
+from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, \
+    make_community_name, make_community, \
     make_community_title, make_community_rules, make_community_description, make_community_user_adjective, \
     make_community_users_adjective, make_community_avatar, make_community_cover, make_category
 
@@ -27,7 +27,8 @@ class CommunityAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        community = make_public_community(creator=user)
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
         community_name = community.name
 
         url = self._get_url(community_name=community_name)
@@ -49,7 +50,8 @@ class CommunityAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        community = make_private_community(creator=user)
+        other_user = make_user()
+        community = make_community(creator=other_user, type='T')
         community_name = community.name
 
         url = self._get_url(community_name=community_name)
@@ -72,7 +74,7 @@ class CommunityAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
 
         other_user = make_user()
-        community = make_administrated_community(creator=other_user)
+        community = make_community(creator=other_user)
 
         new_community_name = make_community_name()
 
@@ -98,7 +100,7 @@ class CommunityAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
 
         other_user = make_user()
-        community = make_administrated_community(creator=other_user)
+        community = make_community(creator=other_user)
 
         user.join_community_with_name(community_name=community.name)
 
@@ -126,7 +128,7 @@ class CommunityAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
 
         other_user = make_user()
-        community = make_administrated_community(creator=other_user)
+        community = make_community(creator=other_user)
 
         user.join_community_with_name(community_name=community.name)
 
@@ -156,7 +158,7 @@ class CommunityAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        community = make_administrated_community(creator=user)
+        community = make_community(creator=user)
         new_community_name = make_community_name()
 
         data = {
@@ -180,8 +182,8 @@ class CommunityAPITests(APITestCase):
         user = make_user()
         other_user = make_user()
 
-        other_community = make_administrated_community(creator=other_user)
-        community = make_administrated_community(creator=user)
+        other_community = make_community(creator=other_user)
+        community = make_community(creator=user)
 
         data = {
             'name': other_community.name
@@ -206,7 +208,7 @@ class CommunityAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        community = make_administrated_community(creator=user, type='P')
+        community = make_community(creator=user, type='P')
         new_community_type = 'T'
 
         data = {
@@ -230,7 +232,7 @@ class CommunityAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        community = make_administrated_community(creator=user)
+        community = make_community(creator=user)
         new_community_title = make_community_title()
 
         data = {
@@ -254,7 +256,7 @@ class CommunityAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        community = make_administrated_community(creator=user)
+        community = make_community(creator=user)
         new_community_users_adjective = make_community_users_adjective()
 
         data = {
@@ -278,7 +280,7 @@ class CommunityAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        community = make_administrated_community(creator=user)
+        community = make_community(creator=user)
         new_community_user_adjective = make_community_user_adjective()
 
         data = {
@@ -302,7 +304,7 @@ class CommunityAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        community = make_administrated_community(creator=user)
+        community = make_community(creator=user)
         new_community_color = fake.hex_color()
 
         data = {
@@ -326,7 +328,7 @@ class CommunityAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        community = make_administrated_community(creator=user)
+        community = make_community(creator=user)
         new_community_description = make_community_description()
 
         data = {
@@ -350,7 +352,7 @@ class CommunityAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        community = make_administrated_community(creator=user)
+        community = make_community(creator=user)
         new_community_rules = make_community_rules()
 
         data = {
@@ -374,7 +376,7 @@ class CommunityAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        community = make_administrated_community(creator=user)
+        community = make_community(creator=user)
 
         data = {
             'description': ''
@@ -397,7 +399,7 @@ class CommunityAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        community = make_administrated_community(creator=user)
+        community = make_community(creator=user)
 
         data = {
             'rules': ''
@@ -420,7 +422,7 @@ class CommunityAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        community = make_administrated_community(creator=user)
+        community = make_community(creator=user)
 
         data = {
             'user_adjective': ''
@@ -443,7 +445,7 @@ class CommunityAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        community = make_administrated_community(creator=user)
+        community = make_community(creator=user)
 
         data = {
             'users_adjective': ''
@@ -466,7 +468,7 @@ class CommunityAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        community = make_administrated_community(creator=user)
+        community = make_community(creator=user)
         new_categories = []
 
         for i in range(settings.COMMUNITY_CATEGORIES_MIN_AMOUNT, settings.COMMUNITY_CATEGORIES_MAX_AMOUNT):
@@ -500,7 +502,7 @@ class CommunityAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        community = make_administrated_community(creator=user)
+        community = make_community(creator=user)
 
         data = {
             'categories': ''
@@ -534,7 +536,7 @@ class CommunityAvatarAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        community = make_administrated_community(creator=user)
+        community = make_community(creator=user)
         community.avatar = None
         community.save()
 
@@ -561,7 +563,7 @@ class CommunityAvatarAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        community = make_administrated_community(creator=user)
+        community = make_community(creator=user)
         community.avatar.save('avatar.jpg', File(make_community_avatar()))
 
         url = self._get_url(community_name=community.name)
@@ -592,7 +594,7 @@ class CommunityCoverAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        community = make_administrated_community(creator=user)
+        community = make_community(creator=user)
         community.cover = None
         community.save()
 
@@ -619,7 +621,7 @@ class CommunityCoverAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        community = make_administrated_community(creator=user)
+        community = make_community(creator=user)
         community.cover.save('cover.jpg', File(make_community_cover()))
 
         url = self._get_url(community_name=community.name)
@@ -652,7 +654,7 @@ class FavoriteCommunityAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
 
         other_user = make_user()
-        community = make_administrated_community(creator=other_user)
+        community = make_community(creator=other_user)
 
         url = self._get_url(community_name=community.name)
 
@@ -670,7 +672,7 @@ class FavoriteCommunityAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
 
         other_user = make_user()
-        community = make_administrated_community(creator=other_user)
+        community = make_community(creator=other_user)
 
         user.join_community_with_name(community.name)
 
@@ -690,7 +692,7 @@ class FavoriteCommunityAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
 
         other_user = make_user()
-        community = make_administrated_community(creator=other_user)
+        community = make_community(creator=other_user)
 
         user.join_community_with_name(community.name)
         user.favorite_community_with_name(community.name)
@@ -711,7 +713,7 @@ class FavoriteCommunityAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
 
         other_user = make_user()
-        community = make_administrated_community(creator=other_user)
+        community = make_community(creator=other_user)
 
         user.join_community_with_name(community.name)
         user.favorite_community_with_name(community.name)
@@ -732,7 +734,7 @@ class FavoriteCommunityAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
 
         other_user = make_user()
-        community = make_administrated_community(creator=other_user)
+        community = make_community(creator=other_user)
 
         user.join_community_with_name(community.name)
 

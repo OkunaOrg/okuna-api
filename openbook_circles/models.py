@@ -14,7 +14,7 @@ from django.utils.translation import ugettext_lazy as _
 
 
 class Circle(models.Model):
-    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='circles', null=True)
+    creator = models.ForeignKey('openbook_auth.User', on_delete=models.CASCADE, related_name='circles', null=True)
     name = models.CharField(_('name'), max_length=CIRCLE_MAX_LENGTH, blank=False, null=False)
     color = models.CharField(_('color'), max_length=COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
                              validators=[hex_color_validator])
