@@ -11,6 +11,9 @@ from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError
 from django.db.models import Q
 
+from imagekit.processors import ResizeToFill
+from imagekit.models import ProcessedImageField
+
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.exceptions import EmailVerificationTokenInvalid
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
@@ -1257,7 +1260,8 @@ class UserProfile(models.Model):
     location = models.CharField(_('location'), max_length=settings.PROFILE_LOCATION_MAX_LENGTH, blank=False, null=True)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     birth_date = models.DateField(_('birth date'), null=False, blank=False)
-    avatar = models.ImageField(_('avatar'), blank=False, null=True)
+    avatar = ProcessedImageField(verbose_name=_('avatar'), processors=[ResizeToFill(500, 500)] ,blank=False, null=True, format='JPEG',
+                                options={'quality': 75}, )
     cover = models.ImageField(_('cover'), blank=False, null=True)
     bio = models.CharField(_('bio'), max_length=settings.PROFILE_BIO_MAX_LENGTH, blank=False, null=True)
     url = models.URLField(_('url'), blank=False, null=True)

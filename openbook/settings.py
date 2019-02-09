@@ -114,6 +114,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
+    'imagekit',
     'django_nose',
     'storages',
     'django_media_fixtures',

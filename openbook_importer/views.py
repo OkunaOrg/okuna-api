@@ -8,6 +8,7 @@ from openbook_posts.models import Post
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.core.files.images import ImageFile
+from django.core.files.images import ImageFile
 from django.utils.dateparse import parse_datetime
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated

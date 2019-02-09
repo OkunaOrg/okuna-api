@@ -8,6 +8,8 @@ from django.db.models import Count
 
 # Create your views here.
 from rest_framework.exceptions import ValidationError
+from imagekit.models import ProcessedImageField
+from imagekit.processors import ResizeToFill
 
 from django.conf import settings
 from openbook.storage_backends import S3PrivateMediaStorage
@@ -148,7 +150,8 @@ post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else defa
 
 class PostImage(models.Model):
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='image')
-    image = models.ImageField(_('image'), blank=False, null=False, storage=post_image_storage)
+    image = ProcessedImageField(verbose_name=_('image'), upload_to=post_image_storage.base_location, format='JPEG', options={'quality': 75},
+                                blank=False, null=False)
 
 
 class PostVideo(models.Model):
