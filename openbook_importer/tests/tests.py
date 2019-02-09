@@ -145,7 +145,7 @@ class UploadFileTests(APITestCase):
 
     def test_findfriend_entries(self):
         """
-        Uploading athe archive as a new user, would lead to a connection
+        Uploading the archive as a new user, would lead to a connection
         between user1 and user2
         """
 
@@ -176,9 +176,13 @@ class UploadFileTests(APITestCase):
             self.assertTrue(friend_object.user1_id == 1)
             self.assertTrue(friend_object.user2_id == 2)
 
+
+class ImportedItemTest(APITestCase):
+
     def test_delete_importedposts(self):
         """
-        Deleting a previously imported import, should remove all corresponding posts.
+        Deleting a previously imported import, should remove all corresponding
+        posts.
         """
 
         user = make_user()
@@ -186,10 +190,96 @@ class UploadFileTests(APITestCase):
 
         with open('openbook_importer/tests/facebook-jayjay6.zip',
                   'rb') as fd:
-            response = self.client.post(reverse('uploads'), {'file': fd},
-                                        **headers)
+            self.client.post(reverse('uploads'), {'file': fd},
+                             **headers)
 
-        user.imports.filter(id=1).delete()
+        uuid = user.imports.filter(id=1)[0].uuid
+        self.client.delete(reverse('imported-archive',
+                                   kwargs={'archive_id': str(uuid)}),
+                           **headers)
 
         self.assertEqual(user.imports.all().count(), 0)
         self.assertEqual(len(ImportedPost.objects.all()), 0)
+
+    def test_get_imports(self):
+
+        """
+        Retrieving imports should result in a `uuid`, `created` and `posts`
+        field in a serialized JSON response
+        """
+
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        with open('openbook_importer/tests/facebook-jayjay6.zip',
+                  'rb') as fd:
+            self.client.post(reverse('uploads'), {'file': fd},
+                             **headers)
+
+        keys = ['uuid', 'created', 'posts']
+
+        response = self.client.get(reverse('imported-archives'),
+                                   **headers).json()
+
+        for archive in response:
+            for key in archive.keys():
+
+                self.assertTrue(key in keys)
+                self.assertIsNotNone(archive[key])
+
+    def test_get_import(self):
+
+        """
+        Retrieving an import should result in a `uuid`, `created` and `posts`
+        field in a serialized JSON response
+        """
+
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        with open('openbook_importer/tests/facebook-jayjay6.zip',
+                  'rb') as fd:
+            self.client.post(reverse('uploads'), {'file': fd},
+                             **headers)
+
+        keys = ['uuid', 'created', 'posts']
+
+        uuid = user.imports.filter(id=1)[0].uuid
+
+        response = self.client.get(reverse('imported-archive',
+                                           kwargs={'archive_id': str(uuid)}),
+                                   **headers).json()[0]
+
+        for key in response.keys():
+
+            self.assertTrue(key in keys)
+            self.assertIsNotNone(response[key])
+
+    def test_get_unauthorized_imports(self):
+
+        """
+        Retrieving import with other user UUID should return 404
+        """
+
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        with open('openbook_importer/tests/facebook-jaybeenote5.zip',
+                  'rb') as fd:
+            response = self.client.post(reverse('uploads'), {'file': fd},
+                                        **headers)
+
+        user2 = make_user()
+        headers = make_authentication_headers_for_user(user2)
+
+        with open('openbook_importer/tests/facebook-jayjay6.zip',
+                  'rb') as fd:
+            response = self.client.post(reverse('uploads'), {'file': fd},
+                                        **headers)
+
+        uuid = user.imports.filter(id=1)[0].uuid
+        response = self.client.get(reverse('imported-archive',
+                                   kwargs={'archive_id': str(uuid)}),
+                                   **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
