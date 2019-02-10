@@ -104,6 +104,45 @@ class CommunityMembersAPITest(APITestCase):
             response_member_id = response_member.get('id')
             self.assertIn(response_member_id, community_members_ids)
 
+    def test_can_retrieve_members_with_max_id_and_count(self):
+        """
+        should be able to retrieve community members with a max id and count
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community_name = community.name
+
+        community_members_ids = []
+
+        amount_of_community_members = 10
+        count = 5
+        # +2 Because of the user & other_user
+        max_id = 6 + 2
+
+        for i in range(0, amount_of_community_members):
+            community_member = make_user()
+            community_member.join_community_with_name(community_name=community_name)
+            community_members_ids.append(community_member.pk)
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.get(url, {
+            'count': count,
+            'max_id': max_id
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_members = json.loads(response.content)
+
+        self.assertEqual(count, len(response_members))
+
+        for response_member in response_members:
+            response_member_id = response_member.get('id')
+            self.assertTrue(response_member_id < max_id)
+
     def _get_url(self, community_name):
         return reverse('community-members', kwargs={
             'community_name': community_name
@@ -225,7 +264,7 @@ class InviteCommunityMembersAPITest(APITestCase):
         user.join_community_with_name(community.name)
 
         other_user.add_moderator_with_username_to_community_with_name(username=user.username,
-                                                                          community_name=community.name)
+                                                                      community_name=community.name)
 
         user_to_invite = make_user()
 

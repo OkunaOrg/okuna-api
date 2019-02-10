@@ -80,7 +80,6 @@ class CommunityPostsAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response_posts = json.loads(response.content)
-        print(response_posts)
 
         self.assertEqual(count, len(response_posts))
 
