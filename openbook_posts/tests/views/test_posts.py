@@ -735,7 +735,5 @@ class PostsAPITests(APITestCase):
         for response_post_id in response_posts_ids:
             self.assertTrue(response_post_id < max_id)
 
-    def test_get_all_community_
-
     def _get_url(self):
         return reverse('posts')
