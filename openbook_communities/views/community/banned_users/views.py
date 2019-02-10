@@ -56,7 +56,7 @@ class BanUser(APIView):
         with transaction.atomic():
             user.ban_user_with_username_from_community_with_name(username=username, community_name=community_name)
 
-        return ApiMessageResponse(_('Banned user!'), status=status.HTTP_201_CREATED)
+        return ApiMessageResponse(_('Banned user!'), status=status.HTTP_200_OK)
 
 
 class UnbanUser(APIView):
