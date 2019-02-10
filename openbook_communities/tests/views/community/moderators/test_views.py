@@ -266,28 +266,6 @@ class CommunityModeratorsAPITest(APITestCase):
 
 
 class CommunityModeratorAPITest(APITestCase):
-    def test_can_remove_community_moderator_if_creator(self):
-        """
-        should be able to remove a community moderator if user is creator of the community
-        """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
-
-        community = make_community(creator=user, type='P')
-
-        moderator_to_remove = make_user()
-        moderator_to_remove.join_community_with_name(community_name=community.name)
-        user.add_moderator_with_username_to_community_with_name(username=moderator_to_remove.username,
-                                                                community_name=community.name)
-
-        url = self._get_url(community_name=community.name, username=moderator_to_remove.username)
-        response = self.client.delete(url, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        self.assertFalse(
-            moderator_to_remove.is_moderator_of_community_with_name(community_name=community.name))
-
     def test_can_remove_community_moderator_if_admin(self):
         """
         should be able to remove a community moderator if user is admin of the community
