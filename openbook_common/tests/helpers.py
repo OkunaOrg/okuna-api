@@ -8,7 +8,6 @@ from openbook_auth.models import User, UserProfile
 from openbook_categories.models import Category
 from openbook_circles.models import Circle
 from openbook_common.models import Emoji, EmojiGroup, Badge
-from openbook_communities.models import Community
 
 fake = Faker()
 

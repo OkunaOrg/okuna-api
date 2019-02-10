@@ -160,7 +160,7 @@ class CommunityBannedUsersAPITest(APITestCase):
         })
 
 
-class BanCommunityuserAPITest(APITestCase):
+class BanCommunityUserAPITest(APITestCase):
     def test_can_ban_user_from_community_if_mod(self):
         """
         should be able to ban user from a community if is moderator and return 200
@@ -281,5 +281,148 @@ class BanCommunityuserAPITest(APITestCase):
 
     def _get_url(self, community_name):
         return reverse('community-ban-user', kwargs={
+            'community_name': community_name
+        })
+
+
+class UnbanCommunityUserAPITest(APITestCase):
+    def test_can_unban_user_from_community_if_mod(self):
+        """
+        should be able to unban user from a community if is moderator and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community_name = community.name
+
+        user.join_community_with_name(community_name)
+        other_user.add_moderator_with_username_to_community_with_name(username=user.username,
+                                                                      community_name=community.name)
+
+        user_to_unban = make_user()
+
+        other_user.ban_user_with_username_from_community_with_name(username=user_to_unban.username,
+                                                                   community_name=community_name)
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, {
+            'username': user_to_unban.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(user_to_unban.is_banned_from_community_with_name(community.name))
+
+    def test_cant_unban_user_from_community_if_already_banned(self):
+        """
+        should not be able to unban user from a community if is not banned and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community_name = community.name
+
+        user.join_community_with_name(community_name)
+        other_user.add_moderator_with_username_to_community_with_name(username=user.username,
+                                                                      community_name=community.name)
+
+        user_to_unban = make_user()
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, {
+            'username': user_to_unban.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(user_to_unban.is_banned_from_community_with_name(community.name))
+
+    def test_can_unban_user_from_community_if_admin(self):
+        """
+        should be able to unban user from a community if is admin and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community_name = community.name
+
+        user.join_community_with_name(community_name)
+        other_user.add_administrator_with_username_to_community_with_name(username=user.username,
+                                                                          community_name=community.name)
+
+        user_to_unban = make_user()
+
+        other_user.ban_user_with_username_from_community_with_name(username=user_to_unban.username,
+                                                                   community_name=community_name)
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, {
+            'username': user_to_unban.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(user_to_unban.is_banned_from_community_with_name(community.name))
+
+    def test_cant_unban_user_from_community_if_member(self):
+        """
+        should not be able to unban user from a community if is member and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community_name = community.name
+
+        user.join_community_with_name(community_name)
+
+        user_to_unban = make_user()
+
+        other_user.ban_user_with_username_from_community_with_name(username=user_to_unban.username,
+                                                                   community_name=community_name)
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, {
+            'username': user_to_unban.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(user_to_unban.is_banned_from_community_with_name(community.name))
+
+    def test_cant_ban_user_from_community(self):
+        """
+        should not be able to ban user from a community and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community_name = community.name
+
+        user_to_unban = make_user()
+
+        other_user.ban_user_with_username_from_community_with_name(username=user_to_unban.username,
+                                                                   community_name=community_name)
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, {
+            'username': user_to_unban.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(user_to_unban.is_banned_from_community_with_name(community.name))
+
+    def _get_url(self, community_name):
+        return reverse('community-unban-user', kwargs={
             'community_name': community_name
         })
