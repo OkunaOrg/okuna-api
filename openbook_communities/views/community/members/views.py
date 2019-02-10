@@ -95,4 +95,4 @@ class InviteCommunityMember(APIView):
             user.invite_user_with_username_to_community_with_name(username=username,
                                                                   community_name=community_name)
 
-        return ApiMessageResponse(_('Invited user successfully!'), status=status.HTTP_200_OK)
+        return ApiMessageResponse(_('Invited user successfully!'), status=status.HTTP_201_CREATED)

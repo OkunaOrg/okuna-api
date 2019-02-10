@@ -115,24 +115,131 @@ class InviteCommunityMembersAPITest(APITestCase):
         """
         should be able to invite a user to join a community part of with invites enabled and return 200
         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community.invites_enabled = True
+        community.save()
+
+        user.join_community_with_name(community.name)
+        user_to_invite = make_user()
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, {
+            'username': user_to_invite.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(user_to_invite.is_invited_to_community_with_name(community_name=community.name))
+
+    def test_cannot_invite_user_to_community_not_part_of_with_invites_enabled(self):
+        """
+        should not be able to invite a user to join a community NOT part of with invites enabled and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community.invites_enabled = True
+        community.save()
+
+        user_to_invite = make_user()
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, {
+            'username': user_to_invite.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(user_to_invite.is_invited_to_community_with_name(community_name=community.name))
 
     def test_cannot_invite_user_to_community_part_of_with_invites_disabled(self):
         """
         should not able to invite a user to join a community part of with invites enabled and return 200
         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community.invites_enabled = False
+        community.save()
+
+        user.join_community_with_name(community.name)
+        user_to_invite = make_user()
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, {
+            'username': user_to_invite.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(user_to_invite.is_invited_to_community_with_name(community_name=community.name))
 
     def test_can_invite_user_to_community_part_of_with_invites_disabled_if_admin(self):
         """
         should be able to invite a user to join a community when invites disabled but user is admin and return 200
         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community.invites_enabled = False
+        community.save()
+
+        user.join_community_with_name(community.name)
+
+        other_user.add_administrator_with_username_to_community_with_name(username=user.username,
+                                                                          community_name=community.name)
+
+        user_to_invite = make_user()
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, {
+            'username': user_to_invite.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(user_to_invite.is_invited_to_community_with_name(community_name=community.name))
 
     def test_can_invite_user_to_community_part_of_with_invites_disabled_if_mod(self):
         """
         should be able to invite a user to join a community when invites disabled but user is mod and return 200
         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community.invites_enabled = False
+        community.save()
+
+        user.join_community_with_name(community.name)
+
+        other_user.add_moderator_with_username_to_community_with_name(username=user.username,
+                                                                          community_name=community.name)
+
+        user_to_invite = make_user()
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, {
+            'username': user_to_invite.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(user_to_invite.is_invited_to_community_with_name(community_name=community.name))
 
     def _get_url(self, community_name):
-        return reverse('community-invites', kwargs={
+        return reverse('community-invite', kwargs={
             'community_name': community_name
         })
 

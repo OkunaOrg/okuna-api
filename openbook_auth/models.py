@@ -360,6 +360,11 @@ class User(AbstractUser):
     def is_moderator_of_community_with_name(self, community_name):
         return self.moderated_communities.filter(name=community_name).exists()
 
+    def is_invited_to_community_with_name(self, community_name):
+        Community = get_community_model()
+        return Community.is_user_with_username_invited_to_community_with_name(username=self.username,
+                                                                              community_name=community_name)
+
     def has_favorite_community_with_name(self, community_name):
         return self.favorite_communities.filter(name=community_name).exists()
 
@@ -1598,8 +1603,7 @@ class User(AbstractUser):
 
         Community = get_community_model()
         if Community.is_community_with_name_private(community_name=community_name):
-            if not Community.is_user_with_username_invited_to_community_with_name(username=self.username,
-                                                                                  community_name=community_name):
+            if not self.is_invited_to_community_with_name(community_name=community_name):
                 raise ValidationError(
                     _('You are not invited to join this community.'),
                 )
