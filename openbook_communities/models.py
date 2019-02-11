@@ -8,7 +8,6 @@ from django.db.models import Count
 
 from openbook.settings import COLOR_ATTR_MAX_LENGTH
 from openbook_auth.models import User
-from openbook_circles.models import Circle
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.utils.model_loaders import get_community_invite_model, \
@@ -252,6 +251,11 @@ class Community(models.Model):
                                 source_user=source_user,
                                 target_user=target_user)
 
+    def create_remove_post_log(self, source_user, target_user):
+        return self._create_log(action_type='RP',
+                                source_user=source_user,
+                                target_user=target_user)
+
     def _create_log(self, action_type, source_user, target_user):
         CommunityModeratorUserActionLog = get_community_log_model()
         return CommunityModeratorUserActionLog.create_community_log(community=self,
@@ -281,6 +285,7 @@ class CommunityLog(models.Model):
                                   null=False,
                                   blank=False)
     created = models.DateTimeField(editable=False)
+
     ACTION_TYPES = (
         ('B', 'Ban'),
         ('U', 'Unban'),
@@ -288,6 +293,7 @@ class CommunityLog(models.Model):
         ('RM', 'Remove Moderator'),
         ('AA', 'Add Administrator'),
         ('RA', 'Remove Administrator'),
+        ('RP', 'Remove Post'),
     )
     action_type = models.CharField(editable=False, blank=False, null=False, choices=ACTION_TYPES, max_length=5)
 

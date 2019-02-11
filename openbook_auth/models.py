@@ -972,8 +972,9 @@ class User(AbstractUser):
 
     def delete_post_with_id(self, post_id):
         self._check_can_delete_post_with_id(post_id)
-        post = self.posts.get(id=post_id)
-        post.delete()
+        Post = get_post_model()
+        # We have to be mindful with using bulk delete as it does not call the delete() method per instance
+        Post.objects.filter(id=post_id).delete()
 
     def get_posts_for_community_with_name(self, community_name, max_id=None):
         """
@@ -1541,7 +1542,19 @@ class User(AbstractUser):
             )
 
     def _check_can_delete_post_with_id(self, post_id):
-        if not self.has_post_with_id(post_id):
+        Post = get_post_model()
+
+        if Post.is_post_with_id_a_community_post(post_id):
+            post = Post.objects.select_related('community').get(pk=post_id)
+            if not self.is_moderator_of_community_with_name(post.community.name):
+                raise ValidationError(
+                    _('Only moderators/administrators can remove community posts.'),
+                )
+            else:
+                # TODO Not the best place to log this but doing the check for community again on delete
+                # is wasteful
+                post.community.create_remove_post_log(source_user=self, target_user=post.creator)
+        elif not self.has_post_with_id(post_id=post_id):
             raise ValidationError(
                 _('Can\'t delete a post that does not belong to you.'),
             )

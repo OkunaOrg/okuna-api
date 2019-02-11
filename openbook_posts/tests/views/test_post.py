@@ -9,7 +9,8 @@ from rest_framework.test import APITestCase
 import logging
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
-    make_fake_post_comment_text, make_user, make_circle, make_emoji, make_emoji_group, make_reactions_emoji_group
+    make_fake_post_comment_text, make_user, make_circle, make_emoji, make_emoji_group, make_reactions_emoji_group, \
+    make_community
 from openbook_posts.models import Post, PostComment, PostReaction
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,85 @@ class PostItemAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(Post.objects.filter(pk=post.pk).count() == 0)
+
+    def test_can_delete_post_of_community_if_mod(self):
+        """
+        should be able to delete a community post if moderator and return 200
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(username=user.username,
+                                                                             community_name=community.name)
+
+        community_post_creator = make_user()
+        community_post_creator.join_community_with_name(community_name=community.name)
+
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        url = self._get_url(post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(Post.objects.filter(pk=post.pk).count() == 0)
+
+    def test_can_delete_post_of_community_if_admin(self):
+        """
+        should be able to delete a community post if administrator and return 200
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+        community_creator.add_administrator_with_username_to_community_with_name(username=user.username,
+                                                                                 community_name=community.name)
+
+        community_post_creator = make_user()
+        community_post_creator.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        url = self._get_url(post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(Post.objects.filter(pk=post.pk).count() == 0)
+
+    def test_logs_community_post_deleted_by_non_creator(self):
+        """
+        should create a log when a community post was deleted by an admin/moderator
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+        community_creator.add_administrator_with_username_to_community_with_name(username=user.username,
+                                                                                 community_name=community.name)
+
+        community_post_creator = make_user()
+        community_post_creator.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        url = self._get_url(post)
+
+        headers = make_authentication_headers_for_user(user)
+        self.client.delete(url, **headers)
+
+        self.assertTrue(community.logs.filter(action_type='RP',
+                                              source_user=user,
+                                              target_user=community_post_creator).exists())
 
     def test_cannot_delete_foreign_post(self):
         """
