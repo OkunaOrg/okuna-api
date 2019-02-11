@@ -187,6 +187,32 @@ class BanCommunityUserAPITest(APITestCase):
 
         self.assertTrue(user_to_ban.is_banned_from_community_with_name(community.name))
 
+    def test_logs_user_banned(self):
+        """
+        should create a log when a community user is banned
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community_name = community.name
+
+        user.join_community_with_name(community_name)
+        other_user.add_moderator_with_username_to_community_with_name(username=user.username,
+                                                                      community_name=community.name)
+
+        user_to_ban = make_user()
+
+        url = self._get_url(community_name=community.name)
+        self.client.post(url, {
+            'username': user_to_ban.username
+        }, **headers)
+
+        self.assertTrue(community.moderators_user_actions_logs.filter(action_type='B',
+                                                                      moderator=user,
+                                                                      target_user=user_to_ban).exists())
+
     def test_cant_ban_user_from_community_if_already_banned(self):
         """
         should not be able to ban user from a community if is already banned and return 400
@@ -314,6 +340,35 @@ class UnbanCommunityUserAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         self.assertFalse(user_to_unban.is_banned_from_community_with_name(community.name))
+
+    def test_logs_user_unbanned(self):
+        """
+        should create a log when a community user is unbanned
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community_name = community.name
+
+        user.join_community_with_name(community_name)
+        other_user.add_moderator_with_username_to_community_with_name(username=user.username,
+                                                                      community_name=community.name)
+
+        user_to_unban = make_user()
+
+        other_user.ban_user_with_username_from_community_with_name(username=user_to_unban.username,
+                                                                   community_name=community_name)
+
+        url = self._get_url(community_name=community.name)
+        self.client.post(url, {
+            'username': user_to_unban.username
+        }, **headers)
+
+        self.assertTrue(community.moderators_user_actions_logs.filter(action_type='U',
+                                                                      moderator=user,
+                                                                      target_user=user_to_unban).exists())
 
     def test_cant_unban_user_from_community_if_already_banned(self):
         """
