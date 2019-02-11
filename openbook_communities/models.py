@@ -256,6 +256,11 @@ class Community(models.Model):
                                 source_user=source_user,
                                 target_user=target_user)
 
+    def create_remove_post_comment_log(self, source_user, target_user):
+        return self._create_log(action_type='RPC',
+                                source_user=source_user,
+                                target_user=target_user)
+
     def _create_log(self, action_type, source_user, target_user):
         CommunityModeratorUserActionLog = get_community_log_model()
         return CommunityModeratorUserActionLog.create_community_log(community=self,
@@ -294,6 +299,7 @@ class CommunityLog(models.Model):
         ('AA', 'Add Administrator'),
         ('RA', 'Remove Administrator'),
         ('RP', 'Remove Post'),
+        ('RPC', 'Remove Post Comment'),
     )
     action_type = models.CharField(editable=False, blank=False, null=False, choices=ACTION_TYPES, max_length=5)
 

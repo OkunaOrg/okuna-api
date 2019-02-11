@@ -1338,20 +1338,34 @@ class User(AbstractUser):
             )
 
     def _check_can_delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
-        # Check if the post belongs to us
-        if self.has_post_with_id(post_id):
-            # Check that the comment belongs to the post
-            PostComment = get_post_comment_model()
-            if PostComment.objects.filter(id=post_comment_id, post_id=post_id).count() == 0:
-                raise ValidationError(
-                    _('That comment does not belong to the specified post.')
-                )
-            return
 
-        if self.posts_comments.filter(id=post_comment_id).count() == 0:
+        # Check that the comment belongs to the post
+        PostComment = get_post_comment_model()
+        Post = get_post_model()
+
+        if not PostComment.objects.filter(id=post_comment_id, post_id=post_id).exists():
             raise ValidationError(
-                _('Can\'t delete a comment that does not belong to you.'),
+                _('The comment does not belong to the specified post.')
             )
+
+        if not self.has_post_with_id(post_id):
+            if not self.posts_comments.filter(id=post_comment_id).exists():
+                # The comment is not ours
+                if Post.is_post_with_id_a_community_post(post_id):
+                    # If the comment is in a community, check if we're moderators
+                    post = Post.objects.select_related('community').get(pk=post_id)
+                    if not self.is_moderator_of_community_with_name(post.community.name):
+                        raise ValidationError(
+                            _('Only moderators/administrators can remove community posts.'),
+                        )
+                    else:
+                        # TODO Not the best place to log this but doing the check for community again on delete is wasteful
+                        post.community.create_remove_post_comment_log(source_user=self,
+                                                                      target_user=post.creator)
+                else:
+                    raise ValidationError(
+                        _('You cannot remove a comment that does not belong to you')
+                    )
 
     def _check_can_get_comments_for_post_with_id(self, post_id):
         self._check_can_see_post_with_id(post_id)
@@ -1544,20 +1558,22 @@ class User(AbstractUser):
     def _check_can_delete_post_with_id(self, post_id):
         Post = get_post_model()
 
-        if Post.is_post_with_id_a_community_post(post_id):
-            post = Post.objects.select_related('community').get(pk=post_id)
-            if not self.is_moderator_of_community_with_name(post.community.name):
-                raise ValidationError(
-                    _('Only moderators/administrators can remove community posts.'),
-                )
+        if not self.has_post_with_id(post_id):
+            if Post.is_post_with_id_a_community_post(post_id):
+                # If the comment is in a community, check if we're moderators
+                post = Post.objects.select_related('community').get(pk=post_id)
+                if not self.is_moderator_of_community_with_name(post.community.name):
+                    raise ValidationError(
+                        _('Only moderators/administrators can remove community posts.'),
+                    )
+                else:
+                    # TODO Not the best place to log this but doing the check for community again on delete is wasteful
+                    post.community.create_remove_post_log(source_user=self,
+                                                          target_user=post.creator)
             else:
-                # TODO Not the best place to log this but doing the check for community again on delete
-                # is wasteful
-                post.community.create_remove_post_log(source_user=self, target_user=post.creator)
-        elif not self.has_post_with_id(post_id=post_id):
-            raise ValidationError(
-                _('Can\'t delete a post that does not belong to you.'),
-            )
+                raise ValidationError(
+                    _('You cannot remove a post that does not belong to you')
+                )
 
     def _check_can_delete_list_with_id(self, list_id):
         if not self.has_list_with_id(list_id):
