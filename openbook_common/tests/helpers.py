@@ -78,6 +78,10 @@ def make_user_avatar():
     return tmp_file
 
 
+def make_category():
+    return mixer.blend(Category)
+
+
 def make_user_cover():
     image = Image.new('RGB', (100, 100))
     tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')

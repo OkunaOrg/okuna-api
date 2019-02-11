@@ -19,6 +19,7 @@ from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 
+from openbook_categories.views import Categories
 from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, EmailVerify, Login, AuthenticatedUser, User, Users, \
@@ -158,10 +159,15 @@ importer_patterns = [
     path('upload/', ImportItem.as_view(), name='uploads')
 ]
 
+categories_patterns = [
+    path('', Categories.as_view(), name='categories')
+]
+
 api_patterns = [
     path('auth/', include(auth_patterns)),
     path('posts/', include(posts_patterns)),
     path('communities/', include(communities_patterns)),
+    path('categories/', include(categories_patterns)),
     path('circles/', include(circles_patterns)),
     path('connections/', include(connections_patterns)),
     path('lists/', include(lists_patterns)),
