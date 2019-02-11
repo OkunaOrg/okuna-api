@@ -168,9 +168,9 @@ class CommunityAdministratorsAPITest(APITestCase):
             'username': administrator_to_add.username
         }, **headers)
 
-        self.assertTrue(community.administrators_user_actions_logs.filter(action_type='AA',
-                                                                          administrator=user,
-                                                                          target_user=administrator_to_add).exists())
+        self.assertTrue(community.logs.filter(action_type='AA',
+                                              source_user=user,
+                                              target_user=administrator_to_add).exists())
 
     def test_cant_add_community_administrator_if_mod(self):
         """
@@ -293,9 +293,9 @@ class CommunityAdministratorAPITest(APITestCase):
         url = self._get_url(community_name=community.name, username=administrator_to_remove.username)
         self.client.delete(url, **headers)
 
-        self.assertTrue(community.administrators_user_actions_logs.filter(action_type='RA',
-                                                                          administrator=user,
-                                                                          target_user=administrator_to_remove).exists())
+        self.assertTrue(community.logs.filter(action_type='RA',
+                                              source_user=user,
+                                              target_user=administrator_to_remove).exists())
 
     def test_cant_remove_creator_from_community_administrators(self):
         """

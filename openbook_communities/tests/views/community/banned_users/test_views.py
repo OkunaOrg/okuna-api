@@ -209,9 +209,9 @@ class BanCommunityUserAPITest(APITestCase):
             'username': user_to_ban.username
         }, **headers)
 
-        self.assertTrue(community.moderators_user_actions_logs.filter(action_type='B',
-                                                                      moderator=user,
-                                                                      target_user=user_to_ban).exists())
+        self.assertTrue(community.logs.filter(action_type='B',
+                                              source_user=user,
+                                              target_user=user_to_ban).exists())
 
     def test_cant_ban_user_from_community_if_already_banned(self):
         """
@@ -366,9 +366,9 @@ class UnbanCommunityUserAPITest(APITestCase):
             'username': user_to_unban.username
         }, **headers)
 
-        self.assertTrue(community.moderators_user_actions_logs.filter(action_type='U',
-                                                                      moderator=user,
-                                                                      target_user=user_to_unban).exists())
+        self.assertTrue(community.logs.filter(action_type='U',
+                                              source_user=user,
+                                              target_user=user_to_unban).exists())
 
     def test_cant_unban_user_from_community_if_already_banned(self):
         """

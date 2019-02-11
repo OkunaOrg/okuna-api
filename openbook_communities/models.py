@@ -12,7 +12,7 @@ from openbook_circles.models import Circle
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.utils.model_loaders import get_community_invite_model, \
-    get_community_moderator_user_action_log_model, get_community_administrator_user_action_log_model, get_category_model
+    get_community_log_model, get_category_model
 from openbook_common.validators import hex_color_validator
 from openbook_communities.validators import community_name_characters_validator
 from openbook_posts.models import Post
@@ -222,49 +222,42 @@ class Community(models.Model):
         CommunityInvite = get_community_invite_model()
         return CommunityInvite.create_community_invite(creator=creator, invited_user=invited_user, community=self)
 
-    def create_moderator_user_ban_log(self, moderator, target_user):
-        return self._create_moderator_user_action_log(action_type='B',
-                                                      moderator=moderator,
-                                                      target_user=target_user)
+    def create_user_ban_log(self, source_user, target_user):
+        return self._create_log(action_type='B',
+                                source_user=source_user,
+                                target_user=target_user)
 
-    def create_moderator_user_unban_log(self, moderator, target_user):
-        return self._create_moderator_user_action_log(action_type='U',
-                                                      moderator=moderator,
-                                                      target_user=target_user)
+    def create_user_unban_log(self, source_user, target_user):
+        return self._create_log(action_type='U',
+                                source_user=source_user,
+                                target_user=target_user)
 
-    def create_administrator_add_administrator_log(self, administrator, target_user):
-        return self._create_administrator_user_action_log(action_type='AA',
-                                                          administrator=administrator,
-                                                          target_user=target_user)
+    def create_add_administrator_log(self, source_user, target_user):
+        return self._create_log(action_type='AA',
+                                source_user=source_user,
+                                target_user=target_user)
 
-    def create_administrator_remove_administrator_log(self, administrator, target_user):
-        return self._create_administrator_user_action_log(action_type='RA',
-                                                          administrator=administrator,
-                                                          target_user=target_user)
+    def create_remove_administrator_log(self, source_user, target_user):
+        return self._create_log(action_type='RA',
+                                source_user=source_user,
+                                target_user=target_user)
 
-    def create_administrator_add_moderator_log(self, administrator, target_user):
-        return self._create_administrator_user_action_log(action_type='AM',
-                                                          administrator=administrator,
-                                                          target_user=target_user)
+    def create_add_moderator_log(self, source_user, target_user):
+        return self._create_log(action_type='AM',
+                                source_user=source_user,
+                                target_user=target_user)
 
-    def create_administrator_remove_moderator_log(self, administrator, target_user):
-        return self._create_administrator_user_action_log(action_type='RM',
-                                                          administrator=administrator,
-                                                          target_user=target_user)
+    def create_remove_moderator_log(self, source_user, target_user):
+        return self._create_log(action_type='RM',
+                                source_user=source_user,
+                                target_user=target_user)
 
-    def _create_moderator_user_action_log(self, action_type, moderator, target_user):
-        CommunityModeratorUserActionLog = get_community_moderator_user_action_log_model()
-        return CommunityModeratorUserActionLog.create_community_moderator_user_action_log(community=self,
-                                                                                          target_user=target_user,
-                                                                                          action_type=action_type,
-                                                                                          moderator=moderator)
-
-    def _create_administrator_user_action_log(self, action_type, administrator, target_user):
-        CommunityAdministratorUserActionLog = get_community_administrator_user_action_log_model()
-        return CommunityAdministratorUserActionLog.create_community_administrator_user_action_log(community=self,
-                                                                                                  target_user=target_user,
-                                                                                                  action_type=action_type,
-                                                                                                  administrator=administrator)
+    def _create_log(self, action_type, source_user, target_user):
+        CommunityModeratorUserActionLog = get_community_log_model()
+        return CommunityModeratorUserActionLog.create_community_log(community=self,
+                                                                    target_user=target_user,
+                                                                    action_type=action_type,
+                                                                    source_user=source_user)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
@@ -276,47 +269,15 @@ class Community(models.Model):
         return self.name
 
 
-class CommunityAdministratorUserActionLog(models.Model):
-    """
-    A log for community administrators user actions such as banning/unbanning
-    """
-    administrator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+', null=False,
-                                      blank=False)
-    target_user = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='+', null=True,
-                                    blank=False)
-    community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='administrators_user_actions_logs',
-                                  null=False,
-                                  blank=False)
-    created = models.DateTimeField(editable=False)
-    ACTION_TYPES = (
-        ('AM', 'Add Moderator'),
-        ('RM', 'Remove Moderator'),
-        ('AA', 'Add Administrator'),
-        ('RA', 'Remove Administrator'),
-    )
-    action_type = models.CharField(editable=False, blank=False, null=False, choices=ACTION_TYPES, max_length=2)
-
-    @classmethod
-    def create_community_administrator_user_action_log(cls, community, action_type, administrator, target_user):
-        return cls.objects.create(community=community, action_type=action_type, administrator=administrator,
-                                  target_user=target_user)
-
-    def save(self, *args, **kwargs):
-        ''' On save, update timestamps '''
-        if not self.id:
-            self.created = timezone.now()
-        return super(CommunityAdministratorUserActionLog, self).save(*args, **kwargs)
-
-
-class CommunityModeratorUserActionLog(models.Model):
+class CommunityLog(models.Model):
     """
     A log for community moderators user actions such as banning/unbanning
     """
-    moderator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+', null=False,
-                                  blank=False)
+    source_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+', null=False,
+                                    blank=False)
     target_user = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='+', null=True,
                                     blank=False)
-    community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='moderators_user_actions_logs',
+    community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='logs',
                                   null=False,
                                   blank=False)
     created = models.DateTimeField(editable=False)
@@ -328,18 +289,18 @@ class CommunityModeratorUserActionLog(models.Model):
         ('AA', 'Add Administrator'),
         ('RA', 'Remove Administrator'),
     )
-    action_type = models.CharField(editable=False, blank=False, null=False, choices=ACTION_TYPES, max_length=2)
+    action_type = models.CharField(editable=False, blank=False, null=False, choices=ACTION_TYPES, max_length=5)
 
     @classmethod
-    def create_community_moderator_user_action_log(cls, community, action_type, moderator, target_user):
-        return cls.objects.create(community=community, action_type=action_type, moderator=moderator,
+    def create_community_log(cls, community, action_type, source_user, target_user):
+        return cls.objects.create(community=community, action_type=action_type, source_user=source_user,
                                   target_user=target_user)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
         if not self.id:
             self.created = timezone.now()
-        return super(CommunityModeratorUserActionLog, self).save(*args, **kwargs)
+        return super(CommunityLog, self).save(*args, **kwargs)
 
 
 class CommunityInvite(models.Model):
