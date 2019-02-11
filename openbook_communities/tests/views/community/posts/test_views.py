@@ -7,7 +7,8 @@ import logging
 import json
 
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, \
-    make_community, make_fake_post_text
+    make_community, make_fake_post_text, make_post_image
+from openbook_posts.models import Post
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -145,7 +146,72 @@ class CommunityPostsAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_can_create_community_text_post_part_of(self):
+        """
+        should be able to create a post for a community part of and return 201
+        """
+        user = make_user()
+        community_creator = make_user()
+        community = make_community(creator=community_creator, type='P')
+
+        user.join_community_with_name(community_name=community.name)
+
+        url = self._get_url(community_name=community.name)
+
+        post_text = make_fake_post_text()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.put(url, {
+            'text': post_text
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Post.objects.filter(text=post_text).exists())
+
+    def test_can_create_community_image_post_part_of(self):
+        """
+        should be able to create an image post for a community part of and return 201
+        """
+        user = make_user()
+        community_creator = make_user()
+        community = make_community(creator=community_creator, type='P')
+
+        user.join_community_with_name(community_name=community.name)
+
+        url = self._get_url(community_name=community.name)
+
+        post_image = make_post_image()
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.put(url, {
+            'image': post_image
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(Post.objects.filter(image__isnull=False).exists())
+
+    def test_cant_create_community_post_not_part_of(self):
+        """
+        should not be able to create a post for a community part of and return 400
+        """
+        user = make_user()
+        community_creator = make_user()
+        community = make_community(creator=community_creator, type='P')
+
+        url = self._get_url(community_name=community.name)
+
+        post_text = make_fake_post_text()
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.put(url, {
+            'text': post_text
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(Post.objects.filter(text=post_text).exists())
+
     def _get_url(self, community_name):
         return reverse('community-posts', kwargs={
             'community_name': community_name
         })
+
+# Test creating posts

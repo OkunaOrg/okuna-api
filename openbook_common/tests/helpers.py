@@ -86,6 +86,14 @@ def make_user_cover():
     return tmp_file
 
 
+def make_post_image():
+    image = Image.new('RGB', (100, 100))
+    tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
+    image.save(tmp_file)
+    tmp_file.seek(0)
+    return tmp_file
+
+
 def make_fake_list_name():
     return fake.text(max_nb_chars=settings.LIST_MAX_LENGTH)
 
