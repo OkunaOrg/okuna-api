@@ -2,7 +2,6 @@ from datetime import datetime
 from json import JSONDecodeError
 
 from rest_framework import status
-from openbook_auth.models import User
 from openbook_posts.models import Post
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -69,7 +68,7 @@ class ImportItem(APIView):
                 image = ImageFile(image['file'])
 
             if not Post.objects.filter(creator=user.pk, text=text, created=created).exists():
-                user.create_post(text=text, image=image, created=created)
+                user.create_public_post(text=text, image=image, created=created)
 
     def _get_media_content(self, post):
 

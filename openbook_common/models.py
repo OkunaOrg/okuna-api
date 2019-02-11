@@ -54,3 +54,8 @@ class Badge(models.Model):
     keyword = models.CharField(max_length=16, blank=False, null=False, unique=True)
     keyword_description = models.CharField(_('keyword_description'), max_length=64, blank=True, null=True, unique=True)
     created = models.DateTimeField(editable=False)
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.created = timezone.now()
+        return super(Badge, self).save(*args, **kwargs)

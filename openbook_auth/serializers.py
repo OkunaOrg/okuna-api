@@ -3,7 +3,7 @@ from django.conf import settings
 from django.utils.translation import gettext as _
 
 from openbook.settings import USERNAME_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, PROFILE_NAME_MAX_LENGTH
-from openbook_auth.models import User, UserProfile, UserProfileBadge
+from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import username_characters_validator, \
     username_not_taken_validator, email_not_taken_validator, user_username_exists, jwt_token_validator, \
     is_of_legal_age_validator
@@ -51,7 +51,6 @@ class LoginSerializer(serializers.Serializer):
 
 
 class BadgeSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Badge
         fields = (
@@ -60,19 +59,9 @@ class BadgeSerializer(serializers.ModelSerializer):
         )
 
 
-class GetUserProfileBadgeSerializer(serializers.ModelSerializer):
-    badge = BadgeSerializer()
-
-    class Meta:
-        model = UserProfileBadge
-        fields = (
-            'badge',
-        )
-
-
 class GetAuthenticatedUserProfileSerializer(serializers.ModelSerializer):
     avatar = serializers.ImageField(max_length=None, use_url=True, allow_null=True, required=False)
-    badges = GetUserProfileBadgeSerializer(many=True)
+    badges = BadgeSerializer(many=True)
 
     class Meta:
         model = UserProfile
@@ -156,7 +145,7 @@ class GetUserSerializer(serializers.Serializer):
 
 
 class GetUserUserProfileSerializer(serializers.ModelSerializer):
-    badges = GetUserProfileBadgeSerializer(many=True)
+    badges = BadgeSerializer(many=True)
 
     class Meta:
         model = UserProfile
@@ -243,7 +232,7 @@ class GetUsersSerializer(serializers.Serializer):
 
 
 class GetUsersUserProfileSerializer(serializers.ModelSerializer):
-    badges = GetUserProfileBadgeSerializer(many=True)
+    badges = BadgeSerializer(many=True)
 
     class Meta:
         model = UserProfile

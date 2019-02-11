@@ -43,29 +43,17 @@ class Register(APIView):
         token = data.get('token')
         User = get_user_model()
         UserInvite = get_user_invite_model()
-        try:
-            user_invite = UserInvite.get_invite_if_valid(token=token)
-        except InvalidSignatureError:
-            return Response(_('Token is not valid'), status=status.HTTP_401_UNAUTHORIZED)
-        except UserInvite.DoesNotExist:
-            return Response(_('No invite found with this token'), status=status.HTTP_404_NOT_FOUND)
+
+        user_invite = UserInvite.get_invite_for_token(token=token)
 
         username = user_invite.username
-        badge_keyword = user_invite.badge_keyword
-        badge = None
-
-        if badge_keyword:
-            try:
-                badge = Badge.objects.get(keyword=badge_keyword)
-            except Badge.DoesNotExist:
-                raise ValidationError(_('The provided badge keyword is invalid'))
 
         if not user_invite.username:
             username = User.get_temporary_username(email)
 
         with transaction.atomic():
             new_user = User.create_user(username=username, email=email, password=password, name=name, avatar=avatar,
-                                        is_of_legal_age=is_of_legal_age, badge=badge)
+                                        is_of_legal_age=is_of_legal_age, badge=user_invite.badge)
             user_invite.created_user = new_user
             user_invite.save()
 

@@ -5,9 +5,9 @@ from faker import Faker
 from django.conf import settings
 from mixer.backend.django import mixer
 from openbook_auth.models import User, UserProfile
+from openbook_categories.models import Category
 from openbook_circles.models import Circle
-from openbook_common.models import Emoji, EmojiGroup
-from openbook_posts.models import Post
+from openbook_common.models import Emoji, EmojiGroup, Badge
 
 fake = Faker()
 
@@ -29,6 +29,10 @@ def make_user():
     user = mixer.blend(User)
     profile = make_profile(user)
     return user
+
+
+def make_badge():
+    return mixer.blend(Badge)
 
 
 def make_users(amount):
@@ -82,9 +86,75 @@ def make_user_cover():
     return tmp_file
 
 
+def make_post_image():
+    image = Image.new('RGB', (100, 100))
+    tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
+    image.save(tmp_file)
+    tmp_file.seek(0)
+    return tmp_file
+
+
 def make_fake_list_name():
     return fake.text(max_nb_chars=settings.LIST_MAX_LENGTH)
 
 
 def make_fake_circle_name():
     return fake.text(max_nb_chars=settings.CIRCLE_MAX_LENGTH)
+
+
+def make_community_avatar():
+    community_avatar = Image.new('RGB', (100, 100))
+    tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
+    community_avatar.save(tmp_file)
+    tmp_file.seek(0)
+    return tmp_file
+
+
+def make_community_cover():
+    community_cover = Image.new('RGB', (100, 100))
+    tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
+    community_cover.save(tmp_file)
+    tmp_file.seek(0)
+    return tmp_file
+
+
+def make_community_description():
+    return fake.text(max_nb_chars=settings.COMMUNITY_DESCRIPTION_MAX_LENGTH)
+
+
+def make_community_rules():
+    return fake.text(max_nb_chars=settings.COMMUNITY_RULES_MAX_LENGTH)
+
+
+def make_community_user_adjective():
+    return fake.word()
+
+
+def make_community_users_adjective():
+    return fake.word()
+
+
+def make_community_name():
+    return fake.user_name().lower()
+
+
+def make_community_title():
+    return fake.user_name()
+
+
+def make_category():
+    return mixer.blend(Category)
+
+
+def make_community_invites_enabled():
+    return fake.boolean()
+
+
+def make_community(creator, type='P'):
+    community = creator.create_community(name=make_community_name(), title=make_community_title(), type=type,
+                                         color=fake.hex_color(), description=make_community_description(),
+                                         rules=make_community_rules(), user_adjective=make_community_user_adjective(),
+                                         users_adjective=make_community_users_adjective(),
+                                         categories_names=[make_category().name],
+                                         invites_enabled=make_community_invites_enabled())
+    return community

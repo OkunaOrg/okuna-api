@@ -33,7 +33,10 @@ class Posts(APIView):
         user = request.user
 
         with transaction.atomic():
-            post = user.create_post(text=text, circles_ids=circles_ids, image=image, video=video)
+            if circles_ids:
+                post = user.create_encircled_post(text=text, circles_ids=circles_ids, image=image, video=video)
+            else:
+                post = user.create_public_post(text=text, image=image, video=video)
 
         post_serializer = AuthenticatedUserPostSerializer(post, context={"request": request})
 
