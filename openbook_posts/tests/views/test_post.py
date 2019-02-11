@@ -367,7 +367,7 @@ class PostCommentItemAPITests(APITestCase):
         community_post_commentator = make_user()
         community_post_commentator.join_community_with_name(community_name=community.name)
 
-        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post = community_post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
         post_comment = community_post_commentator.comment_post_with_id(text=make_fake_post_comment_text(),
                                                                        post_id=post.pk)
 
@@ -398,7 +398,7 @@ class PostCommentItemAPITests(APITestCase):
         community_post_commentator = make_user()
         community_post_commentator.join_community_with_name(community_name=community.name)
 
-        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post = community_post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
         post_comment = community_post_commentator.comment_post_with_id(text=make_fake_post_comment_text(),
                                                                        post_id=post.pk)
 
@@ -409,6 +409,37 @@ class PostCommentItemAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(PostComment.objects.filter(id=post_comment.pk).exists())
+
+    def test_logs_community_post_comment_deleted_by_non_creator(self):
+        """
+        should create a log when a community post comment was deleted by an admin/moderator
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+        community_creator.add_administrator_with_username_to_community_with_name(username=user.username,
+                                                                                 community_name=community.name)
+
+        community_post_creator = make_user()
+        community_post_creator.join_community_with_name(community_name=community.name)
+
+        community_post_commentator = make_user()
+        community_post_commentator.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post_comment = community_post_commentator.comment_post_with_id(text=make_fake_post_comment_text(),
+                                                                       post_id=post.pk)
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        headers = make_authentication_headers_for_user(user)
+        self.client.delete(url, **headers)
+
+        self.assertTrue(
+            community.logs.filter(action_type='RPC', target_user=community_post_commentator, source_user=user).exists())
 
     def test_can_delete_own_comment_in_foreign_public_post(self):
         """

@@ -501,9 +501,8 @@ class User(AbstractUser):
 
     def delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
         self._check_can_delete_comment_with_id_for_post_with_id(post_comment_id, post_id)
-        Post = get_post_model()
-        post = Post.objects.filter(pk=post_id).get()
-        post.remove_comment_with_id(post_comment_id)
+        PostComment = get_post_comment_model()
+        PostComment.objects.filter(pk=post_comment_id).delete()
 
     def create_circle(self, name, color):
         self._check_circle_name_not_taken(name)
@@ -1359,9 +1358,9 @@ class User(AbstractUser):
                             _('Only moderators/administrators can remove community posts.'),
                         )
                     else:
-                        # TODO Not the best place to log this but doing the check for community again on delete is wasteful
+                        post_comment = PostComment.objects.select_related('commenter').get(pk=post_comment_id)
                         post.community.create_remove_post_comment_log(source_user=self,
-                                                                      target_user=post.creator)
+                                                                      target_user=post_comment.commenter)
                 else:
                     raise ValidationError(
                         _('You cannot remove a comment that does not belong to you')

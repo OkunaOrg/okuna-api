@@ -138,9 +138,6 @@ class Post(models.Model):
     def comment(self, text, commenter):
         return PostComment.create_comment(text=text, commenter=commenter, post=self)
 
-    def remove_comment_with_id(self, post_comment_id):
-        self.comments.filter(id=post_comment_id).delete()
-
     def react(self, reactor, emoji_id):
         return PostReaction.create_reaction(reactor=reactor, emoji_id=emoji_id, post=self)
 
