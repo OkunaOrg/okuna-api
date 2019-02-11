@@ -18,7 +18,7 @@ import json
 
 from openbook_circles.models import Circle
 from openbook_common.tests.helpers import make_user, make_users, make_fake_post_text, \
-    make_authentication_headers_for_user, make_circle
+    make_authentication_headers_for_user, make_circle, make_community
 from openbook_lists.models import List
 
 logger = logging.getLogger(__name__)
@@ -341,6 +341,10 @@ class PostsAPITests(APITestCase):
         """
         should be able to retrieve all posts
         """
+
+        # BEWARE The max count for the API is 20. If we are checking for more than 20
+        # posts, it will fail
+
         user = mixer.blend(User)
         auth_token = user.auth_token.key
 
@@ -375,9 +379,22 @@ class PostsAPITests(APITestCase):
             post = user_to_connect.create_public_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
             users_to_connect_posts_ids.append(post.pk)
 
+        amount_of_community_posts = 5
+        community_posts_ids = []
+
+        for i in range(0, amount_of_community_posts):
+            community_creator = make_user()
+            community = make_community(creator=community_creator, type='P')
+            user.join_community_with_name(community_name=community.name)
+            community_member = make_user()
+            community_member.join_community_with_name(community_name=community.name)
+            community_post = community_member.create_community_post(text=make_fake_post_text(),
+                                                                    community_name=community.name)
+            community_posts_ids.append(community_post.pk)
+
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
-        all_posts_ids = users_to_connect_posts_ids + users_to_follow_posts_ids + user_posts_ids
+        all_posts_ids = users_to_connect_posts_ids + users_to_follow_posts_ids + user_posts_ids + community_posts_ids
 
         url = self._get_url()
 
