@@ -157,6 +157,27 @@ class CommunityModeratorsAPITest(APITestCase):
         self.assertTrue(
             user_to_make_moderator.is_moderator_of_community_with_name(community_name=community.name))
 
+    def test_logs_community_moderator_added(self):
+        """
+        should create a log when community moderator was added
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community = make_community(creator=user, type='P')
+
+        moderator_to_add = make_user()
+        moderator_to_add.join_community_with_name(community_name=community.name)
+
+        url = self._get_url(community_name=community.name)
+        self.client.put(url, {
+            'username': moderator_to_add.username
+        }, **headers)
+
+        self.assertTrue(community.administrators_user_actions_logs.filter(action_type='AM',
+                                                                          administrator=user,
+                                                                          target_user=moderator_to_add).exists())
+
     def test_can_add_community_moderator_if_admin(self):
         """
         should be able to add a community moderator if user is administrator of community
@@ -287,6 +308,27 @@ class CommunityModeratorAPITest(APITestCase):
 
         self.assertFalse(
             moderator_to_remove.is_moderator_of_community_with_name(community_name=community.name))
+
+    def test_logs_community_moderator_removed(self):
+        """
+        should create a log when community moderator was removed
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community = make_community(creator=user, type='P')
+
+        moderator_to_remove = make_user()
+        moderator_to_remove.join_community_with_name(community_name=community.name)
+        user.add_moderator_with_username_to_community_with_name(username=moderator_to_remove.username,
+                                                                community_name=community.name)
+
+        url = self._get_url(community_name=community.name, username=moderator_to_remove.username)
+        self.client.delete(url, **headers)
+
+        self.assertTrue(community.administrators_user_actions_logs.filter(action_type='RM',
+                                                                          administrator=user,
+                                                                          target_user=moderator_to_remove).exists())
 
     def test_cant_remove_community_moderator_if_also_admin(self):
         """
