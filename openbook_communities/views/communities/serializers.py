@@ -88,6 +88,7 @@ class GetCommunitiesCommunityCategorySerializer(serializers.ModelSerializer):
             'id',
             'name',
             'title',
+            'color'
         )
 
 
@@ -106,5 +107,6 @@ class CommunitiesCommunitySerializer(serializers.ModelSerializer):
             'color',
             'user_adjective',
             'users_adjective',
-            'categories'
+            'categories',
+            'type'
         )

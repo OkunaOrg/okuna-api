@@ -11,4 +11,5 @@ class GetCategoriesCategorySerializer(serializers.ModelSerializer):
             'title',
             'description',
             'avatar',
+            'color'
         )
