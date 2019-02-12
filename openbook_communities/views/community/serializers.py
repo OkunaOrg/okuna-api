@@ -5,6 +5,7 @@ from openbook_categories.models import Category
 from openbook_categories.validators import category_name_exists
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community
+from openbook_communities.serializers_fields import IsMemberField, IsInvitedField, IsModField, IsAdminField
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 
 
@@ -85,6 +86,10 @@ class UpdateCommunityCategorySerializer(serializers.ModelSerializer):
 
 class GetCommunityCommunitySerializer(serializers.ModelSerializer):
     categories = UpdateCommunityCategorySerializer(many=True)
+    is_member = IsMemberField()
+    is_invited = IsInvitedField()
+    is_mod = IsModField()
+    is_admin = IsAdminField()
 
     class Meta:
         model = Community
@@ -101,4 +106,8 @@ class GetCommunityCommunitySerializer(serializers.ModelSerializer):
             'users_adjective',
             'categories',
             'type',
+            'is_member',
+            'is_invited',
+            'is_admin',
+            'is_mod'
         )
