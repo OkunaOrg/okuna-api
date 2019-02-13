@@ -32,6 +32,7 @@ class IsInvitedField(Field):
 
         return request_user.is_invited_to_community_with_name(community.name)
 
+
 class IsAdminField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'
@@ -62,3 +63,19 @@ class IsModField(Field):
             return False
 
         return request_user.is_moderator_of_community_with_name(community.name)
+
+
+class IsCreatorField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(IsCreatorField, self).__init__(**kwargs)
+
+    def to_representation(self, community):
+        request = self.context.get('request')
+        request_user = request.user
+
+        if request_user.is_anonymous:
+            return False
+
+        return request_user.is_creator_of_community_with_name(community.name)
