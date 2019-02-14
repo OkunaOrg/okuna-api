@@ -34,6 +34,9 @@ pyyaml = "*"
 python-magic = "*"
 safety = "*"
 pyjwt = "*"
+django-imagekit = "*"
+
+
 [pipenv]
 
 allow_prereleases = true
