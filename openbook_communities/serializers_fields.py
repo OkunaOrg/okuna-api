@@ -79,3 +79,23 @@ class IsCreatorField(Field):
             return False
 
         return request_user.is_creator_of_community_with_name(community.name)
+
+
+class RulesField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(RulesField, self).__init__(**kwargs)
+
+    def to_representation(self, community):
+        if not community.is_private():
+            return community.rules
+
+        request = self.context.get('request')
+        request_user = request.user
+
+        if request_user.is_anonymous or not request_user.is_member_of_community_with_name(
+                community_name=community.name):
+            return None
+
+        return community.rules

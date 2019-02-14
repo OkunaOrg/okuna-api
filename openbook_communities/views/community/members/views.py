@@ -10,7 +10,7 @@ from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_communities.views.community.members.serializers import JoinCommunitySerializer, \
     GetCommunityMembersSerializer, GetCommunityMembersMemberSerializer, LeaveCommunitySerializer, \
-    InviteCommunityMemberSerializer
+    InviteCommunityMemberSerializer, MembersCommunitySerializer
 
 
 class CommunityMembers(APIView):
@@ -51,9 +51,10 @@ class JoinCommunity(APIView):
         user = request.user
 
         with transaction.atomic():
-            user.join_community_with_name(community_name=community_name)
+            community = user.join_community_with_name(community_name=community_name)
 
-        return ApiMessageResponse(_('Joined community!'), status=status.HTTP_201_CREATED)
+        return Response(MembersCommunitySerializer(community, context={'request': request}).data,
+                        status=status.HTTP_201_CREATED)
 
 
 class LeaveCommunity(APIView):
@@ -69,10 +70,11 @@ class LeaveCommunity(APIView):
         user = request.user
 
         with transaction.atomic():
-            user.leave_community_with_name(
+            community = user.leave_community_with_name(
                 community_name=community_name)
 
-        return Response(_('Left community!'), status=status.HTTP_200_OK)
+        return Response(MembersCommunitySerializer(community, context={'request': request}).data,
+                        status=status.HTTP_200_OK, )
 
 
 class InviteCommunityMember(APIView):

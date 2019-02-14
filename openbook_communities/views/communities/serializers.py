@@ -116,4 +116,5 @@ class CommunitiesCommunitySerializer(serializers.ModelSerializer):
             'is_member',
             'is_invited',
             'is_creator',
+            'invites_enabled',
         )

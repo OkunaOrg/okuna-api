@@ -9,6 +9,7 @@ from openbook_circles.validators import circle_id_exists
 from openbook_common.models import Emoji
 from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, ReactionsEmojiCountField, \
     CirclesField
+from openbook_communities.models import Community
 from openbook_lists.validators import list_id_exists
 from openbook_posts.models import PostImage, Post, PostReaction, PostVideo
 
@@ -136,6 +137,21 @@ class PostCircleSerializer(serializers.ModelSerializer):
         )
 
 
+class PostCommunitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Community
+        fields = (
+            'id',
+            'name',
+            'title',
+            'color',
+            'avatar',
+            'cover',
+            'user_adjective',
+            'users_adjective',
+        )
+
+
 class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     image = PostImageSerializer(many=False)
     video = PostVideoSerializer(many=False)
@@ -144,6 +160,7 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     reaction = ReactionField(reaction_serializer=PostReactionSerializer)
     comments_count = CommentsCountField()
     circles = CirclesField(circle_serializer=PostCircleSerializer)
+    community = PostCommunitySerializer()
 
     class Meta:
         model = Post
@@ -159,7 +176,8 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'reaction',
             'public_comments',
             'public_reactions',
-            'circles'
+            'circles',
+            'community'
         )
 
 

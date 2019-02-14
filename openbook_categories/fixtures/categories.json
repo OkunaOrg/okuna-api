@@ -82,5 +82,17 @@
       "description_es": "Para todo lo relacionado con arte.",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 6,
+    "fields": {
+      "name": "lifestyle",
+      "title": "Lifestyle",
+      "color": "#000000",
+      "description_en": "For everything related to lifestyle.",
+      "description_es": "Para todo lo relacionado con estilo de vida.",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
   }
 ]
