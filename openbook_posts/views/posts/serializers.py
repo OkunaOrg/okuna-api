@@ -75,11 +75,30 @@ class PostCreatorSerializer(serializers.ModelSerializer):
 
 
 class PostImageSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+    width = serializers.SerializerMethodField()
+    height = serializers.SerializerMethodField()
+
     class Meta:
         model = PostImage
         fields = (
-            'image',
+            'url',
+            'width',
+            'height'
         )
+
+    def get_url(self, post_image):
+        request = self.context.get('request')
+        image_url = post_image.image.url
+        return request.build_absolute_uri(image_url)
+
+    def get_width(self, post_image):
+        width = post_image.image.width
+        return width
+
+    def get_height(self, post_image):
+        height = post_image.image.height
+        return height
 
 
 class PostVideoSerializer(serializers.ModelSerializer):
