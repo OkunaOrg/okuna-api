@@ -131,11 +131,11 @@ def make_community_rules():
 
 
 def make_community_user_adjective():
-    return fake.word()
+    return fake.word().title()
 
 
 def make_community_users_adjective():
-    return fake.word()
+    return fake.word().title()
 
 
 def make_community_name():

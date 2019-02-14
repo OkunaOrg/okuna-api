@@ -12,7 +12,8 @@ import logging
 import json
 
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, \
-    make_community_avatar, make_community_cover, make_category
+    make_community_avatar, make_community_cover, make_category, make_community_users_adjective, \
+    make_community_user_adjective
 from openbook_communities.models import Community
 
 logger = logging.getLogger(__name__)
@@ -238,8 +239,6 @@ class CommunitiesAPITests(APITestCase):
         community_title = fake.name_male()
         community_description = fake.text(max_nb_chars=settings.COMMUNITY_DESCRIPTION_MAX_LENGTH)
         community_rules = fake.text(max_nb_chars=settings.COMMUNITY_RULES_MAX_LENGTH)
-        community_user_adjective = fake.word()
-        community_users_adjective = fake.word()
         community_color = fake.hex_color()
         community_categories = []
         community_type = 'T'
@@ -254,8 +253,6 @@ class CommunitiesAPITests(APITestCase):
             'title': community_title,
             'description': community_description,
             'rules': community_rules,
-            'user_adjective': community_user_adjective,
-            'users_adjective': community_users_adjective,
             'color': community_color,
             'categories': community_categories
         }
@@ -268,8 +265,8 @@ class CommunitiesAPITests(APITestCase):
 
         self.assertTrue(
             Community.objects.filter(name=community_name, title=community_title, description=community_description,
-                                     rules=community_rules, user_adjective=community_user_adjective,
-                                     users_adjective=community_users_adjective, color=community_color,
+                                     rules=community_rules,
+                                     color=community_color,
                                      type=community_type).count() == 1)
 
     def test_create_private_community_should_disable_member_invites(self):
@@ -283,11 +280,9 @@ class CommunitiesAPITests(APITestCase):
         community_title = fake.name_male()
         community_description = fake.text(max_nb_chars=settings.COMMUNITY_DESCRIPTION_MAX_LENGTH)
         community_rules = fake.text(max_nb_chars=settings.COMMUNITY_RULES_MAX_LENGTH)
-        community_user_adjective = fake.word()
-        community_users_adjective = fake.word()
         community_color = fake.hex_color()
         community_categories = []
-        community_type = 'T'
+        community_type = Community.COMMUNITY_TYPE_PRIVATE
 
         for i in range(0, settings.COMMUNITY_CATEGORIES_MAX_AMOUNT):
             category = make_category()
@@ -299,8 +294,6 @@ class CommunitiesAPITests(APITestCase):
             'title': community_title,
             'description': community_description,
             'rules': community_rules,
-            'user_adjective': community_user_adjective,
-            'users_adjective': community_users_adjective,
             'color': community_color,
             'categories': community_categories
         }
@@ -313,8 +306,7 @@ class CommunitiesAPITests(APITestCase):
 
         self.assertTrue(
             Community.objects.filter(name=community_name, title=community_title, description=community_description,
-                                     rules=community_rules, user_adjective=community_user_adjective,
-                                     users_adjective=community_users_adjective, color=community_color,
+                                     rules=community_rules, color=community_color,
                                      type=community_type, invites_enabled=False).count() == 1)
 
     def test_create_public_community_should_enable_member_invites(self):
@@ -328,11 +320,9 @@ class CommunitiesAPITests(APITestCase):
         community_title = fake.name_male()
         community_description = fake.text(max_nb_chars=settings.COMMUNITY_DESCRIPTION_MAX_LENGTH)
         community_rules = fake.text(max_nb_chars=settings.COMMUNITY_RULES_MAX_LENGTH)
-        community_user_adjective = fake.word()
-        community_users_adjective = fake.word()
         community_color = fake.hex_color()
         community_categories = []
-        community_type = 'P'
+        community_type = Community.COMMUNITY_TYPE_PUBLIC
 
         for i in range(0, settings.COMMUNITY_CATEGORIES_MAX_AMOUNT):
             category = make_category()
@@ -344,8 +334,6 @@ class CommunitiesAPITests(APITestCase):
             'title': community_title,
             'description': community_description,
             'rules': community_rules,
-            'user_adjective': community_user_adjective,
-            'users_adjective': community_users_adjective,
             'color': community_color,
             'categories': community_categories
         }
@@ -356,11 +344,9 @@ class CommunitiesAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        self.assertTrue(
-            Community.objects.filter(name=community_name, title=community_title, description=community_description,
-                                     rules=community_rules, user_adjective=community_user_adjective,
-                                     users_adjective=community_users_adjective, color=community_color,
-                                     type=community_type, invites_enabled=True).count() == 1)
+        community = Community.objects.get(name=community_name)
+
+        self.assertTrue(community.invites_enabled)
 
     def test_create_public_community(self):
         """
@@ -373,8 +359,8 @@ class CommunitiesAPITests(APITestCase):
         community_title = fake.name_male()
         community_description = fake.text(max_nb_chars=settings.COMMUNITY_DESCRIPTION_MAX_LENGTH)
         community_rules = fake.text(max_nb_chars=settings.COMMUNITY_RULES_MAX_LENGTH)
-        community_user_adjective = fake.word()
-        community_users_adjective = fake.word()
+        community_user_adjective = make_community_user_adjective()
+        community_users_adjective = make_community_users_adjective()
         community_color = fake.hex_color()
         community_categories = []
         community_type = 'P'
