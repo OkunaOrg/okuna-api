@@ -15,7 +15,7 @@ class Categories(APIView):
 
     def get(self, request):
         Category = get_category_model()
-        categories = Category.objects.all().order_by('-created')
+        categories = Category.objects.all().order_by('order')
         response_serializer = GetCategoriesCategorySerializer(categories, many=True,
                                                               context={"request": request})
 

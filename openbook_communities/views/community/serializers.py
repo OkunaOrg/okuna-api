@@ -4,6 +4,7 @@ from rest_framework import serializers
 from openbook_auth.models import User, UserProfile
 from openbook_categories.models import Category
 from openbook_categories.validators import category_name_exists
+from openbook_common.serializers_fields.user import IsFollowingField
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community
 from openbook_communities.serializers_fields import IsMemberField, IsInvitedField, IsModField, IsAdminField, \
@@ -91,18 +92,21 @@ class GetCommunityModeratorProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'avatar',
+            'name'
         )
 
 
 class GetCommunityModeratorUserSerializer(serializers.ModelSerializer):
     profile = GetCommunityModeratorProfileSerializer(many=False)
+    is_following = IsFollowingField()
 
     class Meta:
         model = User
         fields = (
             'id',
             'username',
-            'profile'
+            'profile',
+            'is_following'
         )
 
 

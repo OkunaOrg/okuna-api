@@ -22,10 +22,12 @@ class Category(models.Model):
     avatar = models.ImageField(_('avatar'), blank=False, null=True)
     color = models.CharField(_('color'), max_length=settings.COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
                              validators=[hex_color_validator])
+    order = models.IntegerField(unique=False, default=100)
 
     @classmethod
-    def create_category(cls, creator, name, color, title=None, description=None, avatar=None):
-        category = cls.objects.create(creator=creator, name=name, color=color, title=title, description=description,
+    def create_category(cls, creator, name, color, order=None, title=None, description=None, avatar=None):
+        category = cls.objects.create(creator=creator, name=name, color=color, title=title, order=order,
+                                      description=description,
                                       avatar=avatar)
 
         return category
