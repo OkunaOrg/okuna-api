@@ -31,7 +31,21 @@ class CreateCommunityPostSerializer(serializers.Serializer):
                                            validators=[community_name_characters_validator, community_name_exists])
 
 
+class CommunityPostImageSerializer(serializers.ModelSerializer):
+    url = image = serializers.ImageField(read_only=True)
+
+    class Meta:
+        model = PostImage
+        fields = (
+            'image',
+            'url',
+            'width',
+            'height'
+        )
+
+
 class CommunityPostCreatorProfileSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = UserProfile
         fields = (
@@ -50,15 +64,6 @@ class CommunityPostCreatorSerializer(serializers.ModelSerializer):
             'profile',
             'username'
         )
-
-
-class CommunityPostImageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PostImage
-        fields = (
-            'image',
-        )
-
 
 class CommunityPostVideoSerializer(serializers.ModelSerializer):
     class Meta:
