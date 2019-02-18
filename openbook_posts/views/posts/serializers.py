@@ -75,13 +75,12 @@ class PostCreatorSerializer(serializers.ModelSerializer):
 
 
 class PostImageSerializer(serializers.ModelSerializer):
-    url = image = serializers.ImageField(read_only=True)
+    image = serializers.ImageField(read_only=True)
 
     class Meta:
         model = PostImage
         fields = (
             'image',
-            'url',
             'width',
             'height'
         )
