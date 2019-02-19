@@ -76,10 +76,14 @@ class PostCreatorSerializer(serializers.ModelSerializer):
 
 
 class PostImageSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(read_only=True)
+
     class Meta:
         model = PostImage
         fields = (
             'image',
+            'width',
+            'height'
         )
 
 
