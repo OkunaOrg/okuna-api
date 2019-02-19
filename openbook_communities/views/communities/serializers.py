@@ -21,9 +21,9 @@ class CreateCommunitySerializer(serializers.Serializer):
     rules = serializers.CharField(max_length=settings.COMMUNITY_RULES_MAX_LENGTH,
                                   allow_blank=True, required=False)
     user_adjective = serializers.CharField(max_length=settings.COMMUNITY_USER_ADJECTIVE_MAX_LENGTH,
-                                           allow_blank=True, required=False)
+                                           allow_blank=False, required=False)
     users_adjective = serializers.CharField(max_length=settings.COMMUNITY_USERS_ADJECTIVE_MAX_LENGTH,
-                                            allow_blank=True, required=False)
+                                            allow_blank=False, required=False)
     avatar = serializers.ImageField(required=False)
     cover = serializers.ImageField(required=False)
     invites_enabled = serializers.BooleanField(required=False, allow_null=False)
