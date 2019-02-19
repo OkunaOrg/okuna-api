@@ -15,6 +15,7 @@ from openbook_common.utils.model_loaders import get_community_invite_model, \
 from openbook_common.validators import hex_color_validator
 from openbook_communities.validators import community_name_characters_validator
 from openbook_posts.models import Post
+from imagekit.models import ProcessedImageField
 
 
 class Community(models.Model):
@@ -27,8 +28,8 @@ class Community(models.Model):
                                    null=True, )
     rules = models.CharField(_('rules'), max_length=settings.COMMUNITY_RULES_MAX_LENGTH, blank=False,
                              null=True)
-    avatar = models.ImageField(_('avatar'), blank=False, null=True)
-    cover = models.ImageField(_('cover'), blank=False, null=True)
+    avatar = ProcessedImageField(verbose_name=_('avatar'), blank=False, null=True, format='JPEG', options={'quality': 60})
+    cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 75})
     created = models.DateTimeField(editable=False)
     starrers = models.ManyToManyField(User, related_name='favorite_communities')
     members = models.ManyToManyField(User, related_name='joined_communities')

@@ -105,6 +105,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'django_nose',
     'storages',
+    'imagekit',
     'django_media_fixtures',
     'openbook_common',
     'openbook_auth',

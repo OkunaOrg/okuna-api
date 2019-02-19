@@ -16,6 +16,7 @@ from openbook_auth.models import User
 from openbook_common.models import Emoji
 from openbook_common.utils.model_loaders import get_post_reaction_model, get_emoji_model, \
     get_circle_model, get_community_model
+from imagekit.models import ProcessedImageField
 
 
 class Post(models.Model):
@@ -164,7 +165,16 @@ post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else defa
 
 class PostImage(models.Model):
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='image')
-    image = models.ImageField(_('image'), blank=False, null=False, storage=post_image_storage)
+    image = ProcessedImageField(verbose_name=_('image'), storage=post_image_storage,
+                                blank=False, null=True, format='JPEG', options={'quality': 75})
+
+    @property
+    def width(self):
+        return self.image.width
+
+    @property
+    def height(self):
+        return self.image.height
 
 
 class PostVideo(models.Model):
