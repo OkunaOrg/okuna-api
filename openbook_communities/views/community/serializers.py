@@ -1,10 +1,14 @@
 from django.conf import settings
 from rest_framework import serializers
 
+from openbook_auth.models import User, UserProfile
 from openbook_categories.models import Category
 from openbook_categories.validators import category_name_exists
+from openbook_common.serializers_fields.user import IsFollowingField
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community
+from openbook_communities.serializers_fields import IsMemberField, IsInvitedField, IsModeratorField, IsAdministratorField, \
+    IsCreatorField, RulesField
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 
 
@@ -72,22 +76,54 @@ class FavoriteCommunitySerializer(serializers.Serializer):
                                            validators=[community_name_characters_validator, community_name_exists])
 
 
-class UpdateCommunityCategorySerializer(serializers.ModelSerializer):
+class GetCommunityCommunityCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = (
             'id',
             'name',
             'title',
+            'color'
+        )
+
+
+class GetCommunityModeratorProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = (
+            'avatar',
+            'name'
+        )
+
+
+class GetCommunityModeratorUserSerializer(serializers.ModelSerializer):
+    profile = GetCommunityModeratorProfileSerializer(many=False)
+    is_following = IsFollowingField()
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'username',
+            'profile',
+            'is_following'
         )
 
 
 class GetCommunityCommunitySerializer(serializers.ModelSerializer):
-    categories = UpdateCommunityCategorySerializer(many=True)
+    categories = GetCommunityCommunityCategorySerializer(many=True)
+    is_member = IsMemberField()
+    is_invited = IsInvitedField()
+    is_mod = IsModeratorField()
+    is_admin = IsAdministratorField()
+    is_creator = IsCreatorField()
+    moderators = GetCommunityModeratorUserSerializer(many=True)
+    rules = RulesField()
 
     class Meta:
         model = Community
         fields = (
+            'id',
             'title',
             'name',
             'avatar',
@@ -98,5 +134,13 @@ class GetCommunityCommunitySerializer(serializers.ModelSerializer):
             'rules',
             'user_adjective',
             'users_adjective',
-            'categories'
+            'categories',
+            'moderators',
+            'type',
+            'invites_enabled',
+            'is_member',
+            'is_invited',
+            'is_admin',
+            'is_mod',
+            'is_creator',
         )

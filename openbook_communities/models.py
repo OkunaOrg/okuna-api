@@ -13,7 +13,8 @@ from django.utils.translation import ugettext_lazy as _
 from openbook_common.utils.model_loaders import get_community_invite_model, \
     get_community_log_model, get_category_model
 from openbook_common.validators import hex_color_validator
-from openbook_communities.validators import community_name_characters_validator
+from openbook_communities.validators import community_name_characters_validator, \
+    community_adjective_characters_validator
 from openbook_posts.models import Post
 from imagekit.models import ProcessedImageField
 
@@ -36,17 +37,19 @@ class Community(models.Model):
     moderators = models.ManyToManyField(User, related_name='moderated_communities')
     administrators = models.ManyToManyField(User, related_name='administrated_communities')
     banned_users = models.ManyToManyField(User, related_name='banned_of_communities')
+    COMMUNITY_TYPE_PRIVATE = 'T'
+    COMMUNITY_TYPE_PUBLIC = 'P'
     COMMUNITY_TYPES = (
-        ('P', 'Public'),
-        ('T', 'Private'),
+        (COMMUNITY_TYPE_PUBLIC, 'Public'),
+        (COMMUNITY_TYPE_PRIVATE, 'Private'),
     )
     type = models.CharField(editable=False, blank=False, null=False, choices=COMMUNITY_TYPES, default='P', max_length=2)
     color = models.CharField(_('color'), max_length=COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
                              validators=[hex_color_validator])
     user_adjective = models.CharField(_('user adjective'), max_length=settings.COMMUNITY_USER_ADJECTIVE_MAX_LENGTH,
-                                      blank=False, null=True, )
+                                      blank=False, null=True, validators=(community_adjective_characters_validator,))
     users_adjective = models.CharField(_('users adjective'), max_length=settings.COMMUNITY_USERS_ADJECTIVE_MAX_LENGTH,
-                                       blank=False, null=True, )
+                                       blank=False, null=True, validators=(community_adjective_characters_validator,))
     invites_enabled = models.BooleanField(_('invites enabled'), default=True)
 
     class Meta:
@@ -102,9 +105,8 @@ class Community(models.Model):
     def create_community(cls, name, title, creator, color, type=None, user_adjective=None, users_adjective=None,
                          avatar=None, cover=None, description=None, rules=None, categories_names=None,
                          invites_enabled=None):
-        name = name.lower()
         # If its a private community and no invites_enabled
-        if type is 'T' and invites_enabled is None:
+        if type is Community.COMMUNITY_TYPE_PRIVATE and invites_enabled is None:
             invites_enabled = False
         else:
             # The default for this field is not working when passed None?
@@ -172,6 +174,9 @@ class Community(models.Model):
     @property
     def members_count(self):
         return self.members.all().count()
+
+    def is_private(self):
+        return self.type is self.COMMUNITY_TYPE_PRIVATE
 
     def update(self, title=None, name=None, description=None, color=None, type=None,
                user_adjective=None,
@@ -273,6 +278,15 @@ class Community(models.Model):
         ''' On save, update timestamps '''
         if not self.id:
             self.created = timezone.now()
+
+        self.name = self.name.lower()
+
+        if self.user_adjective:
+            self.user_adjective = self.user_adjective.title()
+
+        if self.users_adjective:
+            self.users_adjective = self.users_adjective.title()
+
         return super(Community, self).save(*args, **kwargs)
 
     def __str__(self):

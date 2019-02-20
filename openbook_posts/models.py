@@ -1,7 +1,10 @@
 # Create your models here.
+from datetime import timedelta
+
 from django.core.files.storage import default_storage
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Count
@@ -111,8 +114,17 @@ class Post(models.Model):
     @classmethod
     def get_trending_posts(cls):
         Circle = get_circle_model()
+        Community = get_community_model()
         world_circle_id = Circle.get_world_circle_id()
-        return cls.objects.annotate(Count('reactions')).filter(circles__id=world_circle_id).order_by(
+
+        trending_posts_query = Q(created__gte=timezone.now() - timedelta(
+            days=1))
+
+        trending_posts_query.add(Q(circles__id=world_circle_id), Q.OR)
+
+        trending_posts_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC), Q.OR)
+
+        return cls.objects.annotate(Count('reactions')).filter(trending_posts_query).order_by(
             '-reactions__count', '-created')
 
     def count_comments(self, commenter_id=None):

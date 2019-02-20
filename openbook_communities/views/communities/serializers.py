@@ -6,6 +6,7 @@ from openbook_categories.models import Category
 from openbook_categories.validators import category_name_exists
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community
+from openbook_communities.serializers_fields import IsMemberField, IsInvitedField, IsCreatorField
 from openbook_communities.validators import community_name_characters_validator, community_name_not_taken_validator
 
 
@@ -20,9 +21,9 @@ class CreateCommunitySerializer(serializers.Serializer):
     rules = serializers.CharField(max_length=settings.COMMUNITY_RULES_MAX_LENGTH,
                                   allow_blank=True, required=False)
     user_adjective = serializers.CharField(max_length=settings.COMMUNITY_USER_ADJECTIVE_MAX_LENGTH,
-                                           allow_blank=True, required=False)
+                                           allow_blank=False, required=False)
     users_adjective = serializers.CharField(max_length=settings.COMMUNITY_USERS_ADJECTIVE_MAX_LENGTH,
-                                            allow_blank=True, required=False)
+                                            allow_blank=False, required=False)
     avatar = serializers.ImageField(required=False)
     cover = serializers.ImageField(required=False)
     invites_enabled = serializers.BooleanField(required=False, allow_null=False)
@@ -88,11 +89,15 @@ class GetCommunitiesCommunityCategorySerializer(serializers.ModelSerializer):
             'id',
             'name',
             'title',
+            'color'
         )
 
 
 class CommunitiesCommunitySerializer(serializers.ModelSerializer):
     categories = GetCommunitiesCommunityCategorySerializer(many=True)
+    is_member = IsMemberField()
+    is_invited = IsInvitedField()
+    is_creator = IsCreatorField()
 
     class Meta:
         model = Community
@@ -106,5 +111,10 @@ class CommunitiesCommunitySerializer(serializers.ModelSerializer):
             'color',
             'user_adjective',
             'users_adjective',
-            'categories'
+            'categories',
+            'type',
+            'is_member',
+            'is_invited',
+            'is_creator',
+            'invites_enabled',
         )

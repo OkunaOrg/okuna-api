@@ -6,6 +6,7 @@ from django.utils import timezone
 from openbook_auth.models import User
 from django.utils.translation import ugettext_lazy as _
 
+from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community
 
 
@@ -19,10 +20,14 @@ class Category(models.Model):
     created = models.DateTimeField(editable=False)
     communities = models.ManyToManyField(Community, related_name='categories')
     avatar = models.ImageField(_('avatar'), blank=False, null=True)
+    color = models.CharField(_('color'), max_length=settings.COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
+                             validators=[hex_color_validator])
+    order = models.IntegerField(unique=False, default=100)
 
     @classmethod
-    def create_category(cls, creator, name, emoji, title=None, description=None, avatar=None):
-        category = cls.objects.create(creator=creator, name=name, emoji=emoji, title=title, description=description,
+    def create_category(cls, creator, name, color, order=None, title=None, description=None, avatar=None):
+        category = cls.objects.create(creator=creator, name=name, color=color, title=title, order=order,
+                                      description=description,
                                       avatar=avatar)
 
         return category
