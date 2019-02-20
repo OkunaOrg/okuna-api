@@ -7,7 +7,8 @@ from openbook_categories.validators import category_name_exists
 from openbook_common.serializers_fields.user import IsFollowingField
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community
-from openbook_communities.serializers_fields import IsMemberField, IsInvitedField, IsModeratorField, IsAdministratorField, \
+from openbook_communities.serializers_fields import IsMemberField, IsInvitedField, IsModeratorField, \
+    IsAdministratorField, \
     IsCreatorField, RulesField
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 
@@ -143,4 +144,24 @@ class GetCommunityCommunitySerializer(serializers.ModelSerializer):
             'is_admin',
             'is_mod',
             'is_creator',
+        )
+
+
+class CommunityAvatarCommunitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Community
+        fields = (
+            'id',
+            'name',
+            'avatar',
+        )
+
+
+class CommunityCoverCommunitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Community
+        fields = (
+            'id',
+            'name',
+            'cover',
         )

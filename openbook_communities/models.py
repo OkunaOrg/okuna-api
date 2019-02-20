@@ -5,6 +5,7 @@ from django.db import models
 from django.utils import timezone
 from django.db.models import Q
 from django.db.models import Count
+from pilkit.processors import ResizeToFill
 
 from openbook.settings import COLOR_ATTR_MAX_LENGTH
 from openbook_auth.models import User
@@ -29,7 +30,8 @@ class Community(models.Model):
                                    null=True, )
     rules = models.CharField(_('rules'), max_length=settings.COMMUNITY_RULES_MAX_LENGTH, blank=False,
                              null=True)
-    avatar = ProcessedImageField(verbose_name=_('avatar'), blank=False, null=True, format='JPEG', options={'quality': 60})
+    avatar = ProcessedImageField(verbose_name=_('avatar'), blank=False, null=True, format='JPEG',
+                                 options={'quality': 60}, processors=[ResizeToFill(500, 500)])
     cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 75})
     created = models.DateTimeField(editable=False)
     starrers = models.ManyToManyField(User, related_name='favorite_communities')

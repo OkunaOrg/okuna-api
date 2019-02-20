@@ -8,6 +8,8 @@ from django.dispatch import receiver
 from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
+from imagekit.models import ProcessedImageField
+from pilkit.processors import ResizeToFill
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError
 from django.db.models import Q
@@ -15,6 +17,7 @@ from django.db.models import Q
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.exceptions import EmailVerificationTokenInvalid
 from openbook_common.models import Badge
+from openbook_common.utils.helpers import delete_image_kit_image_field
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, \
     get_emoji_group_model, get_user_invite_model, get_community_model, get_community_invite_model, get_tag_model
@@ -165,6 +168,8 @@ class User(AbstractUser):
             self.profile.save()
 
     def delete_profile_cover(self, save=True):
+        delete_image_kit_image_field(self.profile.cover)
+        self.profile.cover = None
         self.profile.cover.delete(save=save)
 
     def update_profile_avatar(self, avatar, save=True):
@@ -177,6 +182,8 @@ class User(AbstractUser):
             self.profile.save()
 
     def delete_profile_avatar(self, save=True):
+        delete_image_kit_image_field(self.profile.avatar)
+        self.profile.avatar = None
         self.profile.avatar.delete(save=save)
 
     def update_username(self, username):
@@ -667,7 +674,9 @@ class User(AbstractUser):
     def delete_community_with_name_avatar(self, community_name):
         self._check_can_update_community_with_name(community_name)
         community_to_delete_avatar_from = self.administrated_communities.get(name=community_name)
-        community_to_delete_avatar_from.avatar.delete()
+        delete_image_kit_image_field(community_to_delete_avatar_from.avatar)
+        community_to_delete_avatar_from.avatar = None
+        community_to_delete_avatar_from.save()
         return community_to_delete_avatar_from
 
     def update_community_with_name_cover(self, community_name, cover):
@@ -684,7 +693,9 @@ class User(AbstractUser):
     def delete_community_with_name_cover(self, community_name):
         self._check_can_update_community_with_name(community_name)
         community_to_delete_cover_from = self.administrated_communities.get(name=community_name)
-        community_to_delete_cover_from.cover.delete()
+        delete_image_kit_image_field(community_to_delete_cover_from.cover)
+        community_to_delete_cover_from.cover = None
+        community_to_delete_cover_from.save()
         return community_to_delete_cover_from
 
     def get_community_with_name_members(self, community_name, max_id):
@@ -1950,8 +1961,9 @@ class UserProfile(models.Model):
     location = models.CharField(_('location'), max_length=settings.PROFILE_LOCATION_MAX_LENGTH, blank=False, null=True)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     is_of_legal_age = models.BooleanField(default=False)
-    avatar = models.ImageField(_('avatar'), blank=False, null=True)
-    cover = models.ImageField(_('cover'), blank=False, null=True)
+    avatar = ProcessedImageField(verbose_name=_('avatar'), blank=False, null=True, format='JPEG',
+                                 options={'quality': 60}, processors=[ResizeToFill(500, 500)])
+    cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 75})
     bio = models.CharField(_('bio'), max_length=settings.PROFILE_BIO_MAX_LENGTH, blank=False, null=True)
     url = models.URLField(_('url'), blank=False, null=True)
     followers_count_visible = models.BooleanField(_('followers count visible'), blank=False, null=False, default=False)

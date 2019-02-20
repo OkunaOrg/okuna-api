@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from openbook_common.utils.helpers import normalise_request_data, normalize_list_value_in_request_data
 from openbook_communities.views.community.serializers import GetCommunityCommunitySerializer, DeleteCommunitySerializer, \
     UpdateCommunitySerializer, UpdateCommunityAvatarSerializer, UpdateCommunityCoverSerializer, GetCommunitySerializer, \
-    FavoriteCommunitySerializer
+    FavoriteCommunitySerializer, CommunityAvatarCommunitySerializer, CommunityCoverCommunitySerializer
 
 
 class CommunityItem(APIView):
@@ -86,17 +86,21 @@ class CommunityAvatar(APIView):
         avatar = data.get('avatar')
 
         with transaction.atomic():
-            user.update_community_with_name_avatar(community_name, avatar=avatar)
+            community = user.update_community_with_name_avatar(community_name, avatar=avatar)
 
-        return Response(status=status.HTTP_200_OK)
+        response_serializer = CommunityAvatarCommunitySerializer(community, context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request, community_name):
         user = request.user
 
         with transaction.atomic():
-            user.delete_community_with_name_avatar(community_name)
+            community = user.delete_community_with_name_avatar(community_name)
 
-        return Response(status=status.HTTP_200_OK)
+        response_serializer = CommunityAvatarCommunitySerializer(community, context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
 class CommunityCover(APIView):
@@ -115,17 +119,21 @@ class CommunityCover(APIView):
         cover = data.get('cover')
 
         with transaction.atomic():
-            user.update_community_with_name_cover(community_name, cover=cover)
+            community = user.update_community_with_name_cover(community_name, cover=cover)
 
-        return Response(status=status.HTTP_200_OK)
+        response_serializer = CommunityCoverCommunitySerializer(community, context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request, community_name):
         user = request.user
 
         with transaction.atomic():
-            user.delete_community_with_name_cover(community_name)
+            community = user.delete_community_with_name_cover(community_name)
 
-        return Response(status=status.HTTP_200_OK)
+        response_serializer = CommunityCoverCommunitySerializer(community, context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
 class FavoriteCommunity(APIView):
