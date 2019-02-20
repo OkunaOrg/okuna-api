@@ -985,6 +985,12 @@ class User(AbstractUser):
     def get_favorite_communities(self):
         return self.favorite_communities.all()
 
+    def get_administrated_communities(self):
+        return self.administrated_communities.all()
+
+    def get_moderated_communities(self):
+        return self.moderated_communities.all()
+
     def create_public_post(self, text=None, image=None, video=None, created=None):
         world_circle_id = self._get_world_circle_id()
         return self.create_encircled_post(text=text, image=image, video=video, circles_ids=[world_circle_id],

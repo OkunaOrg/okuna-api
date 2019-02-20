@@ -13,7 +13,7 @@ import json
 
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, \
     make_community_avatar, make_community_cover, make_category, make_community_users_adjective, \
-    make_community_user_adjective
+    make_community_user_adjective, make_community
 from openbook_communities.models import Community
 
 logger = logging.getLogger(__name__)
@@ -511,6 +511,74 @@ class JoinedCommunities(APITestCase):
 
     def _get_url(self):
         return reverse('joined-communities')
+
+
+class AdministratedCommunities(APITestCase):
+    def test_retrieve_administrated_communities(self):
+        """
+        should be able to retrieve all administrated communities return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_communities = 5
+        communities_ids = []
+
+        for i in range(0, amount_of_communities):
+            community = make_community(creator=user)
+            communities_ids.append(community.pk)
+
+        url = self._get_url()
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), len(communities_ids))
+
+        for response_community in response_communities:
+            response_community_id = response_community.get('id')
+            self.assertIn(response_community_id, communities_ids)
+
+    def _get_url(self):
+        return reverse('administrated-communities')
+
+
+class ModeratedCommunities(APITestCase):
+    def test_retrieve_moderated_communities(self):
+        """
+        should be able to retrieve all moderated communities return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_communities = 5
+        communities_ids = []
+
+        for i in range(0, amount_of_communities):
+            other_user = make_user()
+            community = make_community(creator=other_user)
+            user.join_community_with_name(community_name=community.name)
+            other_user.add_administrator_with_username_to_community_with_name(username=user.username,
+                                                                              community_name=community.name)
+            communities_ids.append(community.pk)
+
+        url = self._get_url()
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), len(communities_ids))
+
+        for response_community in response_communities:
+            response_community_id = response_community.get('id')
+            self.assertIn(response_community_id, communities_ids)
+
+    def _get_url(self):
+        return reverse('moderated-communities')
 
 
 class FavoriteCommunities(APITestCase):

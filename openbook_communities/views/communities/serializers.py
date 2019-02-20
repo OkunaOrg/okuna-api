@@ -53,6 +53,26 @@ class GetJoinedCommunitiesSerializer(serializers.Serializer):
     )
 
 
+class GetModeratedCommunitiesSerializer(serializers.Serializer):
+    count = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
+    offset = serializers.IntegerField(
+        required=False,
+    )
+
+
+class GetAdministratedCommunitiesSerializer(serializers.Serializer):
+    count = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
+    offset = serializers.IntegerField(
+        required=False,
+    )
+
+
 class GetFavoriteCommunitiesSerializer(serializers.Serializer):
     count = serializers.IntegerField(
         required=False,
