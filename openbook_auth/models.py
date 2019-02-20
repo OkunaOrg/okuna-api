@@ -705,6 +705,13 @@ class User(AbstractUser):
         Community = get_community_model()
         return Community.get_community_with_name_members(community_name=community_name, members_max_id=max_id)
 
+    def search_community_with_name_members(self, community_name, query):
+        self._check_can_get_community_with_name_members(
+            community_name=community_name)
+
+        Community = get_community_model()
+        return Community.search_community_with_name_members(community_name=community_name, query=query)
+
     def join_community_with_name(self, community_name):
         self._check_can_join_community_with_name(
             community_name=community_name)
@@ -759,6 +766,13 @@ class User(AbstractUser):
         return Community.get_community_with_name_administrators(community_name=community_name,
                                                                 administrators_max_id=max_id)
 
+    def search_community_with_name_administrators(self, community_name, query):
+        self._check_can_get_community_with_name_administrators(
+            community_name=community_name)
+
+        Community = get_community_model()
+        return Community.search_community_with_name_administrators(community_name=community_name, query=query)
+
     def add_administrator_with_username_to_community_with_name(self, username, community_name):
         self._check_can_add_administrator_with_username_to_community_with_name(
             username=username,
@@ -802,6 +816,13 @@ class User(AbstractUser):
         return Community.get_community_with_name_moderators(community_name=community_name,
                                                             moderators_max_id=max_id)
 
+    def search_community_with_name_moderators(self, community_name, query):
+        self._check_can_get_community_with_name_moderators(
+            community_name=community_name)
+
+        Community = get_community_model()
+        return Community.search_community_with_name_moderators(community_name=community_name, query=query)
+
     def add_moderator_with_username_to_community_with_name(self, username, community_name):
         self._check_can_add_moderator_with_username_to_community_with_name(
             username=username,
@@ -840,6 +861,13 @@ class User(AbstractUser):
 
         Community = get_community_model()
         return Community.get_community_with_name_banned_users(community_name=community_name, users_max_id=max_id)
+
+    def search_community_with_name_banned_users(self, community_name, query):
+        self._check_can_get_community_with_name_banned_users(
+            community_name=community_name)
+
+        Community = get_community_model()
+        return Community.search_community_with_name_banned_users(community_name=community_name, query=query)
 
     def ban_user_with_username_from_community_with_name(self, username, community_name):
         self._check_can_ban_user_with_username_from_community_with_name(username=username,

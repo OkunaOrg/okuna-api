@@ -10,7 +10,7 @@ from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_communities.views.community.members.serializers import JoinCommunitySerializer, \
     GetCommunityMembersSerializer, GetCommunityMembersMemberSerializer, LeaveCommunitySerializer, \
-    InviteCommunityMemberSerializer, MembersCommunitySerializer
+    InviteCommunityMemberSerializer, MembersCommunitySerializer, SearchCommunityMembersSerializer
 
 
 class CommunityMembers(APIView):
@@ -98,3 +98,29 @@ class InviteCommunityMember(APIView):
                                                                   community_name=community_name)
 
         return ApiMessageResponse(_('Invited user successfully!'), status=status.HTTP_201_CREATED)
+
+
+class SearchCommunityMembers(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, community_name):
+        query_params = request.query_params.dict()
+        query_params['community_name'] = community_name
+
+        serializer = SearchCommunityMembersSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 10)
+        query = data.get('query')
+
+        user = request.user
+
+        members = user.search_community_with_name_members(community_name=community_name, query=query)[
+                  :count]
+
+        response_serializer = GetCommunityMembersMemberSerializer(members, many=True,
+                                                                  context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)

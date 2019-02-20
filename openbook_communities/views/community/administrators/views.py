@@ -10,7 +10,7 @@ from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_communities.views.community.administrators.serializers import GetCommunityAdministratorsSerializer, \
     GetCommunityAdministratorsUserSerializer, RemoveCommunityAdministratorSerializer, \
-    AddCommunityAdministratorSerializer
+    AddCommunityAdministratorSerializer, SearchCommunityAdministratorsSerializer
 
 
 class CommunityAdministrators(APIView):
@@ -30,7 +30,8 @@ class CommunityAdministrators(APIView):
 
         user = request.user
 
-        administrators = user.get_community_with_name_administrators(community_name=community_name, max_id=max_id)[:count]
+        administrators = user.get_community_with_name_administrators(community_name=community_name, max_id=max_id)[
+                         :count]
 
         response_serializer = GetCommunityAdministratorsUserSerializer(administrators, many=True,
                                                                        context={"request": request})
@@ -75,6 +76,32 @@ class CommunityAdministratorItem(APIView):
 
         with transaction.atomic():
             user.remove_administrator_with_username_from_community_with_name(username=username,
-                                                                           community_name=community_name)
+                                                                             community_name=community_name)
 
         return ApiMessageResponse(_('Removed administrator'), status=status.HTTP_200_OK)
+
+
+class SearchCommunityAdministrators(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, community_name):
+        query_params = request.query_params.dict()
+        query_params['community_name'] = community_name
+
+        serializer = SearchCommunityAdministratorsSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 10)
+        query = data.get('query')
+
+        user = request.user
+
+        administrators = user.search_community_with_name_administrators(community_name=community_name, query=query)[
+                         :count]
+
+        response_serializer = GetCommunityAdministratorsUserSerializer(administrators, many=True,
+                                                                       context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)

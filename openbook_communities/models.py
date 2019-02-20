@@ -144,6 +144,13 @@ class Community(models.Model):
         return community.members.filter(community_members_query)
 
     @classmethod
+    def search_community_with_name_members(cls, community_name, query):
+        community = Community.objects.get(name=community_name)
+        community_members_query = Q(username__icontains=query)
+        community_members_query.add(Q(profile__name__icontains=query), Q.OR)
+        return community.members.filter(community_members_query)
+
+    @classmethod
     def get_community_with_name_administrators(cls, community_name, administrators_max_id):
         community = Community.objects.get(name=community_name)
         community_administrators_query = Q()
@@ -151,6 +158,13 @@ class Community(models.Model):
         if administrators_max_id:
             community_administrators_query.add(Q(id__lt=administrators_max_id), Q.AND)
 
+        return community.administrators.filter(community_administrators_query)
+
+    @classmethod
+    def search_community_with_name_administrators(cls, community_name, query):
+        community = Community.objects.get(name=community_name)
+        community_administrators_query = Q(username__icontains=query)
+        community_administrators_query.add(Q(profile__name__icontains=query), Q.OR)
         return community.administrators.filter(community_administrators_query)
 
     @classmethod
@@ -164,6 +178,13 @@ class Community(models.Model):
         return community.moderators.filter(community_moderators_query)
 
     @classmethod
+    def search_community_with_name_moderators(cls, community_name, query):
+        community = Community.objects.get(name=community_name)
+        community_moderators_query = Q(username__icontains=query)
+        community_moderators_query.add(Q(profile__name__icontains=query), Q.OR)
+        return community.moderators.filter(community_moderators_query)
+
+    @classmethod
     def get_community_with_name_banned_users(cls, community_name, users_max_id):
         community = Community.objects.get(name=community_name)
         community_members_query = Q()
@@ -172,6 +193,13 @@ class Community(models.Model):
             community_members_query.add(Q(id__lt=users_max_id), Q.AND)
 
         return community.banned_users.filter(community_members_query)
+
+    @classmethod
+    def search_community_with_name_banned_users(cls, community_name, query):
+        community = Community.objects.get(name=community_name)
+        community_banned_users_query = Q(username__icontains=query)
+        community_banned_users_query.add(Q(profile__name__icontains=query), Q.OR)
+        return community.banned_users.filter(community_banned_users_query)
 
     @property
     def members_count(self):

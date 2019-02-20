@@ -71,3 +71,18 @@ class MembersCommunitySerializer(serializers.ModelSerializer):
             'id',
             'is_member'
         )
+
+
+class SearchCommunityMembersSerializer(serializers.Serializer):
+    count = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
+    query = serializers.CharField(
+        max_length=settings.SEARCH_QUERIES_MAX_LENGTH,
+        allow_blank=False,
+        required=True
+    )
+    community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
+                                           allow_blank=False,
+                                           validators=[community_name_characters_validator, community_name_exists])
