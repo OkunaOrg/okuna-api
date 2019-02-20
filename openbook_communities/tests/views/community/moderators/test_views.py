@@ -1,3 +1,5 @@
+import random
+
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
@@ -408,4 +410,102 @@ class CommunityModeratorAPITest(APITestCase):
         return reverse('community-moderator', kwargs={
             'community_name': community_name,
             'community_moderator_username': username
+        })
+
+
+class SearchCommunityModeratorsAPITests(APITestCase):
+    """
+    SearchCommunityModeratorsAPITests
+    """
+
+    def test_can_search_community_moderators_by_name(self):
+        """
+        should be able to search for community moderators by their name and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        community = make_community(creator=user)
+
+        amount_of_community_moderators_to_search_for = 5
+
+        for i in range(0, amount_of_community_moderators_to_search_for):
+            moderator = make_user()
+            moderator.join_community_with_name(community_name=community.name)
+            user.add_moderator_with_username_to_community_with_name(username=moderator.username,
+                                                                    community_name=community.name)
+            moderator_name = moderator.profile.name
+            amount_of_characters_to_query = random.randint(1, len(moderator_name))
+            query = moderator_name[0:amount_of_characters_to_query]
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url(community_name=community.name)
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            response_moderators = json.loads(response.content)
+            response_moderators_count = len(response_moderators)
+            if response_moderators_count == 1:
+                # Our community creator was not retrieved
+                self.assertEqual(response_moderators_count, 1)
+                retrieved_moderator = response_moderators[0]
+                self.assertEqual(retrieved_moderator['id'], moderator.id)
+            else:
+                # Our community creator was retrieved too
+                for response_moderator in response_moderators:
+                    response_moderator_id = response_moderator['id']
+                    self.assertTrue(
+                        response_moderator_id == moderator.id or response_moderator_id == user.id)
+            user.remove_moderator_with_username_from_community_with_name(username=moderator.username,
+                                                                         community_name=community.name)
+
+    def test_can_search_community_moderators_by_username(self):
+        """
+        should be able to search for community moderators by their username and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        community = make_community(creator=user)
+
+        amount_of_community_moderators_to_search_for = 5
+
+        for i in range(0, amount_of_community_moderators_to_search_for):
+            moderator = make_user()
+            moderator.join_community_with_name(community_name=community.name)
+            user.add_moderator_with_username_to_community_with_name(username=moderator.username,
+                                                                    community_name=community.name)
+            moderator_username = moderator.username
+            amount_of_characters_to_query = random.randint(1, len(moderator_username))
+            query = moderator_username[0:amount_of_characters_to_query]
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url(community_name=community.name)
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            response_moderators = json.loads(response.content)
+            response_moderators_count = len(response_moderators)
+            if response_moderators_count == 1:
+                # Our community creator was not retrieved
+                self.assertEqual(response_moderators_count, 1)
+                retrieved_moderator = response_moderators[0]
+                self.assertEqual(retrieved_moderator['id'], moderator.id)
+            else:
+                # Our community creator was retrieved too
+                for response_moderator in response_moderators:
+                    response_moderator_id = response_moderator['id']
+                    self.assertTrue(
+                        response_moderator_id == moderator.id or response_moderator_id == user.id)
+
+            user.remove_moderator_with_username_from_community_with_name(username=moderator.username,
+                                                                         community_name=community.name)
+
+    def _get_url(self, community_name):
+        return reverse('search-community-moderators', kwargs={
+            'community_name': community_name,
         })

@@ -10,7 +10,7 @@ from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_communities.views.community.moderators.serializers import GetCommunityModeratorsSerializer, \
     GetCommunityModeratorsUserSerializer, RemoveCommunityModeratorSerializer, \
-    AddCommunityModeratorSerializer
+    AddCommunityModeratorSerializer, SearchCommunityModeratorsSerializer
 
 
 class CommunityModerators(APIView):

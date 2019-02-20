@@ -1,3 +1,5 @@
+import random
+
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
@@ -375,4 +377,102 @@ class CommunityAdministratorAPITest(APITestCase):
         return reverse('community-administrator', kwargs={
             'community_name': community_name,
             'community_administrator_username': username
+        })
+
+
+class SearchCommunityAdministratorsAPITests(APITestCase):
+    """
+    SearchCommunityAdministratorsAPITests
+    """
+
+    def test_can_search_community_administrators_by_name(self):
+        """
+        should be able to search for community administrators by their name and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        community = make_community(creator=user)
+
+        amount_of_community_administrators_to_search_for = 5
+
+        for i in range(0, amount_of_community_administrators_to_search_for):
+            administrator = make_user()
+            administrator.join_community_with_name(community_name=community.name)
+            user.add_administrator_with_username_to_community_with_name(username=administrator.username,
+                                                                        community_name=community.name)
+            administrator_name = administrator.profile.name
+            amount_of_characters_to_query = random.randint(1, len(administrator_name))
+            query = administrator_name[0:amount_of_characters_to_query]
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url(community_name=community.name)
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            response_administrators = json.loads(response.content)
+            response_administrators_count = len(response_administrators)
+            if response_administrators_count == 1:
+                # Our community creator was not retrieved
+                self.assertEqual(response_administrators_count, 1)
+                retrieved_administrator = response_administrators[0]
+                self.assertEqual(retrieved_administrator['id'], administrator.id)
+            else:
+                # Our community creator was retrieved too
+                for response_administrator in response_administrators:
+                    response_administrator_id = response_administrator['id']
+                    self.assertTrue(
+                        response_administrator_id == administrator.id or response_administrator_id == user.id)
+            user.remove_administrator_with_username_from_community_with_name(username=administrator.username,
+                                                                             community_name=community.name)
+
+    def test_can_search_community_administrators_by_username(self):
+        """
+        should be able to search for community administrators by their username and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        community = make_community(creator=user)
+
+        amount_of_community_administrators_to_search_for = 5
+
+        for i in range(0, amount_of_community_administrators_to_search_for):
+            administrator = make_user()
+            administrator.join_community_with_name(community_name=community.name)
+            user.add_administrator_with_username_to_community_with_name(username=administrator.username,
+                                                                        community_name=community.name)
+            administrator_username = administrator.username
+            amount_of_characters_to_query = random.randint(1, len(administrator_username))
+            query = administrator_username[0:amount_of_characters_to_query]
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url(community_name=community.name)
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            response_administrators = json.loads(response.content)
+            response_administrators_count = len(response_administrators)
+            if response_administrators_count == 1:
+                # Our community creator was not retrieved
+                self.assertEqual(response_administrators_count, 1)
+                retrieved_administrator = response_administrators[0]
+                self.assertEqual(retrieved_administrator['id'], administrator.id)
+            else:
+                # Our community creator was retrieved too
+                for response_administrator in response_administrators:
+                    response_administrator_id = response_administrator['id']
+                    self.assertTrue(
+                        response_administrator_id == administrator.id or response_administrator_id == user.id)
+
+            user.remove_administrator_with_username_from_community_with_name(username=administrator.username,
+                                                                             community_name=community.name)
+
+    def _get_url(self, community_name):
+        return reverse('search-community-administrators', kwargs={
+            'community_name': community_name,
         })

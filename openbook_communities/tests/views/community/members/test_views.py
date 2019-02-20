@@ -1,3 +1,5 @@
+import random
+
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
@@ -360,4 +362,96 @@ class JoinCommunityAPITest(APITestCase):
     def _get_url(self, community_name):
         return reverse('community-join', kwargs={
             'community_name': community_name
+        })
+
+
+class SearchCommunityMembersAPITests(APITestCase):
+    """
+    SearchCommunityMembersAPITests
+    """
+
+    def test_can_search_community_members_by_name(self):
+        """
+        should be able to search for community members by their name and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        community = make_community(creator=user)
+
+        amount_of_community_members_to_search_for = 5
+
+        for i in range(0, amount_of_community_members_to_search_for):
+            member = make_user()
+            member.join_community_with_name(community_name=community.name)
+            member_name = member.profile.name
+            amount_of_characters_to_query = random.randint(1, len(member_name))
+            query = member_name[0:amount_of_characters_to_query]
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url(community_name=community.name)
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            response_members = json.loads(response.content)
+            response_members_count = len(response_members)
+            if response_members_count == 1:
+                # Our community creator was not retrieved
+                self.assertEqual(response_members_count, 1)
+                retrieved_member = response_members[0]
+                self.assertEqual(retrieved_member['id'], member.id)
+            else:
+                # Our community creator was retrieved too
+                for response_member in response_members:
+                    response_member_id = response_member['id']
+                    self.assertTrue(
+                        response_member_id == member.id or response_member_id == user.id)
+            member.leave_community_with_name(community_name=community.name)
+
+    def test_can_search_community_members_by_username(self):
+        """
+        should be able to search for community members by their username and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        community = make_community(creator=user)
+
+        amount_of_community_members_to_search_for = 5
+
+        for i in range(0, amount_of_community_members_to_search_for):
+            member = make_user()
+            member.join_community_with_name(community_name=community.name)
+            member_username = member.username
+            amount_of_characters_to_query = random.randint(1, len(member_username))
+            query = member_username[0:amount_of_characters_to_query]
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url(community_name=community.name)
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            response_members = json.loads(response.content)
+            response_members_count = len(response_members)
+            if response_members_count == 1:
+                # Our community creator was not retrieved
+                self.assertEqual(response_members_count, 1)
+                retrieved_member = response_members[0]
+                self.assertEqual(retrieved_member['id'], member.id)
+            else:
+                # Our community creator was retrieved too
+                for response_member in response_members:
+                    response_member_id = response_member['id']
+                    self.assertTrue(
+                        response_member_id == member.id or response_member_id == user.id)
+
+            member.leave_community_with_name(community_name=community.name)
+
+    def _get_url(self, community_name):
+        return reverse('search-community-members', kwargs={
+            'community_name': community_name,
         })
