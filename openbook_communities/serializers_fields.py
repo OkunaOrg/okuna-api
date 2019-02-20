@@ -33,11 +33,11 @@ class IsInvitedField(Field):
         return request_user.is_invited_to_community_with_name(community.name)
 
 
-class IsAdminField(Field):
+class IsAdministratorField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'
         kwargs['read_only'] = True
-        super(IsAdminField, self).__init__(**kwargs)
+        super(IsAdministratorField, self).__init__(**kwargs)
 
     def to_representation(self, community):
         request = self.context.get('request')
@@ -49,11 +49,11 @@ class IsAdminField(Field):
         return request_user.is_administrator_of_community_with_name(community.name)
 
 
-class IsModField(Field):
+class IsModeratorField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'
         kwargs['read_only'] = True
-        super(IsModField, self).__init__(**kwargs)
+        super(IsModeratorField, self).__init__(**kwargs)
 
     def to_representation(self, community):
         request = self.context.get('request')
