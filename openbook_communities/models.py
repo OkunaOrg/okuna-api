@@ -133,13 +133,22 @@ class Community(models.Model):
     def is_name_taken(cls, name):
         return cls.objects.filter(name__iexact=name).exists()
 
+    EXCLUDE_COMMUNITY_ADMINISTRATORS_KEYWORD = 'administrators'
+    EXCLUDE_COMMUNITY_MODERATORS_KEYWORD = 'moderators'
+
     @classmethod
-    def get_community_with_name_members(cls, community_name, members_max_id):
+    def get_community_with_name_members(cls, community_name, members_max_id, exclude_keyword=None):
         community = Community.objects.get(name=community_name)
         community_members_query = Q()
 
         if members_max_id:
             community_members_query.add(Q(id__lt=members_max_id), Q.AND)
+
+        if exclude_keyword:
+            if exclude_keyword == cls.EXCLUDE_COMMUNITY_ADMINISTRATORS_KEYWORD:
+                community_members_query.add(~Q(administrated_communities__id__contains=community.id), Q.AND)
+            elif exclude_keyword == cls.EXCLUDE_COMMUNITY_MODERATORS_KEYWORD:
+                community_members_query.add(~Q(moderated_communities__id__contains=community.id), Q.AND)
 
         return community.members.filter(community_members_query)
 

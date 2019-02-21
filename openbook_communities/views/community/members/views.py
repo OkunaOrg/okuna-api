@@ -27,10 +27,11 @@ class CommunityMembers(APIView):
 
         count = data.get('count', 10)
         max_id = data.get('max_id')
+        exclude = data.get('exclude')
 
         user = request.user
 
-        members = user.get_community_with_name_members(community_name=community_name, max_id=max_id).order_by(
+        members = user.get_community_with_name_members(community_name=community_name, max_id=max_id, exclude_keyword=exclude).order_by(
             '-id')[:count]
 
         response_serializer = GetCommunityMembersMemberSerializer(members, many=True,
