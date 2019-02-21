@@ -47,6 +47,7 @@ class GetCommunityMembersMemberProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'avatar',
+            'name'
         )
 
 

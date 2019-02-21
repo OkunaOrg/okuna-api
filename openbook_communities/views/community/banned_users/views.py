@@ -29,7 +29,8 @@ class CommunityBannedUsers(APIView):
 
         user = request.user
 
-        banned_users = user.get_community_with_name_banned_users(community_name=community_name, max_id=max_id)[:count]
+        banned_users = user.get_community_with_name_banned_users(community_name=community_name, max_id=max_id).order_by(
+            '-id')[:count]
 
         response_serializer = GetCommunityBannedUsersUserSerializer(banned_users, many=True,
                                                                     context={"request": request})

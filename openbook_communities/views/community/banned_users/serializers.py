@@ -42,6 +42,7 @@ class GetCommunityBannedUsersUserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'avatar',
+            'name'
         )
 
 

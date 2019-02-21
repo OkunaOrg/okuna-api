@@ -30,7 +30,8 @@ class CommunityMembers(APIView):
 
         user = request.user
 
-        members = user.get_community_with_name_members(community_name=community_name, max_id=max_id)[:count]
+        members = user.get_community_with_name_members(community_name=community_name, max_id=max_id).order_by(
+            '-id')[:count]
 
         response_serializer = GetCommunityMembersMemberSerializer(members, many=True,
                                                                   context={"request": request})

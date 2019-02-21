@@ -30,7 +30,8 @@ class CommunityModerators(APIView):
 
         user = request.user
 
-        moderators = user.get_community_with_name_moderators(community_name=community_name, max_id=max_id)[:count]
+        moderators = user.get_community_with_name_moderators(community_name=community_name, max_id=max_id).order_by(
+            '-id')[:count]
 
         response_serializer = GetCommunityModeratorsUserSerializer(moderators, many=True,
                                                                    context={"request": request})

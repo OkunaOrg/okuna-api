@@ -30,7 +30,9 @@ class CommunityAdministrators(APIView):
 
         user = request.user
 
-        administrators = user.get_community_with_name_administrators(community_name=community_name, max_id=max_id)[
+        administrators = user.get_community_with_name_administrators(community_name=community_name,
+                                                                     max_id=max_id).order_by(
+            '-id')[
                          :count]
 
         response_serializer = GetCommunityAdministratorsUserSerializer(administrators, many=True,
