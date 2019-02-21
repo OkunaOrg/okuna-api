@@ -145,19 +145,38 @@ class Community(models.Model):
             community_members_query.add(Q(id__lt=members_max_id), Q.AND)
 
         if exclude_keyword:
-            if exclude_keyword == cls.EXCLUDE_COMMUNITY_ADMINISTRATORS_KEYWORD:
-                community_members_query.add(~Q(administrated_communities__id__contains=community.id), Q.AND)
-            elif exclude_keyword == cls.EXCLUDE_COMMUNITY_MODERATORS_KEYWORD:
-                community_members_query.add(~Q(moderated_communities__id__contains=community.id), Q.AND)
+            community_members_query.add(
+                cls._get_exclude_members_query_for_community_and_keyword(community=community,
+                                                                         exclude_keyword=exclude_keyword),
+                Q.AND)
 
         return community.members.filter(community_members_query)
 
     @classmethod
-    def search_community_with_name_members(cls, community_name, query):
+    def search_community_with_name_members(cls, community_name, query, exclude_keyword=None):
         community = Community.objects.get(name=community_name)
         community_members_query = Q(username__icontains=query)
         community_members_query.add(Q(profile__name__icontains=query), Q.OR)
+
+        if exclude_keyword:
+            community_members_query.add(
+                cls._get_exclude_members_query_for_community_and_keyword(community=community,
+                                                                         exclude_keyword=exclude_keyword),
+                Q.AND)
+
         return community.members.filter(community_members_query)
+
+    @classmethod
+    def _get_exclude_members_query_for_community_and_keyword(cls, community, exclude_keyword):
+        query = None
+        if exclude_keyword == cls.EXCLUDE_COMMUNITY_ADMINISTRATORS_KEYWORD:
+            query = ~Q(administrated_communities__id__contains=community.id)
+        elif exclude_keyword == cls.EXCLUDE_COMMUNITY_MODERATORS_KEYWORD:
+            query = ~Q(moderated_communities__id__contains=community.id)
+        else:
+            raise Exception('Unhandled exclude query keyword')
+
+        return query
 
     @classmethod
     def get_community_with_name_administrators(cls, community_name, administrators_max_id):

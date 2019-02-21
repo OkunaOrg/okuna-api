@@ -706,12 +706,13 @@ class User(AbstractUser):
         return Community.get_community_with_name_members(community_name=community_name, members_max_id=max_id,
                                                          exclude_keyword=exclude_keyword)
 
-    def search_community_with_name_members(self, community_name, query):
+    def search_community_with_name_members(self, community_name, query, exclude_keyword=None):
         self._check_can_get_community_with_name_members(
             community_name=community_name)
 
         Community = get_community_model()
-        return Community.search_community_with_name_members(community_name=community_name, query=query)
+        return Community.search_community_with_name_members(community_name=community_name, query=query,
+                                                            exclude_keyword=exclude_keyword)
 
     def join_community_with_name(self, community_name):
         self._check_can_join_community_with_name(

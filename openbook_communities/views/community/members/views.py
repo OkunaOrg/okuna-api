@@ -116,10 +116,11 @@ class SearchCommunityMembers(APIView):
 
         count = data.get('count', 10)
         query = data.get('query')
+        exclude = data.get('exclude')
 
         user = request.user
 
-        members = user.search_community_with_name_members(community_name=community_name, query=query)[
+        members = user.search_community_with_name_members(community_name=community_name, query=query, exclude_keyword=exclude)[
                   :count]
 
         response_serializer = GetCommunityMembersMemberSerializer(members, many=True,
