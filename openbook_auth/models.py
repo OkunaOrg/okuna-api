@@ -808,6 +808,8 @@ class User(AbstractUser):
         community_to_remove_administrator_from.create_remove_administrator_log(source_user=self,
                                                                                target_user=user_to_remove_as_administrator)
 
+        self.remove_moderator_with_username_from_community_with_name(username=username, community_name=community_name)
+
         return community_to_remove_administrator_from
 
     def get_community_with_name_moderators(self, community_name, max_id):
