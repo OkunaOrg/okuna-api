@@ -41,6 +41,8 @@ from openbook_posts.views.post.views import PostComments, PostCommentItem, PostI
     PostReactionsEmojiCount, PostReactionEmojiGroups
 from openbook_posts.views.posts.views import Posts, TrendingPosts
 from openbook_importer.views import ImportItem
+from openbook_reports.views import ReportCategory, ReportPost, RejectPostReport, ConfirmPostReport, ReportedPosts, \
+    ReportedPostsCommunity, ConfirmPostReports, RejectPostReports
 
 auth_patterns = [
     path('register/', Register.as_view(), name='register-user'),
@@ -54,6 +56,14 @@ auth_patterns = [
     path('users/', Users.as_view(), name='users'),
 ]
 
+post_report_patterns = [
+    path('', ReportPost.as_view(), name='report-post'),
+    path('confirm/', ConfirmPostReports.as_view(), name='post-reports-confirm'),
+    path('<int:report_id>/confirm/', ConfirmPostReport.as_view(), name='post-report-confirm'),
+    path('reject/', RejectPostReports.as_view(), name='post-reports-reject'),
+    path('<int:report_id>/reject/', RejectPostReport.as_view(), name='post-report-reject'),
+]
+
 post_patterns = [
     path('', PostItem.as_view(), name='post'),
     path('comments/', PostComments.as_view(), name='post-comments'),
@@ -61,6 +71,7 @@ post_patterns = [
     path('reactions/', PostReactions.as_view(), name='post-reactions'),
     path('reactions/emoji-count/', PostReactionsEmojiCount.as_view(), name='post-reactions-emoji-count'),
     path('reactions/<int:post_reaction_id>/', PostReactionItem.as_view(), name='post-reaction'),
+    path('reports/', include(post_report_patterns))
 ]
 
 posts_patterns = [
@@ -68,6 +79,7 @@ posts_patterns = [
     path('', Posts.as_view(), name='posts'),
     path('trending/', TrendingPosts.as_view(), name='trending-posts'),
     path('emojis/groups/', PostReactionEmojiGroups.as_view(), name='posts-emoji-groups'),
+    path('reports/', ReportedPosts.as_view(), name='reported-posts'),
 ]
 
 community_administrator_patterns = [
@@ -97,6 +109,7 @@ community_members_patterns = [
 
 community_posts_patterns = [
     path('', CommunityPosts.as_view(), name='community-posts'),
+    path('reports/', ReportedPostsCommunity.as_view(), name='community-reported-posts'),
 ]
 
 community_banned_users_patterns = [
@@ -158,6 +171,10 @@ importer_patterns = [
     path('upload/', ImportItem.as_view(), name='uploads')
 ]
 
+report_categories_patterns = [
+    path('categories/', ReportCategory.as_view(), name='report-categories')
+]
+
 api_patterns = [
     path('auth/', include(auth_patterns)),
     path('posts/', include(posts_patterns)),
@@ -167,6 +184,7 @@ api_patterns = [
     path('lists/', include(lists_patterns)),
     path('follows/', include(follows_patterns)),
     path('import/', include(importer_patterns)),
+    path('reports/', include(report_categories_patterns)),
     url('time/', Time.as_view(), name='time'),
     url('emojis/groups/', EmojiGroups.as_view(), name='emoji-groups'),
 ]
