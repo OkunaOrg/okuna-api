@@ -43,7 +43,7 @@ from openbook_posts.views.post.views import PostComments, PostCommentItem, PostI
 from openbook_posts.views.posts.views import Posts, TrendingPosts
 from openbook_importer.views import ImportItem
 from openbook_reports.views import ReportCategory, ReportPost, RejectPostReport, ConfirmPostReport, ReportedPosts, \
-    ReportedPostsCommunity, ConfirmPostReports, RejectPostReports
+    ReportedPostsCommunity, UserReports
 
 auth_patterns = [
     path('register/', Register.as_view(), name='register-user'),
@@ -59,9 +59,7 @@ auth_patterns = [
 
 post_report_patterns = [
     path('', ReportPost.as_view(), name='report-post'),
-    path('confirm/', ConfirmPostReports.as_view(), name='post-reports-confirm'),
     path('<int:report_id>/confirm/', ConfirmPostReport.as_view(), name='post-report-confirm'),
-    path('reject/', RejectPostReports.as_view(), name='post-reports-reject'),
     path('<int:report_id>/reject/', RejectPostReport.as_view(), name='post-report-reject'),
 ]
 
@@ -176,8 +174,9 @@ categories_patterns = [
     path('', Categories.as_view(), name='categories')
 ]
 
-report_categories_patterns = [
-    path('categories/', ReportCategory.as_view(), name='report-categories')
+report_patterns = [
+    path('categories/', ReportCategory.as_view(), name='report-categories'),
+    path('', UserReports.as_view(), name='reports')
 ]
 
 api_patterns = [
@@ -190,7 +189,7 @@ api_patterns = [
     path('lists/', include(lists_patterns)),
     path('follows/', include(follows_patterns)),
     path('import/', include(importer_patterns)),
-    path('reports/', include(report_categories_patterns)),
+    path('reports/', include(report_patterns)),
     url('time/', Time.as_view(), name='time'),
     url('emojis/groups/', EmojiGroups.as_view(), name='emoji-groups'),
 ]
