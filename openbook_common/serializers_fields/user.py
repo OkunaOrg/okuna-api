@@ -170,9 +170,10 @@ class PostCreatorField(Field):
 
         if post_community:
             post_creator_memberships = post_community.memberships.get(user=post_creator)
-            post_creator_serializer['memberships'] = self.community_membership_serializer([post_creator_memberships],
-                                                                                          many=True,
-                                                                                          context={
-                                                                                              "request": request}).data
+            post_creator_serializer['communities_memberships'] = self.community_membership_serializer(
+                [post_creator_memberships],
+                many=True,
+                context={
+                    "request": request}).data
 
         return post_creator_serializer

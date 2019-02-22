@@ -3,8 +3,8 @@ from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import username_characters_validator, user_username_exists
-from openbook_communities.models import Community
-from openbook_communities.serializers_fields import IsMemberField
+from openbook_communities.models import Community, CommunityMembership
+from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 
 
@@ -70,14 +70,26 @@ class GetCommunityMembersMemberSerializer(serializers.ModelSerializer):
         )
 
 
+class MembersCommunityMembershipSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommunityMembership
+        fields = (
+            'id',
+            'user_id',
+            'community_id',
+            'is_administrator',
+            'is_moderator',
+        )
+
+
 class MembersCommunitySerializer(serializers.ModelSerializer):
-    is_member = IsMemberField()
+    memberships = CommunityMembershipsField(community_membership_serializer=MembersCommunityMembershipSerializer)
 
     class Meta:
         model = Community
         fields = (
             'id',
-            'is_member'
+            'memberships'
         )
 
 
