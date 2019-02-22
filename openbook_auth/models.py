@@ -1241,33 +1241,33 @@ class User(AbstractUser):
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
 
+    def get_reported_posts(self):
+        user_reports = self.get_reports()
+        user_reported_posts = [report.post for report in user_reports]
+        return user_reported_posts
+
+    def get_reports(self):
+        PostReport = get_post_report_model()
+        reports = PostReport.objects.filter(reporter=self)
+        return reports
+
     def report_post_with_id(self, post_id, category_name, comment):
         Post = get_post_model()
         post = Post.objects.get(pk=post_id)
         ReportCategory = get_report_category_model()
         category = ReportCategory.objects.get(name=category_name)
         PostReport = get_post_report_model()
+        self._check_can_user_create_report_for_post(post)
         post_report = PostReport.create_report(post=post, reporter=self, category=category, comment=comment)
         return post_report
 
-    def confirm_all_reports_for_post(self, post, community_name=None):
-        from openbook_reports.models import ReportStatus
-        self._check_can_user_change_report_status(community_name)
-        for report in post.reports:
-            report.check_can_confirm_report()
-            report.status = ReportStatus.CONFIRMED
-            report.save()
-
-    def reject_all_reports_for_post(self, post, community_name=None):
-        from openbook_reports.models import ReportStatus
-        self._check_can_user_change_report_status(community_name)
-        for report in post.reports:
-            report.check_can_reject_report()
-            report.status = ReportStatus.REJECTED
-            report.save()
+    def archive_all_remaining_reports_for_post(self, post):
+        for report in post.reports.all():
+            if report.status == report.PENDING:
+                report.status = report.DELETED
+                report.save()
 
     def confirm_report_with_id_for_post_with_id(self, report_id, post_id):
-        from openbook_reports.models import ReportStatus
         PostReport = get_post_report_model()
         Post = get_post_model()
         report = PostReport.objects.get(pk=report_id)
@@ -1279,16 +1279,34 @@ class User(AbstractUser):
 
         self._check_can_user_change_report_status(community_name)
         report.check_can_confirm_report()
-        report.status = ReportStatus.CONFIRMED
+        report.status = report.CONFIRMED
         report.save()
+        self.archive_all_remaining_reports_for_post(post)
         return report
 
-    def reject_report_with_id_for_post_with_id(self, report, community_name=None):
-        from openbook_reports.models import ReportStatus
+    def reject_report_with_id_for_post_with_id(self, report_id, post_id):
+        PostReport = get_post_report_model()
+        Post = get_post_model()
+        report = PostReport.objects.get(pk=report_id)
+        post = Post.objects.get(pk=post_id)
+
+        community_name = None
+        if post.community:
+            community_name = post.community.name
+
         self._check_can_user_change_report_status(community_name)
         report.check_can_reject_report()
-        report.status = ReportStatus.REJECTED
+        report.status = report.REJECTED
         report.save()
+        self.archive_all_remaining_reports_for_post(post)
+        return report
+
+    def _check_can_user_create_report_for_post(self, post):
+        PostReport = get_post_report_model()
+        if PostReport.objects.filter(post=post, reporter=self).exists():
+            raise ValidationError(
+                _('You have already reported this post')
+            )
 
     def _check_can_user_change_report_status(self, community_name):
         if community_name:

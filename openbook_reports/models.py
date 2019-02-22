@@ -7,20 +7,6 @@ from enum import Enum
 from django.conf import settings
 from django.utils import timezone
 
-
-class ReportStatus(Enum):
-    PENDING = 'PENDING'
-    CONFIRMED = 'CONFIRMED'
-    REJECTED = 'REJECTED'
-
-
-REPORT_STATUS_CHOICES = (
-    (ReportStatus.PENDING, 'PENDING'),
-    (ReportStatus.CONFIRMED, 'CONFIRMED'),
-    (ReportStatus.REJECTED, 'REJECTED'),
-)
-
-
 class ReportCategory(models.Model):
     name = models.CharField(_('name'), max_length=settings.REPORT_CATEGORY_NAME_MAX_LENGTH, blank=False, null=False,
                             unique=True)
@@ -43,9 +29,21 @@ class ReportCategory(models.Model):
 
 
 class AbstractReport(models.Model):
+    PENDING = 'PENDING'
+    CONFIRMED = 'CONFIRMED'
+    REJECTED = 'REJECTED'
+    DELETED = 'DELETED'
+
+    REPORT_STATUS_CHOICES = (
+        (PENDING, 'PENDING'),
+        (CONFIRMED, 'CONFIRMED'),
+        (REJECTED, 'REJECTED'),
+        (DELETED, 'DELETED'),
+    )
+
     category = models.ForeignKey(ReportCategory, on_delete=models.SET_NULL, null=True)
     status = models.CharField(max_length=settings.REPORT_STATUS_MAX_LENGTH, choices=REPORT_STATUS_CHOICES,
-                              null=True, blank=False, default=ReportStatus.PENDING)
+                              null=True, blank=False, default=PENDING)
     comment = models.CharField(max_length=settings.REPORT_COMMENT_MAX_LENGTH, null=True, blank=True)
     created = models.DateTimeField(editable=False)
 
@@ -58,13 +56,13 @@ class AbstractReport(models.Model):
         return super(AbstractReport, self).save(*args, **kwargs)
 
     def check_can_confirm_report(self):
-        if self.status is ReportStatus.REJECTED:
+        if self.status is self.REJECTED or self.status == self.DELETED:
             raise ValidationError(
                 _('Cannot change status of report'),
             )
 
     def check_can_reject_report(self):
-        if self.status is ReportStatus.CONFIRMED:
+        if self.status is self.CONFIRMED or self.status == self.DELETED:
             raise ValidationError(
                 _('Cannot change status of report'),
             )
@@ -75,7 +73,7 @@ class PostReport(AbstractReport):
     reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_reports')
 
     @classmethod
-    def create_report(cls, post, reporter, category, status=ReportStatus.PENDING, comment=None):
+    def create_report(cls, post, reporter, category, status=AbstractReport.PENDING, comment=None):
         print(post, reporter, category, status, comment)
         return PostReport.objects.create(post=post, reporter=reporter, category=category,
                                          status=status, comment=comment)
