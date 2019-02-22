@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import username_characters_validator, user_username_exists
+from openbook_common.serializers_fields.user import IsFollowingField
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 
 
@@ -39,16 +40,19 @@ class GetCommunityModeratorsUserSerializerUserProfileSerializer(serializers.Mode
         model = UserProfile
         fields = (
             'avatar',
+            'name'
         )
 
 
 class GetCommunityModeratorsUserSerializer(serializers.ModelSerializer):
     profile = GetCommunityModeratorsUserSerializerUserProfileSerializer(many=False)
+    is_following = IsFollowingField()
 
     class Meta:
         model = User
         fields = (
             'id',
             'username',
-            'profile'
+            'profile',
+            'is_following'
         )

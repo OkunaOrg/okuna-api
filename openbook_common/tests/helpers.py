@@ -78,6 +78,10 @@ def make_user_avatar():
     return tmp_file
 
 
+def make_category():
+    return mixer.blend(Category)
+
+
 def make_user_cover():
     image = Image.new('RGB', (100, 100))
     tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
@@ -127,11 +131,11 @@ def make_community_rules():
 
 
 def make_community_user_adjective():
-    return fake.word()
+    return fake.word().title()
 
 
 def make_community_users_adjective():
-    return fake.word()
+    return fake.word().title()
 
 
 def make_community_name():
