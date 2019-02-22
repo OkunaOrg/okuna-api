@@ -4,6 +4,8 @@ from rest_framework import serializers
 from openbook_auth.models import User, UserProfile
 from openbook_common.models import Emoji, Badge
 from openbook_common.serializers_fields.post import ReactionsEmojiCountField, CommentsCountField
+from openbook_common.serializers_fields.user import PostCreatorField
+from openbook_communities.models import CommunityMembership
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 from openbook_posts.models import PostImage, PostVideo, Post
 
@@ -99,10 +101,23 @@ class CommunityPostEmojiCountSerializer(serializers.Serializer):
     count = serializers.IntegerField(required=True, )
 
 
+class CommunityMembershipSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommunityMembership
+        fields = (
+            'id',
+            'user_id',
+            'community_id',
+            'is_administrator',
+            'is_moderator',
+        )
+
+
 class CommunityPostSerializer(serializers.ModelSerializer):
     image = CommunityPostImageSerializer(many=False)
     video = CommunityPostVideoSerializer(many=False)
-    creator = CommunityPostCreatorSerializer(many=False)
+    creator = PostCreatorField(post_creator_serializer=CommunityPostCreatorSerializer,
+                               community_membership_serializer=CommunityMembershipSerializer)
     reactions_emoji_counts = ReactionsEmojiCountField(emoji_count_serializer=CommunityPostEmojiCountSerializer)
     comments_count = CommentsCountField()
 
