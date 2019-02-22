@@ -353,10 +353,10 @@ class User(AbstractUser):
                                                        community__name=community_name).exists()
 
     def is_administrator_of_community_with_name(self, community_name):
-        return self.administrated_communities.filter(name=community_name).exists()
+        return self.communities_memberships.filter(community__name=community_name, is_administrator=True).exists()
 
     def is_member_of_community_with_name(self, community_name):
-        return self.joined_communities.filter(name=community_name).exists()
+        return self.communities_memberships.filter(community__name=community_name).exists()
 
     def is_banned_from_community_with_name(self, community_name):
         return self.banned_of_communities.filter(name=community_name).exists()
@@ -365,7 +365,7 @@ class User(AbstractUser):
         return self.created_communities.filter(name=community_name).exists()
 
     def is_moderator_of_community_with_name(self, community_name):
-        return self.moderated_communities.filter(name=community_name).exists()
+        return self.communities_memberships.filter(community__name=community_name, is_moderator=True).exists()
 
     def is_invited_to_community_with_name(self, community_name):
         Community = get_community_model()
@@ -593,16 +593,12 @@ class User(AbstractUser):
         self._check_can_get_circle_with_id(circle_id)
         return self.circles.get(id=circle_id)
 
-    def get_circles_available_for_posting(self):
-        posting_circles_query = Q(creator__id=self.pk)
-        posting_circles_query.add(Q(community__members__id=self.pk), Q.OR)
-        Circle = get_circle_model()
-        return Circle.objects.filter(posting_circles_query)
-
     def favorite_community_with_name(self, community_name):
         self._check_can_favorite_community_with_name(community_name=community_name)
 
-        community_to_favorite = self.joined_communities.get(name=community_name)
+        Community = get_community_model()
+        community_to_favorite = Community.objects.get(name=community_name)
+
         self.favorite_communities.add(community_to_favorite)
 
         return community_to_favorite
@@ -610,7 +606,9 @@ class User(AbstractUser):
     def unfavorite_community_with_name(self, community_name):
         self._check_can_unfavorite_community_with_name(community_name=community_name)
 
-        community_to_unfavorite = self.joined_communities.get(name=community_name)
+        Community = get_community_model()
+        community_to_unfavorite = Community.objects.get(name=community_name)
+
         self.favorite_communities.remove(community_to_unfavorite)
 
         return community_to_unfavorite
@@ -634,7 +632,10 @@ class User(AbstractUser):
 
     def delete_community_with_name(self, community_name):
         self._check_can_delete_community_with_name(community_name)
-        community = self.administrated_communities.get(name=community_name)
+
+        Community = get_community_model()
+        community = Community.objects.get(name=community_name)
+
         community.delete()
 
     def update_community(self, community, title=None, name=None, description=None, color=None, type=None,
@@ -651,7 +652,8 @@ class User(AbstractUser):
         self._check_can_update_community_with_name(community_name)
         self._check_community_data(name)
 
-        community_to_update = self.joined_communities.get(name=community_name)
+        Community = get_community_model()
+        community_to_update = Community.objects.get(name=community_name)
 
         community_to_update.update(name=name, title=title, description=description,
                                    color=color, type=type, user_adjective=user_adjective,
@@ -664,7 +666,8 @@ class User(AbstractUser):
         self._check_can_update_community_with_name(community_name)
         self._check_community_data(avatar=avatar)
 
-        community_to_update_avatar_from = self.administrated_communities.get(name=community_name)
+        Community = get_community_model()
+        community_to_update_avatar_from = Community.objects.get(name=community_name)
         community_to_update_avatar_from.avatar = avatar
 
         community_to_update_avatar_from.save()
@@ -673,7 +676,8 @@ class User(AbstractUser):
 
     def delete_community_with_name_avatar(self, community_name):
         self._check_can_update_community_with_name(community_name)
-        community_to_delete_avatar_from = self.administrated_communities.get(name=community_name)
+        Community = get_community_model()
+        community_to_delete_avatar_from = Community.objects.get(name=community_name)
         delete_image_kit_image_field(community_to_delete_avatar_from.avatar)
         community_to_delete_avatar_from.avatar = None
         community_to_delete_avatar_from.save()
@@ -683,7 +687,9 @@ class User(AbstractUser):
         self._check_can_update_community_with_name(community_name)
         self._check_community_data(cover=cover)
 
-        community_to_update_cover_from = self.administrated_communities.get(name=community_name)
+        Community = get_community_model()
+        community_to_update_cover_from = Community.objects.get(name=community_name)
+
         community_to_update_cover_from.cover = cover
 
         community_to_update_cover_from.save()
@@ -692,7 +698,10 @@ class User(AbstractUser):
 
     def delete_community_with_name_cover(self, community_name):
         self._check_can_update_community_with_name(community_name)
-        community_to_delete_cover_from = self.administrated_communities.get(name=community_name)
+
+        Community = get_community_model()
+        community_to_delete_cover_from = Community.objects.get(name=community_name)
+
         delete_image_kit_image_field(community_to_delete_cover_from.cover)
         community_to_delete_cover_from.cover = None
         community_to_delete_cover_from.save()
@@ -719,7 +728,7 @@ class User(AbstractUser):
             community_name=community_name)
         Community = get_community_model()
         community_to_join = Community.objects.get(name=community_name)
-        community_to_join.members.add(self)
+        community_to_join.add_member(self)
 
         # Clean up any invites
         CommunityInvite = get_community_invite_model()
@@ -734,16 +743,10 @@ class User(AbstractUser):
         Community = get_community_model()
         community_to_leave = Community.objects.get(name=community_name)
 
-        if self.is_moderator_of_community_with_name(community_name):
-            community_to_leave.moderators.remove(self)
-
-        if self.is_administrator_of_community_with_name(community_name):
-            community_to_leave.administrators.remove(self)
-
         if self.has_favorite_community_with_name(community_name):
             self.unfavorite_community_with_name(community_name=community_name)
 
-        community_to_leave.members.remove(self)
+        community_to_leave.remove_member(self)
 
         return community_to_leave
 
@@ -785,7 +788,7 @@ class User(AbstractUser):
         community_to_add_administrator_to = Community.objects.get(name=community_name)
         user_to_add_as_administrator = User.objects.get(username=username)
 
-        community_to_add_administrator_to.administrators.add(user_to_add_as_administrator)
+        community_to_add_administrator_to.add_administrator(user_to_add_as_administrator)
         community_to_add_administrator_to.create_add_administrator_log(source_user=self,
                                                                        target_user=user_to_add_as_administrator)
 
@@ -804,7 +807,7 @@ class User(AbstractUser):
         community_to_remove_administrator_from = Community.objects.get(name=community_name)
         user_to_remove_as_administrator = User.objects.get(username=username)
 
-        community_to_remove_administrator_from.administrators.remove(user_to_remove_as_administrator)
+        community_to_remove_administrator_from.remove_administrator(user_to_remove_as_administrator)
         community_to_remove_administrator_from.create_remove_administrator_log(source_user=self,
                                                                                target_user=user_to_remove_as_administrator)
 
@@ -837,7 +840,8 @@ class User(AbstractUser):
         community_to_add_moderator_to = Community.objects.get(name=community_name)
         user_to_add_as_moderator = User.objects.get(username=username)
 
-        community_to_add_moderator_to.moderators.add(user_to_add_as_moderator)
+        community_to_add_moderator_to.add_moderator(user_to_add_as_moderator)
+
         community_to_add_moderator_to.create_add_moderator_log(source_user=self,
                                                                target_user=user_to_add_as_moderator)
 
@@ -853,7 +857,7 @@ class User(AbstractUser):
         community_to_remove_moderator_from = Community.objects.get(name=community_name)
         user_to_remove_as_moderator = User.objects.get(username=username)
 
-        community_to_remove_moderator_from.moderators.remove(user_to_remove_as_moderator)
+        community_to_remove_moderator_from.remove_moderator(user_to_remove_as_moderator)
         community_to_remove_moderator_from.create_remove_moderator_log(source_user=self,
                                                                        target_user=user_to_remove_as_moderator)
 
@@ -984,16 +988,19 @@ class User(AbstractUser):
         return Community.objects.get(name=community_name)
 
     def get_joined_communities(self):
-        return self.joined_communities.all()
+        Community = get_community_model()
+        return Community.objects.filter(memberships__user=self)
 
     def get_favorite_communities(self):
         return self.favorite_communities.all()
 
     def get_administrated_communities(self):
-        return self.administrated_communities.all()
+        Community = get_community_model()
+        return Community.objects.filter(memberships__user=self, memberships__is_administrator=True)
 
     def get_moderated_communities(self):
-        return self.moderated_communities.all()
+        Community = get_community_model()
+        return Community.objects.filter(memberships__user=self, memberships__is_moderator=True)
 
     def create_public_post(self, text=None, image=None, video=None, created=None):
         world_circle_id = self._get_world_circle_id()
@@ -1059,7 +1066,7 @@ class User(AbstractUser):
 
     def get_community_post_with_id(self, post_id):
         post_query = Q(id=post_id)
-        post_query.add(Q(community__members__id=self.pk), Q.OR)
+        post_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
         # Public type communities
         post_query.add(Q(community__type='P'), Q.OR)
 
@@ -1139,7 +1146,7 @@ class User(AbstractUser):
         if communities_names:
             timeline_posts_query.add(Q(community__name__in=communities_names), Q.AND)
 
-        timeline_posts_query.add(Q(community__members__id=self.pk), Q.OR)
+        timeline_posts_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
 
         if max_id:
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)

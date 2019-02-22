@@ -1,5 +1,7 @@
 from rest_framework.fields import Field
 
+from openbook_communities.models import Community
+
 
 class IsMemberField(Field):
     def __init__(self, **kwargs):
@@ -99,3 +101,18 @@ class RulesField(Field):
             return None
 
         return community.rules
+
+
+class ModeratorsField(Field):
+    def __init__(self, moderator_serializer=None, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        self.moderator_serializer = moderator_serializer
+        super(ModeratorsField, self).__init__(**kwargs)
+
+    def to_representation(self, community):
+        request = self.context.get('request')
+
+        moderators = Community.get_community_with_name_moderators(community_name=community.name)
+
+        return self.moderator_serializer(moderators, context={"request": request}, many=True).data
