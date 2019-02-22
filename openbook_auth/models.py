@@ -17,7 +17,8 @@ from openbook_auth.exceptions import EmailVerificationTokenInvalid
 from openbook_common.models import Badge
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, \
-    get_emoji_group_model, get_user_invite_model, get_community_model, get_community_invite_model, get_tag_model
+    get_emoji_group_model, get_user_invite_model, get_community_model, get_community_invite_model, get_tag_model, \
+    get_post_report_model, get_report_category_model
 from openbook_common.validators import name_characters_validator
 
 
@@ -1239,6 +1240,70 @@ class User(AbstractUser):
 
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
+
+    def report_post_with_id(self, post_id, category_name, comment):
+        Post = get_post_model()
+        post = Post.objects.get(pk=post_id)
+        ReportCategory = get_report_category_model()
+        category = ReportCategory.objects.get(name=category_name)
+        PostReport = get_post_report_model()
+        post_report = PostReport.create_report(post=post, reporter=self, category=category, comment=comment)
+        return post_report
+
+    def confirm_all_reports_for_post(self, post, community_name=None):
+        from openbook_reports.models import ReportStatus
+        self._check_can_user_change_report_status(community_name)
+        for report in post.reports:
+            report.check_can_confirm_report()
+            report.status = ReportStatus.CONFIRMED
+            report.save()
+
+    def reject_all_reports_for_post(self, post, community_name=None):
+        from openbook_reports.models import ReportStatus
+        self._check_can_user_change_report_status(community_name)
+        for report in post.reports:
+            report.check_can_reject_report()
+            report.status = ReportStatus.REJECTED
+            report.save()
+
+    def confirm_report_with_id_for_post_with_id(self, report_id, post_id):
+        from openbook_reports.models import ReportStatus
+        PostReport = get_post_report_model()
+        Post = get_post_model()
+        report = PostReport.objects.get(pk=report_id)
+        post = Post.objects.get(pk=post_id)
+
+        community_name = None
+        if post.community:
+            community_name = post.community.name
+
+        self._check_can_user_change_report_status(community_name)
+        report.check_can_confirm_report()
+        report.status = ReportStatus.CONFIRMED
+        report.save()
+        return report
+
+    def reject_report_with_id_for_post_with_id(self, report, community_name=None):
+        from openbook_reports.models import ReportStatus
+        self._check_can_user_change_report_status(community_name)
+        report.check_can_reject_report()
+        report.status = ReportStatus.REJECTED
+        report.save()
+
+    def _check_can_user_change_report_status(self, community_name):
+        if community_name:
+            Community = get_community_model()
+            is_moderator = \
+                Community.is_user_with_username_moderator_of_community_with_name(username=self.username,
+                                                                                 community_name=community_name)
+            if not is_moderator:
+                raise ValidationError(
+                    _('User cannot change status of report'),
+                )
+        elif not self.is_staff and not self.is_superuser:
+            raise ValidationError(
+                _('User cannot change status of report'),
+            )
 
     def _make_get_post_with_id_query_for_user(self, user, post_id):
         posts_query = self._make_get_posts_query_for_user(user)
