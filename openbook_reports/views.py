@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 from openbook_reports.serializers import GetReportCategoriesSerializer, ReportPostSerializer, PostReportSerializer, \
-    ConfirmPostReportSerializer, PostReportConfirmSerializer
+    ConfirmRejectPostReportSerializer, PostReportConfirmRejectSerializer, AuthenticatedUserPostSerializer
 from openbook_reports.models import ReportCategory as ReportCategoryModel
 
 
@@ -49,7 +49,7 @@ class ConfirmPostReport(APIView):
         request_data['post_id'] = post_id
         request_data['report_id'] = report_id
 
-        serializer = ConfirmPostReportSerializer(data=request_data)
+        serializer = ConfirmRejectPostReportSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
@@ -60,26 +60,51 @@ class ConfirmPostReport(APIView):
         with transaction.atomic():
             post_report = user.confirm_report_with_id_for_post_with_id(report_id=report_id, post_id=post_id)
 
-        post_report_serializer = PostReportConfirmSerializer(post_report, context={"request": request})
+        post_report_serializer = PostReportConfirmRejectSerializer(post_report, context={"request": request})
         return Response(post_report_serializer.data, status=status.HTTP_200_OK)
-
-
-
-class ConfirmPostReports(APIView):
-    permission_classes = (IsAuthenticated,)
-    pass
 
 
 class RejectPostReport(APIView):
     permission_classes = (IsAuthenticated,)
 
+    def post(self, request, post_id, report_id):
+        request_data = request.data.copy()
+        request_data['post_id'] = post_id
+        request_data['report_id'] = report_id
 
-class RejectPostReports(APIView):
-    permission_classes = (IsAuthenticated,)
+        serializer = ConfirmRejectPostReportSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        report_id = data.get('report_id')
+        post_id = data.get('post_id')
+        user = request.user
+
+        with transaction.atomic():
+            post_report = user.reject_report_with_id_for_post_with_id(report_id=report_id, post_id=post_id)
+
+        post_report_serializer = PostReportConfirmRejectSerializer(post_report, context={"request": request})
+        return Response(post_report_serializer.data, status=status.HTTP_200_OK)
 
 
 class ReportedPosts(APIView):
     permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        user = request.user
+        all_reported_posts_serialiazer = AuthenticatedUserPostSerializer(user.get_reported_posts(), many=True, context={"request": request})
+
+        return Response(all_reported_posts_serialiazer.data, status=status.HTTP_200_OK)
+
+
+class UserReports(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        user = request.user
+        all_reports_serialiazed = PostReportSerializer(user.get_reports(), many=True, context={"request": request})
+
+        return Response(all_reports_serialiazed.data, status=status.HTTP_200_OK)
 
 
 class ReportedPostsCommunity(APIView):
