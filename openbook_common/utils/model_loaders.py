@@ -17,6 +17,14 @@ def get_post_model():
     return apps.get_model('openbook_posts.Post')
 
 
+def get_post_report_model():
+    return apps.get_model('openbook_reports.PostReport')
+
+
+def get_report_category_model():
+    return apps.get_model('openbook_reports.ReportCategory')
+
+
 def get_list_model():
     return apps.get_model('openbook_lists.List')
 
