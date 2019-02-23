@@ -5,7 +5,8 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 from openbook_reports.serializers import GetReportCategoriesSerializer, ReportPostSerializer, PostReportSerializer, \
-    ConfirmRejectPostReportSerializer, PostReportConfirmRejectSerializer, AuthenticatedUserPostSerializer
+    ConfirmRejectPostReportSerializer, PostReportConfirmRejectSerializer, AuthenticatedUserPostSerializer, \
+    ReportedPostsCommunitySerializer
 from openbook_reports.models import ReportCategory as ReportCategoryModel
 
 
@@ -109,4 +110,21 @@ class UserReports(APIView):
 
 class ReportedPostsCommunity(APIView):
     permission_classes = (IsAuthenticated,)
+
+    def get(self, request, community_name):
+        request_data = request.data.copy()
+        request_data['community_name'] = community_name
+        serializer = ReportedPostsCommunitySerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        community_name_serialized = serializer.validated_data.get('community_name')
+
+        with transaction.atomic():
+            reported_posts = user.get_reported_posts_for_community_with_name(community_name=community_name_serialized)
+            community_reports_serializer = AuthenticatedUserPostSerializer(reported_posts,
+                                                                           many=True,
+                                                                           context={"request": request})
+
+        return Response(community_reports_serializer.data, status=status.HTTP_200_OK)
 

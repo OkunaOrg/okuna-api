@@ -7,6 +7,7 @@ from openbook_common.models import Emoji
 from openbook_common.serializers_fields.post import ReactionsEmojiCountField, ReactionField, CommentsCountField, \
     CirclesField
 from openbook_communities.models import Community
+from openbook_communities.validators import community_name_characters_validator, community_name_exists
 from openbook_posts.models import Post, PostReaction, PostVideo, PostImage
 from openbook_posts.validators import post_id_exists
 from openbook_reports.models import ReportCategory, PostReport
@@ -214,3 +215,13 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'circles',
             'community'
         )
+
+
+class ReportedPostsCommunitySerializer(serializers.Serializer):
+    community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
+                                           allow_blank=False,
+                                           validators=[community_name_characters_validator, community_name_exists])
+
+
+
+
