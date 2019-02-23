@@ -236,7 +236,7 @@ class CommunityModeratorsAPITest(APITestCase):
 
     def test_cant_add_community_moderator_if_member(self):
         """
-        should not be able to add a community moderator if user is member of community
+        should not be able to add a community moderator if user is just a member of community
         """
         user = make_user()
         other_user = make_user()
@@ -261,7 +261,7 @@ class CommunityModeratorsAPITest(APITestCase):
 
     def test_cant_add_community_moderator_if_not_member(self):
         """
-        should not be able to add a community moderator if user is not member of community
+        should not be able to add a community moderator if user is not even a member of community
         """
         user = make_user()
         other_user = make_user()
@@ -269,18 +269,41 @@ class CommunityModeratorsAPITest(APITestCase):
 
         community = make_community(creator=other_user, type='P')
 
-        user_to_make_admnistrator = make_user()
-        user_to_make_admnistrator.join_community_with_name(community_name=community.name)
+        user_to_make_moderator = make_user()
 
         url = self._get_url(community_name=community.name)
         response = self.client.put(url, {
-            'username': user_to_make_admnistrator.username
+            'username': user_to_make_moderator.username
         }, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         self.assertFalse(
-            user_to_make_admnistrator.is_moderator_of_community_with_name(community_name=community.name))
+            user_to_make_moderator.is_moderator_of_community_with_name(community_name=community.name))
+
+    def test_cant_add_community_moderator_if_admin(self):
+        """
+        should not be able to add a community moderator if the user is already an admin
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community = make_community(creator=user, type='P')
+
+        user_to_make_moderator = make_user()
+        user_to_make_moderator.join_community_with_name(community_name=community.name)
+        user.add_administrator_with_username_to_community_with_name(username=user_to_make_moderator.username,
+                                                                    community_name=community.name)
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.put(url, {
+            'username': user_to_make_moderator.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(
+            user_to_make_moderator.is_moderator_of_community_with_name(community_name=community.name))
 
     def _get_url(self, community_name):
         return reverse('community-moderators', kwargs={
