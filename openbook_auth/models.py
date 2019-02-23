@@ -1241,6 +1241,20 @@ class User(AbstractUser):
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
 
+    def get_reported_posts_for_community_with_name(self, community_name):
+        Community = get_community_model()
+
+        is_moderator = Community.is_user_with_username_moderator_of_community_with_name(username=self.username,
+                                                                                        community_name=community_name)
+
+        if not is_moderator and not self.is_superuser and not self.is_staff:
+            raise ValidationError(
+                _('User cannot access reports from this community')
+            )
+        PostReport = get_post_report_model()
+        reported_posts = [report.post for report in PostReport.objects.filter(Q(post__community__name=community_name))]
+        return reported_posts
+
     def get_reported_posts(self):
         user_reports = self.get_reports()
         user_reported_posts = [report.post for report in user_reports]
@@ -1271,7 +1285,7 @@ class User(AbstractUser):
         PostReport = get_post_report_model()
         Post = get_post_model()
         report = PostReport.objects.get(pk=report_id)
-        post = Post.objects.get(pk=post_id)
+        post = Post.objects.select_related('community').get(pk=post_id)
 
         community_name = None
         if post.community:
@@ -1504,6 +1518,7 @@ class User(AbstractUser):
                 )
         else:
             # Check if we can retrieve the post
+            print(post_id)
             if not self.get_post_with_id_for_user(post_id=post_id, user=post.creator).exists():
                 raise ValidationError(
                     _('This post is private.'),
