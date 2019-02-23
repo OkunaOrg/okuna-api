@@ -88,3 +88,24 @@ class CommunityMembershipsField(Field):
         membership = community.memberships.get(user=request_user)
 
         return self.community_membership_serializer([membership], context={"request": request}, many=True).data
+
+
+class UserCommunitiesMembershipsField(Field):
+    def __init__(self, community_membership_serializer=None, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        self.community_membership_serializer = community_membership_serializer
+        super(UserCommunitiesMembershipsField, self).__init__(**kwargs)
+
+    def to_representation(self, member):
+        request = self.context.get('request')
+        request_user = request.user
+        community = self.context.get('community')
+
+        if not community or request_user.is_anonymous or not request_user.is_member_of_community_with_name(
+                community_name=community.name):
+            return None
+
+        membership = community.memberships.get(user=request_user)
+
+        return self.community_membership_serializer([membership], context={"request": request}, many=True).data

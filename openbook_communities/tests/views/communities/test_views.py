@@ -560,8 +560,8 @@ class ModeratedCommunities(APITestCase):
             other_user = make_user()
             community = make_community(creator=other_user)
             user.join_community_with_name(community_name=community.name)
-            other_user.add_administrator_with_username_to_community_with_name(username=user.username,
-                                                                              community_name=community.name)
+            other_user.add_moderator_with_username_to_community_with_name(username=user.username,
+                                                                          community_name=community.name)
             communities_ids.append(community.pk)
 
         url = self._get_url()

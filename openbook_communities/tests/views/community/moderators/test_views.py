@@ -332,28 +332,6 @@ class CommunityModeratorAPITest(APITestCase):
                                               source_user=user,
                                               target_user=moderator_to_remove).exists())
 
-    def test_cant_remove_community_moderator_if_also_admin(self):
-        """
-        should not be able to remove a community moderator if the moderator is also an admin
-        """
-        user = make_user()
-        other_user = make_user()
-        headers = make_authentication_headers_for_user(user)
-
-        community = make_community(creator=other_user, type='P')
-
-        user.join_community_with_name(community.name)
-        other_user.add_administrator_with_username_to_community_with_name(username=user.username,
-                                                                          community_name=community.name)
-
-        url = self._get_url(community_name=community.name, username=other_user.username)
-        response = self.client.delete(url, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-        self.assertTrue(
-            other_user.is_moderator_of_community_with_name(community_name=community.name))
-
     def test_cant_remove_community_moderator_if_mod(self):
         """
         should not be able to remove a community moderator if user is moderator

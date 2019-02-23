@@ -791,10 +791,6 @@ class User(AbstractUser):
         community_to_add_administrator_to.add_administrator(user_to_add_as_administrator)
         community_to_add_administrator_to.create_add_administrator_log(source_user=self,
                                                                        target_user=user_to_add_as_administrator)
-
-        if not user_to_add_as_administrator.is_moderator_of_community_with_name(community_name=community_name):
-            self.add_moderator_with_username_to_community_with_name(username=username, community_name=community_name)
-
         return community_to_add_administrator_to
 
     def remove_administrator_with_username_from_community_with_name(self, username, community_name):
@@ -810,8 +806,6 @@ class User(AbstractUser):
         community_to_remove_administrator_from.remove_administrator(user_to_remove_as_administrator)
         community_to_remove_administrator_from.create_remove_administrator_log(source_user=self,
                                                                                target_user=user_to_remove_as_administrator)
-
-        self.remove_moderator_with_username_from_community_with_name(username=username, community_name=community_name)
 
         return community_to_remove_administrator_from
 
@@ -1409,7 +1403,9 @@ class User(AbstractUser):
                 if Post.is_post_with_id_a_community_post(post_id):
                     # If the comment is in a community, check if we're moderators
                     post = Post.objects.select_related('community').get(pk=post_id)
-                    if not self.is_moderator_of_community_with_name(post.community.name):
+                    if not self.is_moderator_of_community_with_name(
+                            post.community.name) and not self.is_administrator_of_community_with_name(
+                        post.community.name):
                         raise ValidationError(
                             _('Only moderators/administrators can remove community posts.'),
                         )
@@ -1617,7 +1613,8 @@ class User(AbstractUser):
             if Post.is_post_with_id_a_community_post(post_id):
                 # If the comment is in a community, check if we're moderators
                 post = Post.objects.select_related('community').get(pk=post_id)
-                if not self.is_moderator_of_community_with_name(post.community.name):
+                if not self.is_moderator_of_community_with_name(
+                        post.community.name) and not self.is_administrator_of_community_with_name(post.community.name):
                     raise ValidationError(
                         _('Only moderators/administrators can remove community posts.'),
                     )
@@ -1814,45 +1811,6 @@ class User(AbstractUser):
                 community_name) and not self.is_administrator_of_community_with_name(community_name):
             raise ValidationError('Only administrators & moderators can get the list of administrators')
 
-    def _check_can_add_administrator_with_username_to_community_with_name(self, username, community_name):
-        if not self.is_creator_of_community_with_name(community_name=community_name):
-            raise ValidationError(
-                _('Only the creator of the community can add other administrators.'),
-            )
-
-        Community = get_community_model()
-
-        if Community.is_user_with_username_administrator_of_community_with_name(username=username,
-                                                                                community_name=community_name):
-            raise ValidationError(
-                _('User is already an administrator.'),
-            )
-
-        if not Community.is_user_with_username_member_of_community_with_name(username=username,
-                                                                             community_name=community_name):
-            raise ValidationError(
-                _('Can\'t make administrator a user that is not part of the community.'),
-            )
-
-    def _check_can_remove_administrator_with_username_to_community_with_name(self, username, community_name):
-        if not self.is_creator_of_community_with_name(community_name=community_name):
-            raise ValidationError(
-                _('Only the creator of the community can remove other administrators.'),
-            )
-
-        Community = get_community_model()
-
-        if not Community.is_user_with_username_administrator_of_community_with_name(username=username,
-                                                                                    community_name=community_name):
-            raise ValidationError(
-                _('User to remove is not an administrator.'),
-            )
-
-    def _check_can_get_community_with_name_administrators(self, community_name):
-        if not self.is_moderator_of_community_with_name(
-                community_name) and not self.is_administrator_of_community_with_name(community_name):
-            raise ValidationError('Only administrators & moderators can get the list of administrators')
-
     def _check_can_add_moderator_with_username_to_community_with_name(self, username, community_name):
         if not self.is_administrator_of_community_with_name(community_name=community_name):
             raise ValidationError(
@@ -1860,6 +1818,12 @@ class User(AbstractUser):
             )
 
         Community = get_community_model()
+
+        if Community.is_user_with_username_administrator_of_community_with_name(username=username,
+                                                                                community_name=community_name):
+            raise ValidationError(
+                _('User is an administrator.'),
+            )
 
         if Community.is_user_with_username_moderator_of_community_with_name(username=username,
                                                                             community_name=community_name):
@@ -1885,12 +1849,6 @@ class User(AbstractUser):
                                                                                 community_name=community_name):
             raise ValidationError(
                 _('User to remove is not an moderator.'),
-            )
-
-        if Community.is_user_with_username_administrator_of_community_with_name(username=username,
-                                                                                community_name=community_name):
-            raise ValidationError(
-                _('Can\'t remove a moderator which is also an administrator.'),
             )
 
     def _check_can_get_community_with_name_moderators(self, community_name):
