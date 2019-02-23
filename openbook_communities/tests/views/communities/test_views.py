@@ -228,6 +228,68 @@ class CommunitiesAPITests(APITestCase):
 
         self.assertFalse(Community.objects.filter(name=community_name).exists())
 
+    def test_create_community_should_make_creator_admin(self):
+        """
+        should make the community creator an administrator when creating a new community
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_name = fake.user_name()
+        community_title = fake.name_male()
+        community_color = fake.hex_color()
+        community_categories = []
+        community_type = 'T'
+
+        for i in range(0, settings.COMMUNITY_CATEGORIES_MAX_AMOUNT):
+            category = make_category()
+            community_categories.append(category.name)
+
+        data = {
+            'name': community_name,
+            'type': community_type,
+            'title': community_title,
+            'color': community_color,
+            'categories': community_categories,
+        }
+
+        url = self._get_url()
+
+        self.client.put(url, data, **headers, format='multipart')
+
+        self.assertTrue(user.is_administrator_of_community_with_name(community_name=community_name))
+
+    def test_create_community_should_not_make_creator_mod(self):
+        """
+        should NOT make the community creator a moderator when creating a new community
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_name = fake.user_name()
+        community_title = fake.name_male()
+        community_color = fake.hex_color()
+        community_categories = []
+        community_type = 'T'
+
+        for i in range(0, settings.COMMUNITY_CATEGORIES_MAX_AMOUNT):
+            category = make_category()
+            community_categories.append(category.name)
+
+        data = {
+            'name': community_name,
+            'type': community_type,
+            'title': community_title,
+            'color': community_color,
+            'categories': community_categories,
+        }
+
+        url = self._get_url()
+
+        self.client.put(url, data, **headers, format='multipart')
+
+        self.assertFalse(user.is_moderator_of_community_with_name(community_name=community_name))
+
     def test_create_private_community(self):
         """
         should be able to create a private community and return 201

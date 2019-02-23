@@ -118,7 +118,7 @@ class Community(models.Model):
                                        description=description, type=type, rules=rules,
                                        invites_enabled=invites_enabled)
 
-        CommunityMembership.create_membership(user=creator, is_administrator=True, is_moderator=True,
+        CommunityMembership.create_membership(user=creator, is_administrator=True, is_moderator=False,
                                               community=community)
 
         if categories_names:
