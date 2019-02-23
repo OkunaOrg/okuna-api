@@ -22,6 +22,7 @@ class PostCommenterProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'avatar',
+            'name'
         )
 
 
