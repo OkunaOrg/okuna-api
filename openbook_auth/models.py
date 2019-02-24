@@ -1807,9 +1807,8 @@ class User(AbstractUser):
             )
 
     def _check_can_get_community_with_name_administrators(self, community_name):
-        if not self.is_moderator_of_community_with_name(
-                community_name) and not self.is_administrator_of_community_with_name(community_name):
-            raise ValidationError('Only administrators & moderators can get the list of administrators')
+        # Anyone can get the administrators of the community
+        return True
 
     def _check_can_add_moderator_with_username_to_community_with_name(self, username, community_name):
         if not self.is_administrator_of_community_with_name(community_name=community_name):

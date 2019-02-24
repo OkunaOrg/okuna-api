@@ -29,13 +29,11 @@ class CommunityModeratorsAPITest(APITestCase):
         community_name = community.name
 
         user.join_community_with_name(community_name)
-        other_user.add_moderator_with_username_to_community_with_name(username=user.username,
-                                                                      community_name=community.name)
+        other_user.add_administrator_with_username_to_community_with_name(username=user.username,
+                                                                          community_name=community.name)
 
         amount_of_moderators = 5
         moderators_ids = [
-            user.pk,
-            other_user.pk
         ]
 
         for i in range(0, amount_of_moderators):
@@ -60,7 +58,7 @@ class CommunityModeratorsAPITest(APITestCase):
 
     def test_can_get_community_moderators_if_mod(self):
         """
-        should be able to retrieve the community moderators if user is admin of community
+        should be able to retrieve the community moderators if user is moderator of community
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
@@ -75,7 +73,6 @@ class CommunityModeratorsAPITest(APITestCase):
 
         amount_of_moderators = 5
         moderators_ids = [
-            other_user.pk,
             user.pk
         ]
 
@@ -114,7 +111,6 @@ class CommunityModeratorsAPITest(APITestCase):
 
         amount_of_moderators = 5
         moderators_ids = [
-            other_user.pk,
         ]
 
         for i in range(0, amount_of_moderators):
@@ -380,7 +376,7 @@ class CommunityModeratorAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         self.assertTrue(
-            other_user.is_moderator_of_community_with_name(community_name=community.name))
+            moderator_to_remove.is_moderator_of_community_with_name(community_name=community.name))
 
     def test_cant_remove_community_moderator_if_member(self):
         """
@@ -405,7 +401,7 @@ class CommunityModeratorAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         self.assertTrue(
-            other_user.is_moderator_of_community_with_name(community_name=community.name))
+            moderator_to_remove.is_moderator_of_community_with_name(community_name=community.name))
 
     def _get_url(self, community_name, username):
         return reverse('community-moderator', kwargs={

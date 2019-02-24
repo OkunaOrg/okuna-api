@@ -98,7 +98,7 @@ class CommunityAdministratorsAPITest(APITestCase):
             response_administrator_id = response_administrator.get('id')
             self.assertIn(response_administrator_id, administrators_ids)
 
-    def test_cant_get_community_administrators_if_member(self):
+    def test_can_get_community_administrators_if_member(self):
         """
         should be able to retrieve the community administrators if user is member of community
         """
@@ -106,30 +106,35 @@ class CommunityAdministratorsAPITest(APITestCase):
         headers = make_authentication_headers_for_user(user)
 
         other_user = make_user()
-        community = make_community(creator=other_user, type='P')
+        community = make_community(creator=other_user)
         community_name = community.name
 
         user.join_community_with_name(community_name)
 
-        url = self._get_url(community_name=community.name)
-        response = self.client.get(url, **headers)
+        amount_of_administrators = 5
+        administrators_ids = [
+            other_user.pk
+        ]
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_cant_get_community_administrators(self):
-        """
-        should be able to retrieve the community administrators if user is member of community
-        """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
-
-        other_user = make_user()
-        community = make_community(creator=other_user, type='P')
+        for i in range(0, amount_of_administrators):
+            community_member = make_user()
+            community_member.join_community_with_name(community_name)
+            other_user.add_administrator_with_username_to_community_with_name(username=community_member,
+                                                                              community_name=community.name)
+            administrators_ids.append(community_member.pk)
 
         url = self._get_url(community_name=community.name)
         response = self.client.get(url, **headers)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_administrators = json.loads(response.content)
+
+        self.assertEqual(len(response_administrators), len(administrators_ids))
+
+        for response_administrator in response_administrators:
+            response_administrator_id = response_administrator.get('id')
+            self.assertIn(response_administrator_id, administrators_ids)
 
     def test_can_add_community_administrator_if_creator(self):
         """
