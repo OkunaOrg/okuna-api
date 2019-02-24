@@ -43,7 +43,7 @@ from openbook_posts.views.post.views import PostComments, PostCommentItem, PostI
 from openbook_posts.views.posts.views import Posts, TrendingPosts
 from openbook_importer.views import ImportItem
 from openbook_reports.views import ReportCategory, ReportPost, RejectPostReport, ConfirmPostReport, ReportedPosts, \
-    ReportedPostsCommunity, UserReports
+    ReportedPostsCommunity, UserReports, ReportPostComment, ConfirmPostCommentReport, RejectPostCommentReport
 
 auth_patterns = [
     path('register/', Register.as_view(), name='register-user'),
@@ -63,10 +63,17 @@ post_report_patterns = [
     path('<int:report_id>/reject/', RejectPostReport.as_view(), name='post-report-reject'),
 ]
 
+post_comment_patterns = [
+    path('', PostCommentItem.as_view(), name='post-comment'),
+    path('reports/', ReportPostComment.as_view(), name='post-comment-reports'),
+    path('reports/<int:report_id>/confirm/', ConfirmPostCommentReport.as_view(), name='post-comment-report-confirm'),
+    path('reports/<int:report_id>/reject/', RejectPostCommentReport.as_view(), name='post-comment-report-reject'),
+]
+
 post_patterns = [
     path('', PostItem.as_view(), name='post'),
     path('comments/', PostComments.as_view(), name='post-comments'),
-    path('comments/<int:post_comment_id>/', PostCommentItem.as_view(), name='post-comment'),
+    path('comments/<int:post_comment_id>/', include(post_comment_patterns)),
     path('reactions/', PostReactions.as_view(), name='post-reactions'),
     path('reactions/emoji-count/', PostReactionsEmojiCount.as_view(), name='post-reactions-emoji-count'),
     path('reactions/<int:post_reaction_id>/', PostReactionItem.as_view(), name='post-reaction'),
