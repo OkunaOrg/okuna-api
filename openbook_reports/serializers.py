@@ -9,9 +9,9 @@ from openbook_common.serializers_fields.post import ReactionsEmojiCountField, Re
 from openbook_communities.models import Community
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 from openbook_posts.models import Post, PostReaction, PostVideo, PostImage
-from openbook_posts.validators import post_id_exists
-from openbook_reports.models import ReportCategory, PostReport
-from openbook_reports.validators import is_valid_report_category, report_id_exists
+from openbook_posts.validators import post_id_exists, post_comment_id_exists
+from openbook_reports.models import ReportCategory, PostReport, PostCommentReport
+from openbook_reports.validators import is_valid_report_category, report_id_exists, comment_report_id_exsits
 
 
 class GetReportCategoriesSerializer(serializers.ModelSerializer):
@@ -69,6 +69,17 @@ class ConfirmRejectPostReportSerializer(serializers.Serializer):
     )
 
 
+class ConfirmRejectPostCommentReportSerializer(serializers.Serializer):
+    post_comment_id = serializers.IntegerField(
+        validators=[post_comment_id_exists],
+        required=True,
+    )
+    report_id = serializers.IntegerField(
+        validators=[comment_report_id_exsits],
+        required=True
+    )
+
+
 class PostReportConfirmRejectSerializer(serializers.ModelSerializer):
     category = PostReportCategorySerializer()
 
@@ -82,6 +93,19 @@ class PostReportConfirmRejectSerializer(serializers.ModelSerializer):
             'id'
         )
 
+
+class PostCommentReportConfirmRejectSerializer(serializers.ModelSerializer):
+    category = PostReportCategorySerializer()
+
+    class Meta:
+        model = PostCommentReport
+        fields = (
+            'category',
+            'status',
+            'comment',
+            'created',
+            'id'
+        )
 
 class PostCreatorProfileSerializer(serializers.ModelSerializer):
     badges = BadgeSerializer(many=True)
@@ -223,5 +247,32 @@ class ReportedPostsCommunitySerializer(serializers.Serializer):
                                            validators=[community_name_characters_validator, community_name_exists])
 
 
+class ReportPostCommentSerializer(serializers.Serializer):
+    post_comment_id = serializers.IntegerField(
+        validators=[post_comment_id_exists],
+        required=True,
+    )
+    category_name = serializers.CharField(max_length=settings.REPORT_CATEGORY_NAME_MAX_LENGTH, required=True,
+                                          validators=[is_valid_report_category])
+    comment = serializers.CharField(max_length=settings.REPORT_COMMENT_MAX_LENGTH, allow_blank=True)
 
 
+class ReportPostCommentsSerializer(serializers.Serializer):
+    post_comment_id = serializers.IntegerField(
+        validators=[post_comment_id_exists],
+        required=True,
+    )
+
+
+class PostReportCommentSerializer(serializers.ModelSerializer):
+    category = PostReportCategorySerializer()
+
+    class Meta:
+        model = PostCommentReport
+        fields = (
+            'category',
+            'status',
+            'comment',
+            'created',
+            'id'
+        )

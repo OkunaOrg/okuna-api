@@ -6,7 +6,9 @@ from rest_framework import status
 from rest_framework.response import Response
 from openbook_reports.serializers import GetReportCategoriesSerializer, ReportPostSerializer, PostReportSerializer, \
     ConfirmRejectPostReportSerializer, PostReportConfirmRejectSerializer, AuthenticatedUserPostSerializer, \
-    ReportedPostsCommunitySerializer
+    ReportedPostsCommunitySerializer, ReportPostCommentSerializer, PostReportCommentSerializer, \
+    ReportPostCommentsSerializer, PostCommentReportConfirmRejectSerializer, \
+    ConfirmRejectPostCommentReportSerializer
 from openbook_reports.models import ReportCategory as ReportCategoryModel
 
 
@@ -127,4 +129,93 @@ class ReportedPostsCommunity(APIView):
                                                                            context={"request": request})
 
         return Response(community_reports_serializer.data, status=status.HTTP_200_OK)
+
+
+class ReportPostComment(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def put(self, request, post_id, post_comment_id):
+        request_data = request.data.copy()
+        request_data['post_comment_id'] = post_comment_id
+        serializer = ReportPostCommentSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        comment_text = data.get('comment')
+        category = data.get('category_name')
+        post_comment_id = data.get('post_comment_id')
+        user = request.user
+
+        with transaction.atomic():
+            post_comment_report = user.report_post_comment_with_id(post_comment_id=post_comment_id,
+                                                                   comment=comment_text,
+                                                                   category_name=category)
+
+        post_report_comment_serializer = PostReportCommentSerializer(post_comment_report, context={"request": request})
+        return Response(post_report_comment_serializer.data, status=status.HTTP_201_CREATED)
+
+    def get(self, request, post_id, post_comment_id):
+        request_data = request.data.copy()
+        request_data['post_comment_id'] = post_comment_id
+        serializer = ReportPostCommentsSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        post_comment_id = data.get('post_comment_id')
+        user = request.user
+
+        with transaction.atomic():
+            post_comment_reports = user.get_reports_for_comment_with_id(post_comment_id=post_comment_id)
+            reports_serializer = PostReportCommentSerializer(post_comment_reports, many=True,
+                                                             context={"request": request})
+
+        return Response(reports_serializer.data, status=status.HTTP_200_OK)
+
+
+class ConfirmPostCommentReport(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, post_id, post_comment_id, report_id):
+        request_data = request.data.copy()
+        request_data['post_comment_id'] = post_comment_id
+        request_data['report_id'] = report_id
+        serializer = ConfirmRejectPostCommentReportSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        post_comment_id = data.get('post_comment_id')
+        report_id = data.get('report_id')
+        user = request.user
+
+        with transaction.atomic():
+            post_comment_report = user.confirm_report_with_id_for_comment_with_id(post_comment_id=post_comment_id,
+                                                                                  report_id=report_id)
+
+        post_comment_report_serializer = PostCommentReportConfirmRejectSerializer(post_comment_report,
+                                                                                  context={"request": request})
+        return Response(post_comment_report_serializer.data, status=status.HTTP_200_OK)
+
+
+class RejectPostCommentReport(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, post_id, post_comment_id, report_id):
+        request_data = request.data.copy()
+        request_data['post_comment_id'] = post_comment_id
+        request_data['report_id'] = report_id
+        serializer = ConfirmRejectPostCommentReportSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        post_comment_id = data.get('post_comment_id')
+        report_id = data.get('report_id')
+        user = request.user
+
+        with transaction.atomic():
+            post_comment_report = user.reject_report_with_id_for_comment_with_id(post_comment_id=post_comment_id,
+                                                                                 report_id=report_id)
+
+        post_comment_report_serializer = PostCommentReportConfirmRejectSerializer(post_comment_report,
+                                                                                  context={"request": request})
+        return Response(post_comment_report_serializer.data, status=status.HTTP_200_OK)
 
