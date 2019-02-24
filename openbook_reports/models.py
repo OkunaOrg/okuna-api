@@ -56,13 +56,13 @@ class AbstractReport(models.Model):
         return super(AbstractReport, self).save(*args, **kwargs)
 
     def check_can_confirm_report(self):
-        if self.status is self.REJECTED or self.status == self.DELETED:
+        if self.status == self.REJECTED or self.status == self.DELETED:
             raise ValidationError(
                 _('Cannot change status of report'),
             )
 
     def check_can_reject_report(self):
-        if self.status is self.CONFIRMED or self.status == self.DELETED:
+        if self.status == self.CONFIRMED or self.status == self.DELETED:
             raise ValidationError(
                 _('Cannot change status of report'),
             )
@@ -71,6 +71,9 @@ class AbstractReport(models.Model):
 class PostReport(AbstractReport):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='reports')
     reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_reports')
+
+    class Meta:
+        unique_together = ('post', 'reporter')
 
     @classmethod
     def create_report(cls, post, reporter, category, status=AbstractReport.PENDING, comment=None):
@@ -82,6 +85,9 @@ class PostReport(AbstractReport):
 class PostCommentReport(AbstractReport):
     post_comment = models.ForeignKey(PostComment, on_delete=models.CASCADE, related_name='reports')
     reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comment_reports')
+
+    class Meta:
+        unique_together = ('post_comment', 'reporter')
 
     @classmethod
     def create_comment_report(cls, post_comment, reporter, category, comment):
