@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from django.utils.translation import gettext as _
 
 from openbook_common.responses import ApiMessageResponse
-from openbook_common.utils.helpers import normalise_request_data
+from openbook_common.utils.helpers import normalise_request_data, normalize_list_value_in_request_data
 from openbook_communities.views.community.members.serializers import JoinCommunitySerializer, \
     GetCommunityMembersSerializer, GetCommunityMembersMemberSerializer, LeaveCommunitySerializer, \
     InviteCommunityMemberSerializer, MembersCommunitySerializer, SearchCommunityMembersSerializer
@@ -18,6 +18,7 @@ class CommunityMembers(APIView):
 
     def get(self, request, community_name):
         query_params = request.query_params.dict()
+        normalize_list_value_in_request_data(request_data=query_params, list_name='exclude')
         query_params['community_name'] = community_name
 
         serializer = GetCommunityMembersSerializer(data=query_params)
@@ -31,7 +32,8 @@ class CommunityMembers(APIView):
 
         user = request.user
 
-        members = user.get_community_with_name_members(community_name=community_name, max_id=max_id, exclude_keyword=exclude).order_by(
+        members = user.get_community_with_name_members(community_name=community_name, max_id=max_id,
+                                                       exclude_keywords=exclude).order_by(
             '-id')[:count]
 
         response_serializer = GetCommunityMembersMemberSerializer(members, many=True,
@@ -108,6 +110,7 @@ class SearchCommunityMembers(APIView):
     def get(self, request, community_name):
         query_params = request.query_params.dict()
         query_params['community_name'] = community_name
+        normalize_list_value_in_request_data(request_data=query_params, list_name='exclude')
 
         serializer = SearchCommunityMembersSerializer(data=query_params)
         serializer.is_valid(raise_exception=True)
@@ -120,7 +123,8 @@ class SearchCommunityMembers(APIView):
 
         user = request.user
 
-        members = user.search_community_with_name_members(community_name=community_name, query=query, exclude_keyword=exclude)[
+        members = user.search_community_with_name_members(community_name=community_name, query=query,
+                                                          exclude_keywords=exclude)[
                   :count]
 
         response_serializer = GetCommunityMembersMemberSerializer(members, many=True,

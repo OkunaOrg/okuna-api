@@ -37,11 +37,13 @@ class GetCommunityMembersSerializer(serializers.Serializer):
         required=False,
         max_value=20
     )
-    exclude = serializers.ChoiceField(
+    exclude = serializers.ListField(
         required=False,
-        choices=(
-            Community.EXCLUDE_COMMUNITY_ADMINISTRATORS_KEYWORD,
-            Community.EXCLUDE_COMMUNITY_MODERATORS_KEYWORD,
+        child=serializers.ChoiceField(
+            choices=(
+                Community.EXCLUDE_COMMUNITY_ADMINISTRATORS_KEYWORD,
+                Community.EXCLUDE_COMMUNITY_MODERATORS_KEYWORD,
+            )
         )
     )
     community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,

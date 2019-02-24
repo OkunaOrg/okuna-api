@@ -135,20 +135,21 @@ class Community(models.Model):
     EXCLUDE_COMMUNITY_MODERATORS_KEYWORD = 'moderators'
 
     @classmethod
-    def get_community_with_name_members(cls, community_name, members_max_id=None, exclude_keyword=None):
+    def get_community_with_name_members(cls, community_name, members_max_id=None, exclude_keywords=None):
         community_members_query = Q(communities_memberships__community__name=community_name)
 
         if members_max_id:
             community_members_query.add(Q(id__lt=members_max_id), Q.AND)
 
-        if exclude_keyword:
+        if exclude_keywords:
             community_members_query.add(
-                cls._get_exclude_members_query_for_keyword(exclude_keyword=exclude_keyword),
+                cls._get_exclude_members_query_for_keywords(exclude_keywords=exclude_keywords),
                 Q.AND)
+
         return User.objects.filter(community_members_query)
 
     @classmethod
-    def search_community_with_name_members(cls, community_name, query, exclude_keyword=None):
+    def search_community_with_name_members(cls, community_name, query, exclude_keywords=None):
         db_query = Q(communities_memberships__community__name=community_name)
 
         community_members_query = Q(communities_memberships__user__username__icontains=query)
@@ -156,21 +157,22 @@ class Community(models.Model):
 
         db_query.add(community_members_query, Q.AND)
 
-        if exclude_keyword:
+        if exclude_keywords:
             db_query.add(
-                cls._get_exclude_members_query_for_keyword(exclude_keyword=exclude_keyword),
+                cls._get_exclude_members_query_for_keywords(exclude_keywords=exclude_keywords),
                 Q.AND)
 
         return User.objects.filter(community_members_query)
 
     @classmethod
-    def _get_exclude_members_query_for_keyword(cls, exclude_keyword):
-        if exclude_keyword == cls.EXCLUDE_COMMUNITY_ADMINISTRATORS_KEYWORD:
-            query = Q(communities_memberships__is_administrator=False)
-        elif exclude_keyword == cls.EXCLUDE_COMMUNITY_MODERATORS_KEYWORD:
-            query = Q(communities_memberships__is_moderator=False)
-        else:
-            raise Exception('Unhandled exclude query keyword')
+    def _get_exclude_members_query_for_keywords(cls, exclude_keywords):
+        query = Q()
+
+        if cls.EXCLUDE_COMMUNITY_ADMINISTRATORS_KEYWORD in exclude_keywords:
+            query.add(Q(communities_memberships__is_administrator=False), Q.AND)
+
+        if cls.EXCLUDE_COMMUNITY_MODERATORS_KEYWORD in exclude_keywords:
+            query.add(Q(communities_memberships__is_moderator=False), Q.AND)
 
         return query
 

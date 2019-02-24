@@ -707,21 +707,21 @@ class User(AbstractUser):
         community_to_delete_cover_from.save()
         return community_to_delete_cover_from
 
-    def get_community_with_name_members(self, community_name, max_id=None, exclude_keyword=None):
+    def get_community_with_name_members(self, community_name, max_id=None, exclude_keywords=None):
         self._check_can_get_community_with_name_members(
             community_name=community_name)
 
         Community = get_community_model()
         return Community.get_community_with_name_members(community_name=community_name, members_max_id=max_id,
-                                                         exclude_keyword=exclude_keyword)
+                                                         exclude_keywords=exclude_keywords)
 
-    def search_community_with_name_members(self, community_name, query, exclude_keyword=None):
+    def search_community_with_name_members(self, community_name, query, exclude_keywords=None):
         self._check_can_get_community_with_name_members(
             community_name=community_name)
 
         Community = get_community_model()
         return Community.search_community_with_name_members(community_name=community_name, query=query,
-                                                            exclude_keyword=exclude_keyword)
+                                                            exclude_keywords=exclude_keywords)
 
     def join_community_with_name(self, community_name):
         self._check_can_join_community_with_name(
