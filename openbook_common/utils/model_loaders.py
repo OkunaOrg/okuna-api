@@ -21,6 +21,10 @@ def get_post_report_model():
     return apps.get_model('openbook_reports.PostReport')
 
 
+def get_post_report_comment_model():
+    return apps.get_model('openbook_reports.PostCommentReport')
+
+
 def get_report_category_model():
     return apps.get_model('openbook_reports.ReportCategory')
 
