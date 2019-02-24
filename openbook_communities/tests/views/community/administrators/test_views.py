@@ -158,6 +158,30 @@ class CommunityAdministratorsAPITest(APITestCase):
         self.assertTrue(
             user_to_make_admnistrator.is_administrator_of_community_with_name(community_name=community.name))
 
+    def test_removes_member_from_moderator_when_adding_as_administrator(self):
+        """
+        should remove the member from moderators if added as an administrator
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community = make_community(creator=user, type='P')
+
+        user_to_make_admnistrator = make_user()
+        user_to_make_admnistrator.join_community_with_name(community_name=community.name)
+        user.add_moderator_with_username_to_community_with_name(username=user_to_make_admnistrator,
+                                                                community_name=community.name)
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.put(url, {
+            'username': user_to_make_admnistrator.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertFalse(
+            user_to_make_admnistrator.is_moderator_of_community_with_name(community_name=community.name))
+
     def test_logs_community_administrator_added(self):
         """
         should create a log when community administrator was added
