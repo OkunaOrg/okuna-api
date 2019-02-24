@@ -162,7 +162,7 @@ class Community(models.Model):
                 cls._get_exclude_members_query_for_keywords(exclude_keywords=exclude_keywords),
                 Q.AND)
 
-        return User.objects.filter(community_members_query)
+        return User.objects.filter(db_query)
 
     @classmethod
     def _get_exclude_members_query_for_keywords(cls, exclude_keywords):

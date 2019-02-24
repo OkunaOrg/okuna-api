@@ -25,8 +25,11 @@ def make_fake_post_comment_text():
     return fake.text(max_nb_chars=settings.POST_COMMENT_MAX_LENGTH)
 
 
-def make_user():
-    user = mixer.blend(User)
+def make_user(username=None):
+    if not username:
+        username = fake.user_name()
+
+    user = mixer.blend(User, username=username)
     profile = make_profile(user)
     return user
 
