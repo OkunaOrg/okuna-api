@@ -1241,13 +1241,13 @@ class User(AbstractUser):
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
 
-    def report_post_comment_with_id(self, post_comment_id, category_name, comment):
+    def report_post_comment_with_id_for_post_with_id(self, post_comment_id, post_id, category_name, comment):
+        self._check_can_report_post_comment_with_id_for_post_with_id(post_comment_id, post_id)
         PostComment = get_post_comment_model()
         post_comment = PostComment.objects.get(pk=post_comment_id)
         ReportCategory = get_report_category_model()
         category = ReportCategory.objects.get(name=category_name)
         PostCommentReport = get_post_report_comment_model()
-        self._check_can_user_create_report_for_post_comment(post_comment)
         post_comment_report = PostCommentReport.create_comment_report(post_comment=post_comment, reporter=self, category=category,
                                                                       comment=comment)
         return post_comment_report
@@ -1291,120 +1291,140 @@ class User(AbstractUser):
         return reports
 
     def report_post_with_id(self, post_id, category_name, comment):
+        self._check_can_report_post_with_id(post_id)
         Post = get_post_model()
         post = Post.objects.get(pk=post_id)
         ReportCategory = get_report_category_model()
         category = ReportCategory.objects.get(name=category_name)
         PostReport = get_post_report_model()
-        self._check_can_user_create_report_for_post(post)
         post_report = PostReport.create_report(post=post, reporter=self, category=category, comment=comment)
         return post_report
 
-    def archive_all_remaining_reports_for_post(self, post):
+    def confirm_report_with_id_for_post_with_id(self, report_id, post_id):
+        self._check_can_change_report_with_id_for_post_with_id(post_id, report_id)
+        Post = get_post_model()
+        PostReport = get_post_report_model()
+        report = PostReport.objects.get(pk=report_id)
+        report.status = report.CONFIRMED
+        report.save()
+        post = Post.objects.prefetch_related('reports').get(pk=post_id)
+        self._archive_all_remaining_reports_for_post(post)
+        return report
+
+    def reject_report_with_id_for_post_with_id(self, report_id, post_id):
+        self._check_can_change_report_with_id_for_post_with_id(post_id, report_id)
+        Post = get_post_model()
+        PostReport = get_post_report_model()
+        report = PostReport.objects.get(pk=report_id)
+        report.status = report.REJECTED
+        report.save()
+        post = Post.objects.prefetch_related('reports').get(pk=post_id)
+        self._archive_all_remaining_reports_for_post(post)
+        return report
+
+    def confirm_report_with_id_for_comment_with_id(self, post_id, post_comment_id, report_id):
+        self._check_can_change_report_with_id_for_post_comment_with_id(post_id, post_comment_id, report_id)
+        PostCommentReport = get_post_report_comment_model()
+        PostComment = get_post_comment_model()
+        report = PostCommentReport.objects.get(pk=report_id)
+        report.status = report.CONFIRMED
+        report.save()
+        post_comment = PostComment.objects.prefetch_related('reports').get(pk=post_comment_id)
+        self._archive_all_remaining_reports_for_post_comment(post_comment)
+        return report
+
+    def reject_report_with_id_for_comment_with_id(self, post_id, post_comment_id, report_id):
+        self._check_can_change_report_with_id_for_post_comment_with_id(post_id, post_comment_id, report_id)
+        PostCommentReport = get_post_report_comment_model()
+        PostComment = get_post_comment_model()
+        report = PostCommentReport.objects.get(pk=report_id)
+        report.status = report.REJECTED
+        report.save()
+        post_comment = PostComment.objects.prefetch_related('reports').get(pk=post_comment_id)
+        self._archive_all_remaining_reports_for_post_comment(post_comment)
+        return report
+
+    def _check_can_change_report_with_id_for_post_comment_with_id(self, post_id, post_comment_id, report_id):
+        PostCommentReport = get_post_report_comment_model()
+        PostCommentReport.check_report_status_is_pending_for_report_with_id(report_id)
+        PostComment = get_post_comment_model()
+        Post = get_post_model()
+        post = Post.objects.prefetch_related('comments').get(pk=post_id)
+        if not post.comments.filter(pk=post_comment_id).exists():
+            raise ValidationError(
+                _('No comment with provided id found for this post')
+            )
+
+        post_comment = PostComment.objects.select_related('post').prefetch_related('reports').get(pk=post_comment_id)
+        if not post_comment.reports.filter(pk=report_id).exists():
+            raise ValidationError(
+                _('No report found with the supplied report id')
+            )
+
+        if post_comment.post.community:
+            community_name = post_comment.post.community.name
+            self._check_can_change_report_status_for_community_with_name(community_name)
+        else:
+            self._check_can_change_report_status()
+
+    def _check_can_change_report_with_id_for_post_with_id(self, post_id, report_id):
+        PostReport = get_post_report_model()
+        PostReport.check_report_status_is_pending_for_report_with_id(report_id)
+        Post = get_post_model()
+        post = Post.objects.select_related('community').prefetch_related('reports').get(pk=post_id)
+        if not post.reports.filter(pk=report_id).exists():
+            raise ValidationError(
+                _('No report found with the supplied report id')
+            )
+
+        if post.community:
+            community_name = post.community.name
+            self._check_can_change_report_status_for_community_with_name(community_name)
+        else:
+            self._check_can_change_report_status()
+
+    def _archive_all_remaining_reports_for_post(self, post):
         for report in post.reports.all():
             if report.status == report.PENDING:
                 report.status = report.DELETED
                 report.save()
 
-    def archive_all_remaining_reports_for_post_comment(self, post_comment):
+    def _archive_all_remaining_reports_for_post_comment(self, post_comment):
         for report in post_comment.reports.all():
             if report.status == report.PENDING:
                 report.status = report.DELETED
                 report.save()
 
-    def confirm_report_with_id_for_post_with_id(self, report_id, post_id):
+    def _check_can_report_post_with_id(self, post_id):
         PostReport = get_post_report_model()
-        Post = get_post_model()
-        report = PostReport.objects.get(pk=report_id)
-        post = Post.objects.select_related('community').get(pk=post_id)
-
-        community_name = None
-        if post.community:
-            community_name = post.community.name
-
-        self._check_can_user_change_report_status(community_name)
-        report.check_can_confirm_report()
-        report.status = report.CONFIRMED
-        report.save()
-        self.archive_all_remaining_reports_for_post(post)
-        return report
-
-    def reject_report_with_id_for_post_with_id(self, report_id, post_id):
-        PostReport = get_post_report_model()
-        Post = get_post_model()
-        report = PostReport.objects.get(pk=report_id)
-        post = Post.objects.select_related('community').get(pk=post_id)
-
-        community_name = None
-        if post.community:
-            community_name = post.community.name
-
-        self._check_can_user_change_report_status(community_name)
-        report.check_can_reject_report()
-        report.status = report.REJECTED
-        report.save()
-        self.archive_all_remaining_reports_for_post(post)
-        return report
-
-    def confirm_report_with_id_for_comment_with_id(self, post_comment_id, report_id):
-        PostCommentReport = get_post_report_comment_model()
-        PostComment = get_post_comment_model()
-        report = PostCommentReport.objects.get(pk=report_id)
-        post_comment = PostComment.objects.select_related('post').get(pk=post_comment_id)
-
-        community_name = None
-        if post_comment.post.community:
-            community_name = post_comment.post.community.name
-
-        self._check_can_user_change_report_status(community_name)
-        report.check_can_confirm_report()
-        report.status = report.CONFIRMED
-        report.save()
-        self.archive_all_remaining_reports_for_post_comment(post_comment)
-        return report
-
-    def reject_report_with_id_for_comment_with_id(self, post_comment_id, report_id):
-        PostCommentReport = get_post_report_comment_model()
-        PostComment = get_post_comment_model()
-        report = PostCommentReport.objects.get(pk=report_id)
-        post_comment = PostComment.objects.select_related('post').get(pk=post_comment_id)
-
-        community_name = None
-        if post_comment.post.community:
-            community_name = post_comment.post.community.name
-
-        self._check_can_user_change_report_status(community_name)
-        report.check_can_reject_report()
-        report.status = report.REJECTED
-        report.save()
-        self.archive_all_remaining_reports_for_post_comment(post_comment)
-        return report
-
-    def _check_can_user_create_report_for_post(self, post):
-        PostReport = get_post_report_model()
-        if PostReport.objects.filter(post=post, reporter=self).exists():
+        if PostReport.objects.filter(post__id=post_id, reporter=self).exists():
             raise ValidationError(
                 _('You have already reported this post')
             )
 
-    def _check_can_user_create_report_for_post_comment(self, post_comment):
+    def _check_can_report_post_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
         PostCommentReport = get_post_report_comment_model()
-        if PostCommentReport.objects.filter(post_comment=post_comment, reporter=self).exists():
+        Post = get_post_model()
+        post = Post.objects.prefetch_related('comments').get(pk=post_id)
+        if not post.comments.filter(pk=post_comment_id).exists():
+            raise ValidationError(
+                _('No comment with provided id found for this post')
+            )
+        if PostCommentReport.objects.filter(post_comment__id=post_comment_id, reporter=self).exists():
             raise ValidationError(
                 _('You have already reported this post comment')
             )
 
-    def _check_can_user_change_report_status(self, community_name):
-        if community_name:
-            Community = get_community_model()
-            is_moderator = \
-                Community.is_user_with_username_moderator_of_community_with_name(username=self.username,
-                                                                                 community_name=community_name)
-            if not is_moderator:
-                raise ValidationError(
-                    _('User cannot change status of report'),
-                )
-        elif not self.is_staff and not self.is_superuser:
+    def _check_can_change_report_status_for_community_with_name(self, community_name):
+        Community = get_community_model()
+        is_moderator = \
+            Community.is_user_with_username_moderator_of_community_with_name(username=self.username,
+                                                                             community_name=community_name)
+        if not is_moderator:
+            self._check_can_change_report_status()
+
+    def _check_can_change_report_status(self):
+        if not self.is_staff and not self.is_superuser:
             raise ValidationError(
                 _('User cannot change status of report'),
             )

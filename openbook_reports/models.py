@@ -50,22 +50,16 @@ class AbstractReport(models.Model):
     class Meta:
         abstract = True
 
+    def check_report_status_is_pending(self):
+        if not self.status == self.PENDING:
+            raise ValidationError(
+                _('Cannot change status of report'),
+            )
+
     def save(self, *args, **kwargs):
         if not self.id:
             self.created = timezone.now()
         return super(AbstractReport, self).save(*args, **kwargs)
-
-    def check_can_confirm_report(self):
-        if self.status == self.REJECTED or self.status == self.DELETED:
-            raise ValidationError(
-                _('Cannot change status of report'),
-            )
-
-    def check_can_reject_report(self):
-        if self.status == self.CONFIRMED or self.status == self.DELETED:
-            raise ValidationError(
-                _('Cannot change status of report'),
-            )
 
 
 class PostReport(AbstractReport):
@@ -77,9 +71,13 @@ class PostReport(AbstractReport):
 
     @classmethod
     def create_report(cls, post, reporter, category, status=AbstractReport.PENDING, comment=None):
-        print(post, reporter, category, status, comment)
         return PostReport.objects.create(post=post, reporter=reporter, category=category,
                                          status=status, comment=comment)
+
+    @classmethod
+    def check_report_status_is_pending_for_report_with_id(cls, report_id):
+        report = PostReport.objects.get(pk=report_id)
+        report.check_report_status_is_pending()
 
 
 class PostCommentReport(AbstractReport):
@@ -93,3 +91,8 @@ class PostCommentReport(AbstractReport):
     def create_comment_report(cls, post_comment, reporter, category, comment):
         return PostCommentReport.objects.create(post_comment=post_comment, reporter=reporter,
                                                 category=category, comment=comment)
+
+    @classmethod
+    def check_report_status_is_pending_for_report_with_id(cls, report_id):
+        report = PostCommentReport.objects.get(pk=report_id)
+        report.check_report_status_is_pending()
