@@ -137,6 +137,7 @@ class ReportPostComment(APIView):
     def put(self, request, post_id, post_comment_id):
         request_data = request.data.copy()
         request_data['post_comment_id'] = post_comment_id
+        request_data['post_id'] = post_id
         serializer = ReportPostCommentSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
@@ -144,12 +145,14 @@ class ReportPostComment(APIView):
         comment_text = data.get('comment')
         category = data.get('category_name')
         post_comment_id = data.get('post_comment_id')
+        post_id = data.get('post_id')
         user = request.user
 
         with transaction.atomic():
-            post_comment_report = user.report_post_comment_with_id(post_comment_id=post_comment_id,
-                                                                   comment=comment_text,
-                                                                   category_name=category)
+            post_comment_report = user.report_post_comment_with_id_for_post_with_id(post_comment_id=post_comment_id,
+                                                                                    post_id=post_id,
+                                                                                    comment=comment_text,
+                                                                                    category_name=category)
 
         post_report_comment_serializer = PostReportCommentSerializer(post_comment_report, context={"request": request})
         return Response(post_report_comment_serializer.data, status=status.HTTP_201_CREATED)
@@ -179,16 +182,19 @@ class ConfirmPostCommentReport(APIView):
         request_data = request.data.copy()
         request_data['post_comment_id'] = post_comment_id
         request_data['report_id'] = report_id
+        request_data['post_id'] = post_id
         serializer = ConfirmRejectPostCommentReportSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
         post_comment_id = data.get('post_comment_id')
         report_id = data.get('report_id')
+        post_id = data.get('post_id')
         user = request.user
 
         with transaction.atomic():
-            post_comment_report = user.confirm_report_with_id_for_comment_with_id(post_comment_id=post_comment_id,
+            post_comment_report = user.confirm_report_with_id_for_comment_with_id(post_id=post_id,
+                                                                                  post_comment_id=post_comment_id,
                                                                                   report_id=report_id)
 
         post_comment_report_serializer = PostCommentReportConfirmRejectSerializer(post_comment_report,
@@ -203,16 +209,19 @@ class RejectPostCommentReport(APIView):
         request_data = request.data.copy()
         request_data['post_comment_id'] = post_comment_id
         request_data['report_id'] = report_id
+        request_data['post_id'] = post_id
         serializer = ConfirmRejectPostCommentReportSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
         post_comment_id = data.get('post_comment_id')
         report_id = data.get('report_id')
+        post_id = data.get('post_id')
         user = request.user
 
         with transaction.atomic():
-            post_comment_report = user.reject_report_with_id_for_comment_with_id(post_comment_id=post_comment_id,
+            post_comment_report = user.reject_report_with_id_for_comment_with_id(post_id=post_id,
+                                                                                 post_comment_id=post_comment_id,
                                                                                  report_id=report_id)
 
         post_comment_report_serializer = PostCommentReportConfirmRejectSerializer(post_comment_report,
