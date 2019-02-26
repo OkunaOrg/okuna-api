@@ -307,6 +307,7 @@ class GetLinkedUsersUserCommunityInviteSerializer(serializers.ModelSerializer):
             'id',
             'creator_id',
             'invited_user_id',
+            'community_id'
         )
 
 
