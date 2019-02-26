@@ -761,7 +761,11 @@ class User(AbstractUser):
 
         community_to_invite_user_to.create_invite(creator=self, invited_user=user_to_invite)
 
-        return community_to_invite_user_to
+    def uninvite_user_with_username_to_community_with_name(self, username, community_name):
+        self._check_can_uninvite_user_with_username_to_community_with_name(username=username,
+                                                                           community_name=community_name)
+        community_invite = self.created_communities_invites.filter(invited_user__username=username)
+        community_invite.delete()
 
     def get_community_with_name_administrators(self, community_name, max_id):
         self._check_can_get_community_with_name_administrators(
@@ -1761,6 +1765,13 @@ class User(AbstractUser):
             community_name=community_name)):
             raise ValidationError(
                 _('Invites for this community are not enabled. Only administrators & moderators can invite.'),
+            )
+
+    def _check_can_uninvite_user_with_username_to_community_with_name(self, username, community_name):
+        if not self.has_invited_user_with_username_to_community_with_name(username=username,
+                                                                          community_name=community_name):
+            raise ValidationError(
+                _('No invite to withdraw.'),
             )
 
     def _check_can_get_community_with_name_banned_users(self, community_name):

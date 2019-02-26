@@ -423,6 +423,61 @@ class InviteCommunityMembersAPITest(APITestCase):
         })
 
 
+class UninviteCommunityMembersAPITest(APITestCase):
+    def test_can_uninvite_user_from_community(self):
+        """
+        should be able to uninvite a user from a community and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community.invites_enabled = True
+        community.save()
+
+        user.join_community_with_name(community.name)
+        user_to_invite = make_user()
+        user.invite_user_with_username_to_community_with_name(username=user_to_invite.username,
+                                                              community_name=community.name)
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, {
+            'username': user_to_invite.username
+        }, **headers)
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        self.assertFalse(user_to_invite.is_invited_to_community_with_name(community_name=community.name))
+
+    def test_cannot_withdraw_unexisting_invite(self):
+        """
+        should not be able to withdraw an unexisting invite and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community.invites_enabled = True
+        community.save()
+
+        user.join_community_with_name(community.name)
+        user_to_invite = make_user()
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, {
+            'username': user_to_invite.username
+        }, **headers)
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+    def _get_url(self, community_name):
+        return reverse('community-uninvite', kwargs={
+            'community_name': community_name
+        })
+
+
 class JoinCommunityAPITest(APITestCase):
     def test_can_join_public_community(self):
         """
