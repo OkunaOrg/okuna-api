@@ -272,7 +272,8 @@ class LinkedUsers(APIView):
         with_community = data.get('with_community')
 
         user = request.user
-        users = user.get_linked_users(max_id=max_id)[:count]
+        users = user.get_linked_users(max_id=max_id).order_by(
+            '-id')[:count]
 
         users_serializer = GetLinkedUsersUserSerializer(users, many=True, context={'request': request,
                                                                                    'communities_names': [
