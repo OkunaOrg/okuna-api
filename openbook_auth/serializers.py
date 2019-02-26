@@ -13,9 +13,9 @@ from openbook_circles.models import Circle
 from openbook_common.models import Emoji, Badge
 from openbook_common.serializers_fields.user import IsFollowingField, IsConnectedField, FollowersCountField, \
     FollowingCountField, PostsCountField, ConnectedCirclesField, FollowListsField, IsFullyConnectedField, \
-    IsPendingConnectionConfirmation, CommunitiesMembershipsField
+    IsPendingConnectionConfirmation, CommunitiesMembershipsField, CommunitiesInvitesField
 from openbook_common.validators import name_characters_validator
-from openbook_communities.models import CommunityMembership
+from openbook_communities.models import CommunityMembership, CommunityInvite
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 from openbook_lists.models import List
 
@@ -300,10 +300,23 @@ class GetLinkedUsersUserCommunityMembershipSerializer(serializers.ModelSerialize
         )
 
 
+class GetLinkedUsersUserCommunityInviteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommunityInvite
+        fields = (
+            'id',
+            'creator_id',
+            'invited_user_id',
+        )
+
+
 class GetLinkedUsersUserSerializer(serializers.ModelSerializer):
     profile = GetUsersUserProfileSerializer(many=False)
     communities_memberships = CommunitiesMembershipsField(
         community_membership_serializer=GetLinkedUsersUserCommunityMembershipSerializer)
+    communities_invites = CommunitiesInvitesField(
+        community_invite_serializer=GetLinkedUsersUserCommunityInviteSerializer
+    )
 
     class Meta:
         model = User
@@ -311,5 +324,6 @@ class GetLinkedUsersUserSerializer(serializers.ModelSerializer):
             'id',
             'profile',
             'username',
-            'communities_memberships'
+            'communities_memberships',
+            'communities_invites'
         )

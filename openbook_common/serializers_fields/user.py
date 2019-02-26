@@ -1,5 +1,7 @@
 from rest_framework.fields import Field
 
+from openbook_communities.models import CommunityInvite
+
 
 class IsFollowingField(Field):
     def __init__(self, **kwargs):
@@ -185,3 +187,36 @@ class CommunitiesMembershipsField(Field):
             return None
 
         return self.community_membership_serializer(memberships, context={"request": request}, many=True).data
+
+
+class CommunitiesInvitesField(Field):
+    # Retrieve the invites for the given communities_names of the request user to
+    # the serialized user
+    def __init__(self, community_invite_serializer, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        self.community_invite_serializer = community_invite_serializer
+        super(CommunitiesInvitesField, self).__init__(**kwargs)
+
+    def to_representation(self, user):
+        request = self.context.get('request')
+        communities_names = self.context.get('communities_names')
+
+        request_user = request.user
+
+        community_invites = []
+
+        for community_name in communities_names:
+            if not community_name:
+                continue
+
+            try:
+                community_invite = CommunityInvite.objects.get(creator=request_user, invited_user=user)
+                community_invites.append(community_invite)
+            except CommunityInvite.DoesNotExist:
+                pass
+
+        if not community_invites:
+            return None
+
+        return self.community_invite_serializer(community_invites, context={"request": request}, many=True).data
