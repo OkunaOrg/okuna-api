@@ -4,7 +4,7 @@ from openbook_auth.models import User, UserProfile
 from openbook_auth.serializers import BadgeSerializer
 from openbook_communities.models import Community
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
-from openbook_posts.models import Post, PostVideo, PostImage
+from openbook_posts.models import Post, PostVideo, PostImage, PostComment
 from openbook_posts.validators import post_id_exists, post_comment_id_exists
 from openbook_reports.models import ReportCategory, PostReport, PostCommentReport
 from openbook_reports.validators import is_valid_report_category, report_id_exists, comment_report_id_exsits
@@ -167,11 +167,25 @@ class PostCommunitySerializer(serializers.ModelSerializer):
         )
 
 
+class PostReportCommentSerializer(serializers.ModelSerializer):
+    category = PostReportCategorySerializer()
+
+    class Meta:
+        model = PostCommentReport
+        fields = (
+            'category',
+            'status',
+            'comment',
+            'created',
+            'id'
+        )
+
+
 class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     image = PostImageSerializer(many=False)
     video = PostVideoSerializer(many=False)
     creator = PostCreatorSerializer(many=False)
-    community = PostCommunitySerializer()
+    reports = PostReportSerializer(many=True, read_only=True)
 
     class Meta:
         model = Post
@@ -182,7 +196,22 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'image',
             'video',
             'creator',
-            'community'
+            'reports'
+        )
+
+
+class AuthenticatedUserPostCommentSerializer(serializers.ModelSerializer):
+    commenter = PostCreatorSerializer(many=False)
+    reports = PostReportCommentSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = PostComment
+        fields = (
+            'id',
+            'created',
+            'text',
+            'commenter',
+            'reports'
         )
 
 
@@ -212,16 +241,3 @@ class ReportPostCommentsSerializer(serializers.Serializer):
         required=True,
     )
 
-
-class PostReportCommentSerializer(serializers.ModelSerializer):
-    category = PostReportCategorySerializer()
-
-    class Meta:
-        model = PostCommentReport
-        fields = (
-            'category',
-            'status',
-            'comment',
-            'created',
-            'id'
-        )

@@ -8,7 +8,7 @@ from openbook_reports.serializers import GetReportCategoriesSerializer, ReportPo
     ConfirmRejectPostReportSerializer, PostReportConfirmRejectSerializer, AuthenticatedUserPostSerializer, \
     ReportedPostsCommunitySerializer, ReportPostCommentSerializer, PostReportCommentSerializer, \
     ReportPostCommentsSerializer, PostCommentReportConfirmRejectSerializer, \
-    ConfirmRejectPostCommentReportSerializer
+    ConfirmRejectPostCommentReportSerializer, AuthenticatedUserPostCommentSerializer
 from openbook_reports.models import ReportCategory as ReportCategoryModel
 
 
@@ -131,6 +131,28 @@ class ReportedPostsCommunity(APIView):
         return Response(community_reports_serializer.data, status=status.HTTP_200_OK)
 
 
+class ReportedPostCommentsCommunity(APIView):
+        permission_classes = (IsAuthenticated,)
+
+        def get(self, request, community_name):
+            request_data = request.data.copy()
+            request_data['community_name'] = community_name
+            serializer = ReportedPostsCommunitySerializer(data=request_data)
+            serializer.is_valid(raise_exception=True)
+
+            user = request.user
+            community_name_serialized = serializer.validated_data.get('community_name')
+
+            with transaction.atomic():
+                reported_posts = \
+                    user.get_reported_post_comments_for_community_with_name(community_name=community_name_serialized)
+                community_reports_serializer = AuthenticatedUserPostCommentSerializer(reported_posts,
+                                                                                      many=True,
+                                                                                      context={"request": request})
+
+            return Response(community_reports_serializer.data, status=status.HTTP_200_OK)
+
+
 class ReportPostComment(APIView):
     permission_classes = (IsAuthenticated,)
 
@@ -193,9 +215,10 @@ class ConfirmPostCommentReport(APIView):
         user = request.user
 
         with transaction.atomic():
-            post_comment_report = user.confirm_report_with_id_for_comment_with_id(post_id=post_id,
-                                                                                  post_comment_id=post_comment_id,
-                                                                                  report_id=report_id)
+            post_comment_report = \
+                user.confirm_report_with_id_for_comment_with_id_for_post_with_id(post_id=post_id,
+                                                                                 post_comment_id=post_comment_id,
+                                                                                 report_id=report_id)
 
         post_comment_report_serializer = PostCommentReportConfirmRejectSerializer(post_comment_report,
                                                                                   context={"request": request})
@@ -220,9 +243,10 @@ class RejectPostCommentReport(APIView):
         user = request.user
 
         with transaction.atomic():
-            post_comment_report = user.reject_report_with_id_for_comment_with_id(post_id=post_id,
-                                                                                 post_comment_id=post_comment_id,
-                                                                                 report_id=report_id)
+            post_comment_report = \
+                user.reject_report_with_id_for_comment_with_id_for_post_with_id(post_id=post_id,
+                                                                                post_comment_id=post_comment_id,
+                                                                                report_id=report_id)
 
         post_comment_report_serializer = PostCommentReportConfirmRejectSerializer(post_comment_report,
                                                                                   context={"request": request})

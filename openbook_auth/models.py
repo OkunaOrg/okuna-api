@@ -1267,18 +1267,18 @@ class User(AbstractUser):
             return PostCommentReport.objects.filter(post_comment=post_comment, reporter=self)
 
     def get_reported_posts_for_community_with_name(self, community_name):
-        Community = get_community_model()
-
-        is_moderator = Community.is_user_with_username_moderator_of_community_with_name(username=self.username,
-                                                                                        community_name=community_name)
-
-        if not is_moderator and not self.is_superuser and not self.is_staff:
-            raise ValidationError(
-                _('User cannot access reports from this community')
-            )
+        self._check_can_change_report_status_for_community_with_name(community_name)
         PostReport = get_post_report_model()
         reported_posts = [report.post for report in PostReport.objects.filter(Q(post__community__name=community_name))]
         return reported_posts
+
+    def get_reported_post_comments_for_community_with_name(self, community_name):
+        self._check_can_change_report_status_for_community_with_name(community_name)
+        PostCommentReport = get_post_report_comment_model()
+        reported_post_comments = [report.post_comment for report in PostCommentReport.objects.filter(
+            Q(post_comment__post__community__name=community_name)
+        )]
+        return reported_post_comments
 
     def get_reported_posts(self):
         user_reports = self.get_reports()
@@ -1322,8 +1322,8 @@ class User(AbstractUser):
         self._archive_all_remaining_reports_for_post(post)
         return report
 
-    def confirm_report_with_id_for_comment_with_id(self, post_id, post_comment_id, report_id):
-        self._check_can_change_report_with_id_for_post_comment_with_id(post_id, post_comment_id, report_id)
+    def confirm_report_with_id_for_comment_with_id_for_post_with_id(self, post_id, post_comment_id, report_id):
+        self._check_can_change_report_with_id_for_post_comment_with_for_post_with_id(post_id, post_comment_id, report_id)
         PostCommentReport = get_post_report_comment_model()
         PostComment = get_post_comment_model()
         report = PostCommentReport.objects.get(pk=report_id)
@@ -1333,8 +1333,8 @@ class User(AbstractUser):
         self._archive_all_remaining_reports_for_post_comment(post_comment)
         return report
 
-    def reject_report_with_id_for_comment_with_id(self, post_id, post_comment_id, report_id):
-        self._check_can_change_report_with_id_for_post_comment_with_id(post_id, post_comment_id, report_id)
+    def reject_report_with_id_for_comment_with_id_for_post_with_id(self, post_id, post_comment_id, report_id):
+        self._check_can_change_report_with_id_for_post_comment_with_for_post_with_id(post_id, post_comment_id, report_id)
         PostCommentReport = get_post_report_comment_model()
         PostComment = get_post_comment_model()
         report = PostCommentReport.objects.get(pk=report_id)
@@ -1344,7 +1344,7 @@ class User(AbstractUser):
         self._archive_all_remaining_reports_for_post_comment(post_comment)
         return report
 
-    def _check_can_change_report_with_id_for_post_comment_with_id(self, post_id, post_comment_id, report_id):
+    def _check_can_change_report_with_id_for_post_comment_with_for_post_with_id(self, post_id, post_comment_id, report_id):
         PostCommentReport = get_post_report_comment_model()
         PostCommentReport.check_report_status_is_pending_for_report_with_id(report_id)
         PostComment = get_post_comment_model()
