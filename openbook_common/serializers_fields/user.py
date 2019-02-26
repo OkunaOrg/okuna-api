@@ -152,28 +152,36 @@ class FollowListsField(Field):
         return self.list_serializer(lists, context={"request": request}, many=True).data
 
 
-class PostCreatorField(Field):
-    def __init__(self, community_membership_serializer, post_creator_serializer, **kwargs):
+class CommunitiesMembershipsField(Field):
+    def __init__(self, community_membership_serializer, **kwargs):
         kwargs['source'] = '*'
         kwargs['read_only'] = True
         self.community_membership_serializer = community_membership_serializer
-        self.post_creator_serializer = post_creator_serializer
-        super(PostCreatorField, self).__init__(**kwargs)
+        super(CommunitiesMembershipsField, self).__init__(**kwargs)
 
-    def to_representation(self, post):
+    def to_representation(self, user):
         request = self.context.get('request')
+        communities_names = self.context.get('communities_names')
 
-        post_creator = post.creator
-        post_community = post.community
+        request_user = request.user
 
-        post_creator_serializer = self.post_creator_serializer(post_creator, context={"request": request}).data
+        memberships = []
 
-        if post_community:
-            post_creator_memberships = post_community.memberships.get(user=post_creator)
-            post_creator_serializer['communities_memberships'] = self.community_membership_serializer(
-                [post_creator_memberships],
-                many=True,
-                context={
-                    "request": request}).data
+        for community_name in communities_names:
+            if not community_name:
+                continue
 
-        return post_creator_serializer
+            if not request_user.is_member_of_community_with_name(community_name=community_name):
+                continue
+
+            if not user.is_member_of_community_with_name(community_name=community_name):
+                continue
+
+            community_membership = user.communities_memberships.get(community__name=community_name)
+
+            memberships.append(community_membership)
+
+        if not memberships:
+            return None
+
+        return self.community_membership_serializer(memberships, context={"request": request}, many=True).data

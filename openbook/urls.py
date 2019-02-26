@@ -23,7 +23,7 @@ from openbook_categories.views import Categories
 from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, EmailVerify, Login, AuthenticatedUser, User, Users, \
-    UserSettings
+    UserSettings, LinkedUsers, SearchLinkedUsers
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
     FavoriteCommunities, SearchCommunities, JoinedCommunities, AdministratedCommunities, ModeratedCommunities
 from openbook_communities.views.community.administrators.views import CommunityAdministratorItem, \
@@ -55,6 +55,8 @@ auth_patterns = [
     path('user/', AuthenticatedUser.as_view(), name='authenticated-user'),
     path('users/<str:user_username>/', User.as_view(), name='user'),
     path('users/', Users.as_view(), name='users'),
+    path('linked-users/', LinkedUsers.as_view(), name='linked-users'),
+    path('linked-users/search/', SearchLinkedUsers.as_view(), name='search-linked-users'),
 ]
 
 post_patterns = [

@@ -19,7 +19,8 @@ from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.model_loaders import get_user_invite_model
 from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheckSerializer, LoginSerializer, \
     GetAuthenticatedUserSerializer, GetUserUserSerializer, UpdateAuthenticatedUserSerializer, GetUserSerializer, \
-    GetUsersSerializer, GetUsersUserSerializer, UpdateUserSettingsSerializer, EmailVerifySerializer
+    GetUsersSerializer, GetUsersUserSerializer, UpdateUserSettingsSerializer, EmailVerifySerializer, \
+    GetLinkedUsersUserSerializer, SearchLinkedUsersSerializer, GetLinkedUsersSerializer
 
 
 class Register(APIView):
@@ -249,9 +250,57 @@ class Users(APIView):
             User = get_user_model()
             users = User.get_public_users_with_query(query=query)
         else:
-            users = user.get_users_with_query(query=query)
+            users = user.search_users_with_query(query=query)
 
         users_serializer = GetUsersUserSerializer(users[:count], many=True, context={'request': request})
+
+        return Response(users_serializer.data, status=status.HTTP_200_OK)
+
+
+class LinkedUsers(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        query_params = request.query_params.dict()
+        serializer = GetLinkedUsersSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 10)
+        max_id = data.get('max_id')
+        with_community = data.get('with_community')
+
+        user = request.user
+        users = user.get_linked_users(max_id=max_id)[:count]
+
+        users_serializer = GetLinkedUsersUserSerializer(users, many=True, context={'request': request,
+                                                                                   'communities_names': [
+                                                                                       with_community]})
+
+        return Response(users_serializer.data, status=status.HTTP_200_OK)
+
+
+class SearchLinkedUsers(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        query_params = request.query_params.dict()
+        serializer = SearchLinkedUsersSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 10)
+        query = data.get('query')
+        with_community = data.get('with_community')
+
+        user = request.user
+        users = user.search_linked_users_with_query(query=query)[:count]
+
+        users_serializer = GetLinkedUsersUserSerializer(users, many=True, context={'request': request,
+                                                                                   'communities_names': [
+                                                                                       with_community]})
 
         return Response(users_serializer.data, status=status.HTTP_200_OK)
 

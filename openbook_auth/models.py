@@ -973,9 +973,26 @@ class User(AbstractUser):
         self._check_can_get_list_with_id(list_id)
         return self.lists.get(id=list_id)
 
-    def get_users_with_query(self, query):
+    def search_users_with_query(self, query):
         # In the future, the user might have blocked users which should not be displayed
         return User.get_public_users_with_query(query)
+
+    def get_linked_users(self, max_id=None):
+        # All users which are connected with us and we have accepted by adding
+        # them to a circle
+        linked_users_query = self._make_linked_users_query(max_id=max_id)
+
+        return User.objects.filter(linked_users_query)
+
+    def search_linked_users_with_query(self, query):
+        linked_users_query = self._make_linked_users_query()
+
+        names_query = Q(username__icontains=query)
+        names_query.add(Q(profile__name__icontains=query), Q.OR)
+
+        linked_users_query.add(names_query, Q.AND)
+
+        return User.objects.filter(linked_users_query)
 
     def search_communities_with_query(self, query):
         # In the future, the user might have blocked communities which should not be displayed
@@ -1294,6 +1311,20 @@ class User(AbstractUser):
 
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
+
+    def _make_linked_users_query(self, max_id=None):
+        # All users which are connected with us and we have accepted by adding
+        # them to a circle
+        linked_users_query = Q(circles__connections__target_connection__user_id=self.pk,
+                               circles__connections__target_connection__circles__isnull=False)
+
+        # All users following us
+        linked_users_query.add(Q(follows__followed_user_id=self.pk), Q.OR)
+
+        if max_id:
+            linked_users_query.add(Q(id__lt=max_id), Q.AND)
+
+        return linked_users_query
 
     def _make_get_post_with_id_query_for_user(self, user, post_id):
         posts_query = self._make_get_posts_query_for_user(user)
