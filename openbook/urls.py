@@ -43,7 +43,8 @@ from openbook_posts.views.post.views import PostComments, PostCommentItem, PostI
 from openbook_posts.views.posts.views import Posts, TrendingPosts
 from openbook_importer.views import ImportItem
 from openbook_reports.views import ReportCategory, ReportPost, RejectPostReport, ConfirmPostReport, ReportedPosts, \
-    ReportedPostsCommunity, UserReports, ReportPostComment, ConfirmPostCommentReport, RejectPostCommentReport
+    ReportedPostsCommunity, UserReports, ReportPostComment, ConfirmPostCommentReport, RejectPostCommentReport, \
+    ReportedPostCommentsCommunity
 
 auth_patterns = [
     path('register/', Register.as_view(), name='register-user'),
@@ -116,6 +117,7 @@ community_members_patterns = [
 community_posts_patterns = [
     path('', CommunityPosts.as_view(), name='community-posts'),
     path('reports/', ReportedPostsCommunity.as_view(), name='community-reported-posts'),
+    path('comments/reports/', ReportedPostCommentsCommunity.as_view(), name='community-reported-post-comments'),
 ]
 
 community_banned_users_patterns = [
