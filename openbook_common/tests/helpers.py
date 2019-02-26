@@ -26,10 +26,11 @@ def make_fake_post_comment_text():
 
 
 def make_user(username=None):
-    if not username:
-        username = fake.user_name()
+    if username:
+        user = mixer.blend(User, username=username)
+    else:
+        user = mixer.blend(User)
 
-    user = mixer.blend(User, username=username)
     profile = make_profile(user)
     return user
 
