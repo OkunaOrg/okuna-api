@@ -6,9 +6,9 @@ from openbook_categories.models import Category
 from openbook_categories.validators import category_name_exists
 from openbook_common.serializers_fields.user import IsFollowingField
 from openbook_common.validators import hex_color_validator
-from openbook_communities.models import Community
-from openbook_communities.serializers_fields import IsMemberField, IsInvitedField, IsModeratorField, IsAdministratorField, \
-    IsCreatorField, RulesField
+from openbook_communities.models import Community, CommunityMembership
+from openbook_communities.serializers_fields import IsInvitedField, \
+    IsCreatorField, RulesField, ModeratorsField, CommunityMembershipsField, IsFavoriteField
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 
 
@@ -110,14 +110,25 @@ class GetCommunityModeratorUserSerializer(serializers.ModelSerializer):
         )
 
 
+class GetCommunityCommunityMembershipSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommunityMembership
+        fields = (
+            'id',
+            'user_id',
+            'community_id',
+            'is_administrator',
+            'is_moderator',
+        )
+
+
 class GetCommunityCommunitySerializer(serializers.ModelSerializer):
     categories = GetCommunityCommunityCategorySerializer(many=True)
-    is_member = IsMemberField()
     is_invited = IsInvitedField()
-    is_mod = IsModeratorField()
-    is_admin = IsAdministratorField()
     is_creator = IsCreatorField()
-    moderators = GetCommunityModeratorUserSerializer(many=True)
+    is_favorite = IsFavoriteField()
+    moderators = ModeratorsField(moderator_serializer=GetCommunityModeratorUserSerializer)
+    memberships = CommunityMembershipsField(community_membership_serializer=GetCommunityCommunityMembershipSerializer)
     rules = RulesField()
 
     class Meta:
@@ -138,9 +149,39 @@ class GetCommunityCommunitySerializer(serializers.ModelSerializer):
             'moderators',
             'type',
             'invites_enabled',
-            'is_member',
             'is_invited',
-            'is_admin',
-            'is_mod',
             'is_creator',
+            'is_favorite',
+            'memberships'
+        )
+
+
+class CommunityAvatarCommunitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Community
+        fields = (
+            'id',
+            'name',
+            'avatar',
+        )
+
+
+class CommunityCoverCommunitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Community
+        fields = (
+            'id',
+            'name',
+            'cover',
+        )
+
+
+class FavoriteCommunityCommunitySerializer(serializers.ModelSerializer):
+    is_favorite = IsFavoriteField()
+
+    class Meta:
+        model = Community
+        fields = (
+            'id',
+            'is_favorite',
         )

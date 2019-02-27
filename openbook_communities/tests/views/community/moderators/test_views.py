@@ -1,3 +1,5 @@
+import random
+
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
@@ -27,13 +29,11 @@ class CommunityModeratorsAPITest(APITestCase):
         community_name = community.name
 
         user.join_community_with_name(community_name)
-        other_user.add_moderator_with_username_to_community_with_name(username=user.username,
-                                                                      community_name=community.name)
+        other_user.add_administrator_with_username_to_community_with_name(username=user.username,
+                                                                          community_name=community.name)
 
         amount_of_moderators = 5
         moderators_ids = [
-            user.pk,
-            other_user.pk
         ]
 
         for i in range(0, amount_of_moderators):
@@ -58,7 +58,7 @@ class CommunityModeratorsAPITest(APITestCase):
 
     def test_can_get_community_moderators_if_mod(self):
         """
-        should be able to retrieve the community moderators if user is admin of community
+        should be able to retrieve the community moderators if user is moderator of community
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
@@ -73,7 +73,6 @@ class CommunityModeratorsAPITest(APITestCase):
 
         amount_of_moderators = 5
         moderators_ids = [
-            other_user.pk,
             user.pk
         ]
 
@@ -112,7 +111,6 @@ class CommunityModeratorsAPITest(APITestCase):
 
         amount_of_moderators = 5
         moderators_ids = [
-            other_user.pk,
         ]
 
         for i in range(0, amount_of_moderators):
@@ -234,7 +232,7 @@ class CommunityModeratorsAPITest(APITestCase):
 
     def test_cant_add_community_moderator_if_member(self):
         """
-        should not be able to add a community moderator if user is member of community
+        should not be able to add a community moderator if user is just a member of community
         """
         user = make_user()
         other_user = make_user()
@@ -259,7 +257,7 @@ class CommunityModeratorsAPITest(APITestCase):
 
     def test_cant_add_community_moderator_if_not_member(self):
         """
-        should not be able to add a community moderator if user is not member of community
+        should not be able to add a community moderator if user is not even a member of community
         """
         user = make_user()
         other_user = make_user()
@@ -267,18 +265,41 @@ class CommunityModeratorsAPITest(APITestCase):
 
         community = make_community(creator=other_user, type='P')
 
-        user_to_make_admnistrator = make_user()
-        user_to_make_admnistrator.join_community_with_name(community_name=community.name)
+        user_to_make_moderator = make_user()
 
         url = self._get_url(community_name=community.name)
         response = self.client.put(url, {
-            'username': user_to_make_admnistrator.username
+            'username': user_to_make_moderator.username
         }, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         self.assertFalse(
-            user_to_make_admnistrator.is_moderator_of_community_with_name(community_name=community.name))
+            user_to_make_moderator.is_moderator_of_community_with_name(community_name=community.name))
+
+    def test_cant_add_community_moderator_if_admin(self):
+        """
+        should not be able to add a community moderator if the user is already an admin
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community = make_community(creator=user, type='P')
+
+        user_to_make_moderator = make_user()
+        user_to_make_moderator.join_community_with_name(community_name=community.name)
+        user.add_administrator_with_username_to_community_with_name(username=user_to_make_moderator.username,
+                                                                    community_name=community.name)
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.put(url, {
+            'username': user_to_make_moderator.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(
+            user_to_make_moderator.is_moderator_of_community_with_name(community_name=community.name))
 
     def _get_url(self, community_name):
         return reverse('community-moderators', kwargs={
@@ -330,28 +351,6 @@ class CommunityModeratorAPITest(APITestCase):
                                               source_user=user,
                                               target_user=moderator_to_remove).exists())
 
-    def test_cant_remove_community_moderator_if_also_admin(self):
-        """
-        should not be able to remove a community moderator if the moderator is also an admin
-        """
-        user = make_user()
-        other_user = make_user()
-        headers = make_authentication_headers_for_user(user)
-
-        community = make_community(creator=other_user, type='P')
-
-        user.join_community_with_name(community.name)
-        other_user.add_administrator_with_username_to_community_with_name(username=user.username,
-                                                                          community_name=community.name)
-
-        url = self._get_url(community_name=community.name, username=other_user.username)
-        response = self.client.delete(url, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-        self.assertTrue(
-            other_user.is_moderator_of_community_with_name(community_name=community.name))
-
     def test_cant_remove_community_moderator_if_mod(self):
         """
         should not be able to remove a community moderator if user is moderator
@@ -377,7 +376,7 @@ class CommunityModeratorAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         self.assertTrue(
-            other_user.is_moderator_of_community_with_name(community_name=community.name))
+            moderator_to_remove.is_moderator_of_community_with_name(community_name=community.name))
 
     def test_cant_remove_community_moderator_if_member(self):
         """
@@ -402,10 +401,108 @@ class CommunityModeratorAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         self.assertTrue(
-            other_user.is_moderator_of_community_with_name(community_name=community.name))
+            moderator_to_remove.is_moderator_of_community_with_name(community_name=community.name))
 
     def _get_url(self, community_name, username):
         return reverse('community-moderator', kwargs={
             'community_name': community_name,
             'community_moderator_username': username
+        })
+
+
+class SearchCommunityModeratorsAPITests(APITestCase):
+    """
+    SearchCommunityModeratorsAPITests
+    """
+
+    def test_can_search_community_moderators_by_name(self):
+        """
+        should be able to search for community moderators by their name and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        community = make_community(creator=user)
+
+        amount_of_community_moderators_to_search_for = 5
+
+        for i in range(0, amount_of_community_moderators_to_search_for):
+            moderator = make_user()
+            moderator.join_community_with_name(community_name=community.name)
+            user.add_moderator_with_username_to_community_with_name(username=moderator.username,
+                                                                    community_name=community.name)
+            moderator_name = moderator.profile.name
+            amount_of_characters_to_query = random.randint(1, len(moderator_name))
+            query = moderator_name[0:amount_of_characters_to_query]
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url(community_name=community.name)
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            response_moderators = json.loads(response.content)
+            response_moderators_count = len(response_moderators)
+            if response_moderators_count == 1:
+                # Our community creator was not retrieved
+                self.assertEqual(response_moderators_count, 1)
+                retrieved_moderator = response_moderators[0]
+                self.assertEqual(retrieved_moderator['id'], moderator.id)
+            else:
+                # Our community creator was retrieved too
+                for response_moderator in response_moderators:
+                    response_moderator_id = response_moderator['id']
+                    self.assertTrue(
+                        response_moderator_id == moderator.id or response_moderator_id == user.id)
+            user.remove_moderator_with_username_from_community_with_name(username=moderator.username,
+                                                                         community_name=community.name)
+
+    def test_can_search_community_moderators_by_username(self):
+        """
+        should be able to search for community moderators by their username and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        community = make_community(creator=user)
+
+        amount_of_community_moderators_to_search_for = 5
+
+        for i in range(0, amount_of_community_moderators_to_search_for):
+            moderator = make_user()
+            moderator.join_community_with_name(community_name=community.name)
+            user.add_moderator_with_username_to_community_with_name(username=moderator.username,
+                                                                    community_name=community.name)
+            moderator_username = moderator.username
+            amount_of_characters_to_query = random.randint(1, len(moderator_username))
+            query = moderator_username[0:amount_of_characters_to_query]
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url(community_name=community.name)
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            response_moderators = json.loads(response.content)
+            response_moderators_count = len(response_moderators)
+            if response_moderators_count == 1:
+                # Our community creator was not retrieved
+                self.assertEqual(response_moderators_count, 1)
+                retrieved_moderator = response_moderators[0]
+                self.assertEqual(retrieved_moderator['id'], moderator.id)
+            else:
+                # Our community creator was retrieved too
+                for response_moderator in response_moderators:
+                    response_moderator_id = response_moderator['id']
+                    self.assertTrue(
+                        response_moderator_id == moderator.id or response_moderator_id == user.id)
+
+            user.remove_moderator_with_username_from_community_with_name(username=moderator.username,
+                                                                         community_name=community.name)
+
+    def _get_url(self, community_name):
+        return reverse('search-community-moderators', kwargs={
+            'community_name': community_name,
         })

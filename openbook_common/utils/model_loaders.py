@@ -63,3 +63,7 @@ def get_tag_model():
 
 def get_category_model():
     return apps.get_model('openbook_categories.Category')
+
+
+def get_community_membership_model():
+    return apps.get_model('openbook_communities.CommunityMembership')

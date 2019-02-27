@@ -41,7 +41,7 @@ class UserInvite(models.Model):
         unique_together = ('invited_by', 'email',)
 
     def __str__(self):
-        return 'UserInvite: ' + self.username
+        return 'UserInvite'
 
     @classmethod
     def is_token_valid(cls, token):

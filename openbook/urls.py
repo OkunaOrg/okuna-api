@@ -23,15 +23,17 @@ from openbook_categories.views import Categories
 from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, EmailVerify, Login, AuthenticatedUser, User, Users, \
-    UserSettings
+    UserSettings, LinkedUsers, SearchLinkedUsers
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
-    FavoriteCommunities, SearchCommunities, JoinedCommunities
+    FavoriteCommunities, SearchCommunities, JoinedCommunities, AdministratedCommunities, ModeratedCommunities
 from openbook_communities.views.community.administrators.views import CommunityAdministratorItem, \
-    CommunityAdministrators
-from openbook_communities.views.community.banned_users.views import BanUser, UnbanUser, CommunityBannedUsers
+    CommunityAdministrators, SearchCommunityAdministrators
+from openbook_communities.views.community.banned_users.views import BanUser, UnbanUser, CommunityBannedUsers, \
+    SearchCommunityBannedUsers
 from openbook_communities.views.community.members.views import CommunityMembers, JoinCommunity, \
-    LeaveCommunity, InviteCommunityMember
-from openbook_communities.views.community.moderators.views import CommunityModeratorItem, CommunityModerators
+    LeaveCommunity, InviteCommunityMember, SearchCommunityMembers, UninviteCommunityMember
+from openbook_communities.views.community.moderators.views import CommunityModeratorItem, CommunityModerators, \
+    SearchCommunityModerators
 from openbook_communities.views.community.posts.views import CommunityPosts
 from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, FavoriteCommunity
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
@@ -53,6 +55,8 @@ auth_patterns = [
     path('user/', AuthenticatedUser.as_view(), name='authenticated-user'),
     path('users/<str:user_username>/', User.as_view(), name='user'),
     path('users/', Users.as_view(), name='users'),
+    path('linked-users/', LinkedUsers.as_view(), name='linked-users'),
+    path('linked-users/search/', SearchLinkedUsers.as_view(), name='search-linked-users'),
 ]
 
 post_patterns = [
@@ -77,6 +81,7 @@ community_administrator_patterns = [
 
 community_administrators_patterns = [
     path('', CommunityAdministrators.as_view(), name='community-administrators'),
+    path('search/', SearchCommunityAdministrators.as_view(), name='search-community-administrators'),
     path('<str:community_administrator_username>/', include(community_administrator_patterns)),
 ]
 
@@ -86,14 +91,17 @@ community_moderator_patterns = [
 
 community_moderators_patterns = [
     path('', CommunityModerators.as_view(), name='community-moderators'),
+    path('search/', SearchCommunityModerators.as_view(), name='search-community-moderators'),
     path('<str:community_moderator_username>/', include(community_moderator_patterns)),
 ]
 
 community_members_patterns = [
     path('', CommunityMembers.as_view(), name='community-members'),
+    path('search/', SearchCommunityMembers.as_view(), name='search-community-members'),
     path('join/', JoinCommunity.as_view(), name='community-join'),
     path('leave/', LeaveCommunity.as_view(), name='community-leave'),
     path('invite/', InviteCommunityMember.as_view(), name='community-invite'),
+    path('uninvite/', UninviteCommunityMember.as_view(), name='community-uninvite'),
 ]
 
 community_posts_patterns = [
@@ -102,6 +110,7 @@ community_posts_patterns = [
 
 community_banned_users_patterns = [
     path('', CommunityBannedUsers.as_view(), name='community-banned-users'),
+    path('search/', SearchCommunityBannedUsers.as_view(), name='search-community-banned-users'),
     path('ban/', BanUser.as_view(), name='community-ban-user'),
     path('unban/', UnbanUser.as_view(), name='community-unban-user'),
 ]
@@ -123,6 +132,8 @@ communities_patterns = [
     path('trending/', TrendingCommunities.as_view(), name='trending-communities'),
     path('joined/', JoinedCommunities.as_view(), name='joined-communities'),
     path('favorites/', FavoriteCommunities.as_view(), name='favorite-communities'),
+    path('administrated/', AdministratedCommunities.as_view(), name='administrated-communities'),
+    path('moderated/', ModeratedCommunities.as_view(), name='moderated-communities'),
     path('name-check/', CommunityNameCheck.as_view(), name='community-name-check'),
     path('search/', SearchCommunities.as_view(), name='search-communities'),
     path('<str:community_name>/', include(community_patterns)),
