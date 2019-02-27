@@ -1,15 +1,16 @@
-from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from django.conf import settings
-from django.utils.translation import gettext_lazy as _
 from openbook_auth.models import User, UserProfile
+from openbook_auth.serializers import BadgeSerializer
 from openbook_auth.validators import user_username_exists, username_characters_validator
 from openbook_circles.models import Circle
 from openbook_circles.validators import circle_id_exists
 from openbook_common.models import Emoji
 from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, ReactionsEmojiCountField, \
-    CirclesField
+    CirclesField, PostCreatorField
+from openbook_communities.models import Community, CommunityMembership
+from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_lists.validators import list_id_exists
 from openbook_posts.models import PostImage, Post, PostReaction, PostVideo
 
@@ -52,11 +53,14 @@ class CreatePostSerializer(serializers.Serializer):
 
 
 class PostCreatorProfileSerializer(serializers.ModelSerializer):
+    badges = BadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
             'avatar',
-            'cover'
+            'cover',
+            'badges'
         )
 
 
@@ -73,10 +77,14 @@ class PostCreatorSerializer(serializers.ModelSerializer):
 
 
 class PostImageSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(read_only=True)
+
     class Meta:
         model = PostImage
         fields = (
             'image',
+            'width',
+            'height'
         )
 
 
@@ -134,14 +142,46 @@ class PostCircleSerializer(serializers.ModelSerializer):
         )
 
 
+class CommunityMembershipSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommunityMembership
+        fields = (
+            'id',
+            'user_id',
+            'community_id',
+            'is_administrator',
+            'is_moderator',
+        )
+
+
+class PostCommunitySerializer(serializers.ModelSerializer):
+    memberships = CommunityMembershipsField(community_membership_serializer=CommunityMembershipSerializer)
+
+    class Meta:
+        model = Community
+        fields = (
+            'id',
+            'name',
+            'title',
+            'color',
+            'avatar',
+            'cover',
+            'user_adjective',
+            'users_adjective',
+            'memberships',
+        )
+
+
 class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     image = PostImageSerializer(many=False)
     video = PostVideoSerializer(many=False)
-    creator = PostCreatorSerializer(many=False)
+    creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
+                               community_membership_serializer=CommunityMembershipSerializer)
     reactions_emoji_counts = ReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
     reaction = ReactionField(reaction_serializer=PostReactionSerializer)
     comments_count = CommentsCountField()
     circles = CirclesField(circle_serializer=PostCircleSerializer)
+    community = PostCommunitySerializer()
 
     class Meta:
         model = Post
@@ -157,14 +197,16 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'reaction',
             'public_comments',
             'public_reactions',
-            'circles'
+            'circles',
+            'community'
         )
 
 
 class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
     image = PostImageSerializer(many=False)
     video = PostVideoSerializer(many=False)
-    creator = PostCreatorSerializer(many=False)
+    creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
+                               community_membership_serializer=CommunityMembershipSerializer)
     reactions_emoji_counts = ReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
     comments_count = CommentsCountField()
 

@@ -1,7 +1,10 @@
 # Create your models here.
+from datetime import timedelta
+
 from django.core.files.storage import default_storage
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Count
@@ -14,8 +17,9 @@ from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
 from openbook_common.models import Emoji
-from openbook_common.utils.model_loaders import get_post_reaction_model, get_emoji_model, get_post_comment_model, \
-    get_circle_model
+from openbook_common.utils.model_loaders import get_post_reaction_model, get_emoji_model, \
+    get_circle_model, get_community_model
+from imagekit.models import ProcessedImageField
 
 
 class Post(models.Model):
@@ -24,6 +28,9 @@ class Post(models.Model):
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
     public_comments = models.BooleanField(_('public comments'), default=True, editable=False, null=False)
     public_reactions = models.BooleanField(_('public reactions'), default=True, editable=False, null=False)
+    community = models.ForeignKey('openbook_communities.Community', on_delete=models.CASCADE, related_name='posts',
+                                  null=True,
+                                  blank=False)
 
     @classmethod
     def post_with_id_has_public_comments(cls, post_id):
@@ -34,7 +41,19 @@ class Post(models.Model):
         return Post.objects.filter(pk=post_id, public_reactions=True).count() == 1
 
     @classmethod
-    def create_post(cls, creator, circles_ids, image=None, text=None, video=None, created=None):
+    def is_post_with_id_a_community_post(cls, post_id):
+        return Post.objects.filter(pk=post_id, community__isnull=False).exists()
+
+    @classmethod
+    def create_post(cls, creator, circles_ids=None, community_name=None, image=None, text=None, video=None,
+                    created=None):
+
+        if not community_name and not circles_ids:
+            raise ValidationError(_('A post requires circles or a community to be posted to.'))
+
+        if community_name and circles_ids:
+            raise ValidationError(_('A post cannot be posted both to a community and to circles.'))
+
         if not text and not image and not video:
             raise ValidationError(_('A post requires text or an image/video.'))
 
@@ -52,7 +71,11 @@ class Post(models.Model):
         if video:
             PostVideo.objects.create(video=video, post_id=post.pk)
 
-        post.circles.add(*circles_ids)
+        if circles_ids:
+            post.circles.add(*circles_ids)
+        else:
+            Community = get_community_model()
+            post.community = Community.objects.get(name=community_name)
 
         post.save()
 
@@ -91,8 +114,17 @@ class Post(models.Model):
     @classmethod
     def get_trending_posts(cls):
         Circle = get_circle_model()
+        Community = get_community_model()
         world_circle_id = Circle.get_world_circle_id()
-        return cls.objects.annotate(Count('reactions')).filter(circles__id=world_circle_id).order_by(
+
+        trending_posts_query = Q(created__gte=timezone.now() - timedelta(
+            days=1))
+
+        trending_posts_query.add(Q(circles__id=world_circle_id), Q.OR)
+
+        trending_posts_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC), Q.OR)
+
+        return cls.objects.annotate(Count('reactions')).filter(trending_posts_query).order_by(
             '-reactions__count', '-created')
 
     def count_comments(self, commenter_id=None):
@@ -118,9 +150,6 @@ class Post(models.Model):
 
     def comment(self, text, commenter):
         return PostComment.create_comment(text=text, commenter=commenter, post=self)
-
-    def remove_comment_with_id(self, post_comment_id):
-        self.comments.filter(id=post_comment_id).delete()
 
     def react(self, reactor, emoji_id):
         return PostReaction.create_reaction(reactor=reactor, emoji_id=emoji_id, post=self)
@@ -148,7 +177,16 @@ post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else defa
 
 class PostImage(models.Model):
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='image')
-    image = models.ImageField(_('image'), blank=False, null=False, storage=post_image_storage)
+    image = ProcessedImageField(verbose_name=_('image'), storage=post_image_storage,
+                                blank=False, null=True, format='JPEG', options={'quality': 75})
+
+    @property
+    def width(self):
+        return self.image.width
+
+    @property
+    def height(self):
+        return self.image.height
 
 
 class PostVideo(models.Model):

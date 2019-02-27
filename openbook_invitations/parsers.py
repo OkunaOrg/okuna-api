@@ -1,7 +1,8 @@
 import csv
 import re
+
+from openbook_common.models import Badge
 from openbook_common.utils.model_loaders import get_user_invite_model
-from django.db import transaction, IntegrityError, DatabaseError
 
 
 def parse_kickstarter_csv(filepath):
@@ -18,9 +19,10 @@ def parse_kickstarter_csv(filepath):
                     print('Username was empty for:', name)
                     continue
                 badge_keyword = row[badge_keyword_col]
+                badge = Badge.objects.get(keyword=badge_keyword)
                 UserInvite = get_user_invite_model()
                 UserInvite.create_invite(name=name, email=email, username=username,
-                                             badge_keyword=badge_keyword)
+                                         badge=badge)
     except IOError as e:
         print('Unable to read file')
         raise e
@@ -37,13 +39,38 @@ def parse_indiegogo_csv(filepath):
                 email = row[email_col]
                 username = row[username_col]
                 badge_keyword = row[badge_keyword_col]
+                badge = Badge.objects.get(keyword=badge_keyword)
                 UserInvite = get_user_invite_model()
 
                 if username is None or username is '0' or username is '':
                     print('Username was empty for:', name)
                     continue
                 invited_user = UserInvite.create_invite(name=name, email=email, username=username,
-                                                        badge_keyword=badge_keyword)
+                                                        badge_keyword=badge_keyword, badge=badge)
+                invited_user.save()
+    except IOError as e:
+        print('Unable to read file')
+        raise e
+
+
+def parse_conflicts_csv(filepath):
+    # Hack: Since username is unique, we populate name field with username during
+    # parsing of this csv so we can import all records.
+    # This is a one time operation before launch.
+    try:
+        with open(filepath, newline='') as csvfile:
+            backer_data_reader = csv.reader(csvfile, delimiter=',')
+            header_row = next(backer_data_reader)
+            name_col, email_col = get_column_numbers_for_conflicts_csv(header_row)
+            for row in backer_data_reader:
+                email = row[email_col]
+                username = row[name_col]
+                UserInvite = get_user_invite_model()
+
+                if username is None or username is '0' or username is '':
+                    print('Username was empty for:', username)
+                    continue
+                invited_user = UserInvite.create_invite(name=username, email=email, username=None)
                 invited_user.save()
     except IOError as e:
         print('Unable to read file')
@@ -85,3 +112,13 @@ def get_column_numbers_for_kickstarter(first_row):
             email = index
 
     return name, email, username, badge_keyword
+
+
+def get_column_numbers_for_conflicts_csv(first_row):
+    for index, col in enumerate(first_row):
+        if col == 'Chosen username':
+            name = index
+        elif col == 'Email':
+            email = index
+
+    return name, email

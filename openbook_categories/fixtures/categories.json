@@ -1,0 +1,114 @@
+[
+  {
+    "model": "openbook_categories.Category",
+    "pk": 1,
+    "fields": {
+      "order": "8",
+      "name": "education",
+      "title": "Education",
+      "color": "#6200cc",
+      "description_en": "For everything related to Education.",
+      "description_es": "Para todo lo relacionado con la educación.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_education-min.png"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 2,
+    "fields": {
+      "order": "1",
+      "name": "fun",
+      "title": "Fun",
+      "color": "#ff005d",
+      "description_en": "Fun stuff!",
+      "description_es": "Cosas graciosas!",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_fun-min.png"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 3,
+    "fields": {
+      "order": "3",
+      "name": "technology",
+      "title": "Technology",
+      "color": "#0050ff",
+      "description_en": "For all tech related wizardry.",
+      "description_es": "Para todas las cosas mágicas de la tecnología.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_technology-min.png"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 4,
+    "fields": {
+      "order": "5",
+      "name": "sports",
+      "title": "Sports",
+      "color": "#3c9b48",
+      "description_en": "For everything related to sports.",
+      "description_es": "Para todo lo relacionado con deportes.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_sports-min.png"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 5,
+    "fields": {
+      "order": "4",
+      "name": "nature",
+      "title": "Nature",
+      "color": "#9e5400",
+      "description_en": "For everything related to nature.",
+      "description_es": "Para todo lo relacionado con la naturaleza.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/nature-min.png"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 5,
+    "fields": {
+      "order": "2",
+      "name": "travel",
+      "title": "Travel",
+      "color": "#7c00e2",
+      "description_en": "For everything related to travel.",
+      "description_es": "Para todo lo relacionado con viajar.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_travel-min.png"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 5,
+    "fields": {
+      "order": "6",
+      "name": "art",
+      "title": "Art",
+      "color": "#595959",
+      "description_en": "For everything related to art.",
+      "description_es": "Para todo lo relacionado con arte.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_art-min.png"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 6,
+    "fields": {
+      "order": "7",
+      "name": "lifestyle",
+      "title": "Lifestyle",
+      "color": "#0085d8",
+      "description_en": "For everything related to lifestyle.",
+      "description_es": "Para todo lo relacionado con estilo de vida.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_lifestyle-min.png"
+    }
+  }
+]

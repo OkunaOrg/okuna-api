@@ -9,7 +9,8 @@ from rest_framework.test import APITestCase
 import logging
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
-    make_fake_post_comment_text, make_user, make_circle, make_emoji, make_emoji_group, make_reactions_emoji_group
+    make_fake_post_comment_text, make_user, make_circle, make_emoji, make_emoji_group, make_reactions_emoji_group, \
+    make_community
 from openbook_posts.models import Post, PostComment, PostReaction
 
 logger = logging.getLogger(__name__)
@@ -27,7 +28,7 @@ class PostItemAPITests(APITestCase):
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
-        post = user.create_post(text=make_fake_post_text())
+        post = user.create_public_post(text=make_fake_post_text())
 
         url = self._get_url(post)
 
@@ -35,6 +36,85 @@ class PostItemAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(Post.objects.filter(pk=post.pk).count() == 0)
+
+    def test_can_delete_post_of_community_if_mod(self):
+        """
+        should be able to delete a community post if moderator and return 200
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(username=user.username,
+                                                                             community_name=community.name)
+
+        community_post_creator = make_user()
+        community_post_creator.join_community_with_name(community_name=community.name)
+
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        url = self._get_url(post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(Post.objects.filter(pk=post.pk).count() == 0)
+
+    def test_can_delete_post_of_community_if_admin(self):
+        """
+        should be able to delete a community post if administrator and return 200
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+        community_creator.add_administrator_with_username_to_community_with_name(username=user.username,
+                                                                                 community_name=community.name)
+
+        community_post_creator = make_user()
+        community_post_creator.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        url = self._get_url(post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(Post.objects.filter(pk=post.pk).count() == 0)
+
+    def test_logs_community_post_deleted_by_non_creator(self):
+        """
+        should create a log when a community post was deleted by an admin/moderator
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+        community_creator.add_administrator_with_username_to_community_with_name(username=user.username,
+                                                                                 community_name=community.name)
+
+        community_post_creator = make_user()
+        community_post_creator.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        url = self._get_url(post)
+
+        headers = make_authentication_headers_for_user(user)
+        self.client.delete(url, **headers)
+
+        self.assertTrue(community.logs.filter(action_type='RP',
+                                              source_user=user,
+                                              target_user=community_post_creator).exists())
 
     def test_cannot_delete_foreign_post(self):
         """
@@ -44,7 +124,7 @@ class PostItemAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
 
         foreign_user = make_user()
-        post = foreign_user.create_post(text=make_fake_post_text())
+        post = foreign_user.create_public_post(text=make_fake_post_text())
 
         url = self._get_url(post)
 
@@ -74,7 +154,7 @@ class PostCommentsAPITests(APITestCase):
          """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
-        post = user.create_post(text=make_fake_post_text())
+        post = user.create_public_post(text=make_fake_post_text())
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -95,7 +175,7 @@ class PostCommentsAPITests(APITestCase):
 
         foreign_user = make_user()
         circle = make_circle(creator=foreign_user)
-        post = foreign_user.create_post(text=make_fake_post_text(), circle=circle)
+        post = foreign_user.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -118,7 +198,7 @@ class PostCommentsAPITests(APITestCase):
 
         user.connect_with_user_with_id(user_to_connect.pk)
 
-        connected_user_post = user_to_connect.create_post(text=make_fake_post_text())
+        connected_user_post = user_to_connect.create_public_post(text=make_fake_post_text())
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -143,7 +223,7 @@ class PostCommentsAPITests(APITestCase):
         user.connect_with_user_with_id(user_to_connect.pk)
         user_to_connect.confirm_connection_with_user_with_id(user.pk, circles_ids=[circle.pk])
 
-        connected_user_post = user_to_connect.create_post(text=make_fake_post_text(), circle=circle)
+        connected_user_post = user_to_connect.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -168,7 +248,7 @@ class PostCommentsAPITests(APITestCase):
         user.connect_with_user_with_id(user_to_connect.pk)
         # Note there is no confirmation of the connection on the other side
 
-        connected_user_post = user_to_connect.create_post(text=make_fake_post_text(), circle=circle)
+        connected_user_post = user_to_connect.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -214,7 +294,7 @@ class PostCommentsAPITests(APITestCase):
 
         user.follow_user_with_id(user_to_follow.pk)
 
-        followed_user_post = user_to_follow.create_post(text=make_fake_post_text(), circle=circle)
+        followed_user_post = user_to_follow.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -267,6 +347,99 @@ class PostCommentItemAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(PostComment.objects.filter(id=post_comment.pk).count() == 0)
+
+    def test_can_delete_community_post_comment_if_mod(self):
+        """
+         should be able to delete a community post comment if is moderator and return 200
+         """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(username=user.username,
+                                                                             community_name=community.name)
+
+        community_post_creator = make_user()
+        community_post_creator.join_community_with_name(community_name=community.name)
+
+        community_post_commentator = make_user()
+        community_post_commentator.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post_comment = community_post_commentator.comment_post_with_id(text=make_fake_post_comment_text(),
+                                                                       post_id=post.pk)
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(PostComment.objects.filter(id=post_comment.pk).exists())
+
+    def test_can_delete_community_post_comment_if_admin(self):
+        """
+         should be able to delete a community post comment if is administrator and return 200
+         """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+        community_creator.add_administrator_with_username_to_community_with_name(username=user.username,
+                                                                                 community_name=community.name)
+
+        community_post_creator = make_user()
+        community_post_creator.join_community_with_name(community_name=community.name)
+
+        community_post_commentator = make_user()
+        community_post_commentator.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post_comment = community_post_commentator.comment_post_with_id(text=make_fake_post_comment_text(),
+                                                                       post_id=post.pk)
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(PostComment.objects.filter(id=post_comment.pk).exists())
+
+    def test_logs_community_post_comment_deleted_by_non_creator(self):
+        """
+        should create a log when a community post comment was deleted by an admin/moderator
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+        community_creator.add_administrator_with_username_to_community_with_name(username=user.username,
+                                                                                 community_name=community.name)
+
+        community_post_creator = make_user()
+        community_post_creator.join_community_with_name(community_name=community.name)
+
+        community_post_commentator = make_user()
+        community_post_commentator.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post_comment = community_post_commentator.comment_post_with_id(text=make_fake_post_comment_text(),
+                                                                       post_id=post.pk)
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        headers = make_authentication_headers_for_user(user)
+        self.client.delete(url, **headers)
+
+        self.assertTrue(
+            community.logs.filter(action_type='RPC', target_user=community_post_commentator, source_user=user).exists())
 
     def test_can_delete_own_comment_in_foreign_public_post(self):
         """
@@ -376,7 +549,7 @@ class PostCommentItemAPITests(APITestCase):
         user.connect_with_user_with_id(user_to_connect.pk)
         user_to_connect.confirm_connection_with_user_with_id(user.pk, circles_ids=[circle.pk])
 
-        post = user_to_connect.create_post(text=make_fake_post_text(), circle_id=circle.pk)
+        post = user_to_connect.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -406,7 +579,7 @@ class PostCommentItemAPITests(APITestCase):
         foreign_user.connect_with_user_with_id(user_to_connect.pk)
         user_to_connect.confirm_connection_with_user_with_id(foreign_user.pk, circles_ids=[circle.pk])
 
-        post = user_to_connect.create_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+        post = user_to_connect.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -433,7 +606,7 @@ class PostCommentItemAPITests(APITestCase):
         foreign_user.connect_with_user_with_id(user_to_connect.pk)
         user_to_connect.confirm_connection_with_user_with_id(foreign_user.pk, circles_ids=[circle.pk])
 
-        post = user_to_connect.create_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+        post = user_to_connect.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -512,7 +685,7 @@ class PostCommentItemAPITests(APITestCase):
         foreign_user.connect_with_user_with_id(user_to_follow.pk)
         user_to_follow.confirm_connection_with_user_with_id(foreign_user.pk, circles_ids=[circle.pk])
 
-        post = user_to_follow.create_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+        post = user_to_follow.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         post_comment_text = make_fake_post_comment_text()
 
@@ -548,7 +721,7 @@ class PostReactionsAPITests(APITestCase):
          """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
-        post = user.create_post(text=make_fake_post_text())
+        post = user.create_public_post(text=make_fake_post_text())
 
         emoji_group = make_reactions_emoji_group()
 
@@ -572,7 +745,7 @@ class PostReactionsAPITests(APITestCase):
 
         foreign_user = make_user()
         circle = make_circle(creator=foreign_user)
-        post = foreign_user.create_post(text=make_fake_post_text(), circle=circle)
+        post = foreign_user.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         emoji_group = make_reactions_emoji_group()
 
@@ -593,7 +766,7 @@ class PostReactionsAPITests(APITestCase):
          """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
-        post = user.create_post(text=make_fake_post_text())
+        post = user.create_public_post(text=make_fake_post_text())
 
         emoji_group = make_emoji_group()
 
@@ -619,7 +792,7 @@ class PostReactionsAPITests(APITestCase):
 
         user.connect_with_user_with_id(user_to_connect.pk)
 
-        connected_user_post = user_to_connect.create_post(text=make_fake_post_text())
+        connected_user_post = user_to_connect.create_public_post(text=make_fake_post_text())
 
         emoji_group = make_reactions_emoji_group()
 
@@ -648,7 +821,7 @@ class PostReactionsAPITests(APITestCase):
         user.connect_with_user_with_id(user_to_connect.pk)
         user_to_connect.confirm_connection_with_user_with_id(user.pk, circles_ids=[circle.pk])
 
-        connected_user_post = user_to_connect.create_post(text=make_fake_post_text(), circle=circle)
+        connected_user_post = user_to_connect.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         emoji_group = make_reactions_emoji_group()
 
@@ -677,7 +850,7 @@ class PostReactionsAPITests(APITestCase):
         user.connect_with_user_with_id(user_to_connect.pk)
         # Note there is no confirmation of the connection on the other side
 
-        connected_user_post = user_to_connect.create_post(text=make_fake_post_text(), circle=circle)
+        connected_user_post = user_to_connect.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         emoji_group = make_reactions_emoji_group()
 
@@ -731,7 +904,7 @@ class PostReactionsAPITests(APITestCase):
 
         user.follow_user_with_id(user_to_follow.pk)
 
-        followed_user_post = user_to_follow.create_post(text=make_fake_post_text(), circle=circle)
+        followed_user_post = user_to_follow.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         emoji_group = make_reactions_emoji_group()
 
@@ -753,7 +926,7 @@ class PostReactionsAPITests(APITestCase):
          """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
-        post = user.create_post(text=make_fake_post_text())
+        post = user.create_public_post(text=make_fake_post_text())
 
         emoji_group = make_reactions_emoji_group()
 
@@ -938,7 +1111,7 @@ class PostReactionItemAPITests(APITestCase):
         user.connect_with_user_with_id(user_to_connect.pk)
         user_to_connect.confirm_connection_with_user_with_id(user.pk, circles_ids=[circle.pk])
 
-        post = user_to_connect.create_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+        post = user_to_connect.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         emoji_group = make_reactions_emoji_group()
 
@@ -971,7 +1144,7 @@ class PostReactionItemAPITests(APITestCase):
         foreign_user.connect_with_user_with_id(user_to_connect.pk)
         user_to_connect.confirm_connection_with_user_with_id(foreign_user.pk, circles_ids=[circle.pk])
 
-        post = user_to_connect.create_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+        post = user_to_connect.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         emoji_group = make_reactions_emoji_group()
 
@@ -1001,7 +1174,7 @@ class PostReactionItemAPITests(APITestCase):
         foreign_user.connect_with_user_with_id(user_to_connect.pk)
         user_to_connect.confirm_connection_with_user_with_id(foreign_user.pk, circles_ids=[circle.pk])
 
-        post = user_to_connect.create_post(text=make_fake_post_text(), circle_id=circle.pk)
+        post = user_to_connect.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         emoji_group = make_reactions_emoji_group()
 
@@ -1089,7 +1262,7 @@ class PostReactionItemAPITests(APITestCase):
         foreign_user.connect_with_user_with_id(user_to_follow.pk)
         user_to_follow.confirm_connection_with_user_with_id(foreign_user.pk, circles_ids=[circle.pk])
 
-        post = user_to_follow.create_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+        post = user_to_follow.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
         emoji_group = make_reactions_emoji_group()
 

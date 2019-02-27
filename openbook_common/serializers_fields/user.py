@@ -1,5 +1,7 @@
 from rest_framework.fields import Field
 
+from openbook_communities.models import CommunityInvite
+
 
 class IsFollowingField(Field):
     def __init__(self, **kwargs):
@@ -150,3 +152,95 @@ class FollowListsField(Field):
                 lists = request_user.get_lists_for_follow_for_user_with_id(user.pk).all()
 
         return self.list_serializer(lists, context={"request": request}, many=True).data
+
+
+class CommunitiesMembershipsField(Field):
+    def __init__(self, community_membership_serializer, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        self.community_membership_serializer = community_membership_serializer
+        super(CommunitiesMembershipsField, self).__init__(**kwargs)
+
+    def to_representation(self, user):
+        request = self.context.get('request')
+        communities_names = self.context.get('communities_names')
+
+        request_user = request.user
+
+        memberships = []
+
+        for community_name in communities_names:
+            if not community_name:
+                continue
+
+            if not request_user.is_member_of_community_with_name(community_name=community_name):
+                continue
+
+            if not user.is_member_of_community_with_name(community_name=community_name):
+                continue
+
+            community_membership = user.communities_memberships.get(community__name=community_name)
+
+            memberships.append(community_membership)
+
+        if not memberships:
+            return None
+
+        return self.community_membership_serializer(memberships, context={"request": request}, many=True).data
+
+
+class CommunitiesInvitesField(Field):
+    # Retrieve the invites for the given communities_names of the request user to
+    # the serialized user
+    def __init__(self, community_invite_serializer, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        self.community_invite_serializer = community_invite_serializer
+        super(CommunitiesInvitesField, self).__init__(**kwargs)
+
+    def to_representation(self, user):
+        request = self.context.get('request')
+        communities_names = self.context.get('communities_names')
+
+        request_user = request.user
+
+        community_invites = []
+
+        for community_name in communities_names:
+            if not community_name:
+                continue
+
+            try:
+                community_invite = CommunityInvite.objects.get(creator=request_user, invited_user=user)
+                community_invites.append(community_invite)
+            except CommunityInvite.DoesNotExist:
+                pass
+
+        if not community_invites:
+            return None
+
+        return self.community_invite_serializer(community_invites, context={"request": request}, many=True).data
+
+
+class CreatedCommunitiesInvitesField(Field):
+    # Retrieve the created communities invites
+    # If for_username is in the context, it will retrieve the invites for that
+    # specific user
+    def __init__(self, community_invite_serializer, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        self.community_invite_serializer = community_invite_serializer
+        super(CreatedCommunitiesInvitesField, self).__init__(**kwargs)
+
+    def to_representation(self, user):
+        request = self.context.get('request')
+        request_user = request.user
+
+        for_username = self.context.get('for_username')
+
+        if for_username:
+            community_invites = request_user.created_communities_invites.filter(invited_user__username=for_username)
+        else:
+            community_invites = request_user.created_communities_invites
+
+        return self.community_invite_serializer(community_invites, context={"request": request}, many=True).data

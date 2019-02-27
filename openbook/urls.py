@@ -19,10 +19,23 @@ from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 
+from openbook_categories.views import Categories
 from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, EmailVerify, Login, AuthenticatedUser, User, Users, \
-    UserSettings
+    UserSettings, LinkedUsers, SearchLinkedUsers
+from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
+    FavoriteCommunities, SearchCommunities, JoinedCommunities, AdministratedCommunities, ModeratedCommunities
+from openbook_communities.views.community.administrators.views import CommunityAdministratorItem, \
+    CommunityAdministrators, SearchCommunityAdministrators
+from openbook_communities.views.community.banned_users.views import BanUser, UnbanUser, CommunityBannedUsers, \
+    SearchCommunityBannedUsers
+from openbook_communities.views.community.members.views import CommunityMembers, JoinCommunity, \
+    LeaveCommunity, InviteCommunityMember, SearchCommunityMembers, UninviteCommunityMember
+from openbook_communities.views.community.moderators.views import CommunityModeratorItem, CommunityModerators, \
+    SearchCommunityModerators
+from openbook_communities.views.community.posts.views import CommunityPosts
+from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, FavoriteCommunity
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
@@ -42,6 +55,8 @@ auth_patterns = [
     path('user/', AuthenticatedUser.as_view(), name='authenticated-user'),
     path('users/<str:user_username>/', User.as_view(), name='user'),
     path('users/', Users.as_view(), name='users'),
+    path('linked-users/', LinkedUsers.as_view(), name='linked-users'),
+    path('linked-users/search/', SearchLinkedUsers.as_view(), name='search-linked-users'),
 ]
 
 post_patterns = [
@@ -58,6 +73,70 @@ posts_patterns = [
     path('', Posts.as_view(), name='posts'),
     path('trending/', TrendingPosts.as_view(), name='trending-posts'),
     path('emojis/groups/', PostReactionEmojiGroups.as_view(), name='posts-emoji-groups'),
+]
+
+community_administrator_patterns = [
+    path('', CommunityAdministratorItem.as_view(), name='community-administrator'),
+]
+
+community_administrators_patterns = [
+    path('', CommunityAdministrators.as_view(), name='community-administrators'),
+    path('search/', SearchCommunityAdministrators.as_view(), name='search-community-administrators'),
+    path('<str:community_administrator_username>/', include(community_administrator_patterns)),
+]
+
+community_moderator_patterns = [
+    path('', CommunityModeratorItem.as_view(), name='community-moderator'),
+]
+
+community_moderators_patterns = [
+    path('', CommunityModerators.as_view(), name='community-moderators'),
+    path('search/', SearchCommunityModerators.as_view(), name='search-community-moderators'),
+    path('<str:community_moderator_username>/', include(community_moderator_patterns)),
+]
+
+community_members_patterns = [
+    path('', CommunityMembers.as_view(), name='community-members'),
+    path('search/', SearchCommunityMembers.as_view(), name='search-community-members'),
+    path('join/', JoinCommunity.as_view(), name='community-join'),
+    path('leave/', LeaveCommunity.as_view(), name='community-leave'),
+    path('invite/', InviteCommunityMember.as_view(), name='community-invite'),
+    path('uninvite/', UninviteCommunityMember.as_view(), name='community-uninvite'),
+]
+
+community_posts_patterns = [
+    path('', CommunityPosts.as_view(), name='community-posts'),
+]
+
+community_banned_users_patterns = [
+    path('', CommunityBannedUsers.as_view(), name='community-banned-users'),
+    path('search/', SearchCommunityBannedUsers.as_view(), name='search-community-banned-users'),
+    path('ban/', BanUser.as_view(), name='community-ban-user'),
+    path('unban/', UnbanUser.as_view(), name='community-unban-user'),
+]
+
+community_patterns = [
+    path('', CommunityItem.as_view(), name='community'),
+    path('avatar/', CommunityAvatar.as_view(), name='community-avatar'),
+    path('cover/', CommunityCover.as_view(), name='community-cover'),
+    path('favorite/', FavoriteCommunity.as_view(), name='favorite-community'),
+    path('members/', include(community_members_patterns)),
+    path('posts/', include(community_posts_patterns)),
+    path('banned-users/', include(community_banned_users_patterns)),
+    path('administrators/', include(community_administrators_patterns)),
+    path('moderators/', include(community_moderators_patterns)),
+]
+
+communities_patterns = [
+    path('', Communities.as_view(), name='communities'),
+    path('trending/', TrendingCommunities.as_view(), name='trending-communities'),
+    path('joined/', JoinedCommunities.as_view(), name='joined-communities'),
+    path('favorites/', FavoriteCommunities.as_view(), name='favorite-communities'),
+    path('administrated/', AdministratedCommunities.as_view(), name='administrated-communities'),
+    path('moderated/', ModeratedCommunities.as_view(), name='moderated-communities'),
+    path('name-check/', CommunityNameCheck.as_view(), name='community-name-check'),
+    path('search/', SearchCommunities.as_view(), name='search-communities'),
+    path('<str:community_name>/', include(community_patterns)),
 ]
 
 connections_patterns = [
@@ -91,9 +170,15 @@ importer_patterns = [
     path('upload/', ImportItem.as_view(), name='uploads')
 ]
 
+categories_patterns = [
+    path('', Categories.as_view(), name='categories')
+]
+
 api_patterns = [
     path('auth/', include(auth_patterns)),
     path('posts/', include(posts_patterns)),
+    path('communities/', include(communities_patterns)),
+    path('categories/', include(categories_patterns)),
     path('circles/', include(circles_patterns)),
     path('connections/', include(connections_patterns)),
     path('lists/', include(lists_patterns)),

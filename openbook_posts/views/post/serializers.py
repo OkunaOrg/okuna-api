@@ -3,7 +3,9 @@ from django.conf import settings
 
 from openbook_auth.models import UserProfile, User
 from openbook_common.models import Emoji, EmojiGroup
+from openbook_common.serializers_fields.post_comment import PostCommenterField
 from openbook_common.validators import emoji_id_exists, emoji_group_id_exists
+from openbook_communities.models import CommunityMembership
 from openbook_posts.models import PostComment, PostReaction
 from openbook_posts.validators import post_id_exists, post_comment_id_exists, post_reaction_id_exists
 
@@ -20,6 +22,7 @@ class PostCommenterProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'avatar',
+            'name'
         )
 
 
@@ -35,8 +38,21 @@ class PostCommentCommenterSerializer(serializers.ModelSerializer):
         )
 
 
+class PostCommenterCommunityMembershipSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommunityMembership
+        fields = (
+            'id',
+            'user_id',
+            'community_id',
+            'is_administrator',
+            'is_moderator',
+        )
+
+
 class PostCommentSerializer(serializers.ModelSerializer):
-    commenter = PostCommentCommenterSerializer(many=False)
+    commenter = PostCommenterField(post_commenter_serializer=PostCommentCommenterSerializer,
+                                   community_membership_serializer=PostCommenterCommunityMembershipSerializer)
 
     class Meta:
         model = PostComment

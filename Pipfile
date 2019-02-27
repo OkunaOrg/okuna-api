@@ -1,12 +1,17 @@
 [[source]]
+
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
+
 [dev-packages]
 
+
+
 [packages]
-django = "==2.1.7"
+
+django = "==2.1.5"
 python-dotenv = "*"
 djangorestframework = "*"
 sentry-sdk = "*"
@@ -29,6 +34,9 @@ pyyaml = "*"
 python-magic = "*"
 safety = "*"
 pyjwt = "*"
+django-imagekit = "*"
+
 
 [pipenv]
+
 allow_prereleases = true

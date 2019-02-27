@@ -89,3 +89,30 @@ class CirclesField(Field):
             circles = post.circles
 
         return self.circle_serializer(circles, many=True, context={"request": request, 'post': post}).data
+
+
+class PostCreatorField(Field):
+    def __init__(self, community_membership_serializer, post_creator_serializer, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        self.community_membership_serializer = community_membership_serializer
+        self.post_creator_serializer = post_creator_serializer
+        super(PostCreatorField, self).__init__(**kwargs)
+
+    def to_representation(self, post):
+        request = self.context.get('request')
+
+        post_creator = post.creator
+        post_community = post.community
+
+        post_creator_serializer = self.post_creator_serializer(post_creator, context={"request": request}).data
+
+        if post_community:
+            post_creator_memberships = post_community.memberships.get(user=post_creator)
+            post_creator_serializer['communities_memberships'] = self.community_membership_serializer(
+                [post_creator_memberships],
+                many=True,
+                context={
+                    "request": request}).data
+
+        return post_creator_serializer

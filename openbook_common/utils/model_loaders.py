@@ -21,6 +21,18 @@ def get_list_model():
     return apps.get_model('openbook_lists.List')
 
 
+def get_community_model():
+    return apps.get_model('openbook_communities.Community')
+
+
+def get_community_invite_model():
+    return apps.get_model('openbook_communities.CommunityInvite')
+
+
+def get_community_log_model():
+    return apps.get_model('openbook_communities.CommunityLog')
+
+
 def get_post_comment_model():
     return apps.get_model('openbook_posts.PostComment')
 
@@ -39,3 +51,19 @@ def get_emoji_group_model():
 
 def get_user_invite_model():
     return apps.get_model('openbook_invitations.UserInvite')
+
+
+def get_badge_model():
+    return apps.get_model('openbook_common.Badge')
+
+
+def get_tag_model():
+    return apps.get_model('openbook_tags.Tag')
+
+
+def get_category_model():
+    return apps.get_model('openbook_categories.Category')
+
+
+def get_community_membership_model():
+    return apps.get_model('openbook_communities.CommunityMembership')

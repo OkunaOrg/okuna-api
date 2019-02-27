@@ -1,4 +1,5 @@
 # Create your tests here.
+import random
 import tempfile
 import uuid
 
@@ -18,7 +19,7 @@ import json
 from openbook_auth.views import UserSettings
 from openbook_circles.models import Circle
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_user_bio, \
-    make_user_location, make_user_avatar, make_user_cover
+    make_user_location, make_user_avatar, make_user_cover, make_badge
 from openbook_invitations.models import UserInvite
 
 fake = Faker()
@@ -48,17 +49,17 @@ class RegistrationAPITests(APITestCase):
 
     def test_token_can_be_used_once(self):
         """
-        should return 404 if token already has been used to create an account.
+        should return 400 if token already has been used to create an account.
         """
         url = self._get_url()
-        token = self._get_user_invite_token()
+        token = self._make_user_invite_token()
         first_request_data = {'name': 'Joel Hernandez', 'email': 'joel@open-book.org',
                               'password': 'secretPassword123', 'is_of_legal_age': 'true', 'token': token}
         self.client.post(url, first_request_data, format='multipart')
         second_request_data = {'name': 'Juan Taramera', 'email': 'joel2@open-book.org',
                                'password': 'woahpassword123', 'is_of_legal_age': 'true', 'token': token}
         response = self.client.post(url, second_request_data, format='multipart')
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_token_should_be_valid(self):
         """
@@ -78,7 +79,7 @@ class RegistrationAPITests(APITestCase):
         """
         url = self._get_url()
         invalid_names = ('Joel<', '<>', '',)
-        token = self._get_user_invite_token()
+        token = self._make_user_invite_token()
         for name in invalid_names:
             data = {
                 'username': 'lifenautjoe',
@@ -98,7 +99,7 @@ class RegistrationAPITests(APITestCase):
         should return 400 if the name is not present
         """
         url = self._get_url()
-        token = self._get_user_invite_token()
+        token = self._make_user_invite_token()
         data = {'email': 'user@mail.com', 'password': 'secretPassword123',
                 'is_of_legal_age': 'true', 'token': token}
         response = self.client.post(url, data, format='multipart')
@@ -111,7 +112,7 @@ class RegistrationAPITests(APITestCase):
         should return 400 if the email is not present
         """
         url = self._get_url()
-        token = self._get_user_invite_token()
+        token = self._make_user_invite_token()
         data = {'name': 'Joel Hernandez', 'password': 'secretPassword123',
                 'is_of_legal_age': 'true', 'token': token}
         response = self.client.post(url, data, format='multipart')
@@ -124,7 +125,7 @@ class RegistrationAPITests(APITestCase):
         should return 400 if the is_of_legal_age is not present
         """
         url = self._get_url()
-        token = self._get_user_invite_token()
+        token = self._make_user_invite_token()
         data = {'name': 'Joel Hernandez', 'email': 'user2@mail.com',
                 'password': 'secretPassword123', 'token': token}
         response = self.client.post(url, data, format='multipart')
@@ -137,7 +138,7 @@ class RegistrationAPITests(APITestCase):
         should return 400 if the is_of_legal_age is false
         """
         url = self._get_url()
-        token = self._get_user_invite_token()
+        token = self._make_user_invite_token()
         data = {'name': 'Joel Hernandez', 'email': 'user@mail.com',
                 'password': 'secretPassword123', 'is_of_legal_age': 'false', 'token': token}
         response = self.client.post(url, data, format='multipart')
@@ -150,17 +151,16 @@ class RegistrationAPITests(APITestCase):
         should return 400 if email is taken.
         """
         url = self._get_url()
-        token = self._get_user_invite_token()
+        token = self._make_user_invite_token()
         email = 'joel@open-book.org'
         first_request_data = {'name': 'Joel Hernandez', 'email': email,
                               'password': 'secretPassword123', 'is_of_legal_age': 'true', 'token': token}
         self.client.post(url, first_request_data, format='multipart')
-        token2 = self._get_user_invite_token()
+        token2 = self._make_user_invite_token()
         second_request_data = {'name': 'Juan Taramera', 'email': email,
                                'password': 'woahpassword123', 'is_of_legal_age': 'true', 'token': token2}
         response = self.client.post(url, second_request_data, format='multipart')
         parsed_response = json.loads(response.content)
-        print(parsed_response)
         self.assertIn('email', parsed_response)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -169,7 +169,7 @@ class RegistrationAPITests(APITestCase):
         should create a User model instance
         """
         url = self._get_url()
-        token = self._get_user_invite_token()
+        token = self._make_user_invite_token()
         email = fake.email()
         first_request_data = {'name': 'Joel Hernandez', 'email': email,
                               'password': 'secretPassword123', 'is_of_legal_age': 'true', 'token': token}
@@ -186,7 +186,7 @@ class RegistrationAPITests(APITestCase):
         should create a UserProfile instance and associate it to the User instance
         """
         url = self._get_url()
-        token = self._get_user_invite_token()
+        token = self._make_user_invite_token()
         email = fake.email()
         request_data = {'token': token, 'name': 'Joel Hernandez', 'email': email,
                         'password': 'secretPassword123', 'is_of_legal_age': 'true'}
@@ -196,12 +196,30 @@ class RegistrationAPITests(APITestCase):
         user = User.objects.get(email=email)
         self.assertTrue(hasattr(user, 'profile'))
 
+    def test_user_profile_has_badges(self):
+        """
+        should send user's badges with UserProfile instance
+        """
+        url = self._get_url()
+        badge = make_badge()
+        token = self._make_user_invite_token_with_badge(badge)
+        email = fake.email()
+        request_data = {'token': token, 'name': 'Joel Hernandez', 'email': email,
+                        'password': 'secretPassword123', 'is_of_legal_age': 'true'}
+        response = self.client.post(url, request_data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(UserProfile.objects.count(), 1)
+        user = User.objects.get(email=email)
+        self.assertTrue(hasattr(user.profile, 'badges'))
+        badges = user.profile.badges.all()
+        self.assertTrue(badges[0].keyword, badge.keyword)
+
     def test_user_circles_are_created(self):
         """
         should create the default circles instance and associate it to the User instance
         """
         url = self._get_url()
-        token = self._get_user_invite_token()
+        token = self._make_user_invite_token()
         email = fake.email()
         request_data = {'token': token, 'name': 'Joel Hernandez', 'email': email,
                         'password': 'secretPassword123', 'is_of_legal_age': 'true'}
@@ -226,7 +244,7 @@ class RegistrationAPITests(APITestCase):
         image.save(tmp_file)
         tmp_file.seek(0)
         email = fake.email()
-        token = self._get_user_invite_token()
+        token = self._make_user_invite_token()
         request_data = {'token': token, 'name': 'Joel Hernandez', 'email': email,
                         'password': 'secretPassword123', 'is_of_legal_age': 'true', 'avatar': tmp_file}
         url = self._get_url()
@@ -239,9 +257,9 @@ class RegistrationAPITests(APITestCase):
         """
         Should return 201 when the user was created successfully and return its auth token.
         """
-        token1 = self._get_user_invite_token()
-        token2 = self._get_user_invite_token()
-        token3 = self._get_user_invite_token()
+        token1 = self._make_user_invite_token()
+        token2 = self._make_user_invite_token()
+        token3 = self._make_user_invite_token()
         users_data = (
             {
                 'token': token1, 'name': 'Joel Hernandez', 'email': 'hi@ohmy.com',
@@ -269,8 +287,12 @@ class RegistrationAPITests(APITestCase):
     def _get_url(self):
         return reverse('register-user')
 
-    def _get_user_invite_token(self):
+    def _make_user_invite_token(self):
         user_invite = UserInvite.create_invite(email=fake.email())
+        return user_invite.token
+
+    def _make_user_invite_token_with_badge(self, badge):
+        user_invite = UserInvite.create_invite(email=fake.email(), badge=badge)
         return user_invite.token
 
 
@@ -1103,3 +1125,131 @@ class UserSettingsAPITests(APITestCase):
 
             self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+
+class LinkedUsersAPITests(APITestCase):
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
+    def test_can_retrieve_linked_users(self):
+        """
+        should be able to retrieve the authenticated user linked users
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        linked_users_ids = []
+        amount_of_followers_linked_users = 5
+        amount_of_connected_linked_users = 5
+
+        amount_of_linked_users = amount_of_connected_linked_users + amount_of_followers_linked_users
+
+        for i in range(0, amount_of_followers_linked_users):
+            linked_follower_user = make_user()
+            linked_follower_user.follow_user_with_id(user.pk)
+            linked_users_ids.append(linked_follower_user.pk)
+
+        for i in range(0, amount_of_connected_linked_users):
+            linked_connected_user = make_user()
+            linked_connected_user.connect_with_user_with_id(user.pk)
+            user.confirm_connection_with_user_with_id(linked_connected_user.pk)
+            linked_users_ids.append(linked_connected_user.pk)
+
+        url = self._get_url()
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_linked_users = json.loads(response.content)
+
+        self.assertEqual(len(response_linked_users), amount_of_linked_users)
+
+        for response_member in response_linked_users:
+            response_member_id = response_member.get('id')
+            self.assertIn(response_member_id, linked_users_ids)
+
+    def _get_url(self):
+        return reverse('linked-users')
+
+
+class SearchLinkedUsersAPITests(APITestCase):
+    """
+    SearchLinkedUsersAPI
+    """
+
+    def test_can_search_linked_users_by_name(self):
+        """
+        should be able to search for linked users by their name and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_linked_users_to_search_for = 5
+
+        for i in range(0, amount_of_linked_users_to_search_for):
+            linked_user = make_user()
+            linked_user.follow_user_with_id(user.pk)
+
+            linked_user_name = linked_user.profile.name
+            amount_of_characters_to_query = random.randint(1, len(linked_user_name))
+            query = linked_user_name[0:amount_of_characters_to_query]
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url()
+
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            response_linked_users = json.loads(response.content)
+            response_members_count = len(response_linked_users)
+
+            self.assertEqual(response_members_count, 1)
+            retrieved_linked_member = response_linked_users[0]
+
+            self.assertEqual(retrieved_linked_member['id'], linked_user.id)
+            linked_user.unfollow_user_with_id(user.pk)
+
+    def test_can_search_linked_users_by_username(self):
+        """
+        should be able to search for linked users by their username and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_linked_users_to_search_for = 5
+
+        for i in range(0, amount_of_linked_users_to_search_for):
+            linked_user = make_user()
+            linked_user.follow_user_with_id(user.pk)
+
+            linked_user_username = linked_user.username
+            amount_of_characters_to_query = random.randint(1, len(linked_user_username))
+            query = linked_user_username[0:amount_of_characters_to_query]
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url()
+
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            response_linked_users = json.loads(response.content)
+            response_members_count = len(response_linked_users)
+
+            self.assertEqual(response_members_count, 1)
+            retrieved_linked_member = response_linked_users[0]
+
+            self.assertEqual(retrieved_linked_member['id'], linked_user.id)
+            linked_user.unfollow_user_with_id(user.pk)
+
+    def _get_url(self):
+        return reverse('search-linked-users')

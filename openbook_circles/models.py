@@ -14,7 +14,7 @@ from django.utils.translation import ugettext_lazy as _
 
 
 class Circle(models.Model):
-    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='circles', null=True)
+    creator = models.ForeignKey('openbook_auth.User', on_delete=models.CASCADE, related_name='circles', null=True)
     name = models.CharField(_('name'), max_length=CIRCLE_MAX_LENGTH, blank=False, null=False)
     color = models.CharField(_('color'), max_length=COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
                              validators=[hex_color_validator])
@@ -26,8 +26,13 @@ class Circle(models.Model):
         unique_together = ('creator', 'name',)
 
     @classmethod
+    def create_circle(cls, name, creator=None, color=None):
+        circle = cls.objects.create(name=name, creator=creator, color=color,)
+        return circle
+
+    @classmethod
     def bootstrap_circles_for_user(cls, user):
-        user_connections_circle = cls.objects.create(name=_('Connections'), color='#FFFFFF', creator=user)
+        user_connections_circle = cls.create_circle(name=_('Connections'), color='#FFFFFF', creator=user)
         user.connections_circle = user_connections_circle
         user.save()
 

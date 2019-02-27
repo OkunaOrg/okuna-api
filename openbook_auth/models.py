@@ -1,6 +1,4 @@
 import secrets
-
-from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
 from django.db import models
@@ -10,6 +8,8 @@ from django.dispatch import receiver
 from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
+from imagekit.models import ProcessedImageField
+from pilkit.processors import ResizeToFill
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError
 from django.db.models import Q
@@ -17,11 +17,11 @@ from django.db.models import Q
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.exceptions import EmailVerificationTokenInvalid
 from openbook_common.models import Badge
+from openbook_common.utils.helpers import delete_image_kit_image_field
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
-    get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, get_emoji_model, \
-    get_emoji_group_model, get_user_invite_model
+    get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, \
+    get_emoji_group_model, get_user_invite_model, get_community_model, get_community_invite_model, get_tag_model
 from openbook_common.validators import name_characters_validator
-from openbook_invitations.models import UserInvite
 
 
 class User(AbstractUser):
@@ -57,10 +57,15 @@ class User(AbstractUser):
         verbose_name_plural = _('users')
 
     @classmethod
-    def create_user(cls, username, email=None, password=None, name=None, avatar=None, is_of_legal_age=None, **extra_fields):
+    def create_user(cls, username, email=None, password=None, name=None, avatar=None, is_of_legal_age=None,
+                    badge=None, **extra_fields):
         new_user = cls.objects.create_user(username, email=email, password=password, **extra_fields)
-        UserProfile.objects.create(name=name, user=new_user, avatar=avatar,
-                                   is_of_legal_age=is_of_legal_age)
+        user_profile = UserProfile.objects.create(name=name, user=new_user, avatar=avatar,
+                                                  is_of_legal_age=is_of_legal_age)
+
+        if badge:
+            user_profile.badges.add(badge)
+
         return new_user
 
     @classmethod
@@ -146,6 +151,9 @@ class User(AbstractUser):
     def count_following(self):
         return self.follows.count()
 
+    def count_connections(self):
+        return self.connections.count()
+
     def save(self, *args, **kwargs):
         self.full_clean()
         return super(User, self).save(*args, **kwargs)
@@ -160,6 +168,8 @@ class User(AbstractUser):
             self.profile.save()
 
     def delete_profile_cover(self, save=True):
+        delete_image_kit_image_field(self.profile.cover)
+        self.profile.cover = None
         self.profile.cover.delete(save=save)
 
     def update_profile_avatar(self, avatar, save=True):
@@ -172,6 +182,8 @@ class User(AbstractUser):
             self.profile.save()
 
     def delete_profile_avatar(self, save=True):
+        delete_image_kit_image_field(self.profile.avatar)
+        self.profile.avatar = None
         self.profile.avatar.delete(save=save)
 
     def update_username(self, username):
@@ -336,6 +348,33 @@ class User(AbstractUser):
     def has_list_with_id(self, list_id):
         return self.lists.filter(id=list_id).count() > 0
 
+    def has_invited_user_with_username_to_community_with_name(self, username, community_name):
+        return self.created_communities_invites.filter(invited_user__username=username,
+                                                       community__name=community_name).exists()
+
+    def is_administrator_of_community_with_name(self, community_name):
+        return self.communities_memberships.filter(community__name=community_name, is_administrator=True).exists()
+
+    def is_member_of_community_with_name(self, community_name):
+        return self.communities_memberships.filter(community__name=community_name).exists()
+
+    def is_banned_from_community_with_name(self, community_name):
+        return self.banned_of_communities.filter(name=community_name).exists()
+
+    def is_creator_of_community_with_name(self, community_name):
+        return self.created_communities.filter(name=community_name).exists()
+
+    def is_moderator_of_community_with_name(self, community_name):
+        return self.communities_memberships.filter(community__name=community_name, is_moderator=True).exists()
+
+    def is_invited_to_community_with_name(self, community_name):
+        Community = get_community_model()
+        return Community.is_user_with_username_invited_to_community_with_name(username=self.username,
+                                                                              community_name=community_name)
+
+    def has_favorite_community_with_name(self, community_name):
+        return self.favorite_communities.filter(name=community_name).exists()
+
     def has_list_with_name(self, list_name):
         return self.lists.filter(name=list_name).count() > 0
 
@@ -469,9 +508,8 @@ class User(AbstractUser):
 
     def delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
         self._check_can_delete_comment_with_id_for_post_with_id(post_comment_id, post_id)
-        Post = get_post_model()
-        post = Post.objects.filter(pk=post_id).get()
-        post.remove_comment_with_id(post_comment_id)
+        PostComment = get_post_comment_model()
+        PostComment.objects.filter(pk=post_comment_id).delete()
 
     def create_circle(self, name, color):
         self._check_circle_name_not_taken(name)
@@ -555,6 +593,322 @@ class User(AbstractUser):
         self._check_can_get_circle_with_id(circle_id)
         return self.circles.get(id=circle_id)
 
+    def favorite_community_with_name(self, community_name):
+        self._check_can_favorite_community_with_name(community_name=community_name)
+
+        Community = get_community_model()
+        community_to_favorite = Community.objects.get(name=community_name)
+
+        self.favorite_communities.add(community_to_favorite)
+
+        return community_to_favorite
+
+    def unfavorite_community_with_name(self, community_name):
+        self._check_can_unfavorite_community_with_name(community_name=community_name)
+
+        Community = get_community_model()
+        community_to_unfavorite = Community.objects.get(name=community_name)
+
+        self.favorite_communities.remove(community_to_unfavorite)
+
+        return community_to_unfavorite
+
+    def create_community(self, name, title, type, color, categories_names, description=None, rules=None,
+                         avatar=None, cover=None, user_adjective=None, users_adjective=None,
+                         invites_enabled=None):
+        self._check_can_create_community_with_name(name=name)
+
+        Community = get_community_model()
+        community = Community.create_community(name=name, creator=self, title=title, description=description,
+                                               rules=rules, cover=cover, type=type, avatar=avatar, color=color,
+                                               user_adjective=user_adjective, users_adjective=users_adjective,
+                                               categories_names=categories_names,
+                                               invites_enabled=invites_enabled)
+
+        return community
+
+    def delete_community(self, community):
+        return self.delete_community_with_name(community.name)
+
+    def delete_community_with_name(self, community_name):
+        self._check_can_delete_community_with_name(community_name)
+
+        Community = get_community_model()
+        community = Community.objects.get(name=community_name)
+
+        community.delete()
+
+    def update_community(self, community, title=None, name=None, description=None, color=None, type=None,
+                         user_adjective=None,
+                         users_adjective=None, rules=None):
+        return self.update_community_with_name(community.name, name=name, title=title, description=description,
+                                               color=color, type=type, user_adjective=user_adjective,
+                                               users_adjective=users_adjective, rules=rules)
+
+    def update_community_with_name(self, community_name, title=None, name=None, description=None, color=None, type=None,
+                                   user_adjective=None,
+                                   users_adjective=None, rules=None, categories_names=None,
+                                   invites_enabled=None):
+        self._check_can_update_community_with_name(community_name)
+        self._check_community_data(name)
+
+        Community = get_community_model()
+        community_to_update = Community.objects.get(name=community_name)
+
+        community_to_update.update(name=name, title=title, description=description,
+                                   color=color, type=type, user_adjective=user_adjective,
+                                   users_adjective=users_adjective, rules=rules, categories_names=categories_names,
+                                   invites_enabled=invites_enabled)
+
+        return community_to_update
+
+    def update_community_with_name_avatar(self, community_name, avatar):
+        self._check_can_update_community_with_name(community_name)
+        self._check_community_data(avatar=avatar)
+
+        Community = get_community_model()
+        community_to_update_avatar_from = Community.objects.get(name=community_name)
+        community_to_update_avatar_from.avatar = avatar
+
+        community_to_update_avatar_from.save()
+
+        return community_to_update_avatar_from
+
+    def delete_community_with_name_avatar(self, community_name):
+        self._check_can_update_community_with_name(community_name)
+        Community = get_community_model()
+        community_to_delete_avatar_from = Community.objects.get(name=community_name)
+        delete_image_kit_image_field(community_to_delete_avatar_from.avatar)
+        community_to_delete_avatar_from.avatar = None
+        community_to_delete_avatar_from.save()
+        return community_to_delete_avatar_from
+
+    def update_community_with_name_cover(self, community_name, cover):
+        self._check_can_update_community_with_name(community_name)
+        self._check_community_data(cover=cover)
+
+        Community = get_community_model()
+        community_to_update_cover_from = Community.objects.get(name=community_name)
+
+        community_to_update_cover_from.cover = cover
+
+        community_to_update_cover_from.save()
+
+        return community_to_update_cover_from
+
+    def delete_community_with_name_cover(self, community_name):
+        self._check_can_update_community_with_name(community_name)
+
+        Community = get_community_model()
+        community_to_delete_cover_from = Community.objects.get(name=community_name)
+
+        delete_image_kit_image_field(community_to_delete_cover_from.cover)
+        community_to_delete_cover_from.cover = None
+        community_to_delete_cover_from.save()
+        return community_to_delete_cover_from
+
+    def get_community_with_name_members(self, community_name, max_id=None, exclude_keywords=None):
+        self._check_can_get_community_with_name_members(
+            community_name=community_name)
+
+        Community = get_community_model()
+        return Community.get_community_with_name_members(community_name=community_name, members_max_id=max_id,
+                                                         exclude_keywords=exclude_keywords)
+
+    def search_community_with_name_members(self, community_name, query, exclude_keywords=None):
+        self._check_can_get_community_with_name_members(
+            community_name=community_name)
+
+        Community = get_community_model()
+        return Community.search_community_with_name_members(community_name=community_name, query=query,
+                                                            exclude_keywords=exclude_keywords)
+
+    def join_community_with_name(self, community_name):
+        self._check_can_join_community_with_name(
+            community_name=community_name)
+        Community = get_community_model()
+        community_to_join = Community.objects.get(name=community_name)
+        community_to_join.add_member(self)
+
+        # Clean up any invites
+        CommunityInvite = get_community_invite_model()
+        CommunityInvite.objects.filter(community__name=community_name, invited_user__username=self.username).delete()
+
+        return community_to_join
+
+    def leave_community_with_name(self, community_name):
+        self._check_can_leave_community_with_name(
+            community_name=community_name)
+
+        Community = get_community_model()
+        community_to_leave = Community.objects.get(name=community_name)
+
+        if self.has_favorite_community_with_name(community_name):
+            self.unfavorite_community_with_name(community_name=community_name)
+
+        community_to_leave.remove_member(self)
+
+        return community_to_leave
+
+    def invite_user_with_username_to_community_with_name(self, username, community_name):
+        self._check_can_invite_user_with_username_to_community_with_name(username=username,
+                                                                         community_name=community_name)
+
+        Community = get_community_model()
+
+        community_to_invite_user_to = Community.objects.get(name=community_name)
+        user_to_invite = User.objects.get(username=username)
+
+        community_to_invite_user_to.create_invite(creator=self, invited_user=user_to_invite)
+
+    def uninvite_user_with_username_to_community_with_name(self, username, community_name):
+        self._check_can_uninvite_user_with_username_to_community_with_name(username=username,
+                                                                           community_name=community_name)
+        community_invite = self.created_communities_invites.filter(invited_user__username=username)
+        community_invite.delete()
+
+    def get_community_with_name_administrators(self, community_name, max_id):
+        self._check_can_get_community_with_name_administrators(
+            community_name=community_name)
+
+        Community = get_community_model()
+        return Community.get_community_with_name_administrators(community_name=community_name,
+                                                                administrators_max_id=max_id)
+
+    def search_community_with_name_administrators(self, community_name, query):
+        self._check_can_get_community_with_name_administrators(
+            community_name=community_name)
+
+        Community = get_community_model()
+        return Community.search_community_with_name_administrators(community_name=community_name, query=query)
+
+    def add_administrator_with_username_to_community_with_name(self, username, community_name):
+        self._check_can_add_administrator_with_username_to_community_with_name(
+            username=username,
+            community_name=community_name)
+
+        Community = get_community_model()
+
+        community_to_add_administrator_to = Community.objects.get(name=community_name)
+        user_to_add_as_administrator = User.objects.get(username=username)
+
+        community_to_add_administrator_to.add_administrator(user_to_add_as_administrator)
+        community_to_add_administrator_to.create_add_administrator_log(source_user=self,
+                                                                       target_user=user_to_add_as_administrator)
+
+        if user_to_add_as_administrator.is_moderator_of_community_with_name(community_name=community_name):
+            self.remove_moderator_with_username_from_community_with_name(username=username,
+                                                                         community_name=community_name)
+
+        return community_to_add_administrator_to
+
+    def remove_administrator_with_username_from_community_with_name(self, username, community_name):
+        self._check_can_remove_administrator_with_username_to_community_with_name(
+            username=username,
+            community_name=community_name)
+
+        Community = get_community_model()
+
+        community_to_remove_administrator_from = Community.objects.get(name=community_name)
+        user_to_remove_as_administrator = User.objects.get(username=username)
+
+        community_to_remove_administrator_from.remove_administrator(user_to_remove_as_administrator)
+        community_to_remove_administrator_from.create_remove_administrator_log(source_user=self,
+                                                                               target_user=user_to_remove_as_administrator)
+
+        return community_to_remove_administrator_from
+
+    def get_community_with_name_moderators(self, community_name, max_id):
+        self._check_can_get_community_with_name_moderators(
+            community_name=community_name)
+
+        Community = get_community_model()
+        return Community.get_community_with_name_moderators(community_name=community_name,
+                                                            moderators_max_id=max_id)
+
+    def search_community_with_name_moderators(self, community_name, query):
+        self._check_can_get_community_with_name_moderators(
+            community_name=community_name)
+
+        Community = get_community_model()
+        return Community.search_community_with_name_moderators(community_name=community_name, query=query)
+
+    def add_moderator_with_username_to_community_with_name(self, username, community_name):
+        self._check_can_add_moderator_with_username_to_community_with_name(
+            username=username,
+            community_name=community_name)
+
+        Community = get_community_model()
+
+        community_to_add_moderator_to = Community.objects.get(name=community_name)
+        user_to_add_as_moderator = User.objects.get(username=username)
+
+        community_to_add_moderator_to.add_moderator(user_to_add_as_moderator)
+
+        community_to_add_moderator_to.create_add_moderator_log(source_user=self,
+                                                               target_user=user_to_add_as_moderator)
+
+        return community_to_add_moderator_to
+
+    def remove_moderator_with_username_from_community_with_name(self, username, community_name):
+        self._check_can_remove_moderator_with_username_to_community_with_name(
+            username=username,
+            community_name=community_name)
+
+        Community = get_community_model()
+
+        community_to_remove_moderator_from = Community.objects.get(name=community_name)
+        user_to_remove_as_moderator = User.objects.get(username=username)
+
+        community_to_remove_moderator_from.remove_moderator(user_to_remove_as_moderator)
+        community_to_remove_moderator_from.create_remove_moderator_log(source_user=self,
+                                                                       target_user=user_to_remove_as_moderator)
+
+        return community_to_remove_moderator_from
+
+    def get_community_with_name_banned_users(self, community_name, max_id):
+        self._check_can_get_community_with_name_banned_users(
+            community_name=community_name)
+
+        Community = get_community_model()
+        return Community.get_community_with_name_banned_users(community_name=community_name, users_max_id=max_id)
+
+    def search_community_with_name_banned_users(self, community_name, query):
+        self._check_can_get_community_with_name_banned_users(
+            community_name=community_name)
+
+        Community = get_community_model()
+        return Community.search_community_with_name_banned_users(community_name=community_name, query=query)
+
+    def ban_user_with_username_from_community_with_name(self, username, community_name):
+        self._check_can_ban_user_with_username_from_community_with_name(username=username,
+                                                                        community_name=community_name)
+        Community = get_community_model()
+
+        community_to_ban_user_from = Community.objects.get(name=community_name)
+        user_to_ban = User.objects.get(username=username)
+
+        if user_to_ban.is_member_of_community_with_name(community_name=community_name):
+            user_to_ban.leave_community_with_name(community_name=community_name)
+
+        community_to_ban_user_from.banned_users.add(user_to_ban)
+        community_to_ban_user_from.create_user_ban_log(source_user=self, target_user=user_to_ban)
+
+        return community_to_ban_user_from
+
+    def unban_user_with_username_from_community_with_name(self, username, community_name):
+        self._check_can_unban_user_with_username_from_community_with_name(username=username,
+                                                                          community_name=community_name)
+        Community = get_community_model()
+
+        community_to_unban_user_from = Community.objects.get(name=community_name)
+        user_to_unban = User.objects.get(username=username)
+
+        community_to_unban_user_from.banned_users.remove(user_to_unban)
+        community_to_unban_user_from.create_user_unban_log(source_user=self, target_user=user_to_unban)
+
+        return community_to_unban_user_from
+
     def create_list(self, name, emoji_id):
         self._check_list_name_not_taken(name)
         List = get_list_model()
@@ -623,38 +977,68 @@ class User(AbstractUser):
         self._check_can_get_list_with_id(list_id)
         return self.lists.get(id=list_id)
 
-    def get_users_with_query(self, query):
+    def search_users_with_query(self, query):
         # In the future, the user might have blocked users which should not be displayed
         return User.get_public_users_with_query(query)
 
-    def create_public_post(self, text=None, image=None):
-        # If no circle ids are given, will be public
-        return self.create_post(text=text, image=image)
+    def get_linked_users(self, max_id=None):
+        # All users which are connected with us and we have accepted by adding
+        # them to a circle
+        linked_users_query = self._make_linked_users_query(max_id=max_id)
 
-    def create_encircled_post(self, circles_ids, text=None, image=None):
-        return self.create_post(text=text, image=image, circles_ids=circles_ids)
+        return User.objects.filter(linked_users_query)
 
-    def create_post(self, text=None, image=None, video=None, circles_ids=None, circles=None, circle=None, circle_id=None, created=None):
+    def search_linked_users_with_query(self, query):
+        linked_users_query = self._make_linked_users_query()
 
-        if circles:
-            circles_ids = [circle.pk for circle in circles]
-        elif not circles_ids:
-            circles_ids = []
-            if circle:
-                circle_id = circle.pk
+        names_query = Q(username__icontains=query)
+        names_query.add(Q(profile__name__icontains=query), Q.OR)
 
-            if circle_id:
-                circles_ids.append(circle_id)
+        linked_users_query.add(names_query, Q.AND)
 
-        self._check_post_data(circles_ids=circles_ids)
+        return User.objects.filter(linked_users_query)
 
-        if len(circles_ids) == 0:
-            # If no circle, add post to world circle
-            world_circle_id = self._get_world_circle_id()
-            circles_ids.append(world_circle_id)
+    def search_communities_with_query(self, query):
+        # In the future, the user might have blocked communities which should not be displayed
+        Community = get_community_model()
+        return Community.search_communities_with_query(query)
 
+    def get_community_with_name(self, community_name):
+        Community = get_community_model()
+        return Community.objects.get(name=community_name)
+
+    def get_joined_communities(self):
+        Community = get_community_model()
+        return Community.objects.filter(memberships__user=self)
+
+    def get_favorite_communities(self):
+        return self.favorite_communities.all()
+
+    def get_administrated_communities(self):
+        Community = get_community_model()
+        return Community.objects.filter(memberships__user=self, memberships__is_administrator=True)
+
+    def get_moderated_communities(self):
+        Community = get_community_model()
+        return Community.objects.filter(memberships__user=self, memberships__is_moderator=True)
+
+    def create_public_post(self, text=None, image=None, video=None, created=None):
+        world_circle_id = self._get_world_circle_id()
+        return self.create_encircled_post(text=text, image=image, video=video, circles_ids=[world_circle_id],
+                                          created=created)
+
+    def create_encircled_post(self, circles_ids, text=None, image=None, video=None, created=None):
+        self._check_can_post_to_circles_with_ids(circles_ids=circles_ids)
         Post = get_post_model()
-        post = Post.create_post(text=text, creator=self, circles_ids=circles_ids, image=image, video=video, created=created)
+        post = Post.create_post(text=text, creator=self, circles_ids=circles_ids, image=image, video=video,
+                                created=created)
+        return post
+
+    def create_community_post(self, community_name, text=None, image=None, video=None, created=None):
+        self._check_can_post_to_community_with_name(community_name=community_name)
+        Post = get_post_model()
+        post = Post.create_post(text=text, creator=self, community_name=community_name, image=image, video=video,
+                                created=created)
 
         return post
 
@@ -663,14 +1047,30 @@ class User(AbstractUser):
 
     def delete_post_with_id(self, post_id):
         self._check_can_delete_post_with_id(post_id)
-        post = self.posts.get(id=post_id)
-        post.delete()
+        Post = get_post_model()
+        # We have to be mindful with using bulk delete as it does not call the delete() method per instance
+        Post.objects.filter(id=post_id).delete()
 
-    def update_post(self, post):
-        return self.update_post_with_id(post.pk)
+    def get_posts_for_community_with_name(self, community_name, max_id=None):
+        """
+        :param community_name:
+        :param max_id:
+        :return:
+        """
+        self._check_can_get_posts_for_community_with_name(community_name=community_name)
 
-    def update_post_with_id(self, post_id):
-        pass
+        Community = get_community_model()
+        community = Community.objects.get(name=community_name)
+
+        posts_query = Q(community__id=community.pk)
+
+        if max_id:
+            posts_query.add(Q(id__lt=max_id), Q.AND)
+
+        Post = get_post_model()
+        profile_posts = Post.objects.filter(posts_query).distinct()
+
+        return profile_posts
 
     def get_post_with_id_for_user_with_username(self, username, post_id):
         user = User.objects.get(username=username)
@@ -678,6 +1078,17 @@ class User(AbstractUser):
 
     def get_post_with_id_for_user(self, user, post_id):
         post_query = self._make_get_post_with_id_query_for_user(user, post_id=post_id)
+
+        Post = get_post_model()
+        profile_posts = Post.objects.filter(post_query)
+
+        return profile_posts
+
+    def get_community_post_with_id(self, post_id):
+        post_query = Q(id=post_id)
+        post_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
+        # Public type communities
+        post_query.add(Q(community__type='P'), Q.OR)
 
         Post = get_post_model()
         profile_posts = Post.objects.filter(post_query)
@@ -716,17 +1127,18 @@ class User(AbstractUser):
 
         return profile_posts
 
-    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None):
+    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None, communities_names=None):
         """
         Get the timeline posts for self. The results will be dynamic based on follows and connections.
         :param lists_ids:
         :param circles_ids:
+        :param communities_names:
         :param max_id:
         :param post_id:
         :param username:
         :return:
         """
-        # Add all own posts
+        # If there's no circles or lists filters, add all posts
         if circles_ids or lists_ids:
             timeline_posts_query = Q()
         else:
@@ -734,6 +1146,7 @@ class User(AbstractUser):
 
         follows_related_query = self.follows.select_related('followed_user')
 
+        # If there's lists filters, filter follows with it
         if lists_ids:
             follows = follows_related_query.filter(lists__id__in=lists_ids)
         else:
@@ -750,6 +1163,11 @@ class User(AbstractUser):
                 followed_user_posts_query = self._make_get_posts_query_for_user(followed_user, )
                 timeline_posts_query.add(followed_user_posts_query, Q.OR)
 
+        if communities_names:
+            timeline_posts_query.add(Q(community__name__in=communities_names), Q.AND)
+
+        timeline_posts_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
+
         if max_id:
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
 
@@ -762,7 +1180,7 @@ class User(AbstractUser):
         return self.follow_user_with_id(user.pk, lists_ids)
 
     def follow_user_with_id(self, user_id, lists_ids=None):
-        self._check_is_not_following_user_with_id(user_id)
+        self._check_can_follow_user_with_id(user_id=user_id)
 
         if self.pk == user_id:
             raise ValidationError(
@@ -898,6 +1316,20 @@ class User(AbstractUser):
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
 
+    def _make_linked_users_query(self, max_id=None):
+        # All users which are connected with us and we have accepted by adding
+        # them to a circle
+        linked_users_query = Q(circles__connections__target_connection__user_id=self.pk,
+                               circles__connections__target_connection__circles__isnull=False)
+
+        # All users following us
+        linked_users_query.add(Q(follows__followed_user_id=self.pk), Q.OR)
+
+        if max_id:
+            linked_users_query.add(Q(id__lt=max_id), Q.AND)
+
+        return linked_users_query
+
     def _make_get_post_with_id_query_for_user(self, user, post_id):
         posts_query = self._make_get_posts_query_for_user(user)
         posts_query.add(Q(id=post_id), Q.AND)
@@ -995,20 +1427,36 @@ class User(AbstractUser):
             )
 
     def _check_can_delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
-        # Check if the post belongs to us
-        if self.has_post_with_id(post_id):
-            # Check that the comment belongs to the post
-            PostComment = get_post_comment_model()
-            if PostComment.objects.filter(id=post_comment_id, post_id=post_id).count() == 0:
-                raise ValidationError(
-                    _('That comment does not belong to the specified post.')
-                )
-            return
 
-        if self.posts_comments.filter(id=post_comment_id).count() == 0:
+        # Check that the comment belongs to the post
+        PostComment = get_post_comment_model()
+        Post = get_post_model()
+
+        if not PostComment.objects.filter(id=post_comment_id, post_id=post_id).exists():
             raise ValidationError(
-                _('Can\'t delete a comment that does not belong to you.'),
+                _('The comment does not belong to the specified post.')
             )
+
+        if not self.has_post_with_id(post_id):
+            if not self.posts_comments.filter(id=post_comment_id).exists():
+                # The comment is not ours
+                if Post.is_post_with_id_a_community_post(post_id):
+                    # If the comment is in a community, check if we're moderators
+                    post = Post.objects.select_related('community').get(pk=post_id)
+                    if not self.is_moderator_of_community_with_name(
+                            post.community.name) and not self.is_administrator_of_community_with_name(
+                        post.community.name):
+                        raise ValidationError(
+                            _('Only moderators/administrators can remove community posts.'),
+                        )
+                    else:
+                        post_comment = PostComment.objects.select_related('commenter').get(pk=post_comment_id)
+                        post.community.create_remove_post_comment_log(source_user=self,
+                                                                      target_user=post_comment.commenter)
+                else:
+                    raise ValidationError(
+                        _('You cannot remove a comment that does not belong to you')
+                    )
 
     def _check_can_get_comments_for_post_with_id(self, post_id):
         self._check_can_see_post_with_id(post_id)
@@ -1058,13 +1506,17 @@ class User(AbstractUser):
         if post.creator_id == self.pk or post.is_public_post():
             return
 
-        post_creator = post.creator
-
-        # Check if we can retrieve the post
-        if not self.get_post_with_id_for_user(post_id=post_id, user=post_creator).exists():
-            raise ValidationError(
-                _('This post is private.'),
-            )
+        if post.community:
+            if not self.get_community_post_with_id(post_id=post_id).exists():
+                raise ValidationError(
+                    _('This post is from a private community.'),
+                )
+        else:
+            # Check if we can retrieve the post
+            if not self.get_post_with_id_for_user(post_id=post_id, user=post.creator).exists():
+                raise ValidationError(
+                    _('This post is private.'),
+                )
 
     def _check_follow_lists_ids(self, lists_ids):
         for list_id in lists_ids:
@@ -1073,23 +1525,45 @@ class User(AbstractUser):
     def _check_follow_list_id(self, list_id):
         self._check_has_list_with_id(list_id)
 
-    def _check_post_data(self, circles_ids=None):
+    def _check_can_post_to_circles_with_ids(self, circles_ids=None):
+        for circle_id in circles_ids:
+            if not self.has_circle_with_id(circle_id) and not self.is_world_circle_id(circle_id):
+                raise ValidationError(
+                    _('You cannot post to circle with id %(id)s') % {'id': circle_id},
+                )
 
-        if circles_ids:
-            self._check_has_circles_with_ids(circles_ids)
+    def _check_can_post_to_community_with_name(self, community_name=None):
+        if not self.is_member_of_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('You cannot post to a community you\'re not member of '),
+            )
 
     def _check_list_data(self, name, emoji_id):
         if name:
             self._check_list_name_not_taken(name)
 
+    def _check_community_data(self, name=None, avatar=None, cover=None):
+        if name:
+            self._check_community_name_not_taken(name)
+
     def _check_circle_data(self, name, color):
         if name:
             self._check_circle_name_not_taken(name)
+
+    def _check_can_follow_user_with_id(self, user_id):
+        self._check_is_not_following_user_with_id(user_id)
+        self._check_has_not_reached_max_follows()
 
     def _check_is_not_following_user_with_id(self, user_id):
         if self.is_following_user_with_id(user_id):
             raise ValidationError(
                 _('Already following user.'),
+            )
+
+    def _check_has_not_reached_max_follows(self):
+        if self.count_following() > settings.USER_MAX_FOLLOWS:
+            raise ValidationError(
+                _('Maximum number of follows reached.'),
             )
 
     def _check_is_not_following_user_with_id_in_list_with_id(self, user_id, list_id):
@@ -1112,6 +1586,16 @@ class User(AbstractUser):
         if not self.is_following_user_with_id(user_id):
             raise ValidationError(
                 _('Not following user.'),
+            )
+
+    def _check_can_connect_with_user_with_id(self, user_id):
+        self._check_is_not_connected_with_user_with_id(user_id)
+        self._check_has_not_reached_max_connections()
+
+    def _check_has_not_reached_max_connections(self):
+        if self.count_connections() > settings.USER_MAX_CONNECTIONS:
+            raise ValidationError(
+                _('Maximum number of connections reached.'),
             )
 
     def _check_is_not_connected_with_user_with_id(self, user_id):
@@ -1163,10 +1647,25 @@ class User(AbstractUser):
             )
 
     def _check_can_delete_post_with_id(self, post_id):
+        Post = get_post_model()
+
         if not self.has_post_with_id(post_id):
-            raise ValidationError(
-                _('Can\'t delete a post that does not belong to you.'),
-            )
+            if Post.is_post_with_id_a_community_post(post_id):
+                # If the comment is in a community, check if we're moderators
+                post = Post.objects.select_related('community').get(pk=post_id)
+                if not self.is_moderator_of_community_with_name(
+                        post.community.name) and not self.is_administrator_of_community_with_name(post.community.name):
+                    raise ValidationError(
+                        _('Only moderators/administrators can remove community posts.'),
+                    )
+                else:
+                    # TODO Not the best place to log this but doing the check for community again on delete is wasteful
+                    post.community.create_remove_post_log(source_user=self,
+                                                          target_user=post.creator)
+            else:
+                raise ValidationError(
+                    _('You cannot remove a post that does not belong to you')
+                )
 
     def _check_can_delete_list_with_id(self, list_id):
         if not self.has_list_with_id(list_id):
@@ -1179,6 +1678,228 @@ class User(AbstractUser):
             raise ValidationError(
                 _('Can\'t update a list that does not belong to you.'),
             )
+
+    def _check_can_delete_community_with_name(self, community_name):
+        if not self.is_creator_of_community_with_name(community_name):
+            raise ValidationError(
+                _('Can\'t delete a community that you do not administrate.'),
+            )
+
+    def _check_can_update_community_with_name(self, community_name):
+        if not self.is_administrator_of_community_with_name(community_name):
+            raise ValidationError(
+                _('Can\'t update a community that you do not administrate.'),
+            )
+
+    def _check_can_get_posts_for_community_with_name(self, community_name):
+
+        Community = get_community_model()
+        if Community.is_community_with_name_private(
+                community_name=community_name) and not self.is_member_of_community_with_name(
+            community_name=community_name):
+            raise ValidationError(
+                _('The community is private. You must become a member to retrieve its posts.'),
+            )
+
+    def _check_can_get_community_with_name_members(self, community_name):
+        if self.is_banned_from_community_with_name(community_name):
+            raise ValidationError('You can\'t get the members of a community you have been banned from.')
+
+        Community = get_community_model()
+
+        if Community.is_community_with_name_private(community_name=community_name):
+            if not self.is_member_of_community_with_name(community_name=community_name):
+                raise ValidationError(
+                    _('Can\'t see the members of a private community.'),
+                )
+
+    def _check_can_join_community_with_name(self, community_name):
+        if self.is_banned_from_community_with_name(community_name):
+            raise ValidationError('You can\'t join a community you have been banned from.')
+
+        if self.is_member_of_community_with_name(community_name):
+            raise ValidationError(
+                _('You are already a member of the community.'),
+            )
+
+        Community = get_community_model()
+        if Community.is_community_with_name_private(community_name=community_name):
+            if not self.is_invited_to_community_with_name(community_name=community_name):
+                raise ValidationError(
+                    _('You are not invited to join this community.'),
+                )
+
+    def _check_can_leave_community_with_name(self, community_name):
+        if not self.is_member_of_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('You cannot leave a community you\'re not part of.'),
+            )
+
+        if self.is_creator_of_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('You cannot leave a community you created.'),
+            )
+
+    def _check_can_invite_user_with_username_to_community_with_name(self, username, community_name):
+        if not self.is_member_of_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('You can only invite people to a community you are member of.'),
+            )
+
+        if self.has_invited_user_with_username_to_community_with_name(username=username, community_name=community_name):
+            raise ValidationError(
+                _('You have already invited this user to join the community.'),
+            )
+
+        Community = get_community_model()
+
+        if Community.is_user_with_username_member_of_community_with_name(username=username,
+                                                                         community_name=community_name):
+            raise ValidationError(
+                _('The user is already part of the community.'),
+            )
+
+        if not Community.is_community_with_name_invites_enabled(community_name=community_name) and not (
+                self.is_administrator_of_community_with_name(
+                    community_name=community_name) or self.is_moderator_of_community_with_name(
+            community_name=community_name)):
+            raise ValidationError(
+                _('Invites for this community are not enabled. Only administrators & moderators can invite.'),
+            )
+
+    def _check_can_uninvite_user_with_username_to_community_with_name(self, username, community_name):
+        if not self.has_invited_user_with_username_to_community_with_name(username=username,
+                                                                          community_name=community_name):
+            raise ValidationError(
+                _('No invite to withdraw.'),
+            )
+
+    def _check_can_get_community_with_name_banned_users(self, community_name):
+        if not self.is_administrator_of_community_with_name(
+                community_name=community_name) and not self.is_moderator_of_community_with_name(
+            community_name=community_name):
+            raise ValidationError(
+                _('Only community administrators & moderators can get banned users.'),
+            )
+
+    def _check_can_ban_user_with_username_from_community_with_name(self, username, community_name):
+        if not self.is_administrator_of_community_with_name(
+                community_name=community_name) and not self.is_moderator_of_community_with_name(
+            community_name=community_name):
+            raise ValidationError(
+                _('Only community administrators & moderators can ban community members.'),
+            )
+
+        Community = get_community_model()
+        if Community.is_user_with_username_banned_from_community_with_name(username=username,
+                                                                           community_name=community_name):
+            raise ValidationError(
+                _('User is already banned'),
+            )
+
+        if Community.is_user_with_username_moderator_of_community_with_name(username=username,
+                                                                            community_name=community_name) or Community.is_user_with_username_administrator_of_community_with_name(
+            username=username, community_name=community_name):
+            raise ValidationError(
+                _('You can\'t ban moderators or administrators of the community'),
+            )
+
+    def _check_can_unban_user_with_username_from_community_with_name(self, username, community_name):
+        if not self.is_administrator_of_community_with_name(
+                community_name=community_name) and not self.is_moderator_of_community_with_name(
+            community_name=community_name):
+            raise ValidationError(
+                _('Only community administrators & moderators can ban community members.'),
+            )
+
+        Community = get_community_model()
+        if not Community.is_user_with_username_banned_from_community_with_name(username=username,
+                                                                               community_name=community_name):
+            raise ValidationError(
+                _('Can\'t unban a not-banned user.'),
+            )
+
+    def _check_can_add_administrator_with_username_to_community_with_name(self, username, community_name):
+        if not self.is_creator_of_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('Only the creator of the community can add other administrators.'),
+            )
+
+        Community = get_community_model()
+
+        if Community.is_user_with_username_administrator_of_community_with_name(username=username,
+                                                                                community_name=community_name):
+            raise ValidationError(
+                _('User is already an administrator.'),
+            )
+
+        if not Community.is_user_with_username_member_of_community_with_name(username=username,
+                                                                             community_name=community_name):
+            raise ValidationError(
+                _('Can\'t make administrator a user that is not part of the community.'),
+            )
+
+    def _check_can_remove_administrator_with_username_to_community_with_name(self, username, community_name):
+        if not self.is_creator_of_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('Only the creator of the community can remove other administrators.'),
+            )
+
+        Community = get_community_model()
+
+        if not Community.is_user_with_username_administrator_of_community_with_name(username=username,
+                                                                                    community_name=community_name):
+            raise ValidationError(
+                _('User to remove is not an administrator.'),
+            )
+
+    def _check_can_get_community_with_name_administrators(self, community_name):
+        # Anyone can get the administrators of the community
+        return True
+
+    def _check_can_add_moderator_with_username_to_community_with_name(self, username, community_name):
+        if not self.is_administrator_of_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('Only administrators of the community can add other moderators.'),
+            )
+
+        Community = get_community_model()
+
+        if Community.is_user_with_username_administrator_of_community_with_name(username=username,
+                                                                                community_name=community_name):
+            raise ValidationError(
+                _('User is an administrator.'),
+            )
+
+        if Community.is_user_with_username_moderator_of_community_with_name(username=username,
+                                                                            community_name=community_name):
+            raise ValidationError(
+                _('User is already a moderator.'),
+            )
+
+        if not Community.is_user_with_username_member_of_community_with_name(username=username,
+                                                                             community_name=community_name):
+            raise ValidationError(
+                _('Can\'t make moderator a user that is not part of the community.'),
+            )
+
+    def _check_can_remove_moderator_with_username_to_community_with_name(self, username, community_name):
+        if not self.is_administrator_of_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('Only administrators of the community can remove other moderators.'),
+            )
+
+        Community = get_community_model()
+
+        if not Community.is_user_with_username_moderator_of_community_with_name(username=username,
+                                                                                community_name=community_name):
+            raise ValidationError(
+                _('User to remove is not an moderator.'),
+            )
+
+    def _check_can_get_community_with_name_moderators(self, community_name):
+        # Anyone can see community moderators
+        return True
 
     def _check_can_update_circle_with_id(self, circle_id):
         if not self.has_circle_with_id(circle_id):
@@ -1236,6 +1957,33 @@ class User(AbstractUser):
                 _('You already have a list with that name.'),
             )
 
+    def _check_can_create_community_with_name(self, name):
+        self._check_community_name_not_taken(name)
+
+    def _check_community_name_not_taken(self, community_name):
+        Community = get_community_model()
+        if Community.is_name_taken(community_name):
+            raise ValidationError(
+                _('A community with that name already exists.'),
+            )
+
+    def _check_can_favorite_community_with_name(self, community_name):
+        if not self.is_member_of_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('You must be member of a community before making it a favorite.'),
+            )
+
+        if self.has_favorite_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('You have already marked this community as favorite.'),
+            )
+
+    def _check_can_unfavorite_community_with_name(self, community_name):
+        if not self.has_favorite_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('You have not favorited the community.'),
+            )
+
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_auth_token(sender, instance=None, created=False, **kwargs):
@@ -1262,11 +2010,13 @@ class UserProfile(models.Model):
     location = models.CharField(_('location'), max_length=settings.PROFILE_LOCATION_MAX_LENGTH, blank=False, null=True)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     is_of_legal_age = models.BooleanField(default=False)
-    avatar = models.ImageField(_('avatar'), blank=False, null=True)
-    cover = models.ImageField(_('cover'), blank=False, null=True)
+    avatar = ProcessedImageField(verbose_name=_('avatar'), blank=False, null=True, format='JPEG',
+                                 options={'quality': 60}, processors=[ResizeToFill(500, 500)])
+    cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 75})
     bio = models.CharField(_('bio'), max_length=settings.PROFILE_BIO_MAX_LENGTH, blank=False, null=True)
     url = models.URLField(_('url'), blank=False, null=True)
     followers_count_visible = models.BooleanField(_('followers count visible'), blank=False, null=False, default=False)
+    badges = models.ManyToManyField(Badge, related_name='users_profiles')
 
     class Meta:
         verbose_name = _('user profile')
@@ -1277,8 +2027,3 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.username
-
-
-class UserProfileBadge(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='badges')
-    badge = models.ForeignKey(Badge, on_delete=models.CASCADE)

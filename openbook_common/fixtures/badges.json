@@ -4,8 +4,8 @@
     "pk": 1,
     "fields": {
       "keyword": "VERIFIED",
-      "keyword_es": "Verified",
-      "keyword_en": "Verified",
+      "keyword_description_es": "Verified",
+      "keyword_description_en": "Verified",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -13,9 +13,9 @@
     "model": "openbook_common.Badge",
     "pk": 2,
     "fields": {
-      "keyword": "SUPER",
-      "keyword_es": "Openbook Super Founder",
-      "keyword_en": "Openbook Super Founder",
+      "keyword": "SUPER_FOUNDER",
+      "keyword_description_es": "Openbook Super Founder",
+      "keyword_description_en": "Openbook Super Founder",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -23,9 +23,9 @@
     "model": "openbook_common.Badge",
     "pk": 3,
     "fields": {
-      "keyword": "DIAMOND",
-      "keyword_es": "Openbook Diamond Founder",
-      "keyword_en": "Openbook Diamond Founder",
+      "keyword": "DIAMOND_FOUNDER",
+      "keyword_description_es": "Openbook Diamond Founder",
+      "keyword_description_en": "Openbook Diamond Founder",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -33,9 +33,9 @@
     "model": "openbook_common.Badge",
     "pk": 4,
     "fields": {
-      "keyword": "GOLDEN",
-      "keyword_es": "Openbook Golden Founder",
-      "keyword_en": "Openbook Golden Founder",
+      "keyword": "GOLDEN_FOUNDER",
+      "keyword_description_es": "Openbook Golden Founder",
+      "keyword_description_en": "Openbook Golden Founder",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -44,8 +44,8 @@
     "pk": 5,
     "fields": {
       "keyword": "FOUNDER",
-      "keyword_es": "Openbook Founder",
-      "keyword_en": "Openbook Founder",
+      "keyword_description_es": "Openbook Founder",
+      "keyword_description_en": "Openbook Founder",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   }

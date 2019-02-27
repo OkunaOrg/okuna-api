@@ -105,6 +105,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'django_nose',
     'storages',
+    'imagekit',
     'django_media_fixtures',
     'openbook_common',
     'openbook_auth',
@@ -114,7 +115,10 @@ INSTALLED_APPS = [
     'openbook_importer',
     'openbook_lists',
     'openbook_follows',
+    'openbook_communities',
     'openbook_invitations',
+    'openbook_tags',
+    'openbook_categories',
 ]
 
 MIDDLEWARE = [
@@ -155,7 +159,7 @@ else:
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ['openbook_auth/email_templates', 'openbook_invitations/email_templates'],
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -285,6 +289,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 # Openbook config
 
 USERNAME_MAX_LENGTH = 30
+USER_MAX_FOLLOWS = 500
+USER_MAX_CONNECTIONS = 500
+USER_MAX_COMMUNITIES = 200
 POST_MAX_LENGTH = 560
 POST_COMMENT_MAX_LENGTH = 280
 PASSWORD_MIN_LENGTH = 10
@@ -297,6 +304,19 @@ PROFILE_LOCATION_MAX_LENGTH = 64
 PROFILE_BIO_MAX_LENGTH = 150
 WORLD_CIRCLE_ID = 1
 PASSWORD_RESET_TIMEOUT_DAYS = 1
+COMMUNITY_NAME_MAX_LENGTH = 32
+COMMUNITY_TITLE_MAX_LENGTH = 32
+COMMUNITY_DESCRIPTION_MAX_LENGTH = 500
+COMMUNITY_USER_ADJECTIVE_MAX_LENGTH = 16
+COMMUNITY_USERS_ADJECTIVE_MAX_LENGTH = 16
+COMMUNITY_RULES_MAX_LENGTH = 1500
+COMMUNITY_CATEGORIES_MAX_AMOUNT = 3
+COMMUNITY_CATEGORIES_MIN_AMOUNT = 1
+TAG_NAME_MAX_LENGTH = 32
+CATEGORY_NAME_MAX_LENGTH = 32
+CATEGORY_TITLE_MAX_LENGTH = 64
+CATEGORY_DESCRIPTION_MAX_LENGTH = 64
+SEARCH_QUERIES_MAX_LENGTH = 120
 
 # Email Config
 

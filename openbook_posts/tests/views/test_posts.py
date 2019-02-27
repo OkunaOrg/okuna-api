@@ -18,7 +18,7 @@ import json
 
 from openbook_circles.models import Circle
 from openbook_common.tests.helpers import make_user, make_users, make_fake_post_text, \
-    make_authentication_headers_for_user, make_circle
+    make_authentication_headers_for_user, make_circle, make_community
 from openbook_lists.models import List
 
 logger = logging.getLogger(__name__)
@@ -146,9 +146,9 @@ class PostsAPITests(APITestCase):
 
         self.assertTrue(circle.posts.filter(text=post_text).count() == 0)
 
-    def test_cannot_create_post_in_world_circle(self):
+    def test_can_create_post_in_world_circle(self):
         """
-        should NOT be able to create a post in the world circle and return 400
+        should be able to create a post in the world circle and return 201
         """
         user = make_user()
 
@@ -167,11 +167,11 @@ class PostsAPITests(APITestCase):
 
         response = self.client.put(url, data, **headers, format='multipart')
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        self.assertTrue(user.posts.filter(text=post_text).count() == 0)
+        self.assertTrue(user.posts.filter(text=post_text).exists())
 
-        self.assertTrue(circle.posts.filter(text=post_text).count() == 0)
+        self.assertTrue(circle.posts.filter(text=post_text).exists())
 
     def test_create_image_post(self):
         """
@@ -337,11 +337,14 @@ class PostsAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-
     def test_get_all_posts(self):
         """
         should be able to retrieve all posts
         """
+
+        # BEWARE The max count for the API is 20. If we are checking for more than 20
+        # posts, it will fail
+
         user = mixer.blend(User)
         auth_token = user.auth_token.key
 
@@ -349,7 +352,7 @@ class PostsAPITests(APITestCase):
 
         user_posts_ids = []
         for i in range(amount_of_own_posts):
-            post = user.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
+            post = user.create_public_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
             user_posts_ids.append(post.pk)
 
         amount_of_users_to_follow = 5
@@ -361,7 +364,7 @@ class PostsAPITests(APITestCase):
 
         for index, user_to_follow in enumerate(users_to_follow):
             user.follow_user(user_to_follow, lists_ids=[lists_to_follow_in[index].pk])
-            post = user_to_follow.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
+            post = user_to_follow.create_public_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
             users_to_follow_posts_ids.append(post.pk)
 
         amount_of_users_to_connect = 5
@@ -373,12 +376,25 @@ class PostsAPITests(APITestCase):
 
         for index, user_to_connect in enumerate(users_to_connect):
             user.connect_with_user_with_id(user_to_connect.pk, circles_ids=[circles_to_connect_in[index].pk])
-            post = user_to_connect.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
+            post = user_to_connect.create_public_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
             users_to_connect_posts_ids.append(post.pk)
+
+        amount_of_community_posts = 5
+        community_posts_ids = []
+
+        for i in range(0, amount_of_community_posts):
+            community_creator = make_user()
+            community = make_community(creator=community_creator, type='P')
+            user.join_community_with_name(community_name=community.name)
+            community_member = make_user()
+            community_member.join_community_with_name(community_name=community.name)
+            community_post = community_member.create_community_post(text=make_fake_post_text(),
+                                                                    community_name=community.name)
+            community_posts_ids.append(community_post.pk)
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
-        all_posts_ids = users_to_connect_posts_ids + users_to_follow_posts_ids + user_posts_ids
+        all_posts_ids = users_to_connect_posts_ids + users_to_follow_posts_ids + user_posts_ids + community_posts_ids
 
         url = self._get_url()
 
@@ -408,7 +424,7 @@ class PostsAPITests(APITestCase):
 
         for index, user_to_follow in enumerate(users_to_follow):
             user.follow_user(user_to_follow, lists_ids=[lists_to_follow_in[index].pk])
-            user_to_follow.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
+            user_to_follow.create_public_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
 
         amount_of_users_to_connect = 5
 
@@ -418,7 +434,7 @@ class PostsAPITests(APITestCase):
 
         for index, user_to_connect in enumerate(users_to_connect):
             user.connect_with_user_with_id(user_to_connect.pk, circles_ids=[circles_to_connect_in[index].pk])
-            user_to_connect.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
+            user_to_connect.create_public_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
 
         number_of_circles_to_retrieve_posts_from = 3
 
@@ -430,7 +446,7 @@ class PostsAPITests(APITestCase):
         for index, circle_to_retrieve_posts_from in enumerate(circles_to_retrieve_posts_from):
             user_in_circle = mixer.blend(User)
             user.connect_with_user_with_id(user_in_circle.pk, circles_ids=[circle_to_retrieve_posts_from.pk])
-            post_in_circle = user_in_circle.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
+            post_in_circle = user_in_circle.create_public_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
             in_circle_posts_ids.append(post_in_circle.pk)
 
         number_of_expected_posts = number_of_circles_to_retrieve_posts_from
@@ -468,7 +484,7 @@ class PostsAPITests(APITestCase):
 
         for index, user_to_follow in enumerate(users_to_follow):
             user.follow_user(user_to_follow, lists_ids=[lists_to_follow_in[index].pk])
-            user_to_follow.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
+            user_to_follow.create_public_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
 
         amount_of_users_to_connect = 5
 
@@ -478,7 +494,7 @@ class PostsAPITests(APITestCase):
 
         for index, user_to_connect in enumerate(users_to_connect):
             user.connect_with_user_with_id(user_to_connect.pk, circles_ids=[circles_to_connect_in[index].pk])
-            user_to_connect.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
+            user_to_connect.create_public_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
 
         number_of_lists_to_retrieve_posts_from = 3
 
@@ -489,7 +505,7 @@ class PostsAPITests(APITestCase):
         for index, list_to_retrieve_posts_from in enumerate(lists_to_retrieve_posts_from):
             user_in_list = mixer.blend(User)
             user.follow_user(user_in_list, lists_ids=[list_to_retrieve_posts_from.pk])
-            post_in_list = user_in_list.create_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
+            post_in_list = user_in_list.create_public_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
             in_list_posts_ids.append(post_in_list.pk)
 
         number_of_expected_posts = number_of_lists_to_retrieve_posts_from
