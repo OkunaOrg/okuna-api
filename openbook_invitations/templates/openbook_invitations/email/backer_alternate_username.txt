@@ -1,0 +1,12 @@
+Oh snap! Someone already took your username
+
+We just noticed that an earlier backer already claimed your username "{{ username }}".
+Here is a form where you can fill out an alternate username.
+
+Link to the form: {{ typeform_link }}
+
+We request that you fill this form as soon as possible so that we can process it in time for the Alpha launch.
+We're definitely excited to showcase what we have been building. See you on the Alpha!
+
+Cheers,
+The Openbook Team
