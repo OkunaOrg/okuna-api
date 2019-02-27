@@ -110,6 +110,29 @@ class JoinedCommunities(APIView):
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
+class SearchJoinedCommunities(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        query_params = request.query_params.dict()
+        serializer = SearchCommunitiesSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 10)
+        query = data.get('query')
+
+        user = request.user
+
+        communities = user.search_joined_communities_with_query(query=query)[:count]
+
+        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
+                                                             context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
 class ModeratedCommunities(APIView):
     permission_classes = (IsAuthenticated,)
 

@@ -1014,6 +1014,14 @@ class User(AbstractUser):
         Community = get_community_model()
         return Community.objects.filter(memberships__user=self)
 
+    def search_joined_communities_with_query(self, query):
+        joined_communities_query = Q(memberships__user=self)
+        joined_communities_name_query = Q(name__icontains=query)
+        joined_communities_name_query.add(Q(title__icontains=query), Q.OR)
+        joined_communities_query.add(joined_communities_name_query, Q.AND)
+        Community = get_community_model()
+        return Community.objects.filter(joined_communities_query)
+
     def get_favorite_communities(self):
         return self.favorite_communities.all()
 
