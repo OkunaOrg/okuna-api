@@ -7,7 +7,8 @@ from rest_framework.views import APIView
 from openbook_common.utils.helpers import normalise_request_data, normalize_list_value_in_request_data
 from openbook_communities.views.community.serializers import GetCommunityCommunitySerializer, DeleteCommunitySerializer, \
     UpdateCommunitySerializer, UpdateCommunityAvatarSerializer, UpdateCommunityCoverSerializer, GetCommunitySerializer, \
-    FavoriteCommunitySerializer, CommunityAvatarCommunitySerializer, CommunityCoverCommunitySerializer
+    FavoriteCommunitySerializer, CommunityAvatarCommunitySerializer, CommunityCoverCommunitySerializer, \
+    FavoriteCommunityCommunitySerializer
 
 
 class CommunityItem(APIView):
@@ -149,9 +150,11 @@ class FavoriteCommunity(APIView):
         user = request.user
 
         with transaction.atomic():
-            user.favorite_community_with_name(community_name)
+            community = user.favorite_community_with_name(community_name)
 
-        return Response(status=status.HTTP_201_CREATED)
+        response_serializer = FavoriteCommunityCommunitySerializer(community, context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request, community_name):
         request_data = normalise_request_data(request.data)
@@ -163,6 +166,8 @@ class FavoriteCommunity(APIView):
         user = request.user
 
         with transaction.atomic():
-            user.unfavorite_community_with_name(community_name)
+            community = user.unfavorite_community_with_name(community_name)
 
-        return Response(status=status.HTTP_200_OK)
+        response_serializer = FavoriteCommunityCommunitySerializer(community, context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)

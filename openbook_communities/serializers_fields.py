@@ -35,6 +35,22 @@ class IsCreatorField(Field):
         return request_user.is_creator_of_community_with_name(community.name)
 
 
+class IsFavoriteField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(IsFavoriteField, self).__init__(**kwargs)
+
+    def to_representation(self, community):
+        request = self.context.get('request')
+        request_user = request.user
+
+        if request_user.is_anonymous:
+            return False
+
+        return request_user.has_favorite_community_with_name(community.name)
+
+
 class RulesField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'

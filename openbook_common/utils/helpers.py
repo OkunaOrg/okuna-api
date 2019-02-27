@@ -12,6 +12,9 @@ def normalise_request_data(request_data):
     :param request_data:
     :return:
     """
+    if not request_data:
+        return {}
+
     if isinstance(request_data, QueryDict):
         return request_data.dict()
     return {**request_data}
