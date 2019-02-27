@@ -11,7 +11,7 @@ django-imagekit==4.0.2
 django-media-fixtures==0.0.3
 django-nose==1.4.6
 django-storages==1.7.1
-django==2.1.5
+django==2.1.7
 djangorestframework==3.9.0
 docutils==0.14
 faker==0.9.1
