@@ -355,6 +355,9 @@ class User(AbstractUser):
     def is_administrator_of_community_with_name(self, community_name):
         return self.communities_memberships.filter(community__name=community_name, is_administrator=True).exists()
 
+    def is_member_of_communities(self):
+        return self.communities_memberships.all().exists()
+
     def is_member_of_community_with_name(self, community_name):
         return self.communities_memberships.filter(community__name=community_name).exists()
 
