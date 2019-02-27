@@ -111,6 +111,26 @@ class UserInvite(models.Model):
         self.is_invite_email_sent = True
         self.save()
 
+    def send_alternate_username_survey_email(self):
+        # Hack: Since username is unique, we populate name field with username during
+        # parsing of this csv so we can import all records.
+        # This is a one time operation before launch.
+        mail_subject = _('Action Required: Choose an alternate username for Openbook')
+        text_message_content = render_to_string('openbook_invitations/email/backer_alternate_username.txt', {
+            'username': self.name,
+            'invite_link': 'https://openbook.typeform.com/to/MSbtq9'
+        })
+        html_message_content = render_to_string('openbook_invitations/email/backer_alternate_username.html', {
+            'username': self.name,
+            'typeform_link': 'https://openbook.typeform.com/to/MSbtq9'
+        })
+        email = EmailMultiAlternatives(mail_subject, text_message_content, to=[self.email],
+                                       from_email=settings.SERVICE_EMAIL_ADDRESS)
+        email.attach_alternative(html_message_content, 'text/html')
+        email.send()
+        self.is_invite_email_sent = True
+        self.save()
+
     def generate_token(self):
         token_bytes = jwt.encode({'id': self.id}, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
         return token_bytes.decode('UTF-8')
