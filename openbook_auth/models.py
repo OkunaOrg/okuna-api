@@ -1138,12 +1138,11 @@ class User(AbstractUser):
 
         return profile_posts
 
-    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None, communities_names=None):
+    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None):
         """
         Get the timeline posts for self. The results will be dynamic based on follows and connections.
         :param lists_ids:
         :param circles_ids:
-        :param communities_names:
         :param max_id:
         :param post_id:
         :param username:
@@ -1174,10 +1173,8 @@ class User(AbstractUser):
                 followed_user_posts_query = self._make_get_posts_query_for_user(followed_user, )
                 timeline_posts_query.add(followed_user_posts_query, Q.OR)
 
-        if communities_names:
-            timeline_posts_query.add(Q(community__name__in=communities_names), Q.AND)
-
-        timeline_posts_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
+        if not circles_ids and not lists_ids:
+            timeline_posts_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
 
         if max_id:
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
