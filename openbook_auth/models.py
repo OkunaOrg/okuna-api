@@ -355,6 +355,9 @@ class User(AbstractUser):
     def is_administrator_of_community_with_name(self, community_name):
         return self.communities_memberships.filter(community__name=community_name, is_administrator=True).exists()
 
+    def is_member_of_communities(self):
+        return self.communities_memberships.all().exists()
+
     def is_member_of_community_with_name(self, community_name):
         return self.communities_memberships.filter(community__name=community_name).exists()
 
@@ -1010,6 +1013,14 @@ class User(AbstractUser):
     def get_joined_communities(self):
         Community = get_community_model()
         return Community.objects.filter(memberships__user=self)
+
+    def search_joined_communities_with_query(self, query):
+        joined_communities_query = Q(memberships__user=self)
+        joined_communities_name_query = Q(name__icontains=query)
+        joined_communities_name_query.add(Q(title__icontains=query), Q.OR)
+        joined_communities_query.add(joined_communities_name_query, Q.AND)
+        Community = get_community_model()
+        return Community.objects.filter(joined_communities_query)
 
     def get_favorite_communities(self):
         return self.favorite_communities.all()

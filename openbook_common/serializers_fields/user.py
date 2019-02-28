@@ -20,6 +20,20 @@ class IsFollowingField(Field):
         return False
 
 
+class IsMemberOfCommunities(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(IsMemberOfCommunities, self).__init__(**kwargs)
+
+    def to_representation(self, value):
+        request = self.context.get('request')
+
+        request_user = request.user
+
+        return request_user.is_member_of_communities()
+
+
 class IsConnectedField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'
