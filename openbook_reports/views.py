@@ -142,7 +142,6 @@ class ReportedPostsCommunity(APIView):
 
         with transaction.atomic():
             reported_posts = user.get_reported_posts_for_community_with_name(community_name=community_name_serialized)
-            print(reported_posts)
             community_reports_serializer = AuthenticatedUserPostSerializer(reported_posts,
                                                                            many=True,
                                                                            context={"request": request})
