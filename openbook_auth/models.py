@@ -395,7 +395,10 @@ class User(AbstractUser):
         return self.post_reactions.filter(has_reacted_query).count() > 0
 
     def has_commented_post_with_id(self, post_id):
-        return self.posts_comments.filter(post_id=post_id).count() > 0
+        return self.posts_comments.filter(post_id=post_id).exists()
+
+    def has_notification_with_id(self, notification_id):
+        return self.notifications.filter(pk=notification_id).exists()
 
     def get_lists_for_follow_for_user_with_id(self, user_id):
         self._check_is_following_user_with_id(user_id)
@@ -1346,6 +1349,21 @@ class User(AbstractUser):
 
         return self.notifications.filter(notifications_query)
 
+    def read_all_notifications(self):
+        self.notifications.filter(read=False).update(read=True)
+
+    def read_notification_with_id(self, notification_id):
+        self._check_can_read_notification_with_id(notification_id)
+        notification = self.notifications.get(id=notification_id)
+        notification.read = True
+        notification.save()
+        return notification
+
+    def delete_notification_with_id(self, notification_id):
+        self._check_can_delete_notification_with_id(notification_id)
+        notification = self.notifications.get(id=notification_id)
+        notification.delete()
+
     def _create_post_comment_notification(self, post_comment):
         PostCommentNotification = get_post_comment_notification_model()
         PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
@@ -2040,6 +2058,18 @@ class User(AbstractUser):
         if not self.has_favorite_community_with_name(community_name=community_name):
             raise ValidationError(
                 _('You have not favorited the community.'),
+            )
+
+    def _check_can_read_notification_with_id(self, notification_id):
+        if not self.has_notification_with_id(notification_id=notification_id):
+            raise ValidationError(
+                _('You cannot mark as read a notification that doesn\'t belong to you.'),
+            )
+
+    def _check_can_delete_notification_with_id(self, notification_id):
+        if not self.has_notification_with_id(notification_id=notification_id):
+            raise ValidationError(
+                _('You cannot delete a notification that doesn\'t belong to you.'),
             )
 
 

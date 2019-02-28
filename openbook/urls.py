@@ -41,6 +41,8 @@ from openbook_connections.views import ConnectWithUser, Connections, DisconnectF
     ConfirmConnection
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
 from openbook_lists.views import Lists, ListItem, ListNameCheck
+from openbook_notifications.models import Notification
+from openbook_notifications.views import Notifications, NotificationItem, ReadAllNotifications, ReadNotification
 from openbook_posts.views.post.views import PostComments, PostCommentItem, PostItem, PostReactions, PostReactionItem, \
     PostReactionsEmojiCount, PostReactionEmojiGroups
 from openbook_posts.views.posts.views import Posts, TrendingPosts
@@ -176,6 +178,17 @@ categories_patterns = [
     path('', Categories.as_view(), name='categories')
 ]
 
+notification_patterns = [
+    path('', NotificationItem.as_view(), name='notification'),
+    path('read/', ReadNotification.as_view(), name='read-notification'),
+]
+
+notifications_patterns = [
+    path('', Notifications.as_view(), name='notifications'),
+    path('read/', ReadAllNotifications.as_view(), name='read-all-notifications'),
+    path('<int:notification_id>/', include(notification_patterns)),
+]
+
 api_patterns = [
     path('auth/', include(auth_patterns)),
     path('posts/', include(posts_patterns)),
@@ -185,6 +198,7 @@ api_patterns = [
     path('connections/', include(connections_patterns)),
     path('lists/', include(lists_patterns)),
     path('follows/', include(follows_patterns)),
+    path('notifications/', include(notifications_patterns)),
     path('import/', include(importer_patterns)),
     url('time/', Time.as_view(), name='time'),
     url('emojis/groups/', EmojiGroups.as_view(), name='emoji-groups'),

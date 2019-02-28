@@ -1,8 +1,9 @@
+from generic_relations.relations import GenericRelatedField
 from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
 from openbook_notifications.models import Notification, PostCommentNotification, ConnectionRequestNotification, \
-    ConnectionConfirmedNotification
+    ConnectionConfirmedNotification, FollowNotification
 from openbook_notifications.models.post_reaction_notification import PostReactionNotification
 from openbook_notifications.validators import notification_id_exists
 from openbook_posts.models import PostComment, PostReaction
@@ -168,42 +169,62 @@ class ConnectionConfirmedNotificationSerializer(serializers.ModelSerializer):
         )
 
 
-class GetNotificationsNotificationContentObjectSerializer(serializers.RelatedField):
-    def to_representation(self, value):
-        if isinstance(value, PostCommentNotification):
-            serializer = PostCommentNotificationSerializer(value)
-        elif isinstance(value, PostReactionNotification):
-            serializer = PostReactionNotificationSerializer(value)
-        elif isinstance(value, ConnectionRequestNotification):
-            serializer = ConnectionRequestNotificationSerializer(value)
-        elif isinstance(value, ConnectionRequestNotification):
-            serializer = ConnectionRequestNotificationSerializer(value)
-        elif isinstance(value, ConnectionConfirmedNotification):
-            serializer = ConnectionConfirmedNotificationSerializer(value)
-        else:
-            raise Exception('Unexpected type notification content object')
+class FollowerProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = (
+            'id',
+            'avatar'
+        )
 
-        return serializer.data
+
+class FollowerSerializer(serializers.ModelSerializer):
+    profile = FollowerProfileSerializer()
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'username',
+            'profile'
+        )
+
+
+class FollowNotificationSerializer(serializers.ModelSerializer):
+    follower = FollowerSerializer()
+
+    class Meta:
+        model = FollowNotification
+        fields = (
+            'id',
+            'follower'
+        )
 
 
 class GetNotificationsNotificationSerializer(serializers.ModelSerializer):
-    content_object = GetNotificationsNotificationContentObjectSerializer()
+    content_object = GenericRelatedField({
+        PostCommentNotification: PostCommentNotificationSerializer(),
+        PostReactionNotification: PostReactionNotificationSerializer(),
+        ConnectionRequestNotification: ConnectionRequestNotificationSerializer(),
+        ConnectionConfirmedNotification: ConnectionConfirmedNotificationSerializer(),
+        FollowNotification: FollowNotificationSerializer()
+    })
 
     class Meta:
         model = Notification
         fields = (
             'id',
             'notification_type',
-            'content_object'
+            'content_object',
+            'read'
         )
 
 
 class DeleteNotificationSerializer(serializers.Serializer):
-    notification_id = serializers.IntegerField(allow_blank=False,
-                                               required=True,
+    notification_id = serializers.IntegerField(required=True,
                                                validators=[notification_id_exists])
 
+
 class ReadNotificationSerializer(serializers.Serializer):
-    notification_id = serializers.IntegerField(allow_blank=False,
-                                               required=True,
+    notification_id = serializers.IntegerField(required=True,
                                                validators=[notification_id_exists])
