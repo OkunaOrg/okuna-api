@@ -89,3 +89,21 @@ class CirclesField(Field):
             circles = post.circles
 
         return self.circle_serializer(circles, many=True, context={"request": request, 'post': post}).data
+
+
+class PostReportsField(Field):
+    def __init__(self, post_report_serializer=None, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        self.post_report_serializer = post_report_serializer
+        super(PostReportsField, self).__init__(**kwargs)
+
+    def to_representation(self, post):
+        request = self.context.get('request')
+        request_user = request.user
+        if post.community and request_user.can_see_all_post_reports_from_community_with_name(post.community.name):
+            post_reports = post.reports.all()
+        else:
+            post_reports = post.reports.filter(reporter=request_user)
+
+        return self.post_report_serializer(post_reports, many=True, context={"request": request, 'post': post}).data
