@@ -67,3 +67,23 @@ def get_category_model():
 
 def get_community_membership_model():
     return apps.get_model('openbook_communities.CommunityMembership')
+
+
+def get_post_comment_notification_model():
+    return apps.get_model('openbook_notifications.PostCommentNotification')
+
+
+def get_post_reaction_notification_model():
+    return apps.get_model('openbook_notifications.PostReactionNotification')
+
+
+def get_follow_notification_model():
+    return apps.get_model('openbook_notifications.FollowNotification')
+
+
+def get_connection_request_notification_model():
+    return apps.get_model('openbook_notifications.ConnectionRequestNotification')
+
+
+def get_connection_confirmed_notification_model():
+    return apps.get_model('openbook_notifications.ConnectionConfirmedNotification')

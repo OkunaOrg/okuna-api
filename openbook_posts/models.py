@@ -5,7 +5,6 @@ from django.core.files.storage import default_storage
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
-from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Count
 

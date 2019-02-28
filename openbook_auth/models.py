@@ -20,7 +20,9 @@ from openbook_common.models import Badge
 from openbook_common.utils.helpers import delete_image_kit_image_field
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, \
-    get_emoji_group_model, get_user_invite_model, get_community_model, get_community_invite_model, get_tag_model
+    get_emoji_group_model, get_user_invite_model, get_community_model, get_community_invite_model, get_tag_model, \
+    get_post_comment_notification_model, get_follow_notification_model, get_connection_confirmed_notification_model, \
+    get_connection_request_notification_model, get_post_reaction_notification_model
 from openbook_common.validators import name_characters_validator
 
 
@@ -464,6 +466,8 @@ class User(AbstractUser):
             post = Post.objects.filter(pk=post_id).get()
             post_reaction = post.react(reactor=self, emoji_id=emoji_id)
 
+        self._create_post_reaction_notification(post_reaction=post_reaction)
+
         return post_reaction
 
     def delete_reaction_with_id_for_post_with_id(self, post_reaction_id, post_id):
@@ -507,6 +511,7 @@ class User(AbstractUser):
         Post = get_post_model()
         post = Post.objects.filter(pk=post_id).get()
         post_comment = post.comment(text=text, commenter=self)
+        self._create_post_comment_notification(post_comment=post_comment)
         return post_comment
 
     def delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
@@ -1201,7 +1206,10 @@ class User(AbstractUser):
         self._check_follow_lists_ids(lists_ids)
 
         Follow = get_follow_model()
-        return Follow.create_follow(user_id=self.pk, followed_user_id=user_id, lists_ids=lists_ids)
+        follow = Follow.create_follow(user_id=self.pk, followed_user_id=user_id, lists_ids=lists_ids)
+        self._create_follow_notification(followed_user_id=user_id)
+
+        return follow
 
     def unfollow_user(self, user):
         return self.unfollow_user_with_id(user.pk)
@@ -1266,6 +1274,8 @@ class User(AbstractUser):
         if not self.is_following_user_with_id(user_id):
             self.follow_user_with_id(user_id)
 
+        self._create_connection_request_notification(user_connection_requested_for_id=user_id)
+
         return connection
 
     def confirm_connection_with_user_with_id(self, user_id, circles_ids=None):
@@ -1282,6 +1292,8 @@ class User(AbstractUser):
         # Automatically follow user
         if not self.is_following_user_with_id(user_id):
             self.follow_user_with_id(user_id)
+
+        self._create_connection_confirmed_notification(user_connected_with_id=user_id)
 
         return connection
 
@@ -1316,6 +1328,8 @@ class User(AbstractUser):
         if self.is_following_user_with_id(user_id):
             self.unfollow_user_with_id(user_id)
 
+        self._remove_connection_request_notification(user_connection_requested_for_id=user_id)
+
         return connection
 
     def get_connection_for_user_with_id(self, user_id):
@@ -1323,6 +1337,35 @@ class User(AbstractUser):
 
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
+
+    def _create_post_comment_notification(self, post_comment):
+        PostCommentNotification = get_post_comment_notification_model()
+        PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
+                                                                 owner=post_comment.post.creator)
+
+    def _create_post_reaction_notification(self, post_reaction):
+        PostReactionNotification = get_post_reaction_notification_model()
+        PostReactionNotification.create_post_reaction_notification(post_reaction_id=post_reaction.pk,
+                                                                   owner=post_reaction.post.creator)
+
+    def _create_follow_notification(self, followed_user_id):
+        FollowNotification = get_follow_notification_model()
+        FollowNotification.create_follow_notification(follower_id=self.pk, owner_id=followed_user_id)
+
+    def _create_connection_confirmed_notification(self, user_connected_with_id):
+        ConnectionConfirmedNotification = get_connection_confirmed_notification_model()
+        ConnectionConfirmedNotification.create_connection_confirmed_notification(connection_confirmator_id=self.pk,
+                                                                                 owner_id=user_connected_with_id)
+
+    def _create_connection_request_notification(self, user_connection_requested_for_id):
+        ConnectionRequestNotification = get_connection_request_notification_model()
+        ConnectionRequestNotification.create_connection_request_notification(connection_requester_id=self.pk,
+                                                                             owner_id=user_connection_requested_for_id)
+
+    def _remove_connection_request_notification(self, user_connection_requested_for_id):
+        ConnectionRequestNotification = get_connection_request_notification_model()
+        ConnectionRequestNotification.remove_connection_request_notification(connection_requester_id=self.pk,
+                                                                             owner_id=user_connection_requested_for_id)
 
     def _make_linked_users_query(self, max_id=None):
         # All users which are connected with us and we have accepted by adding
@@ -1700,7 +1743,6 @@ class User(AbstractUser):
             )
 
     def _check_can_get_posts_for_community_with_name(self, community_name):
-
         Community = get_community_model()
         if Community.is_community_with_name_private(
                 community_name=community_name) and not self.is_member_of_community_with_name(

@@ -119,6 +119,7 @@ INSTALLED_APPS = [
     'openbook_invitations',
     'openbook_tags',
     'openbook_categories',
+    'openbook_notifications',
 ]
 
 MIDDLEWARE = [
