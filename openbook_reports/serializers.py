@@ -1,7 +1,10 @@
 from rest_framework import serializers
 from django.conf import settings
+from rest_framework.serializers import ModelSerializer
+
 from openbook_auth.models import User, UserProfile
 from openbook_auth.serializers import BadgeSerializer
+from openbook_common.serializers_fields.post import PostReportsField
 from openbook_communities.models import Community
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 from openbook_posts.models import Post, PostVideo, PostImage, PostComment
@@ -39,6 +42,12 @@ class ReportPostSerializer(serializers.Serializer):
                                           validators=[is_valid_report_category])
     comment = serializers.CharField(max_length=settings.REPORT_COMMENT_MAX_LENGTH, allow_blank=True)
 
+
+class GetPostReportSerializer(serializers.Serializer):
+    post_id = serializers.IntegerField(
+        validators=[post_id_exists],
+        required=True,
+    )
 
 class PostReportSerializer(serializers.ModelSerializer):
     category = PostReportCategorySerializer()
@@ -185,7 +194,7 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     image = PostImageSerializer(many=False)
     video = PostVideoSerializer(many=False)
     creator = PostCreatorSerializer(many=False)
-    reports = PostReportSerializer(many=True, read_only=True)
+    reports = PostReportsField(post_report_serializer=PostReportSerializer)
 
     class Meta:
         model = Post

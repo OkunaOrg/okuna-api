@@ -8,7 +8,7 @@ from openbook_reports.serializers import GetReportCategoriesSerializer, ReportPo
     ConfirmRejectPostReportSerializer, PostReportConfirmRejectSerializer, AuthenticatedUserPostSerializer, \
     ReportedPostsCommunitySerializer, ReportPostCommentSerializer, PostReportCommentSerializer, \
     ReportPostCommentsSerializer, PostCommentReportConfirmRejectSerializer, \
-    ConfirmRejectPostCommentReportSerializer, AuthenticatedUserPostCommentSerializer
+    ConfirmRejectPostCommentReportSerializer, AuthenticatedUserPostCommentSerializer, GetPostReportSerializer
 from openbook_reports.models import ReportCategory as ReportCategoryModel
 
 
@@ -42,6 +42,22 @@ class ReportPost(APIView):
 
         post_report_serializer = PostReportSerializer(post_report, context={"request": request})
         return Response(post_report_serializer.data, status=status.HTTP_201_CREATED)
+
+    def get(self, request, post_id):
+        request_data = request.data.copy()
+        request_data['post_id'] = post_id
+        serializer = GetPostReportSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        post_id = data.get('post_id')
+        user = request.user
+
+        with transaction.atomic():
+            post_reports = user.get_reports_for_post_with_id(post_id=post_id)
+
+        post_report_serializer = PostReportSerializer(post_reports, many=True, context={"request": request})
+        return Response(post_report_serializer.data, status=status.HTTP_200_OK)
 
 
 class ConfirmPostReport(APIView):
@@ -95,9 +111,11 @@ class ReportedPosts(APIView):
 
     def get(self, request):
         user = request.user
-        all_reported_posts_serialiazer = AuthenticatedUserPostSerializer(user.get_reported_posts(), many=True, context={"request": request})
+        all_reported_posts_serializer = AuthenticatedUserPostSerializer(user.get_reported_posts(),
+                                                                        many=True,
+                                                                        context={"request": request})
 
-        return Response(all_reported_posts_serialiazer.data, status=status.HTTP_200_OK)
+        return Response(all_reported_posts_serializer.data, status=status.HTTP_200_OK)
 
 
 class UserReports(APIView):
@@ -124,6 +142,7 @@ class ReportedPostsCommunity(APIView):
 
         with transaction.atomic():
             reported_posts = user.get_reported_posts_for_community_with_name(community_name=community_name_serialized)
+            print(reported_posts)
             community_reports_serializer = AuthenticatedUserPostSerializer(reported_posts,
                                                                            many=True,
                                                                            context={"request": request})
