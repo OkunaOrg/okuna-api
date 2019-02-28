@@ -1,7 +1,6 @@
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
-# Create your models here.
 from openbook_auth.models import User
 from openbook_notifications.models.notification import Notification
 

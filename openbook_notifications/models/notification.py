@@ -3,13 +3,13 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils import timezone
 
-# Create your models here.
 from openbook_auth.models import User
 
 
 class Notification(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     created = models.DateTimeField(editable=False)
+    read = models.BooleanField(default=False)
 
     POST_REACTION = 'PR'
     POST_COMMENT = 'PC'
@@ -34,7 +34,7 @@ class Notification(models.Model):
 
     @classmethod
     def create_notification(cls, owner_id, type, content_object):
-        return cls.objects.create(notification_type=type, content_objec=content_object, owner_id=owner_id)
+        return cls.objects.create(notification_type=type, content_object=content_object, owner_id=owner_id)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''

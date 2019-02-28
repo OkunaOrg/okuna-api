@@ -1338,15 +1338,23 @@ class User(AbstractUser):
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
 
+    def get_notifications(self, max_id=None):
+        notifications_query = Q()
+
+        if max_id:
+            notifications_query.add(Q(id__lt=max_id), Q.AND)
+
+        return self.notifications.filter(notifications_query)
+
     def _create_post_comment_notification(self, post_comment):
         PostCommentNotification = get_post_comment_notification_model()
         PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
-                                                                 owner=post_comment.post.creator)
+                                                                 owner_id=post_comment.post.creator_id)
 
     def _create_post_reaction_notification(self, post_reaction):
         PostReactionNotification = get_post_reaction_notification_model()
         PostReactionNotification.create_post_reaction_notification(post_reaction_id=post_reaction.pk,
-                                                                   owner=post_reaction.post.creator)
+                                                                   owner_id=post_reaction.post.creator_id)
 
     def _create_follow_notification(self, followed_user_id):
         FollowNotification = get_follow_notification_model()
