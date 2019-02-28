@@ -8,6 +8,7 @@ from openbook_auth.models import User, UserProfile
 from openbook_categories.models import Category
 from openbook_circles.models import Circle
 from openbook_common.models import Emoji, EmojiGroup, Badge
+from openbook_reports.models import ReportCategory
 
 fake = Faker()
 
@@ -27,6 +28,12 @@ def make_fake_post_comment_text():
 
 def make_user():
     user = mixer.blend(User)
+    profile = make_profile(user)
+    return user
+
+
+def make_superuser():
+    user = mixer.blend(User, is_superuser=True)
     profile = make_profile(user)
     return user
 
@@ -154,6 +161,14 @@ def make_community_invites_enabled():
     return fake.boolean()
 
 
+def make_member_of_community_with_admin(community, admin):
+    user = make_user()
+    admin.invite_user_with_username_to_community_with_name(username=user.username, community_name=community.name)
+    user.join_community_with_name(community.name)
+
+    return user
+
+
 def make_community(creator, type='P'):
     community = creator.create_community(name=make_community_name(), title=make_community_title(), type=type,
                                          color=fake.hex_color(), description=make_community_description(),
@@ -162,3 +177,12 @@ def make_community(creator, type='P'):
                                          categories_names=[make_category().name],
                                          invites_enabled=make_community_invites_enabled())
     return community
+
+
+def make_report_category():
+    return ReportCategory.objects.get(pk=1)
+
+
+def make_report_comment_text():
+    return fake.text(max_nb_chars=settings.REPORT_COMMENT_MAX_LENGTH)
+
