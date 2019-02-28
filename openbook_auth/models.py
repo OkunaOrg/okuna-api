@@ -2,6 +2,7 @@ import secrets
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
 from django.db import models
+from django.db.models import Count
 from django.contrib.auth.models import AbstractUser
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -9,7 +10,7 @@ from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 from rest_framework.authtoken.models import Token
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, PermissionDenied
 from django.db.models import Q
 
 from openbook.settings import USERNAME_MAX_LENGTH
@@ -1011,9 +1012,13 @@ class User(AbstractUser):
 
     def get_community_post_with_id(self, post_id):
         post_query = Q(id=post_id)
-        post_query.add(Q(community__members__id=self.pk), Q.OR)
-        # Public type communities
-        post_query.add(Q(community__type='P'), Q.OR)
+
+        Community = get_community_model()
+
+        membership_query = Q(community__members__id=self.pk)
+        membership_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC), Q.OR)
+
+        post_query.add(membership_query, Q.AND)
 
         Post = get_post_model()
         profile_posts = Post.objects.filter(post_query)
@@ -1241,14 +1246,15 @@ class User(AbstractUser):
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
 
-    def report_post_comment_with_id_for_post_with_id(self, post_comment_id, post_id, category_name, comment):
+    def report_post_comment_with_id_for_post_with_id(self, post_comment_id, post_id, category_name, comment=None):
         self._check_can_report_post_comment_with_id_for_post_with_id(post_comment_id, post_id)
         PostComment = get_post_comment_model()
         post_comment = PostComment.objects.get(pk=post_comment_id)
         ReportCategory = get_report_category_model()
         category = ReportCategory.objects.get(name=category_name)
         PostCommentReport = get_post_report_comment_model()
-        post_comment_report = PostCommentReport.create_comment_report(post_comment=post_comment, reporter=self, category=category,
+        post_comment_report = PostCommentReport.create_comment_report(post_comment=post_comment, reporter=self,
+                                                                      category=category,
                                                                       comment=comment)
         return post_comment_report
 
@@ -1267,9 +1273,17 @@ class User(AbstractUser):
             return PostCommentReport.objects.filter(post_comment=post_comment, reporter=self)
 
     def get_reported_posts_for_community_with_name(self, community_name):
-        self._check_can_change_report_status_for_community_with_name(community_name)
-        PostReport = get_post_report_model()
-        reported_posts = [report.post for report in PostReport.objects.filter(Q(post__community__name=community_name))]
+        Post = get_post_model()
+        if self.can_see_all_post_reports_from_community_with_name(community_name):
+            reported_posts = Post.objects.annotate(
+                reports_count=Count('reports')
+            ).filter(
+                Q(community__name=community_name) & Q(reports_count__gte=1)
+            )
+            return reported_posts
+        reported_posts = Post.objects.filter(
+            Q(community__name=community_name) & Q(reports__reporter=self)
+        )
         return reported_posts
 
     def get_reported_post_comments_for_community_with_name(self, community_name):
@@ -1290,7 +1304,25 @@ class User(AbstractUser):
         reports = PostReport.objects.filter(reporter=self)
         return reports
 
-    def report_post_with_id(self, post_id, category_name, comment):
+    def get_reports_for_post_with_id(self, post_id):
+        PostReport = get_post_report_model()
+        if self.is_staff or self.is_superuser:
+            reports = PostReport.objects.filter(post__id=post_id)
+            return reports
+
+        Post = get_post_model()
+        post = Post.objects.get(pk=post_id)
+        if post.community:
+            post_report_query = Q(post__id=post_id)
+            Community = get_community_model()
+            post_report_query.add(Q(post__community__moderators__id=self.pk), Q.AND)
+            reports = PostReport.objects.filter(post_report_query)
+            return reports
+
+        reports = PostReport.objects.filter(reporter=self, post__id=post_id)
+        return reports
+
+    def report_post_with_id(self, post_id, category_name, comment=None):
         self._check_can_report_post_with_id(post_id)
         Post = get_post_model()
         post = Post.objects.get(pk=post_id)
@@ -1323,7 +1355,8 @@ class User(AbstractUser):
         return report
 
     def confirm_report_with_id_for_comment_with_id_for_post_with_id(self, post_id, post_comment_id, report_id):
-        self._check_can_change_report_with_id_for_post_comment_with_for_post_with_id(post_id, post_comment_id, report_id)
+        self._check_can_change_report_with_id_for_post_comment_with_for_post_with_id(post_id, post_comment_id,
+                                                                                     report_id)
         PostCommentReport = get_post_report_comment_model()
         PostComment = get_post_comment_model()
         report = PostCommentReport.objects.get(pk=report_id)
@@ -1334,7 +1367,8 @@ class User(AbstractUser):
         return report
 
     def reject_report_with_id_for_comment_with_id_for_post_with_id(self, post_id, post_comment_id, report_id):
-        self._check_can_change_report_with_id_for_post_comment_with_for_post_with_id(post_id, post_comment_id, report_id)
+        self._check_can_change_report_with_id_for_post_comment_with_for_post_with_id(post_id, post_comment_id,
+                                                                                     report_id)
         PostCommentReport = get_post_report_comment_model()
         PostComment = get_post_comment_model()
         report = PostCommentReport.objects.get(pk=report_id)
@@ -1344,7 +1378,18 @@ class User(AbstractUser):
         self._archive_all_remaining_reports_for_post_comment(post_comment)
         return report
 
-    def _check_can_change_report_with_id_for_post_comment_with_for_post_with_id(self, post_id, post_comment_id, report_id):
+    def can_see_all_post_reports_from_community_with_name(self, community_name):
+        Community = get_community_model()
+        is_moderator = \
+            Community.is_user_with_username_moderator_of_community_with_name(username=self.username,
+                                                                             community_name=community_name)
+        if is_moderator or self.is_staff or self.is_superuser:
+            return True
+
+        return False
+
+    def _check_can_change_report_with_id_for_post_comment_with_for_post_with_id(self, post_id, post_comment_id,
+                                                                                report_id):
         PostCommentReport = get_post_report_comment_model()
         PostCommentReport.check_report_status_is_pending_for_report_with_id(report_id)
         PostComment = get_post_comment_model()
@@ -1396,6 +1441,7 @@ class User(AbstractUser):
                 report.save()
 
     def _check_can_report_post_with_id(self, post_id):
+        self._check_can_see_post_with_id(post_id)
         PostReport = get_post_report_model()
         if PostReport.objects.filter(post__id=post_id, reporter=self).exists():
             raise ValidationError(
@@ -1425,7 +1471,7 @@ class User(AbstractUser):
 
     def _check_can_change_report_status(self):
         if not self.is_staff and not self.is_superuser:
-            raise ValidationError(
+            raise PermissionDenied(
                 _('User cannot change status of report'),
             )
 
