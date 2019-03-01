@@ -66,7 +66,7 @@ post_report_patterns = [
 
 post_comment_patterns = [
     path('', PostCommentItem.as_view(), name='post-comment'),
-    path('reports/', ReportPostComment.as_view(), name='post-comment-reports'),
+    path('reports/', ReportPostComment.as_view(), name='report-post-comment'),
     path('reports/<int:report_id>/confirm/', ConfirmPostCommentReport.as_view(), name='post-comment-report-confirm'),
     path('reports/<int:report_id>/reject/', RejectPostCommentReport.as_view(), name='post-comment-report-reject'),
 ]
