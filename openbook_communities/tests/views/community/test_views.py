@@ -11,6 +11,7 @@ from openbook_common.tests.helpers import make_user, make_authentication_headers
     make_community_name, make_community, \
     make_community_title, make_community_rules, make_community_description, make_community_user_adjective, \
     make_community_users_adjective, make_community_avatar, make_community_cover, make_category
+from openbook_communities.models import Community
 
 fake = Faker()
 
@@ -544,6 +545,114 @@ class CommunityAPITests(APITestCase):
         community.refresh_from_db()
 
         self.assertTrue(community.categories.exists())
+
+    def test_creator_can_delete_community(self):
+        """
+        should be able to delete a created community and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community = make_community(creator=user)
+        community_name = community.name
+
+        url = self._get_url(community_name=community_name)
+
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(Community.objects.filter(pk=community.pk).exists())
+
+    def test_admin_cannot_delete_community(self):
+        """
+        should not be able to delete a merely administrated community and return 400
+        """
+        user = make_user()
+        other_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        community = make_community(creator=other_user)
+        community_name = community.name
+
+        user.join_community_with_name(community_name=community_name)
+        other_user.add_administrator_with_username_to_community_with_name(username=user.username,
+                                                                          community_name=community_name)
+
+        url = self._get_url(community_name=community_name)
+
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(Community.objects.filter(pk=community.pk).exists())
+
+    def test_moderator_cannot_delete_community(self):
+        """
+        should not be able to delete a merely moderated community and return 400
+        """
+        user = make_user()
+        other_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        community = make_community(creator=other_user)
+        community_name = community.name
+
+        user.join_community_with_name(community_name=community_name)
+        other_user.add_moderator_with_username_to_community_with_name(username=user.username,
+                                                                      community_name=community_name)
+
+        url = self._get_url(community_name=community_name)
+
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(Community.objects.filter(pk=community.pk).exists())
+
+    def test_member_cannot_delete_community(self):
+        """
+        should not be able to delete a joined community and return 400
+        """
+        user = make_user()
+        other_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        community = make_community(creator=other_user)
+        community_name = community.name
+
+        user.join_community_with_name(community_name=community_name)
+
+        url = self._get_url(community_name=community_name)
+
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(Community.objects.filter(pk=community.pk).exists())
+
+    def test_user_cannot_delete_community(self):
+        """
+        should not be able to delete a community and return 400
+        """
+        user = make_user()
+        other_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        community = make_community(creator=other_user)
+        community_name = community.name
+
+        url = self._get_url(community_name=community_name)
+
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(Community.objects.filter(pk=community.pk).exists())
 
     def _get_url(self, community_name):
         return reverse('community', kwargs={
