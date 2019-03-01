@@ -97,3 +97,99 @@ class ReadNotificationsAPITests(APITestCase):
 
     def _get_url(self):
         return reverse('read-notifications')
+
+
+class NotificationItemAPITests(APITestCase):
+    """
+    NotificationItemAPI
+    """
+
+    def test_can_delete_own_notification(self):
+        """
+        should be able to delete an own notification and return 200
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        notification = make_notification(owner=user)
+        notification_id = notification.pk
+
+        url = self._get_url(notification_id)
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(Notification.objects.filter(id=notification_id).exists())
+
+    def test_cannot_delete_foreign_notification(self):
+        """
+        should not be able to delete a foreign notification and return 200
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        notification = make_notification(owner=foreign_user)
+        notification_id = notification.pk
+
+        url = self._get_url(notification_id)
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(Notification.objects.filter(id=notification_id).exists())
+
+    def _get_url(self, notification_id):
+        return reverse('notification', kwargs={
+            'notification_id': notification_id
+        })
+
+
+class ReadNotificationAPITests(APITestCase):
+    """
+    ReadNotificationAPI
+    """
+
+    def test_can_read_own_notification(self):
+        """
+        should be able to read an own notification and return 200
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        notification = make_notification(owner=user)
+        notification_id = notification.pk
+
+        url = self._get_url(notification_id)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(Notification.objects.filter(id=notification_id, read=True).exists())
+
+    def test_cannot_read_foreign_notification(self):
+        """
+        should not be able to read a foreign notification and return 400
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        notification = make_notification(owner=foreign_user)
+        notification_id = notification.pk
+
+        url = self._get_url(notification_id)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(Notification.objects.filter(id=notification_id, read=False).exists())
+
+    def _get_url(self, notification_id):
+        return reverse('read-notification', kwargs={
+            'notification_id': notification_id
+        })
