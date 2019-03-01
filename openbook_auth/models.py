@@ -1411,9 +1411,9 @@ class User(AbstractUser):
 
     def _delete_connection_confirmed_notification(self, user_connected_with_id):
         ConnectionConfirmedNotification = get_connection_confirmed_notification_model()
-        ConnectionConfirmedNotification.delete_connection_confirmed_notification(
-            connection_confirmator_id=self.pk,
-            owner_id=user_connected_with_id)
+        ConnectionConfirmedNotification.delete_connection_confirmed_notification_for_users_with_ids(
+            user_a_id=self.pk,
+            user_b_id=user_connected_with_id)
 
     def _delete_own_connection_request_notification(self, connection_requester_id):
         ConnectionRequestNotification = get_connection_request_notification_model()
