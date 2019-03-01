@@ -120,6 +120,7 @@ INSTALLED_APPS = [
     'openbook_tags',
     'openbook_categories',
     'openbook_notifications',
+    'openbook_devices',
 ]
 
 MIDDLEWARE = [
@@ -317,6 +318,7 @@ TAG_NAME_MAX_LENGTH = 32
 CATEGORY_NAME_MAX_LENGTH = 32
 CATEGORY_TITLE_MAX_LENGTH = 64
 CATEGORY_DESCRIPTION_MAX_LENGTH = 64
+DEVICE_NAME_MAX_LENGTH = 32
 SEARCH_QUERIES_MAX_LENGTH = 120
 
 # Email Config
