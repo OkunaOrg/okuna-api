@@ -11,7 +11,7 @@ import logging
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_emoji, make_emoji_group, make_reactions_emoji_group, \
     make_community
-from openbook_notifications.models import PostCommentNotification
+from openbook_notifications.models import PostCommentNotification, PostReactionNotification
 from openbook_posts.models import Post, PostComment, PostReaction
 
 logger = logging.getLogger(__name__)
@@ -1007,6 +1007,49 @@ class PostReactionsAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(PostReaction.objects.filter(post_id=post.pk, reactor_id=user.pk).count() == 1)
 
+    def test_reacting_in_foreign_post_creates_notification(self):
+        """
+         should create a notification when reacting on a foreign post
+         """
+        user = make_user()
+        reactor = make_user()
+
+        headers = make_authentication_headers_for_user(reactor)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        emoji_group = make_reactions_emoji_group()
+
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id, emoji_group.pk)
+
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        self.assertTrue(PostReactionNotification.objects.filter(post_reaction__emoji__id=post_reaction_emoji_id,
+                                                                notification__owner=user).exists())
+
+    def test_reacting_in_own_post_does_not_create_notification(self):
+        """
+         should not create a notification when reacting on an own post
+         """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        emoji_group = make_reactions_emoji_group()
+
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id, emoji_group.pk)
+
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        self.assertFalse(PostReactionNotification.objects.filter(post_reaction__emoji__id=post_reaction_emoji_id,
+                                                                 notification__owner=user).exists())
+
     def _get_create_post_reaction_request_data(self, emoji_id, emoji_group_id):
         return {
             'emoji_id': emoji_id,
@@ -1340,6 +1383,31 @@ class PostReactionItemAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(PostReaction.objects.filter(id=post_reaction.pk).count() == 1)
+
+    def test_post_reaction_notification_is_deleted_when_deleting_reaction(self):
+        """
+        should delete the post reaction notification when a post reaction is deleted
+        """
+        user = make_user()
+
+        reactioner = make_user()
+
+        post = user.create_public_post(text=make_fake_post_text())
+
+        emoji_group = make_reactions_emoji_group()
+
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        post_reaction = reactioner.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id,
+                                                         emoji_group_id=emoji_group.pk)
+
+        url = self._get_url(post_reaction=post_reaction, post=post)
+
+        headers = make_authentication_headers_for_user(user)
+        self.client.delete(url, **headers)
+
+        self.assertFalse(PostReactionNotification.objects.filter(post_reaction=post_reaction,
+                                                                 notification__owner=user).exists())
 
     def _get_url(self, post, post_reaction):
         return reverse('post-reaction', kwargs={
