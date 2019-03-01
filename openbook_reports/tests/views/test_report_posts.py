@@ -10,6 +10,7 @@ from openbook_auth.models import User
 from openbook_common.tests.helpers import make_fake_post_text, make_user, make_authentication_headers_for_user, \
     make_circle, make_community, make_superuser, make_report_category, make_report_comment_text, \
     make_member_of_community_with_admin
+from openbook_reports.models import PostReport
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -38,6 +39,9 @@ class PostReportAPITests(APITestCase):
 
         response = self.client.put(url, data, **headers)
 
+        post_report = PostReport.objects.all()
+        self.assertTrue(len(post_report) == 1)
+        self.assertEqual(post_report[0].comment, data['comment'])
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_cannot_create_post_report_twice(self):
@@ -55,7 +59,9 @@ class PostReportAPITests(APITestCase):
 
         response_first = self.client.put(url, data, **headers)
         response_second = self.client.put(url, data, **headers)
+        parsed_response = json.loads(response_second.content)
 
+        self.assertEqual(parsed_response[0], 'You have already reported this post')
         self.assertEqual(response_second.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_cannot_create_post_report_with_invalid_report_category(self):
@@ -95,6 +101,9 @@ class PostReportAPITests(APITestCase):
         data = self._get_post_report_data()
 
         response = self.client.put(url, data, **headers)
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(parsed_response[0], 'This post is private.')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_can_create_post_report_for_community_post(self):
@@ -114,6 +123,10 @@ class PostReportAPITests(APITestCase):
         data = self._get_post_report_data()
 
         response = self.client.put(url, data, **headers)
+
+        post_report = PostReport.objects.all()
+        self.assertTrue(len(post_report) == 1)
+        self.assertEqual(post_report[0].comment, data['comment'])
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_cannot_create_post_report_for_community_user_not_part_of(self):
@@ -131,6 +144,9 @@ class PostReportAPITests(APITestCase):
         data = self._get_post_report_data()
 
         response = self.client.put(url, data, **headers)
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(parsed_response[0], 'This post is from a private community.')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_can_confirm_public_post_report(self):
@@ -145,7 +161,11 @@ class PostReportAPITests(APITestCase):
         url = self._get_post_report_confirm_url(post, post_report)
 
         response = self.client.post(url, **headers)
+        parsed_response = json.loads(response.content)
 
+        post_report = PostReport.objects.first()
+        self.assertEqual(post_report.status, PostReport.CONFIRMED)
+        self.assertEqual(parsed_response['id'], post_report.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_cannot_confirm_public_post_report_if_not_superuser(self):
@@ -160,6 +180,11 @@ class PostReportAPITests(APITestCase):
         url = self._get_post_report_confirm_url(post, post_report)
 
         response = self.client.post(url, **headers)
+        parsed_response = json.loads(response.content)
+
+        post_report = PostReport.objects.first()
+        self.assertEqual(post_report.status, PostReport.PENDING)
+        self.assertEqual(parsed_response['detail'], 'User cannot change status of report')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_can_reject_public_post_report(self):
@@ -174,7 +199,11 @@ class PostReportAPITests(APITestCase):
         url = self._get_post_report_reject_url(post, post_report)
 
         response = self.client.post(url, **headers)
+        parsed_response = json.loads(response.content)
 
+        post_report = PostReport.objects.first()
+        self.assertEqual(post_report.status, PostReport.REJECTED)
+        self.assertEqual(parsed_response['id'], post_report.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_cannot_reject_public_post_report_if_not_superuser(self):
@@ -189,6 +218,11 @@ class PostReportAPITests(APITestCase):
         url = self._get_post_report_reject_url(post, post_report)
 
         response = self.client.post(url, **headers)
+        parsed_response = json.loads(response.content)
+
+        post_report = PostReport.objects.first()
+        self.assertEqual(post_report.status, PostReport.PENDING)
+        self.assertEqual(parsed_response['detail'], 'User cannot change status of report')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_cannot_reject_public_post_report_that_is_already_confirmed(self):
@@ -205,6 +239,11 @@ class PostReportAPITests(APITestCase):
         url = self._get_post_report_reject_url(post, post_report)
 
         response = self.client.post(url, **headers)
+        parsed_response = json.loads(response.content)
+
+        post_report = PostReport.objects.first()
+        self.assertEqual(post_report.status, PostReport.CONFIRMED)
+        self.assertEqual(parsed_response[0], 'Cannot change status of report')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_cannot_confirm_public_post_report_that_is_already_rejected(self):
@@ -221,6 +260,11 @@ class PostReportAPITests(APITestCase):
         url = self._get_post_report_confirm_url(post, post_report)
 
         response = self.client.post(url, **headers)
+        parsed_response = json.loads(response.content)
+
+        post_report = PostReport.objects.first()
+        self.assertEqual(post_report.status, PostReport.REJECTED)
+        self.assertEqual(parsed_response[0], 'Cannot change status of report')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_can_confirm_post_report_for_community(self):
@@ -234,7 +278,11 @@ class PostReportAPITests(APITestCase):
         url = self._get_post_report_confirm_url(post, post_report)
 
         response = self.client.post(url, **headers)
+        parsed_response = json.loads(response.content)
 
+        post_report = PostReport.objects.first()
+        self.assertEqual(post_report.status, PostReport.CONFIRMED)
+        self.assertEqual(parsed_response['id'], post_report.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_can_reject_post_report_for_community(self):
@@ -248,7 +296,11 @@ class PostReportAPITests(APITestCase):
         url = self._get_post_report_reject_url(post, post_report)
 
         response = self.client.post(url, **headers)
+        parsed_response = json.loads(response.content)
 
+        post_report = PostReport.objects.first()
+        self.assertEqual(post_report.status, PostReport.REJECTED)
+        self.assertEqual(parsed_response['id'], post_report.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_can_confirm_post_report_for_community_if_superuser(self):
@@ -263,7 +315,11 @@ class PostReportAPITests(APITestCase):
         url = self._get_post_report_confirm_url(post, post_report)
 
         response = self.client.post(url, **headers)
+        parsed_response = json.loads(response.content)
 
+        post_report = PostReport.objects.first()
+        self.assertEqual(post_report.status, PostReport.CONFIRMED)
+        self.assertEqual(parsed_response['id'], post_report.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_can_reject_post_report_for_community_as_superuser(self):
@@ -278,7 +334,11 @@ class PostReportAPITests(APITestCase):
         url = self._get_post_report_reject_url(post, post_report)
 
         response = self.client.post(url, **headers)
+        parsed_response = json.loads(response.content)
 
+        post_report = PostReport.objects.first()
+        self.assertEqual(post_report.status, PostReport.REJECTED)
+        self.assertEqual(parsed_response['id'], post_report.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_cannot_confirm_post_report_for_community_if_regular_user(self):
@@ -293,7 +353,11 @@ class PostReportAPITests(APITestCase):
         url = self._get_post_report_confirm_url(post, post_report)
 
         response = self.client.post(url, **headers)
+        parsed_response = json.loads(response.content)
 
+        post_report = PostReport.objects.first()
+        self.assertEqual(post_report.status, PostReport.PENDING)
+        self.assertEqual(parsed_response['detail'], 'User cannot change status of report')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_cannot_reject_post_report_for_community_if_regular_user(self):
@@ -308,7 +372,10 @@ class PostReportAPITests(APITestCase):
         url = self._get_post_report_reject_url(post, post_report)
 
         response = self.client.post(url, **headers)
-
+        parsed_response = json.loads(response.content)
+        post_report = PostReport.objects.first()
+        self.assertEqual(post_report.status, PostReport.PENDING)
+        self.assertEqual(parsed_response['detail'], 'User cannot change status of report')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_user_can_see_their_own_post_reports(self):
@@ -330,6 +397,8 @@ class PostReportAPITests(APITestCase):
         parsed_response = json.loads(response.content)
 
         self.assertTrue(len(parsed_response) == 2)
+        self.assertTrue(parsed_response[0]['id'] == post_report.id)
+        self.assertTrue(parsed_response[1]['id'] == post_report_two.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_user_can_see_their_own_post_reports_for_post(self):
@@ -358,7 +427,7 @@ class PostReportAPITests(APITestCase):
         user, reporting_user, post, post_report = self._make_post_report_for_public_post()
         random_user = make_user()
         # report post from a diff user
-        random_user.report_post_with_id(post_id=post.pk, category_name=make_report_category().name)
+        post_report_two = random_user.report_post_with_id(post_id=post.pk, category_name=make_report_category().name)
 
         superuser = make_superuser()
         headers = make_authentication_headers_for_user(superuser)
@@ -368,6 +437,8 @@ class PostReportAPITests(APITestCase):
         parsed_response = json.loads(response.content)
 
         self.assertTrue(len(parsed_response) == 2)
+        self.assertTrue(parsed_response[0]['id'] == post_report.id)
+        self.assertTrue(parsed_response[1]['id'] == post_report_two.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_moderator_can_see_all_post_reports_for_post_in_community(self):
@@ -506,7 +577,7 @@ class PostReportAPITests(APITestCase):
         })
 
     def _get_post_report_reject_url(self, post, post_report):
-        return reverse('post-report-confirm', kwargs={
+        return reverse('post-report-reject', kwargs={
             'post_id': post.pk,
             'report_id': post_report.pk
         })
