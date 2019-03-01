@@ -269,4 +269,3 @@ class RejectPostCommentReport(APIView):
         post_comment_report_serializer = PostCommentReportConfirmRejectSerializer(post_comment_report,
                                                                                   context={"request": request})
         return Response(post_comment_report_serializer.data, status=status.HTTP_200_OK)
-

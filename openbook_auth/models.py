@@ -1259,18 +1259,23 @@ class User(AbstractUser):
         return post_comment_report
 
     def get_reports_for_comment_with_id(self, post_comment_id):
+        PostCommentReport = get_post_report_comment_model()
+        if self.is_staff or self.is_superuser:
+            reports = PostCommentReport.objects.filter(post_comment__id=post_comment_id)
+            return reports
+
         PostComment = get_post_comment_model()
         post_comment = PostComment.objects.select_related('post').get(pk=post_comment_id)
-        PostCommentReport = get_post_report_comment_model()
 
         if post_comment.post.community:
+            post_comment_report_query = Q(post_comment__id=post_comment_id)
             Community = get_community_model()
-            community_name = post_comment.post.community.name
-            Community.is_user_with_username_moderator_of_community_with_name(community_name=community_name,
-                                                                             username=self.username)
-            return PostCommentReport.objects.filter(post_comment=post_comment)
-        else:
-            return PostCommentReport.objects.filter(post_comment=post_comment, reporter=self)
+            post_comment_report_query.add(Q(post_comment__post__community__moderators__id=self.pk), Q.AND)
+            reports = PostCommentReport.objects.filter(post_comment_report_query)
+            return reports
+
+        reports = PostCommentReport.objects.filter(reporter=self, post_comment__id=post_comment_id)
+        return reports
 
     def get_reported_posts_for_community_with_name(self, community_name):
         Post = get_post_model()
@@ -1287,11 +1292,18 @@ class User(AbstractUser):
         return reported_posts
 
     def get_reported_post_comments_for_community_with_name(self, community_name):
-        self._check_can_change_report_status_for_community_with_name(community_name)
-        PostCommentReport = get_post_report_comment_model()
-        reported_post_comments = [report.post_comment for report in PostCommentReport.objects.filter(
-            Q(post_comment__post__community__name=community_name)
-        )]
+        PostComment = get_post_comment_model()
+        if self.can_see_all_post_reports_from_community_with_name(community_name):
+            reported_post_comments = PostComment.objects.annotate(
+                reports_count=Count('reports')
+            ).filter(
+                Q(post__community__name=community_name) & Q(reports_count__gte=1)
+            )
+            return reported_post_comments
+
+        reported_post_comments = PostComment.objects.filter(
+            Q(post__community__name=community_name) & Q(reports__reporter=self)
+        )
         return reported_post_comments
 
     def get_reported_posts(self):
@@ -1449,6 +1461,7 @@ class User(AbstractUser):
             )
 
     def _check_can_report_post_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
+        self._check_can_report_post_with_id(post_id)
         PostCommentReport = get_post_report_comment_model()
         Post = get_post_model()
         post = Post.objects.prefetch_related('comments').get(pk=post_id)
