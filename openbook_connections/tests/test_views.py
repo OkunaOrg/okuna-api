@@ -251,6 +251,7 @@ class DisconnectAPITest(APITestCase):
         user_to_connect = make_user()
 
         user.connect_with_user_with_id(user_to_connect.pk, circles_ids=[circle_to_connect.pk])
+        user_to_connect.confirm_connection_with_user_with_id(user.pk)
 
         headers = make_authentication_headers_for_user(user)
 
