@@ -2,6 +2,7 @@ from rest_framework.fields import Field
 
 from openbook_common.utils.model_loaders import get_post_model
 from openbook_posts.models import PostReaction
+from openbook_reports.models import PostReport
 
 
 class ReactionField(Field):
@@ -102,8 +103,8 @@ class PostReportsField(Field):
         request = self.context.get('request')
         request_user = request.user
         if post.community and request_user.can_see_all_post_reports_from_community_with_name(post.community.name):
-            post_reports = post.reports.all()
+            post_reports = post.reports.filter(status=PostReport.PENDING)
         else:
-            post_reports = post.reports.filter(reporter=request_user)
+            post_reports = post.reports.filter(reporter=request_user, status=PostReport.PENDING)
 
         return self.post_report_serializer(post_reports, many=True, context={"request": request, 'post': post}).data

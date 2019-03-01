@@ -2,7 +2,7 @@ import secrets
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
 from django.db import models
-from django.db.models import Count
+from django.db.models import Count, Exists
 from django.contrib.auth.models import AbstractUser
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -1279,30 +1279,44 @@ class User(AbstractUser):
 
     def get_reported_posts_for_community_with_name(self, community_name):
         Post = get_post_model()
+        PostReport = get_post_report_model()
         if self.can_see_all_post_reports_from_community_with_name(community_name):
             reported_posts = Post.objects.annotate(
-                reports_count=Count('reports')
+                has_pending_reports=Exists(
+                    PostReport.objects.filter(status=PostReport.PENDING)
+                )
             ).filter(
-                Q(community__name=community_name) & Q(reports_count__gte=1)
+                Q(community__name=community_name) & Q(has_pending_reports=True)
             )
             return reported_posts
-        reported_posts = Post.objects.filter(
-            Q(community__name=community_name) & Q(reports__reporter=self)
-        )
+        reported_posts = Post.objects.annotate(
+            pending_reports=Exists(
+                PostReport.objects.filter(status=PostReport.PENDING)
+                )
+            ).filter(
+                Q(community__name=community_name) & Q(reports__reporter=self) & Q(has_pending_reports=True)
+            )
         return reported_posts
 
     def get_reported_post_comments_for_community_with_name(self, community_name):
         PostComment = get_post_comment_model()
+        PostCommentReport = get_post_report_comment_model()
         if self.can_see_all_post_reports_from_community_with_name(community_name):
             reported_post_comments = PostComment.objects.annotate(
-                reports_count=Count('reports')
+                has_pending_reports=Exists(
+                    PostCommentReport.objects.filter(status=PostCommentReport.PENDING)
+                )
             ).filter(
-                Q(post__community__name=community_name) & Q(reports_count__gte=1)
+                Q(post__community__name=community_name) & Q(has_pending_reports=True)
             )
             return reported_post_comments
 
-        reported_post_comments = PostComment.objects.filter(
-            Q(post__community__name=community_name) & Q(reports__reporter=self)
+        reported_post_comments = PostComment.objects.annotate(
+            has_pending_reports=Exists(
+                PostCommentReport.objects.filter(status=PostCommentReport.PENDING)
+            )
+        ).filter(
+            Q(post__community__name=community_name) & Q(reports__reporter=self) & Q(has_pending_reports=True)
         )
         return reported_post_comments
 
