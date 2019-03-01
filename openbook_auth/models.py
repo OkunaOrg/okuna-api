@@ -1290,7 +1290,7 @@ class User(AbstractUser):
             )
             return reported_posts
         reported_posts = Post.objects.annotate(
-            pending_reports=Exists(
+            has_pending_reports=Exists(
                 PostReport.objects.filter(status=PostReport.PENDING)
                 )
             ).filter(
