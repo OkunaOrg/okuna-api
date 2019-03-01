@@ -11,6 +11,7 @@ import logging
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_emoji, make_emoji_group, make_reactions_emoji_group, \
     make_community
+from openbook_notifications.models import PostCommentNotification
 from openbook_posts.models import Post, PostComment, PostReaction
 
 logger = logging.getLogger(__name__)
@@ -305,6 +306,45 @@ class PostCommentsAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(PostComment.objects.filter(post_id=followed_user_post.pk, text=post_comment_text).count() == 0)
+
+    def test_commenting_in_foreign_post_creates_notification(self):
+        """
+         should create a notification when commenting on a foreign post
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        foreign_user = make_user()
+
+        post = foreign_user.create_public_post(text=make_fake_post_text())
+
+        post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        self.assertTrue(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
+                                                               notification__owner=foreign_user).exists())
+
+    def test_commenting_in_own_post_does_not_create_notification(self):
+        """
+         should not create a notification when commenting on an own post
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        self.assertFalse(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
+                                                                notification__owner=user).exists())
 
     def _get_create_post_comment_request_data(self, post_comment_text):
         return {
@@ -698,6 +738,28 @@ class PostCommentItemAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(PostComment.objects.filter(id=post_comment.pk).count() == 1)
+
+    def test_post_comment_notification_is_deleted_when_deleting_comment(self):
+        """
+        should delete the post comment notification when a post comment is deleted
+        """
+        user = make_user()
+
+        commenter = make_user()
+
+        post = user.create_public_post(text=make_fake_post_text())
+
+        post_comment_text = make_fake_post_comment_text()
+
+        post_comment = commenter.comment_post_with_id(post.pk, text=post_comment_text)
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        headers = make_authentication_headers_for_user(user)
+        self.client.delete(url, **headers)
+
+        self.assertFalse(PostCommentNotification.objects.filter(post_comment=post_comment,
+                                                                notification__owner=user).exists())
 
     def _get_url(self, post, post_comment):
         return reverse('post-comment', kwargs={

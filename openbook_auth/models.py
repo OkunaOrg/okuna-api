@@ -515,7 +515,8 @@ class User(AbstractUser):
         Post = get_post_model()
         post = Post.objects.filter(pk=post_id).get()
         post_comment = post.comment(text=text, commenter=self)
-        self._create_post_comment_notification(post_comment=post_comment)
+        if post.creator_id != self.pk:
+            self._create_post_comment_notification(post_comment=post_comment)
         return post_comment
 
     def delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
