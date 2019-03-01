@@ -17,3 +17,8 @@ class PostReactionNotification(models.Model):
                                                         content_object=post_reaction_notification,
                                                         owner_id=owner_id)
         return notification
+
+    @classmethod
+    def delete_post_reaction_notification(cls, post_reaction_id, owner_id):
+        cls.objects.filter(post_reaction_id=post_reaction_id,
+                           notification__owner_id=owner_id).delete()

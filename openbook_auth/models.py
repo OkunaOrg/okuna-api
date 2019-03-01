@@ -475,9 +475,10 @@ class User(AbstractUser):
 
     def delete_reaction_with_id_for_post_with_id(self, post_reaction_id, post_id):
         self._check_can_delete_reaction_with_id_for_post_with_id(post_reaction_id, post_id)
-        Post = get_post_model()
-        post = Post.objects.filter(pk=post_id).get()
-        post.remove_reaction_with_id(post_reaction_id)
+        PostReaction = get_post_reaction_model()
+        post_reaction = PostReaction.objects.filter(pk=post_reaction_id).get()
+        self._delete_post_reaction_notification(post_reaction=post_reaction)
+        post_reaction.delete()
 
     def get_comments_for_post_with_id(self, post_id, max_id=None):
         self._check_can_get_comments_for_post_with_id(post_id)
@@ -520,7 +521,9 @@ class User(AbstractUser):
     def delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
         self._check_can_delete_comment_with_id_for_post_with_id(post_comment_id, post_id)
         PostComment = get_post_comment_model()
-        PostComment.objects.filter(pk=post_comment_id).delete()
+        post_comment = PostComment.objects.get(pk=post_comment_id)
+        self._delete_post_comment_notification(post_comment=post_comment)
+        post_comment.delete()
 
     def create_circle(self, name, color):
         self._check_circle_name_not_taken(name)
@@ -1220,6 +1223,7 @@ class User(AbstractUser):
     def unfollow_user_with_id(self, user_id):
         self._check_is_following_user_with_id(user_id)
         follow = self.follows.get(followed_user_id=user_id)
+        self._delete_follow_notification(followed_user_id=user_id)
         follow.delete()
 
     def update_follow_for_user(self, user, lists_ids=None):
@@ -1324,14 +1328,15 @@ class User(AbstractUser):
 
     def disconnect_from_user_with_id(self, user_id):
         self._check_is_connected_with_user_with_id(user_id)
-        # Actually disconnect
+        if self.is_fully_connected_with_user_with_id(user_id):
+            self._delete_connection_confirmed_notification(user_connected_with_id=user_id)
+            if self.is_following_user_with_id(user_id):
+                self.unfollow_user_with_id(user_id)
+        else:
+            self._delete_connection_request_notification(user_connection_requested_for_id=user_id)
+
         connection = self.connections.get(target_connection__user_id=user_id)
         connection.delete()
-        # Stop following user
-        if self.is_following_user_with_id(user_id):
-            self.unfollow_user_with_id(user_id)
-
-        self._remove_connection_request_notification(user_connection_requested_for_id=user_id)
 
         return connection
 
@@ -1364,9 +1369,17 @@ class User(AbstractUser):
         notification = self.notifications.get(id=notification_id)
         notification.delete()
 
+    def delete_notifications(self):
+        self.notifications.all().delete()
+
     def _create_post_comment_notification(self, post_comment):
         PostCommentNotification = get_post_comment_notification_model()
         PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
+                                                                 owner_id=post_comment.post.creator_id)
+
+    def _delete_post_comment_notification(self, post_comment):
+        PostCommentNotification = get_post_comment_notification_model()
+        PostCommentNotification.delete_post_comment_notification(post_comment_id=post_comment.pk,
                                                                  owner_id=post_comment.post.creator_id)
 
     def _create_post_reaction_notification(self, post_reaction):
@@ -1374,23 +1387,45 @@ class User(AbstractUser):
         PostReactionNotification.create_post_reaction_notification(post_reaction_id=post_reaction.pk,
                                                                    owner_id=post_reaction.post.creator_id)
 
+    def _delete_post_reaction_notification(self, post_reaction):
+        PostReactionNotification = get_post_reaction_notification_model()
+        PostReactionNotification.delete_post_reaction_notification(post_reaction_id=post_reaction.pk,
+                                                                   owner_id=post_reaction.post.creator_id)
+
     def _create_follow_notification(self, followed_user_id):
         FollowNotification = get_follow_notification_model()
         FollowNotification.create_follow_notification(follower_id=self.pk, owner_id=followed_user_id)
 
+    def _delete_follow_notification(self, followed_user_id):
+        FollowNotification = get_follow_notification_model()
+        FollowNotification.delete_follow_notification(follower_id=self.pk, owner_id=followed_user_id)
+
     def _create_connection_confirmed_notification(self, user_connected_with_id):
+        # Remove the connection request we got from the other user
+        self._delete_own_connection_request_notification(connection_requester_id=user_connected_with_id)
         ConnectionConfirmedNotification = get_connection_confirmed_notification_model()
         ConnectionConfirmedNotification.create_connection_confirmed_notification(connection_confirmator_id=self.pk,
                                                                                  owner_id=user_connected_with_id)
+
+    def _delete_connection_confirmed_notification(self, user_connected_with_id):
+        ConnectionConfirmedNotification = get_connection_confirmed_notification_model()
+        ConnectionConfirmedNotification.delete_connection_confirmed_notification(
+            connection_confirmator_id=self.pk,
+            owner_id=user_connected_with_id)
+
+    def _delete_own_connection_request_notification(self, connection_requester_id):
+        ConnectionRequestNotification = get_connection_request_notification_model()
+        ConnectionRequestNotification.delete_connection_request_notification(owner_id=self.pk,
+                                                                             connection_requester_id=connection_requester_id)
 
     def _create_connection_request_notification(self, user_connection_requested_for_id):
         ConnectionRequestNotification = get_connection_request_notification_model()
         ConnectionRequestNotification.create_connection_request_notification(connection_requester_id=self.pk,
                                                                              owner_id=user_connection_requested_for_id)
 
-    def _remove_connection_request_notification(self, user_connection_requested_for_id):
+    def _delete_connection_request_notification(self, user_connection_requested_for_id):
         ConnectionRequestNotification = get_connection_request_notification_model()
-        ConnectionRequestNotification.remove_connection_request_notification(connection_requester_id=self.pk,
+        ConnectionRequestNotification.delete_connection_request_notification(connection_requester_id=self.pk,
                                                                              owner_id=user_connection_requested_for_id)
 
     def _make_linked_users_query(self, max_id=None):

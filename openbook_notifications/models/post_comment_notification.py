@@ -17,3 +17,8 @@ class PostCommentNotification(models.Model):
                                                         content_object=post_comment_notification,
                                                         owner_id=owner_id)
         return notification
+
+    @classmethod
+    def delete_post_comment_notification(cls, post_comment_id, owner_id):
+        cls.objects.filter(post_comment_id=post_comment_id,
+                           notification__owner_id=owner_id).delete()

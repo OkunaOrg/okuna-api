@@ -2,6 +2,7 @@ from generic_relations.relations import GenericRelatedField
 from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
+from openbook_common.models import Emoji
 from openbook_notifications.models import Notification, PostCommentNotification, ConnectionRequestNotification, \
     ConnectionConfirmedNotification, FollowNotification
 from openbook_notifications.models.post_reaction_notification import PostReactionNotification
@@ -47,7 +48,8 @@ class PostCommentSerializer(serializers.ModelSerializer):
         model = PostComment
         fields = (
             'id',
-            'commenter'
+            'commenter',
+            'text'
         )
 
 
@@ -83,25 +85,37 @@ class PostReactionReactorSerializer(serializers.ModelSerializer):
         )
 
 
+class PostReactionEmojiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Emoji
+        fields = (
+            'id',
+            'keyword',
+            'image'
+        )
+
+
 class PostReactionSerializer(serializers.ModelSerializer):
     reactor = PostReactionReactorSerializer()
+    emoji = PostReactionEmojiSerializer()
 
     class Meta:
         model = PostReaction
         fields = (
             'id',
-            'reactor'
+            'reactor',
+            'emoji'
         )
 
 
 class PostReactionNotificationSerializer(serializers.ModelSerializer):
-    post_comment = PostReactionSerializer()
+    post_reaction = PostReactionSerializer()
 
     class Meta:
         model = PostReactionNotification
         fields = (
             'id',
-            'post_comment'
+            'post_reaction'
         )
 
 
@@ -216,7 +230,8 @@ class GetNotificationsNotificationSerializer(serializers.ModelSerializer):
             'id',
             'notification_type',
             'content_object',
-            'read'
+            'read',
+            'created',
         )
 
 

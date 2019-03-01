@@ -18,5 +18,5 @@ class ConnectionRequestNotification(models.Model):
         return notification
 
     @classmethod
-    def remove_connection_request_notification(cls, connection_requester_id, owner_id):
+    def delete_connection_request_notification(cls, connection_requester_id, owner_id):
         cls.objects.filter(connection_requester_id=connection_requester_id, notification__owner_id=owner_id).delete()

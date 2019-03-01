@@ -24,12 +24,20 @@ class Notifications(APIView):
 
         user = request.user
 
-        notifications = user.get_notifications(max_id=max_id)[:count]
+        notifications = user.get_notifications(max_id=max_id).order_by('-created')[:count]
 
         response_serializer = GetNotificationsNotificationSerializer(notifications, many=True,
                                                                      context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request):
+        user = request.user
+
+        with transaction.atomic():
+            user.delete_notifications()
+
+        return Response(status=status.HTTP_200_OK)
 
 
 class ReadAllNotifications(APIView):

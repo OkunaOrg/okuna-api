@@ -16,3 +16,7 @@ class ConnectionConfirmedNotification(models.Model):
                                                         content_object=connection_confirmed_notification,
                                                         owner_id=owner_id)
         return notification
+
+    @classmethod
+    def delete_connection_confirmed_notification(cls, connection_confirmator_id, owner_id):
+        cls.objects.filter(connection_confirmator_id=connection_confirmator_id, notification__owner_id=owner_id).delete()

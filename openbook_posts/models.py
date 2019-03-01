@@ -153,9 +153,6 @@ class Post(models.Model):
     def react(self, reactor, emoji_id):
         return PostReaction.create_reaction(reactor=reactor, emoji_id=emoji_id, post=self)
 
-    def remove_reaction_with_id(self, reaction_id):
-        self.reactions.filter(id=reaction_id).delete()
-
     def is_public_post(self):
         Circle = get_circle_model()
         world_circle_id = Circle.get_world_circle_id()
