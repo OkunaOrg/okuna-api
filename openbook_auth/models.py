@@ -1457,13 +1457,13 @@ class User(AbstractUser):
     def _archive_all_remaining_reports_for_post(self, post):
         for report in post.reports.all():
             if report.status == report.PENDING:
-                report.status = report.DELETED
+                report.status = report.RESOLVED
                 report.save()
 
     def _archive_all_remaining_reports_for_post_comment(self, post_comment):
         for report in post_comment.reports.all():
             if report.status == report.PENDING:
-                report.status = report.DELETED
+                report.status = report.RESOLVED
                 report.save()
 
     def _check_can_report_post_with_id(self, post_id):

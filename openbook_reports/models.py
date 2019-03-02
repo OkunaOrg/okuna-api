@@ -32,13 +32,13 @@ class AbstractReport(models.Model):
     PENDING = 'PENDING'
     CONFIRMED = 'CONFIRMED'
     REJECTED = 'REJECTED'
-    DELETED = 'DELETED'
+    RESOLVED = 'RESOLVED'
 
     REPORT_STATUS_CHOICES = (
         (PENDING, 'PENDING'),
         (CONFIRMED, 'CONFIRMED'),
         (REJECTED, 'REJECTED'),
-        (DELETED, 'DELETED'),
+        (RESOLVED, 'RESOLVED'),
     )
 
     category = models.ForeignKey(ReportCategory, on_delete=models.SET_NULL, null=True)
