@@ -6,10 +6,11 @@ from rest_framework import status
 from mixer.backend.django import mixer
 from rest_framework.test import APITestCase
 import logging
+from django.conf import settings
 from openbook_auth.models import User
 from openbook_common.tests.helpers import make_fake_post_text, make_user, make_authentication_headers_for_user, \
     make_circle, make_community, make_superuser, make_report_category, make_report_comment_text, \
-    make_member_of_community_with_admin
+    make_member_of_community_with_admin, make_users
 from openbook_reports.models import PostReport
 
 logger = logging.getLogger(__name__)
@@ -207,7 +208,7 @@ class PostReportAPITests(APITestCase):
 
         post_reports = PostReport.objects.all()
         self.assertEqual(post_reports[0].status, PostReport.REJECTED)
-        self.assertEqual(post_reports[1].status, PostReport.RESOLVED)
+        self.assertEqual(post_reports[1].status, PostReport.REJECTED)
         self.assertEqual(post_reports[1].id, post_report_two.id)
         self.assertEqual(post_reports[0].id, post_report.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -310,6 +311,45 @@ class PostReportAPITests(APITestCase):
         self.assertEqual(post_report.status, PostReport.REJECTED)
         self.assertEqual(parsed_response[0], 'Cannot change status of report')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cannot_see_public_post_that_is_reported_above_threshold(self):
+        """
+        should not be able to see a public post in timeline if its reported more than
+        the threshold amount of times
+        """
+
+        user, reporting_user, post, post_report = self._make_post_report_for_public_post()
+
+        users = make_users(settings.MAX_REPORTS_ALLOWED_BEFORE_POST_REMOVED)
+        for user in users:
+            user.report_post_with_id(post_id=post.pk, category_name=make_report_category().name)
+
+        headers = make_authentication_headers_for_user(user)
+        url = self._get_timeline_posts_url()
+
+        response = self.client.get(url, **headers)
+        parsed_response = json.loads(response.content)
+        post_reports = PostReport.objects.filter(post__id=post.pk)
+        self.assertTrue(len(parsed_response) == 0)
+        self.assertTrue(len(post_reports) == 11)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_cannot_see_public_post_that_is_reported_by_self(self):
+        """
+        should not be able to see a public post in timeline if its reported by self
+        """
+
+        user, reporting_user, post, post_report = self._make_post_report_for_public_post()
+
+        headers = make_authentication_headers_for_user(reporting_user)
+        url = self._get_timeline_posts_url()
+
+        response = self.client.get(url, **headers)
+        parsed_response = json.loads(response.content)
+        post_report_db = PostReport.objects.filter(post__id=post.pk, reporter=reporting_user)
+        self.assertTrue(len(parsed_response) == 0)
+        self.assertTrue(len(post_report_db) == 1)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_can_confirm_post_report_for_community(self):
         """
@@ -630,3 +670,6 @@ class PostReportAPITests(APITestCase):
         return reverse('report-post', kwargs={
             'post_id': post.pk
         })
+
+    def _get_timeline_posts_url(self):
+        return reverse('posts')

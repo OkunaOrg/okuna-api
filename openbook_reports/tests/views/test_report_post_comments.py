@@ -7,9 +7,10 @@ from mixer.backend.django import mixer
 from rest_framework.test import APITestCase
 import logging
 from openbook_auth.models import User
+from django.conf import settings
 from openbook_common.tests.helpers import make_fake_post_text, make_user, make_authentication_headers_for_user, \
     make_circle, make_community, make_superuser, make_report_category, make_report_comment_text, \
-    make_member_of_community_with_admin, make_fake_post_comment_text
+    make_member_of_community_with_admin, make_fake_post_comment_text, make_users
 from openbook_reports.models import PostReport, PostCommentReport
 
 logger = logging.getLogger(__name__)
@@ -106,6 +107,7 @@ class PostCommentReportAPITests(APITestCase):
 
         response = self.client.put(url, data, **headers)
         parsed_response = json.loads(response.content)
+        print(parsed_response)
 
         self.assertEqual(parsed_response[0], 'This post is private.')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -151,6 +153,7 @@ class PostCommentReportAPITests(APITestCase):
 
         response = self.client.put(url, data, **headers)
         parsed_response = json.loads(response.content)
+        print(parsed_response)
 
         self.assertEqual(parsed_response[0], 'This post is from a private community.')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -223,7 +226,7 @@ class PostCommentReportAPITests(APITestCase):
 
         post_reports = PostCommentReport.objects.all()
         self.assertEqual(post_reports[0].status, PostCommentReport.REJECTED)
-        self.assertEqual(post_reports[1].status, PostCommentReport.RESOLVED)
+        self.assertEqual(post_reports[1].status, PostCommentReport.REJECTED)
         self.assertEqual(post_reports[1].id, post_comment_report_two.id)
         self.assertEqual(post_reports[0].id, post_comment_report.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -476,6 +479,50 @@ class PostCommentReportAPITests(APITestCase):
         self.assertEqual(parsed_response[0]['comment'], post_comment_report.comment)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def test_cannot_see_post_comment_reported_by_self(self):
+        """
+        should not see post comments which are reported by user
+        """
+        user, reporting_user, post, post_comment, post_comment_report = self._make_post_comment_report_for_public_post()
+        headers = make_authentication_headers_for_user(reporting_user)
+
+        url = self._get_comments_for_post_url(post)
+        response = self.client.get(url, **headers)
+        parsed_response = json.loads(response.content)
+
+        post_comment_report_db = PostCommentReport.objects.filter(post_comment__id=post_comment.pk,
+                                                                  reporter=reporting_user)
+        self.assertTrue(len(parsed_response) == 0)
+        self.assertTrue(len(post_comment_report_db) == 1)
+        self.assertEqual(post_comment_report_db[0].id, post_comment_report.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_cannot_see_post_comment_reported_above_threshold(self):
+        """
+        should not see post comments which are reported more times than the threshold
+        """
+        user, reporting_user, post, post_comment, post_comment_report = self._make_post_comment_report_for_public_post()
+
+        users = make_users(settings.MAX_REPORTS_ALLOWED_BEFORE_POST_REMOVED)
+        for user in users:
+            # report post comment from a diff user
+            user.report_post_comment_with_id_for_post_with_id(
+                post_id=post.pk,
+                post_comment_id=post_comment.pk,
+                category_name=make_report_category().name,
+                comment=make_report_comment_text()
+            )
+
+        headers = make_authentication_headers_for_user(reporting_user)
+
+        url = self._get_comments_for_post_url(post)
+        response = self.client.get(url, **headers)
+        parsed_response = json.loads(response.content)
+        post_comment_reports = PostCommentReport.objects.filter(post_comment__id=post_comment.pk)
+        self.assertTrue(len(parsed_response) == 0)
+        self.assertTrue(len(post_comment_reports) == 11)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
     def test_superuser_can_see_all_post_comment_reports_for_post(self):
         """
         should be able to see all post comment reports for post with id if superuser
@@ -675,4 +722,9 @@ class PostCommentReportAPITests(APITestCase):
         return reverse('report-post-comment', kwargs={
             'post_id': post.pk,
             'post_comment_id': post_comment.pk
+        })
+
+    def _get_comments_for_post_url(self, post):
+        return reverse('post-comments', kwargs={
+            'post_id': post.pk
         })
