@@ -477,8 +477,13 @@ class User(AbstractUser):
         if max_id:
             comments_query.add(Q(id__lt=max_id), Q.AND)
 
+        comments_query.add(~Q(reports__reporter=self.pk), Q.AND)
+
+        PostCommentReport = get_post_report_comment_model()
+        report_count_query = Count('reports', filter=~Q(reports__status=PostCommentReport.REJECTED))
         PostComment = get_post_comment_model()
-        return PostComment.objects.filter(comments_query)
+        return PostComment.objects.annotate(report_count=report_count_query).\
+            filter(comments_query, report_count__lte=settings.MAX_REPORTS_ALLOWED_BEFORE_POST_REMOVED)
 
     def get_comments_count_for_post_with_id(self, post_id):
         commenter_id = None
@@ -1101,8 +1106,14 @@ class User(AbstractUser):
         if max_id:
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
 
+        timeline_posts_query.add(~Q(reports__reporter=self.pk), Q.AND)
+
+        PostReport = get_post_report_model()
+        report_count_query = Count('reports', filter=~Q(reports__status=PostReport.REJECTED))
         Post = get_post_model()
-        timeline_posts = Post.objects.filter(timeline_posts_query).distinct()
+        timeline_posts = Post.objects.annotate(report_count=report_count_query).\
+            filter(timeline_posts_query,
+                   report_count__lte=settings.MAX_REPORTS_ALLOWED_BEFORE_POST_REMOVED).distinct()
 
         return timeline_posts
 
@@ -1377,7 +1388,7 @@ class User(AbstractUser):
         report.status = report.REJECTED
         report.save()
         post = Post.objects.prefetch_related('reports').get(pk=post_id)
-        self._archive_all_remaining_reports_for_post(post)
+        self._archive_all_remaining_rejected_reports_for_post(post)
         return report
 
     def confirm_report_with_id_for_comment_with_id_for_post_with_id(self, post_id, post_comment_id, report_id):
@@ -1401,7 +1412,7 @@ class User(AbstractUser):
         report.status = report.REJECTED
         report.save()
         post_comment = PostComment.objects.prefetch_related('reports').get(pk=post_comment_id)
-        self._archive_all_remaining_reports_for_post_comment(post_comment)
+        self._archive_all_remaining_rejected_reports_for_post_comment(post_comment)
         return report
 
     def can_see_all_post_reports_from_community_with_name(self, community_name):
@@ -1460,10 +1471,22 @@ class User(AbstractUser):
                 report.status = report.RESOLVED
                 report.save()
 
+    def _archive_all_remaining_rejected_reports_for_post(self, post):
+        for report in post.reports.all():
+            if report.status == report.PENDING:
+                report.status = report.REJECTED
+                report.save()
+
     def _archive_all_remaining_reports_for_post_comment(self, post_comment):
         for report in post_comment.reports.all():
             if report.status == report.PENDING:
                 report.status = report.RESOLVED
+                report.save()
+
+    def _archive_all_remaining_rejected_reports_for_post_comment(self, post_comment):
+        for report in post_comment.reports.all():
+            if report.status == report.PENDING:
+                report.status = report.REJECTED
                 report.save()
 
     def _check_can_report_post_with_id(self, post_id):
@@ -1475,7 +1498,7 @@ class User(AbstractUser):
             )
 
     def _check_can_report_post_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
-        self._check_can_report_post_with_id(post_id)
+        self._check_can_see_post_with_id(post_id)
         PostCommentReport = get_post_report_comment_model()
         Post = get_post_model()
         post = Post.objects.prefetch_related('comments').get(pk=post_id)
@@ -1483,7 +1506,8 @@ class User(AbstractUser):
             raise ValidationError(
                 _('No comment with provided id found for this post')
             )
-        if PostCommentReport.objects.filter(post_comment__id=post_comment_id, reporter=self).exists():
+        if PostCommentReport.objects.filter(post_comment__post__id=post_id,
+                                            post_comment__id=post_comment_id, reporter=self).exists():
             raise ValidationError(
                 _('You have already reported this post comment')
             )

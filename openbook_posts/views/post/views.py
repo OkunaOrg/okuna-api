@@ -54,7 +54,7 @@ class PostComments(APIView):
 
         post_comments = user.get_comments_for_post_with_id(post_id, max_id=max_id).order_by('-created')[
                         :count]
-
+        print([comment.reports.count() for comment in post_comments])
         post_comments_serializer = PostCommentSerializer(post_comments, many=True, context={"request": request})
 
         return Response(post_comments_serializer.data, status=status.HTTP_200_OK)
