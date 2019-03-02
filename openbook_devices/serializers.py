@@ -2,7 +2,7 @@ from django.conf import settings
 from rest_framework import serializers
 
 from openbook_devices.models import Device
-from openbook_devices.validators import device_id_exists
+from openbook_devices.validators import device_id_exists, device_uuid_not_exists
 
 
 class GetDevicesSerializer(serializers.Serializer):
@@ -42,7 +42,7 @@ class UpdateDeviceSerializer(serializers.Serializer):
 
 
 class CreateDeviceSerializer(serializers.Serializer):
-    uuid = serializers.UUIDField()
+    uuid = serializers.UUIDField(validators=[device_uuid_not_exists])
     name = serializers.CharField(max_length=settings.DEVICE_NAME_MAX_LENGTH, required=False, allow_blank=False, )
     notifications_enabled = serializers.BooleanField(required=False)
-    one_signal_player_id = serializers.CharField()
+    one_signal_player_id = serializers.CharField(required=False)

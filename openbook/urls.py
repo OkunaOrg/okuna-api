@@ -39,6 +39,7 @@ from openbook_communities.views.community.posts.views import CommunityPosts
 from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, FavoriteCommunity
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
+from openbook_devices.views import Devices, DeviceItem
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
 from openbook_lists.views import Lists, ListItem, ListNameCheck
 from openbook_notifications.views import Notifications, NotificationItem, ReadAllNotifications, ReadNotification
@@ -188,6 +189,11 @@ notifications_patterns = [
     path('<int:notification_id>/', include(notification_patterns)),
 ]
 
+devices_patterns = [
+    path('', Devices.as_view(), name='devices'),
+    path('<int:device_id>/', DeviceItem.as_view(), name='device'),
+]
+
 api_patterns = [
     path('auth/', include(auth_patterns)),
     path('posts/', include(posts_patterns)),
@@ -198,6 +204,7 @@ api_patterns = [
     path('lists/', include(lists_patterns)),
     path('follows/', include(follows_patterns)),
     path('notifications/', include(notifications_patterns)),
+    path('devices/', include(devices_patterns)),
     path('import/', include(importer_patterns)),
     url('time/', Time.as_view(), name='time'),
     url('emojis/groups/', EmojiGroups.as_view(), name='emoji-groups'),

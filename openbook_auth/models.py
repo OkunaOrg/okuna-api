@@ -11,7 +11,7 @@ from django.conf import settings
 from imagekit.models import ProcessedImageField
 from pilkit.processors import ResizeToFill
 from rest_framework.authtoken.models import Token
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, PermissionDenied
 from django.db.models import Q
 
 from openbook.settings import USERNAME_MAX_LENGTH
@@ -1404,6 +1404,10 @@ class User(AbstractUser):
 
         return self.devices.filter(devices_query)
 
+    def get_device_with_id(self, device_id):
+        self._check_can_get_device_with_id(device_id=device_id)
+        return self.devices.get(pk=device_id)
+
     def delete_devices(self):
         self.devices.all().delete()
 
@@ -2152,6 +2156,12 @@ class User(AbstractUser):
         if not self.has_device_with_id(device_id=device_id):
             raise ValidationError(
                 _('You cannot delete a device that does not belong to you.'),
+            )
+
+    def _check_can_get_device_with_id(self, device_id):
+        if not self.has_device_with_id(device_id=device_id):
+            raise PermissionDenied(
+                _('You cannot retrieve device that does not belong to you.'),
             )
 
 

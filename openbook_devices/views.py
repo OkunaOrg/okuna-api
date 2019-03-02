@@ -65,6 +65,16 @@ class Devices(APIView):
 class DeviceItem(APIView):
     permission_classes = (IsAuthenticated,)
 
+    def get(self, request, device_id):
+        user = request.user
+
+        device = user.get_device_with_id(device_id=device_id)
+
+        response_serializer = GetDevicesDeviceSerializer(device,
+                                                         context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
     def patch(self, request, device_id):
         request_data = normalise_request_data(request.data)
         request_data['device_id'] = device_id
