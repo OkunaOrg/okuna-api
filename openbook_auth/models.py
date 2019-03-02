@@ -22,7 +22,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, \
     get_emoji_group_model, get_user_invite_model, get_community_model, get_community_invite_model, get_tag_model, \
     get_post_comment_notification_model, get_follow_notification_model, get_connection_confirmed_notification_model, \
-    get_connection_request_notification_model, get_post_reaction_notification_model
+    get_connection_request_notification_model, get_post_reaction_notification_model, get_device_model
 from openbook_common.validators import name_characters_validator
 
 
@@ -399,6 +399,9 @@ class User(AbstractUser):
 
     def has_notification_with_id(self, notification_id):
         return self.notifications.filter(pk=notification_id).exists()
+
+    def has_device_with_id(self, device_id):
+        return self.devices.filter(id=device_id).exists()
 
     def get_lists_for_follow_for_user_with_id(self, user_id):
         self._check_is_following_user_with_id(user_id)
@@ -1374,6 +1377,36 @@ class User(AbstractUser):
     def delete_notifications(self):
         self.notifications.all().delete()
 
+    def create_device(self, uuid, name=None, one_signal_player_id=None,
+                      notifications_enabled=None):
+        Device = get_device_model()
+        return Device.create_device(owner=self, uuid=uuid, name=name, one_signal_player_id=one_signal_player_id,
+                                    notifications_enabled=notifications_enabled)
+
+    def update_device_with_id(self, device_id, name=None, one_signal_player_id=None,
+                              notifications_enabled=None):
+        self._check_can_update_device_with_id(device_id=device_id)
+        Device = get_device_model()
+        device = Device.objects.get(pk=device_id)
+        device.update(name=name, one_signal_player_id=one_signal_player_id, notifications_enabled=notifications_enabled)
+
+    def delete_device_with_id(self, device_id):
+        self._check_can_delete_device_with_id(device_id=device_id)
+        Device = get_device_model()
+        device = Device.objects.get(pk=device_id)
+        device.delete()
+
+    def get_devices(self, max_id=None):
+        devices_query = Q()
+
+        if max_id:
+            devices_query.add(Q(id__lt=max_id), Q.AND)
+
+        return self.devices.filter(devices_query)
+
+    def delete_devices(self):
+        self.devices.all().delete()
+
     def _create_post_comment_notification(self, post_comment):
         PostCommentNotification = get_post_comment_notification_model()
         PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
@@ -2107,6 +2140,18 @@ class User(AbstractUser):
         if not self.has_notification_with_id(notification_id=notification_id):
             raise ValidationError(
                 _('You cannot delete a notification that doesn\'t belong to you.'),
+            )
+
+    def _check_can_update_device_with_id(self, device_id):
+        if not self.has_device_with_id(device_id=device_id):
+            raise ValidationError(
+                _('You cannot update a device that does not belong to you.'),
+            )
+
+    def _check_can_delete_device_with_id(self, device_id):
+        if not self.has_device_with_id(device_id=device_id):
+            raise ValidationError(
+                _('You cannot delete a device that does not belong to you.'),
             )
 
 

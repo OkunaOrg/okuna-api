@@ -87,3 +87,7 @@ def get_connection_request_notification_model():
 
 def get_connection_confirmed_notification_model():
     return apps.get_model('openbook_notifications.ConnectionConfirmedNotification')
+
+
+def get_device_model():
+    return apps.get_model('openbook_devices.Device')
