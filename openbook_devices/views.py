@@ -86,16 +86,18 @@ class DeviceItem(APIView):
 
         name = data.get('name')
         notifications_enabled = data.get('notifications_enabled')
+        one_signal_player_id = data.get('one_signal_player_id')
 
         user = request.user
 
         with transaction.atomic():
             device = user.update_device_with_id(device_id=device_id, name=name,
-                                                notifications_enabled=notifications_enabled)
+                                                notifications_enabled=notifications_enabled,
+                                                one_signal_player_id=one_signal_player_id)
 
         response_serializer = GetDevicesDeviceSerializer(device, context={"request": request})
 
-        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request, device_id):
         serializer = DeleteDeviceSerializer(data={'device_id': device_id})

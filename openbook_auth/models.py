@@ -2148,7 +2148,7 @@ class User(AbstractUser):
 
     def _check_can_update_device_with_id(self, device_id):
         if not self.has_device_with_id(device_id=device_id):
-            raise ValidationError(
+            raise PermissionDenied(
                 _('You cannot update a device that does not belong to you.'),
             )
 
