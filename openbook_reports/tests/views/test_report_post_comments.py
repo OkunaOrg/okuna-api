@@ -201,6 +201,33 @@ class PostCommentReportAPITests(APITestCase):
         self.assertEqual(post_reports[0].id, post_comment_report.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def test_other_reports_are_resolved_after_reject_public_post_comment_report(self):
+        """
+        should mark other reports as resolved after rejecting a public post comment report
+        """
+
+        user, reporting_user, post, post_comment, post_comment_report = self._make_post_comment_report_for_public_post()
+        random_user = make_user()
+        # report post from a diff user
+        post_comment_report_two = random_user.report_post_comment_with_id_for_post_with_id(
+            post_id=post.pk,
+            post_comment_id=post_comment.pk,
+            category_name=make_report_category().name,
+            comment=make_report_comment_text()
+        )
+        confirming_user = make_superuser()
+        headers = make_authentication_headers_for_user(confirming_user)
+        url = self._get_post_comment_report_reject_url(post, post_comment, post_comment_report)
+
+        response = self.client.post(url, **headers)
+
+        post_reports = PostCommentReport.objects.all()
+        self.assertEqual(post_reports[0].status, PostCommentReport.REJECTED)
+        self.assertEqual(post_reports[1].status, PostCommentReport.RESOLVED)
+        self.assertEqual(post_reports[1].id, post_comment_report_two.id)
+        self.assertEqual(post_reports[0].id, post_comment_report.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
     def test_cannot_confirm_public_post_comment_report_if_not_superuser(self):
         """
         should not be able to confirm a public post comment report if the user is not a superuser

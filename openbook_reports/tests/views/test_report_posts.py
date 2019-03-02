@@ -190,6 +190,28 @@ class PostReportAPITests(APITestCase):
         self.assertEqual(post_reports[0].id, post_report.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def test_other_posts_are_resolved_after_reject_public_post_report(self):
+        """
+        should mark all other reports as resolved report is rejected
+        """
+
+        user, reporting_user, post, post_report = self._make_post_report_for_public_post()
+        random_user = make_user()
+        post_report_two = random_user.report_post_with_id(post_id=post.pk, category_name=make_report_category().name)
+
+        confirming_user = make_superuser()
+        headers = make_authentication_headers_for_user(confirming_user)
+        url = self._get_post_report_reject_url(post, post_report)
+
+        response = self.client.post(url, **headers)
+
+        post_reports = PostReport.objects.all()
+        self.assertEqual(post_reports[0].status, PostReport.REJECTED)
+        self.assertEqual(post_reports[1].status, PostReport.RESOLVED)
+        self.assertEqual(post_reports[1].id, post_report_two.id)
+        self.assertEqual(post_reports[0].id, post_report.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
     def test_cannot_confirm_public_post_report_if_not_superuser(self):
         """
         should not be able to confirm a public post report if the user is not a superuser
