@@ -16,27 +16,20 @@ class Device(models.Model):
     one_signal_player_id = models.CharField(_('one signal player id'), blank=False, null=True, max_length=255,
                                             unique=True)
     name = models.CharField(_('name'), max_length=settings.DEVICE_NAME_MAX_LENGTH, blank=False, null=True)
-    notifications_enabled = models.BooleanField(_('notifications enabled'), default=True)
     created = models.DateTimeField(editable=False)
 
     @classmethod
-    def create_device(cls, owner, uuid, name=None, one_signal_player_id=None,
-                      notifications_enabled=None):
-        device = cls.objects.create(owner=owner, uuid=uuid, name=name, one_signal_player_id=one_signal_player_id,
-                                    notifications_enabled=notifications_enabled)
+    def create_device(cls, owner, uuid, name=None, one_signal_player_id=None,):
+        device = cls.objects.create(owner=owner, uuid=uuid, name=name, one_signal_player_id=one_signal_player_id,)
 
         return device
 
-    def update(self, name=None, one_signal_player_id=None,
-               notifications_enabled=None):
+    def update(self, name=None, one_signal_player_id=None):
         if name:
             self.name = name
 
         if one_signal_player_id is not None:
             self.one_signal_player_id = one_signal_player_id
-
-        if notifications_enabled is not None:
-            self.notifications_enabled = notifications_enabled
 
         self.save()
 

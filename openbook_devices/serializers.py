@@ -22,7 +22,6 @@ class GetDevicesDeviceSerializer(serializers.ModelSerializer):
             'id',
             'uuid',
             'one_signal_player_id',
-            'notifications_enabled'
         )
 
 
@@ -37,12 +36,10 @@ class DeleteDeviceSerializer(serializers.Serializer):
 class UpdateDeviceSerializer(serializers.Serializer):
     device_id = serializers.IntegerField(validators=[device_id_exists])
     name = serializers.CharField(max_length=settings.DEVICE_NAME_MAX_LENGTH, required=False, allow_blank=False, )
-    notifications_enabled = serializers.BooleanField(required=False)
     one_signal_player_id = serializers.CharField(required=False)
 
 
 class CreateDeviceSerializer(serializers.Serializer):
     uuid = serializers.UUIDField(validators=[device_uuid_not_exists])
     name = serializers.CharField(max_length=settings.DEVICE_NAME_MAX_LENGTH, required=False, allow_blank=False, )
-    notifications_enabled = serializers.BooleanField(required=False)
     one_signal_player_id = serializers.CharField(required=False)

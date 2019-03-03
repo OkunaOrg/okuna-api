@@ -45,13 +45,11 @@ class DevicesAPITests(APITestCase):
         device_uuid = fake.uuid4()
         device_name = fake.user_name()
         one_signal_player_id = fake.uuid4()
-        notifications_enabled = fake.boolean()
 
         request_body = {
             'uuid': device_uuid,
             'name': device_name,
             'one_signal_player_id': one_signal_player_id,
-            'notifications_enabled': notifications_enabled,
         }
 
         url = self._get_url()
@@ -60,8 +58,8 @@ class DevicesAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        self.assertTrue(Device.objects.filter(uuid=device_uuid, owner=user, one_signal_player_id=one_signal_player_id,
-                                              notifications_enabled=notifications_enabled).exists())
+        self.assertTrue(
+            Device.objects.filter(uuid=device_uuid, owner=user, one_signal_player_id=one_signal_player_id, ).exists())
 
     def test_can_retrieve_devices(self):
         """
@@ -216,29 +214,6 @@ class DeviceItemAPITests(APITestCase):
 
         self.assertTrue(Device.objects.filter(pk=device.pk, name=new_device_name).exists())
 
-    def test_can_update_a_device_notifications_enabled(self):
-        """
-        should be able to update a device notifications enabled and return 200
-        """
-
-        user = make_user()
-        device = make_device(owner=user)
-
-        new_device_notifications_enabled = fake.boolean()
-
-        request_body = {
-            'notifications_enabled': new_device_notifications_enabled
-        }
-
-        url = self._get_url(device_id=device.pk)
-        headers = make_authentication_headers_for_user(user)
-        response = self.client.patch(url, request_body, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        self.assertTrue(
-            Device.objects.filter(pk=device.pk, notifications_enabled=new_device_notifications_enabled).exists())
-
     def test_can_update_a_device_one_signal_player_id(self):
         """
         should be able to update a device one_signal_player_id and return 200
@@ -271,13 +246,11 @@ class DeviceItemAPITests(APITestCase):
         device = make_device(owner=user)
 
         new_device_one_signal_player_id = fake.uuid4()
-        new_notifications_enabled = fake.boolean()
         new_name = fake.user_name()
 
         request_body = {
             'name': new_name,
             'one_signal_player_id': new_device_one_signal_player_id,
-            'notifications_enabled': new_notifications_enabled
         }
 
         url = self._get_url(device_id=device.pk)
@@ -287,8 +260,8 @@ class DeviceItemAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         self.assertTrue(
-            Device.objects.filter(pk=device.pk, one_signal_player_id=new_device_one_signal_player_id, name=new_name,
-                                  notifications_enabled=new_notifications_enabled).exists())
+            Device.objects.filter(pk=device.pk, one_signal_player_id=new_device_one_signal_player_id,
+                                  name=new_name, ).exists())
 
     def test_cant_update_a_foreign_device(self):
         """
@@ -300,13 +273,11 @@ class DeviceItemAPITests(APITestCase):
         device = make_device(owner=foreign_user)
 
         new_device_one_signal_player_id = fake.uuid4()
-        new_notifications_enabled = fake.boolean()
         new_name = fake.user_name()
 
         request_body = {
             'name': new_name,
             'one_signal_player_id': new_device_one_signal_player_id,
-            'notifications_enabled': new_notifications_enabled
         }
 
         url = self._get_url(device_id=device.pk)
@@ -316,8 +287,8 @@ class DeviceItemAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         self.assertFalse(
-            Device.objects.filter(pk=device.pk, one_signal_player_id=new_device_one_signal_player_id, name=new_name,
-                                  notifications_enabled=new_notifications_enabled).exists())
+            Device.objects.filter(pk=device.pk, one_signal_player_id=new_device_one_signal_player_id,
+                                  name=new_name, ).exists())
 
     def _get_url(self, device_id):
         return reverse('device', kwargs={

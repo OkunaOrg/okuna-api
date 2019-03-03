@@ -1390,18 +1390,15 @@ class User(AbstractUser):
     def delete_notifications(self):
         self.notifications.all().delete()
 
-    def create_device(self, uuid, name=None, one_signal_player_id=None,
-                      notifications_enabled=None):
+    def create_device(self, uuid, name=None, one_signal_player_id=None):
         Device = get_device_model()
-        return Device.create_device(owner=self, uuid=uuid, name=name, one_signal_player_id=one_signal_player_id,
-                                    notifications_enabled=notifications_enabled)
+        return Device.create_device(owner=self, uuid=uuid, name=name, one_signal_player_id=one_signal_player_id,)
 
-    def update_device_with_id(self, device_id, name=None, one_signal_player_id=None,
-                              notifications_enabled=None):
+    def update_device_with_id(self, device_id, name=None, one_signal_player_id=None,):
         self._check_can_update_device_with_id(device_id=device_id)
         Device = get_device_model()
         device = Device.objects.get(pk=device_id)
-        device.update(name=name, one_signal_player_id=one_signal_player_id, notifications_enabled=notifications_enabled)
+        device.update(name=name, one_signal_player_id=one_signal_player_id)
 
     def delete_device_with_id(self, device_id):
         self._check_can_delete_device_with_id(device_id=device_id)
