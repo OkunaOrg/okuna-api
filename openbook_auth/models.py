@@ -257,6 +257,19 @@ class User(AbstractUser):
             profile.save()
             self.save()
 
+    def update_notifications_settings(self, post_comment_notifications=None, post_reaction_notifications=None,
+                                      follow_notifications=None, connection_request_notifications=None,
+                                      connection_confirmed_notifications=None):
+        notifications_settings = self.notifications_settings
+        notifications_settings.update(
+            post_comment_notifications=post_comment_notifications,
+            post_reaction_notifications=post_reaction_notifications,
+            follow_notifications=follow_notifications,
+            connection_request_notifications=connection_request_notifications,
+            connection_confirmed_notifications=connection_confirmed_notifications
+        )
+        return notifications_settings
+
     def is_fully_connected_with_user_with_id(self, user_id):
         if not self.is_connected_with_user_with_id(user_id):
             return False
@@ -2207,3 +2220,47 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.username
+
+
+class UserNotificationsSettings(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                related_name='notifications_settings')
+    post_comment_notifications = models.BooleanField(_('post comment notifications'), default=True)
+    post_reaction_notifications = models.BooleanField(_('post reaction notifications'), default=True)
+    follow_notifications = models.BooleanField(_('follow notifications'), default=True)
+    connection_request_notifications = models.BooleanField(_('connection request notifications'), default=True)
+    connection_confirmed_notifications = models.BooleanField(_('connection confirmed notifications'), default=True)
+
+    @classmethod
+    def create_notifications_settings(cls, user):
+        return UserNotificationsSettings.objects.create(user=user)
+
+    def update(self, post_comment_notifications=None, post_reaction_notifications=None,
+               follow_notifications=None, connection_request_notifications=None,
+               connection_confirmed_notifications=None):
+
+        if post_comment_notifications is not None:
+            self.post_comment_notifications = post_comment_notifications
+
+        if post_reaction_notifications is not None:
+            self.post_reaction_notifications = post_reaction_notifications
+
+        if follow_notifications is not None:
+            self.follow_notifications = follow_notifications
+
+        if connection_request_notifications is not None:
+            self.connection_request_notifications = connection_request_notifications
+
+        if connection_confirmed_notifications is not None:
+            self.connection_confirmed_notifications = connection_confirmed_notifications
+
+        self.save()
+
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_user_notifications_settings(sender, instance=None, created=False, **kwargs):
+    """"
+    Create a user notifications settings for users
+    """
+    if created:
+        UserNotificationsSettings.create_notifications_settings(user=instance)
