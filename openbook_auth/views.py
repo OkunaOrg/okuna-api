@@ -14,7 +14,6 @@ from django.utils.translation import gettext as _
 from rest_framework.authtoken.models import Token
 
 from openbook_auth.exceptions import EmailVerificationTokenInvalid
-from openbook_common.models import Badge
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.model_loaders import get_user_invite_model
 from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheckSerializer, LoginSerializer, \

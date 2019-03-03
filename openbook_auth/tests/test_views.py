@@ -887,6 +887,81 @@ class AuthenticatedUserAPITests(APITestCase):
         return reverse('authenticated-user')
 
 
+class AuthenticatedUserNotificationsSettingsTests(APITestCase):
+    """
+    AuthenticatedUserNotificationsSettings
+    """
+
+    def test_can_retrieve_notifications_settings(self):
+        """
+        should be able to retrieve own notifications settings and return 200
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertIn('id', parsed_response)
+        response_id = parsed_response['id']
+        self.assertEqual(response_id, user.notifications_settings.pk)
+
+    def test_can_update_notifications_settings(self):
+        """
+        should be able to update notifications settings and return 200
+        """
+        user = make_user()
+        notifications_settings = user.notifications_settings
+
+        notifications_settings.post_comment_notifications = fake.boolean()
+        notifications_settings.post_reaction_notifications = fake.boolean()
+        notifications_settings.follow_notifications = fake.boolean()
+        notifications_settings.connection_request_notifications = fake.boolean()
+        notifications_settings.connection_confirmed_notifications = fake.boolean()
+
+        notifications_settings.save()
+
+        headers = make_authentication_headers_for_user(user)
+
+        new_post_comment_notifications = notifications_settings.post_comment_notifications
+        new_post_reaction_notifications = notifications_settings.post_reaction_notifications
+        new_follow_notifications = notifications_settings.follow_notifications
+        new_connection_request_notifications = notifications_settings.connection_request_notifications
+        new_connection_confirmed_notifications = notifications_settings.connection_confirmed_notifications
+
+        data = {
+            'post_comment_notifications': new_post_comment_notifications,
+            'post_reaction_notifications': new_post_reaction_notifications,
+            'follow_notifications': new_follow_notifications,
+            'connection_request_notifications': new_connection_request_notifications,
+            'connection_confirmed_notifications': new_connection_confirmed_notifications,
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        notifications_settings.refresh_from_db()
+
+        self.assertEqual(notifications_settings.post_comment_notifications, new_post_comment_notifications)
+        self.assertEqual(notifications_settings.post_reaction_notifications, new_post_reaction_notifications)
+        self.assertEqual(notifications_settings.follow_notifications, new_follow_notifications)
+        self.assertEqual(notifications_settings.connection_request_notifications, new_connection_request_notifications)
+        self.assertEqual(notifications_settings.connection_confirmed_notifications,
+                         new_connection_confirmed_notifications)
+
+    def _get_url(self):
+        return reverse('authenticated-user-notifications-settings')
+
+
 class UserAPITests(APITestCase):
     """
     UserAPI
