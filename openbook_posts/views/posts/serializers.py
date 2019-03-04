@@ -215,6 +215,7 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
         model = Post
         fields = (
             'id',
+            'uuid',
             'comments_count',
             'reactions_emoji_counts',
             'created',

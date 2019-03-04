@@ -69,6 +69,7 @@ class NotificationPostSerializer(serializers.ModelSerializer):
         model = Post
         fields = (
             'id',
+            'uuid',
             'image',
             'text',
             'video'

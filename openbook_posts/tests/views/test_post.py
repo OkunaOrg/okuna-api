@@ -23,6 +23,91 @@ class PostItemAPITests(APITestCase):
     PostItemAPI
     """
 
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
+    def test_can_retrieve_own_post(self):
+        """
+        should be able to retrieve own post and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_post = json.loads(response.content)
+
+        self.assertEqual(response_post['id'], post.pk)
+
+    def test_can_retrieve_foreign_user_public_post(self):
+        """
+        should be able to retrieve a foreign user public post and return 200
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+        post = foreign_user.create_public_post(text=make_fake_post_text())
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_post = json.loads(response.content)
+
+        self.assertEqual(response_post['id'], post.pk)
+
+    def test_can_retrieve_connected_user_encircled_post(self):
+        """
+        should be able to retrieve a connected user encircled post and return 200
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        circle = make_circle(creator=foreign_user)
+        post = foreign_user.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+
+        user.connect_with_user_with_id(foreign_user.pk)
+        foreign_user.confirm_connection_with_user_with_id(user.pk, circles_ids=[circle.pk])
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_post = json.loads(response.content)
+
+        self.assertEqual(response_post['id'], post.pk)
+
+    def test_cant_retrieve_user_encircled_post(self):
+        """
+        should not be able to retrieve a user encircled post and return 400
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        circle = make_circle(creator=foreign_user)
+        post = foreign_user.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_can_delete_own_post(self):
         """
         should be able to delete own post and return 200
