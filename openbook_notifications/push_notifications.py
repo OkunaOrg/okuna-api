@@ -13,8 +13,8 @@ def send_post_reaction_push_notification(post_reaction):
         post_reactor = post_reaction.reactor
 
         one_signal_notification = onesignal_sdk.Notification(
-            contents={"en": _('@%(post_reactor)s reacted to your post.') % {
-                'post_reactor': post_reactor
+            contents={"en": _('@%(post_reactor_username)s reacted to your post.') % {
+                'post_reactor_username': post_reactor.username
             }})
 
         target_devices = post_creator.get_devices_one_signal_player_ids()
@@ -29,8 +29,8 @@ def send_post_comment_push_notification(post_comment):
         post_commenter = post_comment.commenter
 
         one_signal_notification = onesignal_sdk.Notification(
-            contents={"en": _('@%(post_commenter)s commented on your post.') % {
-                'post_commenter': post_commenter
+            contents={"en": _('@%(post_commenter_username)s commented on your post.') % {
+                'post_commenter_username': post_commenter.username
             }})
 
         target_devices = post_creator.get_devices_one_signal_player_ids()
