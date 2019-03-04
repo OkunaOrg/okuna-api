@@ -357,3 +357,7 @@ if IS_PRODUCTION:
     DEFAULT_FILE_STORAGE = 'openbook.storage_backends.S3PublicMediaStorage'
 
     PRIVATE_FILE_STORAGE = 'openbook.storage_backends.S3PrivateMediaStorage'
+
+# ONE SIGNAL
+ONE_SIGNAL_APP_ID = os.environ.get('ONE_SIGNAL_APP_ID')
+ONE_SIGNAL_API_KEY = os.environ.get('ONE_SIGNAL_API_KEY')

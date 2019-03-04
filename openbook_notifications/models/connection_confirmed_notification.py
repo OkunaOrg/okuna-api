@@ -13,10 +13,10 @@ class ConnectionConfirmedNotification(models.Model):
     @classmethod
     def create_connection_confirmed_notification(cls, connection_confirmator_id, owner_id):
         connection_confirmed_notification = cls.objects.create(connection_confirmator_id=connection_confirmator_id)
-        notification = Notification.create_notification(type=Notification.CONNECTION_CONFIRMED,
-                                                        content_object=connection_confirmed_notification,
-                                                        owner_id=owner_id)
-        return notification
+        Notification.create_notification(type=Notification.CONNECTION_CONFIRMED,
+                                         content_object=connection_confirmed_notification,
+                                         owner_id=owner_id)
+        return connection_confirmed_notification
 
     @classmethod
     def delete_connection_confirmed_notification_for_users_with_ids(cls, user_a_id, user_b_id):

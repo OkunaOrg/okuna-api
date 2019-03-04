@@ -24,6 +24,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_comment_notification_model, get_follow_notification_model, get_connection_confirmed_notification_model, \
     get_connection_request_notification_model, get_post_reaction_notification_model, get_device_model
 from openbook_common.validators import name_characters_validator
+from openbook_notifications import push_notifications
 
 
 class User(AbstractUser):
@@ -416,6 +417,21 @@ class User(AbstractUser):
     def has_device_with_id(self, device_id):
         return self.devices.filter(id=device_id).exists()
 
+    def has_follow_notifications_enabled(self):
+        return self.notifications_settings.follow_notifications
+
+    def has_post_reaction_notifications_enabled(self):
+        return self.notifications_settings.post_reaction_notifications
+
+    def has_post_comment_notifications_enabled(self):
+        return self.notifications_settings.post_comment_notifications
+
+    def has_connection_request_notifications_enabled(self):
+        return self.notifications_settings.connection_request_notifications
+
+    def has_connection_confirmed_notifications_enabled(self):
+        return self.notifications_settings.connection_confirmed_notifications
+
     def get_lists_for_follow_for_user_with_id(self, user_id):
         self._check_is_following_user_with_id(user_id)
         follow = self.get_follow_for_user_with_id(user_id)
@@ -487,6 +503,7 @@ class User(AbstractUser):
 
         if post_reaction.post.creator_id != self.pk:
             self._create_post_reaction_notification(post_reaction=post_reaction)
+            self._send_post_reaction_push_notification(post_reaction=post_reaction)
 
         return post_reaction
 
@@ -534,6 +551,7 @@ class User(AbstractUser):
         post_comment = post.comment(text=text, commenter=self)
         if post.creator_id != self.pk:
             self._create_post_comment_notification(post_comment=post_comment)
+            self._send_post_comment_push_notification(post_comment=post_comment)
         return post_comment
 
     def delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
@@ -1232,6 +1250,7 @@ class User(AbstractUser):
         Follow = get_follow_model()
         follow = Follow.create_follow(user_id=self.pk, followed_user_id=user_id, lists_ids=lists_ids)
         self._create_follow_notification(followed_user_id=user_id)
+        self._send_follow_push_notification(followed_user_id=user_id)
 
         return follow
 
@@ -1300,6 +1319,7 @@ class User(AbstractUser):
             self.follow_user_with_id(user_id)
 
         self._create_connection_request_notification(user_connection_requested_for_id=user_id)
+        self._send_connection_request_push_notification(user_connection_requested_for_id=user_id)
 
         return connection
 
@@ -1392,9 +1412,9 @@ class User(AbstractUser):
 
     def create_device(self, uuid, name=None, one_signal_player_id=None):
         Device = get_device_model()
-        return Device.create_device(owner=self, uuid=uuid, name=name, one_signal_player_id=one_signal_player_id,)
+        return Device.create_device(owner=self, uuid=uuid, name=name, one_signal_player_id=one_signal_player_id, )
 
-    def update_device_with_id(self, device_id, name=None, one_signal_player_id=None,):
+    def update_device_with_id(self, device_id, name=None, one_signal_player_id=None, ):
         self._check_can_update_device_with_id(device_id=device_id)
         Device = get_device_model()
         device = Device.objects.get(pk=device_id)
@@ -1414,6 +1434,10 @@ class User(AbstractUser):
 
         return self.devices.filter(devices_query)
 
+    def get_devices_one_signal_player_ids(self):
+        return list(self.devices.filter(one_signal_player_id__isnull=False).only(
+            'one_signal_player_id'))
+
     def get_device_with_id(self, device_id):
         self._check_can_get_device_with_id(device_id=device_id)
         return self.devices.get(pk=device_id)
@@ -1426,6 +1450,9 @@ class User(AbstractUser):
         PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
                                                                  owner_id=post_comment.post.creator_id)
 
+    def _send_post_comment_push_notification(self, post_comment):
+        push_notifications.send_post_comment_push_notification(post_comment=post_comment)
+
     def _delete_post_comment_notification(self, post_comment):
         PostCommentNotification = get_post_comment_notification_model()
         PostCommentNotification.delete_post_comment_notification(post_comment_id=post_comment.pk,
@@ -1436,6 +1463,9 @@ class User(AbstractUser):
         PostReactionNotification.create_post_reaction_notification(post_reaction_id=post_reaction.pk,
                                                                    owner_id=post_reaction.post.creator_id)
 
+    def _send_post_reaction_push_notification(self, post_reaction):
+        push_notifications.send_post_reaction_push_notification(post_reaction=post_reaction)
+
     def _delete_post_reaction_notification(self, post_reaction):
         PostReactionNotification = get_post_reaction_notification_model()
         PostReactionNotification.delete_post_reaction_notification(post_reaction_id=post_reaction.pk,
@@ -1444,6 +1474,10 @@ class User(AbstractUser):
     def _create_follow_notification(self, followed_user_id):
         FollowNotification = get_follow_notification_model()
         FollowNotification.create_follow_notification(follower_id=self.pk, owner_id=followed_user_id)
+
+    def _send_follow_push_notification(self, followed_user_id):
+        followed_user = User.objects.get(pk=followed_user_id)
+        push_notifications.send_follow_push_notification(followed_user=followed_user, following_user=self)
 
     def _delete_follow_notification(self, followed_user_id):
         FollowNotification = get_follow_notification_model()
@@ -1471,6 +1505,12 @@ class User(AbstractUser):
         ConnectionRequestNotification = get_connection_request_notification_model()
         ConnectionRequestNotification.create_connection_request_notification(connection_requester_id=self.pk,
                                                                              owner_id=user_connection_requested_for_id)
+
+    def _send_connection_request_push_notification(self, user_connection_requested_for_id):
+        connection_requested_for = User.objects.get(pk=user_connection_requested_for_id)
+        push_notifications.send_connection_request_push_notification(
+            connection_requester=self,
+            connection_requested_for=connection_requested_for)
 
     def _delete_connection_request_notification(self, user_connection_requested_for_id):
         ConnectionRequestNotification = get_connection_request_notification_model()

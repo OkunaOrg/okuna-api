@@ -31,6 +31,7 @@ safety = "*"
 pyjwt = "*"
 django-imagekit = "*"
 rest-framework-generic-relations = "*"
+onesignal-sdk = "*"
 
 [pipenv]
 allow_prereleases = true

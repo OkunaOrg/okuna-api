@@ -1,7 +1,6 @@
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
-# Create your models here.
 from openbook_notifications.models.notification import Notification
 from openbook_posts.models import PostComment
 
@@ -13,10 +12,10 @@ class PostCommentNotification(models.Model):
     @classmethod
     def create_post_comment_notification(cls, post_comment_id, owner_id):
         post_comment_notification = cls.objects.create(post_comment_id=post_comment_id)
-        notification = Notification.create_notification(type=Notification.POST_COMMENT,
-                                                        content_object=post_comment_notification,
-                                                        owner_id=owner_id)
-        return notification
+        Notification.create_notification(type=Notification.POST_COMMENT,
+                                         content_object=post_comment_notification,
+                                         owner_id=owner_id)
+        return post_comment_notification
 
     @classmethod
     def delete_post_comment_notification(cls, post_comment_id, owner_id):
