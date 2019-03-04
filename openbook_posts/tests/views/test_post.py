@@ -136,7 +136,7 @@ class PostItemAPITests(APITestCase):
 
     def _get_url(self, post):
         return reverse('post', kwargs={
-            'post_id': post.pk
+            'post_uuid': post.uuid
         })
 
 
@@ -353,7 +353,7 @@ class PostCommentsAPITests(APITestCase):
 
     def _get_url(self, post):
         return reverse('post-comments', kwargs={
-            'post_id': post.pk,
+            'post_uuid': post.uuid,
         })
 
 
@@ -763,7 +763,7 @@ class PostCommentItemAPITests(APITestCase):
 
     def _get_url(self, post, post_comment):
         return reverse('post-comment', kwargs={
-            'post_id': post.pk,
+            'post_uuid': post.uuid,
             'post_comment_id': post_comment.pk
         })
 
@@ -1058,7 +1058,7 @@ class PostReactionsAPITests(APITestCase):
 
     def _get_url(self, post):
         return reverse('post-reactions', kwargs={
-            'post_id': post.pk,
+            'post_uuid': post.uuid,
         })
 
 
@@ -1411,7 +1411,7 @@ class PostReactionItemAPITests(APITestCase):
 
     def _get_url(self, post, post_reaction):
         return reverse('post-reaction', kwargs={
-            'post_id': post.pk,
+            'post_uuid': post.uuid,
             'post_reaction_id': post_reaction.pk
         })
 
@@ -1478,7 +1478,7 @@ class PostReactionsEmojiCountAPITests(APITestCase):
 
     def _get_url(self, post):
         return reverse('post-reactions-emoji-count', kwargs={
-            'post_id': post.pk
+            'post_uuid': post.uuid
         })
 
 

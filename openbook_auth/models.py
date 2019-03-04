@@ -1130,17 +1130,11 @@ class User(AbstractUser):
 
         return profile_posts
 
-    def get_post_with_id_for_user_with_username(self, username, post_id):
-        user = User.objects.get(username=username)
-        return self.get_post_with_id_for_user(user, post_id=post_id)
-
-    def get_post_with_id_for_user(self, user, post_id):
-        post_query = self._make_get_post_with_id_query_for_user(user, post_id=post_id)
-
+    def get_post_with_id(self, post_id):
+        self._check_can_see_post_with_id(post_id=post_id)
         Post = get_post_model()
-        profile_posts = Post.objects.filter(post_query)
-
-        return profile_posts
+        post = Post.objects.get(pk=post_id)
+        return post
 
     def get_community_post_with_id(self, post_id):
         post_query = Q(id=post_id)
@@ -1714,10 +1708,18 @@ class User(AbstractUser):
                 )
         else:
             # Check if we can retrieve the post
-            if not self.get_post_with_id_for_user(post_id=post_id, user=post.creator).exists():
+            if not self._can_see_post(post=post):
                 raise ValidationError(
                     _('This post is private.'),
                 )
+
+    def _can_see_post(self, post):
+        post_query = self._make_get_post_with_id_query_for_user(post.creator, post_id=post.pk)
+
+        Post = get_post_model()
+        profile_posts = Post.objects.filter(post_query)
+
+        return profile_posts.exists()
 
     def _check_follow_lists_ids(self, lists_ids):
         for list_id in lists_ids:

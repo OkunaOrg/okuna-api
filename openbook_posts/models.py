@@ -1,4 +1,5 @@
 # Create your models here.
+import uuid
 from datetime import timedelta
 
 from django.core.files.storage import default_storage
@@ -22,6 +23,7 @@ from imagekit.models import ProcessedImageField
 
 
 class Post(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     text = models.CharField(_('text'), max_length=settings.POST_MAX_LENGTH, blank=False, null=True)
     created = models.DateTimeField(editable=False)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')

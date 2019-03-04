@@ -5,24 +5,52 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.translation import ugettext_lazy as _
 
-from openbook_common.utils.model_loaders import get_emoji_group_model
+from openbook_common.utils.model_loaders import get_emoji_group_model, get_post_model
 from openbook_posts.views.post.serializers import GetPostCommentsSerializer, PostCommentSerializer, \
     CommentPostSerializer, DeletePostCommentSerializer, DeletePostSerializer, DeletePostReactionSerializer, \
     ReactToPostSerializer, PostReactionSerializer, GetPostReactionsSerializer, PostEmojiCountSerializer, \
-    GetPostReactionsEmojiCountSerializer, PostReactionEmojiGroupSerializer
+    GetPostReactionsEmojiCountSerializer, PostReactionEmojiGroupSerializer, GetPostSerializer, GetPostPostSerializer
+
+
+# TODO Use post uuid also internally, not only as API resource identifier
+# In order to prevent enumerable posts API in alpha, this is done as a hotfix
+def get_post_id_for_post_uuid(post_uuid):
+    Post = get_post_model()
+    post = Post.objects.values('id').get(uuid=post_uuid)
+    return post['id']
 
 
 class PostItem(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def delete(self, request, post_id):
-        request_data = self._get_request_data(request, post_id)
+    def get(self, request, post_uuid):
+        request_data = self._get_request_data(request, post_uuid)
+
+        serializer = GetPostSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        post_uuid = data.get('post_uuid')
+
+        user = request.user
+        post_id = get_post_id_for_post_uuid(post_uuid)
+
+        post = user.get_post_with_id(post_id)
+
+        post_comments_serializer = GetPostPostSerializer(post, context={"request": request})
+
+        return Response(post_comments_serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, post_uuid):
+        request_data = self._get_request_data(request, post_uuid)
         serializer = DeletePostSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
-        post_id = data.get('post_id')
+        post_uuid = data.get('post_uuid')
+
         user = request.user
+        post_id = get_post_id_for_post_uuid(post_uuid)
 
         with transaction.atomic():
             user.delete_post_with_id(post_id)
@@ -31,17 +59,17 @@ class PostItem(APIView):
             'message': _('Post deleted')
         }, status=status.HTTP_200_OK)
 
-    def _get_request_data(self, request, post_id):
+    def _get_request_data(self, request, post_uuid):
         request_data = request.data.copy()
-        request_data['post_id'] = post_id
+        request_data['post_uuid'] = post_uuid
         return request_data
 
 
 class PostComments(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def get(self, request, post_id):
-        request_data = self._get_request_data(request, post_id)
+    def get(self, request, post_uuid):
+        request_data = self._get_request_data(request, post_uuid)
 
         serializer = GetPostCommentsSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
@@ -49,8 +77,10 @@ class PostComments(APIView):
         data = serializer.validated_data
         max_id = data.get('max_id')
         count = data.get('count', 10)
-        post_id = data.get('post_id')
+        post_uuid = data.get('post_uuid')
+
         user = request.user
+        post_id = get_post_id_for_post_uuid(post_uuid)
 
         post_comments = user.get_comments_for_post_with_id(post_id, max_id=max_id).order_by('-created')[
                         :count]
@@ -59,16 +89,18 @@ class PostComments(APIView):
 
         return Response(post_comments_serializer.data, status=status.HTTP_200_OK)
 
-    def put(self, request, post_id):
-        request_data = self._get_request_data(request, post_id)
+    def put(self, request, post_uuid):
+        request_data = self._get_request_data(request, post_uuid)
 
         serializer = CommentPostSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
         comment_text = data.get('text')
-        post_id = data.get('post_id')
+        post_uuid = data.get('post_uuid')
+
         user = request.user
+        post_id = get_post_id_for_post_uuid(post_uuid)
 
         with transaction.atomic():
             post_comment = user.comment_post_with_id(post_id=post_id, text=comment_text)
@@ -76,25 +108,27 @@ class PostComments(APIView):
         post_comment_serializer = PostCommentSerializer(post_comment, context={"request": request})
         return Response(post_comment_serializer.data, status=status.HTTP_201_CREATED)
 
-    def _get_request_data(self, request, post_id):
+    def _get_request_data(self, request, post_uuid):
         request_data = request.data.copy()
         query_params = request.query_params.dict()
         request_data.update(query_params)
-        request_data['post_id'] = post_id
+        request_data['post_uuid'] = post_uuid
         return request_data
 
 
 class PostCommentItem(APIView):
-    def delete(self, request, post_id, post_comment_id):
-        request_data = self._get_request_data(request, post_id, post_comment_id)
+    def delete(self, request, post_uuid, post_comment_id):
+        request_data = self._get_request_data(request, post_uuid, post_comment_id)
 
         serializer = DeletePostCommentSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
-        post_id = data.get('post_id')
+        post_uuid = data.get('post_uuid')
         post_comment_id = data.get('post_comment_id')
+
         user = request.user
+        post_id = get_post_id_for_post_uuid(post_uuid)
 
         with transaction.atomic():
             user.delete_comment_with_id_for_post_with_id(post_comment_id=post_comment_id, post_id=post_id, )
@@ -103,9 +137,9 @@ class PostCommentItem(APIView):
             'message': _('Comment deleted')
         }, status=status.HTTP_200_OK)
 
-    def _get_request_data(self, request, post_id, post_comment_id):
+    def _get_request_data(self, request, post_uuid, post_comment_id):
         request_data = request.data.copy()
-        request_data['post_id'] = post_id
+        request_data['post_uuid'] = post_uuid
         request_data['post_comment_id'] = post_comment_id
         return request_data
 
@@ -113,18 +147,20 @@ class PostCommentItem(APIView):
 class PostReactions(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def get(self, request, post_id):
-        request_data = self._get_request_data(request, post_id)
+    def get(self, request, post_uuid):
+        request_data = self._get_request_data(request, post_uuid)
 
         serializer = GetPostReactionsSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
-        post_id = data.get('post_id')
+        post_uuid = data.get('post_uuid')
         emoji_id = data.get('emoji_id')
         max_id = data.get('max_id')
         count = data.get('count', 10)
+
         user = request.user
+        post_id = get_post_id_for_post_uuid(post_uuid)
 
         post_reactions = user.get_reactions_for_post_with_id(post_id=post_id, max_id=max_id,
                                                              emoji_id=emoji_id).order_by(
@@ -135,8 +171,8 @@ class PostReactions(APIView):
 
         return Response(post_reactions_serializer.data, status=status.HTTP_200_OK)
 
-    def put(self, request, post_id):
-        request_data = self._get_request_data(request, post_id)
+    def put(self, request, post_uuid):
+        request_data = self._get_request_data(request, post_uuid)
 
         serializer = ReactToPostSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
@@ -144,8 +180,10 @@ class PostReactions(APIView):
         data = serializer.validated_data
         emoji_id = data.get('emoji_id')
         emoji_group_id = data.get('group_id')
-        post_id = data.get('post_id')
+        post_uuid = data.get('post_uuid')
+
         user = request.user
+        post_id = get_post_id_for_post_uuid(post_uuid)
 
         with transaction.atomic():
             post_reaction = user.react_to_post_with_id(post_id=post_id, emoji_id=emoji_id,
@@ -154,26 +192,28 @@ class PostReactions(APIView):
         post_reaction_serializer = PostReactionSerializer(post_reaction, context={"request": request})
         return Response(post_reaction_serializer.data, status=status.HTTP_201_CREATED)
 
-    def _get_request_data(self, request, post_id):
+    def _get_request_data(self, request, post_uuid):
         request_data = request.data.copy()
         query_params = request.query_params.dict()
         request_data.update(query_params)
-        request_data['post_id'] = post_id
+        request_data['post_uuid'] = post_uuid
         return request_data
 
 
 class PostReactionsEmojiCount(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def get(self, request, post_id):
-        request_data = self._get_request_data(request, post_id)
+    def get(self, request, post_uuid):
+        request_data = self._get_request_data(request, post_uuid)
 
         serializer = GetPostReactionsEmojiCountSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
-        post_id = data.get('post_id')
+        post_uuid = data.get('post_uuid')
+
         user = request.user
+        post_id = get_post_id_for_post_uuid(post_uuid)
 
         post_emoji_counts = user.get_emoji_counts_for_post_with_id(post_id)
 
@@ -181,25 +221,27 @@ class PostReactionsEmojiCount(APIView):
 
         return Response(post_reactions_serializer.data, status=status.HTTP_200_OK)
 
-    def _get_request_data(self, request, post_id):
+    def _get_request_data(self, request, post_uuid):
         request_data = request.data.copy()
         query_params = request.query_params.dict()
         request_data.update(query_params)
-        request_data['post_id'] = post_id
+        request_data['post_uuid'] = post_uuid
         return request_data
 
 
 class PostReactionItem(APIView):
-    def delete(self, request, post_id, post_reaction_id):
-        request_data = self._get_request_data(request, post_id, post_reaction_id)
+    def delete(self, request, post_uuid, post_reaction_id):
+        request_data = self._get_request_data(request, post_uuid, post_reaction_id)
 
         serializer = DeletePostReactionSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
-        post_id = data.get('post_id')
+        post_uuid = data.get('post_uuid')
         post_reaction_id = data.get('post_reaction_id')
+
         user = request.user
+        post_id = get_post_id_for_post_uuid(post_uuid)
 
         with transaction.atomic():
             user.delete_reaction_with_id_for_post_with_id(post_reaction_id=post_reaction_id, post_id=post_id, )
@@ -208,9 +250,9 @@ class PostReactionItem(APIView):
             'message': _('Reaction deleted')
         }, status=status.HTTP_200_OK)
 
-    def _get_request_data(self, request, post_id, post_reaction_id):
+    def _get_request_data(self, request, post_uuid, post_reaction_id):
         request_data = request.data.copy()
-        request_data['post_id'] = post_id
+        request_data['post_uuid'] = post_uuid
         request_data['post_reaction_id'] = post_reaction_id
         return request_data
 

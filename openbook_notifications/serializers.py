@@ -7,7 +7,7 @@ from openbook_notifications.models import Notification, PostCommentNotification,
     ConnectionConfirmedNotification, FollowNotification
 from openbook_notifications.models.post_reaction_notification import PostReactionNotification
 from openbook_notifications.validators import notification_id_exists
-from openbook_posts.models import PostComment, PostReaction
+from openbook_posts.models import PostComment, PostReaction, Post, PostImage, PostVideo
 
 
 class GetNotificationsSerializer(serializers.Serializer):
@@ -41,15 +41,51 @@ class PostCommentCommenterSerializer(serializers.ModelSerializer):
         )
 
 
+class PostCommentPostVideoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostVideo
+        fields = (
+            'id',
+            'video',
+        )
+
+
+class PostCommentPostImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostImage
+        fields = (
+            'id',
+            'image',
+            'width',
+            'height'
+        )
+
+
+class NotificationPostSerializer(serializers.ModelSerializer):
+    image = PostCommentPostImageSerializer()
+    video = PostCommentPostVideoSerializer()
+
+    class Meta:
+        model = Post
+        fields = (
+            'id',
+            'image',
+            'text',
+            'video'
+        )
+
+
 class PostCommentSerializer(serializers.ModelSerializer):
     commenter = PostCommentCommenterSerializer()
+    post = NotificationPostSerializer()
 
     class Meta:
         model = PostComment
         fields = (
             'id',
             'commenter',
-            'text'
+            'text',
+            'post'
         )
 
 
@@ -98,13 +134,15 @@ class PostReactionEmojiSerializer(serializers.ModelSerializer):
 class PostReactionSerializer(serializers.ModelSerializer):
     reactor = PostReactionReactorSerializer()
     emoji = PostReactionEmojiSerializer()
+    post = NotificationPostSerializer()
 
     class Meta:
         model = PostReaction
         fields = (
             'id',
             'reactor',
-            'emoji'
+            'emoji',
+            'post'
         )
 
 
