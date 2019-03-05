@@ -362,6 +362,53 @@ class DisconnectAPITest(APITestCase):
         self.assertFalse(ConnectionConfirmedNotification.objects.filter(notification__owner__id=user_to_connect.pk,
                                                                         connection_confirmator__id=user.pk).exists())
 
+    def test_disconnect_from_unconfirmed_connection_should_delete_own_connection_request_notification(self):
+        """
+        should delete own connection request notification when the user disconnects from a unconfirmed connection
+        """
+        user = mixer.blend(User)
+        user_to_connect = mixer.blend(User)
+
+        user_to_connect.connect_with_user_with_id(user.pk)
+        user.confirm_connection_with_user_with_id(user_to_connect.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'username': user_to_connect.username
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(ConnectionRequestNotification.objects.filter(notification__owner__id=user.pk,
+                                                                      connection_requester__id=user_to_connect.pk).exists())
+
+    def test_disconnect_from_connection_should_delete_own_connection_request_notification(self):
+        """
+        should delete own connection request notification when the user disconnects from a confirmed connection
+        """
+        user = mixer.blend(User)
+        user_to_connect = mixer.blend(User)
+
+        user_to_connect.connect_with_user_with_id(user.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'username': user_to_connect.username
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(ConnectionRequestNotification.objects.filter(notification__owner__id=user.pk,
+                                                                      connection_requester__id=user_to_connect.pk).exists())
+
     def _get_url(self):
         return reverse('disconnect-from-user')
 

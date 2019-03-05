@@ -1365,7 +1365,7 @@ class User(AbstractUser):
             if self.is_following_user_with_id(user_id):
                 self.unfollow_user_with_id(user_id)
         else:
-            self._delete_connection_request_notification(user_connection_requested_for_id=user_id)
+            self._delete_connection_request_notification_for_user_with_id(user_id=user_id)
 
         connection = self.connections.get(target_connection__user_id=user_id)
         connection.delete()
@@ -1479,7 +1479,7 @@ class User(AbstractUser):
 
     def _create_connection_confirmed_notification(self, user_connected_with_id):
         # Remove the connection request we got from the other user
-        self._delete_own_connection_request_notification(connection_requester_id=user_connected_with_id)
+        self._delete_connection_request_notification_for_user_with_id(user_id=user_connected_with_id)
         ConnectionConfirmedNotification = get_connection_confirmed_notification_model()
         ConnectionConfirmedNotification.create_connection_confirmed_notification(connection_confirmator_id=self.pk,
                                                                                  owner_id=user_connected_with_id)
@@ -1489,11 +1489,6 @@ class User(AbstractUser):
         ConnectionConfirmedNotification.delete_connection_confirmed_notification_for_users_with_ids(
             user_a_id=self.pk,
             user_b_id=user_connected_with_id)
-
-    def _delete_own_connection_request_notification(self, connection_requester_id):
-        ConnectionRequestNotification = get_connection_request_notification_model()
-        ConnectionRequestNotification.delete_connection_request_notification(owner_id=self.pk,
-                                                                             connection_requester_id=connection_requester_id)
 
     def _create_connection_request_notification(self, user_connection_requested_for_id):
         ConnectionRequestNotification = get_connection_request_notification_model()
@@ -1506,10 +1501,10 @@ class User(AbstractUser):
             connection_requester=self,
             connection_requested_for=connection_requested_for)
 
-    def _delete_connection_request_notification(self, user_connection_requested_for_id):
+    def _delete_connection_request_notification_for_user_with_id(self, user_id):
         ConnectionRequestNotification = get_connection_request_notification_model()
-        ConnectionRequestNotification.delete_connection_request_notification(connection_requester_id=self.pk,
-                                                                             owner_id=user_connection_requested_for_id)
+        ConnectionRequestNotification.delete_connection_request_notification_for_users_with_ids(user_a_id=self.pk,
+                                                                                                user_b_id=user_id)
 
     def _make_linked_users_query(self, max_id=None):
         # All users which are connected with us and we have accepted by adding

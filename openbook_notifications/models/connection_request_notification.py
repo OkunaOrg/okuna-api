@@ -1,5 +1,6 @@
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
+from django.db.models import Q
 
 from openbook_auth.models import User
 from openbook_notifications.models.notification import Notification
@@ -18,5 +19,9 @@ class ConnectionRequestNotification(models.Model):
         return connection_request_notification
 
     @classmethod
-    def delete_connection_request_notification(cls, connection_requester_id, owner_id):
-        cls.objects.filter(connection_requester_id=connection_requester_id, notification__owner_id=owner_id).delete()
+    def delete_connection_request_notification_for_users_with_ids(cls, user_a_id, user_b_id):
+        notification_query = Q(connection_requester_id=user_a_id, notification__owner_id=user_b_id)
+
+        notification_query.add(Q(connection_requester_id=user_b_id, notification__owner_id=user_a_id), Q.OR)
+
+        cls.objects.filter(notification_query).delete()
