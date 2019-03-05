@@ -1,17 +1,24 @@
 from rest_framework import serializers
 
 from openbook_common.utils.model_loaders import get_emoji_model, get_post_model, get_post_reaction_model, \
-    get_post_comment_model, get_user_model
+    get_post_comment_model, get_user_model, get_notification_model
 
 
 # TODO Circular dependency with openbook_auth.models where we call push notification senders which in turn use
-# these serializers, making it impossible to reference to the User model. Redesign.
+# these serializers, making it impossible to reference to the User model. Redesign. Perhaps make these push
+# notifications, part of a job to be sent async.
 
 class PushNotificationsSerializers:
     def __init__(self):
+        PostReaction = get_post_reaction_model()
+        PostComment = get_post_comment_model()
+        User = get_user_model()
+        Emoji = get_emoji_model()
+        Post = get_post_model()
+
         class NotificationUserSerializer(serializers.ModelSerializer):
             class Meta:
-                model = get_user_model()
+                model = User
                 fields = (
                     'id',
                     'username',
@@ -19,7 +26,7 @@ class PushNotificationsSerializers:
 
         class NotificationEmojiSerializer(serializers.ModelSerializer):
             class Meta:
-                model = get_emoji_model()
+                model = Emoji
                 fields = (
                     'id',
                     'keyword',
@@ -27,7 +34,7 @@ class PushNotificationsSerializers:
 
         class NotificationPostSerializer(serializers.ModelSerializer):
             class Meta:
-                model = get_post_model()
+                model = Post
                 fields = (
                     'id',
                     'uuid',
@@ -39,7 +46,7 @@ class PushNotificationsSerializers:
             post = NotificationPostSerializer()
 
             class Meta:
-                model = get_post_reaction_model()
+                model = PostReaction
                 fields = (
                     'id',
                     'reactor',
@@ -54,7 +61,7 @@ class PushNotificationsSerializers:
             post = NotificationPostSerializer()
 
             class Meta:
-                model = get_post_comment_model()
+                model = PostComment
                 fields = (
                     'id',
                     'commenter',

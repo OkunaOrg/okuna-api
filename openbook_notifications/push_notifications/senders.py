@@ -2,6 +2,7 @@ import onesignal as onesignal_sdk
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 
+from openbook_common.utils.model_loaders import get_notification_model
 from openbook_notifications.push_notifications.serializers import PushNotificationsSerializers
 
 onesignal_client = onesignal_sdk.Client(
@@ -21,7 +22,12 @@ def send_post_reaction_push_notification(post_reaction):
 
         NotificationPostReactionSerializer = _get_push_notifications_serializers().NotificationPostReactionSerializer
 
-        notification_data = NotificationPostReactionSerializer(post_reaction).data
+        Notification = get_notification_model()
+
+        notification_data = {
+            'type': Notification.POST_REACTION,
+            'payload': NotificationPostReactionSerializer(post_reaction).data
+        }
 
         one_signal_notification.set_parameter('data', notification_data)
 
@@ -43,7 +49,12 @@ def send_post_comment_push_notification(post_comment):
 
         NotificationPostCommentSerializer = _get_push_notifications_serializers().NotificationPostCommentSerializer
 
-        notification_data = NotificationPostCommentSerializer(post_comment).data
+        Notification = get_notification_model()
+
+        notification_data = {
+            'type': Notification.POST_COMMENT,
+            'payload': NotificationPostCommentSerializer(post_comment).data
+        }
 
         one_signal_notification.set_parameter('data', notification_data)
 
@@ -61,9 +72,14 @@ def send_follow_push_notification(followed_user, following_user):
 
         FollowNotificationSerializer = _get_push_notifications_serializers().FollowNotificationSerializer
 
-        notification_data = FollowNotificationSerializer({
-            'following_user': following_user
-        }).data
+        Notification = get_notification_model()
+
+        notification_data = {
+            'type': Notification.FOLLOW,
+            'payload': FollowNotificationSerializer({
+                'following_user': following_user
+            }).data
+        }
 
         one_signal_notification.set_parameter('data', notification_data)
 
@@ -81,9 +97,14 @@ def send_connection_request_push_notification(connection_requester, connection_r
 
         ConnectionRequestNotificationSerializer = _get_push_notifications_serializers().ConnectionRequestNotificationSerializer
 
-        notification_data = ConnectionRequestNotificationSerializer({
-            'connection_requester': connection_requester
-        }).data
+        Notification = get_notification_model()
+
+        notification_data = {
+            'type': Notification.CONNECTION_REQUEST,
+            'payload': ConnectionRequestNotificationSerializer({
+                'connection_requester': connection_requester
+            }).data
+        }
 
         one_signal_notification.set_parameter('data', notification_data)
 
