@@ -414,8 +414,8 @@ class User(AbstractUser):
     def has_notification_with_id(self, notification_id):
         return self.notifications.filter(pk=notification_id).exists()
 
-    def has_device_with_id(self, device_id):
-        return self.devices.filter(id=device_id).exists()
+    def has_device_with_uuid(self, device_uuid):
+        return self.devices.filter(uuid=device_uuid).exists()
 
     def has_follow_notifications_enabled(self):
         return self.notifications_settings.follow_notifications
@@ -1408,16 +1408,16 @@ class User(AbstractUser):
         Device = get_device_model()
         return Device.create_device(owner=self, uuid=uuid, name=name, one_signal_player_id=one_signal_player_id, )
 
-    def update_device_with_id(self, device_id, name=None, one_signal_player_id=None, ):
-        self._check_can_update_device_with_id(device_id=device_id)
+    def update_device_with_uuid(self, device_uuid, name=None, one_signal_player_id=None, ):
+        self._check_can_update_device_with_uuid(device_uuid=device_uuid)
         Device = get_device_model()
-        device = Device.objects.get(pk=device_id)
+        device = Device.objects.get(uuid=device_uuid)
         device.update(name=name, one_signal_player_id=one_signal_player_id)
 
-    def delete_device_with_id(self, device_id):
-        self._check_can_delete_device_with_id(device_id=device_id)
+    def delete_device_with_uuid(self, device_uuid):
+        self._check_can_delete_device_with_uuid(device_uuid=device_uuid)
         Device = get_device_model()
-        device = Device.objects.get(pk=device_id)
+        device = Device.objects.get(uuid=device_uuid)
         device.delete()
 
     def get_devices(self, max_id=None):
@@ -1432,9 +1432,9 @@ class User(AbstractUser):
         return list(self.devices.filter(one_signal_player_id__isnull=False).only(
             'one_signal_player_id'))
 
-    def get_device_with_id(self, device_id):
-        self._check_can_get_device_with_id(device_id=device_id)
-        return self.devices.get(pk=device_id)
+    def get_device_with_uuid(self, device_uuid):
+        self._check_can_get_device_with_uuid(device_uuid=device_uuid)
+        return self.devices.get(uuid=device_uuid)
 
     def delete_devices(self):
         self.devices.all().delete()
@@ -2193,20 +2193,20 @@ class User(AbstractUser):
                 _('You cannot delete a notification that doesn\'t belong to you.'),
             )
 
-    def _check_can_update_device_with_id(self, device_id):
-        if not self.has_device_with_id(device_id=device_id):
+    def _check_can_update_device_with_uuid(self, device_uuid):
+        if not self.has_device_with_uuid(device_uuid=device_uuid):
             raise PermissionDenied(
                 _('You cannot update a device that does not belong to you.'),
             )
 
-    def _check_can_delete_device_with_id(self, device_id):
-        if not self.has_device_with_id(device_id=device_id):
+    def _check_can_delete_device_with_uuid(self, device_uuid):
+        if not self.has_device_with_uuid(device_uuid=device_uuid):
             raise ValidationError(
                 _('You cannot delete a device that does not belong to you.'),
             )
 
-    def _check_can_get_device_with_id(self, device_id):
-        if not self.has_device_with_id(device_id=device_id):
+    def _check_can_get_device_with_uuid(self, device_uuid):
+        if not self.has_device_with_uuid(device_uuid=device_uuid):
             raise PermissionDenied(
                 _('You cannot retrieve device that does not belong to you.'),
             )

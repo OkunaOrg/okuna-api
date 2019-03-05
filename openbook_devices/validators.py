@@ -11,6 +11,13 @@ def device_id_exists(device_id):
         )
 
 
+def device_uuid_exists(device_uuid):
+    if not Device.objects.filter(uuid=device_uuid).exists():
+        raise ValidationError(
+            _('The uuid does not exist.'),
+        )
+
+
 def device_uuid_not_exists(device_uuid):
     if Device.objects.filter(uuid=device_uuid).exists():
         raise ValidationError(

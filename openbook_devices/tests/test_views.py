@@ -72,7 +72,7 @@ class DevicesAPITests(APITestCase):
 
         for i in range(0, amount_of_devices):
             device = make_device(owner=user)
-            devices_ids.append(device.pk)
+            devices_ids.append(str(device.uuid))
 
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
@@ -85,8 +85,8 @@ class DevicesAPITests(APITestCase):
         self.assertEqual(len(response_devices), len(devices_ids))
 
         for response_device in response_devices:
-            response_device_id = response_device.get('id')
-            self.assertIn(response_device_id, devices_ids)
+            response_device_uuid = response_device.get('uuid')
+            self.assertIn(response_device_uuid, devices_ids)
 
     def test_can_delete_devices(self):
         """
@@ -99,7 +99,7 @@ class DevicesAPITests(APITestCase):
 
         for i in range(0, amount_of_devices):
             device = make_device(owner=user)
-            devices_ids.append(device.pk)
+            devices_ids.append(device.uuid)
 
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
@@ -127,16 +127,16 @@ class DeviceItemAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
 
         device = make_device(owner=user)
-        device_id = device.pk
+        device_uuid = device.uuid
 
-        url = self._get_url(device_id)
+        url = self._get_url(device_uuid)
         response = self.client.get(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response_device = json.loads(response.content)
 
-        self.assertEqual(response_device['id'], device.pk)
+        self.assertEqual(response_device['uuid'], str(device.uuid))
 
     def test_cant_retrieve_foreign_device(self):
         """
@@ -148,9 +148,9 @@ class DeviceItemAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
 
         device = make_device(owner=foreign_user)
-        device_id = device.pk
+        device_uuid = device.uuid
 
-        url = self._get_url(device_id)
+        url = self._get_url(device_uuid)
         response = self.client.get(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -164,14 +164,14 @@ class DeviceItemAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
 
         device = make_device(owner=user)
-        device_id = device.pk
+        device_uuid = device.uuid
 
-        url = self._get_url(device_id)
+        url = self._get_url(device_uuid)
         response = self.client.delete(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        self.assertFalse(Device.objects.filter(id=device_id).exists())
+        self.assertFalse(Device.objects.filter(uuid=device_uuid).exists())
 
     def test_cannot_delete_foreign_device(self):
         """
@@ -183,14 +183,14 @@ class DeviceItemAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
 
         device = make_device(owner=foreign_user)
-        device_id = device.pk
+        device_uuid = device.uuid
 
-        url = self._get_url(device_id)
+        url = self._get_url(device_uuid)
         response = self.client.delete(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        self.assertTrue(Device.objects.filter(id=device_id).exists())
+        self.assertTrue(Device.objects.filter(uuid=device_uuid).exists())
 
     def test_can_update_a_device_name(self):
         """
@@ -206,13 +206,13 @@ class DeviceItemAPITests(APITestCase):
             'name': new_device_name
         }
 
-        url = self._get_url(device_id=device.pk)
+        url = self._get_url(device_uuid=device.uuid)
         headers = make_authentication_headers_for_user(user)
         response = self.client.patch(url, request_body, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        self.assertTrue(Device.objects.filter(pk=device.pk, name=new_device_name).exists())
+        self.assertTrue(Device.objects.filter(uuid=device.uuid, name=new_device_name).exists())
 
     def test_can_update_a_device_one_signal_player_id(self):
         """
@@ -228,14 +228,14 @@ class DeviceItemAPITests(APITestCase):
             'one_signal_player_id': new_device_one_signal_player_id
         }
 
-        url = self._get_url(device_id=device.pk)
+        url = self._get_url(device_uuid=device.uuid)
         headers = make_authentication_headers_for_user(user)
         response = self.client.patch(url, request_body, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         self.assertTrue(
-            Device.objects.filter(pk=device.pk, one_signal_player_id=new_device_one_signal_player_id).exists())
+            Device.objects.filter(uuid=device.uuid, one_signal_player_id=new_device_one_signal_player_id).exists())
 
     def test_can_update_a_device_updatable_arguments_at_once(self):
         """
@@ -253,14 +253,14 @@ class DeviceItemAPITests(APITestCase):
             'one_signal_player_id': new_device_one_signal_player_id,
         }
 
-        url = self._get_url(device_id=device.pk)
+        url = self._get_url(device_uuid=device.uuid)
         headers = make_authentication_headers_for_user(user)
         response = self.client.patch(url, request_body, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         self.assertTrue(
-            Device.objects.filter(pk=device.pk, one_signal_player_id=new_device_one_signal_player_id,
+            Device.objects.filter(uuid=device.uuid, one_signal_player_id=new_device_one_signal_player_id,
                                   name=new_name, ).exists())
 
     def test_cant_update_a_foreign_device(self):
@@ -280,17 +280,17 @@ class DeviceItemAPITests(APITestCase):
             'one_signal_player_id': new_device_one_signal_player_id,
         }
 
-        url = self._get_url(device_id=device.pk)
+        url = self._get_url(device_uuid=device.uuid)
         headers = make_authentication_headers_for_user(user)
         response = self.client.patch(url, request_body, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         self.assertFalse(
-            Device.objects.filter(pk=device.pk, one_signal_player_id=new_device_one_signal_player_id,
+            Device.objects.filter(uuid=device.uuid, one_signal_player_id=new_device_one_signal_player_id,
                                   name=new_name, ).exists())
 
-    def _get_url(self, device_id):
+    def _get_url(self, device_uuid):
         return reverse('device', kwargs={
-            'device_id': device_id
+            'device_uuid': device_uuid
         })

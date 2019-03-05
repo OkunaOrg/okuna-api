@@ -26,7 +26,7 @@ class Devices(APIView):
         user = request.user
 
         with transaction.atomic():
-            device = user.create_device(name=name, uuid=uuid, one_signal_player_id=one_signal_player_id,)
+            device = user.create_device(name=name, uuid=uuid, one_signal_player_id=one_signal_player_id, )
 
         response_serializer = GetDevicesDeviceSerializer(device, context={"request": request})
 
@@ -63,19 +63,19 @@ class Devices(APIView):
 class DeviceItem(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def get(self, request, device_id):
+    def get(self, request, device_uuid):
         user = request.user
 
-        device = user.get_device_with_id(device_id=device_id)
+        device = user.get_device_with_uuid(device_uuid=device_uuid)
 
         response_serializer = GetDevicesDeviceSerializer(device,
                                                          context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
-    def patch(self, request, device_id):
+    def patch(self, request, device_uuid):
         request_data = normalise_request_data(request.data)
-        request_data['device_id'] = device_id
+        request_data['device_uuid'] = device_uuid
 
         serializer = UpdateDeviceSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
@@ -88,20 +88,20 @@ class DeviceItem(APIView):
         user = request.user
 
         with transaction.atomic():
-            device = user.update_device_with_id(device_id=device_id, name=name,
-                                                one_signal_player_id=one_signal_player_id)
+            device = user.update_device_with_uuid(device_uuid=device_uuid, name=name,
+                                                  one_signal_player_id=one_signal_player_id)
 
         response_serializer = GetDevicesDeviceSerializer(device, context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
-    def delete(self, request, device_id):
-        serializer = DeleteDeviceSerializer(data={'device_id': device_id})
+    def delete(self, request, device_uuid):
+        serializer = DeleteDeviceSerializer(data={'device_uuid': device_uuid})
         serializer.is_valid(raise_exception=True)
 
         user = request.user
 
         with transaction.atomic():
-            user.delete_device_with_id(device_id)
+            user.delete_device_with_uuid(device_uuid=device_uuid)
 
         return Response(status=status.HTTP_200_OK)

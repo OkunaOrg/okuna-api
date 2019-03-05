@@ -19,8 +19,8 @@ class Device(models.Model):
     created = models.DateTimeField(editable=False)
 
     @classmethod
-    def create_device(cls, owner, uuid, name=None, one_signal_player_id=None,):
-        device = cls.objects.create(owner=owner, uuid=uuid, name=name, one_signal_player_id=one_signal_player_id,)
+    def create_device(cls, owner, uuid, name=None, one_signal_player_id=None, ):
+        device = cls.objects.create(owner=owner, uuid=uuid, name=name, one_signal_player_id=one_signal_player_id, )
 
         return device
 
