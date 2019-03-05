@@ -91,3 +91,7 @@ def get_connection_confirmed_notification_model():
 
 def get_device_model():
     return apps.get_model('openbook_devices.Device')
+
+
+def get_user_model():
+    return apps.get_model('openbook_auth.User')

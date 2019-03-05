@@ -24,7 +24,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_comment_notification_model, get_follow_notification_model, get_connection_confirmed_notification_model, \
     get_connection_request_notification_model, get_post_reaction_notification_model, get_device_model
 from openbook_common.validators import name_characters_validator
-from openbook_notifications import push_notifications
+from openbook_notifications.push_notifications import senders
 
 
 class User(AbstractUser):
@@ -1445,7 +1445,7 @@ class User(AbstractUser):
                                                                  owner_id=post_comment.post.creator_id)
 
     def _send_post_comment_push_notification(self, post_comment):
-        push_notifications.send_post_comment_push_notification(post_comment=post_comment)
+        senders.send_post_comment_push_notification(post_comment=post_comment)
 
     def _delete_post_comment_notification(self, post_comment):
         PostCommentNotification = get_post_comment_notification_model()
@@ -1458,7 +1458,7 @@ class User(AbstractUser):
                                                                    owner_id=post_reaction.post.creator_id)
 
     def _send_post_reaction_push_notification(self, post_reaction):
-        push_notifications.send_post_reaction_push_notification(post_reaction=post_reaction)
+        senders.send_post_reaction_push_notification(post_reaction=post_reaction)
 
     def _delete_post_reaction_notification(self, post_reaction):
         PostReactionNotification = get_post_reaction_notification_model()
@@ -1471,7 +1471,7 @@ class User(AbstractUser):
 
     def _send_follow_push_notification(self, followed_user_id):
         followed_user = User.objects.get(pk=followed_user_id)
-        push_notifications.send_follow_push_notification(followed_user=followed_user, following_user=self)
+        senders.send_follow_push_notification(followed_user=followed_user, following_user=self)
 
     def _delete_follow_notification(self, followed_user_id):
         FollowNotification = get_follow_notification_model()
@@ -1497,7 +1497,7 @@ class User(AbstractUser):
 
     def _send_connection_request_push_notification(self, user_connection_requested_for_id):
         connection_requested_for = User.objects.get(pk=user_connection_requested_for_id)
-        push_notifications.send_connection_request_push_notification(
+        senders.send_connection_request_push_notification(
             connection_requester=self,
             connection_requested_for=connection_requested_for)
 
