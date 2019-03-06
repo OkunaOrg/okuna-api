@@ -112,10 +112,7 @@ def _send_notification_to_user(user, notification):
             {"field": "tag", "key": "device_uuid", "relation": "=", "value": device.uuid},
         ])
 
-        onesignal_response = onesignal_client.send_notification(notification)
-
-        print(onesignal_response.status_code)
-        print(onesignal_response.json())
+        onesignal_client.send_notification(notification)
 
 
 push_notifications_serializers = None
