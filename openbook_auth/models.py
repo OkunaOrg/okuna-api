@@ -790,7 +790,7 @@ class User(AbstractUser):
 
         # Clean up any invites
         CommunityInvite = get_community_invite_model()
-        CommunityInvite.objects.filter(community__name=community_name, invited_user__username=self.username).all()
+        CommunityInvite.objects.filter(community__name=community_name, invited_user__username=self.username).delete()
 
         # No need to delete community invite notifications as they are delete cascaded
 
