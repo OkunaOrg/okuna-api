@@ -40,7 +40,7 @@ class ReportPostSerializer(serializers.Serializer):
     )
     category_name = serializers.CharField(max_length=settings.REPORT_CATEGORY_NAME_MAX_LENGTH, required=True,
                                           validators=[is_valid_report_category])
-    comment = serializers.CharField(max_length=settings.REPORT_COMMENT_MAX_LENGTH, allow_blank=True)
+    comment = serializers.CharField(max_length=settings.REPORT_COMMENT_MAX_LENGTH, allow_blank=True, required=False)
 
 
 class GetPostReportSerializer(serializers.Serializer):
