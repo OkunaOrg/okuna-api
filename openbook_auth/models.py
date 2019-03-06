@@ -1379,7 +1379,10 @@ class User(AbstractUser):
         if post_comment.post.community:
             post_comment_report_query = Q(post_comment__id=post_comment_id)
             Community = get_community_model()
-            post_comment_report_query.add(Q(post_comment__post__community__moderators__id=self.pk), Q.AND)
+            is_admin_or_moderator_query = Q(post_comment__post__community__memberships__is_moderator=True) | \
+                                          Q(post_comment__post__community__memberships__is_administrator=True)
+
+            post_comment_report_query.add(is_admin_or_moderator_query, Q.AND)
             reports = PostCommentReport.objects.filter(post_comment_report_query)
             return reports
 
@@ -1450,7 +1453,10 @@ class User(AbstractUser):
         if post.community:
             post_report_query = Q(post__id=post_id)
             Community = get_community_model()
-            post_report_query.add(Q(post__community__moderators__id=self.pk), Q.AND)
+            is_admin_or_moderator_query = Q(post__community__memberships__is_moderator=True) | \
+                                          Q(post__community__memberships__is_administrator=True)
+            
+            post_report_query.add(is_admin_or_moderator_query, Q.AND)
             reports = PostReport.objects.filter(post_report_query)
             return reports
 
