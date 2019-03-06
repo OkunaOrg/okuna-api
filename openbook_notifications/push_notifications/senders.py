@@ -12,7 +12,7 @@ onesignal_client = onesignal_sdk.Client(
 def send_post_reaction_push_notification(post_reaction):
     post_creator = post_reaction.post.creator
 
-    if post_creator.has_post_reaction_notifications_enabled():
+    if post_creator.has_reaction_notifications_enabled_for_post_with_id(post_id=post_reaction.post_id):
         post_reactor = post_reaction.reactor
 
         one_signal_notification = onesignal_sdk.Notification(
@@ -37,7 +37,7 @@ def send_post_reaction_push_notification(post_reaction):
 def send_post_comment_push_notification(post_comment):
     post_creator = post_comment.post.creator
 
-    if post_creator.has_post_comment_notifications_enabled():
+    if post_creator.has_comment_notifications_enabled_for_post_with_id(post_id=post_comment.post_id):
         post_commenter = post_comment.commenter
 
         one_signal_notification = onesignal_sdk.Notification(

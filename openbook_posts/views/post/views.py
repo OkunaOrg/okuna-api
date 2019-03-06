@@ -9,7 +9,8 @@ from openbook_common.utils.model_loaders import get_emoji_group_model, get_post_
 from openbook_posts.views.post.serializers import GetPostCommentsSerializer, PostCommentSerializer, \
     CommentPostSerializer, DeletePostCommentSerializer, DeletePostSerializer, DeletePostReactionSerializer, \
     ReactToPostSerializer, PostReactionSerializer, GetPostReactionsSerializer, PostEmojiCountSerializer, \
-    GetPostReactionsEmojiCountSerializer, PostReactionEmojiGroupSerializer, GetPostSerializer, GetPostPostSerializer
+    GetPostReactionsEmojiCountSerializer, PostReactionEmojiGroupSerializer, GetPostSerializer, GetPostPostSerializer, \
+    UnmutePostSerializer, MutePostSerializer
 
 
 # TODO Use post uuid also internally, not only as API resource identifier
@@ -63,6 +64,52 @@ class PostItem(APIView):
         request_data = request.data.copy()
         request_data['post_uuid'] = post_uuid
         return request_data
+
+
+class MutePost(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, post_uuid):
+        serializer = MutePostSerializer(data={
+            'post_uuid': post_uuid
+        })
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        post_uuid = data.get('post_uuid')
+
+        user = request.user
+        post_id = get_post_id_for_post_uuid(post_uuid)
+
+        with transaction.atomic():
+            muted_post = user.mute_post_with_id(post_id=post_id)
+
+        post_comments_serializer = GetPostPostSerializer(muted_post, context={"request": request})
+
+        return Response(post_comments_serializer.data, status=status.HTTP_200_OK)
+
+
+class UnmutePost(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, post_uuid):
+        serializer = UnmutePostSerializer(data={
+            'post_uuid': post_uuid
+        })
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        post_uuid = data.get('post_uuid')
+
+        user = request.user
+        post_id = get_post_id_for_post_uuid(post_uuid)
+
+        with transaction.atomic():
+            muted_post = user.unmute_post_with_id(post_id=post_id)
+
+        post_comments_serializer = GetPostPostSerializer(muted_post, context={"request": request})
+
+        return Response(post_comments_serializer.data, status=status.HTTP_200_OK)
 
 
 class PostComments(APIView):

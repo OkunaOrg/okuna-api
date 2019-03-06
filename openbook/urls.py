@@ -44,7 +44,7 @@ from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFoll
 from openbook_lists.views import Lists, ListItem, ListNameCheck
 from openbook_notifications.views import Notifications, NotificationItem, ReadAllNotifications, ReadNotification
 from openbook_posts.views.post.views import PostComments, PostCommentItem, PostItem, PostReactions, PostReactionItem, \
-    PostReactionsEmojiCount, PostReactionEmojiGroups
+    PostReactionsEmojiCount, PostReactionEmojiGroups, MutePost, UnmutePost
 from openbook_posts.views.posts.views import Posts, TrendingPosts
 from openbook_importer.views import ImportItem
 
@@ -64,8 +64,14 @@ auth_patterns = [
     path('linked-users/search/', SearchLinkedUsers.as_view(), name='search-linked-users'),
 ]
 
+post_notifications_patters = [
+    path('mute/', MutePost.as_view(), name='mute-post'),
+    path('unmute/', UnmutePost.as_view(), name='unmute-post'),
+]
+
 post_patterns = [
     path('', PostItem.as_view(), name='post'),
+    path('notifications/', include(post_notifications_patters)),
     path('comments/', PostComments.as_view(), name='post-comments'),
     path('comments/<int:post_comment_id>/', PostCommentItem.as_view(), name='post-comment'),
     path('reactions/', PostReactions.as_view(), name='post-reactions'),

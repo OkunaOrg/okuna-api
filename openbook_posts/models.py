@@ -245,3 +245,15 @@ class PostReaction(models.Model):
         if not self.id:
             self.created = timezone.now()
         return super(PostReaction, self).save(*args, **kwargs)
+
+
+class PostMute(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='mutes')
+    muter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_mutes')
+
+    class Meta:
+        unique_together = ('post', 'muter',)
+
+    @classmethod
+    def create_post_mute(cls, post_id, muter_id):
+        return cls.objects.create(post_id=post_id, muter_id=muter_id)

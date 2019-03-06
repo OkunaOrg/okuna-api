@@ -116,3 +116,21 @@ class PostCreatorField(Field):
                     "request": request}).data
 
         return post_creator_serializer
+
+
+class IsMutedField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(IsMutedField, self).__init__(**kwargs)
+
+    def to_representation(self, post):
+        request = self.context.get('request')
+        request_user = request.user
+
+        is_muted = False
+
+        if not request_user.is_anonymous:
+            is_muted = request_user.has_muted_post_with_id(post_id=post.pk)
+
+        return is_muted

@@ -17,6 +17,10 @@ def get_post_model():
     return apps.get_model('openbook_posts.Post')
 
 
+def get_post_mute_model():
+    return apps.get_model('openbook_posts.PostMute')
+
+
 def get_list_model():
     return apps.get_model('openbook_lists.List')
 

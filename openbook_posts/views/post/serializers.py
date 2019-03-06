@@ -6,13 +6,13 @@ from openbook_auth.serializers import BadgeSerializer
 from openbook_circles.models import Circle
 from openbook_common.models import Emoji, EmojiGroup
 from openbook_common.serializers_fields.post import PostCreatorField, ReactionsEmojiCountField, ReactionField, \
-    CommentsCountField, CirclesField
+    CommentsCountField, CirclesField, IsMutedField
 from openbook_common.serializers_fields.post_comment import PostCommenterField
 from openbook_common.validators import emoji_id_exists, emoji_group_id_exists
 from openbook_communities.models import CommunityMembership, Community
 from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_posts.models import PostComment, PostReaction, PostVideo, PostImage, Post
-from openbook_posts.validators import post_uuid_exists, post_comment_id_exists, post_reaction_id_exists, \
+from openbook_posts.validators import post_comment_id_exists, post_reaction_id_exists, \
     post_uuid_exists
 
 
@@ -244,6 +244,20 @@ class GetPostSerializer(serializers.Serializer):
     )
 
 
+class MutePostSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+
+
+class UnmutePostSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+
+
 class PostCreatorProfileSerializer(serializers.ModelSerializer):
     badges = BadgeSerializer(many=True)
 
@@ -338,6 +352,7 @@ class GetPostPostSerializer(serializers.ModelSerializer):
     comments_count = CommentsCountField()
     circles = CirclesField(circle_serializer=PostCircleSerializer)
     community = PostCommunitySerializer()
+    is_muted = IsMutedField()
 
     class Meta:
         model = Post
@@ -355,5 +370,6 @@ class GetPostPostSerializer(serializers.ModelSerializer):
             'public_comments',
             'public_reactions',
             'circles',
-            'community'
+            'community',
+            'is_muted'
         )

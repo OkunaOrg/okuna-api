@@ -11,7 +11,7 @@ from django.conf import settings
 from imagekit.models import ProcessedImageField
 from pilkit.processors import ResizeToFill
 from rest_framework.authtoken.models import Token
-from rest_framework.exceptions import ValidationError, PermissionDenied, NotFound
+from rest_framework.exceptions import ValidationError, NotFound
 from django.db.models import Q
 
 from openbook.settings import USERNAME_MAX_LENGTH
@@ -22,7 +22,8 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, \
     get_emoji_group_model, get_user_invite_model, get_community_model, get_community_invite_model, get_tag_model, \
     get_post_comment_notification_model, get_follow_notification_model, get_connection_confirmed_notification_model, \
-    get_connection_request_notification_model, get_post_reaction_notification_model, get_device_model
+    get_connection_request_notification_model, get_post_reaction_notification_model, get_device_model, \
+    get_post_mute_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications.push_notifications import senders
 
@@ -353,10 +354,13 @@ class User(AbstractUser):
         return self.circles.filter(id=circle_id).exists()
 
     def has_circle_with_name(self, circle_name):
-        return self.circles.filter(name=circle_name).count() > 0
+        return self.circles.filter(name=circle_name).exists()
 
     def has_post_with_id(self, post_id):
-        return self.posts.filter(id=post_id).count() > 0
+        return self.posts.filter(id=post_id).exists()
+
+    def has_muted_post_with_id(self, post_id):
+        return self.post_mutes.filter(post_id=post_id).exists()
 
     def has_circles_with_ids(self, circles_ids):
         return self.circles.filter(id__in=circles_ids).count() == len(circles_ids)
@@ -420,11 +424,13 @@ class User(AbstractUser):
     def has_follow_notifications_enabled(self):
         return self.notifications_settings.follow_notifications
 
-    def has_post_reaction_notifications_enabled(self):
-        return self.notifications_settings.post_reaction_notifications
+    def has_reaction_notifications_enabled_for_post_with_id(self, post_id):
+        return self.notifications_settings.post_reaction_notifications and not self.has_muted_post_with_id(
+            post_id=post_id)
 
-    def has_post_comment_notifications_enabled(self):
-        return self.notifications_settings.post_comment_notifications
+    def has_comment_notifications_enabled_for_post_with_id(self, post_id):
+        return self.notifications_settings.post_comment_notifications and not self.has_muted_post_with_id(
+            post_id=post_id)
 
     def has_connection_request_notifications_enabled(self):
         return self.notifications_settings.connection_request_notifications
@@ -1405,9 +1411,9 @@ class User(AbstractUser):
 
     def create_device(self, uuid, name=None):
         Device = get_device_model()
-        return Device.create_device(owner=self, uuid=uuid, name=name )
+        return Device.create_device(owner=self, uuid=uuid, name=name)
 
-    def update_device_with_uuid(self, device_uuid, name=None ):
+    def update_device_with_uuid(self, device_uuid, name=None):
         self._check_can_update_device_with_uuid(device_uuid=device_uuid)
         device = self.devices.get(uuid=device_uuid)
         device.update(name=name)
@@ -1431,6 +1437,21 @@ class User(AbstractUser):
 
     def delete_devices(self):
         self.devices.all().delete()
+
+    def mute_post_with_id(self, post_id):
+        self._check_can_mute_post_with_id(post_id=post_id)
+        Post = get_post_model()
+        PostMute = get_post_mute_model()
+        PostMute.create_post_mute(post_id=post_id, muter_id=self.pk)
+        post = Post.objects.get(pk=post_id)
+        return post
+
+    def unmute_post_with_id(self, post_id):
+        self._check_can_unmute_post_with_id(post_id=post_id)
+        self.post_mutes.filter(post_id=post_id).delete()
+        Post = get_post_model()
+        post = Post.objects.get(pk=post_id)
+        return post
 
     def _create_post_comment_notification(self, post_comment):
         PostCommentNotification = get_post_comment_notification_model()
@@ -2199,6 +2220,19 @@ class User(AbstractUser):
         if not self.has_device_with_uuid(device_uuid=device_uuid):
             raise NotFound(
                 _('Device not found'),
+            )
+
+    def _check_can_mute_post_with_id(self, post_id):
+        if self.has_muted_post_with_id(post_id=post_id):
+            raise ValidationError(
+                _('Post already muted'),
+            )
+        self._check_can_see_post_with_id(post_id=post_id)
+
+    def _check_can_unmute_post_with_id(self, post_id):
+        if not self.has_muted_post_with_id(post_id=post_id):
+            raise ValidationError(
+                _('Post is not muted'),
             )
 
 
