@@ -1381,7 +1381,7 @@ class User(AbstractUser):
             Community = get_community_model()
             is_admin_or_moderator_query = Q(post_comment__post__community__memberships__is_moderator=True) | \
                                           Q(post_comment__post__community__memberships__is_administrator=True)
-
+            
             post_comment_report_query.add(is_admin_or_moderator_query, Q.AND)
             reports = PostCommentReport.objects.filter(post_comment_report_query)
             return reports
