@@ -9,6 +9,8 @@ from django.dispatch import receiver
 from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
+from imagekit.models import ProcessedImageField
+from pilkit.processors import ResizeToFill
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError, PermissionDenied
 from django.db.models import Q
@@ -16,6 +18,7 @@ from django.db.models import Q
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.exceptions import EmailVerificationTokenInvalid
 from openbook_common.models import Badge
+from openbook_common.utils.helpers import delete_image_kit_image_field
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, \
     get_emoji_group_model, get_user_invite_model, get_community_model, get_community_invite_model, get_tag_model, \
@@ -167,6 +170,8 @@ class User(AbstractUser):
             self.profile.save()
 
     def delete_profile_cover(self, save=True):
+        delete_image_kit_image_field(self.profile.cover)
+        self.profile.cover = None
         self.profile.cover.delete(save=save)
 
     def update_profile_avatar(self, avatar, save=True):
@@ -179,6 +184,8 @@ class User(AbstractUser):
             self.profile.save()
 
     def delete_profile_avatar(self, save=True):
+        delete_image_kit_image_field(self.profile.avatar)
+        self.profile.avatar = None
         self.profile.avatar.delete(save=save)
 
     def update_username(self, username):
@@ -348,10 +355,13 @@ class User(AbstractUser):
                                                        community__name=community_name).exists()
 
     def is_administrator_of_community_with_name(self, community_name):
-        return self.administrated_communities.filter(name=community_name).exists()
+        return self.communities_memberships.filter(community__name=community_name, is_administrator=True).exists()
+
+    def is_member_of_communities(self):
+        return self.communities_memberships.all().exists()
 
     def is_member_of_community_with_name(self, community_name):
-        return self.joined_communities.filter(name=community_name).exists()
+        return self.communities_memberships.filter(community__name=community_name).exists()
 
     def is_banned_from_community_with_name(self, community_name):
         return self.banned_of_communities.filter(name=community_name).exists()
@@ -360,7 +370,7 @@ class User(AbstractUser):
         return self.created_communities.filter(name=community_name).exists()
 
     def is_moderator_of_community_with_name(self, community_name):
-        return self.moderated_communities.filter(name=community_name).exists()
+        return self.communities_memberships.filter(community__name=community_name, is_moderator=True).exists()
 
     def is_invited_to_community_with_name(self, community_name):
         Community = get_community_model()
@@ -593,16 +603,12 @@ class User(AbstractUser):
         self._check_can_get_circle_with_id(circle_id)
         return self.circles.get(id=circle_id)
 
-    def get_circles_available_for_posting(self):
-        posting_circles_query = Q(creator__id=self.pk)
-        posting_circles_query.add(Q(community__members__id=self.pk), Q.OR)
-        Circle = get_circle_model()
-        return Circle.objects.filter(posting_circles_query)
-
     def favorite_community_with_name(self, community_name):
         self._check_can_favorite_community_with_name(community_name=community_name)
 
-        community_to_favorite = self.joined_communities.get(name=community_name)
+        Community = get_community_model()
+        community_to_favorite = Community.objects.get(name=community_name)
+
         self.favorite_communities.add(community_to_favorite)
 
         return community_to_favorite
@@ -610,7 +616,9 @@ class User(AbstractUser):
     def unfavorite_community_with_name(self, community_name):
         self._check_can_unfavorite_community_with_name(community_name=community_name)
 
-        community_to_unfavorite = self.joined_communities.get(name=community_name)
+        Community = get_community_model()
+        community_to_unfavorite = Community.objects.get(name=community_name)
+
         self.favorite_communities.remove(community_to_unfavorite)
 
         return community_to_unfavorite
@@ -634,7 +642,10 @@ class User(AbstractUser):
 
     def delete_community_with_name(self, community_name):
         self._check_can_delete_community_with_name(community_name)
-        community = self.administrated_communities.get(name=community_name)
+
+        Community = get_community_model()
+        community = Community.objects.get(name=community_name)
+
         community.delete()
 
     def update_community(self, community, title=None, name=None, description=None, color=None, type=None,
@@ -651,7 +662,8 @@ class User(AbstractUser):
         self._check_can_update_community_with_name(community_name)
         self._check_community_data(name)
 
-        community_to_update = self.joined_communities.get(name=community_name)
+        Community = get_community_model()
+        community_to_update = Community.objects.get(name=community_name)
 
         community_to_update.update(name=name, title=title, description=description,
                                    color=color, type=type, user_adjective=user_adjective,
@@ -664,7 +676,8 @@ class User(AbstractUser):
         self._check_can_update_community_with_name(community_name)
         self._check_community_data(avatar=avatar)
 
-        community_to_update_avatar_from = self.administrated_communities.get(name=community_name)
+        Community = get_community_model()
+        community_to_update_avatar_from = Community.objects.get(name=community_name)
         community_to_update_avatar_from.avatar = avatar
 
         community_to_update_avatar_from.save()
@@ -673,15 +686,20 @@ class User(AbstractUser):
 
     def delete_community_with_name_avatar(self, community_name):
         self._check_can_update_community_with_name(community_name)
-        community_to_delete_avatar_from = self.administrated_communities.get(name=community_name)
-        community_to_delete_avatar_from.avatar.delete()
+        Community = get_community_model()
+        community_to_delete_avatar_from = Community.objects.get(name=community_name)
+        delete_image_kit_image_field(community_to_delete_avatar_from.avatar)
+        community_to_delete_avatar_from.avatar = None
+        community_to_delete_avatar_from.save()
         return community_to_delete_avatar_from
 
     def update_community_with_name_cover(self, community_name, cover):
         self._check_can_update_community_with_name(community_name)
         self._check_community_data(cover=cover)
 
-        community_to_update_cover_from = self.administrated_communities.get(name=community_name)
+        Community = get_community_model()
+        community_to_update_cover_from = Community.objects.get(name=community_name)
+
         community_to_update_cover_from.cover = cover
 
         community_to_update_cover_from.save()
@@ -690,23 +708,37 @@ class User(AbstractUser):
 
     def delete_community_with_name_cover(self, community_name):
         self._check_can_update_community_with_name(community_name)
-        community_to_delete_cover_from = self.administrated_communities.get(name=community_name)
-        community_to_delete_cover_from.cover.delete()
+
+        Community = get_community_model()
+        community_to_delete_cover_from = Community.objects.get(name=community_name)
+
+        delete_image_kit_image_field(community_to_delete_cover_from.cover)
+        community_to_delete_cover_from.cover = None
+        community_to_delete_cover_from.save()
         return community_to_delete_cover_from
 
-    def get_community_with_name_members(self, community_name, max_id):
+    def get_community_with_name_members(self, community_name, max_id=None, exclude_keywords=None):
         self._check_can_get_community_with_name_members(
             community_name=community_name)
 
         Community = get_community_model()
-        return Community.get_community_with_name_members(community_name=community_name, members_max_id=max_id)
+        return Community.get_community_with_name_members(community_name=community_name, members_max_id=max_id,
+                                                         exclude_keywords=exclude_keywords)
+
+    def search_community_with_name_members(self, community_name, query, exclude_keywords=None):
+        self._check_can_get_community_with_name_members(
+            community_name=community_name)
+
+        Community = get_community_model()
+        return Community.search_community_with_name_members(community_name=community_name, query=query,
+                                                            exclude_keywords=exclude_keywords)
 
     def join_community_with_name(self, community_name):
         self._check_can_join_community_with_name(
             community_name=community_name)
         Community = get_community_model()
         community_to_join = Community.objects.get(name=community_name)
-        community_to_join.members.add(self)
+        community_to_join.add_member(self)
 
         # Clean up any invites
         CommunityInvite = get_community_invite_model()
@@ -721,16 +753,10 @@ class User(AbstractUser):
         Community = get_community_model()
         community_to_leave = Community.objects.get(name=community_name)
 
-        if self.is_moderator_of_community_with_name(community_name):
-            community_to_leave.moderators.remove(self)
-
-        if self.is_administrator_of_community_with_name(community_name):
-            community_to_leave.administrators.remove(self)
-
         if self.has_favorite_community_with_name(community_name):
             self.unfavorite_community_with_name(community_name=community_name)
 
-        community_to_leave.members.remove(self)
+        community_to_leave.remove_member(self)
 
         return community_to_leave
 
@@ -745,7 +771,11 @@ class User(AbstractUser):
 
         community_to_invite_user_to.create_invite(creator=self, invited_user=user_to_invite)
 
-        return community_to_invite_user_to
+    def uninvite_user_with_username_to_community_with_name(self, username, community_name):
+        self._check_can_uninvite_user_with_username_to_community_with_name(username=username,
+                                                                           community_name=community_name)
+        community_invite = self.created_communities_invites.filter(invited_user__username=username)
+        community_invite.delete()
 
     def get_community_with_name_administrators(self, community_name, max_id):
         self._check_can_get_community_with_name_administrators(
@@ -754,6 +784,13 @@ class User(AbstractUser):
         Community = get_community_model()
         return Community.get_community_with_name_administrators(community_name=community_name,
                                                                 administrators_max_id=max_id)
+
+    def search_community_with_name_administrators(self, community_name, query):
+        self._check_can_get_community_with_name_administrators(
+            community_name=community_name)
+
+        Community = get_community_model()
+        return Community.search_community_with_name_administrators(community_name=community_name, query=query)
 
     def add_administrator_with_username_to_community_with_name(self, username, community_name):
         self._check_can_add_administrator_with_username_to_community_with_name(
@@ -765,12 +802,13 @@ class User(AbstractUser):
         community_to_add_administrator_to = Community.objects.get(name=community_name)
         user_to_add_as_administrator = User.objects.get(username=username)
 
-        community_to_add_administrator_to.administrators.add(user_to_add_as_administrator)
+        community_to_add_administrator_to.add_administrator(user_to_add_as_administrator)
         community_to_add_administrator_to.create_add_administrator_log(source_user=self,
                                                                        target_user=user_to_add_as_administrator)
 
-        if not user_to_add_as_administrator.is_moderator_of_community_with_name(community_name=community_name):
-            self.add_moderator_with_username_to_community_with_name(username=username, community_name=community_name)
+        if user_to_add_as_administrator.is_moderator_of_community_with_name(community_name=community_name):
+            self.remove_moderator_with_username_from_community_with_name(username=username,
+                                                                         community_name=community_name)
 
         return community_to_add_administrator_to
 
@@ -784,7 +822,7 @@ class User(AbstractUser):
         community_to_remove_administrator_from = Community.objects.get(name=community_name)
         user_to_remove_as_administrator = User.objects.get(username=username)
 
-        community_to_remove_administrator_from.administrators.remove(user_to_remove_as_administrator)
+        community_to_remove_administrator_from.remove_administrator(user_to_remove_as_administrator)
         community_to_remove_administrator_from.create_remove_administrator_log(source_user=self,
                                                                                target_user=user_to_remove_as_administrator)
 
@@ -798,6 +836,13 @@ class User(AbstractUser):
         return Community.get_community_with_name_moderators(community_name=community_name,
                                                             moderators_max_id=max_id)
 
+    def search_community_with_name_moderators(self, community_name, query):
+        self._check_can_get_community_with_name_moderators(
+            community_name=community_name)
+
+        Community = get_community_model()
+        return Community.search_community_with_name_moderators(community_name=community_name, query=query)
+
     def add_moderator_with_username_to_community_with_name(self, username, community_name):
         self._check_can_add_moderator_with_username_to_community_with_name(
             username=username,
@@ -808,7 +853,8 @@ class User(AbstractUser):
         community_to_add_moderator_to = Community.objects.get(name=community_name)
         user_to_add_as_moderator = User.objects.get(username=username)
 
-        community_to_add_moderator_to.moderators.add(user_to_add_as_moderator)
+        community_to_add_moderator_to.add_moderator(user_to_add_as_moderator)
+
         community_to_add_moderator_to.create_add_moderator_log(source_user=self,
                                                                target_user=user_to_add_as_moderator)
 
@@ -824,7 +870,7 @@ class User(AbstractUser):
         community_to_remove_moderator_from = Community.objects.get(name=community_name)
         user_to_remove_as_moderator = User.objects.get(username=username)
 
-        community_to_remove_moderator_from.moderators.remove(user_to_remove_as_moderator)
+        community_to_remove_moderator_from.remove_moderator(user_to_remove_as_moderator)
         community_to_remove_moderator_from.create_remove_moderator_log(source_user=self,
                                                                        target_user=user_to_remove_as_moderator)
 
@@ -836,6 +882,13 @@ class User(AbstractUser):
 
         Community = get_community_model()
         return Community.get_community_with_name_banned_users(community_name=community_name, users_max_id=max_id)
+
+    def search_community_with_name_banned_users(self, community_name, query):
+        self._check_can_get_community_with_name_banned_users(
+            community_name=community_name)
+
+        Community = get_community_model()
+        return Community.search_community_with_name_banned_users(community_name=community_name, query=query)
 
     def ban_user_with_username_from_community_with_name(self, username, community_name):
         self._check_can_ban_user_with_username_from_community_with_name(username=username,
@@ -934,9 +987,26 @@ class User(AbstractUser):
         self._check_can_get_list_with_id(list_id)
         return self.lists.get(id=list_id)
 
-    def get_users_with_query(self, query):
+    def search_users_with_query(self, query):
         # In the future, the user might have blocked users which should not be displayed
         return User.get_public_users_with_query(query)
+
+    def get_linked_users(self, max_id=None):
+        # All users which are connected with us and we have accepted by adding
+        # them to a circle
+        linked_users_query = self._make_linked_users_query(max_id=max_id)
+
+        return User.objects.filter(linked_users_query)
+
+    def search_linked_users_with_query(self, query):
+        linked_users_query = self._make_linked_users_query()
+
+        names_query = Q(username__icontains=query)
+        names_query.add(Q(profile__name__icontains=query), Q.OR)
+
+        linked_users_query.add(names_query, Q.AND)
+
+        return User.objects.filter(linked_users_query)
 
     def search_communities_with_query(self, query):
         # In the future, the user might have blocked communities which should not be displayed
@@ -948,10 +1018,27 @@ class User(AbstractUser):
         return Community.objects.get(name=community_name)
 
     def get_joined_communities(self):
-        return self.joined_communities.all()
+        Community = get_community_model()
+        return Community.objects.filter(memberships__user=self)
+
+    def search_joined_communities_with_query(self, query):
+        joined_communities_query = Q(memberships__user=self)
+        joined_communities_name_query = Q(name__icontains=query)
+        joined_communities_name_query.add(Q(title__icontains=query), Q.OR)
+        joined_communities_query.add(joined_communities_name_query, Q.AND)
+        Community = get_community_model()
+        return Community.objects.filter(joined_communities_query)
 
     def get_favorite_communities(self):
         return self.favorite_communities.all()
+
+    def get_administrated_communities(self):
+        Community = get_community_model()
+        return Community.objects.filter(memberships__user=self, memberships__is_administrator=True)
+
+    def get_moderated_communities(self):
+        Community = get_community_model()
+        return Community.objects.filter(memberships__user=self, memberships__is_moderator=True)
 
     def create_public_post(self, text=None, image=None, video=None, created=None):
         world_circle_id = self._get_world_circle_id()
@@ -1020,7 +1107,7 @@ class User(AbstractUser):
 
         Community = get_community_model()
 
-        membership_query = Q(community__members__id=self.pk)
+        membership_query = Q(community__memberships__user__id=self.pk)
         membership_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC), Q.OR)
 
         post_query.add(membership_query, Q.AND)
@@ -1062,12 +1149,11 @@ class User(AbstractUser):
 
         return profile_posts
 
-    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None, communities_names=None):
+    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None):
         """
         Get the timeline posts for self. The results will be dynamic based on follows and connections.
         :param lists_ids:
         :param circles_ids:
-        :param communities_names:
         :param max_id:
         :param post_id:
         :param username:
@@ -1098,10 +1184,8 @@ class User(AbstractUser):
                 followed_user_posts_query = self._make_get_posts_query_for_user(followed_user, )
                 timeline_posts_query.add(followed_user_posts_query, Q.OR)
 
-        if communities_names:
-            timeline_posts_query.add(Q(community__name__in=communities_names), Q.AND)
-
-        timeline_posts_query.add(Q(community__members__id=self.pk), Q.OR)
+        if not circles_ids and not lists_ids:
+            timeline_posts_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
 
         if max_id:
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
@@ -1256,6 +1340,20 @@ class User(AbstractUser):
 
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
+
+    def _make_linked_users_query(self, max_id=None):
+        # All users which are connected with us and we have accepted by adding
+        # them to a circle
+        linked_users_query = Q(circles__connections__target_connection__user_id=self.pk,
+                               circles__connections__target_connection__circles__isnull=False)
+
+        # All users following us
+        linked_users_query.add(Q(follows__followed_user_id=self.pk), Q.OR)
+
+        if max_id:
+            linked_users_query.add(Q(id__lt=max_id), Q.AND)
+
+        return linked_users_query
 
     def report_post_comment_with_id_for_post_with_id(self, post_comment_id, post_id, category_name, comment=None):
         self._check_can_report_post_comment_with_id_for_post_with_id(post_comment_id, post_id)
@@ -1420,7 +1518,10 @@ class User(AbstractUser):
         is_moderator = \
             Community.is_user_with_username_moderator_of_community_with_name(username=self.username,
                                                                              community_name=community_name)
-        if is_moderator or self.is_staff or self.is_superuser:
+        is_administrator = Community.is_user_with_username_administrator_of_community_with_name(
+            username=self.username, community_name=community_name)
+
+        if is_moderator or is_administrator or self.is_staff or self.is_superuser:
             return True
 
         return False
@@ -1517,7 +1618,10 @@ class User(AbstractUser):
         is_moderator = \
             Community.is_user_with_username_moderator_of_community_with_name(username=self.username,
                                                                              community_name=community_name)
-        if not is_moderator:
+        is_administrator = Community.is_user_with_username_administrator_of_community_with_name(
+            username=self.username, community_name=community_name)
+
+        if not is_moderator and not is_administrator:
             self._check_can_change_report_status()
 
     def _check_can_change_report_status(self):
@@ -1639,7 +1743,9 @@ class User(AbstractUser):
                 if Post.is_post_with_id_a_community_post(post_id):
                     # If the comment is in a community, check if we're moderators
                     post = Post.objects.select_related('community').get(pk=post_id)
-                    if not self.is_moderator_of_community_with_name(post.community.name):
+                    if not self.is_moderator_of_community_with_name(
+                            post.community.name) and not self.is_administrator_of_community_with_name(
+                        post.community.name):
                         raise ValidationError(
                             _('Only moderators/administrators can remove community posts.'),
                         )
@@ -1707,7 +1813,6 @@ class User(AbstractUser):
                 )
         else:
             # Check if we can retrieve the post
-            print(post_id)
             if not self.get_post_with_id_for_user(post_id=post_id, user=post.creator).exists():
                 raise ValidationError(
                     _('This post is private.'),
@@ -1848,7 +1953,8 @@ class User(AbstractUser):
             if Post.is_post_with_id_a_community_post(post_id):
                 # If the comment is in a community, check if we're moderators
                 post = Post.objects.select_related('community').get(pk=post_id)
-                if not self.is_moderator_of_community_with_name(post.community.name):
+                if not self.is_moderator_of_community_with_name(
+                        post.community.name) and not self.is_administrator_of_community_with_name(post.community.name):
                     raise ValidationError(
                         _('Only moderators/administrators can remove community posts.'),
                     )
@@ -1961,6 +2067,13 @@ class User(AbstractUser):
                 _('Invites for this community are not enabled. Only administrators & moderators can invite.'),
             )
 
+    def _check_can_uninvite_user_with_username_to_community_with_name(self, username, community_name):
+        if not self.has_invited_user_with_username_to_community_with_name(username=username,
+                                                                          community_name=community_name):
+            raise ValidationError(
+                _('No invite to withdraw.'),
+            )
+
     def _check_can_get_community_with_name_banned_users(self, community_name):
         if not self.is_administrator_of_community_with_name(
                 community_name=community_name) and not self.is_moderator_of_community_with_name(
@@ -2041,48 +2154,8 @@ class User(AbstractUser):
             )
 
     def _check_can_get_community_with_name_administrators(self, community_name):
-        if not self.is_moderator_of_community_with_name(
-                community_name) and not self.is_administrator_of_community_with_name(community_name):
-            raise ValidationError('Only administrators & moderators can get the list of administrators')
-
-    def _check_can_add_administrator_with_username_to_community_with_name(self, username, community_name):
-        if not self.is_creator_of_community_with_name(community_name=community_name):
-            raise ValidationError(
-                _('Only the creator of the community can add other administrators.'),
-            )
-
-        Community = get_community_model()
-
-        if Community.is_user_with_username_administrator_of_community_with_name(username=username,
-                                                                                community_name=community_name):
-            raise ValidationError(
-                _('User is already an administrator.'),
-            )
-
-        if not Community.is_user_with_username_member_of_community_with_name(username=username,
-                                                                             community_name=community_name):
-            raise ValidationError(
-                _('Can\'t make administrator a user that is not part of the community.'),
-            )
-
-    def _check_can_remove_administrator_with_username_to_community_with_name(self, username, community_name):
-        if not self.is_creator_of_community_with_name(community_name=community_name):
-            raise ValidationError(
-                _('Only the creator of the community can remove other administrators.'),
-            )
-
-        Community = get_community_model()
-
-        if not Community.is_user_with_username_administrator_of_community_with_name(username=username,
-                                                                                    community_name=community_name):
-            raise ValidationError(
-                _('User to remove is not an administrator.'),
-            )
-
-    def _check_can_get_community_with_name_administrators(self, community_name):
-        if not self.is_moderator_of_community_with_name(
-                community_name) and not self.is_administrator_of_community_with_name(community_name):
-            raise ValidationError('Only administrators & moderators can get the list of administrators')
+        # Anyone can get the administrators of the community
+        return True
 
     def _check_can_add_moderator_with_username_to_community_with_name(self, username, community_name):
         if not self.is_administrator_of_community_with_name(community_name=community_name):
@@ -2091,6 +2164,12 @@ class User(AbstractUser):
             )
 
         Community = get_community_model()
+
+        if Community.is_user_with_username_administrator_of_community_with_name(username=username,
+                                                                                community_name=community_name):
+            raise ValidationError(
+                _('User is an administrator.'),
+            )
 
         if Community.is_user_with_username_moderator_of_community_with_name(username=username,
                                                                             community_name=community_name):
@@ -2116,12 +2195,6 @@ class User(AbstractUser):
                                                                                 community_name=community_name):
             raise ValidationError(
                 _('User to remove is not an moderator.'),
-            )
-
-        if Community.is_user_with_username_administrator_of_community_with_name(username=username,
-                                                                                community_name=community_name):
-            raise ValidationError(
-                _('Can\'t remove a moderator which is also an administrator.'),
             )
 
     def _check_can_get_community_with_name_moderators(self, community_name):
@@ -2237,8 +2310,9 @@ class UserProfile(models.Model):
     location = models.CharField(_('location'), max_length=settings.PROFILE_LOCATION_MAX_LENGTH, blank=False, null=True)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     is_of_legal_age = models.BooleanField(default=False)
-    avatar = models.ImageField(_('avatar'), blank=False, null=True)
-    cover = models.ImageField(_('cover'), blank=False, null=True)
+    avatar = ProcessedImageField(verbose_name=_('avatar'), blank=False, null=True, format='JPEG',
+                                 options={'quality': 60}, processors=[ResizeToFill(500, 500)])
+    cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 75})
     bio = models.CharField(_('bio'), max_length=settings.PROFILE_BIO_MAX_LENGTH, blank=False, null=True)
     url = models.URLField(_('url'), blank=False, null=True)
     followers_count_visible = models.BooleanField(_('followers count visible'), blank=False, null=False, default=False)

@@ -1,5 +1,6 @@
 from django.http import QueryDict
 import secrets
+from imagekit.utils import get_cache
 
 r = lambda: secrets.randbelow(255)
 
@@ -11,6 +12,9 @@ def normalise_request_data(request_data):
     :param request_data:
     :return:
     """
+    if not request_data:
+        return {}
+
     if isinstance(request_data, QueryDict):
         return request_data.dict()
     return {**request_data}
@@ -33,3 +37,22 @@ def normalize_list_value_in_request_data(list_name, request_data):
 
 def generate_random_hex_color():
     return '#%02X%02X%02X' % (r(), r(), r())
+
+
+def delete_image_kit_image_field(image_kit_field):
+    # ImageKit has a bug where files are cached and not deleted right away
+    # https://github.com/matthewwithanm/django-imagekit/issues/229#issuecomment-315690575
+
+    if not image_kit_field:
+        return
+
+    try:
+        file = image_kit_field.file
+    except FileNotFoundError:
+        pass
+    else:
+        cache = get_cache()
+        cache.delete(cache.get(file))
+        image_kit_field.storage.delete(file.name)
+
+    image_kit_field.delete()

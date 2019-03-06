@@ -42,6 +42,7 @@ class GetCommunityBannedUsersUserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'avatar',
+            'name'
         )
 
 
@@ -55,3 +56,18 @@ class GetCommunityBannedUsersUserSerializer(serializers.ModelSerializer):
             'username',
             'profile'
         )
+
+
+class SearchCommunityBannedUsersSerializer(serializers.Serializer):
+    count = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
+    query = serializers.CharField(
+        max_length=settings.SEARCH_QUERIES_MAX_LENGTH,
+        allow_blank=False,
+        required=True
+    )
+    community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
+                                           allow_blank=False,
+                                           validators=[community_name_characters_validator, community_name_exists])

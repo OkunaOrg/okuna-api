@@ -4,6 +4,7 @@ from rest_framework import serializers
 from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import username_characters_validator, user_username_exists
 from openbook_common.serializers_fields.user import IsFollowingField
+from openbook_communities.serializers_fields import UserCommunitiesMembershipsField
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 
 
@@ -54,5 +55,20 @@ class GetCommunityModeratorsUserSerializer(serializers.ModelSerializer):
             'id',
             'username',
             'profile',
-            'is_following'
+            'is_following',
         )
+
+
+class SearchCommunityModeratorsSerializer(serializers.Serializer):
+    count = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
+    query = serializers.CharField(
+        max_length=settings.SEARCH_QUERIES_MAX_LENGTH,
+        allow_blank=False,
+        required=True
+    )
+    community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
+                                           allow_blank=False,
+                                           validators=[community_name_characters_validator, community_name_exists])

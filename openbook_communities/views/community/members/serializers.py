@@ -3,8 +3,9 @@ from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import username_characters_validator, user_username_exists
-from openbook_communities.models import Community
-from openbook_communities.serializers_fields import IsMemberField
+from openbook_common.serializers_fields.user import CreatedCommunitiesInvitesField
+from openbook_communities.models import Community, CommunityMembership, CommunityInvite
+from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 
 
@@ -37,6 +38,15 @@ class GetCommunityMembersSerializer(serializers.Serializer):
         required=False,
         max_value=20
     )
+    exclude = serializers.ListField(
+        required=False,
+        child=serializers.ChoiceField(
+            choices=(
+                Community.EXCLUDE_COMMUNITY_ADMINISTRATORS_KEYWORD,
+                Community.EXCLUDE_COMMUNITY_MODERATORS_KEYWORD,
+            )
+        )
+    )
     community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
                                            allow_blank=False,
                                            validators=[community_name_characters_validator, community_name_exists])
@@ -47,6 +57,7 @@ class GetCommunityMembersMemberProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'avatar',
+            'name'
         )
 
 
@@ -62,12 +73,72 @@ class GetCommunityMembersMemberSerializer(serializers.ModelSerializer):
         )
 
 
+class MembersCommunityMembershipSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommunityMembership
+        fields = (
+            'id',
+            'user_id',
+            'community_id',
+            'is_administrator',
+            'is_moderator',
+        )
+
+
 class MembersCommunitySerializer(serializers.ModelSerializer):
-    is_member = IsMemberField()
+    memberships = CommunityMembershipsField(community_membership_serializer=MembersCommunityMembershipSerializer)
 
     class Meta:
         model = Community
         fields = (
             'id',
-            'is_member'
+            'memberships'
+        )
+
+
+class SearchCommunityMembersSerializer(serializers.Serializer):
+    count = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
+    query = serializers.CharField(
+        max_length=settings.SEARCH_QUERIES_MAX_LENGTH,
+        allow_blank=False,
+        required=True
+    )
+    exclude = serializers.ListField(
+        required=False,
+        child=serializers.ChoiceField(
+            choices=(
+                Community.EXCLUDE_COMMUNITY_ADMINISTRATORS_KEYWORD,
+                Community.EXCLUDE_COMMUNITY_MODERATORS_KEYWORD,
+            )
+        )
+    )
+    community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
+                                           allow_blank=False,
+                                           validators=[community_name_characters_validator, community_name_exists])
+
+
+class InviteUserCommunityInviteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommunityInvite
+        fields = (
+            'id',
+            'creator_id',
+            'invited_user_id',
+            'community_id'
+        )
+
+
+class InviteUserSerializer(serializers.ModelSerializer):
+    created_communities_invites = CreatedCommunitiesInvitesField(
+        community_invite_serializer=InviteUserCommunityInviteSerializer
+    )
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'created_communities_invites'
         )

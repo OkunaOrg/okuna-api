@@ -1,3 +1,5 @@
+import random
+
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
@@ -13,7 +15,7 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class CommunityBannedUsersAPITest(APITestCase):
+class Communitybanned_usersAPITest(APITestCase):
     def test_cannot_retrieve_banned_users_of_private_community(self):
         """
         should not be able to retrieve the banned users of a private community and return 400
@@ -480,4 +482,102 @@ class UnbanCommunityUserAPITest(APITestCase):
     def _get_url(self, community_name):
         return reverse('community-unban-user', kwargs={
             'community_name': community_name
+        })
+
+
+class SearchCommunityBannedUsersAPITests(APITestCase):
+    """
+    SearchCommunityBannedUsersAPITests
+    """
+
+    def test_can_search_community_banned_users_by_name(self):
+        """
+        should be able to search for community banned users by their name and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        community = make_community(creator=user)
+
+        amount_of_community_banned_users_to_search_for = 5
+
+        for i in range(0, amount_of_community_banned_users_to_search_for):
+            banned_user = make_user()
+            banned_user.join_community_with_name(community_name=community.name)
+            user.ban_user_with_username_from_community_with_name(username=banned_user.username,
+                                                                 community_name=community.name)
+            banned_user_username = banned_user.profile.name
+            amount_of_characters_to_query = random.randint(1, len(banned_user_username))
+            query = banned_user_username[0:amount_of_characters_to_query]
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url(community_name=community.name)
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            response_banned_users = json.loads(response.content)
+            response_banned_users_count = len(response_banned_users)
+            if response_banned_users_count == 1:
+                # Our community creator was not retrieved
+                self.assertEqual(response_banned_users_count, 1)
+                retrieved_banned_user = response_banned_users[0]
+                self.assertEqual(retrieved_banned_user['id'], banned_user.id)
+            else:
+                # Our community creator was retrieved too
+                for response_banned_user in response_banned_users:
+                    response_banned_user_id = response_banned_user['id']
+                    self.assertTrue(
+                        response_banned_user_id == banned_user.id or response_banned_user_id == user.id)
+            user.unban_user_with_username_from_community_with_name(username=banned_user.username,
+                                                                          community_name=community.name)
+
+    def test_can_search_community_banned_users_by_username(self):
+        """
+        should be able to search for community banned_users by their username and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        community = make_community(creator=user)
+
+        amount_of_community_banned_users_to_search_for = 5
+
+        for i in range(0, amount_of_community_banned_users_to_search_for):
+            banned_user = make_user()
+            banned_user.join_community_with_name(community_name=community.name)
+            user.ban_user_with_username_from_community_with_name(username=banned_user.username,
+                                                                     community_name=community.name)
+            banned_user_username = banned_user.username
+            amount_of_characters_to_query = random.randint(1, len(banned_user_username))
+            query = banned_user_username[0:amount_of_characters_to_query]
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url(community_name=community.name)
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            response_banned_users = json.loads(response.content)
+            response_banned_users_count = len(response_banned_users)
+            if response_banned_users_count == 1:
+                # Our community creator was not retrieved
+                self.assertEqual(response_banned_users_count, 1)
+                retrieved_banned_user = response_banned_users[0]
+                self.assertEqual(retrieved_banned_user['id'], banned_user.id)
+            else:
+                # Our community creator was retrieved too
+                for response_banned_user in response_banned_users:
+                    response_banned_user_id = response_banned_user['id']
+                    self.assertTrue(
+                        response_banned_user_id == banned_user.id or response_banned_user_id == user.id)
+
+            user.unban_user_with_username_from_community_with_name(username=banned_user.username,
+                                                                          community_name=community.name)
+
+    def _get_url(self, community_name):
+        return reverse('search-community-banned-users', kwargs={
+            'community_name': community_name,
         })

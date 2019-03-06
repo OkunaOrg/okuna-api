@@ -1,3 +1,5 @@
+import random
+
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
@@ -8,6 +10,7 @@ import json
 
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, \
     make_community
+from openbook_communities.models import Community
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -142,6 +145,143 @@ class CommunityMembersAPITest(APITestCase):
         for response_member in response_members:
             response_member_id = response_member.get('id')
             self.assertTrue(response_member_id < max_id)
+
+    def test_can_filter_administrators_from_members_of_community(self):
+        """
+        should be able to filter the administrators from the retrieve the members of a community
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community_name = community.name
+
+        amount_of_community_members = 5
+        community_members_ids = []
+
+        for i in range(0, amount_of_community_members):
+            community_member = make_user()
+            community_member.join_community_with_name(community_name=community_name)
+            community_members_ids.append(community_member.pk)
+
+        amount_of_community_administrators = 5
+
+        for i in range(0, amount_of_community_administrators):
+            community_administrator = make_user()
+            community_administrator.join_community_with_name(community_name=community_name)
+            other_user.add_administrator_with_username_to_community_with_name(username=community_administrator.username,
+                                                                              community_name=community.name)
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.get(url, {
+            'exclude': Community.EXCLUDE_COMMUNITY_ADMINISTRATORS_KEYWORD,
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_members = json.loads(response.content)
+
+        self.assertEqual(len(response_members), len(community_members_ids))
+
+        for response_member in response_members:
+            response_member_id = response_member.get('id')
+            self.assertIn(response_member_id, community_members_ids)
+
+    def test_can_filter_moderators_from_members_of_community(self):
+        """
+        should be able to filter the moderators from the retrieve the members of a community
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community_name = community.name
+
+        amount_of_community_members = 5
+        community_members_ids = [
+            other_user.pk
+        ]
+
+        for i in range(0, amount_of_community_members):
+            community_member = make_user()
+            community_member.join_community_with_name(community_name=community_name)
+            community_members_ids.append(community_member.pk)
+
+        amount_of_community_moderators = 5
+
+        for i in range(0, amount_of_community_moderators):
+            community_moderator = make_user()
+            community_moderator.join_community_with_name(community_name=community_name)
+            other_user.add_moderator_with_username_to_community_with_name(username=community_moderator.username,
+                                                                          community_name=community.name)
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.get(url, {
+            'exclude': Community.EXCLUDE_COMMUNITY_MODERATORS_KEYWORD,
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_members = json.loads(response.content)
+
+        self.assertEqual(len(response_members), len(community_members_ids))
+
+        for response_member in response_members:
+            response_member_id = response_member.get('id')
+            self.assertIn(response_member_id, community_members_ids)
+
+    def test_can_filter_moderators_and_administrators_from_members_of_community(self):
+        """
+        should be able to filter the moderators and administrators from the retrieve the members of a community
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community_name = community.name
+
+        amount_of_community_members = 5
+        community_members_ids = []
+
+        for i in range(0, amount_of_community_members):
+            community_member = make_user()
+            community_member.join_community_with_name(community_name=community_name)
+            community_members_ids.append(community_member.pk)
+
+        amount_of_community_moderators = 5
+
+        for i in range(0, amount_of_community_moderators):
+            community_moderator = make_user()
+            community_moderator.join_community_with_name(community_name=community_name)
+            other_user.add_moderator_with_username_to_community_with_name(username=community_moderator.username,
+                                                                          community_name=community.name)
+
+        amount_of_community_administrators = 5
+
+        for i in range(0, amount_of_community_administrators):
+            community_moderator = make_user()
+            community_moderator.join_community_with_name(community_name=community_name)
+            other_user.add_administrator_with_username_to_community_with_name(username=community_moderator.username,
+                                                                              community_name=community.name)
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.get(url, {
+            'exclude': ','.join(
+                [Community.EXCLUDE_COMMUNITY_MODERATORS_KEYWORD, Community.EXCLUDE_COMMUNITY_ADMINISTRATORS_KEYWORD]),
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_members = json.loads(response.content)
+
+        self.assertEqual(len(response_members), len(community_members_ids))
+
+        for response_member in response_members:
+            response_member_id = response_member.get('id')
+            self.assertIn(response_member_id, community_members_ids)
 
     def _get_url(self, community_name):
         return reverse('community-members', kwargs={
@@ -283,6 +423,61 @@ class InviteCommunityMembersAPITest(APITestCase):
         })
 
 
+class UninviteCommunityMembersAPITest(APITestCase):
+    def test_can_uninvite_user_from_community(self):
+        """
+        should be able to uninvite a user from a community and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community.invites_enabled = True
+        community.save()
+
+        user.join_community_with_name(community.name)
+        user_to_invite = make_user()
+        user.invite_user_with_username_to_community_with_name(username=user_to_invite.username,
+                                                              community_name=community.name)
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, {
+            'username': user_to_invite.username
+        }, **headers)
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        self.assertFalse(user_to_invite.is_invited_to_community_with_name(community_name=community.name))
+
+    def test_cannot_withdraw_unexisting_invite(self):
+        """
+        should not be able to withdraw an unexisting invite and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community.invites_enabled = True
+        community.save()
+
+        user.join_community_with_name(community.name)
+        user_to_invite = make_user()
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, {
+            'username': user_to_invite.username
+        }, **headers)
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+    def _get_url(self, community_name):
+        return reverse('community-uninvite', kwargs={
+            'community_name': community_name
+        })
+
+
 class JoinCommunityAPITest(APITestCase):
     def test_can_join_public_community(self):
         """
@@ -360,4 +555,249 @@ class JoinCommunityAPITest(APITestCase):
     def _get_url(self, community_name):
         return reverse('community-join', kwargs={
             'community_name': community_name
+        })
+
+
+class SearchCommunityMembersAPITests(APITestCase):
+    """
+    SearchCommunityMembersAPITests
+    """
+
+    def test_can_search_community_members_by_name(self):
+        """
+        should be able to search for community members by their name and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        community = make_community(creator=user)
+
+        amount_of_community_members_to_search_for = 5
+
+        for i in range(0, amount_of_community_members_to_search_for):
+            member = make_user()
+            member.join_community_with_name(community_name=community.name)
+            member_name = member.profile.name
+            amount_of_characters_to_query = random.randint(1, len(member_name))
+            query = member_name[0:amount_of_characters_to_query]
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url(community_name=community.name)
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            response_members = json.loads(response.content)
+            response_members_count = len(response_members)
+            if response_members_count == 1:
+                # Our community creator was not retrieved
+                self.assertEqual(response_members_count, 1)
+                retrieved_member = response_members[0]
+                self.assertEqual(retrieved_member['id'], member.id)
+            else:
+                # Our community creator was retrieved too
+                for response_member in response_members:
+                    response_member_id = response_member['id']
+                    self.assertTrue(
+                        response_member_id == member.id or response_member_id == user.id)
+            member.leave_community_with_name(community_name=community.name)
+
+    def test_can_search_community_members_by_username(self):
+        """
+        should be able to search for community members by their username and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        community = make_community(creator=user)
+
+        amount_of_community_members_to_search_for = 5
+
+        for i in range(0, amount_of_community_members_to_search_for):
+            member = make_user()
+            member.join_community_with_name(community_name=community.name)
+            member_username = member.username
+            amount_of_characters_to_query = random.randint(1, len(member_username))
+            query = member_username[0:amount_of_characters_to_query]
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url(community_name=community.name)
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            response_members = json.loads(response.content)
+            response_members_count = len(response_members)
+            if response_members_count == 1:
+                # Our community creator was not retrieved
+                self.assertEqual(response_members_count, 1)
+                retrieved_member = response_members[0]
+                self.assertEqual(retrieved_member['id'], member.id)
+            else:
+                # Our community creator was retrieved too
+                for response_member in response_members:
+                    response_member_id = response_member['id']
+                    self.assertTrue(
+                        response_member_id == member.id or response_member_id == user.id)
+
+            member.leave_community_with_name(community_name=community.name)
+
+    def test_can_filter_administrators_from_members_search(self):
+        """
+        should be able to filter the administrators from the search members of a community
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        similar_username = fake.user_name()
+
+        community_creator = make_user(username=similar_username + fake.word())
+        community = make_community(creator=community_creator, type='P')
+        community_name = community.name
+
+        community_member = make_user(username=similar_username + fake.word())
+        community_member.join_community_with_name(community_name=community_name)
+
+        community_moderator = make_user(username=similar_username + fake.word())
+        community_moderator.join_community_with_name(community_name=community_name)
+        community_creator.add_moderator_with_username_to_community_with_name(username=community_moderator.username,
+                                                                             community_name=community.name)
+
+        community_administrator = make_user(username=similar_username + fake.word())
+        community_administrator.join_community_with_name(community_name=community_name)
+        community_creator.add_administrator_with_username_to_community_with_name(
+            username=community_administrator.username,
+            community_name=community.name)
+
+        expected_members = [
+            community_member,
+            community_moderator,
+            # Creator is administrator too
+            # community_creator,
+        ]
+
+        expected_members_ids = [member.pk for member in expected_members]
+
+        url = self._get_url(community_name=community.name)
+
+        response = self.client.get(url, {
+            'query': similar_username,
+            'exclude': Community.EXCLUDE_COMMUNITY_ADMINISTRATORS_KEYWORD,
+        }, **headers)
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        response_members = json.loads(response.content)
+
+        self.assertEqual(len(response_members), len(expected_members))
+
+        for response_member in response_members:
+            response_member_id = response_member.get('id')
+            self.assertIn(response_member_id, expected_members_ids)
+
+    def test_can_filter_moderators_from_members_search(self):
+        """
+        should be able to filter the moderators from the search members of a community
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        similar_username = fake.user_name()
+
+        community_creator = make_user(username=similar_username + fake.word())
+        community = make_community(creator=community_creator, type='P')
+        community_name = community.name
+
+        community_member = make_user(username=similar_username + fake.word())
+        community_member.join_community_with_name(community_name=community_name)
+
+        community_moderator = make_user(username=similar_username + fake.word())
+        community_moderator.join_community_with_name(community_name=community_name)
+        community_creator.add_moderator_with_username_to_community_with_name(username=community_moderator.username,
+                                                                             community_name=community.name)
+
+        community_administrator = make_user(username=similar_username + fake.word())
+        community_administrator.join_community_with_name(community_name=community_name)
+        community_creator.add_administrator_with_username_to_community_with_name(
+            username=community_administrator.username,
+            community_name=community.name)
+
+        expected_members = [
+            community_member,
+            community_administrator,
+            community_creator,
+        ]
+
+        expected_members_ids = [member.pk for member in expected_members]
+
+        url = self._get_url(community_name=community.name)
+
+        response = self.client.get(url, {
+            'query': similar_username,
+            'exclude': Community.EXCLUDE_COMMUNITY_MODERATORS_KEYWORD,
+        }, **headers)
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        response_members = json.loads(response.content)
+
+        self.assertEqual(len(response_members), len(expected_members))
+
+        for response_member in response_members:
+            response_member_id = response_member.get('id')
+            self.assertIn(response_member_id, expected_members_ids)
+
+    def test_can_filter_moderators_and_administrators_from_members_search(self):
+        """
+        should be able to filter the moderators and administrators from the search members of a community
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community_name = community.name
+
+        community_member = make_user()
+        community_member.join_community_with_name(community_name=community_name)
+
+        community_moderator = make_user()
+        community_moderator.join_community_with_name(community_name=community_name)
+        other_user.add_moderator_with_username_to_community_with_name(username=community_moderator.username,
+                                                                      community_name=community.name)
+
+        community_administrator = make_user()
+        community_administrator.join_community_with_name(community_name=community_name)
+        other_user.add_administrator_with_username_to_community_with_name(username=community_administrator.username,
+                                                                          community_name=community.name)
+
+        expected_members = [
+            community_member
+        ]
+
+        expected_members_ids = [member.pk for member in expected_members]
+
+        url = self._get_url(community_name=community.name)
+
+        response = self.client.get(url, {
+            'query': community_member.username,
+            'exclude': ','.join(
+                [Community.EXCLUDE_COMMUNITY_MODERATORS_KEYWORD, Community.EXCLUDE_COMMUNITY_ADMINISTRATORS_KEYWORD]),
+        }, **headers)
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        response_members = json.loads(response.content)
+
+        self.assertEqual(len(response_members), len(expected_members))
+
+        for response_member in response_members:
+            response_member_id = response_member.get('id')
+            self.assertIn(response_member_id, expected_members_ids)
+
+    def _get_url(self, community_name):
+        return reverse('search-community-members', kwargs={
+            'community_name': community_name,
         })

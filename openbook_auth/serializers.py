@@ -13,8 +13,10 @@ from openbook_circles.models import Circle
 from openbook_common.models import Emoji, Badge
 from openbook_common.serializers_fields.user import IsFollowingField, IsConnectedField, FollowersCountField, \
     FollowingCountField, PostsCountField, ConnectedCirclesField, FollowListsField, IsFullyConnectedField, \
-    IsPendingConnectionConfirmation
+    IsPendingConnectionConfirmation, CommunitiesMembershipsField, CommunitiesInvitesField, IsMemberOfCommunities
 from openbook_common.validators import name_characters_validator
+from openbook_communities.models import CommunityMembership, CommunityInvite
+from openbook_communities.validators import community_name_characters_validator, community_name_exists
 from openbook_lists.models import List
 
 
@@ -84,6 +86,7 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
     posts_count = PostsCountField()
     followers_count = FollowersCountField()
     following_count = FollowingCountField()
+    is_member_of_communities = IsMemberOfCommunities()
 
     class Meta:
         model = User
@@ -95,7 +98,8 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
             'posts_count',
             'followers_count',
             'following_count',
-            'connections_circle_id'
+            'connections_circle_id',
+            'is_member_of_communities'
         )
 
 
@@ -224,11 +228,37 @@ class GetUserUserSerializer(serializers.ModelSerializer):
 
 
 class GetUsersSerializer(serializers.Serializer):
-    query = serializers.CharField(max_length=PROFILE_NAME_MAX_LENGTH, required=True)
+    query = serializers.CharField(max_length=settings.SEARCH_QUERIES_MAX_LENGTH, required=True)
     count = serializers.IntegerField(
         required=False,
         max_value=10
     )
+
+
+class GetLinkedUsersSerializer(serializers.Serializer):
+    max_id = serializers.IntegerField(
+        required=False,
+    )
+    count = serializers.IntegerField(
+        required=False,
+        max_value=10
+    )
+    with_community = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
+                                           allow_blank=False,
+                                           required=False,
+                                           validators=[community_name_characters_validator, community_name_exists])
+
+
+class SearchLinkedUsersSerializer(serializers.Serializer):
+    query = serializers.CharField(max_length=settings.SEARCH_QUERIES_MAX_LENGTH, required=True)
+    count = serializers.IntegerField(
+        required=False,
+        max_value=10
+    )
+    with_community = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
+                                           allow_blank=False,
+                                           required=False,
+                                           validators=[community_name_characters_validator, community_name_exists])
 
 
 class GetUsersUserProfileSerializer(serializers.ModelSerializer):
@@ -257,4 +287,46 @@ class GetUsersUserSerializer(serializers.ModelSerializer):
             'username',
             'is_following',
             'is_connected'
+        )
+
+
+class GetLinkedUsersUserCommunityMembershipSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommunityMembership
+        fields = (
+            'id',
+            'user_id',
+            'community_id',
+            'is_administrator',
+            'is_moderator',
+        )
+
+
+class GetLinkedUsersUserCommunityInviteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommunityInvite
+        fields = (
+            'id',
+            'creator_id',
+            'invited_user_id',
+            'community_id'
+        )
+
+
+class GetLinkedUsersUserSerializer(serializers.ModelSerializer):
+    profile = GetUsersUserProfileSerializer(many=False)
+    communities_memberships = CommunitiesMembershipsField(
+        community_membership_serializer=GetLinkedUsersUserCommunityMembershipSerializer)
+    communities_invites = CommunitiesInvitesField(
+        community_invite_serializer=GetLinkedUsersUserCommunityInviteSerializer
+    )
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'profile',
+            'username',
+            'communities_memberships',
+            'communities_invites'
         )

@@ -11,7 +11,8 @@ from openbook_common.utils.helpers import normalize_list_value_in_request_data, 
 from openbook_common.utils.model_loaders import get_community_model
 from openbook_communities.views.communities.serializers import CreateCommunitySerializer, \
     CommunitiesCommunitySerializer, SearchCommunitiesSerializer, CommunityNameCheckSerializer, \
-    GetFavoriteCommunitiesSerializer, GetJoinedCommunitiesSerializer, TrendingCommunitiesSerializer
+    GetFavoriteCommunitiesSerializer, GetJoinedCommunitiesSerializer, TrendingCommunitiesSerializer, \
+    GetModeratedCommunitiesSerializer, GetAdministratedCommunitiesSerializer
 
 
 class Communities(APIView):
@@ -102,6 +103,75 @@ class JoinedCommunities(APIView):
         user = request.user
 
         communities = user.get_joined_communities()[offset:count]
+
+        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
+                                                             context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class SearchJoinedCommunities(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        query_params = request.query_params.dict()
+        serializer = SearchCommunitiesSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 10)
+        query = data.get('query')
+
+        user = request.user
+
+        communities = user.search_joined_communities_with_query(query=query)[:count]
+
+        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
+                                                             context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class ModeratedCommunities(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        query_params = request.query_params.dict()
+        serializer = GetModeratedCommunitiesSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 10)
+        offset = data.get('offset', 0)
+
+        user = request.user
+
+        communities = user.get_moderated_communities()[offset:count]
+
+        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
+                                                             context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class AdministratedCommunities(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        query_params = request.query_params.dict()
+        serializer = GetAdministratedCommunitiesSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 10)
+        offset = data.get('offset', 0)
+
+        user = request.user
+
+        communities = user.get_administrated_communities()[offset:count]
 
         response_serializer = CommunitiesCommunitySerializer(communities, many=True,
                                                              context={"request": request})

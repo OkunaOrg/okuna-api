@@ -5,13 +5,14 @@ from django.db import models
 from django.utils import timezone
 from django.db.models import Q
 from django.db.models import Count
+from pilkit.processors import ResizeToFill
 
 from openbook.settings import COLOR_ATTR_MAX_LENGTH
 from openbook_auth.models import User
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.utils.model_loaders import get_community_invite_model, \
-    get_community_log_model, get_category_model
+    get_community_log_model, get_category_model, get_community_membership_model
 from openbook_common.validators import hex_color_validator
 from openbook_communities.validators import community_name_characters_validator, \
     community_adjective_characters_validator
@@ -29,13 +30,11 @@ class Community(models.Model):
                                    null=True, )
     rules = models.CharField(_('rules'), max_length=settings.COMMUNITY_RULES_MAX_LENGTH, blank=False,
                              null=True)
-    avatar = ProcessedImageField(verbose_name=_('avatar'), blank=False, null=True, format='JPEG', options={'quality': 60})
+    avatar = ProcessedImageField(verbose_name=_('avatar'), blank=False, null=True, format='JPEG',
+                                 options={'quality': 60}, processors=[ResizeToFill(500, 500)])
     cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 75})
     created = models.DateTimeField(editable=False)
     starrers = models.ManyToManyField(User, related_name='favorite_communities')
-    members = models.ManyToManyField(User, related_name='joined_communities')
-    moderators = models.ManyToManyField(User, related_name='moderated_communities')
-    administrators = models.ManyToManyField(User, related_name='administrated_communities')
     banned_users = models.ManyToManyField(User, related_name='banned_of_communities')
     COMMUNITY_TYPE_PRIVATE = 'T'
     COMMUNITY_TYPE_PUBLIC = 'P'
@@ -63,15 +62,17 @@ class Community(models.Model):
 
     @classmethod
     def is_user_with_username_member_of_community_with_name(cls, username, community_name):
-        return cls.objects.filter(name=community_name, members__username=username).exists()
+        return cls.objects.filter(name=community_name, memberships__user__username=username).exists()
 
     @classmethod
     def is_user_with_username_administrator_of_community_with_name(cls, username, community_name):
-        return cls.objects.filter(name=community_name, administrators__username=username).exists()
+        return cls.objects.filter(name=community_name, memberships__user__username=username,
+                                  memberships__is_administrator=True).exists()
 
     @classmethod
     def is_user_with_username_moderator_of_community_with_name(cls, username, community_name):
-        return cls.objects.filter(name=community_name, moderators__username=username).exists()
+        return cls.objects.filter(name=community_name, memberships__user__username=username,
+                                  memberships__is_moderator=True).exists()
 
     @classmethod
     def is_user_with_username_banned_from_community_with_name(cls, username, community_name):
@@ -98,8 +99,8 @@ class Community(models.Model):
         if category_name:
             trending_communities_query.add(Q(categories__name=category_name), Q.AND)
 
-        return cls.objects.annotate(Count('members')).filter(trending_communities_query).order_by(
-            '-members__count', '-created')
+        return cls.objects.annotate(Count('memberships')).filter(trending_communities_query).order_by(
+            '-memberships__count', '-created')
 
     @classmethod
     def create_community(cls, name, title, creator, color, type=None, user_adjective=None, users_adjective=None,
@@ -117,9 +118,8 @@ class Community(models.Model):
                                        description=description, type=type, rules=rules,
                                        invites_enabled=invites_enabled)
 
-        community.administrators.add(creator)
-        community.moderators.add(creator)
-        community.members.add(creator)
+        CommunityMembership.create_membership(user=creator, is_administrator=True, is_moderator=False,
+                                              community=community)
 
         if categories_names:
             community.set_categories_with_names(categories_names=categories_names)
@@ -131,35 +131,94 @@ class Community(models.Model):
     def is_name_taken(cls, name):
         return cls.objects.filter(name__iexact=name).exists()
 
+    EXCLUDE_COMMUNITY_ADMINISTRATORS_KEYWORD = 'administrators'
+    EXCLUDE_COMMUNITY_MODERATORS_KEYWORD = 'moderators'
+
     @classmethod
-    def get_community_with_name_members(cls, community_name, members_max_id):
-        community = Community.objects.get(name=community_name)
-        community_members_query = Q()
+    def get_community_with_name_members(cls, community_name, members_max_id=None, exclude_keywords=None):
+        community_members_query = Q(communities_memberships__community__name=community_name)
 
         if members_max_id:
             community_members_query.add(Q(id__lt=members_max_id), Q.AND)
 
-        return community.members.filter(community_members_query)
+        if exclude_keywords:
+            community_members_query.add(
+                cls._get_exclude_members_query_for_keywords(exclude_keywords=exclude_keywords),
+                Q.AND)
+
+        return User.objects.filter(community_members_query)
+
+    @classmethod
+    def search_community_with_name_members(cls, community_name, query, exclude_keywords=None):
+        db_query = Q(communities_memberships__community__name=community_name)
+
+        community_members_query = Q(communities_memberships__user__username__icontains=query)
+        community_members_query.add(Q(communities_memberships__user__profile__name__icontains=query), Q.OR)
+
+        db_query.add(community_members_query, Q.AND)
+
+        if exclude_keywords:
+            db_query.add(
+                cls._get_exclude_members_query_for_keywords(exclude_keywords=exclude_keywords),
+                Q.AND)
+
+        return User.objects.filter(db_query)
+
+    @classmethod
+    def _get_exclude_members_query_for_keywords(cls, exclude_keywords):
+        query = Q()
+
+        if cls.EXCLUDE_COMMUNITY_ADMINISTRATORS_KEYWORD in exclude_keywords:
+            query.add(Q(communities_memberships__is_administrator=False), Q.AND)
+
+        if cls.EXCLUDE_COMMUNITY_MODERATORS_KEYWORD in exclude_keywords:
+            query.add(Q(communities_memberships__is_moderator=False), Q.AND)
+
+        return query
 
     @classmethod
     def get_community_with_name_administrators(cls, community_name, administrators_max_id):
-        community = Community.objects.get(name=community_name)
-        community_administrators_query = Q()
+        community_administrators_query = Q(communities_memberships__community__name=community_name,
+                                           communities_memberships__is_administrator=True)
 
         if administrators_max_id:
-            community_administrators_query.add(Q(id__lt=administrators_max_id), Q.AND)
+            community_administrators_query.add(Q(communities_memberships__user__id__lt=administrators_max_id), Q.AND)
 
-        return community.administrators.filter(community_administrators_query)
+        return User.objects.filter(community_administrators_query)
 
     @classmethod
-    def get_community_with_name_moderators(cls, community_name, moderators_max_id):
-        community = Community.objects.get(name=community_name)
-        community_moderators_query = Q()
+    def search_community_with_name_administrators(cls, community_name, query):
+        db_query = Q(communities_memberships__community__name=community_name,
+                     communities_memberships__is_administrator=True)
+
+        community_members_query = Q(communities_memberships__user__username__icontains=query)
+        community_members_query.add(Q(communities_memberships__user__profile__name__icontains=query), Q.OR)
+
+        db_query.add(community_members_query, Q.AND)
+
+        return User.objects.filter(db_query)
+
+    @classmethod
+    def get_community_with_name_moderators(cls, community_name, moderators_max_id=None):
+        community_moderators_query = Q(communities_memberships__community__name=community_name,
+                                       communities_memberships__is_moderator=True)
 
         if moderators_max_id:
-            community_moderators_query.add(Q(id__lt=moderators_max_id), Q.AND)
+            community_moderators_query.add(Q(communities_memberships__user__id__lt=moderators_max_id), Q.AND)
 
-        return community.moderators.filter(community_moderators_query)
+        return User.objects.filter(community_moderators_query)
+
+    @classmethod
+    def search_community_with_name_moderators(cls, community_name, query):
+        db_query = Q(communities_memberships__community__name=community_name,
+                     communities_memberships__is_moderator=True)
+
+        community_members_query = Q(communities_memberships__user__username__icontains=query)
+        community_members_query.add(Q(communities_memberships__user__profile__name__icontains=query), Q.OR)
+
+        db_query.add(community_members_query, Q.AND)
+
+        return User.objects.filter(db_query)
 
     @classmethod
     def get_community_with_name_banned_users(cls, community_name, users_max_id):
@@ -171,9 +230,16 @@ class Community(models.Model):
 
         return community.banned_users.filter(community_members_query)
 
+    @classmethod
+    def search_community_with_name_banned_users(cls, community_name, query):
+        community = Community.objects.get(name=community_name)
+        community_banned_users_query = Q(username__icontains=query)
+        community_banned_users_query.add(Q(profile__name__icontains=query), Q.OR)
+        return community.banned_users.filter(community_banned_users_query)
+
     @property
     def members_count(self):
-        return self.members.all().count()
+        return self.memberships.all().count()
 
     def is_private(self):
         return self.type is self.COMMUNITY_TYPE_PRIVATE
@@ -213,6 +279,38 @@ class Community(models.Model):
             self.set_categories_with_names(categories_names=categories_names)
 
         self.save()
+
+    def add_moderator(self, user):
+        user_membership = self.memberships.get(user=user)
+        user_membership.is_moderator = True
+        user_membership.save()
+        return user_membership
+
+    def remove_moderator(self, user):
+        user_membership = self.memberships.get(user=user)
+        user_membership.is_moderator = False
+        user_membership.save()
+        return user_membership
+
+    def add_administrator(self, user):
+        user_membership = self.memberships.get(user=user)
+        user_membership.is_administrator = True
+        user_membership.save()
+        return user_membership
+
+    def remove_administrator(self, user):
+        user_membership = self.memberships.get(user=user)
+        user_membership.is_administrator = False
+        user_membership.save()
+        return user_membership
+
+    def add_member(self, user):
+        user_membership = CommunityMembership.create_membership(user=user, community=self)
+        return user_membership
+
+    def remove_member(self, user):
+        user_membership = self.memberships.get(user=user)
+        user_membership.delete()
 
     def set_categories_with_names(self, categories_names):
         self.clear_categories()
@@ -291,6 +389,35 @@ class Community(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class CommunityMembership(models.Model):
+    """
+    An object representing the membership of a user in a community
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='communities_memberships', null=False,
+                             blank=False)
+    community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='memberships', null=False,
+                                  blank=False)
+    is_administrator = models.BooleanField(_('is administrator'), default=False)
+    is_moderator = models.BooleanField(_('is moderator'), default=False)
+    created = models.DateTimeField(editable=False)
+
+    class Meta:
+        unique_together = (('user', 'community'),)
+
+    @classmethod
+    def create_membership(cls, user, community, is_administrator=False, is_moderator=False):
+        membership = cls.objects.create(user=user, community=community, is_administrator=is_administrator,
+                                        is_moderator=is_moderator)
+
+        return membership
+
+    def save(self, *args, **kwargs):
+        ''' On save, update timestamps '''
+        if not self.id:
+            self.created = timezone.now()
+        return super(CommunityMembership, self).save(*args, **kwargs)
 
 
 class CommunityLog(models.Model):

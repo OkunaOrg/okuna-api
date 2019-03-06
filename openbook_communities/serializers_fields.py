@@ -1,20 +1,6 @@
 from rest_framework.fields import Field
 
-
-class IsMemberField(Field):
-    def __init__(self, **kwargs):
-        kwargs['source'] = '*'
-        kwargs['read_only'] = True
-        super(IsMemberField, self).__init__(**kwargs)
-
-    def to_representation(self, community):
-        request = self.context.get('request')
-        request_user = request.user
-
-        if request_user.is_anonymous:
-            return False
-
-        return request_user.is_member_of_community_with_name(community.name)
+from openbook_communities.models import Community
 
 
 class IsInvitedField(Field):
@@ -33,38 +19,6 @@ class IsInvitedField(Field):
         return request_user.is_invited_to_community_with_name(community.name)
 
 
-class IsAdministratorField(Field):
-    def __init__(self, **kwargs):
-        kwargs['source'] = '*'
-        kwargs['read_only'] = True
-        super(IsAdministratorField, self).__init__(**kwargs)
-
-    def to_representation(self, community):
-        request = self.context.get('request')
-        request_user = request.user
-
-        if request_user.is_anonymous:
-            return False
-
-        return request_user.is_administrator_of_community_with_name(community.name)
-
-
-class IsModeratorField(Field):
-    def __init__(self, **kwargs):
-        kwargs['source'] = '*'
-        kwargs['read_only'] = True
-        super(IsModeratorField, self).__init__(**kwargs)
-
-    def to_representation(self, community):
-        request = self.context.get('request')
-        request_user = request.user
-
-        if request_user.is_anonymous:
-            return False
-
-        return request_user.is_moderator_of_community_with_name(community.name)
-
-
 class IsCreatorField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'
@@ -79,6 +33,22 @@ class IsCreatorField(Field):
             return False
 
         return request_user.is_creator_of_community_with_name(community.name)
+
+
+class IsFavoriteField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(IsFavoriteField, self).__init__(**kwargs)
+
+    def to_representation(self, community):
+        request = self.context.get('request')
+        request_user = request.user
+
+        if request_user.is_anonymous:
+            return False
+
+        return request_user.has_favorite_community_with_name(community.name)
 
 
 class RulesField(Field):
@@ -99,3 +69,59 @@ class RulesField(Field):
             return None
 
         return community.rules
+
+
+class ModeratorsField(Field):
+    def __init__(self, moderator_serializer=None, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        self.moderator_serializer = moderator_serializer
+        super(ModeratorsField, self).__init__(**kwargs)
+
+    def to_representation(self, community):
+        request = self.context.get('request')
+
+        moderators = Community.get_community_with_name_moderators(community_name=community.name)
+
+        return self.moderator_serializer(moderators, context={"request": request}, many=True).data
+
+
+class CommunityMembershipsField(Field):
+    def __init__(self, community_membership_serializer=None, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        self.community_membership_serializer = community_membership_serializer
+        super(CommunityMembershipsField, self).__init__(**kwargs)
+
+    def to_representation(self, community):
+        request = self.context.get('request')
+        request_user = request.user
+
+        if request_user.is_anonymous or not request_user.is_member_of_community_with_name(
+                community_name=community.name):
+            return None
+
+        membership = community.memberships.get(user=request_user)
+
+        return self.community_membership_serializer([membership], context={"request": request}, many=True).data
+
+
+class UserCommunitiesMembershipsField(Field):
+    def __init__(self, community_membership_serializer=None, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        self.community_membership_serializer = community_membership_serializer
+        super(UserCommunitiesMembershipsField, self).__init__(**kwargs)
+
+    def to_representation(self, member):
+        request = self.context.get('request')
+        request_user = request.user
+        community = self.context.get('community')
+
+        if not community or request_user.is_anonymous or not request_user.is_member_of_community_with_name(
+                community_name=community.name):
+            return None
+
+        membership = community.memberships.get(user=request_user)
+
+        return self.community_membership_serializer([membership], context={"request": request}, many=True).data
