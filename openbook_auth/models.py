@@ -827,11 +827,17 @@ class User(AbstractUser):
         self._create_community_invite_notification(community_invite)
         self._send_community_invite_push_notification(community_invite)
 
+        return community_invite
+
     def uninvite_user_with_username_to_community_with_name(self, username, community_name):
         self._check_can_uninvite_user_with_username_to_community_with_name(username=username,
                                                                            community_name=community_name)
-        community_invite = self.created_communities_invites.filter(invited_user__username=username)
+
+        community_invite = self.created_communities_invites.get(invited_user__username=username, creator=self)
+        uninvited_user = community_invite.invited_user
         community_invite.delete()
+
+        return uninvited_user
 
     def get_community_with_name_administrators(self, community_name, max_id):
         self._check_can_get_community_with_name_administrators(
