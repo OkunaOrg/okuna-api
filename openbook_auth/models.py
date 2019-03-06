@@ -500,10 +500,9 @@ class User(AbstractUser):
             Post = get_post_model()
             post = Post.objects.filter(pk=post_id).get()
             post_reaction = post.react(reactor=self, emoji_id=emoji_id)
-
-        if post_reaction.post.creator_id != self.pk:
-            self._create_post_reaction_notification(post_reaction=post_reaction)
-            self._send_post_reaction_push_notification(post_reaction=post_reaction)
+            if post_reaction.post.creator_id != self.pk:
+                self._create_post_reaction_notification(post_reaction=post_reaction)
+                self._send_post_reaction_push_notification(post_reaction=post_reaction)
 
         return post_reaction
 
