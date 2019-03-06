@@ -11,7 +11,7 @@ from django.conf import settings
 from imagekit.models import ProcessedImageField
 from pilkit.processors import ResizeToFill
 from rest_framework.authtoken.models import Token
-from rest_framework.exceptions import ValidationError, PermissionDenied
+from rest_framework.exceptions import ValidationError, PermissionDenied, NotFound
 from django.db.models import Q
 
 from openbook.settings import USERNAME_MAX_LENGTH
@@ -1404,20 +1404,18 @@ class User(AbstractUser):
     def delete_notifications(self):
         self.notifications.all().delete()
 
-    def create_device(self, uuid, name=None, one_signal_player_id=None):
+    def create_device(self, uuid, name=None):
         Device = get_device_model()
-        return Device.create_device(owner=self, uuid=uuid, name=name, one_signal_player_id=one_signal_player_id, )
+        return Device.create_device(owner=self, uuid=uuid, name=name )
 
-    def update_device_with_uuid(self, device_uuid, name=None, one_signal_player_id=None, ):
+    def update_device_with_uuid(self, device_uuid, name=None ):
         self._check_can_update_device_with_uuid(device_uuid=device_uuid)
-        Device = get_device_model()
-        device = Device.objects.get(uuid=device_uuid)
-        device.update(name=name, one_signal_player_id=one_signal_player_id)
+        device = self.devices.get(uuid=device_uuid)
+        device.update(name=name)
 
     def delete_device_with_uuid(self, device_uuid):
         self._check_can_delete_device_with_uuid(device_uuid=device_uuid)
-        Device = get_device_model()
-        device = Device.objects.get(uuid=device_uuid)
+        device = self.devices.get(uuid=device_uuid)
         device.delete()
 
     def get_devices(self, max_id=None):
@@ -1427,10 +1425,6 @@ class User(AbstractUser):
             devices_query.add(Q(id__lt=max_id), Q.AND)
 
         return self.devices.filter(devices_query)
-
-    def get_devices_one_signal_player_ids(self):
-        return list(self.devices.filter(one_signal_player_id__isnull=False).only(
-            'one_signal_player_id'))
 
     def get_device_with_uuid(self, device_uuid):
         self._check_can_get_device_with_uuid(device_uuid=device_uuid)
@@ -2194,21 +2188,18 @@ class User(AbstractUser):
             )
 
     def _check_can_update_device_with_uuid(self, device_uuid):
-        if not self.has_device_with_uuid(device_uuid=device_uuid):
-            raise PermissionDenied(
-                _('You cannot update a device that does not belong to you.'),
-            )
+        self._check_has_device_with_uuid(device_uuid=device_uuid)
 
     def _check_can_delete_device_with_uuid(self, device_uuid):
-        if not self.has_device_with_uuid(device_uuid=device_uuid):
-            raise ValidationError(
-                _('You cannot delete a device that does not belong to you.'),
-            )
+        self._check_has_device_with_uuid(device_uuid=device_uuid)
 
     def _check_can_get_device_with_uuid(self, device_uuid):
+        self._check_has_device_with_uuid(device_uuid=device_uuid)
+
+    def _check_has_device_with_uuid(self, device_uuid):
         if not self.has_device_with_uuid(device_uuid=device_uuid):
-            raise PermissionDenied(
-                _('You cannot retrieve device that does not belong to you.'),
+            raise NotFound(
+                _('Device not found'),
             )
 
 

@@ -193,7 +193,7 @@ notifications_patterns = [
 
 devices_patterns = [
     path('', Devices.as_view(), name='devices'),
-    path('<uuid:device_uuid>/', DeviceItem.as_view(), name='device'),
+    path('<str:device_uuid>/', DeviceItem.as_view(), name='device'),
 ]
 
 api_patterns = [

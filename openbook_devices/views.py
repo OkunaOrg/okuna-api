@@ -21,12 +21,11 @@ class Devices(APIView):
 
         name = data.get('name')
         uuid = data.get('uuid')
-        one_signal_player_id = data.get('one_signal_player_id')
 
         user = request.user
 
         with transaction.atomic():
-            device = user.create_device(name=name, uuid=uuid, one_signal_player_id=one_signal_player_id, )
+            device = user.create_device(name=name, uuid=uuid)
 
         response_serializer = GetDevicesDeviceSerializer(device, context={"request": request})
 
@@ -83,13 +82,11 @@ class DeviceItem(APIView):
         data = serializer.validated_data
 
         name = data.get('name')
-        one_signal_player_id = data.get('one_signal_player_id')
 
         user = request.user
 
         with transaction.atomic():
-            device = user.update_device_with_uuid(device_uuid=device_uuid, name=name,
-                                                  one_signal_player_id=one_signal_player_id)
+            device = user.update_device_with_uuid(device_uuid=device_uuid, name=name)
 
         response_serializer = GetDevicesDeviceSerializer(device, context={"request": request})
 

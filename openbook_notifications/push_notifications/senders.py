@@ -31,9 +31,7 @@ def send_post_reaction_push_notification(post_reaction):
 
         one_signal_notification.set_parameter('data', notification_data)
 
-        target_devices = post_creator.get_devices_one_signal_player_ids()
-
-        _send_notification_to_target_devices(notification=one_signal_notification, target_devices=target_devices)
+        _send_notification_to_user(notification=one_signal_notification, user=post_creator)
 
 
 def send_post_comment_push_notification(post_comment):
@@ -58,9 +56,7 @@ def send_post_comment_push_notification(post_comment):
 
         one_signal_notification.set_parameter('data', notification_data)
 
-        target_devices = post_creator.get_devices_one_signal_player_ids()
-
-        _send_notification_to_target_devices(notification=one_signal_notification, target_devices=target_devices)
+        _send_notification_to_user(notification=one_signal_notification, user=post_creator)
 
 
 def send_follow_push_notification(followed_user, following_user):
@@ -83,9 +79,7 @@ def send_follow_push_notification(followed_user, following_user):
 
         one_signal_notification.set_parameter('data', notification_data)
 
-        target_devices = followed_user.get_devices_one_signal_player_ids()
-
-        _send_notification_to_target_devices(notification=one_signal_notification, target_devices=target_devices)
+        _send_notification_to_user(notification=one_signal_notification, user=followed_user)
 
 
 def send_connection_request_push_notification(connection_requester, connection_requested_for):
@@ -108,14 +102,15 @@ def send_connection_request_push_notification(connection_requester, connection_r
 
         one_signal_notification.set_parameter('data', notification_data)
 
-        target_devices = connection_requested_for.get_devices_one_signal_player_ids()
-
-        _send_notification_to_target_devices(notification=one_signal_notification, target_devices=target_devices)
+        _send_notification_to_user(user=connection_requested_for, notification=one_signal_notification, )
 
 
-def _send_notification_to_target_devices(notification, target_devices):
-    if target_devices:
-        notification.set_target_devices(target_devices)
+def _send_notification_to_user(user, notification):
+    for device in user.devices.all():
+        notification.set_filters([
+            {"field": "tag", "key": "user_id", "relation": "=", "value": user.pk},
+            {"field": "tag", "key": "device_uuid", "relation": "=", "value": device.uuid},
+        ])
 
         onesignal_response = onesignal_client.send_notification(notification)
 

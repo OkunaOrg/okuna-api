@@ -2,7 +2,6 @@ from django.conf import settings
 from rest_framework import serializers
 
 from openbook_devices.models import Device
-from openbook_devices.validators import device_uuid_exists, device_uuid_not_exists
 
 
 class GetDevicesSerializer(serializers.Serializer):
@@ -21,25 +20,22 @@ class GetDevicesDeviceSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'uuid',
-            'one_signal_player_id',
         )
 
 
 class GetDeviceSerializer(serializers.Serializer):
-    device_uuid = serializers.UUIDField(validators=[device_uuid_exists])
+    device_uuid = serializers.CharField()
 
 
 class DeleteDeviceSerializer(serializers.Serializer):
-    device_uuid = serializers.UUIDField(validators=[device_uuid_exists])
+    device_uuid = serializers.CharField()
 
 
 class UpdateDeviceSerializer(serializers.Serializer):
-    device_uuid = serializers.UUIDField(validators=[device_uuid_exists])
+    device_uuid = serializers.CharField()
     name = serializers.CharField(max_length=settings.DEVICE_NAME_MAX_LENGTH, required=False, allow_blank=False, )
-    one_signal_player_id = serializers.CharField(required=False)
 
 
 class CreateDeviceSerializer(serializers.Serializer):
-    uuid = serializers.UUIDField(validators=[device_uuid_not_exists])
+    uuid = serializers.CharField()
     name = serializers.CharField(max_length=settings.DEVICE_NAME_MAX_LENGTH, required=False, allow_blank=False, )
-    one_signal_player_id = serializers.CharField(required=False)
