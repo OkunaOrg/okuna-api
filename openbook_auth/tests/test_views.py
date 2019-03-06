@@ -924,6 +924,7 @@ class AuthenticatedUserNotificationsSettingsTests(APITestCase):
         notifications_settings.follow_notifications = fake.boolean()
         notifications_settings.connection_request_notifications = fake.boolean()
         notifications_settings.connection_confirmed_notifications = fake.boolean()
+        notifications_settings.community_invite_notifications = fake.boolean()
 
         notifications_settings.save()
 
@@ -934,6 +935,7 @@ class AuthenticatedUserNotificationsSettingsTests(APITestCase):
         new_follow_notifications = notifications_settings.follow_notifications
         new_connection_request_notifications = notifications_settings.connection_request_notifications
         new_connection_confirmed_notifications = notifications_settings.connection_confirmed_notifications
+        new_community_invite_notifications = notifications_settings.community_invite_notifications
 
         data = {
             'post_comment_notifications': new_post_comment_notifications,
@@ -941,6 +943,7 @@ class AuthenticatedUserNotificationsSettingsTests(APITestCase):
             'follow_notifications': new_follow_notifications,
             'connection_request_notifications': new_connection_request_notifications,
             'connection_confirmed_notifications': new_connection_confirmed_notifications,
+            'community_invite_notifications': new_community_invite_notifications
         }
 
         url = self._get_url()
@@ -955,6 +958,7 @@ class AuthenticatedUserNotificationsSettingsTests(APITestCase):
         self.assertEqual(notifications_settings.post_reaction_notifications, new_post_reaction_notifications)
         self.assertEqual(notifications_settings.follow_notifications, new_follow_notifications)
         self.assertEqual(notifications_settings.connection_request_notifications, new_connection_request_notifications)
+        self.assertEqual(notifications_settings.community_invite_notifications, new_community_invite_notifications)
         self.assertEqual(notifications_settings.connection_confirmed_notifications,
                          new_connection_confirmed_notifications)
 

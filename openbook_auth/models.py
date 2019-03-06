@@ -261,14 +261,17 @@ class User(AbstractUser):
 
     def update_notifications_settings(self, post_comment_notifications=None, post_reaction_notifications=None,
                                       follow_notifications=None, connection_request_notifications=None,
-                                      connection_confirmed_notifications=None):
+                                      connection_confirmed_notifications=None,
+                                      community_invite_notifications=None):
+
         notifications_settings = self.notifications_settings
         notifications_settings.update(
             post_comment_notifications=post_comment_notifications,
             post_reaction_notifications=post_reaction_notifications,
             follow_notifications=follow_notifications,
             connection_request_notifications=connection_request_notifications,
-            connection_confirmed_notifications=connection_confirmed_notifications
+            connection_confirmed_notifications=connection_confirmed_notifications,
+            community_invite_notifications=community_invite_notifications
         )
         return notifications_settings
 
@@ -2322,7 +2325,7 @@ class UserNotificationsSettings(models.Model):
 
     def update(self, post_comment_notifications=None, post_reaction_notifications=None,
                follow_notifications=None, connection_request_notifications=None,
-               connection_confirmed_notifications=None):
+               connection_confirmed_notifications=None, community_invite_notifications=None):
 
         if post_comment_notifications is not None:
             self.post_comment_notifications = post_comment_notifications
@@ -2338,6 +2341,9 @@ class UserNotificationsSettings(models.Model):
 
         if connection_confirmed_notifications is not None:
             self.connection_confirmed_notifications = connection_confirmed_notifications
+
+        if community_invite_notifications is not None:
+            self.community_invite_notifications = community_invite_notifications
 
         self.save()
 
