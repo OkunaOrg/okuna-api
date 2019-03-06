@@ -105,6 +105,33 @@ def send_connection_request_push_notification(connection_requester, connection_r
         _send_notification_to_user(user=connection_requested_for, notification=one_signal_notification, )
 
 
+def send_community_invite_push_notification(community_invite):
+    invited_user = community_invite.invited_user
+
+    if invited_user.has_community_invite_notifications_enabled():
+        invite_creator = community_invite.creator
+        community = community_invite.community
+
+        one_signal_notification = onesignal_sdk.Notification(
+            contents={"en": _('@%(invite_creator)s has invited you to join /c/%(community_name)s.') % {
+                'invite_creator': invite_creator.username,
+                'community_name': community.name,
+            }})
+
+        NotificationCommunityInviteSerializer = _get_push_notifications_serializers().NotificationCommunityInviteSerializer
+
+        Notification = get_notification_model()
+
+        notification_data = {
+            'type': Notification.COMMUNITY_INVITE,
+            'payload': NotificationCommunityInviteSerializer(community_invite).data
+        }
+
+        one_signal_notification.set_parameter('data', notification_data)
+
+        _send_notification_to_user(notification=one_signal_notification, user=invited_user)
+
+
 def _send_notification_to_user(user, notification):
     for device in user.devices.all():
         notification.set_filters([

@@ -23,7 +23,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_emoji_group_model, get_user_invite_model, get_community_model, get_community_invite_model, get_tag_model, \
     get_post_comment_notification_model, get_follow_notification_model, get_connection_confirmed_notification_model, \
     get_connection_request_notification_model, get_post_reaction_notification_model, get_device_model, \
-    get_post_mute_model
+    get_post_mute_model, get_community_invite_notification_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications.push_notifications import senders
 
@@ -435,6 +435,9 @@ class User(AbstractUser):
     def has_connection_request_notifications_enabled(self):
         return self.notifications_settings.connection_request_notifications
 
+    def has_community_invite_notifications_enabled(self):
+        return self.notifications_settings.community_invite_notifications
+
     def has_connection_confirmed_notifications_enabled(self):
         return self.notifications_settings.connection_confirmed_notifications
 
@@ -787,7 +790,9 @@ class User(AbstractUser):
 
         # Clean up any invites
         CommunityInvite = get_community_invite_model()
-        CommunityInvite.objects.filter(community__name=community_name, invited_user__username=self.username).delete()
+        CommunityInvite.objects.filter(community__name=community_name, invited_user__username=self.username).all()
+
+        # No need to delete community invite notifications as they are delete cascaded
 
         return community_to_join
 
@@ -814,7 +819,10 @@ class User(AbstractUser):
         community_to_invite_user_to = Community.objects.get(name=community_name)
         user_to_invite = User.objects.get(username=username)
 
-        community_to_invite_user_to.create_invite(creator=self, invited_user=user_to_invite)
+        community_invite = community_to_invite_user_to.create_invite(creator=self, invited_user=user_to_invite)
+
+        self._create_community_invite_notification(community_invite)
+        self._send_community_invite_push_notification(community_invite)
 
     def uninvite_user_with_username_to_community_with_name(self, username, community_name):
         self._check_can_uninvite_user_with_username_to_community_with_name(username=username,
@@ -1478,6 +1486,14 @@ class User(AbstractUser):
         PostReactionNotification = get_post_reaction_notification_model()
         PostReactionNotification.delete_post_reaction_notification(post_reaction_id=post_reaction.pk,
                                                                    owner_id=post_reaction.post.creator_id)
+
+    def _create_community_invite_notification(self, community_invite):
+        CommunityInviteNotification = get_community_invite_notification_model()
+        CommunityInviteNotification.create_community_invite_notification(community_invite_id=community_invite.pk,
+                                                                         owner_id=community_invite.invited_user_id)
+
+    def _send_community_invite_push_notification(self, community_invite):
+        senders.send_community_invite_push_notification(community_invite=community_invite)
 
     def _create_follow_notification(self, followed_user_id):
         FollowNotification = get_follow_notification_model()
@@ -2298,6 +2314,7 @@ class UserNotificationsSettings(models.Model):
     follow_notifications = models.BooleanField(_('follow notifications'), default=True)
     connection_request_notifications = models.BooleanField(_('connection request notifications'), default=True)
     connection_confirmed_notifications = models.BooleanField(_('connection confirmed notifications'), default=True)
+    community_invite_notifications = models.BooleanField(_('community invite notifications'), default=True)
 
     @classmethod
     def create_notifications_settings(cls, user):

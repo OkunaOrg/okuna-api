@@ -93,6 +93,10 @@ def get_connection_confirmed_notification_model():
     return apps.get_model('openbook_notifications.ConnectionConfirmedNotification')
 
 
+def get_community_invite_notification_model():
+    return apps.get_model('openbook_notifications.CommunityInviteNotification')
+
+
 def get_notification_model():
     return apps.get_model('openbook_notifications.Notification')
 
