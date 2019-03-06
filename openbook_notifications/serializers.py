@@ -3,8 +3,9 @@ from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
 from openbook_common.models import Emoji
+from openbook_communities.models import Community, CommunityInvite
 from openbook_notifications.models import Notification, PostCommentNotification, ConnectionRequestNotification, \
-    ConnectionConfirmedNotification, FollowNotification
+    ConnectionConfirmedNotification, FollowNotification, CommunityInviteNotification
 from openbook_notifications.models.post_reaction_notification import PostReactionNotification
 from openbook_notifications.validators import notification_id_exists
 from openbook_posts.models import PostComment, PostReaction, Post, PostImage, PostVideo
@@ -254,13 +255,72 @@ class FollowNotificationSerializer(serializers.ModelSerializer):
         )
 
 
+class CommunityInviteCreatorProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = (
+            'id',
+            'avatar'
+        )
+
+
+class CommunityInviteCreatorSerializer(serializers.ModelSerializer):
+    profile = CommunityInviteCreatorProfileSerializer()
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'username',
+            'profile'
+        )
+
+
+class CommunityInviteCommunitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Community
+        fields = (
+            'id',
+            'name',
+            'avatar',
+            'cover',
+            'color'
+        )
+
+
+class CommunityInviteSerializer(serializers.ModelSerializer):
+    creator = CommunityInviteCreatorSerializer()
+    community = CommunityInviteCommunitySerializer()
+
+    class Meta:
+        model = CommunityInvite
+        fields = (
+            'id',
+            'creator',
+            'invited_user_id',
+            'community'
+        )
+
+
+class CommunityInviteNotificationSerializer(serializers.ModelSerializer):
+    community_invite = CommunityInviteSerializer()
+
+    class Meta:
+        model = CommunityInviteNotification
+        fields = (
+            'id',
+            'community_invite'
+        )
+
+
 class GetNotificationsNotificationSerializer(serializers.ModelSerializer):
     content_object = GenericRelatedField({
         PostCommentNotification: PostCommentNotificationSerializer(),
         PostReactionNotification: PostReactionNotificationSerializer(),
         ConnectionRequestNotification: ConnectionRequestNotificationSerializer(),
         ConnectionConfirmedNotification: ConnectionConfirmedNotificationSerializer(),
-        FollowNotification: FollowNotificationSerializer()
+        FollowNotification: FollowNotificationSerializer(),
+        CommunityInviteNotification: CommunityInviteNotificationSerializer()
     })
 
     class Meta:
