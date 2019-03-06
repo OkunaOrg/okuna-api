@@ -235,26 +235,3 @@ class CommunitiesInvitesField(Field):
 
         return self.community_invite_serializer(community_invites, context={"request": request}, many=True).data
 
-
-class CreatedCommunitiesInvitesField(Field):
-    # Retrieve the created communities invites
-    # If for_username is in the context, it will retrieve the invites for that
-    # specific user
-    def __init__(self, community_invite_serializer, **kwargs):
-        kwargs['source'] = '*'
-        kwargs['read_only'] = True
-        self.community_invite_serializer = community_invite_serializer
-        super(CreatedCommunitiesInvitesField, self).__init__(**kwargs)
-
-    def to_representation(self, user):
-        request = self.context.get('request')
-        request_user = request.user
-
-        for_username = self.context.get('for_username')
-
-        if for_username:
-            community_invites = request_user.created_communities_invites.filter(invited_user__username=for_username)
-        else:
-            community_invites = request_user.created_communities_invites
-
-        return self.community_invite_serializer(community_invites, context={"request": request}, many=True).data
