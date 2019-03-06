@@ -11,6 +11,7 @@ import logging
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_emoji, make_emoji_group, make_reactions_emoji_group, \
     make_community
+from openbook_communities.models import Community
 from openbook_notifications.models import PostCommentNotification, PostReactionNotification
 from openbook_posts.models import Post, PostComment, PostReaction
 
@@ -221,6 +222,144 @@ class PostItemAPITests(APITestCase):
 
     def _get_url(self, post):
         return reverse('post', kwargs={
+            'post_uuid': post.uuid
+        })
+
+
+class MutePostAPITests(APITestCase):
+    """
+    MutePostAPI
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
+    def test_can_mute_own_post(self):
+        """
+        should be able to mute own post and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(user.has_muted_post_with_id(post.pk))
+
+    def test_cant_mute_own_post_if_already_muted(self):
+        """
+        should not be able to mute own post if already muted and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        url = self._get_url(post)
+
+        user.mute_post_with_id(post.pk)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(user.has_muted_post_with_id(post.pk))
+
+    def test_cant_mute_foreign_post(self):
+        """
+        should not be able to mute a foreign post and return 403
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+        post = foreign_user.create_public_post(text=make_fake_post_text())
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertFalse(user.has_muted_post_with_id(post.pk))
+
+    def _get_url(self, post):
+        return reverse('mute-post', kwargs={
+            'post_uuid': post.uuid
+        })
+
+
+class UnmutePostAPITests(APITestCase):
+    """
+    UnmutePostAPI
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
+    def test_can_unmute_own_post(self):
+        """
+        should be able to unmute own post and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        user.mute_post_with_id(post.pk)
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(user.has_muted_post_with_id(post.pk))
+
+    def test_cant_unmute_own_post_if_already_unmuted(self):
+        """
+        should not be able to unmute own post if already unmuted and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(user.has_muted_post_with_id(post.pk))
+
+    def test_cant_unmute_foreign_post(self):
+        """
+        should not be able to unmute a foreign post and return 403
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+        post = foreign_user.create_public_post(text=make_fake_post_text())
+
+        foreign_user.mute_post_with_id(post.pk)
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        print(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertTrue(foreign_user.has_muted_post_with_id(post.pk))
+
+    def _get_url(self, post):
+        return reverse('unmute-post', kwargs={
             'post_uuid': post.uuid
         })
 
