@@ -8,7 +8,7 @@ from openbook_circles.models import Circle
 from openbook_circles.validators import circle_id_exists
 from openbook_common.models import Emoji
 from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, ReactionsEmojiCountField, \
-    CirclesField, PostCreatorField
+    CirclesField, PostCreatorField, IsMutedField
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_lists.validators import list_id_exists
@@ -182,6 +182,7 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     comments_count = CommentsCountField()
     circles = CirclesField(circle_serializer=PostCircleSerializer)
     community = PostCommunitySerializer()
+    is_muted = IsMutedField()
 
     class Meta:
         model = Post
@@ -199,7 +200,8 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'public_comments',
             'public_reactions',
             'circles',
-            'community'
+            'community',
+            'is_muted'
         )
 
 
