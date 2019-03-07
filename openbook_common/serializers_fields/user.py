@@ -128,6 +128,22 @@ class PostsCountField(Field):
         return value.count_public_posts()
 
 
+class UnreadNotificationsCountField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(UnreadNotificationsCountField, self).__init__(**kwargs)
+
+    def to_representation(self, value):
+        request = self.context.get('request')
+        request_user = request.user
+
+        if not request_user.is_anonymous:
+            return request_user.count_unread_notifications()
+
+        return None
+
+
 class ConnectedCirclesField(Field):
     def __init__(self, circle_serializer=None, **kwargs):
         self.circle_serializer = circle_serializer
@@ -234,4 +250,3 @@ class CommunitiesInvitesField(Field):
             return None
 
         return self.community_invite_serializer(community_invites, context={"request": request}, many=True).data
-

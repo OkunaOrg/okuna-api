@@ -13,7 +13,8 @@ from openbook_circles.models import Circle
 from openbook_common.models import Emoji, Badge
 from openbook_common.serializers_fields.user import IsFollowingField, IsConnectedField, FollowersCountField, \
     FollowingCountField, PostsCountField, ConnectedCirclesField, FollowListsField, IsFullyConnectedField, \
-    IsPendingConnectionConfirmation, CommunitiesMembershipsField, CommunitiesInvitesField, IsMemberOfCommunities
+    IsPendingConnectionConfirmation, CommunitiesMembershipsField, CommunitiesInvitesField, IsMemberOfCommunities, \
+    UnreadNotificationsCountField
 from openbook_common.validators import name_characters_validator
 from openbook_communities.models import CommunityMembership, CommunityInvite
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
@@ -84,6 +85,7 @@ class GetAuthenticatedUserProfileSerializer(serializers.ModelSerializer):
 class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
     profile = GetAuthenticatedUserProfileSerializer(many=False)
     posts_count = PostsCountField()
+    unread_notifications_count = UnreadNotificationsCountField()
     followers_count = FollowersCountField()
     following_count = FollowingCountField()
     is_member_of_communities = IsMemberOfCommunities()
@@ -99,7 +101,8 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
             'followers_count',
             'following_count',
             'connections_circle_id',
-            'is_member_of_communities'
+            'is_member_of_communities',
+            'unread_notifications_count'
         )
 
 

@@ -126,6 +126,9 @@ class User(AbstractUser):
     def count_posts(self):
         return self.posts.count()
 
+    def count_unread_notifications(self):
+        return self.notifications.filter(read=False).count()
+
     def count_public_posts(self):
         """
         Count how many public posts has the user created
