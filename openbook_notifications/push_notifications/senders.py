@@ -134,6 +134,9 @@ def send_community_invite_push_notification(community_invite):
 
 def _send_notification_to_user(user, notification):
     for device in user.devices.all():
+        notification.set_parameter('ios_badgeType', 'Increase')
+        notification.set_parameter('ios_badgeCount', '1')
+
         notification.set_filters([
             {"field": "tag", "key": "user_id", "relation": "=", "value": user.pk},
             {"field": "tag", "key": "device_uuid", "relation": "=", "value": device.uuid},
