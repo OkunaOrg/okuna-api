@@ -119,6 +119,8 @@ INSTALLED_APPS = [
     'openbook_invitations',
     'openbook_tags',
     'openbook_categories',
+    'openbook_notifications',
+    'openbook_devices',
 ]
 
 MIDDLEWARE = [
@@ -316,6 +318,8 @@ TAG_NAME_MAX_LENGTH = 32
 CATEGORY_NAME_MAX_LENGTH = 32
 CATEGORY_TITLE_MAX_LENGTH = 64
 CATEGORY_DESCRIPTION_MAX_LENGTH = 64
+DEVICE_NAME_MAX_LENGTH = 32
+DEVICE_UUID_MAX_LENGTH = 64
 SEARCH_QUERIES_MAX_LENGTH = 120
 
 # Email Config
@@ -354,3 +358,7 @@ if IS_PRODUCTION:
     DEFAULT_FILE_STORAGE = 'openbook.storage_backends.S3PublicMediaStorage'
 
     PRIVATE_FILE_STORAGE = 'openbook.storage_backends.S3PrivateMediaStorage'
+
+# ONE SIGNAL
+ONE_SIGNAL_APP_ID = os.environ.get('ONE_SIGNAL_APP_ID')
+ONE_SIGNAL_API_KEY = os.environ.get('ONE_SIGNAL_API_KEY')

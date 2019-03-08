@@ -95,10 +95,11 @@ class InviteCommunityMember(APIView):
         user = request.user
 
         with transaction.atomic():
-            user.invite_user_with_username_to_community_with_name(username=username,
-                                                                  community_name=community_name)
+            community_invite = user.invite_user_with_username_to_community_with_name(username=username,
+                                                                                     community_name=community_name)
 
-        response_serializer = InviteUserSerializer(user, context={"request": request, 'for_username': username})
+        response_serializer = InviteUserSerializer(community_invite.invited_user,
+                                                   context={"request": request, 'communities_names': [community_name]})
 
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -120,10 +121,11 @@ class UninviteCommunityMember(APIView):
         user = request.user
 
         with transaction.atomic():
-            user.uninvite_user_with_username_to_community_with_name(username=username,
-                                                                  community_name=community_name)
+            uninvited_user = user.uninvite_user_with_username_to_community_with_name(username=username,
+                                                                                     community_name=community_name)
 
-        response_serializer = InviteUserSerializer(user, context={"request": request, 'for_username': username})
+        response_serializer = InviteUserSerializer(uninvited_user,
+                                                   context={"request": request, 'communities_names': [community_name]})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 

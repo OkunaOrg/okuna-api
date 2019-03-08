@@ -22,8 +22,8 @@ from django.conf.urls.static import static
 from openbook_categories.views import Categories
 from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups
-from openbook_auth.views import Register, UsernameCheck, EmailCheck, EmailVerify, Login, AuthenticatedUser, User, Users, \
-    UserSettings, LinkedUsers, SearchLinkedUsers
+from openbook_auth.views import Register, UsernameCheck, EmailCheck, EmailVerify, Login, AuthenticatedUser, Users, \
+    UserSettings, LinkedUsers, SearchLinkedUsers, UserItem, AuthenticatedUserNotificationsSettings
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
     FavoriteCommunities, SearchCommunities, JoinedCommunities, AdministratedCommunities, ModeratedCommunities, \
     SearchJoinedCommunities
@@ -39,10 +39,12 @@ from openbook_communities.views.community.posts.views import CommunityPosts
 from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, FavoriteCommunity
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
+from openbook_devices.views import Devices, DeviceItem
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
 from openbook_lists.views import Lists, ListItem, ListNameCheck
+from openbook_notifications.views import Notifications, NotificationItem, ReadAllNotifications, ReadNotification
 from openbook_posts.views.post.views import PostComments, PostCommentItem, PostItem, PostReactions, PostReactionItem, \
-    PostReactionsEmojiCount, PostReactionEmojiGroups
+    PostReactionsEmojiCount, PostReactionEmojiGroups, MutePost, UnmutePost
 from openbook_posts.views.posts.views import Posts, TrendingPosts
 from openbook_importer.views import ImportItem
 
@@ -54,14 +56,22 @@ auth_patterns = [
     path('email/verify/<str:token>/', EmailVerify.as_view(), name='email-verify'),
     path('user/settings/', UserSettings.as_view(), name='user-settings'),
     path('user/', AuthenticatedUser.as_view(), name='authenticated-user'),
-    path('users/<str:user_username>/', User.as_view(), name='user'),
+    path('user/notifications-settings/', AuthenticatedUserNotificationsSettings.as_view(),
+         name='authenticated-user-notifications-settings'),
+    path('users/<str:user_username>/', UserItem.as_view(), name='user'),
     path('users/', Users.as_view(), name='users'),
     path('linked-users/', LinkedUsers.as_view(), name='linked-users'),
     path('linked-users/search/', SearchLinkedUsers.as_view(), name='search-linked-users'),
 ]
 
+post_notifications_patters = [
+    path('mute/', MutePost.as_view(), name='mute-post'),
+    path('unmute/', UnmutePost.as_view(), name='unmute-post'),
+]
+
 post_patterns = [
     path('', PostItem.as_view(), name='post'),
+    path('notifications/', include(post_notifications_patters)),
     path('comments/', PostComments.as_view(), name='post-comments'),
     path('comments/<int:post_comment_id>/', PostCommentItem.as_view(), name='post-comment'),
     path('reactions/', PostReactions.as_view(), name='post-reactions'),
@@ -70,7 +80,7 @@ post_patterns = [
 ]
 
 posts_patterns = [
-    path('<int:post_id>/', include(post_patterns)),
+    path('<uuid:post_uuid>/', include(post_patterns)),
     path('', Posts.as_view(), name='posts'),
     path('trending/', TrendingPosts.as_view(), name='trending-posts'),
     path('emojis/groups/', PostReactionEmojiGroups.as_view(), name='posts-emoji-groups'),
@@ -176,6 +186,22 @@ categories_patterns = [
     path('', Categories.as_view(), name='categories')
 ]
 
+notification_patterns = [
+    path('', NotificationItem.as_view(), name='notification'),
+    path('read/', ReadNotification.as_view(), name='read-notification'),
+]
+
+notifications_patterns = [
+    path('', Notifications.as_view(), name='notifications'),
+    path('read/', ReadAllNotifications.as_view(), name='read-notifications'),
+    path('<int:notification_id>/', include(notification_patterns)),
+]
+
+devices_patterns = [
+    path('', Devices.as_view(), name='devices'),
+    path('<str:device_uuid>/', DeviceItem.as_view(), name='device'),
+]
+
 api_patterns = [
     path('auth/', include(auth_patterns)),
     path('posts/', include(posts_patterns)),
@@ -185,6 +211,8 @@ api_patterns = [
     path('connections/', include(connections_patterns)),
     path('lists/', include(lists_patterns)),
     path('follows/', include(follows_patterns)),
+    path('notifications/', include(notifications_patterns)),
+    path('devices/', include(devices_patterns)),
     path('import/', include(importer_patterns)),
     url('time/', Time.as_view(), name='time'),
     url('emojis/groups/', EmojiGroups.as_view(), name='emoji-groups'),

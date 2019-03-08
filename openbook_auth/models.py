@@ -11,7 +11,7 @@ from django.conf import settings
 from imagekit.models import ProcessedImageField
 from pilkit.processors import ResizeToFill
 from rest_framework.authtoken.models import Token
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, NotFound, PermissionDenied
 from django.db.models import Q
 
 from openbook.settings import USERNAME_MAX_LENGTH
@@ -20,8 +20,12 @@ from openbook_common.models import Badge
 from openbook_common.utils.helpers import delete_image_kit_image_field
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, \
-    get_emoji_group_model, get_user_invite_model, get_community_model, get_community_invite_model, get_tag_model
+    get_emoji_group_model, get_user_invite_model, get_community_model, get_community_invite_model, get_tag_model, \
+    get_post_comment_notification_model, get_follow_notification_model, get_connection_confirmed_notification_model, \
+    get_connection_request_notification_model, get_post_reaction_notification_model, get_device_model, \
+    get_post_mute_model, get_community_invite_notification_model
 from openbook_common.validators import name_characters_validator
+from openbook_notifications.push_notifications import senders
 
 
 class User(AbstractUser):
@@ -121,6 +125,9 @@ class User(AbstractUser):
 
     def count_posts(self):
         return self.posts.count()
+
+    def count_unread_notifications(self):
+        return self.notifications.filter(read=False).count()
 
     def count_public_posts(self):
         """
@@ -255,6 +262,22 @@ class User(AbstractUser):
             profile.save()
             self.save()
 
+    def update_notifications_settings(self, post_comment_notifications=None, post_reaction_notifications=None,
+                                      follow_notifications=None, connection_request_notifications=None,
+                                      connection_confirmed_notifications=None,
+                                      community_invite_notifications=None):
+
+        notifications_settings = self.notifications_settings
+        notifications_settings.update(
+            post_comment_notifications=post_comment_notifications,
+            post_reaction_notifications=post_reaction_notifications,
+            follow_notifications=follow_notifications,
+            connection_request_notifications=connection_request_notifications,
+            connection_confirmed_notifications=connection_confirmed_notifications,
+            community_invite_notifications=community_invite_notifications
+        )
+        return notifications_settings
+
     def is_fully_connected_with_user_with_id(self, user_id):
         if not self.is_connected_with_user_with_id(user_id):
             return False
@@ -337,10 +360,13 @@ class User(AbstractUser):
         return self.circles.filter(id=circle_id).exists()
 
     def has_circle_with_name(self, circle_name):
-        return self.circles.filter(name=circle_name).count() > 0
+        return self.circles.filter(name=circle_name).exists()
 
     def has_post_with_id(self, post_id):
-        return self.posts.filter(id=post_id).count() > 0
+        return self.posts.filter(id=post_id).exists()
+
+    def has_muted_post_with_id(self, post_id):
+        return self.post_mutes.filter(post_id=post_id).exists()
 
     def has_circles_with_ids(self, circles_ids):
         return self.circles.filter(id__in=circles_ids).count() == len(circles_ids)
@@ -393,7 +419,33 @@ class User(AbstractUser):
         return self.post_reactions.filter(has_reacted_query).count() > 0
 
     def has_commented_post_with_id(self, post_id):
-        return self.posts_comments.filter(post_id=post_id).count() > 0
+        return self.posts_comments.filter(post_id=post_id).exists()
+
+    def has_notification_with_id(self, notification_id):
+        return self.notifications.filter(pk=notification_id).exists()
+
+    def has_device_with_uuid(self, device_uuid):
+        return self.devices.filter(uuid=device_uuid).exists()
+
+    def has_follow_notifications_enabled(self):
+        return self.notifications_settings.follow_notifications
+
+    def has_reaction_notifications_enabled_for_post_with_id(self, post_id):
+        return self.notifications_settings.post_reaction_notifications and not self.has_muted_post_with_id(
+            post_id=post_id)
+
+    def has_comment_notifications_enabled_for_post_with_id(self, post_id):
+        return self.notifications_settings.post_comment_notifications and not self.has_muted_post_with_id(
+            post_id=post_id)
+
+    def has_connection_request_notifications_enabled(self):
+        return self.notifications_settings.connection_request_notifications
+
+    def has_community_invite_notifications_enabled(self):
+        return self.notifications_settings.community_invite_notifications
+
+    def has_connection_confirmed_notifications_enabled(self):
+        return self.notifications_settings.connection_confirmed_notifications
 
     def get_lists_for_follow_for_user_with_id(self, user_id):
         self._check_is_following_user_with_id(user_id)
@@ -463,14 +515,18 @@ class User(AbstractUser):
             Post = get_post_model()
             post = Post.objects.filter(pk=post_id).get()
             post_reaction = post.react(reactor=self, emoji_id=emoji_id)
+            if post_reaction.post.creator_id != self.pk:
+                self._create_post_reaction_notification(post_reaction=post_reaction)
+                self._send_post_reaction_push_notification(post_reaction=post_reaction)
 
         return post_reaction
 
     def delete_reaction_with_id_for_post_with_id(self, post_reaction_id, post_id):
         self._check_can_delete_reaction_with_id_for_post_with_id(post_reaction_id, post_id)
-        Post = get_post_model()
-        post = Post.objects.filter(pk=post_id).get()
-        post.remove_reaction_with_id(post_reaction_id)
+        PostReaction = get_post_reaction_model()
+        post_reaction = PostReaction.objects.filter(pk=post_reaction_id).get()
+        self._delete_post_reaction_notification(post_reaction=post_reaction)
+        post_reaction.delete()
 
     def get_comments_for_post_with_id(self, post_id, max_id=None):
         self._check_can_get_comments_for_post_with_id(post_id)
@@ -507,12 +563,17 @@ class User(AbstractUser):
         Post = get_post_model()
         post = Post.objects.filter(pk=post_id).get()
         post_comment = post.comment(text=text, commenter=self)
+        if post.creator_id != self.pk:
+            self._create_post_comment_notification(post_comment=post_comment)
+            self._send_post_comment_push_notification(post_comment=post_comment)
         return post_comment
 
     def delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
         self._check_can_delete_comment_with_id_for_post_with_id(post_comment_id, post_id)
         PostComment = get_post_comment_model()
-        PostComment.objects.filter(pk=post_comment_id).delete()
+        post_comment = PostComment.objects.get(pk=post_comment_id)
+        self._delete_post_comment_notification(post_comment=post_comment)
+        post_comment.delete()
 
     def create_circle(self, name, color):
         self._check_circle_name_not_taken(name)
@@ -737,6 +798,8 @@ class User(AbstractUser):
         CommunityInvite = get_community_invite_model()
         CommunityInvite.objects.filter(community__name=community_name, invited_user__username=self.username).delete()
 
+        # No need to delete community invite notifications as they are delete cascaded
+
         return community_to_join
 
     def leave_community_with_name(self, community_name):
@@ -762,13 +825,22 @@ class User(AbstractUser):
         community_to_invite_user_to = Community.objects.get(name=community_name)
         user_to_invite = User.objects.get(username=username)
 
-        community_to_invite_user_to.create_invite(creator=self, invited_user=user_to_invite)
+        community_invite = community_to_invite_user_to.create_invite(creator=self, invited_user=user_to_invite)
+
+        self._create_community_invite_notification(community_invite)
+        self._send_community_invite_push_notification(community_invite)
+
+        return community_invite
 
     def uninvite_user_with_username_to_community_with_name(self, username, community_name):
         self._check_can_uninvite_user_with_username_to_community_with_name(username=username,
                                                                            community_name=community_name)
-        community_invite = self.created_communities_invites.filter(invited_user__username=username)
+
+        community_invite = self.created_communities_invites.get(invited_user__username=username, creator=self)
+        uninvited_user = community_invite.invited_user
         community_invite.delete()
+
+        return uninvited_user
 
     def get_community_with_name_administrators(self, community_name, max_id):
         self._check_can_get_community_with_name_administrators(
@@ -1083,17 +1155,11 @@ class User(AbstractUser):
 
         return profile_posts
 
-    def get_post_with_id_for_user_with_username(self, username, post_id):
-        user = User.objects.get(username=username)
-        return self.get_post_with_id_for_user(user, post_id=post_id)
-
-    def get_post_with_id_for_user(self, user, post_id):
-        post_query = self._make_get_post_with_id_query_for_user(user, post_id=post_id)
-
+    def get_post_with_id(self, post_id):
+        self._check_can_see_post_with_id(post_id=post_id)
         Post = get_post_model()
-        profile_posts = Post.objects.filter(post_query)
-
-        return profile_posts
+        post = Post.objects.get(pk=post_id)
+        return post
 
     def get_community_post_with_id(self, post_id):
         post_query = Q(id=post_id)
@@ -1201,7 +1267,11 @@ class User(AbstractUser):
         self._check_follow_lists_ids(lists_ids)
 
         Follow = get_follow_model()
-        return Follow.create_follow(user_id=self.pk, followed_user_id=user_id, lists_ids=lists_ids)
+        follow = Follow.create_follow(user_id=self.pk, followed_user_id=user_id, lists_ids=lists_ids)
+        self._create_follow_notification(followed_user_id=user_id)
+        self._send_follow_push_notification(followed_user_id=user_id)
+
+        return follow
 
     def unfollow_user(self, user):
         return self.unfollow_user_with_id(user.pk)
@@ -1209,6 +1279,7 @@ class User(AbstractUser):
     def unfollow_user_with_id(self, user_id):
         self._check_is_following_user_with_id(user_id)
         follow = self.follows.get(followed_user_id=user_id)
+        self._delete_follow_notification(followed_user_id=user_id)
         follow.delete()
 
     def update_follow_for_user(self, user, lists_ids=None):
@@ -1266,6 +1337,9 @@ class User(AbstractUser):
         if not self.is_following_user_with_id(user_id):
             self.follow_user_with_id(user_id)
 
+        self._create_connection_request_notification(user_connection_requested_for_id=user_id)
+        self._send_connection_request_push_notification(user_connection_requested_for_id=user_id)
+
         return connection
 
     def confirm_connection_with_user_with_id(self, user_id, circles_ids=None):
@@ -1282,6 +1356,8 @@ class User(AbstractUser):
         # Automatically follow user
         if not self.is_following_user_with_id(user_id):
             self.follow_user_with_id(user_id)
+
+        self._create_connection_confirmed_notification(user_connected_with_id=user_id)
 
         return connection
 
@@ -1309,12 +1385,15 @@ class User(AbstractUser):
 
     def disconnect_from_user_with_id(self, user_id):
         self._check_is_connected_with_user_with_id(user_id)
-        # Actually disconnect
+        if self.is_fully_connected_with_user_with_id(user_id):
+            self._delete_connection_confirmed_notification(user_connected_with_id=user_id)
+            if self.is_following_user_with_id(user_id):
+                self.unfollow_user_with_id(user_id)
+        else:
+            self._delete_connection_request_notification_for_user_with_id(user_id=user_id)
+
         connection = self.connections.get(target_connection__user_id=user_id)
         connection.delete()
-        # Stop following user
-        if self.is_following_user_with_id(user_id):
-            self.unfollow_user_with_id(user_id)
 
         return connection
 
@@ -1323,6 +1402,151 @@ class User(AbstractUser):
 
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
+
+    def get_notifications(self, max_id=None):
+        notifications_query = Q()
+
+        if max_id:
+            notifications_query.add(Q(id__lt=max_id), Q.AND)
+
+        return self.notifications.filter(notifications_query)
+
+    def read_all_notifications(self):
+        self.notifications.filter(read=False).update(read=True)
+
+    def read_notification_with_id(self, notification_id):
+        self._check_can_read_notification_with_id(notification_id)
+        notification = self.notifications.get(id=notification_id)
+        notification.read = True
+        notification.save()
+        return notification
+
+    def delete_notification_with_id(self, notification_id):
+        self._check_can_delete_notification_with_id(notification_id)
+        notification = self.notifications.get(id=notification_id)
+        notification.delete()
+
+    def delete_notifications(self):
+        self.notifications.all().delete()
+
+    def create_device(self, uuid, name=None):
+        Device = get_device_model()
+        return Device.create_device(owner=self, uuid=uuid, name=name)
+
+    def update_device_with_uuid(self, device_uuid, name=None):
+        self._check_can_update_device_with_uuid(device_uuid=device_uuid)
+        device = self.devices.get(uuid=device_uuid)
+        device.update(name=name)
+
+    def delete_device_with_uuid(self, device_uuid):
+        self._check_can_delete_device_with_uuid(device_uuid=device_uuid)
+        device = self.devices.get(uuid=device_uuid)
+        device.delete()
+
+    def get_devices(self, max_id=None):
+        devices_query = Q()
+
+        if max_id:
+            devices_query.add(Q(id__lt=max_id), Q.AND)
+
+        return self.devices.filter(devices_query)
+
+    def get_device_with_uuid(self, device_uuid):
+        self._check_can_get_device_with_uuid(device_uuid=device_uuid)
+        return self.devices.get(uuid=device_uuid)
+
+    def delete_devices(self):
+        self.devices.all().delete()
+
+    def mute_post_with_id(self, post_id):
+        self._check_can_mute_post_with_id(post_id=post_id)
+        Post = get_post_model()
+        PostMute = get_post_mute_model()
+        PostMute.create_post_mute(post_id=post_id, muter_id=self.pk)
+        post = Post.objects.get(pk=post_id)
+        return post
+
+    def unmute_post_with_id(self, post_id):
+        self._check_can_unmute_post_with_id(post_id=post_id)
+        self.post_mutes.filter(post_id=post_id).delete()
+        Post = get_post_model()
+        post = Post.objects.get(pk=post_id)
+        return post
+
+    def _create_post_comment_notification(self, post_comment):
+        PostCommentNotification = get_post_comment_notification_model()
+        PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
+                                                                 owner_id=post_comment.post.creator_id)
+
+    def _send_post_comment_push_notification(self, post_comment):
+        senders.send_post_comment_push_notification(post_comment=post_comment)
+
+    def _delete_post_comment_notification(self, post_comment):
+        PostCommentNotification = get_post_comment_notification_model()
+        PostCommentNotification.delete_post_comment_notification(post_comment_id=post_comment.pk,
+                                                                 owner_id=post_comment.post.creator_id)
+
+    def _create_post_reaction_notification(self, post_reaction):
+        PostReactionNotification = get_post_reaction_notification_model()
+        PostReactionNotification.create_post_reaction_notification(post_reaction_id=post_reaction.pk,
+                                                                   owner_id=post_reaction.post.creator_id)
+
+    def _send_post_reaction_push_notification(self, post_reaction):
+        senders.send_post_reaction_push_notification(post_reaction=post_reaction)
+
+    def _delete_post_reaction_notification(self, post_reaction):
+        PostReactionNotification = get_post_reaction_notification_model()
+        PostReactionNotification.delete_post_reaction_notification(post_reaction_id=post_reaction.pk,
+                                                                   owner_id=post_reaction.post.creator_id)
+
+    def _create_community_invite_notification(self, community_invite):
+        CommunityInviteNotification = get_community_invite_notification_model()
+        CommunityInviteNotification.create_community_invite_notification(community_invite_id=community_invite.pk,
+                                                                         owner_id=community_invite.invited_user_id)
+
+    def _send_community_invite_push_notification(self, community_invite):
+        senders.send_community_invite_push_notification(community_invite=community_invite)
+
+    def _create_follow_notification(self, followed_user_id):
+        FollowNotification = get_follow_notification_model()
+        FollowNotification.create_follow_notification(follower_id=self.pk, owner_id=followed_user_id)
+
+    def _send_follow_push_notification(self, followed_user_id):
+        followed_user = User.objects.get(pk=followed_user_id)
+        senders.send_follow_push_notification(followed_user=followed_user, following_user=self)
+
+    def _delete_follow_notification(self, followed_user_id):
+        FollowNotification = get_follow_notification_model()
+        FollowNotification.delete_follow_notification(follower_id=self.pk, owner_id=followed_user_id)
+
+    def _create_connection_confirmed_notification(self, user_connected_with_id):
+        # Remove the connection request we got from the other user
+        self._delete_connection_request_notification_for_user_with_id(user_id=user_connected_with_id)
+        ConnectionConfirmedNotification = get_connection_confirmed_notification_model()
+        ConnectionConfirmedNotification.create_connection_confirmed_notification(connection_confirmator_id=self.pk,
+                                                                                 owner_id=user_connected_with_id)
+
+    def _delete_connection_confirmed_notification(self, user_connected_with_id):
+        ConnectionConfirmedNotification = get_connection_confirmed_notification_model()
+        ConnectionConfirmedNotification.delete_connection_confirmed_notification_for_users_with_ids(
+            user_a_id=self.pk,
+            user_b_id=user_connected_with_id)
+
+    def _create_connection_request_notification(self, user_connection_requested_for_id):
+        ConnectionRequestNotification = get_connection_request_notification_model()
+        ConnectionRequestNotification.create_connection_request_notification(connection_requester_id=self.pk,
+                                                                             owner_id=user_connection_requested_for_id)
+
+    def _send_connection_request_push_notification(self, user_connection_requested_for_id):
+        connection_requested_for = User.objects.get(pk=user_connection_requested_for_id)
+        senders.send_connection_request_push_notification(
+            connection_requester=self,
+            connection_requested_for=connection_requested_for)
+
+    def _delete_connection_request_notification_for_user_with_id(self, user_id):
+        ConnectionRequestNotification = get_connection_request_notification_model()
+        ConnectionRequestNotification.delete_connection_request_notification_for_users_with_ids(user_a_id=self.pk,
+                                                                                                user_b_id=user_id)
 
     def _make_linked_users_query(self, max_id=None):
         # All users which are connected with us and we have accepted by adding
@@ -1521,10 +1745,18 @@ class User(AbstractUser):
                 )
         else:
             # Check if we can retrieve the post
-            if not self.get_post_with_id_for_user(post_id=post_id, user=post.creator).exists():
+            if not self._can_see_post(post=post):
                 raise ValidationError(
                     _('This post is private.'),
                 )
+
+    def _can_see_post(self, post):
+        post_query = self._make_get_post_with_id_query_for_user(post.creator, post_id=post.pk)
+
+        Post = get_post_model()
+        profile_posts = Post.objects.filter(post_query)
+
+        return profile_posts.exists()
 
     def _check_follow_lists_ids(self, lists_ids):
         for list_id in lists_ids:
@@ -1700,7 +1932,6 @@ class User(AbstractUser):
             )
 
     def _check_can_get_posts_for_community_with_name(self, community_name):
-
         Community = get_community_model()
         if Community.is_community_with_name_private(
                 community_name=community_name) and not self.is_member_of_community_with_name(
@@ -1992,6 +2223,56 @@ class User(AbstractUser):
                 _('You have not favorited the community.'),
             )
 
+    def _check_can_read_notification_with_id(self, notification_id):
+        if not self.has_notification_with_id(notification_id=notification_id):
+            raise ValidationError(
+                _('You cannot mark as read a notification that doesn\'t belong to you.'),
+            )
+
+    def _check_can_delete_notification_with_id(self, notification_id):
+        if not self.has_notification_with_id(notification_id=notification_id):
+            raise ValidationError(
+                _('You cannot delete a notification that doesn\'t belong to you.'),
+            )
+
+    def _check_can_update_device_with_uuid(self, device_uuid):
+        self._check_has_device_with_uuid(device_uuid=device_uuid)
+
+    def _check_can_delete_device_with_uuid(self, device_uuid):
+        self._check_has_device_with_uuid(device_uuid=device_uuid)
+
+    def _check_can_get_device_with_uuid(self, device_uuid):
+        self._check_has_device_with_uuid(device_uuid=device_uuid)
+
+    def _check_has_device_with_uuid(self, device_uuid):
+        if not self.has_device_with_uuid(device_uuid=device_uuid):
+            raise NotFound(
+                _('Device not found'),
+            )
+
+    def _check_can_mute_post_with_id(self, post_id):
+        if self.has_muted_post_with_id(post_id=post_id):
+            raise ValidationError(
+                _('Post already muted'),
+            )
+        self._check_has_post_with_id(post_id=post_id)
+
+    def _check_can_unmute_post_with_id(self, post_id):
+        self._check_has_post_with_id(post_id=post_id)
+        self._check_has_muted_post_with_id(post_id=post_id)
+
+    def _check_has_muted_post_with_id(self, post_id):
+        if not self.has_muted_post_with_id(post_id=post_id):
+            raise ValidationError(
+                _('Post is not muted'),
+            )
+
+    def _check_has_post_with_id(self, post_id):
+        if not self.has_post_with_id(post_id):
+            raise PermissionDenied(
+                _('This post does not belong to you.'),
+            )
+
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_auth_token(sender, instance=None, created=False, **kwargs):
@@ -2035,3 +2316,51 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.username
+
+
+class UserNotificationsSettings(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+                                related_name='notifications_settings')
+    post_comment_notifications = models.BooleanField(_('post comment notifications'), default=True)
+    post_reaction_notifications = models.BooleanField(_('post reaction notifications'), default=True)
+    follow_notifications = models.BooleanField(_('follow notifications'), default=True)
+    connection_request_notifications = models.BooleanField(_('connection request notifications'), default=True)
+    connection_confirmed_notifications = models.BooleanField(_('connection confirmed notifications'), default=True)
+    community_invite_notifications = models.BooleanField(_('community invite notifications'), default=True)
+
+    @classmethod
+    def create_notifications_settings(cls, user):
+        return UserNotificationsSettings.objects.create(user=user)
+
+    def update(self, post_comment_notifications=None, post_reaction_notifications=None,
+               follow_notifications=None, connection_request_notifications=None,
+               connection_confirmed_notifications=None, community_invite_notifications=None):
+
+        if post_comment_notifications is not None:
+            self.post_comment_notifications = post_comment_notifications
+
+        if post_reaction_notifications is not None:
+            self.post_reaction_notifications = post_reaction_notifications
+
+        if follow_notifications is not None:
+            self.follow_notifications = follow_notifications
+
+        if connection_request_notifications is not None:
+            self.connection_request_notifications = connection_request_notifications
+
+        if connection_confirmed_notifications is not None:
+            self.connection_confirmed_notifications = connection_confirmed_notifications
+
+        if community_invite_notifications is not None:
+            self.community_invite_notifications = community_invite_notifications
+
+        self.save()
+
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_user_notifications_settings(sender, instance=None, created=False, **kwargs):
+    """"
+    Create a user notifications settings for users
+    """
+    if created:
+        UserNotificationsSettings.create_notifications_settings(user=instance)

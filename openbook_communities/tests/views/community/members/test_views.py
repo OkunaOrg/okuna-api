@@ -3,14 +3,16 @@ import random
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
 
 import logging
 import json
 
+from rest_framework.test import APITestCase
+
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, \
     make_community
 from openbook_communities.models import Community
+from openbook_notifications.models import CommunityInviteNotification
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -314,6 +316,31 @@ class InviteCommunityMembersAPITest(APITestCase):
 
         self.assertTrue(user_to_invite.is_invited_to_community_with_name(community_name=community.name))
 
+    def test_invite_user_to_community_creates_community_invite_notification(self):
+        """
+        should create an community invite notification when a user is invited to join a community
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type='P')
+        community.invites_enabled = True
+        community.save()
+
+        user.join_community_with_name(community.name)
+        user_to_invite = make_user()
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, {
+            'username': user_to_invite.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(CommunityInviteNotification.objects.filter(community_invite__invited_user=user_to_invite,
+                                                                   community_invite__creator=user).exists())
+
     def test_cannot_invite_user_to_community_not_part_of_with_invites_enabled(self):
         """
         should not be able to invite a user to join a community NOT part of with invites enabled and return 200
@@ -515,6 +542,27 @@ class JoinCommunityAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         self.assertTrue(user.is_member_of_community_with_name(community_name=community.name))
+
+    def test_join_community_with_invite_removes_community_invite_notification(self):
+        """
+        should able to join a private community with an invite and remove the community invite notification
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user)
+
+        other_user.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                    community_name=community.name)
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertFalse(CommunityInviteNotification.objects.filter(community_invite__invited_user=user,
+                                                                    community_invite__creator=other_user).exists())
 
     def test_cannot_join_private_community_without_invite(self):
         """

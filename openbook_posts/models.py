@@ -1,10 +1,10 @@
 # Create your models here.
+import uuid
 from datetime import timedelta
 
 from django.core.files.storage import default_storage
 from django.db import models
 from django.db.models import Q
-from django.utils import timezone
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Count
@@ -23,6 +23,7 @@ from imagekit.models import ProcessedImageField
 
 
 class Post(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     text = models.CharField(_('text'), max_length=settings.POST_MAX_LENGTH, blank=False, null=True)
     created = models.DateTimeField(editable=False)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
@@ -154,9 +155,6 @@ class Post(models.Model):
     def react(self, reactor, emoji_id):
         return PostReaction.create_reaction(reactor=reactor, emoji_id=emoji_id, post=self)
 
-    def remove_reaction_with_id(self, reaction_id):
-        self.reactions.filter(id=reaction_id).delete()
-
     def is_public_post(self):
         Circle = get_circle_model()
         world_circle_id = Circle.get_world_circle_id()
@@ -247,3 +245,15 @@ class PostReaction(models.Model):
         if not self.id:
             self.created = timezone.now()
         return super(PostReaction, self).save(*args, **kwargs)
+
+
+class PostMute(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='mutes')
+    muter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_mutes')
+
+    class Meta:
+        unique_together = ('post', 'muter',)
+
+    @classmethod
+    def create_post_mute(cls, post_id, muter_id):
+        return cls.objects.create(post_id=post_id, muter_id=muter_id)
