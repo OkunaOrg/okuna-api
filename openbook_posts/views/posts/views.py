@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import status
@@ -29,7 +30,7 @@ class Posts(APIView):
         data = serializer.validated_data
         text = data.get('text')
         image = data.get('image')
-        video = data.get('video')
+        video = data.get('video') if settings.FEATURE_VIDEO_POSTS_ENABLED else None
         circles_ids = data.get('circle_id')
         user = request.user
 
