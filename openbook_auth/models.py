@@ -1246,7 +1246,11 @@ class User(AbstractUser):
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
 
         Post = get_post_model()
-        timeline_posts = Post.objects.filter(timeline_posts_query).distinct()
+
+        if not timeline_posts_query.children:
+            timeline_posts = Post.objects.none()
+        else:
+            timeline_posts = Post.objects.filter(timeline_posts_query).distinct()
 
         return timeline_posts
 

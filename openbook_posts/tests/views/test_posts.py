@@ -752,5 +752,34 @@ class PostsAPITests(APITestCase):
         for response_post_id in response_posts_ids:
             self.assertTrue(response_post_id < max_id)
 
+    def test_retrieves_no_posts_when_filtering_on_empty_circle(self):
+        """
+        should retrieve no posts when filtering on an empty circle
+        """
+        user = make_user()
+        connections_circle_id = user.connections_circle_id
+
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_foreign_public_posts = 10
+
+        public_posts_ids = []
+
+        for i in range(amount_of_foreign_public_posts):
+            post_text = make_fake_post_text()
+            foreign_user = make_user()
+            public_post = foreign_user.create_public_post(text=post_text)
+            public_posts_ids.append(public_post.pk)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {'circle_id': connections_circle_id}, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), 0)
+
     def _get_url(self):
         return reverse('posts')
