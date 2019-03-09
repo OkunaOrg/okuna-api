@@ -179,15 +179,11 @@ class PostImage(models.Model):
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='image')
     image = ProcessedImageField(verbose_name=_('image'), storage=post_image_storage,
                                 upload_to=upload_to_post_image_directory,
+                                width_field='width',
+                                height_field='height',
                                 blank=False, null=True, format='JPEG', options={'quality': 75})
-
-    @property
-    def width(self):
-        return self.image.width
-
-    @property
-    def height(self):
-        return self.image.height
+    width = models.PositiveIntegerField(editable=False, null=False, blank=False)
+    height = models.PositiveIntegerField(editable=False, null=False, blank=False)
 
 
 class PostVideo(models.Model):

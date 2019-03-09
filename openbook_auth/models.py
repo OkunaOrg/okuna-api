@@ -16,6 +16,7 @@ from django.db.models import Q
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.exceptions import EmailVerificationTokenInvalid
+from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
 from openbook_common.models import Badge
 from openbook_common.utils.helpers import delete_image_kit_image_field
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
@@ -2304,8 +2305,10 @@ class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     is_of_legal_age = models.BooleanField(default=False)
     avatar = ProcessedImageField(verbose_name=_('avatar'), blank=False, null=True, format='JPEG',
-                                 options={'quality': 60}, processors=[ResizeToFill(500, 500)])
-    cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 75})
+                                 options={'quality': 60}, processors=[ResizeToFill(500, 500)],
+                                 upload_to=upload_to_user_avatar_directory)
+    cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 75},
+                                upload_to=upload_to_user_cover_directory)
     bio = models.CharField(_('bio'), max_length=settings.PROFILE_BIO_MAX_LENGTH, blank=False, null=True)
     url = models.URLField(_('url'), blank=False, null=True)
     followers_count_visible = models.BooleanField(_('followers count visible'), blank=False, null=False, default=False)
