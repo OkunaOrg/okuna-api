@@ -4,7 +4,6 @@ import tempfile
 import uuid
 
 from PIL import Image
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.urls import reverse
 from faker import Faker
 from unittest import mock
@@ -63,7 +62,7 @@ class RegistrationAPITests(APITestCase):
 
     def test_token_should_be_valid(self):
         """
-        should return 401 if token is invalid.
+        should return 400 if token is invalid.
         """
         url = self._get_url()
         token = uuid.uuid4()
@@ -71,7 +70,7 @@ class RegistrationAPITests(APITestCase):
                               'password': 'secretPassword123', 'is_of_legal_age': 'true', 'token': token}
         response = self.client.post(url, first_request_data, format='multipart')
 
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_invalid_name(self):
         """
@@ -1172,7 +1171,7 @@ class UserSettingsAPITests(APITestCase):
 
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def _get_email_url(self, token):
+    def _get_verify_email_url(self, token):
         return reverse('email-verify', kwargs={
             'token': token
         })
@@ -1183,26 +1182,63 @@ class UserSettingsAPITests(APITestCase):
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
-        token = PasswordResetTokenGenerator().make_token(user)
 
-        with mock.patch.object(UserSettings, 'send_confirmation_email', return_value=None):
-            response = self.client.get(self._get_email_url(token), **headers)
+        new_email = fake.email()
+        token = user.update_email(new_email)
 
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.get(self._get_verify_email_url(token), **headers)
 
-    def test_cannot_verify_invalid_email_token(self):
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertTrue(user.is_email_verified)
+
+    def test_cant_verify_email_with_other_email(self):
         """
-        should not be able to verify the authenticated user email with incorrect token
+        should not be able to verify the authenticated user email with a token for another email
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
-        token = PasswordResetTokenGenerator().make_token(user)
-        incorrect_token = fake.sha256(raw_output=False)
 
-        with mock.patch.object(UserSettings, 'send_confirmation_email', return_value=None):
-            response = self.client.get(self._get_email_url(incorrect_token), **headers)
+        new_email = fake.email()
+        token = user.update_email(new_email)
 
-            self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        other_email = fake.email()
+        user.update_email(other_email)
+
+        response = self.client.get(self._get_verify_email_url(token), **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        user.refresh_from_db()
+
+        self.assertFalse(user.is_email_verified)
+
+    def test_cant_verify_email_with_other_user_id(self):
+        """
+        should not be able to verify the authenticated user email with foreign user token for same email
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        email = fake.email()
+
+        foreign_token = foreign_user.update_email(email)
+
+        foreign_user.update_email(fake.email())
+
+        user.update_email(email)
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(self._get_verify_email_url(foreign_token), **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        user.refresh_from_db()
+
+        self.assertFalse(user.is_email_verified)
+        self.assertEqual(user.email, email)
 
 
 class LinkedUsersAPITests(APITestCase):

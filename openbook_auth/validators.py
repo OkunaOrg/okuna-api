@@ -3,7 +3,7 @@ from django.conf import settings
 import jwt
 from django.utils.translation import gettext_lazy as _
 from jwt import InvalidSignatureError
-from jwt.exceptions import DecodeError
+from jwt.exceptions import DecodeError, ExpiredSignatureError
 from rest_framework.exceptions import ValidationError, AuthenticationFailed
 
 from openbook_auth.models import User
@@ -43,19 +43,6 @@ def user_username_exists(username):
     if not User.objects.filter(username=username).exists():
         raise ValidationError(
             _('No user with the provided username exists.'),
-        )
-
-
-def jwt_token_validator(token):
-    try:
-        jwt.decode(token, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
-    except InvalidSignatureError:
-        raise AuthenticationFailed(
-            _('Token is invalid.'),
-        )
-    except DecodeError:
-        raise AuthenticationFailed(
-            _('Token is invalid.'),
         )
 
 

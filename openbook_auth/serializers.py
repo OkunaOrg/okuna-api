@@ -5,7 +5,7 @@ from django.utils.translation import gettext as _
 from openbook.settings import USERNAME_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, PROFILE_NAME_MAX_LENGTH
 from openbook_auth.models import User, UserProfile, UserNotificationsSettings
 from openbook_auth.validators import username_characters_validator, \
-    username_not_taken_validator, email_not_taken_validator, user_username_exists, jwt_token_validator, \
+    username_not_taken_validator, email_not_taken_validator, user_username_exists, \
     is_of_legal_age_validator
 from django.contrib.auth.password_validation import validate_password
 
@@ -29,7 +29,7 @@ class RegisterSerializer(serializers.Serializer):
                                  allow_blank=False, validators=[name_characters_validator])
     avatar = serializers.ImageField(allow_empty_file=True, required=False)
     email = serializers.EmailField(validators=[email_not_taken_validator])
-    token = serializers.CharField(validators=[jwt_token_validator])
+    token = serializers.CharField()
 
 
 class UsernameCheckSerializer(serializers.Serializer):

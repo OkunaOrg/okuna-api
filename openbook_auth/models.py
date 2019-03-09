@@ -1,5 +1,7 @@
 import secrets
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from datetime import datetime, timedelta
+
+import jwt
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
 from django.db import models
 from django.contrib.auth.models import AbstractUser
@@ -15,7 +17,6 @@ from rest_framework.exceptions import ValidationError, NotFound, PermissionDenie
 from django.db.models import Q
 
 from openbook.settings import USERNAME_MAX_LENGTH
-from openbook_auth.exceptions import EmailVerificationTokenInvalid
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
 from openbook_common.models import Badge
 from openbook_common.utils.helpers import delete_image_kit_image_field
@@ -208,18 +209,13 @@ class User(AbstractUser):
         self.email = email
         self.is_email_verified = False
         self.save()
-
-    def set_email_verified(self):
-        self.is_email_verified = True
+        verify_token = self._make_email_verification_token_for_email(email=email)
+        return verify_token
 
     def verify_email_with_token(self, token):
-        is_token_valid = PasswordResetTokenGenerator().check_token(self, token)
-        if not is_token_valid:
-            raise EmailVerificationTokenInvalid()
-        self.set_email_verified()
-
-    def make_email_verification_token(self):
-        return PasswordResetTokenGenerator().make_token(self)
+        self._check_email_verification_token_is_valid_for_email(email_verification_token=token)
+        self.is_email_verified = True
+        self.save()
 
     def update(self,
                username=None,
@@ -1632,6 +1628,41 @@ class User(AbstractUser):
         :return:
         """
         return []
+
+    def _make_email_verification_token_for_email(self, email):
+        return jwt.encode({'email': email, 'user_id': self.pk, 'exp': datetime.utcnow() + timedelta(days=1)},
+                          settings.SECRET_KEY,
+                          algorithm=settings.JWT_ALGORITHM).decode('utf-8')
+
+    def _check_email_verification_token_is_valid_for_email(self, email_verification_token):
+        try:
+            token_contents = jwt.decode(email_verification_token, settings.SECRET_KEY,
+                                        algorithm=settings.JWT_ALGORITHM)
+            token_email = token_contents['email']
+
+            token_user_id = token_contents['user_id']
+            if token_email != self.email:
+                raise ValidationError(
+                    _('Token email does not match')
+                )
+
+            if token_user_id != self.pk:
+                raise ValidationError(
+                    _('Token user id does not match')
+                )
+        except jwt.InvalidSignatureError:
+            raise ValidationError(
+                _('Invalid token signature')
+            )
+        except jwt.ExpiredSignatureError:
+            raise ValidationError(
+                _('Token expired')
+            )
+        except jwt.DecodeError as e:
+            print(e)
+            raise ValidationError(
+                _('Failed to decode token')
+            )
 
     def _check_connection_circles_ids(self, circles_ids):
         for circle_id in circles_ids:
