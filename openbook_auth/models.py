@@ -1,5 +1,7 @@
 import secrets
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from datetime import datetime, timedelta
+
+import jwt
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
 from django.db import models
 from django.contrib.auth.models import AbstractUser
@@ -15,7 +17,7 @@ from rest_framework.exceptions import ValidationError, NotFound, PermissionDenie
 from django.db.models import Q
 
 from openbook.settings import USERNAME_MAX_LENGTH
-from openbook_auth.exceptions import EmailVerificationTokenInvalid
+from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
 from openbook_common.models import Badge
 from openbook_common.utils.helpers import delete_image_kit_image_field
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
@@ -207,18 +209,13 @@ class User(AbstractUser):
         self.email = email
         self.is_email_verified = False
         self.save()
-
-    def set_email_verified(self):
-        self.is_email_verified = True
+        verify_token = self._make_email_verification_token_for_email(email=email)
+        return verify_token
 
     def verify_email_with_token(self, token):
-        is_token_valid = PasswordResetTokenGenerator().check_token(self, token)
-        if not is_token_valid:
-            raise EmailVerificationTokenInvalid()
-        self.set_email_verified()
-
-    def make_email_verification_token(self):
-        return PasswordResetTokenGenerator().make_token(self)
+        self._check_email_verification_token_is_valid_for_email(email_verification_token=token)
+        self.is_email_verified = True
+        self.save()
 
     def update(self,
                username=None,
@@ -1178,7 +1175,7 @@ class User(AbstractUser):
         :param max_id:
         :return:
         """
-        posts_query = Q(creator_id=self.id)
+        posts_query = Q(creator_id=self.id, community__isnull=True)
 
         if max_id:
             posts_query.add(Q(id__lt=max_id), Q.AND)
@@ -1246,7 +1243,11 @@ class User(AbstractUser):
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
 
         Post = get_post_model()
-        timeline_posts = Post.objects.filter(timeline_posts_query).distinct()
+
+        if not timeline_posts_query.children:
+            timeline_posts = Post.objects.none()
+        else:
+            timeline_posts = Post.objects.filter(timeline_posts_query).distinct()
 
         return timeline_posts
 
@@ -1627,6 +1628,40 @@ class User(AbstractUser):
         :return:
         """
         return []
+
+    def _make_email_verification_token_for_email(self, email):
+        return jwt.encode({'email': email, 'user_id': self.pk, 'exp': datetime.utcnow() + timedelta(days=1)},
+                          settings.SECRET_KEY,
+                          algorithm=settings.JWT_ALGORITHM).decode('utf-8')
+
+    def _check_email_verification_token_is_valid_for_email(self, email_verification_token):
+        try:
+            token_contents = jwt.decode(email_verification_token, settings.SECRET_KEY,
+                                        algorithm=settings.JWT_ALGORITHM)
+            token_email = token_contents['email']
+
+            token_user_id = token_contents['user_id']
+            if token_email != self.email:
+                raise ValidationError(
+                    _('Token email does not match')
+                )
+
+            if token_user_id != self.pk:
+                raise ValidationError(
+                    _('Token user id does not match')
+                )
+        except jwt.InvalidSignatureError:
+            raise ValidationError(
+                _('Invalid token signature')
+            )
+        except jwt.ExpiredSignatureError:
+            raise ValidationError(
+                _('Token expired')
+            )
+        except jwt.DecodeError as e:
+            raise ValidationError(
+                _('Failed to decode token')
+            )
 
     def _check_connection_circles_ids(self, circles_ids):
         for circle_id in circles_ids:
@@ -2300,8 +2335,10 @@ class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     is_of_legal_age = models.BooleanField(default=False)
     avatar = ProcessedImageField(verbose_name=_('avatar'), blank=False, null=True, format='JPEG',
-                                 options={'quality': 60}, processors=[ResizeToFill(500, 500)])
-    cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 75})
+                                 options={'quality': 60}, processors=[ResizeToFill(500, 500)],
+                                 upload_to=upload_to_user_avatar_directory)
+    cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 75},
+                                upload_to=upload_to_user_cover_directory)
     bio = models.CharField(_('bio'), max_length=settings.PROFILE_BIO_MAX_LENGTH, blank=False, null=True)
     url = models.URLField(_('url'), blank=False, null=True)
     followers_count_visible = models.BooleanField(_('followers count visible'), blank=False, null=False, default=False)

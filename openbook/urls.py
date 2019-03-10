@@ -213,10 +213,12 @@ api_patterns = [
     path('follows/', include(follows_patterns)),
     path('notifications/', include(notifications_patterns)),
     path('devices/', include(devices_patterns)),
-    path('import/', include(importer_patterns)),
     url('time/', Time.as_view(), name='time'),
     url('emojis/groups/', EmojiGroups.as_view(), name='emoji-groups'),
 ]
+
+if settings.FEATURE_IMPORTER_ENABLED:
+    api_patterns.append(path('import/', include(importer_patterns))),
 
 urlpatterns = [
     path('api/', include(api_patterns)),

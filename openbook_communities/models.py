@@ -14,6 +14,7 @@ from django.utils.translation import ugettext_lazy as _
 from openbook_common.utils.model_loaders import get_community_invite_model, \
     get_community_log_model, get_category_model, get_community_membership_model
 from openbook_common.validators import hex_color_validator
+from openbook_communities.helpers import upload_to_community_avatar_directory, upload_to_community_cover_directory
 from openbook_communities.validators import community_name_characters_validator, \
     community_adjective_characters_validator
 from openbook_posts.models import Post
@@ -31,8 +32,10 @@ class Community(models.Model):
     rules = models.CharField(_('rules'), max_length=settings.COMMUNITY_RULES_MAX_LENGTH, blank=False,
                              null=True)
     avatar = ProcessedImageField(verbose_name=_('avatar'), blank=False, null=True, format='JPEG',
-                                 options={'quality': 60}, processors=[ResizeToFill(500, 500)])
-    cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 75})
+                                 options={'quality': 60}, processors=[ResizeToFill(500, 500)],
+                                 upload_to=upload_to_community_avatar_directory)
+    cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 75},
+                                upload_to=upload_to_community_cover_directory)
     created = models.DateTimeField(editable=False)
     starrers = models.ManyToManyField(User, related_name='favorite_communities')
     banned_users = models.ManyToManyField(User, related_name='banned_of_communities')

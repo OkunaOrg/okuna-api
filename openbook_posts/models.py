@@ -21,6 +21,8 @@ from openbook_common.utils.model_loaders import get_post_reaction_model, get_emo
     get_circle_model, get_community_model
 from imagekit.models import ProcessedImageField
 
+from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory
+
 
 class Post(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
@@ -176,20 +178,18 @@ post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else defa
 class PostImage(models.Model):
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='image')
     image = ProcessedImageField(verbose_name=_('image'), storage=post_image_storage,
+                                upload_to=upload_to_post_image_directory,
+                                width_field='width',
+                                height_field='height',
                                 blank=False, null=True, format='JPEG', options={'quality': 75})
-
-    @property
-    def width(self):
-        return self.image.width
-
-    @property
-    def height(self):
-        return self.image.height
+    width = models.PositiveIntegerField(editable=False, null=False, blank=False)
+    height = models.PositiveIntegerField(editable=False, null=False, blank=False)
 
 
 class PostVideo(models.Model):
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='video')
-    video = models.FileField(_('video'), blank=False, null=False, storage=post_image_storage)
+    video = models.FileField(_('video'), blank=False, null=False, storage=post_image_storage,
+                             upload_to=upload_to_post_video_directory)
 
 
 class PostComment(models.Model):

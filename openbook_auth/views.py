@@ -13,7 +13,6 @@ from rest_framework.views import APIView
 from django.utils.translation import gettext as _
 from rest_framework.authtoken.models import Token
 
-from openbook_auth.exceptions import EmailVerificationTokenInvalid
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.model_loaders import get_user_invite_model
 from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheckSerializer, LoginSerializer, \
@@ -106,10 +105,7 @@ class EmailVerify(APIView):
         serializer.is_valid(raise_exception=True)
         token = serializer.validated_data.get('token')
 
-        try:
-            user.verify_email_with_token(token)
-        except EmailVerificationTokenInvalid:
-            return Response(_('Verify email token invalid or expired'), status=status.HTTP_401_UNAUTHORIZED)
+        user.verify_email_with_token(token)
 
         return ApiMessageResponse(_('Email verified'), status=status.HTTP_200_OK)
 
@@ -241,8 +237,8 @@ class UserSettings(APIView):
             has_email = 'email' in data
             if has_email:
                 new_email = data.get('email')
-                user.update_email(new_email)
-                self.send_confirmation_email(user)
+                confirm_email_token = user.update_email(new_email)
+                self.send_confirmation_email(user, confirm_email_token)
 
             if not has_email and not has_password:
                 return Response(_('Please specify email or password to update'), status=status.HTTP_400_BAD_REQUEST)
@@ -250,16 +246,16 @@ class UserSettings(APIView):
         user_serializer = GetAuthenticatedUserSerializer(user, context={"request": request})
         return Response(user_serializer.data, status=status.HTTP_200_OK)
 
-    def send_confirmation_email(self, user):
+    def send_confirmation_email(self, user, confirm_email_token):
         mail_subject = _('Confirm your email for Openbook')
         text_content = render_to_string('openbook_auth/email/change_email.txt', {
             'name': user.profile.name,
-            'confirmation_link': self.generate_confirmation_link(user.make_email_verification_token())
+            'confirmation_link': self.generate_confirmation_link(confirm_email_token)
         })
 
         html_content = render_to_string('openbook_auth/email/change_email.html', {
             'name': user.profile.name,
-            'confirmation_link': self.generate_confirmation_link(user.make_email_verification_token())
+            'confirmation_link': self.generate_confirmation_link(confirm_email_token)
         })
 
         email = EmailMultiAlternatives(
