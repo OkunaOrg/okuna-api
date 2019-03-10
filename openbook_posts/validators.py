@@ -1,4 +1,4 @@
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, NotFound
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_posts.models import Post, PostComment, PostReaction
@@ -13,7 +13,7 @@ def post_id_exists(post_id):
 
 def post_uuid_exists(post_uuid):
     if not Post.objects.filter(uuid=post_uuid).exists():
-        raise ValidationError(
+        raise NotFound(
             _('The post does not exist.'),
         )
 

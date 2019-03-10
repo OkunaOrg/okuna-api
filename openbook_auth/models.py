@@ -1658,7 +1658,7 @@ class User(AbstractUser):
             raise ValidationError(
                 _('Token expired')
             )
-        except jwt.DecodeError as e:
+        except jwt.DecodeError:
             raise ValidationError(
                 _('Failed to decode token')
             )
