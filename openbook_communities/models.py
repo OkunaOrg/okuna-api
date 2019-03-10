@@ -180,7 +180,7 @@ class Community(models.Model):
         return query
 
     @classmethod
-    def get_community_with_name_administrators(cls, community_name, administrators_max_id):
+    def get_community_with_name_administrators(cls, community_name, administrators_max_id=None):
         community_administrators_query = Q(communities_memberships__community__name=community_name,
                                            communities_memberships__is_administrator=True)
 
