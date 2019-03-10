@@ -1,7 +1,7 @@
 import re
 
 from django.utils.translation import gettext_lazy as _
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, NotFound
 
 from openbook_common.utils.model_loaders import get_community_model
 
@@ -31,6 +31,6 @@ def community_name_not_taken_validator(community_name):
 def community_name_exists(community_name):
     Community = get_community_model()
     if not Community.objects.filter(name=community_name).exists():
-        raise ValidationError(
+        raise NotFound(
             _('No community with the provided name exists.'),
         )
