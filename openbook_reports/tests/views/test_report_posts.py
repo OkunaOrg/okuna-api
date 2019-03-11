@@ -645,7 +645,7 @@ class PostReportAPITests(APITestCase):
 
     def _get_reports_for_post_url(self, post):
         return reverse('report-post', kwargs={
-            'post_id': post.pk
+            'post_uuid': post.uuid
         })
 
     def _get_post_report_data(self):
@@ -656,19 +656,19 @@ class PostReportAPITests(APITestCase):
 
     def _get_post_report_confirm_url(self, post, post_report):
         return reverse('post-report-confirm', kwargs={
-            'post_id': post.pk,
+            'post_uuid': post.uuid,
             'report_id': post_report.pk
         })
 
     def _get_post_report_reject_url(self, post, post_report):
         return reverse('post-report-reject', kwargs={
-            'post_id': post.pk,
+            'post_uuid': post.uuid,
             'report_id': post_report.pk
         })
 
     def _get_post_report_url(self, post):
         return reverse('report-post', kwargs={
-            'post_id': post.pk
+            'post_uuid': post.uuid
         })
 
     def _get_timeline_posts_url(self):

@@ -4,12 +4,20 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
+
+from openbook_common.utils.model_loaders import get_post_model
 from openbook_reports.serializers import GetReportCategoriesSerializer, ReportPostSerializer, PostReportSerializer, \
     ConfirmRejectPostReportSerializer, PostReportConfirmRejectSerializer, AuthenticatedUserPostSerializer, \
     ReportedPostsCommunitySerializer, ReportPostCommentSerializer, PostReportCommentSerializer, \
     ReportPostCommentsSerializer, PostCommentReportConfirmRejectSerializer, \
     ConfirmRejectPostCommentReportSerializer, AuthenticatedUserPostCommentSerializer, GetPostReportSerializer
 from openbook_reports.models import ReportCategory as ReportCategoryModel
+
+
+def get_post_id_for_post_uuid(post_uuid):
+    Post = get_post_model()
+    post = Post.objects.values('id').get(uuid=post_uuid)
+    return post['id']
 
 
 class ReportCategory(APIView):
@@ -25,17 +33,19 @@ class ReportCategory(APIView):
 class ReportPost(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def put(self, request, post_id):
+    def put(self, request, post_uuid):
         request_data = request.data.copy()
-        request_data['post_id'] = post_id
+        request_data['post_uuid'] = post_uuid
         serializer = ReportPostSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
         comment_text = data.get('comment')
         category = data.get('category_name')
-        post_id = data.get('post_id')
+        post_uuid = data.get('post_uuid')
         user = request.user
+
+        post_id = get_post_id_for_post_uuid(post_uuid)
 
         with transaction.atomic():
             post_report = user.report_post_with_id(post_id=post_id, comment=comment_text, category_name=category)
@@ -43,15 +53,17 @@ class ReportPost(APIView):
         post_report_serializer = PostReportSerializer(post_report, context={"request": request})
         return Response(post_report_serializer.data, status=status.HTTP_201_CREATED)
 
-    def get(self, request, post_id):
+    def get(self, request, post_uuid):
         request_data = request.data.copy()
-        request_data['post_id'] = post_id
+        request_data['post_uuid'] = post_uuid
         serializer = GetPostReportSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
-        post_id = data.get('post_id')
+        post_uuid = data.get('post_uuid')
         user = request.user
+
+        post_id = get_post_id_for_post_uuid(post_uuid)
 
         with transaction.atomic():
             post_reports = user.get_reports_for_post_with_id(post_id=post_id)
@@ -63,9 +75,9 @@ class ReportPost(APIView):
 class ConfirmPostReport(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def post(self, request, post_id, report_id):
+    def post(self, request, post_uuid, report_id):
         request_data = request.data.copy()
-        request_data['post_id'] = post_id
+        request_data['post_uuid'] = post_uuid
         request_data['report_id'] = report_id
 
         serializer = ConfirmRejectPostReportSerializer(data=request_data)
@@ -73,8 +85,10 @@ class ConfirmPostReport(APIView):
 
         data = serializer.validated_data
         report_id = data.get('report_id')
-        post_id = data.get('post_id')
+        post_uuid = data.get('post_uuid')
         user = request.user
+
+        post_id = get_post_id_for_post_uuid(post_uuid)
 
         with transaction.atomic():
             post_report = user.confirm_report_with_id_for_post_with_id(report_id=report_id, post_id=post_id)
@@ -86,9 +100,9 @@ class ConfirmPostReport(APIView):
 class RejectPostReport(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def post(self, request, post_id, report_id):
+    def post(self, request, post_uuid, report_id):
         request_data = request.data.copy()
-        request_data['post_id'] = post_id
+        request_data['post_uuid'] = post_uuid
         request_data['report_id'] = report_id
 
         serializer = ConfirmRejectPostReportSerializer(data=request_data)
@@ -96,8 +110,10 @@ class RejectPostReport(APIView):
 
         data = serializer.validated_data
         report_id = data.get('report_id')
-        post_id = data.get('post_id')
+        post_uuid = data.get('post_uuid')
         user = request.user
+
+        post_id = get_post_id_for_post_uuid(post_uuid)
 
         with transaction.atomic():
             post_report = user.reject_report_with_id_for_post_with_id(report_id=report_id, post_id=post_id)
@@ -174,10 +190,10 @@ class ReportedPostCommentsCommunity(APIView):
 class ReportPostComment(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def put(self, request, post_id, post_comment_id):
+    def put(self, request, post_uuid, post_comment_id):
         request_data = request.data.copy()
         request_data['post_comment_id'] = post_comment_id
-        request_data['post_id'] = post_id
+        request_data['post_uuid'] = post_uuid
         serializer = ReportPostCommentSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
@@ -185,8 +201,10 @@ class ReportPostComment(APIView):
         comment_text = data.get('comment')
         category = data.get('category_name')
         post_comment_id = data.get('post_comment_id')
-        post_id = data.get('post_id')
+        post_uuid = data.get('post_uuid')
         user = request.user
+
+        post_id = get_post_id_for_post_uuid(post_uuid)
 
         with transaction.atomic():
             post_comment_report = user.report_post_comment_with_id_for_post_with_id(post_comment_id=post_comment_id,
@@ -197,7 +215,7 @@ class ReportPostComment(APIView):
         post_report_comment_serializer = PostReportCommentSerializer(post_comment_report, context={"request": request})
         return Response(post_report_comment_serializer.data, status=status.HTTP_201_CREATED)
 
-    def get(self, request, post_id, post_comment_id):
+    def get(self, request, post_uuid, post_comment_id):
         request_data = request.data.copy()
         request_data['post_comment_id'] = post_comment_id
         serializer = ReportPostCommentsSerializer(data=request_data)
@@ -218,19 +236,21 @@ class ReportPostComment(APIView):
 class ConfirmPostCommentReport(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def post(self, request, post_id, post_comment_id, report_id):
+    def post(self, request, post_uuid, post_comment_id, report_id):
         request_data = request.data.copy()
         request_data['post_comment_id'] = post_comment_id
         request_data['report_id'] = report_id
-        request_data['post_id'] = post_id
+        request_data['post_uuid'] = post_uuid
         serializer = ConfirmRejectPostCommentReportSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
         post_comment_id = data.get('post_comment_id')
         report_id = data.get('report_id')
-        post_id = data.get('post_id')
+        post_uuid = data.get('post_uuid')
         user = request.user
+
+        post_id = get_post_id_for_post_uuid(post_uuid)
 
         with transaction.atomic():
             post_comment_report = \
@@ -246,19 +266,21 @@ class ConfirmPostCommentReport(APIView):
 class RejectPostCommentReport(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def post(self, request, post_id, post_comment_id, report_id):
+    def post(self, request, post_uuid, post_comment_id, report_id):
         request_data = request.data.copy()
         request_data['post_comment_id'] = post_comment_id
         request_data['report_id'] = report_id
-        request_data['post_id'] = post_id
+        request_data['post_uuid'] = post_uuid
         serializer = ConfirmRejectPostCommentReportSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
         post_comment_id = data.get('post_comment_id')
         report_id = data.get('report_id')
-        post_id = data.get('post_id')
+        post_uuid = data.get('post_uuid')
         user = request.user
+
+        post_id = get_post_id_for_post_uuid(post_uuid)
 
         with transaction.atomic():
             post_comment_report = \

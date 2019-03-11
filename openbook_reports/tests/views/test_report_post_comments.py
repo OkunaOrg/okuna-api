@@ -694,7 +694,7 @@ class PostCommentReportAPITests(APITestCase):
 
     def _get_reports_for_post_comment_url(self, post, post_comment):
         return reverse('report-post-comment', kwargs={
-            'post_id': post.pk,
+            'post_uuid': post.uuid,
             'post_comment_id': post_comment.pk,
         })
 
@@ -706,25 +706,25 @@ class PostCommentReportAPITests(APITestCase):
 
     def _get_post_comment_report_confirm_url(self, post, post_comment, post_comment_report):
         return reverse('post-comment-report-confirm', kwargs={
-            'post_id': post.pk,
+            'post_uuid': post.uuid,
             'post_comment_id': post_comment.pk,
             'report_id': post_comment_report.pk
         })
 
     def _get_post_comment_report_reject_url(self, post, post_comment, post_comment_report):
         return reverse('post-comment-report-reject', kwargs={
-            'post_id': post.pk,
+            'post_uuid': post.uuid,
             'post_comment_id': post_comment.pk,
             'report_id': post_comment_report.pk
         })
 
     def _get_post_comment_report_url(self, post, post_comment):
         return reverse('report-post-comment', kwargs={
-            'post_id': post.pk,
+            'post_uuid': post.uuid,
             'post_comment_id': post_comment.pk
         })
 
     def _get_comments_for_post_url(self, post):
         return reverse('post-comments', kwargs={
-            'post_id': post.pk
+            'post_uuid': post.uuid
         })

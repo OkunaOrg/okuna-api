@@ -1256,13 +1256,13 @@ class User(AbstractUser):
         if max_id:
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
 
-        timeline_posts_query.add(~Q(reports__reporter=self.pk), Q.AND)
-
         PostReport = get_post_report_model()
         Post = get_post_model()
+
         if not timeline_posts_query.children:
             timeline_posts = Post.objects.none()
         else:
+            timeline_posts_query.add(~Q(reports__reporter=self.pk), Q.AND)
             report_count_query = Count('reports', filter=~Q(reports__status=PostReport.REJECTED))
             timeline_posts = Post.objects.annotate(report_count=report_count_query).\
             filter(timeline_posts_query,

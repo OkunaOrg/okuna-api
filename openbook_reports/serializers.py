@@ -8,7 +8,7 @@ from openbook_common.serializers_fields.post import PostReportsField
 from openbook_communities.models import Community
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 from openbook_posts.models import Post, PostVideo, PostImage, PostComment
-from openbook_posts.validators import post_id_exists, post_comment_id_exists
+from openbook_posts.validators import post_id_exists, post_comment_id_exists, post_uuid_exists
 from openbook_reports.models import ReportCategory, PostReport, PostCommentReport
 from openbook_reports.validators import is_valid_report_category, report_id_exists, comment_report_id_exsits
 
@@ -35,8 +35,8 @@ class PostReportCategorySerializer(serializers.ModelSerializer):
 
 
 class ReportPostSerializer(serializers.Serializer):
-    post_id = serializers.IntegerField(
-        validators=[post_id_exists],
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
         required=True,
     )
     category_name = serializers.CharField(max_length=settings.REPORT_CATEGORY_NAME_MAX_LENGTH, required=True,
@@ -45,8 +45,8 @@ class ReportPostSerializer(serializers.Serializer):
 
 
 class GetPostReportSerializer(serializers.Serializer):
-    post_id = serializers.IntegerField(
-        validators=[post_id_exists],
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
         required=True,
     )
 
@@ -65,8 +65,8 @@ class PostReportSerializer(serializers.ModelSerializer):
 
 
 class ConfirmRejectPostReportSerializer(serializers.Serializer):
-    post_id = serializers.IntegerField(
-        validators=[post_id_exists],
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
         required=True,
     )
     report_id = serializers.IntegerField(
@@ -76,8 +76,8 @@ class ConfirmRejectPostReportSerializer(serializers.Serializer):
 
 
 class ConfirmRejectPostCommentReportSerializer(serializers.Serializer):
-    post_id = serializers.IntegerField(
-        validators=[post_id_exists],
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
         required=True,
     )
     post_comment_id = serializers.IntegerField(
@@ -236,8 +236,8 @@ class ReportPostCommentSerializer(serializers.Serializer):
         validators=[post_comment_id_exists],
         required=True,
     )
-    post_id = serializers.IntegerField(
-        validators=[post_id_exists],
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
         required=True,
     )
     category_name = serializers.CharField(max_length=settings.REPORT_CATEGORY_NAME_MAX_LENGTH, required=True,
