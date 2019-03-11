@@ -2,17 +2,23 @@ from rest_framework import serializers
 from django.conf import settings
 
 from openbook_auth.models import UserProfile, User
+from openbook_auth.serializers import BadgeSerializer
+from openbook_circles.models import Circle
 from openbook_common.models import Emoji, EmojiGroup
+from openbook_common.serializers_fields.post import PostCreatorField, ReactionsEmojiCountField, ReactionField, \
+    CommentsCountField, CirclesField, IsMutedField
 from openbook_common.serializers_fields.post_comment import PostCommenterField
 from openbook_common.validators import emoji_id_exists, emoji_group_id_exists
-from openbook_communities.models import CommunityMembership
-from openbook_posts.models import PostComment, PostReaction
-from openbook_posts.validators import post_id_exists, post_comment_id_exists, post_reaction_id_exists
+from openbook_communities.models import CommunityMembership, Community
+from openbook_communities.serializers_fields import CommunityMembershipsField
+from openbook_posts.models import PostComment, PostReaction, PostVideo, PostImage, Post
+from openbook_posts.validators import post_comment_id_exists, post_reaction_id_exists, \
+    post_uuid_exists
 
 
 class DeletePostSerializer(serializers.Serializer):
-    post_id = serializers.IntegerField(
-        validators=[post_id_exists],
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
         required=True,
     )
 
@@ -65,16 +71,16 @@ class PostCommentSerializer(serializers.ModelSerializer):
 
 
 class CommentPostSerializer(serializers.Serializer):
-    post_id = serializers.IntegerField(
-        validators=[post_id_exists],
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
         required=True,
     )
     text = serializers.CharField(max_length=settings.POST_COMMENT_MAX_LENGTH, required=True, allow_blank=False)
 
 
 class GetPostCommentsSerializer(serializers.Serializer):
-    post_id = serializers.IntegerField(
-        validators=[post_id_exists],
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
         required=True,
     )
     max_id = serializers.IntegerField(
@@ -87,8 +93,8 @@ class GetPostCommentsSerializer(serializers.Serializer):
 
 
 class DeletePostCommentSerializer(serializers.Serializer):
-    post_id = serializers.IntegerField(
-        validators=[post_id_exists],
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
         required=True,
     )
     post_comment_id = serializers.IntegerField(
@@ -148,8 +154,8 @@ class PostEmojiCountSerializer(serializers.Serializer):
 
 
 class ReactToPostSerializer(serializers.Serializer):
-    post_id = serializers.IntegerField(
-        validators=[post_id_exists],
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
         required=True,
     )
     emoji_id = serializers.IntegerField(
@@ -163,15 +169,15 @@ class ReactToPostSerializer(serializers.Serializer):
 
 
 class GetPostReactionsEmojiCountSerializer(serializers.Serializer):
-    post_id = serializers.IntegerField(
-        validators=[post_id_exists],
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
         required=True,
     )
 
 
 class GetPostReactionsSerializer(serializers.Serializer):
-    post_id = serializers.IntegerField(
-        validators=[post_id_exists],
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
         required=True,
     )
     max_id = serializers.IntegerField(
@@ -188,8 +194,8 @@ class GetPostReactionsSerializer(serializers.Serializer):
 
 
 class DeletePostReactionSerializer(serializers.Serializer):
-    post_id = serializers.IntegerField(
-        validators=[post_id_exists],
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
         required=True,
     )
     post_reaction_id = serializers.IntegerField(
@@ -228,4 +234,142 @@ class PostReactionEmojiGroupSerializer(serializers.ModelSerializer):
             'color',
             'order',
             'emojis',
+        )
+
+
+class GetPostSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+
+
+class MutePostSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+
+
+class UnmutePostSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+
+
+class PostCreatorProfileSerializer(serializers.ModelSerializer):
+    badges = BadgeSerializer(many=True)
+
+    class Meta:
+        model = UserProfile
+        fields = (
+            'avatar',
+            'cover',
+            'badges'
+        )
+
+
+class PostCreatorSerializer(serializers.ModelSerializer):
+    profile = PostCreatorProfileSerializer(many=False)
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'profile',
+            'username'
+        )
+
+
+class PostImageSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(read_only=True)
+
+    class Meta:
+        model = PostImage
+        fields = (
+            'image',
+            'width',
+            'height'
+        )
+
+
+class PostVideoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostVideo
+        fields = (
+            'video',
+        )
+
+
+class CommunityMembershipSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommunityMembership
+        fields = (
+            'id',
+            'user_id',
+            'community_id',
+            'is_administrator',
+            'is_moderator',
+        )
+
+
+class PostCommunitySerializer(serializers.ModelSerializer):
+    memberships = CommunityMembershipsField(community_membership_serializer=CommunityMembershipSerializer)
+
+    class Meta:
+        model = Community
+        fields = (
+            'id',
+            'name',
+            'title',
+            'color',
+            'avatar',
+            'cover',
+            'user_adjective',
+            'users_adjective',
+            'memberships',
+        )
+
+
+class PostCircleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Circle
+        fields = (
+            'id',
+            'name',
+            'color',
+        )
+
+
+class GetPostPostSerializer(serializers.ModelSerializer):
+    image = PostImageSerializer(many=False)
+    video = PostVideoSerializer(many=False)
+    creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
+                               community_membership_serializer=CommunityMembershipSerializer)
+    reactions_emoji_counts = ReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
+    reaction = ReactionField(reaction_serializer=PostReactionSerializer)
+    comments_count = CommentsCountField()
+    circles = CirclesField(circle_serializer=PostCircleSerializer)
+    community = PostCommunitySerializer()
+    is_muted = IsMutedField()
+
+    class Meta:
+        model = Post
+        fields = (
+            'id',
+            'uuid',
+            'comments_count',
+            'reactions_emoji_counts',
+            'created',
+            'text',
+            'image',
+            'video',
+            'creator',
+            'reaction',
+            'public_comments',
+            'public_reactions',
+            'circles',
+            'community',
+            'is_muted'
         )

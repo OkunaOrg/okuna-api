@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import status
@@ -5,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from openbook_common.utils.helpers import normalize_list_value_in_request_data
 from openbook_common.utils.model_loaders import get_post_model
 from openbook_posts.permissions import IsGetOrIsAuthenticated
 from openbook_posts.views.posts.serializers import CreatePostSerializer, AuthenticatedUserPostSerializer, \
@@ -28,7 +30,7 @@ class Posts(APIView):
         data = serializer.validated_data
         text = data.get('text')
         image = data.get('image')
-        video = data.get('video')
+        video = data.get('video') if settings.FEATURE_VIDEO_POSTS_ENABLED else None
         circles_ids = data.get('circle_id')
         user = request.user
 
@@ -49,14 +51,8 @@ class Posts(APIView):
 
     def get_posts_for_authenticated_user(self, request):
         query_params = request.query_params.dict()
-
-        circle_id = query_params.get('circle_id', None)
-        if circle_id:
-            query_params['circle_id'] = query_params['circle_id'].split(',')
-
-        list_id = query_params.get('list_id', None)
-        if list_id:
-            query_params['list_id'] = query_params['list_id'].split(',')
+        normalize_list_value_in_request_data('circle_id', query_params)
+        normalize_list_value_in_request_data('list_id', query_params)
 
         serializer = GetPostsSerializer(data=query_params)
         serializer.is_valid(raise_exception=True)

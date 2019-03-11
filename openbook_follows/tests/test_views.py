@@ -12,6 +12,7 @@ import json
 
 from openbook_lists.models import List
 from openbook_follows.models import Follow
+from openbook_notifications.models import FollowNotification
 
 logger = logging.getLogger(__name__)
 
@@ -169,6 +170,28 @@ class FollowAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(Follow.objects.filter(user=user, followed_user=user).count() == 0)
 
+    def test_follow_should_create_notification(self):
+        """
+        should create a notification when a user is followed
+        """
+        user = mixer.blend(User)
+
+        auth_token = user.auth_token.key
+
+        user_to_follow = mixer.blend(User)
+
+        headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
+
+        data = {
+            'username': user_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        self.client.post(url, data, **headers, format='multipart')
+
+        self.assertTrue(FollowNotification.objects.filter(follower=user, notification__owner=user_to_follow).exists())
+
     def _get_url(self):
         return reverse('follow-user')
 
@@ -224,6 +247,31 @@ class UnfollowAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         self.assertFalse(user.is_following_user(not_followed_user))
+
+    def test_unfollow_should_delete_follow_notification(self):
+        """
+        should delete the follow notification when a user is unfollowed
+        """
+        user = mixer.blend(User)
+
+        auth_token = user.auth_token.key
+
+        list_to_follow = mixer.blend(List, creator=user)
+        user_to_unfollow = mixer.blend(User)
+
+        user.follow_user(user_to_unfollow, lists_ids=[list_to_follow.pk])
+
+        headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
+
+        data = {
+            'username': user_to_unfollow.username
+        }
+
+        url = self._get_url()
+
+        self.client.post(url, data, **headers, format='multipart')
+
+        self.assertFalse(FollowNotification.objects.filter(follower=user, notification__owner=user_to_unfollow).exists())
 
     def _get_url(self):
         return reverse('unfollow-user')

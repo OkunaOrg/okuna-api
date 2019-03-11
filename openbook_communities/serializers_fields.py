@@ -86,6 +86,21 @@ class ModeratorsField(Field):
         return self.moderator_serializer(moderators, context={"request": request}, many=True).data
 
 
+class AdministratorsField(Field):
+    def __init__(self, administrator_serializer=None, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        self.administrator_serializer = administrator_serializer
+        super(AdministratorsField, self).__init__(**kwargs)
+
+    def to_representation(self, community):
+        request = self.context.get('request')
+
+        administrators = Community.get_community_with_name_administrators(community_name=community.name)
+
+        return self.administrator_serializer(administrators, context={"request": request}, many=True).data
+
+
 class CommunityMembershipsField(Field):
     def __init__(self, community_membership_serializer=None, **kwargs):
         kwargs['source'] = '*'

@@ -8,6 +8,8 @@ from openbook_auth.models import User, UserProfile
 from openbook_categories.models import Category
 from openbook_circles.models import Circle
 from openbook_common.models import Emoji, EmojiGroup, Badge
+from openbook_devices.models import Device
+from openbook_notifications.models import Notification
 from openbook_reports.models import ReportCategory
 
 fake = Faker()
@@ -190,3 +192,11 @@ def make_report_category():
 def make_report_comment_text():
     return fake.text(max_nb_chars=settings.REPORT_COMMENT_MAX_LENGTH)
 
+
+
+def make_notification(owner):
+    return mixer.blend(Notification, owner=owner)
+
+
+def make_device(owner):
+    return mixer.blend(Device, owner=owner)

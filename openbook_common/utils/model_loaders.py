@@ -29,6 +29,10 @@ def get_report_category_model():
     return apps.get_model('openbook_reports.ReportCategory')
 
 
+def get_post_mute_model():
+    return apps.get_model('openbook_posts.PostMute')
+
+
 def get_list_model():
     return apps.get_model('openbook_lists.List')
 
@@ -79,3 +83,39 @@ def get_category_model():
 
 def get_community_membership_model():
     return apps.get_model('openbook_communities.CommunityMembership')
+
+
+def get_post_comment_notification_model():
+    return apps.get_model('openbook_notifications.PostCommentNotification')
+
+
+def get_post_reaction_notification_model():
+    return apps.get_model('openbook_notifications.PostReactionNotification')
+
+
+def get_follow_notification_model():
+    return apps.get_model('openbook_notifications.FollowNotification')
+
+
+def get_connection_request_notification_model():
+    return apps.get_model('openbook_notifications.ConnectionRequestNotification')
+
+
+def get_connection_confirmed_notification_model():
+    return apps.get_model('openbook_notifications.ConnectionConfirmedNotification')
+
+
+def get_community_invite_notification_model():
+    return apps.get_model('openbook_notifications.CommunityInviteNotification')
+
+
+def get_notification_model():
+    return apps.get_model('openbook_notifications.Notification')
+
+
+def get_device_model():
+    return apps.get_model('openbook_devices.Device')
+
+
+def get_user_model():
+    return apps.get_model('openbook_auth.User')
