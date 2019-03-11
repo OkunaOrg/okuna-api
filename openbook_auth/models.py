@@ -833,7 +833,8 @@ class User(AbstractUser):
         self._check_can_uninvite_user_with_username_to_community_with_name(username=username,
                                                                            community_name=community_name)
 
-        community_invite = self.created_communities_invites.get(invited_user__username=username, creator=self)
+        community_invite = self.created_communities_invites.get(invited_user__username=username, creator=self,
+                                                                community__name=community_name)
         uninvited_user = community_invite.invited_user
         community_invite.delete()
 

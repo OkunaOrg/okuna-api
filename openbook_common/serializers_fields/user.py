@@ -241,7 +241,8 @@ class CommunitiesInvitesField(Field):
                 continue
 
             try:
-                community_invite = CommunityInvite.objects.get(creator=request_user, invited_user=user)
+                community_invite = CommunityInvite.objects.get(creator=request_user, invited_user=user,
+                                                               community__name=community_name)
                 community_invites.append(community_invite)
             except CommunityInvite.DoesNotExist:
                 pass

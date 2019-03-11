@@ -233,7 +233,7 @@ class UserSettings(APIView):
                 if user.check_password(current_password):
                     user.update_password(password=new_password)
                 else:
-                    return Response(_('Password is not valid'), status=status.HTTP_400_BAD_REQUEST)
+                    raise AuthenticationFailed(detail='Password is not valid')
             has_email = 'email' in data
             if has_email:
                 new_email = data.get('email')
