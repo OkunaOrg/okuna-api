@@ -13,7 +13,7 @@ from django.conf import settings
 from imagekit.models import ProcessedImageField
 from pilkit.processors import ResizeToFill
 from rest_framework.authtoken.models import Token
-from rest_framework.exceptions import ValidationError, NotFound, PermissionDenied
+from rest_framework.exceptions import ValidationError, NotFound, PermissionDenied, AuthenticationFailed
 from django.db.models import Q
 
 from openbook.settings import USERNAME_MAX_LENGTH
@@ -38,7 +38,7 @@ class User(AbstractUser):
     first_name = None
     last_name = None
     email = models.EmailField(_('email address'), unique=True, null=False, blank=False)
-    connections_circle = models.ForeignKey('openbook_circles.Circle', on_delete=models.PROTECT, related_name='+',
+    connections_circle = models.ForeignKey('openbook_circles.Circle', on_delete=models.CASCADE, related_name='+',
                                            null=True, blank=True)
 
     username_validator = UnicodeUsernameValidator() if six.PY3 else ASCIIUsernameValidator()
@@ -162,6 +162,10 @@ class User(AbstractUser):
 
     def count_connections(self):
         return self.connections.count()
+
+    def delete_with_password(self, password):
+        self._check_password_matches(password=password)
+        self.delete()
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -2307,6 +2311,12 @@ class User(AbstractUser):
         if not self.has_post_with_id(post_id):
             raise PermissionDenied(
                 _('This post does not belong to you.'),
+            )
+
+    def _check_password_matches(self, password):
+        if not self.check_password(password):
+            raise AuthenticationFailed(
+                _('Wrong password.'),
             )
 
 

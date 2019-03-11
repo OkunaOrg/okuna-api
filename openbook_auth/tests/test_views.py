@@ -481,6 +481,10 @@ class AuthenticatedUserAPITests(APITestCase):
     AuthenticatedUserAPI
     """
 
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
     def test_can_retrieve_user(self):
         """
         should return 200 and the data of the authenticated user
@@ -882,6 +886,71 @@ class AuthenticatedUserAPITests(APITestCase):
 
         self.assertEqual(new_url, user.profile.url)
 
+    def test_can_delete_user_with_password(self):
+        """
+        should be able to delete the authenticated user with his password and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user_password = fake.password()
+
+        user.set_password(user_password)
+
+        user.save()
+
+        data = {
+            'password': user_password
+        }
+
+        url = self._get_url()
+
+        response = self.client.delete(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(User.objects.filter(pk=user.pk).exists())
+
+    def test_cant_delete_user_with_wrong_password(self):
+        """
+        should not be able to delete the authenticated user with a wrong password and return 401
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user_password = fake.password()
+
+        user.save()
+
+        data = {
+            'password': user_password
+        }
+
+        url = self._get_url()
+
+        response = self.client.delete(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        self.assertTrue(User.objects.filter(pk=user.pk).exists())
+
+    def test_cant_delete_user_without_password(self):
+        """
+        should not be able to delete the authenticated user without his password and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user.save()
+
+        url = self._get_url()
+
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(User.objects.filter(pk=user.pk).exists())
+
     def _get_url(self):
         return reverse('authenticated-user')
 
@@ -1118,7 +1187,7 @@ class UserSettingsAPITests(APITestCase):
         }
 
         response = self.client.patch(self.url, data, **headers)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_cannot_change_password_without_new_password(self):
         """

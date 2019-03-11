@@ -19,7 +19,8 @@ from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheck
     GetAuthenticatedUserSerializer, GetUserUserSerializer, UpdateAuthenticatedUserSerializer, GetUserSerializer, \
     GetUsersSerializer, GetUsersUserSerializer, UpdateUserSettingsSerializer, EmailVerifySerializer, \
     GetLinkedUsersUserSerializer, SearchLinkedUsersSerializer, GetLinkedUsersSerializer, \
-    AuthenticatedUserNotificationsSettingsSerializer, UpdateAuthenticatedUserNotificationsSettingsSerializer
+    AuthenticatedUserNotificationsSettingsSerializer, UpdateAuthenticatedUserNotificationsSettingsSerializer, \
+    DeleteAuthenticatedUserSerializer
 
 
 class Register(APIView):
@@ -175,6 +176,20 @@ class AuthenticatedUser(APIView):
 
         user_serializer = GetAuthenticatedUserSerializer(user, context={"request": request})
         return Response(user_serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request):
+        serializer = DeleteAuthenticatedUserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user = request.user
+
+        password = data.get('password')
+
+        with transaction.atomic():
+            user.delete_with_password(password=password)
+
+        return Response(_('Goodbye 😔'), status=status.HTTP_200_OK)
 
 
 class AuthenticatedUserNotificationsSettings(APIView):
