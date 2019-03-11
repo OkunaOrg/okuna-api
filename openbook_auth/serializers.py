@@ -127,6 +127,11 @@ class UpdateAuthenticatedUserSerializer(serializers.Serializer):
                                      allow_blank=True)
 
 
+class DeleteAuthenticatedUserSerializer(serializers.Serializer):
+    password = serializers.CharField(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH,
+                                     validators=[validate_password], required=True, allow_blank=False)
+
+
 class UpdateUserSettingsSerializer(serializers.Serializer):
     new_password = serializers.CharField(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH,
                                          validators=[validate_password], required=False, allow_blank=False)

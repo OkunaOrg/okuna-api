@@ -19,7 +19,8 @@ from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheck
     GetAuthenticatedUserSerializer, GetUserUserSerializer, UpdateAuthenticatedUserSerializer, GetUserSerializer, \
     GetUsersSerializer, GetUsersUserSerializer, UpdateUserSettingsSerializer, EmailVerifySerializer, \
     GetLinkedUsersUserSerializer, SearchLinkedUsersSerializer, GetLinkedUsersSerializer, \
-    AuthenticatedUserNotificationsSettingsSerializer, UpdateAuthenticatedUserNotificationsSettingsSerializer
+    AuthenticatedUserNotificationsSettingsSerializer, UpdateAuthenticatedUserNotificationsSettingsSerializer, \
+    DeleteAuthenticatedUserSerializer
 
 
 class Register(APIView):
@@ -177,6 +178,24 @@ class AuthenticatedUser(APIView):
         return Response(user_serializer.data, status=status.HTTP_200_OK)
 
 
+class AuthenticatedUserDelete(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        serializer = DeleteAuthenticatedUserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user = request.user
+
+        password = data.get('password')
+
+        with transaction.atomic():
+            user.delete_with_password(password=password)
+
+        return Response(_('Goodbye 😔'), status=status.HTTP_200_OK)
+
+
 class AuthenticatedUserNotificationsSettings(APIView):
     permission_classes = (IsAuthenticated,)
 
@@ -233,7 +252,7 @@ class UserSettings(APIView):
                 if user.check_password(current_password):
                     user.update_password(password=new_password)
                 else:
-                    return Response(_('Password is not valid'), status=status.HTTP_400_BAD_REQUEST)
+                    raise AuthenticationFailed(detail='Password is not valid')
             has_email = 'email' in data
             if has_email:
                 new_email = data.get('email')
