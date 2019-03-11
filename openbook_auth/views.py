@@ -177,7 +177,11 @@ class AuthenticatedUser(APIView):
         user_serializer = GetAuthenticatedUserSerializer(user, context={"request": request})
         return Response(user_serializer.data, status=status.HTTP_200_OK)
 
-    def delete(self, request):
+
+class AuthenticatedUserDelete(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
         serializer = DeleteAuthenticatedUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
