@@ -2,7 +2,7 @@ import secrets
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
 from django.db import models
-from django.db.models import Count, Exists
+from django.db.models import Count, Exists, OuterRef
 from django.contrib.auth.models import AbstractUser
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -1395,7 +1395,7 @@ class User(AbstractUser):
         if self.can_see_all_post_reports_from_community_with_name(community_name):
             reported_posts = Post.objects.annotate(
                 has_pending_reports=Exists(
-                    PostReport.objects.filter(status=PostReport.PENDING)
+                    PostReport.objects.filter(status=PostReport.PENDING, post=OuterRef('pk'))
                 )
             ).filter(
                 Q(community__name=community_name) & Q(has_pending_reports=True)
@@ -1403,7 +1403,7 @@ class User(AbstractUser):
             return reported_posts
         reported_posts = Post.objects.annotate(
             has_pending_reports=Exists(
-                PostReport.objects.filter(status=PostReport.PENDING)
+                PostReport.objects.filter(status=PostReport.PENDING, post=OuterRef('pk'))
                 )
             ).filter(
                 Q(community__name=community_name) & Q(reports__reporter=self) & Q(has_pending_reports=True)
@@ -1416,7 +1416,7 @@ class User(AbstractUser):
         if self.can_see_all_post_reports_from_community_with_name(community_name):
             reported_post_comments = PostComment.objects.annotate(
                 has_pending_reports=Exists(
-                    PostCommentReport.objects.filter(status=PostCommentReport.PENDING)
+                    PostCommentReport.objects.filter(status=PostCommentReport.PENDING, post_comment=OuterRef('pk'))
                 )
             ).filter(
                 Q(post__community__name=community_name) & Q(has_pending_reports=True)
@@ -1425,7 +1425,7 @@ class User(AbstractUser):
 
         reported_post_comments = PostComment.objects.annotate(
             has_pending_reports=Exists(
-                PostCommentReport.objects.filter(status=PostCommentReport.PENDING)
+                PostCommentReport.objects.filter(status=PostCommentReport.PENDING, post_comment=OuterRef('pk'))
             )
         ).filter(
             Q(post__community__name=community_name) & Q(reports__reporter=self) & Q(has_pending_reports=True)

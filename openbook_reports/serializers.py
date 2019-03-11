@@ -30,6 +30,7 @@ class PostReportCategorySerializer(serializers.ModelSerializer):
         model = ReportCategory
         fields = (
             'name',
+            'title'
         )
 
 
