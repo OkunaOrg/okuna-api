@@ -94,6 +94,7 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             'id',
+            'uuid',
             'email',
             'username',
             'profile',

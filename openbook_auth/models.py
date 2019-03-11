@@ -2,6 +2,7 @@ import secrets
 from datetime import datetime, timedelta
 
 import jwt
+import uuid
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
 from django.db import models
 from django.contrib.auth.models import AbstractUser
@@ -57,6 +58,8 @@ class User(AbstractUser):
             'unique': _("A user with that username already exists."),
         },
     )
+
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
     class Meta:
         verbose_name = _('user')
