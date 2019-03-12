@@ -7,6 +7,7 @@ from enum import Enum
 from django.conf import settings
 from django.utils import timezone
 
+
 class ReportCategory(models.Model):
     name = models.CharField(_('name'), max_length=settings.REPORT_CATEGORY_NAME_MAX_LENGTH, blank=False, null=False,
                             unique=True)

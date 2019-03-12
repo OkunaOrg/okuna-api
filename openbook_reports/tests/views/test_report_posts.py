@@ -462,7 +462,7 @@ class PostReportAPITests(APITestCase):
         self.assertEqual(parsed_response['detail'], 'User cannot change status of report')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_user_can_see_their_own_post_reports(self):
+    def test_user_can_see_their_own_reported_posts(self):
         """
         should be able to see self-reported posts
         """
@@ -481,8 +481,8 @@ class PostReportAPITests(APITestCase):
         parsed_response = json.loads(response.content)
 
         self.assertTrue(len(parsed_response) == 2)
-        self.assertTrue(parsed_response[0]['id'] == post_report.id)
-        self.assertTrue(parsed_response[1]['id'] == post_report_two.id)
+        self.assertTrue(parsed_response[0]['uuid'] == str(post.uuid))
+        self.assertTrue(parsed_response[1]['uuid'] == str(post_two.uuid))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_user_can_see_their_own_post_reports_for_post(self):
@@ -608,7 +608,7 @@ class PostReportAPITests(APITestCase):
 
         self.assertTrue(len(parsed_response) == 1)
         post_reports = parsed_response[0]['reports']
-        self.assertEqual(parsed_response[0]['id'], post.id)
+        self.assertEqual(parsed_response[0]['uuid'], str(post.uuid))
         self.assertEqual(post_reports[0]['id'], post_report.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 

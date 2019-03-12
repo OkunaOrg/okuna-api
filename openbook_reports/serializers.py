@@ -4,7 +4,7 @@ from rest_framework.serializers import ModelSerializer
 
 from openbook_auth.models import User, UserProfile
 from openbook_auth.serializers import BadgeSerializer
-from openbook_common.serializers_fields.post import PostReportsField
+from openbook_common.serializers_fields.post import PostReportsField, PostReportCountsField
 from openbook_communities.models import Community
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 from openbook_posts.models import Post, PostVideo, PostImage, PostComment
@@ -191,6 +191,11 @@ class PostReportCommentSerializer(serializers.ModelSerializer):
         )
 
 
+class PostReportCategoryCountSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=settings.REPORT_CATEGORY_TITLE_MAX_LENGTH)
+    count = serializers.IntegerField()
+
+
 class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     image = PostImageSerializer(many=False)
     video = PostVideoSerializer(many=False)
@@ -200,7 +205,7 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = (
-            'id',
+            'uuid',
             'created',
             'text',
             'image',

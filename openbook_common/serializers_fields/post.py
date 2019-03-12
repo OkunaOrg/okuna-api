@@ -1,5 +1,6 @@
 from rest_framework.fields import Field
-
+from django.db.models import F
+from django.db.models import Count
 from openbook_common.utils.model_loaders import get_post_model
 from openbook_posts.models import PostReaction
 from openbook_reports.models import PostReport
@@ -135,6 +136,30 @@ class PostReportsField(Field):
             post_reports = post.reports.filter(reporter=request_user, status=PostReport.PENDING)
 
         return self.post_report_serializer(post_reports, many=True, context={"request": request, 'post': post}).data
+
+
+class PostReportCountsField(Field):
+    def __init__(self, post_report_category_count_serializer=None, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        self.post_report_category_count_serializer = post_report_category_count_serializer
+        super(PostReportCountsField, self).__init__(**kwargs)
+
+    def to_representation(self, post):
+        request = self.context.get('request')
+        request_user = request.user
+        if post.community and request_user.can_see_all_post_reports_from_community_with_name(post.community.name):
+            post_reports_counts_list = PostReport.objects.annotate(title=F('category__title'))\
+                .values('title').annotate(count=Count('status')).filter(post=post, status=PostReport.PENDING)
+        else:
+            post_reports_counts_list = PostReport.objects.annotate(title=F('category__title')) \
+                .values('title').annotate(count=Count('status')).\
+                filter(post=post, status=PostReport.PENDING, reporter=request_user)
+
+        return self.post_report_category_count_serializer(
+            post_reports_counts_list,
+            many=True,
+            context={"request": request, 'post': post}).data
 
 
 class IsMutedField(Field):
