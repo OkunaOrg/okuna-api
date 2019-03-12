@@ -356,6 +356,8 @@ if IS_PRODUCTION:
 
     STATIC_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, AWS_STATIC_LOCATION)
 
+    MEDIA_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, AWS_PUBLIC_MEDIA_LOCATION)
+
     STATICFILES_STORAGE = 'openbook.storage_backends.S3StaticStorage'
 
     DEFAULT_FILE_STORAGE = 'openbook.storage_backends.S3PublicMediaStorage'
