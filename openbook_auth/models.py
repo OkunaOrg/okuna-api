@@ -2,6 +2,7 @@ import secrets
 from datetime import datetime, timedelta
 
 import jwt
+import uuid
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
 from django.db import models
 from django.contrib.auth.models import AbstractUser
@@ -57,6 +58,8 @@ class User(AbstractUser):
             'unique': _("A user with that username already exists."),
         },
     )
+
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
     class Meta:
         verbose_name = _('user')
@@ -1436,6 +1439,7 @@ class User(AbstractUser):
         self.notifications.all().delete()
 
     def create_device(self, uuid, name=None):
+        self._check_device_with_uuid_does_not_exist(uuid)
         Device = get_device_model()
         return Device.create_device(owner=self, uuid=uuid, name=name)
 
@@ -2318,6 +2322,10 @@ class User(AbstractUser):
             raise AuthenticationFailed(
                 _('Wrong password.'),
             )
+
+    def _check_device_with_uuid_does_not_exist(self, device_uuid):
+        if self.devices.filter(uuid=device_uuid).exists():
+            raise ValidationError('Device already exists')
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
