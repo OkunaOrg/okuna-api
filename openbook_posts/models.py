@@ -10,6 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.db.models import Count
 
 # Create your views here.
+from pilkit.processors import ResizeToFit
 from rest_framework.exceptions import ValidationError
 
 from django.conf import settings
@@ -181,7 +182,7 @@ class PostImage(models.Model):
                                 upload_to=upload_to_post_image_directory,
                                 width_field='width',
                                 height_field='height',
-                                blank=False, null=True, format='JPEG', options={'quality': 75})
+                                blank=False, null=True, format='JPEG', options={'quality': 50}, processors=[ResizeToFit(width=1024, upscale=False)])
     width = models.PositiveIntegerField(editable=False, null=False, blank=False)
     height = models.PositiveIntegerField(editable=False, null=False, blank=False)
 

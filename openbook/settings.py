@@ -347,7 +347,8 @@ if IS_PRODUCTION:
     AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME')
     AWS_S3_ENCRYPTION = True
     AWS_S3_SIGNATURE_VERSION = 's3v4'
-    AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
+    AWS_S3_DOMAIN = os.environ.get('AWS_S3_DOMAIN', 's3.amazonaws.com')
+    AWS_S3_CUSTOM_DOMAIN = '%s.%s' % (AWS_STORAGE_BUCKET_NAME, AWS_S3_DOMAIN)
 
     AWS_S3_OBJECT_PARAMETERS = {
         'CacheControl': 'max-age=86400',

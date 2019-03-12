@@ -5,7 +5,7 @@ from django.db import models
 from django.utils import timezone
 from django.db.models import Q
 from django.db.models import Count
-from pilkit.processors import ResizeToFill
+from pilkit.processors import ResizeToFill, ResizeToFit
 
 from openbook.settings import COLOR_ATTR_MAX_LENGTH
 from openbook_auth.models import User
@@ -34,8 +34,9 @@ class Community(models.Model):
     avatar = ProcessedImageField(verbose_name=_('avatar'), blank=False, null=True, format='JPEG',
                                  options={'quality': 60}, processors=[ResizeToFill(500, 500)],
                                  upload_to=upload_to_community_avatar_directory)
-    cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 75},
-                                upload_to=upload_to_community_cover_directory)
+    cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 50},
+                                upload_to=upload_to_community_cover_directory,
+                                processors=[ResizeToFit(width=1024, upscale=False)])
     created = models.DateTimeField(editable=False)
     starrers = models.ManyToManyField(User, related_name='favorite_communities')
     banned_users = models.ManyToManyField(User, related_name='banned_of_communities')
