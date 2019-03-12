@@ -3,7 +3,8 @@ from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
 from openbook_common.models import Emoji, Badge
-from openbook_common.serializers_fields.post import ReactionsEmojiCountField, CommentsCountField, PostCreatorField
+from openbook_common.serializers_fields.post import ReactionsEmojiCountField, CommentsCountField, PostCreatorField, \
+    IsMutedField
 from openbook_communities.models import CommunityMembership, Community
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 from openbook_posts.models import PostImage, PostVideo, Post
@@ -126,11 +127,13 @@ class CommunityPostSerializer(serializers.ModelSerializer):
     reactions_emoji_counts = ReactionsEmojiCountField(emoji_count_serializer=CommunityPostEmojiCountSerializer)
     comments_count = CommentsCountField()
     community = CommunityPostCommunitySerializer(many=False)
+    is_muted = IsMutedField()
 
     class Meta:
         model = Post
         fields = (
             'id',
+            'uuid',
             'comments_count',
             'reactions_emoji_counts',
             'created',
@@ -138,5 +141,6 @@ class CommunityPostSerializer(serializers.ModelSerializer):
             'image',
             'video',
             'creator',
-            'community'
+            'community',
+            'is_muted',
         )

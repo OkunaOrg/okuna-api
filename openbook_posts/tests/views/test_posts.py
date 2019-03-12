@@ -713,6 +713,76 @@ class PostsAPITests(APITestCase):
         for public_post_id in public_posts_ids:
             self.assertIn(public_post_id, response_posts_ids)
 
+    def test_get_all_own_posts(self):
+        """
+        should be able to retrieve all own posts
+        and return 200
+        """
+        user = make_user()
+
+        amount_of_public_posts = random.randint(1, 5)
+        amount_of_encircled_posts = random.randint(1, 5)
+
+        created_posts_ids = []
+
+        for i in range(amount_of_public_posts):
+            post = user.create_public_post(make_fake_post_text())
+            created_posts_ids.append(post.pk)
+
+        circle = make_circle(creator=user)
+
+        for i in range(amount_of_encircled_posts):
+            post = user.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+            created_posts_ids.append(post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), len(created_posts_ids))
+
+        response_posts_ids = [post['id'] for post in response_posts]
+
+        for post_id in created_posts_ids:
+            self.assertIn(post_id, response_posts_ids)
+
+    def test_filter_community_post_from_own_posts(self):
+        """
+        should filter out the community posts when retrieving all own posts and return 200
+        """
+        user = make_user()
+        community = make_community(creator=user)
+
+        amount_of_community_posts = random.randint(1, 5)
+
+        created_posts_ids = []
+
+        for i in range(amount_of_community_posts):
+            post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            created_posts_ids.append(post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), 0)
+
     def test_get_all_public_posts_for_user_unauthenticated_with_max_id_and_count(self):
         """
         should be able to retrieve all the public posts of an specific user
@@ -751,6 +821,35 @@ class PostsAPITests(APITestCase):
 
         for response_post_id in response_posts_ids:
             self.assertTrue(response_post_id < max_id)
+
+    def test_retrieves_no_posts_when_filtering_on_empty_circle(self):
+        """
+        should retrieve no posts when filtering on an empty circle
+        """
+        user = make_user()
+        connections_circle_id = user.connections_circle_id
+
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_foreign_public_posts = 10
+
+        public_posts_ids = []
+
+        for i in range(amount_of_foreign_public_posts):
+            post_text = make_fake_post_text()
+            foreign_user = make_user()
+            public_post = foreign_user.create_public_post(text=post_text)
+            public_posts_ids.append(public_post.pk)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {'circle_id': connections_circle_id}, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), 0)
 
     def _get_url(self):
         return reverse('posts')

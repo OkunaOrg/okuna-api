@@ -13,14 +13,14 @@ from rest_framework.views import APIView
 from django.utils.translation import gettext as _
 from rest_framework.authtoken.models import Token
 
-from openbook_auth.exceptions import EmailVerificationTokenInvalid
-from openbook_common.models import Badge
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.model_loaders import get_user_invite_model
 from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheckSerializer, LoginSerializer, \
     GetAuthenticatedUserSerializer, GetUserUserSerializer, UpdateAuthenticatedUserSerializer, GetUserSerializer, \
     GetUsersSerializer, GetUsersUserSerializer, UpdateUserSettingsSerializer, EmailVerifySerializer, \
-    GetLinkedUsersUserSerializer, SearchLinkedUsersSerializer, GetLinkedUsersSerializer
+    GetLinkedUsersUserSerializer, SearchLinkedUsersSerializer, GetLinkedUsersSerializer, \
+    AuthenticatedUserNotificationsSettingsSerializer, UpdateAuthenticatedUserNotificationsSettingsSerializer, \
+    DeleteAuthenticatedUserSerializer
 
 
 class Register(APIView):
@@ -106,10 +106,7 @@ class EmailVerify(APIView):
         serializer.is_valid(raise_exception=True)
         token = serializer.validated_data.get('token')
 
-        try:
-            user.verify_email_with_token(token)
-        except EmailVerificationTokenInvalid:
-            return Response(_('Verify email token invalid or expired'), status=status.HTTP_401_UNAUTHORIZED)
+        user.verify_email_with_token(token)
 
         return ApiMessageResponse(_('Email verified'), status=status.HTTP_200_OK)
 
@@ -181,7 +178,63 @@ class AuthenticatedUser(APIView):
         return Response(user_serializer.data, status=status.HTTP_200_OK)
 
 
+class AuthenticatedUserDelete(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        serializer = DeleteAuthenticatedUserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user = request.user
+
+        password = data.get('password')
+
+        with transaction.atomic():
+            user.delete_with_password(password=password)
+
+        return Response(_('Goodbye 😔'), status=status.HTTP_200_OK)
+
+
+class AuthenticatedUserNotificationsSettings(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        user_notifications_settings_serializer = AuthenticatedUserNotificationsSettingsSerializer(
+            request.user.notifications_settings, context={'request': request})
+        return Response(user_notifications_settings_serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request):
+        serializer = UpdateAuthenticatedUserNotificationsSettingsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        post_comment_notifications = data.get('post_comment_notifications')
+        post_reaction_notifications = data.get('post_reaction_notifications')
+        follow_notifications = data.get('follow_notifications')
+        connection_request_notifications = data.get('connection_request_notifications')
+        connection_confirmed_notifications = data.get('connection_confirmed_notifications')
+        community_invite_notifications = data.get('community_invite_notifications')
+
+        user = request.user
+
+        with transaction.atomic():
+            notifications_settings = user.update_notifications_settings(
+                post_comment_notifications=post_comment_notifications,
+                post_reaction_notifications=post_reaction_notifications,
+                follow_notifications=follow_notifications,
+                connection_request_notifications=connection_request_notifications,
+                connection_confirmed_notifications=connection_confirmed_notifications,
+                community_invite_notifications=community_invite_notifications
+            )
+
+        user_notifications_settings_serializer = AuthenticatedUserNotificationsSettingsSerializer(
+            notifications_settings, context={'request': request})
+        return Response(user_notifications_settings_serializer.data, status=status.HTTP_200_OK)
+
+
 class UserSettings(APIView):
+    # TODO Split into update password and update email APIs...
     permission_classes = (IsAuthenticated,)
 
     def patch(self, request):
@@ -199,12 +252,12 @@ class UserSettings(APIView):
                 if user.check_password(current_password):
                     user.update_password(password=new_password)
                 else:
-                    return Response(_('Password is not valid'), status=status.HTTP_400_BAD_REQUEST)
+                    raise AuthenticationFailed(detail='Password is not valid')
             has_email = 'email' in data
             if has_email:
                 new_email = data.get('email')
-                user.update_email(new_email)
-                self.send_confirmation_email(user)
+                confirm_email_token = user.update_email(new_email)
+                self.send_confirmation_email(user, confirm_email_token)
 
             if not has_email and not has_password:
                 return Response(_('Please specify email or password to update'), status=status.HTTP_400_BAD_REQUEST)
@@ -212,16 +265,16 @@ class UserSettings(APIView):
         user_serializer = GetAuthenticatedUserSerializer(user, context={"request": request})
         return Response(user_serializer.data, status=status.HTTP_200_OK)
 
-    def send_confirmation_email(self, user):
+    def send_confirmation_email(self, user, confirm_email_token):
         mail_subject = _('Confirm your email for Openbook')
         text_content = render_to_string('openbook_auth/email/change_email.txt', {
             'name': user.profile.name,
-            'confirmation_link': self.generate_confirmation_link(user.make_email_verification_token())
+            'confirmation_link': self.generate_confirmation_link(confirm_email_token)
         })
 
         html_content = render_to_string('openbook_auth/email/change_email.html', {
             'name': user.profile.name,
-            'confirmation_link': self.generate_confirmation_link(user.make_email_verification_token())
+            'confirmation_link': self.generate_confirmation_link(confirm_email_token)
         })
 
         email = EmailMultiAlternatives(
@@ -306,7 +359,7 @@ class SearchLinkedUsers(APIView):
         return Response(users_serializer.data, status=status.HTTP_200_OK)
 
 
-class User(APIView):
+class UserItem(APIView):
     def get(self, request, user_username):
         request_data = request.data.copy()
         request_data['username'] = user_username

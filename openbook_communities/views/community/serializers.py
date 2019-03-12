@@ -8,7 +8,7 @@ from openbook_common.serializers_fields.user import IsFollowingField
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import IsInvitedField, \
-    IsCreatorField, RulesField, ModeratorsField, CommunityMembershipsField, IsFavoriteField
+    IsCreatorField, RulesField, ModeratorsField, CommunityMembershipsField, IsFavoriteField, AdministratorsField
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 
 
@@ -96,7 +96,7 @@ class GetCommunityModeratorProfileSerializer(serializers.ModelSerializer):
         )
 
 
-class GetCommunityModeratorUserSerializer(serializers.ModelSerializer):
+class GetCommunityStaffUserSerializer(serializers.ModelSerializer):
     profile = GetCommunityModeratorProfileSerializer(many=False)
     is_following = IsFollowingField()
 
@@ -127,7 +127,8 @@ class GetCommunityCommunitySerializer(serializers.ModelSerializer):
     is_invited = IsInvitedField()
     is_creator = IsCreatorField()
     is_favorite = IsFavoriteField()
-    moderators = ModeratorsField(moderator_serializer=GetCommunityModeratorUserSerializer)
+    moderators = ModeratorsField(moderator_serializer=GetCommunityStaffUserSerializer)
+    administrators = AdministratorsField(administrator_serializer=GetCommunityStaffUserSerializer)
     memberships = CommunityMembershipsField(community_membership_serializer=GetCommunityCommunityMembershipSerializer)
     rules = RulesField()
 
@@ -147,12 +148,13 @@ class GetCommunityCommunitySerializer(serializers.ModelSerializer):
             'users_adjective',
             'categories',
             'moderators',
+            'administrators',
             'type',
             'invites_enabled',
             'is_invited',
             'is_creator',
             'is_favorite',
-            'memberships'
+            'memberships',
         )
 
 

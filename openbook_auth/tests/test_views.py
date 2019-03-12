@@ -4,7 +4,6 @@ import tempfile
 import uuid
 
 from PIL import Image
-from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.urls import reverse
 from faker import Faker
 from unittest import mock
@@ -63,7 +62,7 @@ class RegistrationAPITests(APITestCase):
 
     def test_token_should_be_valid(self):
         """
-        should return 401 if token is invalid.
+        should return 400 if token is invalid.
         """
         url = self._get_url()
         token = uuid.uuid4()
@@ -71,7 +70,7 @@ class RegistrationAPITests(APITestCase):
                               'password': 'secretPassword123', 'is_of_legal_age': 'true', 'token': token}
         response = self.client.post(url, first_request_data, format='multipart')
 
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_invalid_name(self):
         """
@@ -482,6 +481,10 @@ class AuthenticatedUserAPITests(APITestCase):
     AuthenticatedUserAPI
     """
 
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
     def test_can_retrieve_user(self):
         """
         should return 200 and the data of the authenticated user
@@ -887,6 +890,159 @@ class AuthenticatedUserAPITests(APITestCase):
         return reverse('authenticated-user')
 
 
+class AuthenticatedUserDeleteTests(APITestCase):
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
+    def test_can_delete_user_with_password(self):
+        """
+        should be able to delete the authenticated user with his password and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user_password = fake.password()
+
+        user.set_password(user_password)
+
+        user.save()
+
+        data = {
+            'password': user_password
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(User.objects.filter(pk=user.pk).exists())
+
+    def test_cant_delete_user_with_wrong_password(self):
+        """
+        should not be able to delete the authenticated user with a wrong password and return 401
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user_password = fake.password()
+
+        user.save()
+
+        data = {
+            'password': user_password
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        self.assertTrue(User.objects.filter(pk=user.pk).exists())
+
+    def test_cant_delete_user_without_password(self):
+        """
+        should not be able to delete the authenticated user without his password and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user.save()
+
+        url = self._get_url()
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(User.objects.filter(pk=user.pk).exists())
+
+    def _get_url(self):
+        return reverse('authenticated-user-delete')
+
+
+class AuthenticatedUserNotificationsSettingsTests(APITestCase):
+    """
+    AuthenticatedUserNotificationsSettings
+    """
+
+    def test_can_retrieve_notifications_settings(self):
+        """
+        should be able to retrieve own notifications settings and return 200
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertIn('id', parsed_response)
+        response_id = parsed_response['id']
+        self.assertEqual(response_id, user.notifications_settings.pk)
+
+    def test_can_update_notifications_settings(self):
+        """
+        should be able to update notifications settings and return 200
+        """
+        user = make_user()
+        notifications_settings = user.notifications_settings
+
+        notifications_settings.post_comment_notifications = fake.boolean()
+        notifications_settings.post_reaction_notifications = fake.boolean()
+        notifications_settings.follow_notifications = fake.boolean()
+        notifications_settings.connection_request_notifications = fake.boolean()
+        notifications_settings.connection_confirmed_notifications = fake.boolean()
+        notifications_settings.community_invite_notifications = fake.boolean()
+
+        notifications_settings.save()
+
+        headers = make_authentication_headers_for_user(user)
+
+        new_post_comment_notifications = notifications_settings.post_comment_notifications
+        new_post_reaction_notifications = notifications_settings.post_reaction_notifications
+        new_follow_notifications = notifications_settings.follow_notifications
+        new_connection_request_notifications = notifications_settings.connection_request_notifications
+        new_connection_confirmed_notifications = notifications_settings.connection_confirmed_notifications
+        new_community_invite_notifications = notifications_settings.community_invite_notifications
+
+        data = {
+            'post_comment_notifications': new_post_comment_notifications,
+            'post_reaction_notifications': new_post_reaction_notifications,
+            'follow_notifications': new_follow_notifications,
+            'connection_request_notifications': new_connection_request_notifications,
+            'connection_confirmed_notifications': new_connection_confirmed_notifications,
+            'community_invite_notifications': new_community_invite_notifications
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        notifications_settings.refresh_from_db()
+
+        self.assertEqual(notifications_settings.post_comment_notifications, new_post_comment_notifications)
+        self.assertEqual(notifications_settings.post_reaction_notifications, new_post_reaction_notifications)
+        self.assertEqual(notifications_settings.follow_notifications, new_follow_notifications)
+        self.assertEqual(notifications_settings.connection_request_notifications, new_connection_request_notifications)
+        self.assertEqual(notifications_settings.community_invite_notifications, new_community_invite_notifications)
+        self.assertEqual(notifications_settings.connection_confirmed_notifications,
+                         new_connection_confirmed_notifications)
+
+    def _get_url(self):
+        return reverse('authenticated-user-notifications-settings')
+
+
 class UserAPITests(APITestCase):
     """
     UserAPI
@@ -1040,7 +1196,7 @@ class UserSettingsAPITests(APITestCase):
         }
 
         response = self.client.patch(self.url, data, **headers)
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_cannot_change_password_without_new_password(self):
         """
@@ -1093,7 +1249,7 @@ class UserSettingsAPITests(APITestCase):
 
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def _get_email_url(self, token):
+    def _get_verify_email_url(self, token):
         return reverse('email-verify', kwargs={
             'token': token
         })
@@ -1104,26 +1260,63 @@ class UserSettingsAPITests(APITestCase):
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
-        token = PasswordResetTokenGenerator().make_token(user)
 
-        with mock.patch.object(UserSettings, 'send_confirmation_email', return_value=None):
-            response = self.client.get(self._get_email_url(token), **headers)
+        new_email = fake.email()
+        token = user.update_email(new_email)
 
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.get(self._get_verify_email_url(token), **headers)
 
-    def test_cannot_verify_invalid_email_token(self):
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertTrue(user.is_email_verified)
+
+    def test_cant_verify_email_with_other_email(self):
         """
-        should not be able to verify the authenticated user email with incorrect token
+        should not be able to verify the authenticated user email with a token for another email
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
-        token = PasswordResetTokenGenerator().make_token(user)
-        incorrect_token = fake.sha256(raw_output=False)
 
-        with mock.patch.object(UserSettings, 'send_confirmation_email', return_value=None):
-            response = self.client.get(self._get_email_url(incorrect_token), **headers)
+        new_email = fake.email()
+        token = user.update_email(new_email)
 
-            self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        other_email = fake.email()
+        user.update_email(other_email)
+
+        response = self.client.get(self._get_verify_email_url(token), **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        user.refresh_from_db()
+
+        self.assertFalse(user.is_email_verified)
+
+    def test_cant_verify_email_with_other_user_id(self):
+        """
+        should not be able to verify the authenticated user email with foreign user token for same email
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        email = fake.email()
+
+        foreign_token = foreign_user.update_email(email)
+
+        foreign_user.update_email(fake.email())
+
+        user.update_email(email)
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(self._get_verify_email_url(foreign_token), **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        user.refresh_from_db()
+
+        self.assertFalse(user.is_email_verified)
+        self.assertEqual(user.email, email)
 
 
 class LinkedUsersAPITests(APITestCase):

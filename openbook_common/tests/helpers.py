@@ -8,6 +8,8 @@ from openbook_auth.models import User, UserProfile
 from openbook_categories.models import Category
 from openbook_circles.models import Circle
 from openbook_common.models import Emoji, EmojiGroup, Badge
+from openbook_devices.models import Device
+from openbook_notifications.models import Notification
 
 fake = Faker()
 
@@ -166,3 +168,11 @@ def make_community(creator, type='P'):
                                          categories_names=[make_category().name],
                                          invites_enabled=make_community_invites_enabled())
     return community
+
+
+def make_notification(owner):
+    return mixer.blend(Notification, owner=owner)
+
+
+def make_device(owner):
+    return mixer.blend(Device, owner=owner)

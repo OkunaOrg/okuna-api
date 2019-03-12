@@ -1,17 +1,12 @@
 [[source]]
-
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
-
 [dev-packages]
 
-
-
 [packages]
-
-django = "==2.1.5"
+django = ">=2.1.6"
 python-dotenv = "*"
 djangorestframework = "*"
 sentry-sdk = "*"
@@ -30,13 +25,13 @@ django-amazon-ses = "*"
 django-media-fixtures = "==0.0.3"
 django-modeltranslation = {editable = true,git = "https://github.com/lifenautjoe/django-modeltranslation.git"}
 bandit = "*"
-pyyaml = "*"
+pyyaml = ">=4.2b1"
 python-magic = "*"
 safety = "*"
 pyjwt = "*"
 django-imagekit = "*"
-
+rest-framework-generic-relations = "*"
+onesignal-sdk = "*"
 
 [pipenv]
-
 allow_prereleases = true

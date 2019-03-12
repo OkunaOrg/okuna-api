@@ -11,6 +11,8 @@ import logging
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_emoji, make_emoji_group, make_reactions_emoji_group, \
     make_community
+from openbook_communities.models import Community
+from openbook_notifications.models import PostCommentNotification, PostReactionNotification
 from openbook_posts.models import Post, PostComment, PostReaction
 
 logger = logging.getLogger(__name__)
@@ -21,6 +23,91 @@ class PostItemAPITests(APITestCase):
     """
     PostItemAPI
     """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
+    def test_can_retrieve_own_post(self):
+        """
+        should be able to retrieve own post and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_post = json.loads(response.content)
+
+        self.assertEqual(response_post['id'], post.pk)
+
+    def test_can_retrieve_foreign_user_public_post(self):
+        """
+        should be able to retrieve a foreign user public post and return 200
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+        post = foreign_user.create_public_post(text=make_fake_post_text())
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_post = json.loads(response.content)
+
+        self.assertEqual(response_post['id'], post.pk)
+
+    def test_can_retrieve_connected_user_encircled_post(self):
+        """
+        should be able to retrieve a connected user encircled post and return 200
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        circle = make_circle(creator=foreign_user)
+        post = foreign_user.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+
+        user.connect_with_user_with_id(foreign_user.pk)
+        foreign_user.confirm_connection_with_user_with_id(user.pk, circles_ids=[circle.pk])
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_post = json.loads(response.content)
+
+        self.assertEqual(response_post['id'], post.pk)
+
+    def test_cant_retrieve_user_encircled_post(self):
+        """
+        should not be able to retrieve a user encircled post and return 400
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        circle = make_circle(creator=foreign_user)
+        post = foreign_user.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_can_delete_own_post(self):
         """
@@ -135,7 +222,145 @@ class PostItemAPITests(APITestCase):
 
     def _get_url(self, post):
         return reverse('post', kwargs={
-            'post_id': post.pk
+            'post_uuid': post.uuid
+        })
+
+
+class MutePostAPITests(APITestCase):
+    """
+    MutePostAPI
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
+    def test_can_mute_own_post(self):
+        """
+        should be able to mute own post and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(user.has_muted_post_with_id(post.pk))
+
+    def test_cant_mute_own_post_if_already_muted(self):
+        """
+        should not be able to mute own post if already muted and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        url = self._get_url(post)
+
+        user.mute_post_with_id(post.pk)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(user.has_muted_post_with_id(post.pk))
+
+    def test_cant_mute_foreign_post(self):
+        """
+        should not be able to mute a foreign post and return 403
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+        post = foreign_user.create_public_post(text=make_fake_post_text())
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertFalse(user.has_muted_post_with_id(post.pk))
+
+    def _get_url(self, post):
+        return reverse('mute-post', kwargs={
+            'post_uuid': post.uuid
+        })
+
+
+class UnmutePostAPITests(APITestCase):
+    """
+    UnmutePostAPI
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
+    def test_can_unmute_own_post(self):
+        """
+        should be able to unmute own post and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        user.mute_post_with_id(post.pk)
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(user.has_muted_post_with_id(post.pk))
+
+    def test_cant_unmute_own_post_if_already_unmuted(self):
+        """
+        should not be able to unmute own post if already unmuted and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(user.has_muted_post_with_id(post.pk))
+
+    def test_cant_unmute_foreign_post(self):
+        """
+        should not be able to unmute a foreign post and return 403
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+        post = foreign_user.create_public_post(text=make_fake_post_text())
+
+        foreign_user.mute_post_with_id(post.pk)
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        print(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertTrue(foreign_user.has_muted_post_with_id(post.pk))
+
+    def _get_url(self, post):
+        return reverse('unmute-post', kwargs={
+            'post_uuid': post.uuid
         })
 
 
@@ -306,6 +531,45 @@ class PostCommentsAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(PostComment.objects.filter(post_id=followed_user_post.pk, text=post_comment_text).count() == 0)
 
+    def test_commenting_in_foreign_post_creates_notification(self):
+        """
+         should create a notification when commenting on a foreign post
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        foreign_user = make_user()
+
+        post = foreign_user.create_public_post(text=make_fake_post_text())
+
+        post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        self.assertTrue(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
+                                                               notification__owner=foreign_user).exists())
+
+    def test_commenting_in_own_post_does_not_create_notification(self):
+        """
+         should not create a notification when commenting on an own post
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        self.assertFalse(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
+                                                                notification__owner=user).exists())
+
     def _get_create_post_comment_request_data(self, post_comment_text):
         return {
             'text': post_comment_text
@@ -313,7 +577,7 @@ class PostCommentsAPITests(APITestCase):
 
     def _get_url(self, post):
         return reverse('post-comments', kwargs={
-            'post_id': post.pk,
+            'post_uuid': post.uuid,
         })
 
 
@@ -699,9 +963,31 @@ class PostCommentItemAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(PostComment.objects.filter(id=post_comment.pk).count() == 1)
 
+    def test_post_comment_notification_is_deleted_when_deleting_comment(self):
+        """
+        should delete the post comment notification when a post comment is deleted
+        """
+        user = make_user()
+
+        commenter = make_user()
+
+        post = user.create_public_post(text=make_fake_post_text())
+
+        post_comment_text = make_fake_post_comment_text()
+
+        post_comment = commenter.comment_post_with_id(post.pk, text=post_comment_text)
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        headers = make_authentication_headers_for_user(user)
+        self.client.delete(url, **headers)
+
+        self.assertFalse(PostCommentNotification.objects.filter(post_comment=post_comment,
+                                                                notification__owner=user).exists())
+
     def _get_url(self, post, post_comment):
         return reverse('post-comment', kwargs={
-            'post_id': post.pk,
+            'post_uuid': post.uuid,
             'post_comment_id': post_comment.pk
         })
 
@@ -945,6 +1231,49 @@ class PostReactionsAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(PostReaction.objects.filter(post_id=post.pk, reactor_id=user.pk).count() == 1)
 
+    def test_reacting_in_foreign_post_creates_notification(self):
+        """
+         should create a notification when reacting on a foreign post
+         """
+        user = make_user()
+        reactor = make_user()
+
+        headers = make_authentication_headers_for_user(reactor)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        emoji_group = make_reactions_emoji_group()
+
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id, emoji_group.pk)
+
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        self.assertTrue(PostReactionNotification.objects.filter(post_reaction__emoji__id=post_reaction_emoji_id,
+                                                                notification__owner=user).exists())
+
+    def test_reacting_in_own_post_does_not_create_notification(self):
+        """
+         should not create a notification when reacting on an own post
+         """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        emoji_group = make_reactions_emoji_group()
+
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id, emoji_group.pk)
+
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        self.assertFalse(PostReactionNotification.objects.filter(post_reaction__emoji__id=post_reaction_emoji_id,
+                                                                 notification__owner=user).exists())
+
     def _get_create_post_reaction_request_data(self, emoji_id, emoji_group_id):
         return {
             'emoji_id': emoji_id,
@@ -953,7 +1282,7 @@ class PostReactionsAPITests(APITestCase):
 
     def _get_url(self, post):
         return reverse('post-reactions', kwargs={
-            'post_id': post.pk,
+            'post_uuid': post.uuid,
         })
 
 
@@ -1279,9 +1608,34 @@ class PostReactionItemAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(PostReaction.objects.filter(id=post_reaction.pk).count() == 1)
 
+    def test_post_reaction_notification_is_deleted_when_deleting_reaction(self):
+        """
+        should delete the post reaction notification when a post reaction is deleted
+        """
+        user = make_user()
+
+        reactioner = make_user()
+
+        post = user.create_public_post(text=make_fake_post_text())
+
+        emoji_group = make_reactions_emoji_group()
+
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        post_reaction = reactioner.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id,
+                                                         emoji_group_id=emoji_group.pk)
+
+        url = self._get_url(post_reaction=post_reaction, post=post)
+
+        headers = make_authentication_headers_for_user(user)
+        self.client.delete(url, **headers)
+
+        self.assertFalse(PostReactionNotification.objects.filter(post_reaction=post_reaction,
+                                                                 notification__owner=user).exists())
+
     def _get_url(self, post, post_reaction):
         return reverse('post-reaction', kwargs={
-            'post_id': post.pk,
+            'post_uuid': post.uuid,
             'post_reaction_id': post_reaction.pk
         })
 
@@ -1348,7 +1702,7 @@ class PostReactionsEmojiCountAPITests(APITestCase):
 
     def _get_url(self, post):
         return reverse('post-reactions-emoji-count', kwargs={
-            'post_id': post.pk
+            'post_uuid': post.uuid
         })
 
 
