@@ -8,9 +8,8 @@ class S3StaticStorage(S3Boto3Storage):
 
     def __init__(self, *args, **kwargs):
         boto_config = dict(
-            s3={'addressing_style': self.addressing_style},
+            s3={'addressing_style': self.addressing_style, 'use_accelerate_endpoint': True},
             signature_version=self.signature_version,
-            use_accelerate_endpoint=True
         )
         self.config = Config(**boto_config)
         super().__init__(*args, **kwargs)
@@ -22,7 +21,7 @@ class S3PublicMediaStorage(S3Boto3Storage):
 
     def __init__(self, *args, **kwargs):
         boto_config = dict(
-            s3={'addressing_style': self.addressing_style},
+            s3={'addressing_style': self.addressing_style, 'use_accelerate_endpoint': True},
             signature_version=self.signature_version,
             use_accelerate_endpoint=True
         )
@@ -38,7 +37,7 @@ class S3PrivateMediaStorage(S3Boto3Storage):
 
     def __init__(self, *args, **kwargs):
         boto_config = dict(
-            s3={'addressing_style': self.addressing_style},
+            s3={'addressing_style': self.addressing_style, 'use_accelerate_endpoint': True},
             signature_version=self.signature_version,
             use_accelerate_endpoint=True
         )
