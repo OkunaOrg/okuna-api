@@ -200,3 +200,63 @@ def make_notification(owner):
 
 def make_device(owner):
     return mixer.blend(Device, owner=owner)
+
+
+def make_post_report_for_public_post():
+    user = make_user()
+    post = user.create_public_post(text=make_fake_post_text())
+
+    reporting_user = make_user()
+    post_report = reporting_user.report_post_with_id(post_id=post.pk,
+                                                     category_id=make_report_category().id,
+                                                     comment=make_report_comment_text())
+
+    return user, reporting_user, post, post_report
+
+
+def make_post_report_for_community_post():
+    admin = make_user()
+    community = make_community(admin, type='T')
+    post = admin.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+    reporting_user = make_user()
+    admin.invite_user_with_username_to_community_with_name(username=reporting_user.username, community_name=community.name)
+    reporting_user.join_community_with_name(community.name)
+    post_report = reporting_user.report_post_with_id(post_id=post.pk, category_id=make_report_category().id)
+
+    return community, reporting_user, admin, post, post_report
+
+
+def make_post_comment_report_for_public_post():
+    user = make_user()
+    post = user.create_public_post(text=make_fake_post_text())
+    post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+    reporting_user = make_user()
+    post_comment_report = reporting_user.report_post_comment_with_id_for_post_with_id(
+        post_id=post.pk,
+        post_comment_id=post_comment.pk,
+        category_id=make_report_category().id,
+        comment=make_report_comment_text()
+    )
+
+    return user, reporting_user, post, post_comment, post_comment_report
+
+
+def make_post_comment_report_for_community_post():
+    admin = make_user()
+    community = make_community(admin, type='T')
+    post = admin.create_community_post(text=make_fake_post_text(), community_name=community.name)
+    post_comment = admin.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+    reporting_user = make_user()
+    admin.invite_user_with_username_to_community_with_name(username=reporting_user.username, community_name=community.name)
+    reporting_user.join_community_with_name(community.name)
+    post_comment_report = reporting_user.report_post_comment_with_id_for_post_with_id(
+        post_id=post.pk,
+        post_comment_id=post_comment.pk,
+        category_id=make_report_category().id,
+        comment=make_report_comment_text()
+    )
+
+    return community, reporting_user, admin, post, post_comment, post_comment_report
