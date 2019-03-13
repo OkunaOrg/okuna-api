@@ -1,6 +1,7 @@
 import secrets
 from datetime import datetime, timedelta
 import jwt
+import uuid
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
 from django.db import models
 from django.db.models import Count, Exists, OuterRef
@@ -11,7 +12,7 @@ from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 from imagekit.models import ProcessedImageField
-from pilkit.processors import ResizeToFill
+from pilkit.processors import ResizeToFill, ResizeToFit
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError, NotFound, PermissionDenied, AuthenticationFailed
 from django.db.models import Q
@@ -57,6 +58,8 @@ class User(AbstractUser):
             'unique': _("A user with that username already exists."),
         },
     )
+
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
     class Meta:
         verbose_name = _('user')
@@ -1450,6 +1453,7 @@ class User(AbstractUser):
         self.notifications.all().delete()
 
     def create_device(self, uuid, name=None):
+        self._check_device_with_uuid_does_not_exist(uuid)
         Device = get_device_model()
         return Device.create_device(owner=self, uuid=uuid, name=name)
 
@@ -2611,6 +2615,10 @@ class User(AbstractUser):
                 _('Wrong password.'),
             )
 
+    def _check_device_with_uuid_does_not_exist(self, device_uuid):
+        if self.devices.filter(uuid=device_uuid).exists():
+            raise ValidationError('Device already exists')
+
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_auth_token(sender, instance=None, created=False, **kwargs):
@@ -2638,10 +2646,11 @@ class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     is_of_legal_age = models.BooleanField(default=False)
     avatar = ProcessedImageField(verbose_name=_('avatar'), blank=False, null=True, format='JPEG',
-                                 options={'quality': 60}, processors=[ResizeToFill(500, 500)],
+                                 options={'quality': 50}, processors=[ResizeToFill(500, 500)],
                                  upload_to=upload_to_user_avatar_directory)
-    cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 75},
-                                upload_to=upload_to_user_cover_directory)
+    cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 50},
+                                upload_to=upload_to_user_cover_directory,
+                                processors=[ResizeToFit(width=1024, upscale=False)])
     bio = models.CharField(_('bio'), max_length=settings.PROFILE_BIO_MAX_LENGTH, blank=False, null=True)
     url = models.URLField(_('url'), blank=False, null=True)
     followers_count_visible = models.BooleanField(_('followers count visible'), blank=False, null=False, default=False)
