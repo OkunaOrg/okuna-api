@@ -71,8 +71,8 @@ class PostReport(AbstractReport):
         unique_together = ('post', 'reporter')
 
     @classmethod
-    def create_report(cls, post, reporter, category, status=AbstractReport.PENDING, comment=None):
-        return PostReport.objects.create(post=post, reporter=reporter, category=category,
+    def create_report(cls, post_id, reporter_id, category_id, status=AbstractReport.PENDING, comment=None):
+        return PostReport.objects.create(post_id=post_id, reporter_id=reporter_id, category_id=category_id,
                                          status=status, comment=comment)
 
     @classmethod
@@ -89,9 +89,9 @@ class PostCommentReport(AbstractReport):
         unique_together = ('post_comment', 'reporter')
 
     @classmethod
-    def create_comment_report(cls, post_comment, reporter, category, comment):
-        return PostCommentReport.objects.create(post_comment=post_comment, reporter=reporter,
-                                                category=category, comment=comment)
+    def create_comment_report(cls, post_comment_id, reporter_id, category_id, comment):
+        return PostCommentReport.objects.create(post_comment_id=post_comment_id, reporter_id=reporter_id,
+                                                category_id=category_id, comment=comment)
 
     @classmethod
     def check_report_status_is_pending_for_report_with_id(cls, report_id):
