@@ -1066,7 +1066,7 @@ class User(AbstractUser):
         # them to a circle
         linked_users_query = self._make_linked_users_query(max_id=max_id)
 
-        return User.objects.filter(linked_users_query)
+        return User.objects.filter(linked_users_query).distinct()
 
     def search_linked_users_with_query(self, query):
         linked_users_query = self._make_linked_users_query()
