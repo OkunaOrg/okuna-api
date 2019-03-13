@@ -3,6 +3,7 @@ import random
 import tempfile
 import uuid
 
+from urllib.parse import urlsplit  # Python 3
 from PIL import Image
 from django.urls import reverse
 from faker import Faker
@@ -885,6 +886,33 @@ class AuthenticatedUserAPITests(APITestCase):
         user.refresh_from_db()
 
         self.assertEqual(new_url, user.profile.url)
+
+    def test_can_update_user_url_with_not_fully_qualified_urls(self):
+        """
+        should be able to update the authenticated user url with not fully qualified urls and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        new_url = fake.url()
+
+        parsed_url = urlsplit(new_url)
+
+        unfully_qualified_url = parsed_url.netloc
+
+        data = {
+            'url': unfully_qualified_url
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertEqual('https://' + unfully_qualified_url, user.profile.url)
 
     def _get_url(self):
         return reverse('authenticated-user')
