@@ -1809,7 +1809,7 @@ class User(AbstractUser):
     def _archive_all_remaining_rejected_reports_for_post(self, post_id):
         PostReport = get_post_report_model()
         post_reports_update_query = Q(post_id=post_id)
-        post_reports_update_query.add(~Q(status=PostReport.CONFIRMED), Q.AND)
+        post_reports_update_query.add(~Q(status=PostReport.REJECTED), Q.AND)
         PostReport.objects.filter(post_reports_update_query).update(status=PostReport.REJECTED)
 
     def _archive_all_remaining_reports_for_post_comment(self, post_comment_id):
@@ -1821,7 +1821,7 @@ class User(AbstractUser):
     def _archive_all_remaining_rejected_reports_for_post_comment(self, post_comment_id):
         PostCommentReport = get_post_report_comment_model()
         post_reports_update_query = Q(post_comment_id=post_comment_id)
-        post_reports_update_query.add(~Q(status=PostCommentReport.CONFIRMED), Q.AND)
+        post_reports_update_query.add(~Q(status=PostCommentReport.REJECTED), Q.AND)
         PostCommentReport.objects.filter(post_reports_update_query).update(status=PostCommentReport.REJECTED)
 
     def _check_can_report_post_with_id(self, post_id):
