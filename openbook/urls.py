@@ -238,7 +238,6 @@ api_patterns = [
     path('connections/', include(connections_patterns)),
     path('lists/', include(lists_patterns)),
     path('follows/', include(follows_patterns)),
-    path('import/', include(importer_patterns)),
     path('reports/', include(report_patterns)),
     path('notifications/', include(notifications_patterns)),
     path('devices/', include(devices_patterns)),
