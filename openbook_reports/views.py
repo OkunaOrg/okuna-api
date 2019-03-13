@@ -41,14 +41,14 @@ class ReportPost(APIView):
 
         data = serializer.validated_data
         comment_text = data.get('comment')
-        category = data.get('category_name')
+        category_id = data.get('category_id')
         post_uuid = data.get('post_uuid')
         user = request.user
 
         post_id = get_post_id_for_post_uuid(post_uuid)
 
         with transaction.atomic():
-            post_report = user.report_post_with_id(post_id=post_id, comment=comment_text, category_name=category)
+            post_report = user.report_post_with_id(post_id=post_id, comment=comment_text, category_id=category_id)
 
         post_report_serializer = PostReportSerializer(post_report, context={"request": request})
         return Response(post_report_serializer.data, status=status.HTTP_201_CREATED)
@@ -64,9 +64,7 @@ class ReportPost(APIView):
         user = request.user
 
         post_id = get_post_id_for_post_uuid(post_uuid)
-
-        with transaction.atomic():
-            post_reports = user.get_reports_for_post_with_id(post_id=post_id)
+        post_reports = user.get_reports_for_post_with_id(post_id=post_id)
 
         post_report_serializer = PostReportSerializer(post_reports, many=True, context={"request": request})
         return Response(post_report_serializer.data, status=status.HTTP_200_OK)
@@ -139,7 +137,7 @@ class UserReports(APIView):
 
     def get(self, request):
         user = request.user
-        all_reports_serialiazed = PostReportSerializer(user.get_reports(), many=True, context={"request": request})
+        all_reports_serialiazed = PostReportSerializer(user.get_post_reports(), many=True, context={"request": request})
 
         return Response(all_reports_serialiazed.data, status=status.HTTP_200_OK)
 
@@ -156,11 +154,10 @@ class ReportedPostsCommunity(APIView):
         user = request.user
         community_name_serialized = serializer.validated_data.get('community_name')
 
-        with transaction.atomic():
-            reported_posts = user.get_reported_posts_for_community_with_name(community_name=community_name_serialized)
-            community_reports_serializer = AuthenticatedUserPostSerializer(reported_posts,
-                                                                           many=True,
-                                                                           context={"request": request})
+        reported_posts = user.get_reported_posts_for_community_with_name(community_name=community_name_serialized)
+        community_reports_serializer = AuthenticatedUserPostSerializer(reported_posts,
+                                                                       many=True,
+                                                                       context={"request": request})
 
         return Response(community_reports_serializer.data, status=status.HTTP_200_OK)
 
@@ -177,12 +174,11 @@ class ReportedPostCommentsCommunity(APIView):
             user = request.user
             community_name_serialized = serializer.validated_data.get('community_name')
 
-            with transaction.atomic():
-                reported_posts = \
-                    user.get_reported_post_comments_for_community_with_name(community_name=community_name_serialized)
-                community_reports_serializer = AuthenticatedUserPostCommentSerializer(reported_posts,
-                                                                                      many=True,
-                                                                                      context={"request": request})
+            reported_posts = \
+                user.get_reported_post_comments_for_community_with_name(community_name=community_name_serialized)
+            community_reports_serializer = AuthenticatedUserPostCommentSerializer(reported_posts,
+                                                                                  many=True,
+                                                                                  context={"request": request})
 
             return Response(community_reports_serializer.data, status=status.HTTP_200_OK)
 
@@ -199,7 +195,7 @@ class ReportPostComment(APIView):
 
         data = serializer.validated_data
         comment_text = data.get('comment')
-        category = data.get('category_name')
+        category_id = data.get('category_id')
         post_comment_id = data.get('post_comment_id')
         post_uuid = data.get('post_uuid')
         user = request.user
@@ -210,7 +206,7 @@ class ReportPostComment(APIView):
             post_comment_report = user.report_post_comment_with_id_for_post_with_id(post_comment_id=post_comment_id,
                                                                                     post_id=post_id,
                                                                                     comment=comment_text,
-                                                                                    category_name=category)
+                                                                                    category_id=category_id)
 
         post_report_comment_serializer = PostReportCommentSerializer(post_comment_report, context={"request": request})
         return Response(post_report_comment_serializer.data, status=status.HTTP_201_CREATED)
@@ -225,10 +221,9 @@ class ReportPostComment(APIView):
         post_comment_id = data.get('post_comment_id')
         user = request.user
 
-        with transaction.atomic():
-            post_comment_reports = user.get_reports_for_comment_with_id(post_comment_id=post_comment_id)
-            reports_serializer = PostReportCommentSerializer(post_comment_reports, many=True,
-                                                             context={"request": request})
+        post_comment_reports = user.get_reports_for_comment_with_id(post_comment_id=post_comment_id)
+        reports_serializer = PostReportCommentSerializer(post_comment_reports, many=True,
+                                                         context={"request": request})
 
         return Response(reports_serializer.data, status=status.HTTP_200_OK)
 

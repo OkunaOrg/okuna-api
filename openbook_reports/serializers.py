@@ -42,8 +42,7 @@ class ReportPostSerializer(serializers.Serializer):
         validators=[post_uuid_exists],
         required=True,
     )
-    category_name = serializers.CharField(max_length=settings.REPORT_CATEGORY_NAME_MAX_LENGTH, required=True,
-                                          validators=[is_valid_report_category])
+    category_id = serializers.IntegerField(required=True, validators=[is_valid_report_category])
     comment = serializers.CharField(max_length=settings.REPORT_COMMENT_MAX_LENGTH, allow_blank=True, required=False)
 
 
@@ -301,8 +300,7 @@ class ReportPostCommentSerializer(serializers.Serializer):
         validators=[post_uuid_exists],
         required=True,
     )
-    category_name = serializers.CharField(max_length=settings.REPORT_CATEGORY_NAME_MAX_LENGTH, required=True,
-                                          validators=[is_valid_report_category])
+    category_id = serializers.IntegerField(required=True, validators=[is_valid_report_category])
     comment = serializers.CharField(max_length=settings.REPORT_COMMENT_MAX_LENGTH, allow_blank=True)
 
 

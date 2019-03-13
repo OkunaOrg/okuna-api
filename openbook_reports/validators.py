@@ -3,8 +3,8 @@ from openbook_reports.models import ReportCategory, PostReport, PostCommentRepor
 from django.utils.translation import ugettext_lazy as _
 
 
-def is_valid_report_category(category_name):
-    if not ReportCategory.objects.filter(name=category_name).exists():
+def is_valid_report_category(category_id):
+    if not ReportCategory.objects.filter(id=category_id).exists():
         raise ValidationError(
             _('This is not a valid report category.'),
         )
