@@ -8,6 +8,7 @@ from faker import Faker
 from rest_framework import status
 from rest_framework.test import APITestCase
 from mixer.backend.django import mixer
+from django.conf import settings
 
 from openbook.settings import POST_MAX_LENGTH
 from openbook_auth.models import User
@@ -18,8 +19,10 @@ import json
 
 from openbook_circles.models import Circle
 from openbook_common.tests.helpers import make_user, make_users, make_fake_post_text, \
-    make_authentication_headers_for_user, make_circle, make_community
+    make_authentication_headers_for_user, make_circle, make_community, make_report_category, \
+    make_post_report_for_public_post
 from openbook_lists.models import List
+from openbook_reports.models import PostReport
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -34,7 +37,8 @@ class PostsAPITests(APITestCase):
     """
 
     fixtures = [
-        'openbook_circles/fixtures/circles.json'
+        'openbook_circles/fixtures/circles.json',
+        'openbook_reports/fixtures/report_categories.json'
     ]
 
     def test_create_text_post(self):
@@ -850,6 +854,45 @@ class PostsAPITests(APITestCase):
         response_posts = json.loads(response.content)
 
         self.assertEqual(len(response_posts), 0)
+
+    def test_cannot_see_public_post_that_is_reported_above_threshold(self):
+        """
+        should not be able to see a public post in timeline if its reported more than
+        the threshold amount of times
+        """
+
+        user, reporting_user, post, post_report = make_post_report_for_public_post()
+
+        users = make_users(settings.MAX_REPORTS_ALLOWED_BEFORE_POST_REMOVED)
+        for user in users:
+            user.report_post_with_id(post_id=post.pk, category_id=make_report_category().id)
+
+        headers = make_authentication_headers_for_user(user)
+        url = self._get_url()
+
+        response = self.client.get(url, **headers)
+        parsed_response = json.loads(response.content)
+        post_reports = PostReport.objects.filter(post__id=post.pk)
+        self.assertTrue(len(parsed_response) == 0)
+        self.assertTrue(len(post_reports) == 11)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_cannot_see_public_post_that_is_reported_by_self(self):
+        """
+        should not be able to see a public post in timeline if its reported by self
+        """
+
+        user, reporting_user, post, post_report = make_post_report_for_public_post()
+
+        headers = make_authentication_headers_for_user(reporting_user)
+        url = self._get_url()
+
+        response = self.client.get(url, **headers)
+        parsed_response = json.loads(response.content)
+        post_report_db = PostReport.objects.filter(post__id=post.pk, reporter=reporting_user)
+        self.assertTrue(len(parsed_response) == 0)
+        self.assertTrue(len(post_report_db) == 1)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def _get_url(self):
         return reverse('posts')

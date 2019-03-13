@@ -10,7 +10,8 @@ from django.conf import settings
 from openbook_auth.models import User
 from openbook_common.tests.helpers import make_fake_post_text, make_user, make_authentication_headers_for_user, \
     make_circle, make_community, make_superuser, make_report_category, make_report_comment_text, \
-    make_member_of_community_with_admin, make_users
+    make_member_of_community_with_admin, make_users, make_post_report_for_public_post, \
+    make_post_report_for_community_post
 from openbook_reports.models import PostReport
 
 logger = logging.getLogger(__name__)
@@ -150,12 +151,32 @@ class PostReportAPITests(APITestCase):
         self.assertEqual(parsed_response[0], 'This post is from a private community.')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def _get_post_report_data(self):
+        return {
+            'category_id': 1,
+            'comment': 'This is spam'
+        }
+
+    def _get_post_report_url(self, post):
+        return reverse('report-post', kwargs={
+            'post_uuid': post.uuid
+        })
+
+
+class PostReportConfirmAPITests(APITestCase):
+    """
+    PostReportConfirm API
+    """
+    fixtures = [
+        'openbook_reports/fixtures/report_categories.json'
+    ]
+
     def test_can_confirm_public_post_report(self):
         """
         should be able to confirm a public post report if superuser
         """
 
-        user, reporting_user, post, post_report = self._make_post_report_for_public_post()
+        user, reporting_user, post, post_report = make_post_report_for_public_post()
 
         confirming_user = make_superuser()
         headers = make_authentication_headers_for_user(confirming_user)
@@ -174,7 +195,7 @@ class PostReportAPITests(APITestCase):
         should mark all other reports as resolved report is confirmed
         """
 
-        user, reporting_user, post, post_report = self._make_post_report_for_public_post()
+        user, reporting_user, post, post_report = make_post_report_for_public_post()
         random_user = make_user()
         post_report_two = random_user.report_post_with_id(post_id=post.pk, category_id=make_report_category().id)
 
@@ -191,12 +212,123 @@ class PostReportAPITests(APITestCase):
         self.assertEqual(post_reports[0].id, post_report.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def test_cannot_confirm_public_post_report_if_not_superuser(self):
+        """
+        should not be able to confirm a public post report if the user is not a superuser
+        """
+
+        user, reporting_user, post, post_report = make_post_report_for_public_post()
+
+        confirming_user = make_user()
+        headers = make_authentication_headers_for_user(confirming_user)
+        url = self._get_post_report_confirm_url(post, post_report)
+
+        response = self.client.post(url, **headers)
+        parsed_response = json.loads(response.content)
+
+        post_report = PostReport.objects.first()
+        self.assertEqual(post_report.status, PostReport.PENDING)
+        self.assertEqual(parsed_response['detail'], 'User cannot change status of report')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_cannot_confirm_public_post_report_that_is_already_rejected(self):
+        """
+        should not be able to confirm a public post report if its already been rejected
+        """
+
+        user, reporting_user, post, post_report = make_post_report_for_public_post()
+
+        confirming_user = make_superuser()
+        headers = make_authentication_headers_for_user(confirming_user)
+        confirming_user.reject_report_with_id_for_post_with_id(report_id=post_report.pk, post_id=post.pk)
+
+        url = self._get_post_report_confirm_url(post, post_report)
+
+        response = self.client.post(url, **headers)
+        parsed_response = json.loads(response.content)
+
+        post_report = PostReport.objects.first()
+        self.assertEqual(post_report.status, PostReport.REJECTED)
+        self.assertEqual(parsed_response[0], 'Cannot change status of report')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_can_confirm_post_report_for_community(self):
+        """
+        should be able to confirm a community post report if admin
+        """
+
+        community, reporting_user, admin, post, post_report = make_post_report_for_community_post()
+
+        headers = make_authentication_headers_for_user(admin)
+        url = self._get_post_report_confirm_url(post, post_report)
+
+        response = self.client.post(url, **headers)
+        parsed_response = json.loads(response.content)
+
+        post_report = PostReport.objects.first()
+        self.assertEqual(post_report.status, PostReport.CONFIRMED)
+        self.assertEqual(parsed_response['id'], post_report.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_can_confirm_post_report_for_community_if_superuser(self):
+        """
+        should be able to confirm a community post report if superuser
+        """
+
+        community, reporting_user, admin, post, post_report = make_post_report_for_community_post()
+
+        user = make_superuser()
+        headers = make_authentication_headers_for_user(user)
+        url = self._get_post_report_confirm_url(post, post_report)
+
+        response = self.client.post(url, **headers)
+        parsed_response = json.loads(response.content)
+
+        post_report = PostReport.objects.first()
+        self.assertEqual(post_report.status, PostReport.CONFIRMED)
+        self.assertEqual(parsed_response['id'], post_report.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_cannot_confirm_post_report_for_community_if_regular_user(self):
+        """
+        should not be able to reject a community post report if not admin or superuser
+        """
+
+        community, reporting_user, admin, post, post_report = make_post_report_for_community_post()
+
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        url = self._get_post_report_confirm_url(post, post_report)
+
+        response = self.client.post(url, **headers)
+        parsed_response = json.loads(response.content)
+
+        post_report = PostReport.objects.first()
+        self.assertEqual(post_report.status, PostReport.PENDING)
+        self.assertEqual(parsed_response['detail'], 'User cannot change status of report')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def _get_post_report_confirm_url(self, post, post_report):
+        return reverse('post-report-confirm', kwargs={
+            'post_uuid': post.uuid,
+            'report_id': post_report.pk
+        })
+
+
+class PostReportRejectAPITests(APITestCase):
+    """
+    PostReportRejectAPI
+    """
+    fixtures = [
+        'openbook_reports/fixtures/report_categories.json'
+    ]
+
     def test_other_posts_are_resolved_after_reject_public_post_report(self):
         """
         should mark all other reports as resolved report is rejected
         """
 
-        user, reporting_user, post, post_report = self._make_post_report_for_public_post()
+        user, reporting_user, post, post_report = make_post_report_for_public_post()
         random_user = make_user()
         post_report_two = random_user.report_post_with_id(post_id=post.pk, category_id=make_report_category().id)
 
@@ -213,31 +345,12 @@ class PostReportAPITests(APITestCase):
         self.assertEqual(post_reports[0].id, post_report.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_cannot_confirm_public_post_report_if_not_superuser(self):
-        """
-        should not be able to confirm a public post report if the user is not a superuser
-        """
-
-        user, reporting_user, post, post_report = self._make_post_report_for_public_post()
-
-        confirming_user = make_user()
-        headers = make_authentication_headers_for_user(confirming_user)
-        url = self._get_post_report_confirm_url(post, post_report)
-
-        response = self.client.post(url, **headers)
-        parsed_response = json.loads(response.content)
-
-        post_report = PostReport.objects.first()
-        self.assertEqual(post_report.status, PostReport.PENDING)
-        self.assertEqual(parsed_response['detail'], 'User cannot change status of report')
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
     def test_can_reject_public_post_report(self):
         """
         should be able to reject a public post report if superuser
         """
 
-        user, reporting_user, post, post_report = self._make_post_report_for_public_post()
+        user, reporting_user, post, post_report = make_post_report_for_public_post()
 
         confirming_user = make_superuser()
         headers = make_authentication_headers_for_user(confirming_user)
@@ -256,7 +369,7 @@ class PostReportAPITests(APITestCase):
         should not be able to reject a public post report if the user is not a superuser
         """
 
-        user, reporting_user, post, post_report = self._make_post_report_for_public_post()
+        user, reporting_user, post, post_report = make_post_report_for_public_post()
 
         confirming_user = make_user()
         headers = make_authentication_headers_for_user(confirming_user)
@@ -275,7 +388,7 @@ class PostReportAPITests(APITestCase):
         should not be able to reject a public post report if its already been confirmed
         """
 
-        user, reporting_user, post, post_report = self._make_post_report_for_public_post()
+        user, reporting_user, post, post_report = make_post_report_for_public_post()
 
         confirming_user = make_superuser()
         headers = make_authentication_headers_for_user(confirming_user)
@@ -291,90 +404,12 @@ class PostReportAPITests(APITestCase):
         self.assertEqual(parsed_response[0], 'Cannot change status of report')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_cannot_confirm_public_post_report_that_is_already_rejected(self):
-        """
-        should not be able to confirm a public post report if its already been rejected
-        """
-
-        user, reporting_user, post, post_report = self._make_post_report_for_public_post()
-
-        confirming_user = make_superuser()
-        headers = make_authentication_headers_for_user(confirming_user)
-        confirming_user.reject_report_with_id_for_post_with_id(report_id=post_report.pk, post_id=post.pk)
-
-        url = self._get_post_report_confirm_url(post, post_report)
-
-        response = self.client.post(url, **headers)
-        parsed_response = json.loads(response.content)
-
-        post_report = PostReport.objects.first()
-        self.assertEqual(post_report.status, PostReport.REJECTED)
-        self.assertEqual(parsed_response[0], 'Cannot change status of report')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_cannot_see_public_post_that_is_reported_above_threshold(self):
-        """
-        should not be able to see a public post in timeline if its reported more than
-        the threshold amount of times
-        """
-
-        user, reporting_user, post, post_report = self._make_post_report_for_public_post()
-
-        users = make_users(settings.MAX_REPORTS_ALLOWED_BEFORE_POST_REMOVED)
-        for user in users:
-            user.report_post_with_id(post_id=post.pk, category_id=make_report_category().id)
-
-        headers = make_authentication_headers_for_user(user)
-        url = self._get_timeline_posts_url()
-
-        response = self.client.get(url, **headers)
-        parsed_response = json.loads(response.content)
-        post_reports = PostReport.objects.filter(post__id=post.pk)
-        self.assertTrue(len(parsed_response) == 0)
-        self.assertTrue(len(post_reports) == 11)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_cannot_see_public_post_that_is_reported_by_self(self):
-        """
-        should not be able to see a public post in timeline if its reported by self
-        """
-
-        user, reporting_user, post, post_report = self._make_post_report_for_public_post()
-
-        headers = make_authentication_headers_for_user(reporting_user)
-        url = self._get_timeline_posts_url()
-
-        response = self.client.get(url, **headers)
-        parsed_response = json.loads(response.content)
-        post_report_db = PostReport.objects.filter(post__id=post.pk, reporter=reporting_user)
-        self.assertTrue(len(parsed_response) == 0)
-        self.assertTrue(len(post_report_db) == 1)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_can_confirm_post_report_for_community(self):
-        """
-        should be able to confirm a community post report if admin
-        """
-
-        community, reporting_user, admin, post, post_report = self._make_post_report_for_community_post()
-
-        headers = make_authentication_headers_for_user(admin)
-        url = self._get_post_report_confirm_url(post, post_report)
-
-        response = self.client.post(url, **headers)
-        parsed_response = json.loads(response.content)
-
-        post_report = PostReport.objects.first()
-        self.assertEqual(post_report.status, PostReport.CONFIRMED)
-        self.assertEqual(parsed_response['id'], post_report.id)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
     def test_can_reject_post_report_for_community(self):
         """
         should be able to reject a community post report if admin
         """
 
-        community, reporting_user, admin, post, post_report = self._make_post_report_for_community_post()
+        community, reporting_user, admin, post, post_report = make_post_report_for_community_post()
 
         headers = make_authentication_headers_for_user(admin)
         url = self._get_post_report_reject_url(post, post_report)
@@ -384,25 +419,6 @@ class PostReportAPITests(APITestCase):
 
         post_report = PostReport.objects.first()
         self.assertEqual(post_report.status, PostReport.REJECTED)
-        self.assertEqual(parsed_response['id'], post_report.id)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_can_confirm_post_report_for_community_if_superuser(self):
-        """
-        should be able to confirm a community post report if superuser
-        """
-
-        community, reporting_user, admin, post, post_report = self._make_post_report_for_community_post()
-
-        user = make_superuser()
-        headers = make_authentication_headers_for_user(user)
-        url = self._get_post_report_confirm_url(post, post_report)
-
-        response = self.client.post(url, **headers)
-        parsed_response = json.loads(response.content)
-
-        post_report = PostReport.objects.first()
-        self.assertEqual(post_report.status, PostReport.CONFIRMED)
         self.assertEqual(parsed_response['id'], post_report.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -411,7 +427,7 @@ class PostReportAPITests(APITestCase):
         should be able to reject a community post report if superuser
         """
 
-        community, reporting_user, admin, post, post_report = self._make_post_report_for_community_post()
+        community, reporting_user, admin, post, post_report = make_post_report_for_community_post()
 
         user = make_superuser()
         headers = make_authentication_headers_for_user(user)
@@ -425,31 +441,12 @@ class PostReportAPITests(APITestCase):
         self.assertEqual(parsed_response['id'], post_report.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_cannot_confirm_post_report_for_community_if_regular_user(self):
-        """
-        should not be able to reject a community post report if not admin or superuser
-        """
-
-        community, reporting_user, admin, post, post_report = self._make_post_report_for_community_post()
-
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
-        url = self._get_post_report_confirm_url(post, post_report)
-
-        response = self.client.post(url, **headers)
-        parsed_response = json.loads(response.content)
-
-        post_report = PostReport.objects.first()
-        self.assertEqual(post_report.status, PostReport.PENDING)
-        self.assertEqual(parsed_response['detail'], 'User cannot change status of report')
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
     def test_cannot_reject_post_report_for_community_if_regular_user(self):
         """
         should not be able to reject a community post report if not admin or superuser
         """
 
-        community, reporting_user, admin, post, post_report = self._make_post_report_for_community_post()
+        community, reporting_user, admin, post, post_report = make_post_report_for_community_post()
 
         user = make_user()
         headers = make_authentication_headers_for_user(user)
@@ -461,6 +458,21 @@ class PostReportAPITests(APITestCase):
         self.assertEqual(post_report.status, PostReport.PENDING)
         self.assertEqual(parsed_response['detail'], 'User cannot change status of report')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def _get_post_report_reject_url(self, post, post_report):
+        return reverse('post-report-reject', kwargs={
+            'post_uuid': post.uuid,
+            'report_id': post_report.pk
+        })
+
+
+class ReportedPostsAPITests(APITestCase):
+    """
+    ReportedPosts API
+    """
+    fixtures = [
+        'openbook_reports/fixtures/report_categories.json'
+    ]
 
     def test_user_can_see_their_own_reported_posts(self):
         """
@@ -485,11 +497,23 @@ class PostReportAPITests(APITestCase):
         self.assertTrue(parsed_response[1]['uuid'] == str(post_two.uuid))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_user_can_see_their_own_post_reports_for_post(self):
+    def _get_all_reports_url(self):
+        return reverse('reported-posts')
+
+
+class PostItemPostReportsAPITests(APITestCase):
+    """
+    PostItemPostReports API
+    """
+    fixtures = [
+        'openbook_reports/fixtures/report_categories.json'
+    ]
+
+    def test_user_can_see_their_own_post_report_for_post(self):
         """
-        should be able to see all self reported post reports for post with id
+        should be able to see  self reported post report for post with id
         """
-        user, reporting_user, post, post_report = self._make_post_report_for_public_post()
+        user, reporting_user, post, post_report = make_post_report_for_public_post()
         random_user = make_user()
         # report post from a diff user
         random_user.report_post_with_id(post_id=post.pk, category_id=make_report_category().id)
@@ -508,7 +532,7 @@ class PostReportAPITests(APITestCase):
         """
         should be able to see all reported post reports for post with id if superuser
         """
-        user, reporting_user, post, post_report = self._make_post_report_for_public_post()
+        user, reporting_user, post, post_report = make_post_report_for_public_post()
         random_user = make_user()
         # report post from a diff user
         post_report_two = random_user.report_post_with_id(post_id=post.pk, category_id=make_report_category().id)
@@ -563,12 +587,26 @@ class PostReportAPITests(APITestCase):
         self.assertTrue(report_two['comment'] == post_report_two.comment)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
+    def _get_reports_for_post_url(self, post):
+        return reverse('report-post', kwargs={
+            'post_uuid': post.uuid
+        })
+
+
+class CommunityPostReportsAPITests(APITestCase):
+    """
+    CommunityPostReports API
+    """
+    fixtures = [
+        'openbook_reports/fixtures/report_categories.json'
+    ]
+
     def test_user_can_see_all_post_reports_from_community_if_moderator(self):
         """
         should be able to see all reported posts if community moderator
         """
 
-        community, reporting_user, admin, post, post_report = self._make_post_report_for_community_post()
+        community, reporting_user, admin, post, post_report = make_post_report_for_community_post()
         reporting_user_two = make_member_of_community_with_admin(community, admin)
         post_report_two = reporting_user_two.report_post_with_id(post_id=post.pk,
                                                                  comment=make_report_comment_text(),
@@ -591,7 +629,7 @@ class PostReportAPITests(APITestCase):
         should not be able to see all reported posts if not community moderator
         """
 
-        community, reporting_user, admin, post, post_report = self._make_post_report_for_community_post()
+        community, reporting_user, admin, post, post_report = make_post_report_for_community_post()
         # create another post and report it
         post_two = reporting_user.create_community_post(text=make_fake_post_text(),
                                                         community_name=community.name)
@@ -610,64 +648,7 @@ class PostReportAPITests(APITestCase):
         message = parsed_response[0]
         self.assertEqual(message, 'Only moderators/administrators can see reported posts for community.')
 
-    def _make_post_report_for_public_post(self):
-        user = make_user()
-        post = user.create_public_post(text=make_fake_post_text())
-
-        reporting_user = make_user()
-        post_report = reporting_user.report_post_with_id(post_id=post.pk,
-                                                         category_id=make_report_category().id,
-                                                         comment=make_report_comment_text())
-
-        return user, reporting_user, post, post_report
-
-    def _make_post_report_for_community_post(self):
-        admin = make_user()
-        community = make_community(admin, type='T')
-        post = admin.create_community_post(text=make_fake_post_text(), community_name=community.name)
-
-        reporting_user = make_user()
-        admin.invite_user_with_username_to_community_with_name(username=reporting_user.username, community_name=community.name)
-        reporting_user.join_community_with_name(community.name)
-        post_report = reporting_user.report_post_with_id(post_id=post.pk, category_id=make_report_category().id)
-
-        return community, reporting_user, admin, post, post_report
-
-    def _get_all_reports_url(self):
-        return reverse('reported-posts')
-
     def _get_all_community_reports_url(self, community):
         return reverse('community-reported-posts', kwargs={
             'community_name': community.name
         })
-
-    def _get_reports_for_post_url(self, post):
-        return reverse('report-post', kwargs={
-            'post_uuid': post.uuid
-        })
-
-    def _get_post_report_data(self):
-        return {
-            'category_id': 1,
-            'comment': 'This is spam'
-        }
-
-    def _get_post_report_confirm_url(self, post, post_report):
-        return reverse('post-report-confirm', kwargs={
-            'post_uuid': post.uuid,
-            'report_id': post_report.pk
-        })
-
-    def _get_post_report_reject_url(self, post, post_report):
-        return reverse('post-report-reject', kwargs={
-            'post_uuid': post.uuid,
-            'report_id': post_report.pk
-        })
-
-    def _get_post_report_url(self, post):
-        return reverse('report-post', kwargs={
-            'post_uuid': post.uuid
-        })
-
-    def _get_timeline_posts_url(self):
-        return reverse('posts')

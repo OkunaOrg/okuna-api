@@ -4,16 +4,18 @@ import json
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
+from django.conf import settings
 from rest_framework.test import APITestCase
 
 import logging
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_emoji, make_emoji_group, make_reactions_emoji_group, \
-    make_community
+    make_community, make_report_category, make_report_comment_text, make_users, make_post_comment_report_for_public_post
 from openbook_communities.models import Community
 from openbook_notifications.models import PostCommentNotification, PostReactionNotification
 from openbook_posts.models import Post, PostComment, PostReaction
+from openbook_reports.models import PostCommentReport
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -370,7 +372,8 @@ class PostCommentsAPITests(APITestCase):
     """
 
     fixtures = [
-        'openbook_circles/fixtures/circles.json'
+        'openbook_circles/fixtures/circles.json',
+        'openbook_reports/fixtures/report_categories.json'
     ]
 
     def test_can_comment_in_own_post(self):
@@ -569,6 +572,48 @@ class PostCommentsAPITests(APITestCase):
 
         self.assertFalse(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
                                                                 notification__owner=user).exists())
+
+    def test_cannot_see_post_comment_reported_by_self(self):
+        """
+        should not see post comments which are reported by user
+        """
+        user, reporting_user, post, post_comment, post_comment_report = make_post_comment_report_for_public_post()
+        headers = make_authentication_headers_for_user(reporting_user)
+
+        url = self._get_url(post)
+        response = self.client.get(url, **headers)
+
+        post_comment_report_db = PostCommentReport.objects.get(post_comment__id=post_comment.pk,
+                                                                  reporter=reporting_user)
+
+        self.assertEqual(post_comment_report_db.id, post_comment_report.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_cannot_see_post_comment_reported_above_threshold(self):
+        """
+        should not see post comments which are reported more times than the threshold
+        """
+        user, reporting_user, post, post_comment, post_comment_report = make_post_comment_report_for_public_post()
+
+        users = make_users(settings.MAX_REPORTS_ALLOWED_BEFORE_POST_REMOVED)
+        for user in users:
+            # report post comment from a diff user
+            user.report_post_comment_with_id_for_post_with_id(
+                post_id=post.pk,
+                post_comment_id=post_comment.pk,
+                category_id=make_report_category().id,
+                comment=make_report_comment_text()
+            )
+
+        headers = make_authentication_headers_for_user(reporting_user)
+
+        url = self._get_url(post)
+        response = self.client.get(url, **headers)
+        parsed_response = json.loads(response.content)
+        post_comment_reports = PostCommentReport.objects.filter(post_comment__id=post_comment.pk)
+        self.assertTrue(len(parsed_response) == 0)
+        self.assertTrue(len(post_comment_reports) == 11)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def _get_create_post_comment_request_data(self, post_comment_text):
         return {
