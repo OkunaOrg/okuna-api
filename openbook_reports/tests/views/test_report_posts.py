@@ -77,14 +77,14 @@ class PostReportAPITests(APITestCase):
 
         url = self._get_post_report_url(post)
         data = {
-            'category_name': 'invalid_category',
+            'category_id': 90,
             'comment': 'This is spam'
         }
 
         response = self.client.put(url, data, **headers)
         parsed_response = json.loads(response.content)
 
-        self.assertIn('category_name', parsed_response)
+        self.assertIn('category_id', parsed_response)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_cannot_create_post_report_for_private_posts(self):
@@ -176,7 +176,7 @@ class PostReportAPITests(APITestCase):
 
         user, reporting_user, post, post_report = self._make_post_report_for_public_post()
         random_user = make_user()
-        post_report_two = random_user.report_post_with_id(post_id=post.pk, category_name=make_report_category().name)
+        post_report_two = random_user.report_post_with_id(post_id=post.pk, category_id=make_report_category().id)
 
         confirming_user = make_superuser()
         headers = make_authentication_headers_for_user(confirming_user)
@@ -198,7 +198,7 @@ class PostReportAPITests(APITestCase):
 
         user, reporting_user, post, post_report = self._make_post_report_for_public_post()
         random_user = make_user()
-        post_report_two = random_user.report_post_with_id(post_id=post.pk, category_name=make_report_category().name)
+        post_report_two = random_user.report_post_with_id(post_id=post.pk, category_id=make_report_category().id)
 
         confirming_user = make_superuser()
         headers = make_authentication_headers_for_user(confirming_user)
@@ -322,7 +322,7 @@ class PostReportAPITests(APITestCase):
 
         users = make_users(settings.MAX_REPORTS_ALLOWED_BEFORE_POST_REMOVED)
         for user in users:
-            user.report_post_with_id(post_id=post.pk, category_name=make_report_category().name)
+            user.report_post_with_id(post_id=post.pk, category_id=make_report_category().id)
 
         headers = make_authentication_headers_for_user(user)
         url = self._get_timeline_posts_url()
@@ -471,8 +471,8 @@ class PostReportAPITests(APITestCase):
         post_two = user.create_public_post(text=make_fake_post_text())
 
         reporting_user = make_user()
-        post_report = reporting_user.report_post_with_id(post_id=post.pk, category_name=make_report_category().name)
-        post_report_two = reporting_user.report_post_with_id(post_id=post_two.pk, category_name=make_report_category().name)
+        post_report = reporting_user.report_post_with_id(post_id=post.pk, category_id=make_report_category().id)
+        post_report_two = reporting_user.report_post_with_id(post_id=post_two.pk, category_id=make_report_category().id)
         headers = make_authentication_headers_for_user(reporting_user)
 
         url = self._get_all_reports_url()
@@ -492,7 +492,7 @@ class PostReportAPITests(APITestCase):
         user, reporting_user, post, post_report = self._make_post_report_for_public_post()
         random_user = make_user()
         # report post from a diff user
-        random_user.report_post_with_id(post_id=post.pk, category_name=make_report_category().name)
+        random_user.report_post_with_id(post_id=post.pk, category_id=make_report_category().id)
         headers = make_authentication_headers_for_user(reporting_user)
 
         url = self._get_reports_for_post_url(post)
@@ -511,7 +511,7 @@ class PostReportAPITests(APITestCase):
         user, reporting_user, post, post_report = self._make_post_report_for_public_post()
         random_user = make_user()
         # report post from a diff user
-        post_report_two = random_user.report_post_with_id(post_id=post.pk, category_name=make_report_category().name)
+        post_report_two = random_user.report_post_with_id(post_id=post.pk, category_id=make_report_category().id)
 
         superuser = make_superuser()
         headers = make_authentication_headers_for_user(superuser)
@@ -538,7 +538,7 @@ class PostReportAPITests(APITestCase):
         admin.invite_user_with_username_to_community_with_name(username=reporting_user.username, community_name=community.name)
         reporting_user.join_community_with_name(community.name)
         post_report = reporting_user.report_post_with_id(post_id=post.pk,
-                                                         category_name=make_report_category().name,
+                                                         category_id=make_report_category().id,
                                                          comment=make_report_comment_text())
 
         # report post second time diff user
@@ -547,7 +547,7 @@ class PostReportAPITests(APITestCase):
                                                                community_name=community.name)
         reporting_user_two.join_community_with_name(community.name)
         post_report_two = reporting_user_two.report_post_with_id(post_id=post.pk,
-                                                                 category_name=make_report_category().name,
+                                                                 category_id=make_report_category().id,
                                                                  comment=make_report_comment_text())
 
         headers = make_authentication_headers_for_user(admin)
@@ -572,7 +572,7 @@ class PostReportAPITests(APITestCase):
         reporting_user_two = make_member_of_community_with_admin(community, admin)
         post_report_two = reporting_user_two.report_post_with_id(post_id=post.pk,
                                                                  comment=make_report_comment_text(),
-                                                                 category_name=make_report_category().name)
+                                                                 category_id=make_report_category().id)
 
         headers = make_authentication_headers_for_user(admin)
         url = self._get_all_community_reports_url(community)
@@ -598,7 +598,7 @@ class PostReportAPITests(APITestCase):
 
         reporting_user_two = make_member_of_community_with_admin(community, admin)
         post_report_two = reporting_user_two.report_post_with_id(post_id=post_two.pk,
-                                                                 category_name=make_report_category().name)
+                                                                 category_id=make_report_category().id)
 
         headers = make_authentication_headers_for_user(reporting_user)
         url = self._get_all_community_reports_url(community)
@@ -606,11 +606,9 @@ class PostReportAPITests(APITestCase):
         response = self.client.get(url, **headers)
         parsed_response = json.loads(response.content)
 
-        self.assertTrue(len(parsed_response) == 1)
-        post_reports = parsed_response[0]['reports']
-        self.assertEqual(parsed_response[0]['uuid'], str(post.uuid))
-        self.assertEqual(post_reports[0]['id'], post_report.id)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        message = parsed_response[0]
+        self.assertEqual(message, 'Only moderators/administrators can see reported posts for community.')
 
     def _make_post_report_for_public_post(self):
         user = make_user()
@@ -618,7 +616,7 @@ class PostReportAPITests(APITestCase):
 
         reporting_user = make_user()
         post_report = reporting_user.report_post_with_id(post_id=post.pk,
-                                                         category_name=make_report_category().name,
+                                                         category_id=make_report_category().id,
                                                          comment=make_report_comment_text())
 
         return user, reporting_user, post, post_report
@@ -631,7 +629,7 @@ class PostReportAPITests(APITestCase):
         reporting_user = make_user()
         admin.invite_user_with_username_to_community_with_name(username=reporting_user.username, community_name=community.name)
         reporting_user.join_community_with_name(community.name)
-        post_report = reporting_user.report_post_with_id(post_id=post.pk, category_name=make_report_category().name)
+        post_report = reporting_user.report_post_with_id(post_id=post.pk, category_id=make_report_category().id)
 
         return community, reporting_user, admin, post, post_report
 
@@ -650,7 +648,7 @@ class PostReportAPITests(APITestCase):
 
     def _get_post_report_data(self):
         return {
-            'category_name': 'spam',
+            'category_id': 1,
             'comment': 'This is spam'
         }
 

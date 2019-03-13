@@ -80,14 +80,14 @@ class PostCommentReportAPITests(APITestCase):
 
         url = self._get_post_comment_report_url(post, post_comment)
         data = {
-            'category_name': 'invalid_category',
+            'category_id': 99,
             'comment': 'This is spam'
         }
 
         response = self.client.put(url, data, **headers)
         parsed_response = json.loads(response.content)
 
-        self.assertIn('category_name', parsed_response)
+        self.assertIn('category_id', parsed_response)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_cannot_create_post_comment_report_for_private_posts(self):
@@ -188,7 +188,7 @@ class PostCommentReportAPITests(APITestCase):
         post_comment_report_two = random_user.report_post_comment_with_id_for_post_with_id(
             post_id=post.pk,
             post_comment_id=post_comment.pk,
-            category_name=make_report_category().name,
+            category_id=make_report_category().id,
             comment=make_report_comment_text()
         )
         confirming_user = make_superuser()
@@ -215,7 +215,7 @@ class PostCommentReportAPITests(APITestCase):
         post_comment_report_two = random_user.report_post_comment_with_id_for_post_with_id(
             post_id=post.pk,
             post_comment_id=post_comment.pk,
-            category_name=make_report_category().name,
+            category_id=make_report_category().id,
             comment=make_report_comment_text()
         )
         confirming_user = make_superuser()
@@ -455,7 +455,7 @@ class PostCommentReportAPITests(APITestCase):
         self.assertEqual(parsed_response['detail'], 'User cannot change status of report')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_user_can_see_their_own_post_reports_for_post(self):
+    def test_user_can_see_their_own_post_reports_for_post_comment(self):
         """
         should be able to see all self reported post comment reports for post comment with id
         """
@@ -465,7 +465,7 @@ class PostCommentReportAPITests(APITestCase):
         random_user.report_post_comment_with_id_for_post_with_id(
             post_id=post.pk,
             post_comment_id=post_comment.pk,
-            category_name=make_report_category().name,
+            category_id=make_report_category().id,
             comment=make_report_comment_text()
         )
         headers = make_authentication_headers_for_user(reporting_user)
@@ -473,7 +473,7 @@ class PostCommentReportAPITests(APITestCase):
         url = self._get_reports_for_post_comment_url(post, post_comment)
         response = self.client.get(url, **headers)
         parsed_response = json.loads(response.content)
-
+        print(parsed_response)
         self.assertTrue(len(parsed_response) == 1)
         self.assertEqual(parsed_response[0]['id'], post_comment_report.pk)
         self.assertEqual(parsed_response[0]['comment'], post_comment_report.comment)
@@ -509,7 +509,7 @@ class PostCommentReportAPITests(APITestCase):
             user.report_post_comment_with_id_for_post_with_id(
                 post_id=post.pk,
                 post_comment_id=post_comment.pk,
-                category_name=make_report_category().name,
+                category_id=make_report_category().id,
                 comment=make_report_comment_text()
             )
 
@@ -533,7 +533,7 @@ class PostCommentReportAPITests(APITestCase):
         post_comment_report_two = random_user.report_post_comment_with_id_for_post_with_id(
             post_id=post.pk,
             post_comment_id=post_comment.pk,
-            category_name=make_report_category().name,
+            category_id=make_report_category().id,
             comment=make_report_comment_text()
         )
 
@@ -565,7 +565,7 @@ class PostCommentReportAPITests(APITestCase):
         post_comment_report = reporting_user.report_post_comment_with_id_for_post_with_id(
             post_id=post.pk,
             post_comment_id=post_comment.pk,
-            category_name=make_report_category().name,
+            category_id=make_report_category().id,
             comment=make_report_comment_text()
         )
 
@@ -577,7 +577,7 @@ class PostCommentReportAPITests(APITestCase):
         post_comment_report_two = reporting_user_two.report_post_comment_with_id_for_post_with_id(
             post_id=post.pk,
             post_comment_id=post_comment.pk,
-            category_name=make_report_category().name,
+            category_id=make_report_category().id,
             comment=make_report_comment_text()
         )
 
@@ -606,7 +606,7 @@ class PostCommentReportAPITests(APITestCase):
         post_comment_report_two = reporting_user_two.report_post_comment_with_id_for_post_with_id(
             post_id=post.pk,
             post_comment_id=post_comment.pk,
-            category_name=make_report_category().name,
+            category_id=make_report_category().id,
             comment=make_report_comment_text()
         )
 
@@ -637,7 +637,7 @@ class PostCommentReportAPITests(APITestCase):
         post_comment_report_two = reporting_user_two.report_post_comment_with_id_for_post_with_id(
             post_id=post.pk,
             post_comment_id=post_comment_two.pk,
-            category_name=make_report_category().name,
+            category_id=make_report_category().id,
             comment=make_report_comment_text()
         )
 
@@ -647,11 +647,9 @@ class PostCommentReportAPITests(APITestCase):
         response = self.client.get(url, **headers)
         parsed_response = json.loads(response.content)
 
-        self.assertTrue(len(parsed_response) == 1)
-        post_reports = parsed_response[0]['reports']
-        self.assertEqual(parsed_response[0]['id'], post.id)
-        self.assertEqual(post_reports[0]['id'], post_comment_report.id)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        message = parsed_response[0]
+        self.assertEqual(message, 'Only moderators/administrators can see reported post comments for community.')
 
     def _make_post_comment_report_for_public_post(self):
         user = make_user()
@@ -662,7 +660,7 @@ class PostCommentReportAPITests(APITestCase):
         post_comment_report = reporting_user.report_post_comment_with_id_for_post_with_id(
             post_id=post.pk, 
             post_comment_id=post_comment.pk, 
-            category_name=make_report_category().name, 
+            category_id=make_report_category().id, 
             comment=make_report_comment_text()
         )
 
@@ -680,7 +678,7 @@ class PostCommentReportAPITests(APITestCase):
         post_comment_report = reporting_user.report_post_comment_with_id_for_post_with_id(
             post_id=post.pk,
             post_comment_id=post_comment.pk,
-            category_name=make_report_category().name,
+            category_id=make_report_category().id,
             comment=make_report_comment_text()
         )
 
@@ -700,7 +698,7 @@ class PostCommentReportAPITests(APITestCase):
 
     def _get_post_comment_report_data(self):
         return {
-            'category_name': 'spam',
+            'category_id': 1,
             'comment': 'This is spam'
         }
 
