@@ -1066,7 +1066,7 @@ class User(AbstractUser):
         # them to a circle
         linked_users_query = self._make_linked_users_query(max_id=max_id)
 
-        return User.objects.filter(linked_users_query)
+        return User.objects.filter(linked_users_query).distinct()
 
     def search_linked_users_with_query(self, query):
         linked_users_query = self._make_linked_users_query()
@@ -1220,7 +1220,9 @@ class User(AbstractUser):
         :return:
         """
         # If there's no circles or lists filters, add all posts
-        if circles_ids or lists_ids:
+        if circles_ids:
+            timeline_posts_query = Q(creator=self.pk, circles__id__in=circles_ids)
+        elif lists_ids:
             timeline_posts_query = Q()
         else:
             timeline_posts_query = Q(creator_id=self.pk)

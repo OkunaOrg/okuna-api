@@ -4,6 +4,7 @@ from rest_framework import serializers
 from openbook.settings import COLOR_ATTR_MAX_LENGTH
 from openbook_categories.models import Category
 from openbook_categories.validators import category_name_exists
+from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import IsInvitedField, IsCreatorField, CommunityMembershipsField, \
@@ -25,8 +26,10 @@ class CreateCommunitySerializer(serializers.Serializer):
                                            allow_blank=False, required=False)
     users_adjective = serializers.CharField(max_length=settings.COMMUNITY_USERS_ADJECTIVE_MAX_LENGTH,
                                             allow_blank=False, required=False)
-    avatar = serializers.ImageField(required=False)
-    cover = serializers.ImageField(required=False)
+    avatar = RestrictedImageFileSizeField(required=False,
+                                          max_upload_size=settings.COMMUNITY_AVATAR_MAX_SIZE)
+    cover = RestrictedImageFileSizeField(required=False,
+                                         max_upload_size=settings.COMMUNITY_COVER_MAX_SIZE)
     invites_enabled = serializers.BooleanField(required=False, allow_null=False)
     color = serializers.CharField(max_length=COLOR_ATTR_MAX_LENGTH, required=True,
                                   validators=[hex_color_validator])

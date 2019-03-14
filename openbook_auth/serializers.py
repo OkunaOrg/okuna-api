@@ -11,6 +11,7 @@ from django.contrib.auth.password_validation import validate_password
 
 from openbook_circles.models import Circle
 from openbook_common.models import Emoji, Badge
+from openbook_common.serializers_fields.request import FriendlyUrlField, RestrictedImageFileSizeField
 from openbook_common.serializers_fields.user import IsFollowingField, IsConnectedField, FollowersCountField, \
     FollowingCountField, PostsCountField, ConnectedCirclesField, FollowListsField, IsFullyConnectedField, \
     IsPendingConnectionConfirmation, CommunitiesMembershipsField, CommunitiesInvitesField, IsMemberOfCommunities, \
@@ -27,7 +28,8 @@ class RegisterSerializer(serializers.Serializer):
     is_of_legal_age = serializers.BooleanField(validators=[is_of_legal_age_validator])
     name = serializers.CharField(max_length=PROFILE_NAME_MAX_LENGTH,
                                  allow_blank=False, validators=[name_characters_validator])
-    avatar = serializers.ImageField(allow_empty_file=True, required=False)
+    avatar = RestrictedImageFileSizeField(allow_empty_file=True, required=False,
+                                          max_upload_size=settings.PROFILE_AVATAR_MAX_SIZE)
     email = serializers.EmailField(validators=[email_not_taken_validator])
     token = serializers.CharField()
 
@@ -112,8 +114,10 @@ class UpdateAuthenticatedUserSerializer(serializers.Serializer):
                                      allow_blank=False,
                                      validators=[username_characters_validator],
                                      required=False)
-    avatar = serializers.ImageField(allow_empty_file=False, required=False, allow_null=True)
-    cover = serializers.ImageField(allow_empty_file=False, required=False, allow_null=True)
+    avatar = RestrictedImageFileSizeField(allow_empty_file=False, required=False, allow_null=True,
+                                          max_upload_size=settings.PROFILE_AVATAR_MAX_SIZE)
+    cover = RestrictedImageFileSizeField(allow_empty_file=False, required=False, allow_null=True,
+                                         max_upload_size=settings.PROFILE_COVER_MAX_SIZE)
     password = serializers.CharField(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH,
                                      validators=[validate_password], required=False, allow_blank=False)
     name = serializers.CharField(max_length=PROFILE_NAME_MAX_LENGTH,
@@ -122,8 +126,8 @@ class UpdateAuthenticatedUserSerializer(serializers.Serializer):
     followers_count_visible = serializers.BooleanField(required=False, default=None, allow_null=True)
     bio = serializers.CharField(max_length=settings.PROFILE_BIO_MAX_LENGTH, required=False,
                                 allow_blank=True)
-    url = serializers.URLField(required=False,
-                               allow_blank=True)
+    url = FriendlyUrlField(required=False,
+                           allow_blank=True)
     location = serializers.CharField(max_length=settings.PROFILE_LOCATION_MAX_LENGTH, required=False,
                                      allow_blank=True)
 
