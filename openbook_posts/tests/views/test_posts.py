@@ -851,5 +851,40 @@ class PostsAPITests(APITestCase):
 
         self.assertEqual(len(response_posts), 0)
 
+    def test_retrieves_own_posts_of_own_filtered_circle(self):
+        """
+        should retrieve own posts when filtering on a circle that is from us
+        """
+        user = make_user()
+
+        circle = make_circle(creator=user)
+        circle_id = circle.pk
+
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_posts = 10
+
+        posts_ids = []
+
+        for i in range(amount_of_posts):
+            post_text = make_fake_post_text()
+            post = user.create_encircled_post(text=post_text, circles_ids=[circle_id])
+            posts_ids.append(post.pk)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {'circle_id': circle_id}, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), len(posts_ids))
+
+        response_posts_ids = [post['id'] for post in response_posts]
+
+        for post_id in posts_ids:
+            self.assertIn(post_id, response_posts_ids)
+
     def _get_url(self):
         return reverse('posts')
