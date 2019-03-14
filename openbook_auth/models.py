@@ -1220,7 +1220,9 @@ class User(AbstractUser):
         :return:
         """
         # If there's no circles or lists filters, add all posts
-        if circles_ids or lists_ids:
+        if circles_ids:
+            timeline_posts_query = Q(creator=self.pk, circles__id__in=circles_ids)
+        elif lists_ids:
             timeline_posts_query = Q()
         else:
             timeline_posts_query = Q(creator_id=self.pk)
