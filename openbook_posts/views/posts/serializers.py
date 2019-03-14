@@ -9,6 +9,7 @@ from openbook_circles.validators import circle_id_exists
 from openbook_common.models import Emoji
 from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, ReactionsEmojiCountField, \
     CirclesField, PostCreatorField, IsMutedField
+from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_lists.validators import list_id_exists
@@ -44,7 +45,8 @@ class GetPostsSerializer(serializers.Serializer):
 
 class CreatePostSerializer(serializers.Serializer):
     text = serializers.CharField(max_length=settings.POST_MAX_LENGTH, required=False, allow_blank=False)
-    image = serializers.ImageField(allow_empty_file=False, required=False)
+    image = RestrictedImageFileSizeField(allow_empty_file=False, required=False,
+                                         max_upload_size=settings.POST_IMAGE_MAX_SIZE)
     video = serializers.FileField(allow_empty_file=False, required=False)
     circle_id = serializers.ListField(
         required=False,
