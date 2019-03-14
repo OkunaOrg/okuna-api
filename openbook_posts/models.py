@@ -124,9 +124,10 @@ class Post(models.Model):
         trending_posts_query = Q(created__gte=timezone.now() - timedelta(
             days=1))
 
-        trending_posts_query.add(Q(circles__id=world_circle_id), Q.OR)
+        trending_posts_sources_query = Q(circles__id=world_circle_id)
+        trending_posts_sources_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC), Q.OR)
 
-        trending_posts_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC), Q.OR)
+        trending_posts_query.add(trending_posts_sources_query, Q.AND)
 
         return cls.objects.annotate(Count('reactions')).filter(trending_posts_query).order_by(
             '-reactions__count', '-created')
@@ -182,7 +183,8 @@ class PostImage(models.Model):
                                 upload_to=upload_to_post_image_directory,
                                 width_field='width',
                                 height_field='height',
-                                blank=False, null=True, format='JPEG', options={'quality': 50}, processors=[ResizeToFit(width=1024, upscale=False)])
+                                blank=False, null=True, format='JPEG', options={'quality': 50},
+                                processors=[ResizeToFit(width=1024, upscale=False)])
     width = models.PositiveIntegerField(editable=False, null=False, blank=False)
     height = models.PositiveIntegerField(editable=False, null=False, blank=False)
 
