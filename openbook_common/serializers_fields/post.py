@@ -134,3 +134,21 @@ class IsMutedField(Field):
             is_muted = request_user.has_muted_post_with_id(post_id=post.pk)
 
         return is_muted
+
+
+class IsEncircledField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(IsEncircledField, self).__init__(**kwargs)
+
+    def to_representation(self, post):
+        request = self.context.get('request')
+        request_user = request.user
+
+        is_encircled = False
+
+        if not request_user.is_anonymous:
+            is_encircled = post.is_encircled_post()
+
+        return is_encircled
