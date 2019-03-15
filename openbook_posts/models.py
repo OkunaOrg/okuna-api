@@ -162,9 +162,12 @@ class Post(models.Model):
     def is_public_post(self):
         Circle = get_circle_model()
         world_circle_id = Circle.get_world_circle_id()
-        if self.circles.filter(id=world_circle_id).count() == 1:
+        if self.circles.filter(id=world_circle_id).exists():
             return True
         return False
+
+    def is_encircled_post(self):
+        return not self.is_public_post() and not self.community
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
