@@ -133,7 +133,7 @@ def get_column_numbers_for_conflicts_csv(first_row):
 
 def get_temporary_username(email):
     username = email.split('@')[0]
-    temp_username = username + str(secrets.randbelow(9999))
+    temp_username = sanitise_username(username) + str(secrets.randbelow(9999))
     User = get_user_model()
     while User.is_username_taken(temp_username):
         temp_username = username + str(secrets.randbelow(9999))
