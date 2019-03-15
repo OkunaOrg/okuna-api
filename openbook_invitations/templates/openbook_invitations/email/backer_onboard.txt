@@ -1,16 +1,22 @@
 Hey {{ name|default:'' }},
 
 
-You've been invited by Openbook to try the Alpha.
-It's time. Your contributions and continued support have made this project possible. Now we would like you to have exclusive access to one of the earliest versions of Openbook. Getting started is simple:
+Hooray! You've been invited by Openbook to try the Alpha.
+Your contributions and continued support have made this project possible. Thank you <3
+
+Please follow the steps below to download and join Openbook
 
 Step 1.
-If you're on an Apple iPhone download the TestFlight App using this link :https://testflight.apple.com/join/XniAjdyF and install the Openbook App.
+If you're on an Apple iPhone download the TestFlight App and install Openbook using this link :https://testflight.apple.com/join/XniAjdyF
 If you're on an Android device you can download and install the Openbook App directly using this link: https://play.google.com/apps/testing/social.openbook.app
 
 Step 2.
-Once the app is installed, click on this link to setup up your account:
+Once the app is installed, click on the following link to setup up your account:
 {{ invite_link }}
+
+
+We hope to see you soon at Openbook. If you need some help, drop us a message on Slack at
+https://join.slack.com/t/openbookorg/shared_invite/enQtNDI2NjI3MDM0MzA2LTYwM2E1Y2NhYWRmNTMzZjFhYWZlYmM2YTQ0MWEwYjYyMzcxMGI0MTFhNTIwYjU2ZDI1YjllYzlhOWZjZDc4ZWY
 
 Cheers,
 The Openbook Team
