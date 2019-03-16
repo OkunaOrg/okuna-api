@@ -108,9 +108,9 @@ class PostCreatorField(Field):
         post_creator_serializer = self.post_creator_serializer(post_creator, context={"request": request}).data
 
         if post_community:
-            post_creator_memberships = post_community.memberships.get(user=post_creator)
+            post_creator_memberships = post_community.memberships.filter(user=post_creator).all()
             post_creator_serializer['communities_memberships'] = self.community_membership_serializer(
-                [post_creator_memberships],
+                post_creator_memberships,
                 many=True,
                 context={
                     "request": request}).data
