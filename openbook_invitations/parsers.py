@@ -81,10 +81,25 @@ def parse_indiegogo_csv_and_sanitise_usernames(filepath):
                     username = get_temporary_username(email)
                     print('Using generated random username @', username)
                 print(username, email)
-                UserInvite.update_invite(name=name, email=email, username=username, badge=badge)
+                update_invite(name=name, email=email, username=username, badge=badge)
     except IOError as e:
         print('Unable to read file')
         raise e
+
+
+def update_invite(cls, email, name=None, username=None, badge=None):
+    UserInvite = get_user_invite_model()
+    invites = UserInvite.objects.filter(email=email)
+    if len(invites) == 2:
+        invite = invites.filter(username=username).first()
+        if invite is None:
+            invite = invites.last()
+    else:
+        invite = invites.first()
+    invite.username = username
+    invite.save()
+    print('New username is: ', invite.username)
+    return invite
 
 
 def parse_conflicts_csv(filepath):
