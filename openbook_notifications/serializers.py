@@ -62,31 +62,9 @@ class PostCommentPostImageSerializer(serializers.ModelSerializer):
         )
 
 
-class NotificationPostCreatorProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserProfile
-        fields = (
-            'id',
-            'avatar'
-        )
-
-
-class NotificationPostCreatorSerializer(serializers.ModelSerializer):
-    profile = NotificationPostCreatorProfileSerializer()
-
-    class Meta:
-        model = User
-        fields = (
-            'id',
-            'username',
-            'profile'
-        )
-
-
 class NotificationPostSerializer(serializers.ModelSerializer):
     image = PostCommentPostImageSerializer()
     video = PostCommentPostVideoSerializer()
-    creator = NotificationPostCreatorSerializer()
 
     class Meta:
         model = Post
@@ -96,7 +74,6 @@ class NotificationPostSerializer(serializers.ModelSerializer):
             'image',
             'text',
             'video',
-            'creator',
         )
 
 
