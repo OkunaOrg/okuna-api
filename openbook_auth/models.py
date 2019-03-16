@@ -1,6 +1,6 @@
 import secrets
 from datetime import datetime, timedelta
-
+import re
 import jwt
 import uuid
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
@@ -114,9 +114,14 @@ class User(AbstractUser):
         return cls.objects.get(username=user_username)
 
     @classmethod
+    def sanitise_username(cls, username):
+        chars = '[@#!±$%^&*()=|/><?,:;\~`{}]'
+        return re.sub(chars, '', username).lower().replace(' ', '_').replace('+', '_').replace('-', '_')
+
+    @classmethod
     def get_temporary_username(cls, email):
         username = email.split('@')[0]
-        temp_username = username
+        temp_username = cls.sanitise_username(username)
         while cls.is_username_taken(temp_username):
             temp_username = username + str(secrets.randbelow(9999))
 
