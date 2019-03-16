@@ -60,6 +60,22 @@ class UserInvite(models.Model):
         return invite
 
     @classmethod
+    def update_invite(cls, email, name=None, username=None, badge=None):
+        UserInvite = get_user_invite_model()
+        invites = UserInvite.objects.filter(email=email)
+        print('updating...', email)
+        if len(invites) == 2:
+            invite = invites.filter(username=username).first()
+            if invite is None:
+                invite = invites.last()
+        else:
+            invite = invites.first()
+        invite.username = username
+        invite.save()
+        print('New username is: ', invite.username)
+        return invite
+
+    @classmethod
     def get_invite_for_token(cls, token):
         cls._check_token_is_valid(token=token)
         user_invite = UserInvite.objects.get(token=token, created_user=None)

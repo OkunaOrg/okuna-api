@@ -40,7 +40,7 @@ def parse_indiegogo_csv(filepath):
             for row in backer_data_reader:
                 name = row[name_col]
                 email = row[email_col]
-                username = row[username_col]
+                username = sanitise_username(row[username_col])
                 badge_keyword = row[badge_keyword_col]
                 if badge_keyword:
                     badge = Badge.objects.get(keyword=badge_keyword)
@@ -55,6 +55,33 @@ def parse_indiegogo_csv(filepath):
                 invited_user = UserInvite.create_invite(name=name, email=email, username=username,
                                                         badge=badge)
                 invited_user.save()
+    except IOError as e:
+        print('Unable to read file')
+        raise e
+
+
+def parse_indiegogo_csv_and_sanitise_usernames(filepath):
+    try:
+        with open(filepath, newline='') as csvfile:
+            backer_data_reader = csv.reader(csvfile, delimiter=',')
+            header_row = next(backer_data_reader)
+            name_col, email_col, username_col, badge_keyword_col = get_column_numbers_for_indiegogo(header_row)
+            for row in backer_data_reader:
+                name = row[name_col]
+                email = row[email_col]
+                username = sanitise_username(row[username_col])
+                badge_keyword = row[badge_keyword_col]
+                if badge_keyword:
+                    badge = Badge.objects.get(keyword=badge_keyword)
+                else:
+                    badge = None
+                UserInvite = get_user_invite_model()
+                if username is None or username == '0' or username is '':
+                    print('Username was empty for:', name)
+                    username = get_temporary_username(email)
+                    print('Using generated random username @', username)
+                print(username, email)
+                UserInvite.update_invite(name=name, email=email, username=username, badge=badge)
     except IOError as e:
         print('Unable to read file')
         raise e
@@ -86,7 +113,7 @@ def parse_conflicts_csv(filepath):
 
 def sanitise_username(username):
     chars = '[@#!±$%^&*()=|/><?,:;\~`{}]'
-    return re.sub(chars, '', username).lower().replace(' ', '_').replace('+', '_').replace('-', '_')
+    return re.sub(chars, '', username).lower().replace(' ', '_').replace('+', '_').replace('-', '_').replace('\\', '')
 
 
 def get_column_numbers_for_indiegogo(first_row):
