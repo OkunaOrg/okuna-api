@@ -222,25 +222,25 @@ class User(AbstractUser):
         self.set_password(password)
         self.save()
 
-    def update_email(self, email):
+    def request_update_email(self, email):
         self._check_email_not_taken(email)
-        self.email = email
         self.is_email_verified = False
         self.save()
-        verify_token = self._make_email_verification_token_for_email(email=email)
+        verify_token = self._make_email_verification_token_for_email(new_email=email)
         return verify_token
 
     def verify_email_with_token(self, token):
-        self._check_email_verification_token_is_valid_for_email(email_verification_token=token)
+        new_email = self._check_email_verification_token_is_valid_for_email(email_verification_token=token)
         self.is_email_verified = True
+        self.email = new_email
         self.save()
 
     def verify_password_reset_token(self, token, password):
-        self._check_email_verification_token_is_valid_for_email(email_verification_token=token)
+        self._check_password_reset_verification_token_is_valid_for_email(password_verification_token=token)
         self.update_password(password=password)
 
     def request_password_reset(self):
-        password_reset_token = self._make_email_verification_token_for_email(self.email)
+        password_reset_token = self._make_password_reset_verification_token_for_email(email=self.email)
         mail_subject = _('Reset your password for Openbook')
         text_content = render_to_string('openbook_auth/email/reset_password.txt', {
             'name': self.profile.name,
@@ -1676,16 +1676,21 @@ class User(AbstractUser):
         """
         return []
 
-    def _make_email_verification_token_for_email(self, email):
-        return jwt.encode({'email': email, 'user_id': self.pk, 'exp': datetime.utcnow() + timedelta(days=1)},
+    def _make_email_verification_token_for_email(self, new_email):
+        return jwt.encode({'new_email': new_email, 'email': self.email, 'user_id': self.pk, 'exp': datetime.utcnow() + timedelta(days=1)},
                           settings.SECRET_KEY,
                           algorithm=settings.JWT_ALGORITHM).decode('utf-8')
 
-    def _check_email_verification_token_is_valid_for_email(self, email_verification_token):
+    def _make_password_reset_verification_token_for_email(self, email):
+        return jwt.encode({'user_email': email, 'user_id': self.pk, 'exp': datetime.utcnow() + timedelta(days=1)},
+                          settings.SECRET_KEY,
+                          algorithm=settings.JWT_ALGORITHM).decode('utf-8')
+
+    def _check_password_reset_verification_token_is_valid_for_email(self, password_verification_token):
         try:
-            token_contents = jwt.decode(email_verification_token, settings.SECRET_KEY,
+            token_contents = jwt.decode(password_verification_token, settings.SECRET_KEY,
                                         algorithm=settings.JWT_ALGORITHM)
-            token_email = token_contents['email']
+            token_email = token_contents['user_email']
 
             token_user_id = token_contents['user_id']
             if token_email != self.email:
@@ -1697,6 +1702,7 @@ class User(AbstractUser):
                 raise ValidationError(
                     _('Token user id does not match')
                 )
+            return token_email
         except jwt.InvalidSignatureError:
             raise ValidationError(
                 _('Invalid token signature')
@@ -1708,6 +1714,45 @@ class User(AbstractUser):
         except jwt.DecodeError:
             raise ValidationError(
                 _('Failed to decode token')
+            )
+        except KeyError:
+            raise ValidationError(
+                _('Invalid token')
+            )
+
+    def _check_email_verification_token_is_valid_for_email(self, email_verification_token):
+        try:
+            token_contents = jwt.decode(email_verification_token, settings.SECRET_KEY,
+                                        algorithm=settings.JWT_ALGORITHM)
+            token_email = token_contents['email']
+            new_email = token_contents['new_email']
+
+            token_user_id = token_contents['user_id']
+            if token_email != self.email:
+                raise ValidationError(
+                    _('Token email does not match')
+                )
+
+            if token_user_id != self.pk:
+                raise ValidationError(
+                    _('Token user id does not match')
+                )
+            return new_email
+        except jwt.InvalidSignatureError:
+            raise ValidationError(
+                _('Invalid token signature')
+            )
+        except jwt.ExpiredSignatureError:
+            raise ValidationError(
+                _('Token expired')
+            )
+        except jwt.DecodeError:
+            raise ValidationError(
+                _('Failed to decode token')
+            )
+        except KeyError:
+            raise ValidationError(
+                _('Invalid token')
             )
 
     def _check_connection_circles_ids(self, circles_ids):
