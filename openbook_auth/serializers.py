@@ -6,7 +6,7 @@ from openbook.settings import USERNAME_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD
 from openbook_auth.models import User, UserProfile, UserNotificationsSettings
 from openbook_auth.validators import username_characters_validator, \
     username_not_taken_validator, email_not_taken_validator, user_username_exists, \
-    is_of_legal_age_validator
+    is_of_legal_age_validator, user_email_exists
 from django.contrib.auth.password_validation import validate_password
 
 from openbook_circles.models import Circle
@@ -366,3 +366,8 @@ class UpdateAuthenticatedUserNotificationsSettingsSerializer(serializers.Seriali
     connection_request_notifications = serializers.BooleanField(required=False)
     connection_confirmed_notifications = serializers.BooleanField(required=False)
     community_invite_notifications = serializers.BooleanField(required=False)
+
+
+class RequestPasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=False, validators=[user_email_exists])
+    username = serializers.CharField(max_length=USERNAME_MAX_LENGTH, required=False, validators=[user_username_exists])

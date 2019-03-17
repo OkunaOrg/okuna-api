@@ -9,6 +9,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import six
+from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 from imagekit.models import ProcessedImageField
@@ -16,6 +17,7 @@ from pilkit.processors import ResizeToFill, ResizeToFit
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError, NotFound, PermissionDenied, AuthenticationFailed
 from django.db.models import Q
+from django.core.mail import EmailMultiAlternatives
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
@@ -112,6 +114,10 @@ class User(AbstractUser):
     @classmethod
     def get_user_with_username(cls, user_username):
         return cls.objects.get(username=user_username)
+
+    @classmethod
+    def get_user_with_email(cls, user_email):
+        return cls.objects.get(email=user_email)
 
     @classmethod
     def sanitise_username(cls, username):
@@ -228,6 +234,28 @@ class User(AbstractUser):
         self._check_email_verification_token_is_valid_for_email(email_verification_token=token)
         self.is_email_verified = True
         self.save()
+
+    def verify_password_reset_token(self, token, password):
+        self._check_email_verification_token_is_valid_for_email(email_verification_token=token)
+        self.update_password(password=password)
+
+    def request_password_reset(self):
+        password_reset_token = self._make_email_verification_token_for_email(self.email)
+        mail_subject = _('Reset your password for Openbook')
+        text_content = render_to_string('openbook_auth/email/reset_password.txt', {
+            'name': self.profile.name,
+            'confirmation_link': self._generate_password_reset_link(password_reset_token)
+        })
+
+        html_content = render_to_string('openbook_auth/email/reset_password.html', {
+            'name': self.profile.name,
+            'confirmation_link': self._generate_password_reset_link(password_reset_token)
+        })
+
+        email = EmailMultiAlternatives(
+            mail_subject, text_content, to=[self.email], from_email=settings.SERVICE_EMAIL_ADDRESS)
+        email.attach_alternative(html_content, 'text/html')
+        email.send()
 
     def update(self,
                username=None,
@@ -1489,6 +1517,9 @@ class User(AbstractUser):
         Post = get_post_model()
         post = Post.objects.get(pk=post_id)
         return post
+
+    def _generate_password_reset_link(self, token):
+        return '{0}/api/auth/password/verify?token={1}&email={2}'.format(settings.EMAIL_HOST, token, self.email)
 
     def _create_post_comment_notification(self, post_comment):
         PostCommentNotification = get_post_comment_notification_model()

@@ -24,7 +24,7 @@ from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, EmailVerify, Login, AuthenticatedUser, Users, \
     UserSettings, LinkedUsers, SearchLinkedUsers, UserItem, AuthenticatedUserNotificationsSettings, \
-    AuthenticatedUserDelete
+    AuthenticatedUserDelete, PasswordResetRequest, PasswordResetVerify
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
     FavoriteCommunities, SearchCommunities, JoinedCommunities, AdministratedCommunities, ModeratedCommunities, \
     SearchJoinedCommunities
@@ -55,6 +55,8 @@ auth_patterns = [
     path('username-check/', UsernameCheck.as_view(), name='username-check'),
     path('email-check/', EmailCheck.as_view(), name='email-check'),
     path('email/verify/<str:token>/', EmailVerify.as_view(), name='email-verify'),
+    path('password/reset/', PasswordResetRequest.as_view(), name='request-password-reset'),
+    path('password/verify/', PasswordResetVerify.as_view(), name='verify-reset-password'),
     path('user/settings/', UserSettings.as_view(), name='user-settings'),
     path('user/', AuthenticatedUser.as_view(), name='authenticated-user'),
     path('user/delete/', AuthenticatedUserDelete.as_view(), name='authenticated-user-delete'),
