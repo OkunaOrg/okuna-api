@@ -371,3 +371,10 @@ class UpdateAuthenticatedUserNotificationsSettingsSerializer(serializers.Seriali
 class RequestPasswordResetSerializer(serializers.Serializer):
     email = serializers.EmailField(required=False, validators=[user_email_exists])
     username = serializers.CharField(max_length=USERNAME_MAX_LENGTH, required=False, validators=[user_username_exists])
+
+
+class VerifyPasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField(validators=[user_email_exists])
+    token = serializers.CharField()
+    new_password = serializers.CharField(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH,
+                                     validators=[validate_password])
