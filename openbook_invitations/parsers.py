@@ -87,7 +87,7 @@ def parse_indiegogo_csv_and_sanitise_usernames(filepath):
         raise e
 
 
-def update_invite(cls, email, name=None, username=None, badge=None):
+def update_invite(email, name=None, username=None, badge=None):
     UserInvite = get_user_invite_model()
     invites = UserInvite.objects.filter(email=email)
     if len(invites) == 2:
