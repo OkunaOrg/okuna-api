@@ -1188,7 +1188,7 @@ class User(AbstractUser):
         :param max_id:
         :return:
         """
-        posts_query = Q(creator_id=self.id)
+        posts_query = Q(creator_id=self.id, community__isnull=True)
 
         if max_id:
             posts_query.add(Q(id__lt=max_id), Q.AND)
