@@ -1242,25 +1242,6 @@ class UserSettingsAPITests(APITestCase):
         response = self.client.patch(self.url, data, **headers)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_can_change_email_successfully(self):
-        """
-        should be able to update the authenticated user email and return 200
-        """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
-        new_email = fake.email()
-
-        data = {
-            'email': new_email
-        }
-
-        with mock.patch.object(UserSettings, 'send_confirmation_email', return_value=None):
-            response = self.client.patch(self.url, data, **headers)
-            parsed_reponse = json.loads(response.content)
-
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            self.assertEqual(parsed_reponse['email'], new_email)
-
     def test_cannot_change_email_to_existing_email(self):
         """
         should not be able to update the authenticated user email to existing email
@@ -1290,7 +1271,7 @@ class UserSettingsAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
 
         new_email = fake.email()
-        token = user.update_email(new_email)
+        token = user.request_update_email(new_email)
 
         response = self.client.get(self._get_verify_email_url(token), **headers)
 
@@ -1299,27 +1280,7 @@ class UserSettingsAPITests(APITestCase):
         user.refresh_from_db()
 
         self.assertTrue(user.is_email_verified)
-
-    def test_cant_verify_email_with_other_email(self):
-        """
-        should not be able to verify the authenticated user email with a token for another email
-        """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
-
-        new_email = fake.email()
-        token = user.update_email(new_email)
-
-        other_email = fake.email()
-        user.update_email(other_email)
-
-        response = self.client.get(self._get_verify_email_url(token), **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-        user.refresh_from_db()
-
-        self.assertFalse(user.is_email_verified)
+        self.assertTrue(user.email == new_email)
 
     def test_cant_verify_email_with_other_user_id(self):
         """
@@ -1327,14 +1288,11 @@ class UserSettingsAPITests(APITestCase):
         """
         user = make_user()
         foreign_user = make_user()
+        original_email = user.email
+        new_email = fake.email()
+        foreign_token = foreign_user.request_update_email(new_email)
 
-        email = fake.email()
-
-        foreign_token = foreign_user.update_email(email)
-
-        foreign_user.update_email(fake.email())
-
-        user.update_email(email)
+        user.request_update_email(new_email)
         headers = make_authentication_headers_for_user(user)
 
         response = self.client.get(self._get_verify_email_url(foreign_token), **headers)
@@ -1344,7 +1302,8 @@ class UserSettingsAPITests(APITestCase):
         user.refresh_from_db()
 
         self.assertFalse(user.is_email_verified)
-        self.assertEqual(user.email, email)
+        # user email should not have changed
+        self.assertTrue(user.email == original_email)
 
 
 class LinkedUsersAPITests(APITestCase):
