@@ -117,15 +117,12 @@ class Post(models.Model):
 
     @classmethod
     def get_trending_posts(cls):
-        Circle = get_circle_model()
         Community = get_community_model()
-        world_circle_id = Circle.get_world_circle_id()
 
         trending_posts_query = Q(created__gte=timezone.now() - timedelta(
-            days=1))
+            hours=12))
 
-        trending_posts_sources_query = Q(circles__id=world_circle_id)
-        trending_posts_sources_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC), Q.OR)
+        trending_posts_sources_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC)
 
         trending_posts_query.add(trending_posts_sources_query, Q.AND)
 
