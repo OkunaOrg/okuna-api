@@ -73,7 +73,7 @@ class NotificationPostSerializer(serializers.ModelSerializer):
             'uuid',
             'image',
             'text',
-            'video'
+            'video',
         )
 
 

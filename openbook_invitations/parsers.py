@@ -48,7 +48,7 @@ def parse_indiegogo_csv(filepath):
                     badge = None
                 UserInvite = get_user_invite_model()
 
-                if username is None or username is '0' or username is '':
+                if username is None or username == '0' or username is '':
                     print('Username was empty for:', name)
                     username = get_temporary_username(email)
                     print('Using generated random username @', username)
@@ -87,7 +87,7 @@ def parse_indiegogo_csv_and_sanitise_usernames(filepath):
         raise e
 
 
-def update_invite(cls, email, name=None, username=None, badge=None):
+def update_invite(email, name=None, username=None, badge=None):
     UserInvite = get_user_invite_model()
     invites = UserInvite.objects.filter(email=email)
     if len(invites) == 2:

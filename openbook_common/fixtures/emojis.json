@@ -572,5 +572,33 @@
       "image": "openbook_common/emojis/map.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 43,
+    "fields": {
+      "group_id": 2,
+      "order": 10,
+      "keyword": "pride",
+      "keyword_es": "Pride",
+      "keyword_en": "Pride",
+      "color": "#0089f2",
+      "image": "openbook_common/emojis/pride.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 44,
+    "fields": {
+      "group_id": 2,
+      "order": 1,
+      "keyword": "like",
+      "keyword_es": "Like it",
+      "keyword_en": "Me gusta",
+      "color": "#0089f2",
+      "image": "openbook_common/emojis/thumbs_up.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
   }
 ]
