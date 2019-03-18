@@ -374,7 +374,6 @@ class RequestPasswordResetSerializer(serializers.Serializer):
 
 
 class VerifyPasswordResetSerializer(serializers.Serializer):
-    email = serializers.EmailField(validators=[user_email_exists])
     token = serializers.CharField()
     new_password = serializers.CharField(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH,
-                                     validators=[validate_password])
+                                         validators=[validate_password])

@@ -255,7 +255,7 @@ class UserSettings(APIView):
             has_email = 'email' in data
             if has_email:
                 new_email = data.get('email')
-                confirm_email_token = user.request_update_email(new_email)
+                confirm_email_token = user.request_email_update(new_email)
                 self.send_confirmation_email(user, new_email, confirm_email_token)
 
             if not has_email and not has_password:
@@ -411,8 +411,7 @@ class PasswordResetRequest(APIView):
         with transaction.atomic():
             user.request_password_reset()
 
-        return Response('A password reset link was sent to the email',
-                        status=status.HTTP_200_OK)
+        return ApiMessageResponse(_('A password reset link was sent to the email'), status=status.HTTP_200_OK)
 
 
 class PasswordResetVerify(APIView):
@@ -423,14 +422,13 @@ class PasswordResetVerify(APIView):
 
         data = serializer.validated_data
         token = data.get('token')
-        email = data.get('email')
         new_password = data.get('new_password')
 
         User = get_user_model()
-        user = User.get_user_with_email(email)
+        user = User.get_user_for_password_reset_token(token)
 
         with transaction.atomic():
             user.verify_password_reset_token(token=token, password=new_password)
 
-        return Response('Password set successfully', status=status.HTTP_200_OK)
+        return ApiMessageResponse(_('Password set successfully'), status=status.HTTP_200_OK)
 

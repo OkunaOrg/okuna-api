@@ -62,6 +62,12 @@ class User(AbstractUser):
     )
 
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    JWT_TOKEN_TYPE_CHANGE_EMAIL = 'CE'
+    JWT_TOKEN_TYPE_PASSWORD_RESET = 'PR'
+    JWT_TOKEN_TYPES = (
+        (JWT_TOKEN_TYPE_PASSWORD_RESET, 'PASSWORD_RESET'),
+        (JWT_TOKEN_TYPE_CHANGE_EMAIL, 'CHANGE_EMAIL'),
+    )
 
     class Meta:
         verbose_name = _('user')
@@ -138,6 +144,43 @@ class User(AbstractUser):
         users_query = Q(username__icontains=query)
         users_query.add(Q(profile__name__icontains=query), Q.OR)
         return cls.objects.filter(users_query)
+
+    @classmethod
+    def get_user_for_password_reset_token(cls, password_verification_token):
+        try:
+            token_contents = jwt.decode(password_verification_token, settings.SECRET_KEY,
+                                        algorithm=settings.JWT_ALGORITHM)
+
+            token_user_id = token_contents['user_id']
+            token_type = token_contents['type']
+
+            if token_type != cls.JWT_TOKEN_TYPE_PASSWORD_RESET:
+                raise ValidationError(
+                    _('Token type does not match')
+                )
+            user = User.objects.get(pk=token_user_id)
+
+            return user
+        except jwt.InvalidSignatureError:
+            raise ValidationError(
+                _('Invalid token signature')
+            )
+        except jwt.ExpiredSignatureError:
+            raise ValidationError(
+                _('Token expired')
+            )
+        except jwt.DecodeError:
+            raise ValidationError(
+                _('Failed to decode token')
+            )
+        except User.DoesNotExist:
+            raise ValidationError(
+            _('No user found for token')
+            )
+        except KeyError:
+            raise ValidationError(
+                _('Invalid token')
+            )
 
     def count_posts(self):
         return self.posts.count()
@@ -222,25 +265,23 @@ class User(AbstractUser):
         self.set_password(password)
         self.save()
 
-    def request_update_email(self, email):
+    def request_email_update(self, email):
         self._check_email_not_taken(email)
-        self.is_email_verified = False
         self.save()
         verify_token = self._make_email_verification_token_for_email(new_email=email)
         return verify_token
 
     def verify_email_with_token(self, token):
         new_email = self._check_email_verification_token_is_valid_for_email(email_verification_token=token)
-        self.is_email_verified = True
         self.email = new_email
         self.save()
 
     def verify_password_reset_token(self, token, password):
-        self._check_password_reset_verification_token_is_valid_for_email(password_verification_token=token)
+        self._check_password_reset_verification_token_is_valid(password_verification_token=token)
         self.update_password(password=password)
 
     def request_password_reset(self):
-        password_reset_token = self._make_password_reset_verification_token_for_email(email=self.email)
+        password_reset_token = self._make_password_reset_verification_token()
         self._send_password_reset_email_with_token(password_reset_token)
         return password_reset_token
 
@@ -1506,7 +1547,7 @@ class User(AbstractUser):
         return post
 
     def _generate_password_reset_link(self, token):
-        return '{0}/api/auth/password/verify?token={1}&email={2}'.format(settings.EMAIL_HOST, token, self.email)
+        return '{0}/api/auth/password/verify?token={1}'.format(settings.EMAIL_HOST, token)
 
     def _create_post_comment_notification(self, post_comment):
         PostCommentNotification = get_post_comment_notification_model()
@@ -1681,32 +1722,39 @@ class User(AbstractUser):
         return []
 
     def _make_email_verification_token_for_email(self, new_email):
-        return jwt.encode({'new_email': new_email, 'email': self.email, 'user_id': self.pk, 'exp': datetime.utcnow() + timedelta(days=1)},
+        return jwt.encode({'type': self.JWT_TOKEN_TYPE_CHANGE_EMAIL,
+                           'new_email': new_email,
+                           'email': self.email,
+                           'user_id': self.pk,
+                           'exp': datetime.utcnow() + timedelta(days=1)},
                           settings.SECRET_KEY,
                           algorithm=settings.JWT_ALGORITHM).decode('utf-8')
 
-    def _make_password_reset_verification_token_for_email(self, email):
-        return jwt.encode({'user_email': email, 'user_id': self.pk, 'exp': datetime.utcnow() + timedelta(days=1)},
+    def _make_password_reset_verification_token(self):
+        return jwt.encode({'type': self.JWT_TOKEN_TYPE_PASSWORD_RESET,
+                           'user_id': self.pk,
+                           'exp': datetime.utcnow() + timedelta(days=1)},
                           settings.SECRET_KEY,
                           algorithm=settings.JWT_ALGORITHM).decode('utf-8')
 
-    def _check_password_reset_verification_token_is_valid_for_email(self, password_verification_token):
+    def _check_password_reset_verification_token_is_valid(self, password_verification_token):
         try:
             token_contents = jwt.decode(password_verification_token, settings.SECRET_KEY,
                                         algorithm=settings.JWT_ALGORITHM)
-            token_email = token_contents['user_email']
 
             token_user_id = token_contents['user_id']
-            if token_email != self.email:
+            token_type = token_contents['type']
+
+            if token_type != self.JWT_TOKEN_TYPE_PASSWORD_RESET:
                 raise ValidationError(
-                    _('Token email does not match')
+                    _('Token type does not match')
                 )
 
             if token_user_id != self.pk:
                 raise ValidationError(
                     _('Token user id does not match')
                 )
-            return token_email
+            return token_user_id
         except jwt.InvalidSignatureError:
             raise ValidationError(
                 _('Invalid token signature')
@@ -1730,8 +1778,14 @@ class User(AbstractUser):
                                         algorithm=settings.JWT_ALGORITHM)
             token_email = token_contents['email']
             new_email = token_contents['new_email']
-
             token_user_id = token_contents['user_id']
+            token_type = token_contents['type']
+
+            if token_type != self.JWT_TOKEN_TYPE_CHANGE_EMAIL:
+                raise ValidationError(
+                    _('Token type does not match')
+                )
+
             if token_email != self.email:
                 raise ValidationError(
                     _('Token email does not match')
