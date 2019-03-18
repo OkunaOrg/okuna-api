@@ -19,7 +19,7 @@ import json
 from openbook_auth.views import UserSettings
 from openbook_circles.models import Circle
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_user_bio, \
-    make_user_location, make_user_avatar, make_user_cover, make_badge, make_fake_username
+    make_user_location, make_user_avatar, make_user_cover, make_badge
 from openbook_invitations.models import UserInvite
 
 fake = Faker()
@@ -302,14 +302,13 @@ class RequestPasswordResetAPITests(APITestCase):
         """
         Should not be able to request password reset if no valid username exists
         """
-        username = make_fake_username()
+        username = fake.user_name()
         request_data = {
             'username': username
         }
         url = self._get_url()
-        with mock.patch.object(User, '_send_password_reset_email_with_token', return_value=None):
-            response = self.client.post(url, request_data, format='multipart')
 
+        response = self.client.post(url, request_data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_cannot_request_password_reset_with_invalid_email(self):
@@ -368,7 +367,7 @@ class VerifyResetPasswordAPITests(APITestCase):
 
     def test_can_update_password_with_valid_token(self):
         """
-        Should update password with valid token for email
+        Should update password with valid token
         """
         user = make_user()
         old_password = user.password
@@ -381,7 +380,6 @@ class VerifyResetPasswordAPITests(APITestCase):
         request_data = {
             'new_password': new_password,
             'token': password_reset_token,
-            'email': user_email
         }
 
         response = self.client.post(url, request_data, format='multipart')
@@ -407,40 +405,13 @@ class VerifyResetPasswordAPITests(APITestCase):
         new_password = 'testing12345'
         request_data = {
             'new_password': new_password,
-            'token': fake.text(),
-            'email': user_email
+            'token': fake.text()
         }
 
         response = self.client.post(url, request_data, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         user_db = User.objects.get(email=user_email)
         self.assertEqual(user_db.password, old_password)
-
-    def test_cannot_update_password_with_incorrect_email_token_combination(self):
-        """
-        Should not update password with invalid token-email combination
-        """
-        user = make_user()
-        old_password = user.password
-        user_email = user.email
-
-        another_user = make_user()
-
-        url = self._get_url()
-
-        password_reset_token = user.request_password_reset()
-        new_password = 'testing12345'
-        request_data = {
-            'new_password': new_password,
-            'token': password_reset_token,
-            'email': another_user.email
-        }
-
-        response = self.client.post(url, request_data, format='multipart')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        user_db = User.objects.get(email=user_email)
-        self.assertEqual(user_db.password, old_password)
-
 
     def test_cannot_update_password_without_providing_new_password(self):
         """
@@ -455,29 +426,6 @@ class VerifyResetPasswordAPITests(APITestCase):
         password_reset_token = user.request_password_reset()
         new_password = 'testing12345'
         request_data = {
-            'token': password_reset_token,
-            'email': user_email
-        }
-
-        response = self.client.post(url, request_data, format='multipart')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        user_db = User.objects.get(email=user_email)
-        self.assertEqual(user_db.password, old_password)
-
-    def test_cannot_update_password_without_providing_email(self):
-        """
-        Should not update password without providing email
-        """
-        user = make_user()
-        old_password = user.password
-        user_email = user.email
-
-        url = self._get_url()
-
-        password_reset_token = user.request_password_reset()
-        new_password = 'testing12345'
-        request_data = {
-            'new_password': new_password,
             'token': password_reset_token
         }
 
@@ -486,7 +434,7 @@ class VerifyResetPasswordAPITests(APITestCase):
         user_db = User.objects.get(email=user_email)
         self.assertEqual(user_db.password, old_password)
 
-    def test_cannot_update_password_without_providing_email(self):
+    def test_cannot_update_password_without_providing_token(self):
         """
         Should not update password without providing token
         """
@@ -500,7 +448,6 @@ class VerifyResetPasswordAPITests(APITestCase):
         new_password = 'testing12345'
         request_data = {
             'new_password': new_password,
-            'email': user_email
         }
 
         response = self.client.post(url, request_data, format='multipart')
@@ -1485,15 +1432,13 @@ class VerifyChangeEmailAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
 
         new_email = fake.email()
-        token = user.request_update_email(new_email)
+        token = user.request_email_update(new_email)
 
         response = self.client.get(self._get_verify_email_url(token), **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         user.refresh_from_db()
-
-        self.assertTrue(user.is_email_verified)
         self.assertTrue(user.email == new_email)
 
     def test_cannot_verify_email_with_other_user_id(self):
@@ -1504,9 +1449,9 @@ class VerifyChangeEmailAPITests(APITestCase):
         foreign_user = make_user()
         original_email = user.email
         new_email = fake.email()
-        foreign_token = foreign_user.request_update_email(new_email)
+        foreign_token = foreign_user.request_email_update(new_email)
 
-        user.request_update_email(new_email)
+        user.request_email_update(new_email)
         headers = make_authentication_headers_for_user(user)
 
         response = self.client.get(self._get_verify_email_url(foreign_token), **headers)
@@ -1515,7 +1460,6 @@ class VerifyChangeEmailAPITests(APITestCase):
 
         user.refresh_from_db()
 
-        self.assertFalse(user.is_email_verified)
         # user email should not have changed
         self.assertTrue(user.email == original_email)
 
