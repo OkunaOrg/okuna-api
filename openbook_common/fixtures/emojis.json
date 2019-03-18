@@ -600,5 +600,19 @@
       "image": "openbook_common/emojis/thumbs_up.png",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 45,
+    "fields": {
+      "group_id": 2,
+      "order": 1,
+      "keyword": "Hehe",
+      "keyword_es": "Hehe",
+      "keyword_en": "Hehe",
+      "color": "#0089f2",
+      "image": "openbook_common/emojis/hehe.png",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
   }
 ]
