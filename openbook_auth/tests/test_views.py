@@ -8,6 +8,7 @@ from PIL import Image
 from django.urls import reverse
 from faker import Faker
 from unittest import mock
+from django.core import mail
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -16,10 +17,10 @@ from openbook_auth.models import User, UserProfile
 import logging
 import json
 
-from openbook_auth.views import UserSettings
+from openbook_auth.views import UserSettings, PasswordResetRequest
 from openbook_circles.models import Circle
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_user_bio, \
-    make_user_location, make_user_avatar, make_user_cover, make_badge
+    make_user_location, make_user_avatar, make_user_cover, make_badge, make_fake_username
 from openbook_invitations.models import UserInvite
 
 fake = Faker()
@@ -294,6 +295,74 @@ class RegistrationAPITests(APITestCase):
     def _make_user_invite_token_with_badge(self, badge):
         user_invite = UserInvite.create_invite(email=fake.email(), badge=badge)
         return user_invite.token
+
+
+class RequestPasswordResetAPITests(APITestCase):
+
+    def test_cannot_request_password_reset_with_invalid_username(self):
+        """
+        Should not be able to request password reset if no valid username exists
+        """
+        username = make_fake_username()
+        request_data = {
+            'username': username
+        }
+        url = self._get_url()
+        with mock.patch.object(User, '_send_password_reset_email_with_token', return_value=None):
+            response = self.client.post(url, request_data, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_cannot_request_password_reset_with_invalid_email(self):
+        """
+        Should not be able to request password reset if no valid email exists
+        """
+        email = fake.email()
+        request_data = {
+            'email': email
+        }
+        url = self._get_url()
+        with mock.patch.object(User, '_send_password_reset_email_with_token', return_value=None):
+            response = self.client.post(url, request_data, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_request_password_reset_successfully_with_valid_username(self):
+        """
+        Should generate request password reset token for username and send mail
+        """
+        user = make_user()
+        request_data = {
+            'username': user.username
+        }
+
+        url = self._get_url()
+        response = self.client.post(url, request_data, format='multipart')
+        email_message = mail.outbox[0]
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(email_message.to[0], user.email)
+        self.assertEqual(email_message.subject, 'Reset your password for Openbook')
+
+    def test_request_password_reset_successfully_with_valid_email(self):
+        """
+        Should generate request password reset token for email  and send mail
+        """
+        user = make_user()
+        request_data = {
+            'email': user.email
+        }
+
+        url = self._get_url()
+        response = self.client.post(url, request_data, format='multipart')
+        email_message = mail.outbox[0]
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(email_message.to[0], user.email)
+        self.assertEqual(email_message.subject, 'Reset your password for Openbook')
+
+    def _get_url(self):
+        return reverse('request-password-reset')
 
 
 class UsernameCheckAPITests(APITestCase):
@@ -1433,3 +1502,5 @@ class SearchLinkedUsersAPITests(APITestCase):
 
     def _get_url(self):
         return reverse('search-linked-users')
+
+
