@@ -1558,11 +1558,13 @@ class User(AbstractUser):
         mail_subject = _('Reset your password for Openbook')
         text_content = render_to_string('openbook_auth/email/reset_password.txt', {
             'name': self.profile.name,
+            'username': self.username,
             'password_reset_link': self._generate_password_reset_link(password_reset_token)
         })
 
         html_content = render_to_string('openbook_auth/email/reset_password.html', {
             'name': self.profile.name,
+            'username': self.username,
             'password_reset_link': self._generate_password_reset_link(password_reset_token)
         })
 
