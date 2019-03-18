@@ -376,7 +376,7 @@ class VerifyResetPasswordAPITests(APITestCase):
         username = user.username
         url = self._get_url()
 
-        password_reset_token = user._make_password_reset_verification_token_for_email(email=user.email)
+        password_reset_token = user.request_password_reset()
         new_password = 'testing12345'
         request_data = {
             'new_password': new_password,
@@ -403,7 +403,7 @@ class VerifyResetPasswordAPITests(APITestCase):
 
         url = self._get_url()
 
-        password_reset_token = user._make_password_reset_verification_token_for_email(email=user.email)
+        password_reset_token = user.request_password_reset()
         new_password = 'testing12345'
         request_data = {
             'new_password': new_password,
@@ -428,7 +428,7 @@ class VerifyResetPasswordAPITests(APITestCase):
 
         url = self._get_url()
 
-        password_reset_token = user._make_password_reset_verification_token_for_email(email=user.email)
+        password_reset_token = user.request_password_reset()
         new_password = 'testing12345'
         request_data = {
             'new_password': new_password,
@@ -452,7 +452,7 @@ class VerifyResetPasswordAPITests(APITestCase):
 
         url = self._get_url()
 
-        password_reset_token = user._make_password_reset_verification_token_for_email(email=user.email)
+        password_reset_token = user.request_password_reset()
         new_password = 'testing12345'
         request_data = {
             'token': password_reset_token,
@@ -474,7 +474,7 @@ class VerifyResetPasswordAPITests(APITestCase):
 
         url = self._get_url()
 
-        password_reset_token = user._make_password_reset_verification_token_for_email(email=user.email)
+        password_reset_token = user.request_password_reset()
         new_password = 'testing12345'
         request_data = {
             'new_password': new_password,
@@ -496,7 +496,7 @@ class VerifyResetPasswordAPITests(APITestCase):
 
         url = self._get_url()
 
-        password_reset_token = user._make_password_reset_verification_token_for_email(email=user.email)
+        password_reset_token = user.request_password_reset()
         new_password = 'testing12345'
         request_data = {
             'new_password': new_password,
@@ -1474,10 +1474,8 @@ class UserSettingsAPITests(APITestCase):
 
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def _get_verify_email_url(self, token):
-        return reverse('email-verify', kwargs={
-            'token': token
-        })
+
+class VerifyChangeEmailAPITests(APITestCase):
 
     def test_can_verify_email_token_successfully(self):
         """
@@ -1498,7 +1496,7 @@ class UserSettingsAPITests(APITestCase):
         self.assertTrue(user.is_email_verified)
         self.assertTrue(user.email == new_email)
 
-    def test_cant_verify_email_with_other_user_id(self):
+    def test_cannot_verify_email_with_other_user_id(self):
         """
         should not be able to verify the authenticated user email with foreign user token for same email
         """
@@ -1520,6 +1518,11 @@ class UserSettingsAPITests(APITestCase):
         self.assertFalse(user.is_email_verified)
         # user email should not have changed
         self.assertTrue(user.email == original_email)
+
+    def _get_verify_email_url(self, token):
+        return reverse('email-verify', kwargs={
+            'token': token
+        })
 
 
 class LinkedUsersAPITests(APITestCase):
