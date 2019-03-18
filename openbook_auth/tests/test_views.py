@@ -400,7 +400,6 @@ class VerifyResetPasswordAPITests(APITestCase):
         user = make_user()
         old_password = user.password
         user_email = user.email
-        username = user.username
 
         url = self._get_url()
 
@@ -409,6 +408,98 @@ class VerifyResetPasswordAPITests(APITestCase):
         request_data = {
             'new_password': new_password,
             'token': fake.text(),
+            'email': user_email
+        }
+
+        response = self.client.post(url, request_data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        user_db = User.objects.get(email=user_email)
+        self.assertEqual(user_db.password, old_password)
+
+    def test_cannot_update_password_with_incorrect_email_token_combination(self):
+        """
+        Should not update password with invalid token-email combination
+        """
+        user = make_user()
+        old_password = user.password
+        user_email = user.email
+
+        another_user = make_user()
+
+        url = self._get_url()
+
+        password_reset_token = user._make_password_reset_verification_token_for_email(email=user.email)
+        new_password = 'testing12345'
+        request_data = {
+            'new_password': new_password,
+            'token': password_reset_token,
+            'email': another_user.email
+        }
+
+        response = self.client.post(url, request_data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        user_db = User.objects.get(email=user_email)
+        self.assertEqual(user_db.password, old_password)
+
+
+    def test_cannot_update_password_without_providing_new_password(self):
+        """
+        Should not update password without a new password
+        """
+        user = make_user()
+        old_password = user.password
+        user_email = user.email
+
+        url = self._get_url()
+
+        password_reset_token = user._make_password_reset_verification_token_for_email(email=user.email)
+        new_password = 'testing12345'
+        request_data = {
+            'token': password_reset_token,
+            'email': user_email
+        }
+
+        response = self.client.post(url, request_data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        user_db = User.objects.get(email=user_email)
+        self.assertEqual(user_db.password, old_password)
+
+    def test_cannot_update_password_without_providing_email(self):
+        """
+        Should not update password without providing email
+        """
+        user = make_user()
+        old_password = user.password
+        user_email = user.email
+
+        url = self._get_url()
+
+        password_reset_token = user._make_password_reset_verification_token_for_email(email=user.email)
+        new_password = 'testing12345'
+        request_data = {
+            'new_password': new_password,
+            'token': password_reset_token
+        }
+
+        response = self.client.post(url, request_data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        user_db = User.objects.get(email=user_email)
+        self.assertEqual(user_db.password, old_password)
+
+    def test_cannot_update_password_without_providing_email(self):
+        """
+        Should not update password without providing token
+        """
+        user = make_user()
+        old_password = user.password
+        user_email = user.email
+
+        url = self._get_url()
+
+        password_reset_token = user._make_password_reset_verification_token_for_email(email=user.email)
+        new_password = 'testing12345'
+        request_data = {
+            'new_password': new_password,
             'email': user_email
         }
 
