@@ -2,7 +2,6 @@
 import random
 import tempfile
 import uuid
-
 from urllib.parse import urlsplit  # Python 3
 from PIL import Image
 from django.urls import reverse
@@ -11,13 +10,13 @@ from unittest import mock
 from django.core import mail
 from rest_framework import status
 from rest_framework.test import APITestCase
-
+from django.contrib.auth import authenticate
 from openbook_auth.models import User, UserProfile
 
 import logging
 import json
 
-from openbook_auth.views import UserSettings, PasswordResetRequest
+from openbook_auth.views import UserSettings
 from openbook_circles.models import Circle
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_user_bio, \
     make_user_location, make_user_avatar, make_user_cover, make_badge, make_fake_username
@@ -363,6 +362,63 @@ class RequestPasswordResetAPITests(APITestCase):
 
     def _get_url(self):
         return reverse('request-password-reset')
+
+
+class VerifyResetPasswordAPITests(APITestCase):
+
+    def test_can_update_password_with_valid_token(self):
+        """
+        Should update password with valid token for email
+        """
+        user = make_user()
+        old_password = user.password
+        user_email = user.email
+        username = user.username
+        url = self._get_url()
+
+        password_reset_token = user._make_password_reset_verification_token_for_email(email=user.email)
+        new_password = 'testing12345'
+        request_data = {
+            'new_password': new_password,
+            'token': password_reset_token,
+            'email': user_email
+        }
+
+        response = self.client.post(url, request_data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # cannot authenticate with old password
+        user = authenticate(username=username, password=old_password)
+        self.assertTrue(user is None)
+        # can authenticate with new password
+        user_new = authenticate(username=username, password=new_password)
+        self.assertEqual(user_new.email, user_email)
+
+    def test_cannot_update_password_with_invalid_token(self):
+        """
+        Should not update password with invalid token for email
+        """
+        user = make_user()
+        old_password = user.password
+        user_email = user.email
+        username = user.username
+
+        url = self._get_url()
+
+        password_reset_token = user._make_password_reset_verification_token_for_email(email=user.email)
+        new_password = 'testing12345'
+        request_data = {
+            'new_password': new_password,
+            'token': fake.text(),
+            'email': user_email
+        }
+
+        response = self.client.post(url, request_data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        user_db = User.objects.get(email=user_email)
+        self.assertEqual(user_db.password, old_password)
+
+    def _get_url(self):
+        return reverse('verify-reset-password')
 
 
 class UsernameCheckAPITests(APITestCase):

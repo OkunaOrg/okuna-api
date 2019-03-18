@@ -3,7 +3,6 @@ from django.db import transaction
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
-from jwt import InvalidSignatureError
 from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed, ValidationError
 from rest_framework.parsers import MultiPartParser, FormParser
