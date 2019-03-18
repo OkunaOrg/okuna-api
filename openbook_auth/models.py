@@ -242,6 +242,7 @@ class User(AbstractUser):
     def request_password_reset(self):
         password_reset_token = self._make_password_reset_verification_token_for_email(email=self.email)
         self._send_password_reset_email_with_token(password_reset_token)
+        return password_reset_token
 
     def update(self,
                username=None,
@@ -1516,12 +1517,12 @@ class User(AbstractUser):
         mail_subject = _('Reset your password for Openbook')
         text_content = render_to_string('openbook_auth/email/reset_password.txt', {
             'name': self.profile.name,
-            'confirmation_link': self._generate_password_reset_link(password_reset_token)
+            'password_reset_link': self._generate_password_reset_link(password_reset_token)
         })
 
         html_content = render_to_string('openbook_auth/email/reset_password.html', {
             'name': self.profile.name,
-            'confirmation_link': self._generate_password_reset_link(password_reset_token)
+            'password_reset_link': self._generate_password_reset_link(password_reset_token)
         })
 
         email = EmailMultiAlternatives(
