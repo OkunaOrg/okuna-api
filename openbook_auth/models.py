@@ -241,21 +241,7 @@ class User(AbstractUser):
 
     def request_password_reset(self):
         password_reset_token = self._make_password_reset_verification_token_for_email(email=self.email)
-        mail_subject = _('Reset your password for Openbook')
-        text_content = render_to_string('openbook_auth/email/reset_password.txt', {
-            'name': self.profile.name,
-            'confirmation_link': self._generate_password_reset_link(password_reset_token)
-        })
-
-        html_content = render_to_string('openbook_auth/email/reset_password.html', {
-            'name': self.profile.name,
-            'confirmation_link': self._generate_password_reset_link(password_reset_token)
-        })
-
-        email = EmailMultiAlternatives(
-            mail_subject, text_content, to=[self.email], from_email=settings.SERVICE_EMAIL_ADDRESS)
-        email.attach_alternative(html_content, 'text/html')
-        email.send()
+        self._send_password_reset_email_with_token(password_reset_token)
 
     def update(self,
                username=None,
@@ -1525,6 +1511,23 @@ class User(AbstractUser):
         PostCommentNotification = get_post_comment_notification_model()
         PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
                                                                  owner_id=post_comment.post.creator_id)
+
+    def _send_password_reset_email_with_token(self, password_reset_token):
+        mail_subject = _('Reset your password for Openbook')
+        text_content = render_to_string('openbook_auth/email/reset_password.txt', {
+            'name': self.profile.name,
+            'confirmation_link': self._generate_password_reset_link(password_reset_token)
+        })
+
+        html_content = render_to_string('openbook_auth/email/reset_password.html', {
+            'name': self.profile.name,
+            'confirmation_link': self._generate_password_reset_link(password_reset_token)
+        })
+
+        email = EmailMultiAlternatives(
+            mail_subject, text_content, to=[self.email], from_email=settings.SERVICE_EMAIL_ADDRESS)
+        email.attach_alternative(html_content, 'text/html')
+        email.send()
 
     def _send_post_comment_push_notification(self, post_comment):
         senders.send_post_comment_push_notification(post_comment=post_comment)
