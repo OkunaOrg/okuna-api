@@ -571,6 +571,44 @@ class JoinedCommunities(APITestCase):
             response_community_id = response_community.get('id')
             self.assertIn(response_community_id, communities_ids)
 
+    def test_retrieve_joined_communities_offset(self):
+        """
+        should be able to retrieve all own communities with an offset return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        total_amount_of_communities = 10
+        offset = 5
+
+        community_creator = make_user()
+        communities = []
+
+        for i in range(0, total_amount_of_communities):
+            community = make_community(creator=community_creator)
+            communities.append(community)
+
+        offsetted_communities = communities[offset: total_amount_of_communities]
+        offsetted_communities_ids = [community.pk for community in offsetted_communities]
+
+        for community in communities:
+            user.join_community_with_name(community_name=community.name)
+
+        url = self._get_url()
+        response = self.client.get(url, {
+            'offset': offset
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), total_amount_of_communities - offset)
+
+        for response_community in response_communities:
+            response_community_id = response_community.get('id')
+            self.assertIn(response_community_id, offsetted_communities_ids)
+
     def _get_url(self):
         return reverse('joined-communities')
 
@@ -686,6 +724,46 @@ class AdministratedCommunities(APITestCase):
             response_community_id = response_community.get('id')
             self.assertIn(response_community_id, communities_ids)
 
+    def test_retrieve_administrated_communities_offset(self):
+        """
+        should be able to retrieve all own communities with an offset return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        total_amount_of_communities = 10
+        offset = 5
+
+        communities = []
+        community_creator = make_user()
+
+        for i in range(0, total_amount_of_communities):
+            community = make_community(creator=community_creator)
+            communities.append(community)
+
+        offsetted_communities = communities[offset: total_amount_of_communities]
+        offsetted_communities_ids = [community.pk for community in offsetted_communities]
+
+        for community in communities:
+            user.join_community_with_name(community_name=community.name)
+            community_creator.add_administrator_with_username_to_community_with_name(username=user.username,
+                                                                                     community_name=community.name)
+
+        url = self._get_url()
+        response = self.client.get(url, {
+            'offset': offset
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), total_amount_of_communities - offset)
+
+        for response_community in response_communities:
+            response_community_id = response_community.get('id')
+            self.assertIn(response_community_id, offsetted_communities_ids)
+
     def _get_url(self):
         return reverse('administrated-communities')
 
@@ -721,6 +799,46 @@ class ModeratedCommunities(APITestCase):
         for response_community in response_communities:
             response_community_id = response_community.get('id')
             self.assertIn(response_community_id, communities_ids)
+
+    def test_retrieve_moderated_communities_offset(self):
+        """
+        should be able to retrieve all moderated communities with an offset return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        total_amount_of_communities = 10
+        offset = 5
+
+        community_creator = make_user()
+        communities = []
+
+        for i in range(0, total_amount_of_communities):
+            community = make_community(creator=community_creator)
+            communities.append(community)
+
+        offsetted_communities = communities[offset: total_amount_of_communities]
+        offsetted_communities_ids = [community.pk for community in offsetted_communities]
+
+        for community in communities:
+            user.join_community_with_name(community_name=community.name)
+            community_creator.add_moderator_with_username_to_community_with_name(username=user.username,
+                                                                                 community_name=community.name)
+
+        url = self._get_url()
+        response = self.client.get(url, {
+            'offset': offset
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), total_amount_of_communities - offset)
+
+        for response_community in response_communities:
+            response_community_id = response_community.get('id')
+            self.assertIn(response_community_id, offsetted_communities_ids)
 
     def _get_url(self):
         return reverse('moderated-communities')
@@ -772,6 +890,40 @@ class FavoriteCommunities(APITestCase):
         response_communities = json.loads(response.content)
 
         self.assertEqual(len(response_communities), 0)
+
+    def test_retrieve_favorite_communities_offset(self):
+        """
+        should be able to retrieve all favorite communities with an offset return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        total_amount_of_communities = 10
+        offset = 5
+
+        communities = mixer.cycle(total_amount_of_communities).blend(Community, creator=user)
+
+        offsetted_communities = communities[offset: total_amount_of_communities]
+        offsetted_communities_ids = [community.pk for community in offsetted_communities]
+
+        for community in communities:
+            user.join_community_with_name(community_name=community.name)
+            user.favorite_community_with_name(community_name=community.name)
+
+        url = self._get_url()
+        response = self.client.get(url, {
+            'offset': offset
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), total_amount_of_communities - offset)
+
+        for response_community in response_communities:
+            response_community_id = response_community.get('id')
+            self.assertIn(response_community_id, offsetted_communities_ids)
 
     def _get_url(self):
         return reverse('favorite-communities')
