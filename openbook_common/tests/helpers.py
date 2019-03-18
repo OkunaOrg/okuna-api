@@ -23,11 +23,6 @@ def make_fake_post_text():
     return fake.text(max_nb_chars=settings.POST_MAX_LENGTH)
 
 
-def make_fake_username():
-    username = fake.text(max_nb_chars=settings.USERNAME_MAX_LENGTH)
-    return username.lower().replace(' ', '_')
-
-
 def make_fake_post_comment_text():
     return fake.text(max_nb_chars=settings.POST_COMMENT_MAX_LENGTH)
 
