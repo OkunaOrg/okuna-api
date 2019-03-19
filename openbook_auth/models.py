@@ -1081,7 +1081,7 @@ class User(AbstractUser):
 
         linked_users_query.add(names_query, Q.AND)
 
-        return User.objects.filter(linked_users_query)
+        return User.objects.filter(linked_users_query).distinct()
 
     def search_communities_with_query(self, query):
         # In the future, the user might have blocked communities which should not be displayed
