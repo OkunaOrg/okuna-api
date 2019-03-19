@@ -64,10 +64,6 @@ class User(AbstractUser):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     JWT_TOKEN_TYPE_CHANGE_EMAIL = 'CE'
     JWT_TOKEN_TYPE_PASSWORD_RESET = 'PR'
-    JWT_TOKEN_TYPES = (
-        (JWT_TOKEN_TYPE_PASSWORD_RESET, 'PASSWORD_RESET'),
-        (JWT_TOKEN_TYPE_CHANGE_EMAIL, 'CHANGE_EMAIL'),
-    )
 
     class Meta:
         verbose_name = _('user')
