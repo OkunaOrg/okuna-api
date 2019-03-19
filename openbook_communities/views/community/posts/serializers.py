@@ -118,7 +118,11 @@ class CommunityMembershipSerializer(serializers.ModelSerializer):
 class CommunityPostCommunitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Community
-        fields = ('id',)
+        fields = (
+            'id',
+            'name',
+            'avatar'
+        )
 
 
 class CommunityPostSerializer(serializers.ModelSerializer):
