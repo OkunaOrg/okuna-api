@@ -208,7 +208,7 @@ class User(AbstractUser):
         self.profile.avatar.delete(save=save)
 
     def update_username(self, username):
-        self._check_username_not_taken(username)
+        self.check_username_available_to_self(username)
         self.username = username
         self.save()
 
@@ -286,6 +286,16 @@ class User(AbstractUser):
             community_invite_notifications=community_invite_notifications
         )
         return notifications_settings
+
+    def check_username_available_to_self(self, username):
+        if username == self.username:
+            return
+
+        is_username_claimed_in_invites = self._is_username_claimed_in_invites(username)
+        if is_username_claimed_in_invites or User.objects.filter(username=username).exists():
+            raise ValidationError(
+                _('The username is already taken.')
+            )
 
     def is_fully_connected_with_user_with_id(self, user_id):
         if not self.is_connected_with_user_with_id(user_id):
@@ -1700,14 +1710,16 @@ class User(AbstractUser):
                 _('The email is already taken.')
             )
 
-    def _check_username_not_taken(self, username):
-        if username == self.username:
-            return
-
-        if User.is_username_taken(username=username):
-            raise ValidationError(
-                _('The username is already taken.')
-            )
+    def _is_username_claimed_in_invites(self, username):
+        UserInvite = get_user_invite_model()
+        user_invites = UserInvite.objects.filter(username=username)
+        if user_invites.exists():
+            invite = UserInvite.objects.get(username=username)
+            if invite.created_user is None:
+                return True
+            else:
+                return False
+        return False
 
     def _check_can_delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
 
