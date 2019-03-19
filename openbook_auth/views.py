@@ -3,7 +3,6 @@ from django.db import transaction
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
-from jwt import InvalidSignatureError
 from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed, ValidationError
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -20,7 +19,7 @@ from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheck
     GetUsersSerializer, GetUsersUserSerializer, UpdateUserSettingsSerializer, EmailVerifySerializer, \
     GetLinkedUsersUserSerializer, SearchLinkedUsersSerializer, GetLinkedUsersSerializer, \
     AuthenticatedUserNotificationsSettingsSerializer, UpdateAuthenticatedUserNotificationsSettingsSerializer, \
-    DeleteAuthenticatedUserSerializer, UpdateUsernameCheckSerializer
+    DeleteAuthenticatedUserSerializer, RequestPasswordResetSerializer, VerifyPasswordResetSerializer, UpdateUsernameCheckSerializer
 
 
 class Register(APIView):
@@ -274,8 +273,8 @@ class UserSettings(APIView):
             has_email = 'email' in data
             if has_email:
                 new_email = data.get('email')
-                confirm_email_token = user.update_email(new_email)
-                self.send_confirmation_email(user, confirm_email_token)
+                confirm_email_token = user.request_email_update(new_email)
+                self.send_confirmation_email(user, new_email, confirm_email_token)
 
             if not has_email and not has_password:
                 return Response(_('Please specify email or password to update'), status=status.HTTP_400_BAD_REQUEST)
@@ -283,7 +282,7 @@ class UserSettings(APIView):
         user_serializer = GetAuthenticatedUserSerializer(user, context={"request": request})
         return Response(user_serializer.data, status=status.HTTP_200_OK)
 
-    def send_confirmation_email(self, user, confirm_email_token):
+    def send_confirmation_email(self, user, new_email, confirm_email_token):
         mail_subject = _('Confirm your email for Openbook')
         text_content = render_to_string('openbook_auth/email/change_email.txt', {
             'name': user.profile.name,
@@ -296,7 +295,7 @@ class UserSettings(APIView):
         })
 
         email = EmailMultiAlternatives(
-            mail_subject, text_content, to=[user.email], from_email=settings.SERVICE_EMAIL_ADDRESS)
+            mail_subject, text_content, to=[new_email], from_email=settings.SERVICE_EMAIL_ADDRESS)
         email.attach_alternative(html_content, 'text/html')
         email.send()
 
@@ -402,3 +401,52 @@ class UserItem(APIView):
             user_serializer = GetUserUserSerializer(user, context={"request": request})
 
         return Response(user_serializer.data, status=status.HTTP_200_OK)
+
+
+class PasswordResetRequest(APIView):
+    def post(self, request):
+        request_data = request.data
+        serializer = RequestPasswordResetSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        has_username = 'username' in data
+        has_email = 'email' in data
+
+        if not has_email and not has_username:
+            return Response('At least one of email or username is required', status=status.HTTP_400_BAD_REQUEST)
+
+        User = get_user_model()
+        user = None
+        if has_username:
+            username = data.get('username')
+            user = User.get_user_with_username(username)
+
+        if has_email:
+            email = data.get('email')
+            user = User.get_user_with_email(email)
+
+        with transaction.atomic():
+            user.request_password_reset()
+
+        return ApiMessageResponse(_('A password reset link was sent to the email'), status=status.HTTP_200_OK)
+
+
+class PasswordResetVerify(APIView):
+    def post(self, request):
+        request_data = request.data
+        serializer = VerifyPasswordResetSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        token = data.get('token')
+        new_password = data.get('new_password')
+
+        User = get_user_model()
+        user = User.get_user_for_password_reset_token(token)
+
+        with transaction.atomic():
+            user.verify_password_reset_token(token=token, password=new_password)
+
+        return ApiMessageResponse(_('Password set successfully'), status=status.HTTP_200_OK)
+
