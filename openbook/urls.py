@@ -24,7 +24,7 @@ from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups
 from openbook_auth.views import Register, UsernameCheck, EmailCheck, EmailVerify, Login, AuthenticatedUser, Users, \
     UserSettings, LinkedUsers, SearchLinkedUsers, UserItem, AuthenticatedUserNotificationsSettings, \
-    AuthenticatedUserDelete, AuthenticatedUserDelete, PasswordResetRequest, PasswordResetVerify
+    AuthenticatedUserDelete, PasswordResetRequest, PasswordResetVerify
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
     FavoriteCommunities, SearchCommunities, JoinedCommunities, AdministratedCommunities, ModeratedCommunities, \
     SearchJoinedCommunities
