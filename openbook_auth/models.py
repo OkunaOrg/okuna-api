@@ -84,7 +84,7 @@ class User(AbstractUser):
     @classmethod
     def is_username_taken(cls, username):
         UserInvite = get_user_invite_model()
-        user_invites = UserInvite.objects.filter(username=username)
+        user_invites = UserInvite.objects.filter(username=username, created_user=None)
         users = cls.objects.filter(username=username)
         if not user_invites.exists() and not users.exists():
             return False
