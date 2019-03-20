@@ -19,7 +19,7 @@ from .serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheck
     GetUsersSerializer, GetUsersUserSerializer, UpdateUserSettingsSerializer, EmailVerifySerializer, \
     GetLinkedUsersUserSerializer, SearchLinkedUsersSerializer, GetLinkedUsersSerializer, \
     AuthenticatedUserNotificationsSettingsSerializer, UpdateAuthenticatedUserNotificationsSettingsSerializer, \
-    DeleteAuthenticatedUserSerializer, RequestPasswordResetSerializer, VerifyPasswordResetSerializer, UpdateUsernameCheckSerializer
+    DeleteAuthenticatedUserSerializer, RequestPasswordResetSerializer, VerifyPasswordResetSerializer
 
 
 class Register(APIView):
@@ -74,24 +74,7 @@ class UsernameCheck(APIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        # The serializer contains the username checks, meaning at this line, it's all good.
-        return ApiMessageResponse(_('Username available'), status=status.HTTP_202_ACCEPTED)
 
-
-class UpdateUsernameCheck(APIView):
-    """
-    The API to check if a username is both valid and if the authenticated user can update to it
-    """
-    permission_classes = (IsAuthenticated,)
-
-    serializer_class = UpdateUsernameCheckSerializer
-
-    def post(self, request):
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = request.user
-        username = serializer.validated_data.get('username')
-        user.check_username_available_to_self(username)
         # The serializer contains the username checks, meaning at this line, it's all good.
         return ApiMessageResponse(_('Username available'), status=status.HTTP_202_ACCEPTED)
 
