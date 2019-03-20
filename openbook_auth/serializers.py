@@ -40,12 +40,6 @@ class UsernameCheckSerializer(serializers.Serializer):
                                      validators=[username_characters_validator, username_not_taken_validator])
 
 
-class UpdateUsernameCheckSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length=USERNAME_MAX_LENGTH,
-                                     allow_blank=False,
-                                     validators=[username_characters_validator])
-
-
 class EmailCheckSerializer(serializers.Serializer):
     email = serializers.EmailField(validators=[email_not_taken_validator])
 

@@ -74,7 +74,6 @@ class UsernameCheck(APIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-
         # The serializer contains the username checks, meaning at this line, it's all good.
         return ApiMessageResponse(_('Username available'), status=status.HTTP_202_ACCEPTED)
 

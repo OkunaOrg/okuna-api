@@ -339,16 +339,6 @@ class User(AbstractUser):
         )
         return notifications_settings
 
-    # def check_username_available_to_self(self, username):
-    #     if username == self.username:
-    #         return
-    #
-    #     is_username_claimed_in_invites = self._is_username_claimed_in_invites(username)
-    #     if is_username_claimed_in_invites or User.objects.filter(username=username).exists():
-    #         raise ValidationError(
-    #             _('The username is already taken.')
-    #         )
-
     def is_fully_connected_with_user_with_id(self, user_id):
         if not self.is_connected_with_user_with_id(user_id):
             return False
