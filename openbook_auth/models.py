@@ -18,6 +18,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError, NotFound, PermissionDenied, AuthenticationFailed
 from django.db.models import Q
 from django.core.mail import EmailMultiAlternatives
+from itertools import chain
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
@@ -589,7 +590,7 @@ class User(AbstractUser):
         self._delete_post_reaction_notification(post_reaction=post_reaction)
         post_reaction.delete()
 
-    def get_comments_for_post_with_id(self, post_id, max_id=None):
+    def get_comments_for_post_with_id(self, post_id, count, max_id=None, since_id=None):
         self._check_can_get_comments_for_post_with_id(post_id)
         comments_query = Q(post_id=post_id)
 
@@ -599,11 +600,26 @@ class User(AbstractUser):
         if not Post.post_with_id_has_public_comments(post_id):
             comments_query = Q(commenter_id=self.pk)
 
-        if max_id:
-            comments_query.add(Q(id__lt=max_id), Q.AND)
-
+        max_id_query_results = []
+        since_id_query_results = []
         PostComment = get_post_comment_model()
-        return PostComment.objects.filter(comments_query)
+        if max_id:
+            max_id_query_results = PostComment.objects.filter(comments_query
+                                                              & Q(id__lt=max_id)).order_by('-created')[:count]
+            max_id_query_results = list(max_id_query_results)
+
+        if since_id:
+            since_id_query_results = PostComment.objects.filter(comments_query &
+                                                                Q(id__gte=since_id)).order_by('created')[:count]
+            since_id_query_results = list(reversed(since_id_query_results))
+
+        result_list = list(chain(since_id_query_results, max_id_query_results))
+
+        if not max_id and not since_id:
+            results_comments_query = PostComment.objects.filter(comments_query).order_by('-created')[:count]
+            result_list = list(results_comments_query)
+
+        return result_list
 
     def get_comments_count_for_post_with_id(self, post_id):
         commenter_id = None

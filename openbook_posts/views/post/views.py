@@ -123,14 +123,24 @@ class PostComments(APIView):
 
         data = serializer.validated_data
         max_id = data.get('max_id')
-        count = data.get('count', 10)
+        since_id = data.get('since_id')
+        count = data.get('count')
+        if max_id and since_id and not count:
+            # 5 comments in either direction, total 10
+            count = 5
+        elif not count:
+            # scrolling in one direction
+            count = 10
+
         post_uuid = data.get('post_uuid')
 
         user = request.user
         post_id = get_post_id_for_post_uuid(post_uuid)
 
-        post_comments = user.get_comments_for_post_with_id(post_id, max_id=max_id).order_by('-created')[
-                        :count]
+        post_comments = user.get_comments_for_post_with_id(post_id,
+                                                           max_id=max_id,
+                                                           since_id=since_id,
+                                                           count=count)
 
         post_comments_serializer = PostCommentSerializer(post_comments, many=True, context={"request": request})
 
