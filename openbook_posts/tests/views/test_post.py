@@ -7,6 +7,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 import logging
+import random
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_emoji, make_emoji_group, make_reactions_emoji_group, \
@@ -595,6 +596,98 @@ class PostCommentsAPITests(APITestCase):
 
         for comment in post_comments:
             self.assertTrue(comment.pk in response_ids)
+
+    def test_should_retrieve_comments_less_than_max_id_on_post(self):
+        """
+        should retrieve comments less than max id for post if param is present
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        amount_of_post_comments = 10
+        post_comments = []
+
+        for i in range(amount_of_post_comments):
+            post_comment_text = make_fake_post_comment_text()
+            post_comments.append(user.comment_post_with_id(post_id=post.pk, text=post_comment_text))
+
+        random_int = random.randint(1, 10)
+        max_id = post_comments[random_int].pk
+
+        url = self._get_url(post)
+        response = self.client.get(url, {
+            'max_id': max_id
+        }, **headers)
+        parsed_response = json.loads(response.content)
+        response_ids = [comment['id'] for comment in parsed_response]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for returned_id in response_ids:
+            self.assertTrue(returned_id < max_id)
+
+    def test_should_retrieve_comments_greater_than_or_equal_to_since_id(self):
+        """
+        should retrieve comments greater than or equal to since_id for post if param is present
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        amount_of_post_comments = 10
+        post_comments = []
+
+        for i in range(amount_of_post_comments):
+            post_comment_text = make_fake_post_comment_text()
+            post_comments.append(user.comment_post_with_id(post_id=post.pk, text=post_comment_text))
+
+        random_int = random.randint(1, 10)
+        since_id = post_comments[random_int].pk
+
+        url = self._get_url(post)
+        response = self.client.get(url, {
+            'since_id': since_id
+        }, **headers)
+        parsed_response = json.loads(response.content)
+        response_ids = [comment['id'] for comment in parsed_response]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for returned_id in response_ids:
+            self.assertTrue(returned_id >= since_id)
+
+    def test_should_retrieve_comments_slice_for_since_id_and_max_id(self):
+        """
+        should retrieve comments slice for post comments taking into account since_id and max_id
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        amount_of_post_comments = 10
+        post_comments = []
+
+        for i in range(amount_of_post_comments):
+            post_comment_text = make_fake_post_comment_text()
+            post_comments.append(user.comment_post_with_id(post_id=post.pk, text=post_comment_text))
+
+        random_int = random.randint(1, 10)
+        since_id = post_comments[random_int].pk
+        max_id = since_id
+
+        url = self._get_url(post)
+        response = self.client.get(url, {
+            'since_id': since_id,
+            'max_id': max_id,
+            'count': 2
+        }, **headers)
+        parsed_response = json.loads(response.content)
+        response_ids = [int(comment['id']) for comment in parsed_response]
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(len(parsed_response) == 4)
+        comments_after_since_id = [id for id in response_ids if id >= since_id]
+        comments_before_max_id = [id for id in response_ids if id < max_id]
+        self.assertTrue(len(comments_after_since_id) == 2)
+        self.assertTrue(len(comments_before_max_id) == 2)
 
     def _get_create_post_comment_request_data(self, post_comment_text):
         return {
