@@ -570,6 +570,32 @@ class PostCommentsAPITests(APITestCase):
         self.assertFalse(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
                                                                 notification__owner=user).exists())
 
+    def test_should_retrieve_all_comments_on_public_post(self):
+        """
+        should retrieve all comments on public post
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        amount_of_post_comments = 10
+        post_comments = []
+
+        for i in range(amount_of_post_comments):
+            post_comment_text = make_fake_post_comment_text()
+            post_comments.append(user.comment_post_with_id(post_id=post.pk, text=post_comment_text))
+
+        url = self._get_url(post)
+        response = self.client.get(url, **headers)
+        parsed_response = json.loads(response.content)
+        response_ids = [comment['id'] for comment in parsed_response]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(len(parsed_response) == amount_of_post_comments)
+
+        for comment in post_comments:
+            self.assertTrue(comment.pk in response_ids)
+
     def _get_create_post_comment_request_data(self, post_comment_text):
         return {
             'text': post_comment_text
