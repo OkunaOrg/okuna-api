@@ -626,9 +626,9 @@ class PostCommentsAPITests(APITestCase):
         for returned_id in response_ids:
             self.assertTrue(returned_id < max_id)
 
-    def test_should_retrieve_comments_greater_than_or_equal_to_since_id(self):
+    def test_should_retrieve_comments_greater_than_or_equal_to_min_id(self):
         """
-        should retrieve comments greater than or equal to since_id for post if param is present
+        should retrieve comments greater than or equal to min_id for post if param is present
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
@@ -642,22 +642,22 @@ class PostCommentsAPITests(APITestCase):
             post_comments.append(user.comment_post_with_id(post_id=post.pk, text=post_comment_text))
 
         random_int = random.randint(1, 10)
-        since_id = post_comments[random_int].pk
+        min_id = post_comments[random_int].pk
 
         url = self._get_url(post)
         response = self.client.get(url, {
-            'since_id': since_id
+            'min_id': min_id
         }, **headers)
         parsed_response = json.loads(response.content)
         response_ids = [comment['id'] for comment in parsed_response]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         for returned_id in response_ids:
-            self.assertTrue(returned_id >= since_id)
+            self.assertTrue(returned_id >= min_id)
 
-    def test_should_retrieve_comments_slice_for_since_id_and_max_id(self):
+    def test_should_retrieve_comments_slice_for_min_id_and_max_id(self):
         """
-        should retrieve comments slice for post comments taking into account since_id and max_id
+        should retrieve comments slice for post comments taking into account min_id and max_id
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
@@ -671,12 +671,12 @@ class PostCommentsAPITests(APITestCase):
             post_comments.append(user.comment_post_with_id(post_id=post.pk, text=post_comment_text))
 
         random_int = random.randint(1, 10)
-        since_id = post_comments[random_int].pk
-        max_id = since_id
+        min_id = post_comments[random_int].pk
+        max_id = min_id
 
         url = self._get_url(post)
         response = self.client.get(url, {
-            'since_id': since_id,
+            'min_id': min_id,
             'max_id': max_id,
             'count': 2
         }, **headers)
@@ -684,9 +684,9 @@ class PostCommentsAPITests(APITestCase):
         response_ids = [int(comment['id']) for comment in parsed_response]
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(len(parsed_response) == 4)
-        comments_after_since_id = [id for id in response_ids if id >= since_id]
+        comments_after_min_id = [id for id in response_ids if id >= min_id]
         comments_before_max_id = [id for id in response_ids if id < max_id]
-        self.assertTrue(len(comments_after_since_id) == 2)
+        self.assertTrue(len(comments_after_min_id) == 2)
         self.assertTrue(len(comments_before_max_id) == 2)
 
     def _get_create_post_comment_request_data(self, post_comment_text):

@@ -123,9 +123,9 @@ class PostComments(APIView):
 
         data = serializer.validated_data
         max_id = data.get('max_id')
-        since_id = data.get('since_id')
+        min_id = data.get('min_id')
         count = data.get('count')
-        if max_id and since_id and not count:
+        if max_id and min_id and not count:
             # 5 comments in either direction, total 10
             count = 5
         elif not count:
@@ -139,7 +139,7 @@ class PostComments(APIView):
 
         post_comments = user.get_comments_for_post_with_id(post_id,
                                                            max_id=max_id,
-                                                           since_id=since_id,
+                                                           min_id=min_id,
                                                            count=count)
 
         post_comments_serializer = PostCommentSerializer(post_comments, many=True, context={"request": request})

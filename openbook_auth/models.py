@@ -590,7 +590,7 @@ class User(AbstractUser):
         self._delete_post_reaction_notification(post_reaction=post_reaction)
         post_reaction.delete()
 
-    def get_comments_for_post_with_id(self, post_id, count, max_id=None, since_id=None):
+    def get_comments_for_post_with_id(self, post_id, count, max_id=None, min_id=None):
         self._check_can_get_comments_for_post_with_id(post_id)
         comments_query = Q(post_id=post_id)
 
@@ -601,21 +601,21 @@ class User(AbstractUser):
             comments_query = Q(commenter_id=self.pk)
 
         max_id_query_results = []
-        since_id_query_results = []
+        min_id_query_results = []
         PostComment = get_post_comment_model()
         if max_id:
             max_id_query_results = PostComment.objects.filter(comments_query
                                                               & Q(id__lt=max_id)).order_by('-created')[:count]
             max_id_query_results = list(max_id_query_results)
 
-        if since_id:
-            since_id_query_results = PostComment.objects.filter(comments_query &
-                                                                Q(id__gte=since_id)).order_by('created')[:count]
-            since_id_query_results = list(reversed(since_id_query_results))
+        if min_id:
+            min_id_query_results = PostComment.objects.filter(comments_query &
+                                                                Q(id__gte=min_id)).order_by('created')[:count]
+            min_id_query_results = list(reversed(min_id_query_results))
 
-        result_list = list(chain(since_id_query_results, max_id_query_results))
+        result_list = list(chain(min_id_query_results, max_id_query_results))
 
-        if not max_id and not since_id:
+        if not max_id and not min_id:
             results_comments_query = PostComment.objects.filter(comments_query).order_by('-created')[:count]
             result_list = list(results_comments_query)
 

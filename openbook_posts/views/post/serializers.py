@@ -86,7 +86,7 @@ class GetPostCommentsSerializer(serializers.Serializer):
     max_id = serializers.IntegerField(
         required=False,
     )
-    since_id = serializers.IntegerField(
+    min_id = serializers.IntegerField(
         required=False,
     )
     count = serializers.IntegerField(
