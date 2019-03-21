@@ -670,7 +670,7 @@ class PostCommentsAPITests(APITestCase):
             post_comment_text = make_fake_post_comment_text()
             post_comments.append(user.comment_post_with_id(post_id=post.pk, text=post_comment_text))
 
-        random_int = random.randint(1, 10)
+        random_int = random.randint(3, 9)
         min_id = post_comments[random_int].pk
         max_id = min_id
 
@@ -682,6 +682,7 @@ class PostCommentsAPITests(APITestCase):
         }, **headers)
         parsed_response = json.loads(response.content)
         response_ids = [int(comment['id']) for comment in parsed_response]
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(len(parsed_response) == 4)
         comments_after_min_id = [id for id in response_ids if id >= min_id]
