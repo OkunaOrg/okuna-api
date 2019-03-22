@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.translation import ugettext_lazy as _
 from itertools import chain
+import operator
 
 from openbook_common.utils.model_loaders import get_emoji_group_model, get_post_model
 from openbook_posts.views.post.serializers import GetPostCommentsSerializer, PostCommentSerializer, \
@@ -156,7 +157,9 @@ class PostComments(APIView):
 
             if min_id:
                 post_comments_min = user.get_comments_for_min_id_for_post_with_id(post_id,
-                                                                                  min_id=min_id).order_by(sort)[:count_min]
+                                                                                  min_id=min_id).order_by('pk')[:count_min]
+                post_comments_min = sorted(post_comments_min,
+                                           key=operator.attrgetter('created'), reverse=sort == self.SORT_DESC)
                 post_comments_min = list(post_comments_min)  # execute query
 
             all_comments = list(chain(post_comments_min, post_comments_max))  # already sorted

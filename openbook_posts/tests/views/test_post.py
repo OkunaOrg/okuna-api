@@ -353,8 +353,6 @@ class UnmutePostAPITests(APITestCase):
 
         response = self.client.post(url, **headers)
 
-        print(response.content)
-
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         self.assertTrue(foreign_user.has_muted_post_with_id(post.pk))
@@ -638,7 +636,6 @@ class PostCommentsAPITests(APITestCase):
             post_comment_text = make_fake_post_comment_text()
             post_comments.append(user.comment_post_with_id(post_id=post.pk, text=post_comment_text))
 
-        print(post_comments)
         random_int = random.randint(3, 9)
         max_id = post_comments[random_int].pk
 
@@ -690,14 +687,14 @@ class PostCommentsAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
         post = user.create_public_post(text=make_fake_post_text())
 
-        amount_of_post_comments = 10
+        amount_of_post_comments = 20
         post_comments = []
 
         for i in range(amount_of_post_comments):
             post_comment_text = make_fake_post_comment_text()
             post_comments.append(user.comment_post_with_id(post_id=post.pk, text=post_comment_text))
 
-        random_int = random.randint(3, 9)
+        random_int = random.randint(3, 17)
         min_id = post_comments[random_int].pk
         max_id = min_id
         count_max = 2
