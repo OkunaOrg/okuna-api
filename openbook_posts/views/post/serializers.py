@@ -13,7 +13,7 @@ from openbook_communities.models import CommunityMembership, Community
 from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_posts.models import PostComment, PostReaction, PostVideo, PostImage, Post
 from openbook_posts.validators import post_comment_id_exists, post_reaction_id_exists, \
-    post_uuid_exists
+    post_uuid_exists, comments_sort_validator
 
 
 class DeletePostSerializer(serializers.Serializer):
@@ -89,10 +89,15 @@ class GetPostCommentsSerializer(serializers.Serializer):
     min_id = serializers.IntegerField(
         required=False,
     )
-    count = serializers.IntegerField(
+    count_max = serializers.IntegerField(
         required=False,
         max_value=20
     )
+    count_min = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
+    sort = serializers.CharField(required=False, validators=[comments_sort_validator])
 
 
 class DeletePostCommentSerializer(serializers.Serializer):

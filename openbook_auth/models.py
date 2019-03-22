@@ -18,7 +18,6 @@ from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError, NotFound, PermissionDenied, AuthenticationFailed
 from django.db.models import Q
 from django.core.mail import EmailMultiAlternatives
-from itertools import chain
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
@@ -590,36 +589,43 @@ class User(AbstractUser):
         self._delete_post_reaction_notification(post_reaction=post_reaction)
         post_reaction.delete()
 
-    def get_comments_for_post_with_id(self, post_id, count, max_id=None, min_id=None):
-        self._check_can_get_comments_for_post_with_id(post_id)
+    def get_comments_for_max_id_for_post_with_id(self, post_id, max_id):
         comments_query = Q(post_id=post_id)
 
         Post = get_post_model()
-
         # If comments are private, return only own comments
         if not Post.post_with_id_has_public_comments(post_id):
             comments_query = Q(commenter_id=self.pk)
 
-        max_id_query_results = []
-        min_id_query_results = []
         PostComment = get_post_comment_model()
-        if max_id:
-            max_id_query_results = PostComment.objects.filter(comments_query
-                                                              & Q(id__lt=max_id)).order_by('-created')[:count]
-            max_id_query_results = list(max_id_query_results)
+        max_id_query_results = PostComment.objects.filter(comments_query
+                                                          & Q(id__lt=max_id))
+        return max_id_query_results
 
-        if min_id:
-            min_id_query_results = PostComment.objects.filter(comments_query &
-                                                                Q(id__gte=min_id)).order_by('created')[:count]
-            min_id_query_results = list(reversed(min_id_query_results))
+    def get_comments_for_min_id_for_post_with_id(self, post_id, min_id):
+        comments_query = Q(post_id=post_id)
 
-        result_list = list(chain(min_id_query_results, max_id_query_results))
+        Post = get_post_model()
+        # If comments are private, return only own comments
+        if not Post.post_with_id_has_public_comments(post_id):
+            comments_query = Q(commenter_id=self.pk)
 
-        if not max_id and not min_id:
-            results_comments_query = PostComment.objects.filter(comments_query).order_by('-created')[:count]
-            result_list = list(results_comments_query)
+        PostComment = get_post_comment_model()
+        min_id_query_results = PostComment.objects.filter(comments_query & Q(id__gte=min_id))
 
-        return result_list
+        return min_id_query_results
+
+    def get_all_comments_for_post_with_id(self, post_id):
+        comments_query = Q(post_id=post_id)
+
+        Post = get_post_model()
+        # If comments are private, return only own comments
+        if not Post.post_with_id_has_public_comments(post_id):
+            comments_query = Q(commenter_id=self.pk)
+        PostComment = get_post_comment_model()
+
+        return PostComment.objects.filter(comments_query)
+
 
     def get_comments_count_for_post_with_id(self, post_id):
         commenter_id = None
