@@ -12,11 +12,10 @@ from openbook_auth.models import User
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.utils.model_loaders import get_community_invite_model, \
-    get_community_log_model, get_category_model, get_community_membership_model
+    get_community_log_model, get_category_model
 from openbook_common.validators import hex_color_validator
 from openbook_communities.helpers import upload_to_community_avatar_directory, upload_to_community_cover_directory
-from openbook_communities.validators import community_name_characters_validator, \
-    community_adjective_characters_validator
+from openbook_communities.validators import community_name_characters_validator
 from openbook_posts.models import Post
 from imagekit.models import ProcessedImageField
 
@@ -50,9 +49,9 @@ class Community(models.Model):
     color = models.CharField(_('color'), max_length=COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
                              validators=[hex_color_validator])
     user_adjective = models.CharField(_('user adjective'), max_length=settings.COMMUNITY_USER_ADJECTIVE_MAX_LENGTH,
-                                      blank=False, null=True, validators=(community_adjective_characters_validator,))
+                                      blank=False, null=True)
     users_adjective = models.CharField(_('users adjective'), max_length=settings.COMMUNITY_USERS_ADJECTIVE_MAX_LENGTH,
-                                       blank=False, null=True, validators=(community_adjective_characters_validator,))
+                                       blank=False, null=True)
     invites_enabled = models.BooleanField(_('invites enabled'), default=True)
 
     class Meta:

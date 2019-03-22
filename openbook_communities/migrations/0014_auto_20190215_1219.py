@@ -14,11 +14,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='community',
             name='user_adjective',
-            field=models.CharField(max_length=16, null=True, validators=[openbook_communities.validators.community_adjective_characters_validator], verbose_name='user adjective'),
+            field=models.CharField(max_length=16, null=True, validators=[], verbose_name='user adjective'),
         ),
         migrations.AlterField(
             model_name='community',
             name='users_adjective',
-            field=models.CharField(max_length=16, null=True, validators=[openbook_communities.validators.community_adjective_characters_validator], verbose_name='users adjective'),
+            field=models.CharField(max_length=16, null=True, validators=[], verbose_name='users adjective'),
         ),
     ]
