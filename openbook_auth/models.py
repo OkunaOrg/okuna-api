@@ -1254,10 +1254,13 @@ class User(AbstractUser):
         return post
 
     def get_community_post_with_id(self, post_id):
+        Community = get_community_model()
         post_query = Q(id=post_id)
-        post_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
-        # Public type communities
-        post_query.add(Q(community__type='P'), Q.OR)
+
+        post_query_visibility_query = Q(community__memberships__user__id=self.pk)
+        post_query_visibility_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, ), Q.OR)
+
+        post_query.add(post_query_visibility_query, Q.AND)
 
         Post = get_post_model()
         profile_posts = Post.objects.filter(post_query)
