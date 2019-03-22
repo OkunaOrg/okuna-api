@@ -13,13 +13,6 @@ def community_name_characters_validator(community_name):
         )
 
 
-def community_adjective_characters_validator(adjective):
-    if not re.match('^[a-zA-Z]*$', adjective):
-        raise ValidationError(
-            _('Community_names can only contain alphabetical characters.'),
-        )
-
-
 def community_name_not_taken_validator(community_name):
     Community = get_community_model()
     if Community.is_name_taken(community_name):
