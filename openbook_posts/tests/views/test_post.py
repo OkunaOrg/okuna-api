@@ -638,7 +638,8 @@ class PostCommentsAPITests(APITestCase):
             post_comment_text = make_fake_post_comment_text()
             post_comments.append(user.comment_post_with_id(post_id=post.pk, text=post_comment_text))
 
-        random_int = random.randint(1, 10)
+        print(post_comments)
+        random_int = random.randint(3, 9)
         max_id = post_comments[random_int].pk
 
         url = self._get_url(post)
@@ -667,7 +668,7 @@ class PostCommentsAPITests(APITestCase):
             post_comment_text = make_fake_post_comment_text()
             post_comments.append(user.comment_post_with_id(post_id=post.pk, text=post_comment_text))
 
-        random_int = random.randint(1, 10)
+        random_int = random.randint(3, 9)
         min_id = post_comments[random_int].pk
 
         url = self._get_url(post)
