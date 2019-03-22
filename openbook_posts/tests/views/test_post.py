@@ -379,24 +379,6 @@ class MutePostAPITests(APITestCase):
 
         self.assertTrue(user.has_muted_post_with_id(post.pk))
 
-    def test_cant_mute_foreign_post_if_cannot_see_it(self):
-        """
-        should not be able to mute a foreign post and return 403
-        """
-        user = make_user()
-        foreign_user = make_user()
-
-        headers = make_authentication_headers_for_user(user)
-        post = foreign_user.create_public_post(text=make_fake_post_text())
-
-        url = self._get_url(post)
-
-        response = self.client.post(url, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-        self.assertFalse(user.has_muted_post_with_id(post.pk))
-
     def _get_url(self, post):
         return reverse('mute-post', kwargs={
             'post_uuid': post.uuid
