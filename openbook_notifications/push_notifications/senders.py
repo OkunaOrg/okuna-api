@@ -4,7 +4,7 @@ from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 from onesignal import OneSignalError
 
-from openbook_common.utils.model_loaders import get_notification_model, get_user_model
+from openbook_common.utils.model_loaders import get_notification_model, get_user_model, get_post_model
 from openbook_notifications.push_notifications.serializers import PushNotificationsSerializers
 from hashlib import sha256
 
@@ -41,55 +41,28 @@ def send_post_reaction_push_notification(post_reaction):
         _send_notification_to_user(notification=one_signal_notification, user=post_creator)
 
 
-def send_post_comment_push_notification(post_comment):
-    User = get_user_model()
+def send_post_comment_push_notification_with_message(post_comment, message, target_user):
     Notification = get_notification_model()
     NotificationPostCommentSerializer = _get_push_notifications_serializers().NotificationPostCommentSerializer
 
     post = post_comment.post
-    post_creator = post.creator
-    post_commenter = post_comment.commenter
-
-    post_notification_target_users_query = Q(posts_comments__post_id=post.id)
-    post_notification_target_users_query.add(Q(posts__id=post.id), Q.OR)
-    post_notification_target_users_query.add(~Q(id=post_commenter.id), Q.AND)
-
-    post_notification_target_users = User.objects.filter(post_notification_target_users_query).distinct()
 
     notification_payload = NotificationPostCommentSerializer(post_comment).data
     notification_group = 'post_%s' % post.id
 
-    # Send a notification to all post commenters
-    for post_notification_target_user in post_notification_target_users:
-        if post_notification_target_user.has_comment_notifications_enabled_for_post_with_id(
-                post_id=post_comment.post_id):
+    one_signal_notification = onesignal_sdk.Notification(
+        contents=message)
 
-            post_notification_target_user_is_post_creator = post_notification_target_user.id == post_creator.id
+    notification_data = {
+        'type': Notification.POST_COMMENT,
+        'payload': notification_payload
+    }
 
-            if post_notification_target_user_is_post_creator:
-                notification_message = {
-                    "en": _('@%(post_commenter_username)s commented on your post.') % {
-                        'post_commenter_username': post_commenter.username
-                    }}
-            else:
-                notification_message = {
-                    "en": _('@%(post_commenter_username)s commented on a post you also commented on.') % {
-                        'post_commenter_username': post_commenter.username
-                    }}
+    one_signal_notification.set_parameter('data', notification_data)
+    one_signal_notification.set_parameter('!thread_id', notification_group)
+    one_signal_notification.set_parameter('android_group', notification_group)
 
-            one_signal_notification = onesignal_sdk.Notification(
-                contents=notification_message)
-
-            notification_data = {
-                'type': Notification.POST_COMMENT,
-                'payload': notification_payload
-            }
-
-            one_signal_notification.set_parameter('data', notification_data)
-            one_signal_notification.set_parameter('!thread_id', notification_group)
-            one_signal_notification.set_parameter('android_group', notification_group)
-
-            _send_notification_to_user(notification=one_signal_notification, user=post_notification_target_user)
+    _send_notification_to_user(notification=one_signal_notification, user=target_user)
 
 
 def send_follow_push_notification(followed_user, following_user):
