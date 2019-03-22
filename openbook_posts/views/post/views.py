@@ -145,7 +145,7 @@ class PostComments(APIView):
             sort = self.SORT_DICT[sort]
 
         if not max_id and not min_id:
-            all_comments = user.get_all_comments_for_post_with_id(post_id).order_by(sort)
+            all_comments = user.get_all_comments_for_post_with_id(post_id).order_by(sort)[:count_max]
             all_comments = list(all_comments)
         else:
             post_comments_max = []
