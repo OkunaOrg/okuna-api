@@ -3,6 +3,8 @@ from django.utils.translation import ugettext_lazy as _
 
 from openbook_posts.models import Post, PostComment, PostReaction
 
+SORT_CHOICES = ['ASC', 'DESC']
+
 
 def post_id_exists(post_id):
     if not Post.objects.filter(id=post_id).exists():
@@ -30,3 +32,7 @@ def post_reaction_id_exists(post_reaction_id):
         raise ValidationError(
             _('The post reaction does not exist.'),
         )
+
+
+def comments_sort_validator(sort_type):
+    return sort_type in SORT_CHOICES

@@ -597,6 +597,32 @@ class PostCommentsAPITests(APITestCase):
         for comment in post_comments:
             self.assertTrue(comment.pk in response_ids)
 
+    def test_should_retrieve_all_comments_on_public_post_with_sort(self):
+        """
+        should retrieve all comments on public post with sort ascending
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        amount_of_post_comments = 10
+        post_comments = []
+
+        for i in range(amount_of_post_comments):
+            post_comment_text = make_fake_post_comment_text()
+            post_comments.append(user.comment_post_with_id(post_id=post.pk, text=post_comment_text))
+
+        url = self._get_url(post)
+        response = self.client.get(url, {'sort': 'ASC'}, **headers)
+        parsed_response = json.loads(response.content)
+        response_ids = [comment['id'] for comment in parsed_response]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(len(parsed_response) == amount_of_post_comments)
+
+        for comment in post_comments:
+            self.assertTrue(comment.pk in response_ids)
+
     def test_should_retrieve_comments_less_than_max_id_on_post(self):
         """
         should retrieve comments less than max id for post if param is present
@@ -673,22 +699,25 @@ class PostCommentsAPITests(APITestCase):
         random_int = random.randint(3, 9)
         min_id = post_comments[random_int].pk
         max_id = min_id
+        count_max = 2
+        count_min = 3
 
         url = self._get_url(post)
         response = self.client.get(url, {
             'min_id': min_id,
             'max_id': max_id,
-            'count': 2
+            'count_max': count_max,
+            'count_min': count_min
         }, **headers)
         parsed_response = json.loads(response.content)
         response_ids = [int(comment['id']) for comment in parsed_response]
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(len(parsed_response) == 4)
+        self.assertTrue(len(parsed_response) == (count_max + count_min))
         comments_after_min_id = [id for id in response_ids if id >= min_id]
         comments_before_max_id = [id for id in response_ids if id < max_id]
-        self.assertTrue(len(comments_after_min_id) == 2)
-        self.assertTrue(len(comments_before_max_id) == 2)
+        self.assertTrue(len(comments_after_min_id) == count_min)
+        self.assertTrue(len(comments_before_max_id) == count_max)
 
     def _get_create_post_comment_request_data(self, post_comment_text):
         return {
