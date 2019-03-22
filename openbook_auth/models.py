@@ -627,36 +627,35 @@ class User(AbstractUser):
         post_creator = post.creator
         post_commenter = self
 
-        if post_creator.id != self.pk:
-            post_notification_target_users = Post.get_post_comment_notification_target_users(post_id=post.id,
-                                                                                             post_commenter_id=self.pk)
-            PostCommentNotification = get_post_comment_notification_model()
+        post_notification_target_users = Post.get_post_comment_notification_target_users(post_id=post.id,
+                                                                                         post_commenter_id=self.pk)
+        PostCommentNotification = get_post_comment_notification_model()
 
-            for post_notification_target_user in post_notification_target_users:
+        for post_notification_target_user in post_notification_target_users:
 
-                post_notification_target_user_is_post_creator = post_notification_target_user.id == post_creator.id
-                post_notification_target_has_comment_notifications_enabled = post_notification_target_user.has_comment_notifications_enabled_for_post_with_id(
-                    post_id=post_comment.post_id)
+            post_notification_target_user_is_post_creator = post_notification_target_user.id == post_creator.id
+            post_notification_target_has_comment_notifications_enabled = post_notification_target_user.has_comment_notifications_enabled_for_post_with_id(
+                post_id=post_comment.post_id)
 
-                if post_notification_target_user_is_post_creator or post_notification_target_has_comment_notifications_enabled:
-                    PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
-                                                                             owner_id=post_notification_target_user.id)
+            if post_notification_target_user_is_post_creator or post_notification_target_has_comment_notifications_enabled:
+                PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
+                                                                         owner_id=post_notification_target_user.id)
 
-                if post_notification_target_has_comment_notifications_enabled:
-                    if post_notification_target_user_is_post_creator:
-                        notification_message = {
-                            "en": _('@%(post_commenter_username)s commented on your post.') % {
-                                'post_commenter_username': post_commenter.username
-                            }}
-                    else:
-                        notification_message = {
-                            "en": _('@%(post_commenter_username)s commented on a post you also commented on.') % {
-                                'post_commenter_username': post_commenter.username
-                            }}
+            if post_notification_target_has_comment_notifications_enabled:
+                if post_notification_target_user_is_post_creator:
+                    notification_message = {
+                        "en": _('@%(post_commenter_username)s commented on your post.') % {
+                            'post_commenter_username': post_commenter.username
+                        }}
+                else:
+                    notification_message = {
+                        "en": _('@%(post_commenter_username)s commented on a post you also commented on.') % {
+                            'post_commenter_username': post_commenter.username
+                        }}
 
-                    self._send_post_comment_push_notification(post_comment=post_comment,
-                                                              notification_message=notification_message,
-                                                              notification_target_user=post_notification_target_user)
+                self._send_post_comment_push_notification(post_comment=post_comment,
+                                                          notification_message=notification_message,
+                                                          notification_target_user=post_notification_target_user)
 
         return post_comment
 
