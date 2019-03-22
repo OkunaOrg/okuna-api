@@ -269,10 +269,7 @@ class MutePostAPITests(APITestCase):
 
         self.assertTrue(user.has_muted_post_with_id(post.pk))
 
-    def test_cant_mute_foreign_post(self):
-        """
-        should not be able to mute a foreign post and return 403
-        """
+    def test_can_mute_foreign_post_if_public_post(self):
         user = make_user()
         foreign_user = make_user()
 
@@ -283,9 +280,104 @@ class MutePostAPITests(APITestCase):
 
         response = self.client.post(url, **headers)
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(user.has_muted_post_with_id(post.pk))
+
+    def test_cannot_mute_foreign_post_if_encircled_post(self):
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        circle = make_circle(creator=foreign_user)
+
+        post = foreign_user.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         self.assertFalse(user.has_muted_post_with_id(post.pk))
+
+    def test_can_mute_foreign_post_if_part_of_encircled_post(self):
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        circle = make_circle(creator=foreign_user)
+
+        post = foreign_user.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+
+        foreign_user.connect_with_user_with_id(user_id=user.pk, circles_ids=[circle.pk])
+        user.confirm_connection_with_user_with_id(user_id=foreign_user.pk)
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(user.has_muted_post_with_id(post.pk))
+
+    def test_can_mute_community_post_if_public(self):
+        user = make_user()
+
+        foreign_user = make_user()
+        community = make_community(creator=foreign_user)
+
+        headers = make_authentication_headers_for_user(user)
+        post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(user.has_muted_post_with_id(post.pk))
+
+    def test_cant_mute_community_post_if_private_and_not_member(self):
+        user = make_user()
+
+        foreign_user = make_user()
+        community = make_community(creator=foreign_user, type='T')
+
+        headers = make_authentication_headers_for_user(user)
+        post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(user.has_muted_post_with_id(post.pk))
+
+    def test_can_mute_community_post_if_private_and_member(self):
+        user = make_user()
+
+        foreign_user = make_user()
+        community = make_community(creator=foreign_user, type='T')
+
+        headers = make_authentication_headers_for_user(user)
+        post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        foreign_user.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                      community_name=community.name)
+
+        user.join_community_with_name(community_name=community.name)
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(user.has_muted_post_with_id(post.pk))
 
     def _get_url(self, post):
         return reverse('mute-post', kwargs={
@@ -569,6 +661,58 @@ class PostCommentsAPITests(APITestCase):
 
         self.assertFalse(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
                                                                 notification__owner=user).exists())
+
+    def test_commenting_in_commented_post_by_foreign_user_creates_foreign_notification(self):
+        """
+         should create a notification when a user comments in a post where a foreign user commented before
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+
+        foreign_user = make_user()
+
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        foreign_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+        post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        self.assertTrue(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
+                                                               notification__owner=foreign_user).exists())
+
+    def test_commenting_in_commented_post_by_foreign_user_not_creates_foreign_notification_when_muted(self):
+        """
+         should NOT create a notification when a user comments in a post where a foreign user commented and muted before
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+
+        foreign_user = make_user()
+
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        foreign_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+        foreign_user.mute_post_with_id(post_id=post.pk)
+
+        post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        self.assertFalse(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
+                                                                notification__owner=foreign_user).exists())
 
     def _get_create_post_comment_request_data(self, post_comment_text):
         return {
