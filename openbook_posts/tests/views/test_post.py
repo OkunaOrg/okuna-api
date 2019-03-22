@@ -664,7 +664,7 @@ class PostCommentsAPITests(APITestCase):
 
     def test_commenting_in_commented_post_by_foreign_user_creates_foreign_notification(self):
         """
-         should create a notification when a foreign user comments in a previously commented post
+         should create a notification when a user comments in a post where a foreign user commented before
          """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
@@ -675,9 +675,9 @@ class PostCommentsAPITests(APITestCase):
 
         post = post_creator.create_public_post(text=make_fake_post_text())
 
-        post_comment_text = make_fake_post_comment_text()
+        foreign_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
 
-        foreign_user.comment_post_with_id(post_id=post.pk, text=post_comment_text)
+        post_comment_text = make_fake_post_comment_text()
 
         data = self._get_create_post_comment_request_data(post_comment_text)
 
@@ -686,6 +686,33 @@ class PostCommentsAPITests(APITestCase):
 
         self.assertTrue(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
                                                                notification__owner=foreign_user).exists())
+
+    def test_commenting_in_commented_post_by_foreign_user_not_creates_foreign_notification_when_muted(self):
+        """
+         should NOT create a notification when a user comments in a post where a foreign user commented and muted before
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+
+        foreign_user = make_user()
+
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        foreign_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+        foreign_user.mute_post_with_id(post_id=post.pk)
+
+        post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        self.assertFalse(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
+                                                                notification__owner=foreign_user).exists())
 
     def _get_create_post_comment_request_data(self, post_comment_text):
         return {
