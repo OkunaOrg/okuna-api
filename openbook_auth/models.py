@@ -577,7 +577,9 @@ class User(AbstractUser):
             post = Post.objects.filter(pk=post_id).get()
             post_reaction = post.react(reactor=self, emoji_id=emoji_id)
             if post_reaction.post.creator_id != self.pk:
-                self._create_post_reaction_notification(post_reaction=post_reaction)
+                # TODO Refactor. This check is being done twice. (Also in _send_post_reaction_push_notification)
+                if post.creator.has_reaction_notifications_enabled_for_post_with_id(post_id=post.pk):
+                    self._create_post_reaction_notification(post_reaction=post_reaction)
                 self._send_post_reaction_push_notification(post_reaction=post_reaction)
 
         return post_reaction
@@ -637,11 +639,10 @@ class User(AbstractUser):
             post_notification_target_has_comment_notifications_enabled = post_notification_target_user.has_comment_notifications_enabled_for_post_with_id(
                 post_id=post_comment.post_id)
 
-            if post_notification_target_user_is_post_creator or post_notification_target_has_comment_notifications_enabled:
+            if post_notification_target_has_comment_notifications_enabled:
                 PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
                                                                          owner_id=post_notification_target_user.id)
 
-            if post_notification_target_has_comment_notifications_enabled:
                 if post_notification_target_user_is_post_creator:
                     notification_message = {
                         "en": _('@%(post_commenter_username)s commented on your post.') % {
