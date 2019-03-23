@@ -19,6 +19,9 @@ onesignal_client = onesignal_sdk.Client(
 def send_post_reaction_push_notification(post_reaction):
     post_creator = post_reaction.post.creator
 
+    post_id = post_reaction.post_id
+    notification_group = 'post_%s' % post_id
+
     if post_creator.has_reaction_notifications_enabled_for_post_with_id(post_id=post_reaction.post_id):
         post_reactor = post_reaction.reactor
 
@@ -37,6 +40,8 @@ def send_post_reaction_push_notification(post_reaction):
         }
 
         one_signal_notification.set_parameter('data', notification_data)
+        one_signal_notification.set_parameter('!thread_id', notification_group)
+        one_signal_notification.set_parameter('android_group', notification_group)
 
         _send_notification_to_user(notification=one_signal_notification, user=post_creator)
 
