@@ -428,28 +428,6 @@ class UnmutePostAPITests(APITestCase):
 
         self.assertFalse(user.has_muted_post_with_id(post.pk))
 
-    def test_cant_unmute_foreign_post(self):
-        """
-        should not be able to unmute a foreign post and return 403
-        """
-        user = make_user()
-        foreign_user = make_user()
-
-        headers = make_authentication_headers_for_user(user)
-        post = foreign_user.create_public_post(text=make_fake_post_text())
-
-        foreign_user.mute_post_with_id(post.pk)
-
-        url = self._get_url(post)
-
-        response = self.client.post(url, **headers)
-
-        print(response.content)
-
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-        self.assertTrue(foreign_user.has_muted_post_with_id(post.pk))
-
     def _get_url(self, post):
         return reverse('unmute-post', kwargs={
             'post_uuid': post.uuid
