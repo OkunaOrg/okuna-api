@@ -18,7 +18,7 @@ class Category(models.Model):
     description = models.CharField(_('description'), max_length=settings.CATEGORY_DESCRIPTION_MAX_LENGTH, blank=False,
                                    null=True, )
     created = models.DateTimeField(editable=False)
-    communities = models.ManyToManyField(Community, related_name='categories')
+    communities = models.ManyToManyField(Community, related_name='categories', blank=True)
     avatar = models.ImageField(_('avatar'), blank=False, null=True)
     color = models.CharField(_('color'), max_length=settings.COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
                              validators=[hex_color_validator])
@@ -36,3 +36,6 @@ class Category(models.Model):
         if not self.id:
             self.created = timezone.now()
         return super(Category, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return 'Category: ' + self.name
