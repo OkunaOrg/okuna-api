@@ -11,6 +11,12 @@ from openbook_notifications.validators import notification_id_exists
 from openbook_posts.models import PostComment, PostReaction, Post, PostImage, PostVideo
 
 
+class ReadNotificationsSerializer(serializers.Serializer):
+    max_id = serializers.IntegerField(
+        required=False,
+    )
+
+
 class GetNotificationsSerializer(serializers.Serializer):
     count = serializers.IntegerField(
         required=False,

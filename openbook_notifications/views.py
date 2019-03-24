@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from openbook_notifications.serializers import GetNotificationsSerializer, GetNotificationsNotificationSerializer, \
-    DeleteNotificationSerializer, ReadNotificationSerializer
+    DeleteNotificationSerializer, ReadNotificationSerializer, ReadNotificationsSerializer
 
 
 class Notifications(APIView):
@@ -40,14 +40,21 @@ class Notifications(APIView):
         return Response(status=status.HTTP_200_OK)
 
 
-class ReadAllNotifications(APIView):
+class ReadNotifications(APIView):
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
         user = request.user
 
+        serializer = ReadNotificationsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        max_id = data.get('max_id')
+
         with transaction.atomic():
-            user.read_all_notifications()
+            user.read_notifications(max_id=max_id)
 
         return Response(status=status.HTTP_200_OK)
 
