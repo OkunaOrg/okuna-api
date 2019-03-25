@@ -43,7 +43,7 @@ from openbook_connections.views import ConnectWithUser, Connections, DisconnectF
 from openbook_devices.views import Devices, DeviceItem
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
 from openbook_lists.views import Lists, ListItem, ListNameCheck
-from openbook_notifications.views import Notifications, NotificationItem, ReadAllNotifications, ReadNotification
+from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
 from openbook_posts.views.post.views import PostComments, PostCommentItem, PostItem, PostReactions, PostReactionItem, \
     PostReactionsEmojiCount, PostReactionEmojiGroups, MutePost, UnmutePost
 from openbook_posts.views.posts.views import Posts, TrendingPosts
@@ -197,7 +197,7 @@ notification_patterns = [
 
 notifications_patterns = [
     path('', Notifications.as_view(), name='notifications'),
-    path('read/', ReadAllNotifications.as_view(), name='read-notifications'),
+    path('read/', ReadNotifications.as_view(), name='read-notifications'),
     path('<int:notification_id>/', include(notification_patterns)),
 ]
 
