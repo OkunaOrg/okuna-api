@@ -293,7 +293,7 @@ class Users(APIView):
 
         data = serializer.validated_data
 
-        count = data.get('count', 10)
+        count = data.get('count', 20)
         query = data.get('query')
 
         user = request.user

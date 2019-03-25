@@ -1513,8 +1513,13 @@ class User(AbstractUser):
 
         return self.notifications.filter(notifications_query)
 
-    def read_all_notifications(self):
-        self.notifications.filter(read=False).update(read=True)
+    def read_notifications(self, max_id=None):
+        notifications_query = Q(read=False)
+
+        if max_id:
+            notifications_query.add(Q(id__lte=max_id), Q.AND)
+
+        self.notifications.filter(notifications_query).update(read=True)
 
     def read_notification_with_id(self, notification_id):
         self._check_can_read_notification_with_id(notification_id)
