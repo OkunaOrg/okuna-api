@@ -2449,9 +2449,12 @@ class User(AbstractUser):
             )
 
     def _check_can_delete_notification_with_id(self, notification_id):
+        self._check_has_notification_with_id(notification_id=notification_id)
+
+    def _check_has_notification_with_id(self, notification_id):
         if not self.has_notification_with_id(notification_id=notification_id):
             raise ValidationError(
-                _('You cannot delete a notification that doesn\'t belong to you.'),
+                _('This notification does not belong to you.'),
             )
 
     def _check_can_update_device_with_uuid(self, device_uuid):
