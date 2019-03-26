@@ -12,7 +12,7 @@ import json
 
 from openbook_circles.models import Circle
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_circle
-from openbook_notifications.models import ConnectionConfirmedNotification, ConnectionRequestNotification
+from openbook_notifications.models import ConnectionConfirmedNotification, ConnectionRequestNotification, Notification
 
 logger = logging.getLogger(__name__)
 
@@ -324,6 +324,12 @@ class DisconnectAPITest(APITestCase):
         user.connect_with_user_with_id(user_to_connect.pk)
         user_to_connect.confirm_connection_with_user_with_id(user.pk)
 
+        connection_confirmed_notification = ConnectionConfirmedNotification.objects.get(
+            connection_confirmator=user_to_connect,
+            notification__owner=user)
+        notification = Notification.objects.get(notification_type=Notification.CONNECTION_CONFIRMED,
+                                                object_id=connection_confirmed_notification.pk)
+
         headers = make_authentication_headers_for_user(user)
 
         data = {
@@ -335,8 +341,9 @@ class DisconnectAPITest(APITestCase):
         response = self.client.post(url, data, **headers, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        self.assertFalse(ConnectionConfirmedNotification.objects.filter(notification__owner__id=user.pk,
-                                                                        connection_confirmator__id=user_to_connect.pk).exists())
+        self.assertFalse(
+            ConnectionConfirmedNotification.objects.filter(pk=connection_confirmed_notification.pk).exists())
+        self.assertFalse(Notification.objects.filter(pk=notification.pk).exists())
 
     def test_disconnect_should_delete_foreign_connection_confirmed_notification(self):
         """
@@ -348,6 +355,11 @@ class DisconnectAPITest(APITestCase):
         user_to_connect.connect_with_user_with_id(user.pk)
         user.confirm_connection_with_user_with_id(user_to_connect.pk)
 
+        connection_confirmed_notification = ConnectionConfirmedNotification.objects.get(connection_confirmator=user,
+                                                                                        notification__owner=user_to_connect)
+        notification = Notification.objects.get(notification_type=Notification.CONNECTION_CONFIRMED,
+                                                object_id=connection_confirmed_notification.pk)
+
         headers = make_authentication_headers_for_user(user)
 
         data = {
@@ -359,8 +371,9 @@ class DisconnectAPITest(APITestCase):
         response = self.client.post(url, data, **headers, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        self.assertFalse(ConnectionConfirmedNotification.objects.filter(notification__owner__id=user_to_connect.pk,
-                                                                        connection_confirmator__id=user.pk).exists())
+        self.assertFalse(
+            ConnectionConfirmedNotification.objects.filter(pk=connection_confirmed_notification.pk).exists())
+        self.assertFalse(Notification.objects.filter(pk=notification.pk).exists())
 
     def test_disconnect_from_unconfirmed_connection_should_delete_own_connection_request_notification(self):
         """
@@ -370,7 +383,12 @@ class DisconnectAPITest(APITestCase):
         user_to_connect = mixer.blend(User)
 
         user_to_connect.connect_with_user_with_id(user.pk)
-        user.confirm_connection_with_user_with_id(user_to_connect.pk)
+
+        connection_request_notification = ConnectionRequestNotification.objects.get(
+            connection_requester=user_to_connect)
+        notification = Notification.objects.get(owner=user,
+                                                notification_type=Notification.CONNECTION_REQUEST,
+                                                object_id=connection_request_notification.pk)
 
         headers = make_authentication_headers_for_user(user)
 
@@ -383,31 +401,9 @@ class DisconnectAPITest(APITestCase):
         response = self.client.post(url, data, **headers, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        self.assertFalse(ConnectionRequestNotification.objects.filter(notification__owner__id=user.pk,
-                                                                      connection_requester__id=user_to_connect.pk).exists())
-
-    def test_disconnect_from_connection_should_delete_own_connection_request_notification(self):
-        """
-        should delete own connection request notification when the user disconnects from a confirmed connection
-        """
-        user = mixer.blend(User)
-        user_to_connect = mixer.blend(User)
-
-        user_to_connect.connect_with_user_with_id(user.pk)
-
-        headers = make_authentication_headers_for_user(user)
-
-        data = {
-            'username': user_to_connect.username
-        }
-
-        url = self._get_url()
-
-        response = self.client.post(url, data, **headers, format='multipart')
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        self.assertFalse(ConnectionRequestNotification.objects.filter(notification__owner__id=user.pk,
-                                                                      connection_requester__id=user_to_connect.pk).exists())
+        self.assertFalse(
+            ConnectionRequestNotification.objects.filter(pk=connection_request_notification.pk).exists())
+        self.assertFalse(Notification.objects.filter(pk=notification.pk).exists())
 
     def _get_url(self):
         return reverse('disconnect-from-user')
