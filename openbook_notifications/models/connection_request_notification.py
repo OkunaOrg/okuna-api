@@ -15,10 +15,9 @@ class ConnectionRequestNotification(models.Model):
     @classmethod
     def create_connection_request_notification(cls, connection_requester_id, owner_id):
         connection_request_notification = cls.objects.create(connection_requester_id=connection_requester_id)
-        Notification.create_notification(type=Notification.CONNECTION_REQUEST,
-                                         content_object=connection_request_notification,
-                                         owner_id=owner_id)
-        return connection_request_notification
+        return Notification.create_notification(type=Notification.CONNECTION_REQUEST,
+                                                content_object=connection_request_notification,
+                                                owner_id=owner_id)
 
     @classmethod
     def delete_connection_request_notification_for_users_with_ids(cls, user_a_id, user_b_id):
