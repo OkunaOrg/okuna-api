@@ -55,7 +55,7 @@ def send_post_comment_push_notification_with_message(post_comment, message, targ
 
     notification_data = {
         'type': Notification.POST_COMMENT,
-        'notification_id': notification
+        'notification_id': notification.pk
     }
 
     one_signal_notification.set_parameter('data', notification_data)
@@ -144,7 +144,5 @@ def _send_notification_to_user(user, notification):
 
         try:
             response = onesignal_client.send_notification(notification)
-            print(response)
-            print('HELLO')
         except OneSignalError as e:
             logger.error('Error sending notification to user_id %s with error %s' % (user.id, e))
