@@ -592,28 +592,18 @@ class User(AbstractUser):
     def get_comments_for_post_with_id(self, post_id, min_id=None, max_id=None):
         comments_query = Q(post_id=post_id)
 
-        Post = get_post_model()
-        PostComment = get_post_comment_model()
-
-        if not min_id and not max_id:
-            Post = get_post_model()
-            # If comments are private, return only own comments
-            if not Post.post_with_id_has_public_comments(post_id):
-                comments_query = Q(commenter_id=self.pk)
-            PostComment = get_post_comment_model()
-
-            return PostComment.objects.filter(comments_query)
-
-        if min_id:
-            min_id_query_results = PostComment.objects.filter(comments_query & Q(id__gte=min_id))
-
-            return min_id_query_results
-
         if max_id:
-            max_id_query_results = PostComment.objects.filter(comments_query
-                                                              & Q(id__lt=max_id))
+            comments_query.add(Q(id__lt=max_id), Q.AND)
+        elif min_id:
+            comments_query.add(Q(id__gte=min_id), Q.AND)
 
-            return max_id_query_results
+        Post = get_post_model()
+        # If comments are private, return only own comments
+        if not Post.post_with_id_has_public_comments(post_id):
+            comments_query.add(Q(commenter_id=self.pk), Q.AND)
+
+        PostComment = get_post_comment_model()
+        return PostComment.objects.filter(comments_query)
 
     def get_comments_count_for_post_with_id(self, post_id):
         commenter_id = None
