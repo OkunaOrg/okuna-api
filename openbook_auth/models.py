@@ -589,43 +589,31 @@ class User(AbstractUser):
         self._delete_post_reaction_notification(post_reaction=post_reaction)
         post_reaction.delete()
 
-    def get_comments_for_max_id_for_post_with_id(self, post_id, max_id):
+    def get_comments_for_post_with_id(self, post_id, min_id=None, max_id=None):
         comments_query = Q(post_id=post_id)
 
         Post = get_post_model()
-        # If comments are private, return only own comments
-        if not Post.post_with_id_has_public_comments(post_id):
-            comments_query = Q(commenter_id=self.pk)
-
-        PostComment = get_post_comment_model()
-        max_id_query_results = PostComment.objects.filter(comments_query
-                                                          & Q(id__lt=max_id))
-        return max_id_query_results
-
-    def get_comments_for_min_id_for_post_with_id(self, post_id, min_id):
-        comments_query = Q(post_id=post_id)
-
-        Post = get_post_model()
-        # If comments are private, return only own comments
-        if not Post.post_with_id_has_public_comments(post_id):
-            comments_query = Q(commenter_id=self.pk)
-
-        PostComment = get_post_comment_model()
-        min_id_query_results = PostComment.objects.filter(comments_query & Q(id__gte=min_id))
-
-        return min_id_query_results
-
-    def get_all_comments_for_post_with_id(self, post_id):
-        comments_query = Q(post_id=post_id)
-
-        Post = get_post_model()
-        # If comments are private, return only own comments
-        if not Post.post_with_id_has_public_comments(post_id):
-            comments_query = Q(commenter_id=self.pk)
         PostComment = get_post_comment_model()
 
-        return PostComment.objects.filter(comments_query)
+        if not min_id and not max_id:
+            Post = get_post_model()
+            # If comments are private, return only own comments
+            if not Post.post_with_id_has_public_comments(post_id):
+                comments_query = Q(commenter_id=self.pk)
+            PostComment = get_post_comment_model()
 
+            return PostComment.objects.filter(comments_query)
+
+        if min_id:
+            min_id_query_results = PostComment.objects.filter(comments_query & Q(id__gte=min_id))
+
+            return min_id_query_results
+
+        if max_id:
+            max_id_query_results = PostComment.objects.filter(comments_query
+                                                              & Q(id__lt=max_id))
+
+            return max_id_query_results
 
     def get_comments_count_for_post_with_id(self, post_id):
         commenter_id = None

@@ -145,22 +145,21 @@ class PostComments(APIView):
             sort = self.SORT_DICT[sort]
 
         if not max_id and not min_id:
-            all_comments = user.get_all_comments_for_post_with_id(post_id).order_by(sort)[:count_max]
+            all_comments = user.get_comments_for_post_with_id(post_id).order_by(sort)[:count_max]
             all_comments = list(all_comments)
         else:
             post_comments_max = []
             post_comments_min = []
             if max_id:
-                post_comments_max = user.get_comments_for_max_id_for_post_with_id(post_id,
-                                                                                  max_id=max_id).order_by(sort)[:count_max]
-                post_comments_max = list(post_comments_max)  # execute query
+                post_comments_max = user.get_comments_for_post_with_id(post_id,
+                                                                       max_id=max_id).order_by(sort)[:count_max]
+                post_comments_max = post_comments_max.all()  # execute query
 
             if min_id:
-                post_comments_min = user.get_comments_for_min_id_for_post_with_id(post_id,
-                                                                                  min_id=min_id).order_by('pk')[:count_min]
-                post_comments_min = sorted(post_comments_min,
+                post_comments_min = user.get_comments_for_post_with_id(post_id,
+                                                                       min_id=min_id).order_by('pk')[:count_min]
+                post_comments_min = sorted(post_comments_min.all(),
                                            key=operator.attrgetter('created'), reverse=sort == self.SORT_DESC)
-                post_comments_min = list(post_comments_min)  # execute query
 
             all_comments = list(chain(post_comments_min, post_comments_max))  # already sorted
 
