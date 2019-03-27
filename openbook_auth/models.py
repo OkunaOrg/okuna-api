@@ -171,7 +171,7 @@ class User(AbstractUser):
             )
         except User.DoesNotExist:
             raise ValidationError(
-            _('No user found for token')
+                _('No user found for token')
             )
         except KeyError:
             raise ValidationError(
@@ -577,7 +577,9 @@ class User(AbstractUser):
             post = Post.objects.filter(pk=post_id).get()
             post_reaction = post.react(reactor=self, emoji_id=emoji_id)
             if post_reaction.post.creator_id != self.pk:
-                self._create_post_reaction_notification(post_reaction=post_reaction)
+                # TODO Refactor. This check is being done twice. (Also in _send_post_reaction_push_notification)
+                if post.creator.has_reaction_notifications_enabled_for_post_with_id(post_id=post.pk):
+                    self._create_post_reaction_notification(post_reaction=post_reaction)
                 self._send_post_reaction_push_notification(post_reaction=post_reaction)
 
         return post_reaction
@@ -634,9 +636,38 @@ class User(AbstractUser):
         Post = get_post_model()
         post = Post.objects.filter(pk=post_id).get()
         post_comment = post.comment(text=text, commenter=self)
-        if post.creator_id != self.pk:
-            self._create_post_comment_notification(post_comment=post_comment)
-            self._send_post_comment_push_notification(post_comment=post_comment)
+        post_creator = post.creator
+        post_commenter = self
+
+        post_notification_target_users = Post.get_post_comment_notification_target_users(post_id=post.id,
+                                                                                         post_commenter_id=self.pk)
+        PostCommentNotification = get_post_comment_notification_model()
+
+        for post_notification_target_user in post_notification_target_users:
+
+            post_notification_target_user_is_post_creator = post_notification_target_user.id == post_creator.id
+            post_notification_target_has_comment_notifications_enabled = post_notification_target_user.has_comment_notifications_enabled_for_post_with_id(
+                post_id=post_comment.post_id)
+
+            if post_notification_target_has_comment_notifications_enabled:
+                PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
+                                                                         owner_id=post_notification_target_user.id)
+
+                if post_notification_target_user_is_post_creator:
+                    notification_message = {
+                        "en": _('@%(post_commenter_username)s commented on your post.') % {
+                            'post_commenter_username': post_commenter.username
+                        }}
+                else:
+                    notification_message = {
+                        "en": _('@%(post_commenter_username)s commented on a post you also commented on.') % {
+                            'post_commenter_username': post_commenter.username
+                        }}
+
+                self._send_post_comment_push_notification(post_comment=post_comment,
+                                                          notification_message=notification_message,
+                                                          notification_target_user=post_notification_target_user)
+
         return post_comment
 
     def delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
@@ -1234,10 +1265,13 @@ class User(AbstractUser):
         return post
 
     def get_community_post_with_id(self, post_id):
+        Community = get_community_model()
         post_query = Q(id=post_id)
-        post_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
-        # Public type communities
-        post_query.add(Q(community__type='P'), Q.OR)
+
+        post_query_visibility_query = Q(community__memberships__user__id=self.pk)
+        post_query_visibility_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, ), Q.OR)
+
+        post_query.add(post_query_visibility_query, Q.AND)
 
         Post = get_post_model()
         profile_posts = Post.objects.filter(post_query)
@@ -1489,8 +1523,13 @@ class User(AbstractUser):
 
         return self.notifications.filter(notifications_query)
 
-    def read_all_notifications(self):
-        self.notifications.filter(read=False).update(read=True)
+    def read_notifications(self, max_id=None):
+        notifications_query = Q(read=False)
+
+        if max_id:
+            notifications_query.add(Q(id__lte=max_id), Q.AND)
+
+        self.notifications.filter(notifications_query).update(read=True)
 
     def read_notification_with_id(self, notification_id):
         self._check_can_read_notification_with_id(notification_id)
@@ -1555,11 +1594,6 @@ class User(AbstractUser):
     def _generate_password_reset_link(self, token):
         return '{0}/api/auth/password/verify?token={1}'.format(settings.EMAIL_HOST, token)
 
-    def _create_post_comment_notification(self, post_comment):
-        PostCommentNotification = get_post_comment_notification_model()
-        PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
-                                                                 owner_id=post_comment.post.creator_id)
-
     def _send_password_reset_email_with_token(self, password_reset_token):
         mail_subject = _('Reset your password for Openbook')
         text_content = render_to_string('openbook_auth/email/reset_password.txt', {
@@ -1579,8 +1613,10 @@ class User(AbstractUser):
         email.attach_alternative(html_content, 'text/html')
         email.send()
 
-    def _send_post_comment_push_notification(self, post_comment):
-        senders.send_post_comment_push_notification(post_comment=post_comment)
+    def _send_post_comment_push_notification(self, post_comment, notification_message, notification_target_user):
+        senders.send_post_comment_push_notification_with_message(post_comment=post_comment,
+                                                                 message=notification_message,
+                                                                 target_user=notification_target_user)
 
     def _delete_post_comment_notification(self, post_comment):
         PostCommentNotification = get_post_comment_notification_model()
@@ -2448,10 +2484,9 @@ class User(AbstractUser):
             raise ValidationError(
                 _('Post already muted'),
             )
-        self._check_has_post_with_id(post_id=post_id)
+        self._check_can_see_post_with_id(post_id=post_id)
 
     def _check_can_unmute_post_with_id(self, post_id):
-        self._check_has_post_with_id(post_id=post_id)
         self._check_has_muted_post_with_id(post_id=post_id)
 
     def _check_has_muted_post_with_id(self, post_id):

@@ -1,10 +1,16 @@
 import onesignal as onesignal_sdk
 from django.conf import settings
+from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
+from onesignal import OneSignalError
 
-from openbook_common.utils.model_loaders import get_notification_model
+from openbook_common.utils.model_loaders import get_notification_model, get_user_model, get_post_model
 from openbook_notifications.push_notifications.serializers import PushNotificationsSerializers
 from hashlib import sha256
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 onesignal_client = onesignal_sdk.Client(
     app={"app_auth_key": settings.ONE_SIGNAL_API_KEY, "app_id": settings.ONE_SIGNAL_APP_ID})
@@ -12,6 +18,9 @@ onesignal_client = onesignal_sdk.Client(
 
 def send_post_reaction_push_notification(post_reaction):
     post_creator = post_reaction.post.creator
+
+    post_id = post_reaction.post_id
+    notification_group = 'post_%s' % post_id
 
     if post_creator.has_reaction_notifications_enabled_for_post_with_id(post_id=post_reaction.post_id):
         post_reactor = post_reaction.reactor
@@ -31,33 +40,34 @@ def send_post_reaction_push_notification(post_reaction):
         }
 
         one_signal_notification.set_parameter('data', notification_data)
+        one_signal_notification.set_parameter('!thread_id', notification_group)
+        one_signal_notification.set_parameter('android_group', notification_group)
 
         _send_notification_to_user(notification=one_signal_notification, user=post_creator)
 
 
-def send_post_comment_push_notification(post_comment):
-    post_creator = post_comment.post.creator
+def send_post_comment_push_notification_with_message(post_comment, message, target_user):
+    Notification = get_notification_model()
+    NotificationPostCommentSerializer = _get_push_notifications_serializers().NotificationPostCommentSerializer
 
-    if post_creator.has_comment_notifications_enabled_for_post_with_id(post_id=post_comment.post_id):
-        post_commenter = post_comment.commenter
+    post = post_comment.post
 
-        one_signal_notification = onesignal_sdk.Notification(
-            contents={"en": _('@%(post_commenter_username)s commented on your post.') % {
-                'post_commenter_username': post_commenter.username
-            }})
+    notification_payload = NotificationPostCommentSerializer(post_comment).data
+    notification_group = 'post_%s' % post.id
 
-        NotificationPostCommentSerializer = _get_push_notifications_serializers().NotificationPostCommentSerializer
+    one_signal_notification = onesignal_sdk.Notification(
+        contents=message)
 
-        Notification = get_notification_model()
+    notification_data = {
+        'type': Notification.POST_COMMENT,
+        'payload': notification_payload
+    }
 
-        notification_data = {
-            'type': Notification.POST_COMMENT,
-            'payload': NotificationPostCommentSerializer(post_comment).data
-        }
+    one_signal_notification.set_parameter('data', notification_data)
+    one_signal_notification.set_parameter('!thread_id', notification_group)
+    one_signal_notification.set_parameter('android_group', notification_group)
 
-        one_signal_notification.set_parameter('data', notification_data)
-
-        _send_notification_to_user(notification=one_signal_notification, user=post_creator)
+    _send_notification_to_user(notification=one_signal_notification, user=target_user)
 
 
 def send_follow_push_notification(followed_user, following_user):
@@ -147,7 +157,10 @@ def _send_notification_to_user(user, notification):
             {"field": "tag", "key": "device_uuid", "relation": "=", "value": device.uuid},
         ])
 
-        onesignal_client.send_notification(notification)
+        try:
+            onesignal_client.send_notification(notification)
+        except OneSignalError as e:
+            logger.error('Error sending notification to user_id %s with error %s' % (user.id, e))
 
 
 push_notifications_serializers = None

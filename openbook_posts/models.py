@@ -129,6 +129,21 @@ class Post(models.Model):
         return cls.objects.annotate(Count('reactions')).filter(trending_posts_query).order_by(
             '-reactions__count', '-created')
 
+    @classmethod
+    def get_post_comment_notification_target_users(cls, post_id, post_commenter_id):
+        """
+        Returns the users that should be notified of a post comment.
+        This includes the post creator and other post commenters
+        :param post_id:
+        :param post_commenter_id:
+        :return:
+        """
+        post_notification_target_users_query = Q(posts_comments__post_id=post_id)
+        post_notification_target_users_query.add(Q(posts__id=post_id), Q.OR)
+        post_notification_target_users_query.add(~Q(id=post_commenter_id), Q.AND)
+
+        return User.objects.filter(post_notification_target_users_query).distinct()
+
     def count_comments(self, commenter_id=None):
         return PostComment.count_comments_for_post_with_id(self.pk, commenter_id=commenter_id)
 
