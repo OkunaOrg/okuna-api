@@ -677,6 +677,15 @@ class User(AbstractUser):
         self._delete_post_comment_notification(post_comment=post_comment)
         post_comment.delete()
 
+    def update_comment_with_id_for_post_with_id(self, post_comment_id, post_id, text):
+        self._check_can_delete_comment_with_id_for_post_with_id(post_comment_id, post_id)
+        PostComment = get_post_comment_model()
+        post_comment = PostComment.objects.get(pk=post_comment_id)
+        post_comment.text = text
+        post_comment.is_edited = True
+        post_comment.save()
+        return post_comment
+
     def create_circle(self, name, color):
         self._check_circle_name_not_taken(name)
         Circle = get_circle_model()
