@@ -12,7 +12,7 @@ import json
 
 from openbook_lists.models import List
 from openbook_follows.models import Follow
-from openbook_notifications.models import FollowNotification
+from openbook_notifications.models import FollowNotification, Notification
 
 logger = logging.getLogger(__name__)
 
@@ -261,6 +261,9 @@ class UnfollowAPITest(APITestCase):
 
         user.follow_user(user_to_unfollow, lists_ids=[list_to_follow.pk])
 
+        follow_notification = FollowNotification.objects.get(follower=user, notification__owner=user_to_unfollow)
+        notification = Notification.objects.get(notification_type=Notification.FOLLOW, object_id=follow_notification.pk)
+
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
         data = {
@@ -271,7 +274,8 @@ class UnfollowAPITest(APITestCase):
 
         self.client.post(url, data, **headers, format='multipart')
 
-        self.assertFalse(FollowNotification.objects.filter(follower=user, notification__owner=user_to_unfollow).exists())
+        self.assertFalse(FollowNotification.objects.filter(pk=follow_notification.pk).exists())
+        self.assertFalse(Notification.objects.filter(pk=notification.pk).exists())
 
     def _get_url(self):
         return reverse('unfollow-user')
