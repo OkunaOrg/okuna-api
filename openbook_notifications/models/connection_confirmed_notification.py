@@ -1,6 +1,8 @@
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.db.models import Q
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 
 from openbook_auth.models import User
 from openbook_notifications.models.notification import Notification
@@ -13,10 +15,9 @@ class ConnectionConfirmedNotification(models.Model):
     @classmethod
     def create_connection_confirmed_notification(cls, connection_confirmator_id, owner_id):
         connection_confirmed_notification = cls.objects.create(connection_confirmator_id=connection_confirmator_id)
-        Notification.create_notification(type=Notification.CONNECTION_CONFIRMED,
-                                         content_object=connection_confirmed_notification,
-                                         owner_id=owner_id)
-        return connection_confirmed_notification
+        return Notification.create_notification(type=Notification.CONNECTION_CONFIRMED,
+                                                content_object=connection_confirmed_notification,
+                                                owner_id=owner_id)
 
     @classmethod
     def delete_connection_confirmed_notification_for_users_with_ids(cls, user_a_id, user_b_id):
@@ -27,3 +28,8 @@ class ConnectionConfirmedNotification(models.Model):
                                  notification__owner_id=user_a_id), Q.OR)
 
         cls.objects.filter(notification_query).delete()
+
+
+@receiver(pre_delete, sender=ConnectionConfirmedNotification, dispatch_uid='connection_confirmed_delete_cleanup')
+def connection_confirmed_notification_pre_delete(sender, instance, using, **kwargs):
+    Notification.objects.filter(notification_type=Notification.CONNECTION_CONFIRMED, object_id=instance.pk).delete()

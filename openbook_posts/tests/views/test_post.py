@@ -13,7 +13,7 @@ from openbook_common.tests.helpers import make_authentication_headers_for_user, 
     make_fake_post_comment_text, make_user, make_circle, make_emoji, make_emoji_group, make_reactions_emoji_group, \
     make_community
 from openbook_communities.models import Community
-from openbook_notifications.models import PostCommentNotification, PostReactionNotification
+from openbook_notifications.models import PostCommentNotification, PostReactionNotification, Notification
 from openbook_posts.models import Post, PostComment, PostReaction
 
 logger = logging.getLogger(__name__)
@@ -1248,13 +1248,18 @@ class PostCommentItemAPITests(APITestCase):
 
         post_comment = commenter.comment_post_with_id(post.pk, text=post_comment_text)
 
+        post_comment_notification = PostCommentNotification.objects.get(post_comment=post_comment,
+                                                                        notification__owner=user)
+        notification = Notification.objects.get(notification_type=Notification.POST_COMMENT,
+                                                object_id=post_comment_notification.pk)
+
         url = self._get_url(post_comment=post_comment, post=post)
 
         headers = make_authentication_headers_for_user(user)
         self.client.delete(url, **headers)
 
-        self.assertFalse(PostCommentNotification.objects.filter(post_comment=post_comment,
-                                                                notification__owner=user).exists())
+        self.assertFalse(PostCommentNotification.objects.filter(pk=post_comment_notification.pk).exists())
+        self.assertFalse(Notification.objects.filter(pk=notification.pk).exists())
 
     def _get_url(self, post, post_comment):
         return reverse('post-comment', kwargs={
@@ -1896,13 +1901,18 @@ class PostReactionItemAPITests(APITestCase):
         post_reaction = reactioner.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id,
                                                          emoji_group_id=emoji_group.pk)
 
+        post_reaction_notification = PostReactionNotification.objects.get(post_reaction=post_reaction,
+                                                                          notification__owner=user)
+        notification = Notification.objects.get(notification_type=Notification.POST_REACTION,
+                                                object_id=post_reaction_notification.pk)
+
         url = self._get_url(post_reaction=post_reaction, post=post)
 
         headers = make_authentication_headers_for_user(user)
         self.client.delete(url, **headers)
 
-        self.assertFalse(PostReactionNotification.objects.filter(post_reaction=post_reaction,
-                                                                 notification__owner=user).exists())
+        self.assertFalse(PostReactionNotification.objects.filter(pk=post_reaction_notification.pk).exists())
+        self.assertFalse(Notification.objects.filter(pk=notification.pk).exists())
 
     def _get_url(self, post, post_reaction):
         return reverse('post-reaction', kwargs={

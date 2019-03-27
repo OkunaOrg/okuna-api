@@ -1,5 +1,7 @@
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 
 from openbook_notifications.models.notification import Notification
 from openbook_posts.models import PostComment
@@ -12,12 +14,16 @@ class PostCommentNotification(models.Model):
     @classmethod
     def create_post_comment_notification(cls, post_comment_id, owner_id):
         post_comment_notification = cls.objects.create(post_comment_id=post_comment_id)
-        Notification.create_notification(type=Notification.POST_COMMENT,
-                                         content_object=post_comment_notification,
-                                         owner_id=owner_id)
-        return post_comment_notification
+        return Notification.create_notification(type=Notification.POST_COMMENT,
+                                                content_object=post_comment_notification,
+                                                owner_id=owner_id)
 
     @classmethod
     def delete_post_comment_notification(cls, post_comment_id, owner_id):
         cls.objects.filter(post_comment_id=post_comment_id,
                            notification__owner_id=owner_id).delete()
+
+
+@receiver(pre_delete, sender=PostCommentNotification, dispatch_uid='post_comment_delete_cleanup')
+def post_comment_notification_pre_delete(sender, instance, using, **kwargs):
+    Notification.objects.filter(notification_type=Notification.POST_COMMENT, object_id=instance.pk).delete()
