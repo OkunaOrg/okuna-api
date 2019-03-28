@@ -15,9 +15,10 @@ class CommunityInviteNotification(models.Model):
     @classmethod
     def create_community_invite_notification(cls, community_invite_id, owner_id):
         community_invite_notification = cls.objects.create(community_invite_id=community_invite_id)
-        return Notification.create_notification(type=Notification.COMMUNITY_INVITE,
-                                                content_object=community_invite_notification,
-                                                owner_id=owner_id)
+        Notification.create_notification(type=Notification.COMMUNITY_INVITE,
+                                         content_object=community_invite_notification,
+                                         owner_id=owner_id)
+        return community_invite_notification
 
     @classmethod
     def delete_community_invite_notification(cls, community_invite_id, owner_id):
