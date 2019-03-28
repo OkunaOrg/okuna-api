@@ -7,12 +7,13 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 import logging
+import random
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_emoji, make_emoji_group, make_reactions_emoji_group, \
     make_community
 from openbook_communities.models import Community
-from openbook_notifications.models import PostCommentNotification, PostReactionNotification
+from openbook_notifications.models import PostCommentNotification, PostReactionNotification, Notification
 from openbook_posts.models import Post, PostComment, PostReaction
 
 logger = logging.getLogger(__name__)
@@ -692,6 +693,154 @@ class PostCommentsAPITests(APITestCase):
         self.assertFalse(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
                                                                 notification__owner=foreign_user).exists())
 
+    def test_should_retrieve_all_comments_on_public_post(self):
+        """
+        should retrieve all comments on public post
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        amount_of_post_comments = 10
+        post_comments = []
+
+        for i in range(amount_of_post_comments):
+            post_comment_text = make_fake_post_comment_text()
+            post_comments.append(user.comment_post_with_id(post_id=post.pk, text=post_comment_text))
+
+        url = self._get_url(post)
+        response = self.client.get(url, **headers)
+        parsed_response = json.loads(response.content)
+        response_ids = [comment['id'] for comment in parsed_response]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(len(parsed_response) == amount_of_post_comments)
+
+        for comment in post_comments:
+            self.assertTrue(comment.pk in response_ids)
+
+    def test_should_retrieve_all_comments_on_public_post_with_sort(self):
+        """
+        should retrieve all comments on public post with sort ascending
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        amount_of_post_comments = 10
+        post_comments = []
+
+        for i in range(amount_of_post_comments):
+            post_comment_text = make_fake_post_comment_text()
+            post_comments.append(user.comment_post_with_id(post_id=post.pk, text=post_comment_text))
+
+        url = self._get_url(post)
+        response = self.client.get(url, {'sort': 'ASC'}, **headers)
+        parsed_response = json.loads(response.content)
+        response_ids = [comment['id'] for comment in parsed_response]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(len(parsed_response) == amount_of_post_comments)
+
+        for comment in post_comments:
+            self.assertTrue(comment.pk in response_ids)
+
+    def test_should_retrieve_comments_less_than_max_id_on_post(self):
+        """
+        should retrieve comments less than max id for post if param is present
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        amount_of_post_comments = 10
+        post_comments = []
+
+        for i in range(amount_of_post_comments):
+            post_comment_text = make_fake_post_comment_text()
+            post_comments.append(user.comment_post_with_id(post_id=post.pk, text=post_comment_text))
+
+        random_int = random.randint(3, 9)
+        max_id = post_comments[random_int].pk
+
+        url = self._get_url(post)
+        response = self.client.get(url, {
+            'max_id': max_id
+        }, **headers)
+        parsed_response = json.loads(response.content)
+        response_ids = [comment['id'] for comment in parsed_response]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for returned_id in response_ids:
+            self.assertTrue(returned_id < max_id)
+
+    def test_should_retrieve_comments_greater_than_or_equal_to_min_id(self):
+        """
+        should retrieve comments greater than or equal to min_id for post if param is present
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        amount_of_post_comments = 10
+        post_comments = []
+
+        for i in range(amount_of_post_comments):
+            post_comment_text = make_fake_post_comment_text()
+            post_comments.append(user.comment_post_with_id(post_id=post.pk, text=post_comment_text))
+
+        random_int = random.randint(3, 9)
+        min_id = post_comments[random_int].pk
+
+        url = self._get_url(post)
+        response = self.client.get(url, {
+            'min_id': min_id
+        }, **headers)
+        parsed_response = json.loads(response.content)
+        response_ids = [comment['id'] for comment in parsed_response]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for returned_id in response_ids:
+            self.assertTrue(returned_id >= min_id)
+
+    def test_should_retrieve_comments_slice_for_min_id_and_max_id(self):
+        """
+        should retrieve comments slice for post comments taking into account min_id and max_id
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        amount_of_post_comments = 20
+        post_comments = []
+
+        for i in range(amount_of_post_comments):
+            post_comment_text = make_fake_post_comment_text()
+            post_comments.append(user.comment_post_with_id(post_id=post.pk, text=post_comment_text))
+
+        random_int = random.randint(3, 17)
+        min_id = post_comments[random_int].pk
+        max_id = min_id
+        count_max = 2
+        count_min = 3
+
+        url = self._get_url(post)
+        response = self.client.get(url, {
+            'min_id': min_id,
+            'max_id': max_id,
+            'count_max': count_max,
+            'count_min': count_min
+        }, **headers)
+        parsed_response = json.loads(response.content)
+        response_ids = [int(comment['id']) for comment in parsed_response]
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(len(parsed_response) == (count_max + count_min))
+        comments_after_min_id = [id for id in response_ids if id >= min_id]
+        comments_before_max_id = [id for id in response_ids if id < max_id]
+        self.assertTrue(len(comments_after_min_id) == count_min)
+        self.assertTrue(len(comments_before_max_id) == count_max)
+
     def _get_create_post_comment_request_data(self, post_comment_text):
         return {
             'text': post_comment_text
@@ -1099,13 +1248,18 @@ class PostCommentItemAPITests(APITestCase):
 
         post_comment = commenter.comment_post_with_id(post.pk, text=post_comment_text)
 
+        post_comment_notification = PostCommentNotification.objects.get(post_comment=post_comment,
+                                                                        notification__owner=user)
+        notification = Notification.objects.get(notification_type=Notification.POST_COMMENT,
+                                                object_id=post_comment_notification.pk)
+
         url = self._get_url(post_comment=post_comment, post=post)
 
         headers = make_authentication_headers_for_user(user)
         self.client.delete(url, **headers)
 
-        self.assertFalse(PostCommentNotification.objects.filter(post_comment=post_comment,
-                                                                notification__owner=user).exists())
+        self.assertFalse(PostCommentNotification.objects.filter(pk=post_comment_notification.pk).exists())
+        self.assertFalse(Notification.objects.filter(pk=notification.pk).exists())
 
     def _get_url(self, post, post_comment):
         return reverse('post-comment', kwargs={
@@ -1747,13 +1901,18 @@ class PostReactionItemAPITests(APITestCase):
         post_reaction = reactioner.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id,
                                                          emoji_group_id=emoji_group.pk)
 
+        post_reaction_notification = PostReactionNotification.objects.get(post_reaction=post_reaction,
+                                                                          notification__owner=user)
+        notification = Notification.objects.get(notification_type=Notification.POST_REACTION,
+                                                object_id=post_reaction_notification.pk)
+
         url = self._get_url(post_reaction=post_reaction, post=post)
 
         headers = make_authentication_headers_for_user(user)
         self.client.delete(url, **headers)
 
-        self.assertFalse(PostReactionNotification.objects.filter(post_reaction=post_reaction,
-                                                                 notification__owner=user).exists())
+        self.assertFalse(PostReactionNotification.objects.filter(pk=post_reaction_notification.pk).exists())
+        self.assertFalse(Notification.objects.filter(pk=notification.pk).exists())
 
     def _get_url(self, post, post_reaction):
         return reverse('post-reaction', kwargs={

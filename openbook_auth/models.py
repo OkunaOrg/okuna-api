@@ -591,18 +591,18 @@ class User(AbstractUser):
         self._delete_post_reaction_notification(post_reaction=post_reaction)
         post_reaction.delete()
 
-    def get_comments_for_post_with_id(self, post_id, max_id=None):
-        self._check_can_get_comments_for_post_with_id(post_id)
+    def get_comments_for_post_with_id(self, post_id, min_id=None, max_id=None):
         comments_query = Q(post_id=post_id)
-
-        Post = get_post_model()
-
-        # If comments are private, return only own comments
-        if not Post.post_with_id_has_public_comments(post_id):
-            comments_query = Q(commenter_id=self.pk)
 
         if max_id:
             comments_query.add(Q(id__lt=max_id), Q.AND)
+        elif min_id:
+            comments_query.add(Q(id__gte=min_id), Q.AND)
+
+        Post = get_post_model()
+        # If comments are private, return only own comments
+        if not Post.post_with_id_has_public_comments(post_id):
+            comments_query.add(Q(commenter_id=self.pk), Q.AND)
 
         PostComment = get_post_comment_model()
         return PostComment.objects.filter(comments_query)
@@ -2449,9 +2449,12 @@ class User(AbstractUser):
             )
 
     def _check_can_delete_notification_with_id(self, notification_id):
+        self._check_has_notification_with_id(notification_id=notification_id)
+
+    def _check_has_notification_with_id(self, notification_id):
         if not self.has_notification_with_id(notification_id=notification_id):
             raise ValidationError(
-                _('You cannot delete a notification that doesn\'t belong to you.'),
+                _('This notification does not belong to you.'),
             )
 
     def _check_can_update_device_with_uuid(self, device_uuid):

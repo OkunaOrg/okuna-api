@@ -1,6 +1,8 @@
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.db.models import Q
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 
 from openbook_auth.models import User
 from openbook_notifications.models.notification import Notification
@@ -25,3 +27,8 @@ class ConnectionRequestNotification(models.Model):
         notification_query.add(Q(connection_requester_id=user_b_id, notification__owner_id=user_a_id), Q.OR)
 
         cls.objects.filter(notification_query).delete()
+
+
+@receiver(pre_delete, sender=ConnectionRequestNotification, dispatch_uid='connection_request_delete_cleanup')
+def connection_request_notification_pre_delete(sender, instance, using, **kwargs):
+    Notification.objects.filter(notification_type=Notification.CONNECTION_REQUEST, object_id=instance.pk).delete()

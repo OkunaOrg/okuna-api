@@ -86,10 +86,21 @@ class GetPostCommentsSerializer(serializers.Serializer):
     max_id = serializers.IntegerField(
         required=False,
     )
-    count = serializers.IntegerField(
+    min_id = serializers.IntegerField(
+        required=False,
+    )
+    count_max = serializers.IntegerField(
         required=False,
         max_value=20
     )
+    count_min = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
+    sort = serializers.ChoiceField(required=False, choices=[
+        'ASC',
+        'DESC'
+    ])
 
 
 class DeletePostCommentSerializer(serializers.Serializer):
