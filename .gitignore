@@ -8,3 +8,8 @@ reports
 coverage.xml
 src/
 static/
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
