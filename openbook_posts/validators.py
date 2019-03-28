@@ -33,6 +33,3 @@ def post_reaction_id_exists(post_reaction_id):
             _('The post reaction does not exist.'),
         )
 
-
-def comments_sort_validator(sort_type):
-    return sort_type in SORT_CHOICES

@@ -116,11 +116,9 @@ class UnmutePost(APIView):
 
 class PostComments(APIView):
     permission_classes = (IsAuthenticated,)
-    SORT_DESC = '-created'
-    SORT_ASC = 'created'
-    SORT_DICT = {
-        'DESC': SORT_DESC,
-        'ASC': SORT_ASC
+    SORT_CHOICE_TO_QUERY = {
+        'DESC': '-created',
+        'ASC': 'created'
     }
 
     def get(self, request, post_uuid):
@@ -134,32 +132,30 @@ class PostComments(APIView):
         min_id = data.get('min_id')
         count_max = data.get('count_max', 10)
         count_min = data.get('count_min', 10)
-        sort = data.get('sort')
+        sort = data.get('sort', 'DESC')
         post_uuid = data.get('post_uuid')
 
         user = request.user
         post_id = get_post_id_for_post_uuid(post_uuid)
-        if not sort:
-            sort = self.SORT_DESC
-        else:
-            sort = self.SORT_DICT[sort]
+
+        sort_query = self.SORT_CHOICE_TO_QUERY[sort]
 
         if not max_id and not min_id:
-            all_comments = user.get_comments_for_post_with_id(post_id).order_by(sort)[:count_max]
-            all_comments = list(all_comments)
+            all_comments = user.get_comments_for_post_with_id(post_id).order_by(sort_query)[:count_max].all()
         else:
             post_comments_max = []
             post_comments_min = []
             if max_id:
                 post_comments_max = user.get_comments_for_post_with_id(post_id,
-                                                                       max_id=max_id).order_by(sort)[:count_max]
+                                                                       max_id=max_id).order_by(sort_query)[:count_max]
                 post_comments_max = post_comments_max.all()  # execute query
 
             if min_id:
                 post_comments_min = user.get_comments_for_post_with_id(post_id,
                                                                        min_id=min_id).order_by('pk')[:count_min]
                 post_comments_min = sorted(post_comments_min.all(),
-                                           key=operator.attrgetter('created'), reverse=sort == self.SORT_DESC)
+                                           key=operator.attrgetter('created'),
+                                           reverse=sort_query == self.SORT_CHOICE_TO_QUERY['DESC'])
 
             all_comments = list(chain(post_comments_min, post_comments_max))  # already sorted
 
