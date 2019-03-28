@@ -23,8 +23,3 @@ class PostCommentNotification(models.Model):
     def delete_post_comment_notification(cls, post_comment_id, owner_id):
         cls.objects.filter(post_comment_id=post_comment_id,
                            notification__owner_id=owner_id).delete()
-
-
-@receiver(pre_delete, sender=PostCommentNotification, dispatch_uid='post_comment_delete_cleanup')
-def post_comment_notification_pre_delete(sender, instance, using, **kwargs):
-    Notification.objects.filter(notification_type=Notification.POST_COMMENT, object_id=instance.pk).delete()

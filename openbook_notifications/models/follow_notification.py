@@ -22,8 +22,3 @@ class FollowNotification(models.Model):
     @classmethod
     def delete_follow_notification(cls, follower_id, owner_id):
         cls.objects.filter(follower_id=follower_id, notification__owner_id=owner_id).delete()
-
-
-@receiver(pre_delete, sender=FollowNotification, dispatch_uid='follow_delete_cleanup')
-def follow_notification_pre_delete(sender, instance, using, **kwargs):
-    Notification.objects.filter(notification_type=Notification.FOLLOW, object_id=instance.pk).delete()
