@@ -678,7 +678,7 @@ class User(AbstractUser):
         post_comment.delete()
 
     def update_comment_with_id_for_post_with_id(self, post_comment_id, post_id, text):
-        self._check_can_delete_comment_with_id_for_post_with_id(post_comment_id, post_id)
+        self._check_can_edit_comment_with_id_for_post_with_id(post_comment_id, post_id)
         PostComment = get_post_comment_model()
         post_comment = PostComment.objects.get(pk=post_comment_id)
         post_comment.text = text
@@ -1894,6 +1894,22 @@ class User(AbstractUser):
         if User.is_username_taken(username=username):
             raise ValidationError(
                 _('The username is already taken.')
+            )
+
+    def _check_can_edit_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
+        # Check that the comment belongs to the post
+        PostComment = get_post_comment_model()
+        Post = get_post_model()
+
+        if not PostComment.objects.filter(id=post_comment_id, post_id=post_id).exists():
+            raise ValidationError(
+                _('The comment does not belong to the specified post.')
+            )
+
+        if not self.posts_comments.filter(id=post_comment_id).exists():
+            # The comment is not ours
+            raise ValidationError(
+                _('You cannot edit a comment that does not belong to you')
             )
 
     def _check_can_delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
