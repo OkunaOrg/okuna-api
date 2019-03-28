@@ -29,6 +29,3 @@ class ConnectionRequestNotification(models.Model):
         cls.objects.filter(notification_query).delete()
 
 
-@receiver(pre_delete, sender=ConnectionRequestNotification, dispatch_uid='connection_request_delete_cleanup')
-def connection_request_notification_pre_delete(sender, instance, using, **kwargs):
-    Notification.objects.filter(notification_type=Notification.CONNECTION_REQUEST, object_id=instance.pk).delete()

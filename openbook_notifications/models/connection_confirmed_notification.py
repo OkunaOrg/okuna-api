@@ -29,8 +29,3 @@ class ConnectionConfirmedNotification(models.Model):
                                  notification__owner_id=user_a_id), Q.OR)
 
         cls.objects.filter(notification_query).delete()
-
-
-@receiver(pre_delete, sender=ConnectionConfirmedNotification, dispatch_uid='connection_confirmed_delete_cleanup')
-def connection_confirmed_notification_pre_delete(sender, instance, using, **kwargs):
-    Notification.objects.filter(notification_type=Notification.CONNECTION_CONFIRMED, object_id=instance.pk).delete()
