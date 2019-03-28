@@ -1207,7 +1207,7 @@ class PostCommentItemAPITests(APITestCase):
 
     def test_cannot_delete_foreign_comment_in_folowed_user_encircled_post(self):
         """
-             should not be able to delete foreign comment in a followed user encircled post and return 400
+            should not be able to delete foreign comment in a followed user encircled post and return 400
         """
         user = make_user()
 
@@ -1236,7 +1236,7 @@ class PostCommentItemAPITests(APITestCase):
 
     def test_post_comment_notification_is_deleted_when_deleting_comment(self):
         """
-        should delete the post comment notification when a post comment is deleted
+            should delete the post comment notification when a post comment is deleted
         """
         user = make_user()
 
@@ -1255,6 +1255,107 @@ class PostCommentItemAPITests(APITestCase):
 
         self.assertFalse(PostCommentNotification.objects.filter(post_comment=post_comment,
                                                                 notification__owner=user).exists())
+
+    def test_can_edit_own_post_comment_on_own_post(self):
+        """
+            should be able to edit own post comment
+        """
+
+        user = make_user()
+        post = user.create_public_post(text=make_fake_post_text())
+        original_post_comment_text = make_fake_post_comment_text()
+        post_comment = user.comment_post_with_id(post.pk, text=original_post_comment_text)
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        edited_post_comment_text = make_fake_post_comment_text()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.patch(url, {
+            'text': edited_post_comment_text
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        post_comment_db = PostComment.objects.get(pk=post_comment.pk)
+        self.assertTrue(post_comment_db.text == edited_post_comment_text)
+        self.assertTrue(post_comment_db.is_edited)
+
+    def test_can_edit_own_post_comment_on_others_post(self):
+        """
+            should be able to edit own post comment on someone else's post
+        """
+
+        user = make_user()
+        post_creator = make_user()
+        post = post_creator.create_public_post(text=make_fake_post_text())
+        original_post_comment_text = make_fake_post_comment_text()
+        post_comment = user.comment_post_with_id(post.pk, text=original_post_comment_text)
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        edited_post_comment_text = make_fake_post_comment_text()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.patch(url, {
+            'text': edited_post_comment_text
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        post_comment_db = PostComment.objects.get(pk=post_comment.pk)
+        self.assertTrue(post_comment_db.text == edited_post_comment_text)
+
+    def test_cannot_edit_others_post_comment(self):
+        """
+            should not be able to edit someone else's comment
+        """
+
+        user = make_user()
+        commenter = make_user()
+        post = user.create_public_post(text=make_fake_post_text())
+        original_post_comment_text = make_fake_post_comment_text()
+        post_comment = commenter.comment_post_with_id(post.pk, text=original_post_comment_text)
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        edited_post_comment_text = make_fake_post_comment_text()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.patch(url, {
+            'text': edited_post_comment_text
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        post_comment_db = PostComment.objects.get(pk=post_comment.pk)
+        self.assertTrue(post_comment_db.text == original_post_comment_text)
+        self.assertFalse(post_comment_db.is_edited)
+
+    def test_cannot_edit_others_community_post_comment_even_if_admin(self):
+        """
+            should not be able to edit someone else's comment even if community admin
+        """
+
+        user = make_user()
+        admin = make_user()
+        community = make_community(admin)
+
+        user.join_community_with_name(community_name=community.name)
+        post = user.create_community_post(community.name, text=make_fake_post_text())
+        original_post_comment_text = make_fake_post_comment_text()
+        post_comment = user.comment_post_with_id(post.pk, text=original_post_comment_text)
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        edited_post_comment_text = make_fake_post_comment_text()
+        headers = make_authentication_headers_for_user(admin)
+
+        response = self.client.patch(url, {
+            'text': edited_post_comment_text
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        post_comment_db = PostComment.objects.get(pk=post_comment.pk)
+        self.assertTrue(post_comment_db.text == original_post_comment_text)
+
 
     def _get_url(self, post, post_comment):
         return reverse('post-comment', kwargs={
