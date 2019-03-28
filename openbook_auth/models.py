@@ -577,8 +577,10 @@ class User(AbstractUser):
             post = Post.objects.filter(pk=post_id).get()
             post_reaction = post.react(reactor=self, emoji_id=emoji_id)
             if post_reaction.post.creator_id != self.pk:
-                notification = self._create_post_reaction_notification(post_reaction=post_reaction)
-                self._send_post_reaction_push_notification(post_reaction=post_reaction, notification=notification)
+                # TODO Refactor. This check is being done twice. (Also in _send_post_reaction_push_notification)
+                if post.creator.has_reaction_notifications_enabled_for_post_with_id(post_id=post.pk):
+                    self._create_post_reaction_notification(post_reaction=post_reaction)
+                self._send_post_reaction_push_notification(post_reaction=post_reaction)
 
         return post_reaction
 
@@ -638,8 +640,8 @@ class User(AbstractUser):
                 post_id=post_comment.post_id)
 
             if post_notification_target_has_comment_notifications_enabled:
-                notification = PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
-                                                                                        owner_id=post_notification_target_user.id)
+                PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
+                                                                         owner_id=post_notification_target_user.id)
 
                 if post_notification_target_user_is_post_creator:
                     notification_message = {
@@ -654,8 +656,7 @@ class User(AbstractUser):
 
                 self._send_post_comment_push_notification(post_comment=post_comment,
                                                           notification_message=notification_message,
-                                                          notification_target_user=post_notification_target_user,
-                                                          notification=notification)
+                                                          notification_target_user=post_notification_target_user)
 
         return post_comment
 
@@ -918,8 +919,8 @@ class User(AbstractUser):
 
         community_invite = community_to_invite_user_to.create_invite(creator=self, invited_user=user_to_invite)
 
-        notification = self._create_community_invite_notification(community_invite)
-        self._send_community_invite_push_notification(community_invite, notification=notification)
+        self._create_community_invite_notification(community_invite)
+        self._send_community_invite_push_notification(community_invite)
 
         return community_invite
 
@@ -1369,8 +1370,9 @@ class User(AbstractUser):
 
         Follow = get_follow_model()
         follow = Follow.create_follow(user_id=self.pk, followed_user_id=user_id, lists_ids=lists_ids)
-        notification = self._create_follow_notification(followed_user_id=user_id)
-        self._send_follow_push_notification(followed_user_id=user_id, notification=notification)
+        self._create_follow_notification(followed_user_id=user_id)
+        self._send_follow_push_notification(followed_user_id=user_id)
+
         return follow
 
     def unfollow_user(self, user):
@@ -1437,9 +1439,8 @@ class User(AbstractUser):
         if not self.is_following_user_with_id(user_id):
             self.follow_user_with_id(user_id)
 
-        notification = self._create_connection_request_notification(user_connection_requested_for_id=user_id)
-        self._send_connection_request_push_notification(user_connection_requested_for_id=user_id,
-                                                        notification=notification)
+        self._create_connection_request_notification(user_connection_requested_for_id=user_id)
+        self._send_connection_request_push_notification(user_connection_requested_for_id=user_id)
 
         return connection
 
@@ -1602,12 +1603,10 @@ class User(AbstractUser):
         email.attach_alternative(html_content, 'text/html')
         email.send()
 
-    def _send_post_comment_push_notification(self, post_comment, notification_message, notification_target_user,
-                                             notification):
+    def _send_post_comment_push_notification(self, post_comment, notification_message, notification_target_user):
         senders.send_post_comment_push_notification_with_message(post_comment=post_comment,
                                                                  message=notification_message,
-                                                                 target_user=notification_target_user,
-                                                                 notification=notification)
+                                                                 target_user=notification_target_user)
 
     def _delete_post_comment_notification(self, post_comment):
         PostCommentNotification = get_post_comment_notification_model()
@@ -1616,11 +1615,11 @@ class User(AbstractUser):
 
     def _create_post_reaction_notification(self, post_reaction):
         PostReactionNotification = get_post_reaction_notification_model()
-        return PostReactionNotification.create_post_reaction_notification(post_reaction_id=post_reaction.pk,
-                                                                          owner_id=post_reaction.post.creator_id)
+        PostReactionNotification.create_post_reaction_notification(post_reaction_id=post_reaction.pk,
+                                                                   owner_id=post_reaction.post.creator_id)
 
-    def _send_post_reaction_push_notification(self, post_reaction, notification):
-        senders.send_post_reaction_push_notification(post_reaction=post_reaction, notification=notification)
+    def _send_post_reaction_push_notification(self, post_reaction):
+        senders.send_post_reaction_push_notification(post_reaction=post_reaction)
 
     def _delete_post_reaction_notification(self, post_reaction):
         PostReactionNotification = get_post_reaction_notification_model()
@@ -1629,20 +1628,19 @@ class User(AbstractUser):
 
     def _create_community_invite_notification(self, community_invite):
         CommunityInviteNotification = get_community_invite_notification_model()
-        return CommunityInviteNotification.create_community_invite_notification(community_invite_id=community_invite.pk,
-                                                                                owner_id=community_invite.invited_user_id)
+        CommunityInviteNotification.create_community_invite_notification(community_invite_id=community_invite.pk,
+                                                                         owner_id=community_invite.invited_user_id)
 
-    def _send_community_invite_push_notification(self, community_invite, notification):
-        senders.send_community_invite_push_notification(community_invite=community_invite, notification=notification)
+    def _send_community_invite_push_notification(self, community_invite):
+        senders.send_community_invite_push_notification(community_invite=community_invite)
 
     def _create_follow_notification(self, followed_user_id):
         FollowNotification = get_follow_notification_model()
-        return FollowNotification.create_follow_notification(follower_id=self.pk, owner_id=followed_user_id)
+        FollowNotification.create_follow_notification(follower_id=self.pk, owner_id=followed_user_id)
 
-    def _send_follow_push_notification(self, followed_user_id, notification):
+    def _send_follow_push_notification(self, followed_user_id):
         followed_user = User.objects.get(pk=followed_user_id)
-        senders.send_follow_push_notification(followed_user=followed_user, following_user=self,
-                                              notification=notification)
+        senders.send_follow_push_notification(followed_user=followed_user, following_user=self)
 
     def _delete_follow_notification(self, followed_user_id):
         FollowNotification = get_follow_notification_model()
@@ -1663,14 +1661,14 @@ class User(AbstractUser):
 
     def _create_connection_request_notification(self, user_connection_requested_for_id):
         ConnectionRequestNotification = get_connection_request_notification_model()
-        return ConnectionRequestNotification.create_connection_request_notification(connection_requester_id=self.pk,
-                                                                                    owner_id=user_connection_requested_for_id)
+        ConnectionRequestNotification.create_connection_request_notification(connection_requester_id=self.pk,
+                                                                             owner_id=user_connection_requested_for_id)
 
-    def _send_connection_request_push_notification(self, user_connection_requested_for_id, notification):
+    def _send_connection_request_push_notification(self, user_connection_requested_for_id):
         connection_requested_for = User.objects.get(pk=user_connection_requested_for_id)
         senders.send_connection_request_push_notification(
             connection_requester=self,
-            connection_requested_for=connection_requested_for, notification=notification)
+            connection_requested_for=connection_requested_for)
 
     def _delete_connection_request_notification_for_user_with_id(self, user_id):
         ConnectionRequestNotification = get_connection_request_notification_model()
