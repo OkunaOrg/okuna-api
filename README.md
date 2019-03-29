@@ -124,8 +124,6 @@ Required for creating a new account.
 usage: manage.py create_invite [-h] [--email EMAIL] [--username USERNAME] [--name NAME] [--badge BADGE]
 ```
 
-Create 
-
 ## FAQ
 
 ### Double logging in console
