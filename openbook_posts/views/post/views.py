@@ -147,10 +147,8 @@ class PostComments(APIView):
             post_comments_min = []
             if max_id:
                 post_comments_max = user.get_comments_for_post_with_id(post_id,
-                                                                       max_id=max_id).order_by('-pk')[:count_max]
-                post_comments_max = sorted(post_comments_max.all(),
-                                           key=operator.attrgetter('created'),
-                                           reverse=sort_query == self.SORT_CHOICE_TO_QUERY['DESC'])
+                                                                       max_id=max_id).order_by(sort_query)[:count_max]
+                post_comments_max = post_comments_max.all()  # execute query
 
             if min_id:
                 post_comments_min = user.get_comments_for_post_with_id(post_id,
@@ -159,10 +157,7 @@ class PostComments(APIView):
                                            key=operator.attrgetter('created'),
                                            reverse=sort_query == self.SORT_CHOICE_TO_QUERY['DESC'])
 
-            if sort_query == self.SORT_CHOICE_TO_QUERY['ASC']:
-                all_comments = list(chain(post_comments_max, post_comments_min))
-            elif sort_query == self.SORT_CHOICE_TO_QUERY['DESC']:
-                all_comments = list(chain(post_comments_min, post_comments_max))
+            all_comments = list(chain(post_comments_min, post_comments_max))  # already sorted
 
         post_comments_serializer = PostCommentSerializer(all_comments, many=True, context={"request": request})
 
