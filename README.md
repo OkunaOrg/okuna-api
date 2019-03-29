@@ -117,6 +117,7 @@ python manage.py runserver
 
 ### `manage.py create_invite`
 
+
 Creates a user invite and outputs its token.
 Required for creating a new account.
 
