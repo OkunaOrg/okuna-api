@@ -1310,35 +1310,39 @@ class User(AbstractUser):
         :param username:
         :return:
         """
-        # If there's no circles or lists filters, add all posts
-        if circles_ids:
-            timeline_posts_query = Q(creator=self.pk, circles__id__in=circles_ids)
-        elif lists_ids:
-            timeline_posts_query = Q()
-        else:
-            timeline_posts_query = Q(creator_id=self.pk)
 
-        follows_related_query = self.follows.select_related('followed_user')
-
-        # If there's lists filters, filter follows with it
-        if lists_ids:
-            follows = follows_related_query.filter(lists__id__in=lists_ids)
-        else:
-            follows = follows_related_query.all()
-
-        for follow in follows:
-            followed_user = follow.followed_user
-            if circles_ids:
-                # Check that the user belongs to the filtered circles
-                if self.is_connected_with_user_with_id_in_circles_with_ids(followed_user.pk, circles_ids):
-                    followed_user_posts_query = self._make_get_posts_query_for_user(followed_user, )
-                    timeline_posts_query.add(followed_user_posts_query, Q.OR)
-            else:
-                followed_user_posts_query = self._make_get_posts_query_for_user(followed_user, )
-                timeline_posts_query.add(followed_user_posts_query, Q.OR)
+        timeline_posts_query = Q()
 
         if not circles_ids and not lists_ids:
+            # All of our posts
+            timeline_posts_query.add(Q(creator_id=self.pk), Q.OR)
+            # All of the posts of communities we're part of
             timeline_posts_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
+
+        linked_users_query = Q()
+
+        # Posts from people we are following
+        following_query = Q(creator__followers__user_id=self.pk)
+
+        if lists_ids:
+            following_query.add(Q(creator__followers__lists__id__in=lists_ids), Q.AND)
+
+        linked_users_query.add(following_query, Q.AND)
+
+        final_query = Q(circles__id=self._get_world_circle_id())
+
+        # Posts from people we are connected with
+        connections_query = Q(circles__connections__target_connection__user_id=self.pk,
+                              circles__connections__target_connection__circles__isnull=False)
+
+        if circles_ids:
+            connections_query.add(Q(circles__id__in=circles_ids), Q.AND)
+
+        final_query.add(connections_query, Q.OR)
+
+        linked_users_query.add(final_query, Q.AND)
+
+        timeline_posts_query.add(linked_users_query, Q.OR)
 
         if max_id:
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
