@@ -1348,6 +1348,7 @@ class User(AbstractUser):
         posts_visibility_query.add(connections_posts_query, Q.OR)
 
         foreign_posts_query.add(posts_visibility_query, Q.AND)
+        
 
         timeline_posts_query.add(foreign_posts_query, Q.OR)
 
