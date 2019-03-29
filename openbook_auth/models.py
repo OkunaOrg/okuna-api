@@ -1318,31 +1318,37 @@ class User(AbstractUser):
             timeline_posts_query.add(Q(creator_id=self.pk), Q.OR)
             # All of the posts of communities we're part of
             timeline_posts_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
+        elif circles_ids:
+            timeline_posts_query.add(Q(creator_id=self.pk, circles__id__in=circles_ids), Q.OR)
 
-        linked_users_query = Q()
+        all_linked_users_posts = Q()
 
         # Posts from people we are following
-        following_query = Q(creator__followers__user_id=self.pk)
+        following_users_posts = Q(creator__followers__user_id=self.pk)
 
         if lists_ids:
-            following_query.add(Q(creator__followers__lists__id__in=lists_ids), Q.AND)
+            following_users_posts.add(Q(creator__followers__lists__id__in=lists_ids), Q.AND)
 
-        linked_users_query.add(following_query, Q.AND)
-
-        final_query = Q(circles__id=self._get_world_circle_id())
-
-        # Posts from people we are connected with
-        connections_query = Q(circles__connections__target_connection__user_id=self.pk,
-                              circles__connections__target_connection__circles__isnull=False)
+        all_linked_users_posts.add(following_users_posts, Q.AND)
 
         if circles_ids:
-            connections_query.add(Q(circles__id__in=circles_ids), Q.AND)
+            posts_visibility_query = Q(circles__id=self._get_world_circle_id(),
+                                       creator__connections__target_connection__circles__id__in=circles_ids)
+        else:
+            posts_visibility_query = Q(circles__id=self._get_world_circle_id())
 
-        final_query.add(connections_query, Q.OR)
+        # Posts from people we are connected with
+        connections_posts_query = Q(circles__connections__target_connection__user_id=self.pk,
+                                    circles__connections__target_connection__circles__isnull=False)
 
-        linked_users_query.add(final_query, Q.AND)
+        if circles_ids:
+            connections_posts_query.add(Q(circles__connections__target_connection__circles__id__in=circles_ids), Q.AND)
 
-        timeline_posts_query.add(linked_users_query, Q.OR)
+        posts_visibility_query.add(connections_posts_query, Q.OR)
+
+        all_linked_users_posts.add(posts_visibility_query, Q.AND)
+
+        timeline_posts_query.add(all_linked_users_posts, Q.OR)
 
         if max_id:
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
