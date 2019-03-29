@@ -841,46 +841,6 @@ class PostCommentsAPITests(APITestCase):
         self.assertTrue(len(comments_after_min_id) == count_min)
         self.assertTrue(len(comments_before_max_id) == count_max)
 
-    def test_should_retrieve_comments_slice_with_sort_for_min_id_and_max_id(self):
-        """
-        should retrieve comments slice sorted ascending for post comments taking into account min_id and max_id
-        """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
-        post = user.create_public_post(text=make_fake_post_text())
-
-        amount_of_post_comments = 20
-        post_comments = []
-
-        for i in range(amount_of_post_comments):
-            post_comment_text = make_fake_post_comment_text()
-            post_comments.append(user.comment_post_with_id(post_id=post.pk, text=post_comment_text))
-
-        random_int = random.randint(3, 17)
-        min_id = post_comments[random_int].pk
-        max_id = min_id
-        count_max = 2
-        count_min = 3
-
-        url = self._get_url(post)
-        response = self.client.get(url, {
-            'min_id': min_id,
-            'max_id': max_id,
-            'count_max': count_max,
-            'count_min': count_min,
-            'sort': 'ASC'
-        }, **headers)
-        parsed_response = json.loads(response.content)
-        response_ids = [int(comment['id']) for comment in parsed_response]
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(len(parsed_response) == (count_max + count_min))
-        self.assertTrue(sorted(response_ids) == response_ids)
-        comments_after_min_id = [id for id in response_ids if id >= min_id]
-        comments_before_max_id = [id for id in response_ids if id < max_id]
-        self.assertTrue(len(comments_after_min_id) == count_min)
-        self.assertTrue(len(comments_before_max_id) == count_max)
-
     def _get_create_post_comment_request_data(self, post_comment_text):
         return {
             'text': post_comment_text
