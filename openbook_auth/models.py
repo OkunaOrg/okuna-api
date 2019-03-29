@@ -1319,9 +1319,10 @@ class User(AbstractUser):
             # All of the posts of communities we're part of
             timeline_posts_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
         elif circles_ids:
+            # All of our posts for the given circles
             timeline_posts_query.add(Q(creator_id=self.pk, circles__id__in=circles_ids), Q.OR)
 
-        all_linked_users_posts = Q()
+        foreign_posts_query = Q()
 
         # Posts from people we are following
         following_users_posts = Q(creator__followers__user_id=self.pk)
@@ -1329,7 +1330,7 @@ class User(AbstractUser):
         if lists_ids:
             following_users_posts.add(Q(creator__followers__lists__id__in=lists_ids), Q.AND)
 
-        all_linked_users_posts.add(following_users_posts, Q.AND)
+        foreign_posts_query.add(following_users_posts, Q.AND)
 
         if circles_ids:
             posts_visibility_query = Q(circles__id=self._get_world_circle_id(),
@@ -1346,9 +1347,9 @@ class User(AbstractUser):
 
         posts_visibility_query.add(connections_posts_query, Q.OR)
 
-        all_linked_users_posts.add(posts_visibility_query, Q.AND)
+        foreign_posts_query.add(posts_visibility_query, Q.AND)
 
-        timeline_posts_query.add(all_linked_users_posts, Q.OR)
+        timeline_posts_query.add(foreign_posts_query, Q.OR)
 
         if max_id:
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
