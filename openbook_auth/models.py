@@ -1311,6 +1311,9 @@ class User(AbstractUser):
         :return:
         """
 
+        if not circles_ids and not lists_ids:
+            return self._get_timeline_posts_with_no_filters(max_id=max_id)
+
         # If there's no circles or lists filters, add all posts
         if circles_ids:
             timeline_posts_query = Q(creator=self.pk, circles__id__in=circles_ids)
@@ -1351,6 +1354,65 @@ class User(AbstractUser):
             timeline_posts = Post.objects.filter(timeline_posts_query).distinct()
 
         return timeline_posts
+
+    def _get_timeline_posts_with_no_filters(self, max_id=None):
+
+        timeline_posts_query = Q()
+
+        # All all own posts
+
+        own_posts_query = Q(creator_id=self.pk)
+
+        timeline_posts_query.add(own_posts_query, Q.OR)
+
+        # Add all posts of communities we're member of
+
+        communities_member_of_posts_query = Q(community__memberships__user__id=self.pk)
+
+        timeline_posts_query.add(communities_member_of_posts_query, Q.OR)
+
+        # Add posts of other users
+
+        users_posts_query = Q()
+
+        # Only add the posts of users we're following
+
+        followed_users_query = Q(creator__followers__user_id=self.pk)
+
+        users_posts_query.add(followed_users_query, Q.AND)
+
+        # All user posts belong to circles
+
+        users_circles_query = Q()
+
+        # Add the world circle
+
+        world_circle_query = Q(circles__id=self._get_world_circle_id())
+
+        users_circles_query.add(world_circle_query, Q.OR)
+
+        # Add the circles we're part of
+
+        connections_circles_query = Q(circles__connections__target_user_id=self.pk,
+                                      circles__connections__target_connection__circles__isnull=False)
+
+        users_circles_query.add(connections_circles_query, Q.OR)
+
+        # Add the circles query to the users posts query
+
+        users_posts_query.add(users_circles_query, Q.AND)
+
+        # Add the users query to the timeline query
+
+        timeline_posts_query.add(users_posts_query, Q.OR)
+
+        # Allow max_id for cursor based scrolling
+        if max_id:
+            timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
+
+        Post = get_post_model()
+
+        return Post.objects.filter(timeline_posts_query)
 
     def follow_user(self, user, lists_ids=None):
         return self.follow_user_with_id(user.pk, lists_ids)
