@@ -117,3 +117,4 @@ workflows:
             only:
             - master
             - develop
+            - acceptance
