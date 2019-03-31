@@ -463,7 +463,7 @@ class PostsAPITests(APITestCase):
 
         response_posts = json.loads(response.content)
 
-        self.assertEqual(number_of_expected_posts, len(response_posts))
+        self.assertEqual(len(response_posts), number_of_expected_posts)
 
         for response_post in response_posts:
             self.assertIn(response_post.get('id'), in_circle_posts_ids)

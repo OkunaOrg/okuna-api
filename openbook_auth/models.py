@@ -1350,23 +1350,27 @@ class User(AbstractUser):
 
         users_circles_query = Q()
 
-        # Add the world circle if there's no circles filtering
+        # Add the world circle
 
         if not has_circles_filtering:
             world_circle_query = Q(circles__id=self._get_world_circle_id())
-
             users_circles_query.add(world_circle_query, Q.OR)
 
         # Add the circles we're part of or the ones filtered on
+        connections_circles_query = Q(creator__connections__target_user_id=self.pk,
+                                      creator__connections__target_connection__circles__isnull=False, )
+
+        # Dont bring connections community posts
+        connections_circles_query.add(Q(community__isnull=True), Q.AND)
 
         if has_circles_filtering:
-            connections_circles_query = Q(creator__connections__target_user_id=self.pk,
-                                          creator__connections__target_connection__circles__in=circles_ids,
-                                          community__isnull=True)
+            circle_filter_query = Q(creator__connections__target_connection__circles__in=circles_ids)
+            circle_filter_query.add(
+                Q(circles__connections__target_user_id=self.pk, ) | Q(circles__id=self._get_world_circle_id()), Q.AND)
+            connections_circles_query.add(circle_filter_query, Q.AND)
         else:
-            connections_circles_query = Q(creator__connections__target_user_id=self.pk,
-                                          creator__connections__target_connection__circles__isnull=False,
-                                          community__isnull=True)
+            # Posts of circles we're part of
+            connections_circles_query.add(Q(circles__connections__target_user_id=self.pk, ), Q.AND)
 
         users_circles_query.add(connections_circles_query, Q.OR)
 
