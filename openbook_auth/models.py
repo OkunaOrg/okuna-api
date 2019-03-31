@@ -1312,8 +1312,8 @@ class User(AbstractUser):
         """
         timeline_posts_query = Q()
 
-        has_circles_filtering = circles_ids is not None and circles_ids
-        has_lists_filtering = lists_ids is not None and lists_ids
+        has_circles_filtering = circles_ids is not None and len(circles_ids) > 0
+        has_lists_filtering = lists_ids is not None and len(lists_ids) > 0
 
         has_filtering = has_circles_filtering or has_lists_filtering
 
@@ -1361,10 +1361,12 @@ class User(AbstractUser):
 
         if has_circles_filtering:
             connections_circles_query = Q(creator__connections__target_user_id=self.pk,
-                                          creator__connections__target_connection__circles__in=circles_ids)
+                                          creator__connections__target_connection__circles__in=circles_ids,
+                                          community__isnull=True)
         else:
             connections_circles_query = Q(creator__connections__target_user_id=self.pk,
-                                          creator__connections__target_connection__circles__isnull=False)
+                                          creator__connections__target_connection__circles__isnull=False,
+                                          community__isnull=True)
 
         users_circles_query.add(connections_circles_query, Q.OR)
 
