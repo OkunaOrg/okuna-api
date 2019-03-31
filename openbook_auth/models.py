@@ -1310,59 +1310,79 @@ class User(AbstractUser):
         :param username:
         :return:
         """
-
         timeline_posts_query = Q()
 
-        if not circles_ids and not lists_ids:
-            # All of our posts
-            timeline_posts_query.add(Q(creator_id=self.pk), Q.OR)
-            # All of the posts of communities we're part of
-            timeline_posts_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
-        elif circles_ids:
-            # All of our posts for the given circles
-            timeline_posts_query.add(Q(creator_id=self.pk, circles__id__in=circles_ids), Q.OR)
+        has_circles_filtering = circles_ids is not None and circles_ids
+        has_lists_filtering = lists_ids is not None and lists_ids
 
-        foreign_posts_query = Q()
+        has_filtering = has_circles_filtering or has_lists_filtering
 
-        # Posts from people we are following
-        following_users_posts = Q(creator__followers__user_id=self.pk)
+        # When no filtering is made
 
-        if lists_ids:
-            following_users_posts.add(Q(creator__followers__lists__id__in=lists_ids), Q.AND)
+        if not has_filtering:
+            # Add all own posts
+            own_posts_query = Q(creator_id=self.pk)
 
-        foreign_posts_query.add(following_users_posts, Q.AND)
+            timeline_posts_query.add(own_posts_query, Q.OR)
 
-        if circles_ids:
-            posts_visibility_query = Q(circles__id=self._get_world_circle_id(),
-                                       creator__connections__target_connection__circles__id__in=circles_ids)
+            # Add all posts of communities we're part of
+            communities_member_of_posts_query = Q(community__memberships__user__id=self.pk)
+
+            timeline_posts_query.add(communities_member_of_posts_query, Q.OR)
+        elif has_circles_filtering:
+            own_circles_posts_query = Q(creator_id=self.pk, circles__in=circles_ids)
+            timeline_posts_query.add(own_circles_posts_query, Q.OR)
+
+        # Add posts of other users
+
+        users_posts_query = Q()
+
+        # Only add the posts of users we're following
+
+        if has_lists_filtering:
+            followed_users_query = Q(creator__followers__user_id=self.pk, creator__followers__lists__id__in=lists_ids)
         else:
-            posts_visibility_query = Q(circles__id=self._get_world_circle_id())
+            followed_users_query = Q(creator__followers__user_id=self.pk)
 
-        # Posts from people we are connected with
-        connections_posts_query = Q(circles__connections__target_connection__user_id=self.pk,
-                                    circles__connections__target_connection__circles__isnull=False)
+        users_posts_query.add(followed_users_query, Q.AND)
 
-        if circles_ids:
-            connections_posts_query.add(Q(circles__connections__target_connection__circles__id__in=circles_ids), Q.AND)
+        # All user posts belong to circles
 
-        posts_visibility_query.add(connections_posts_query, Q.OR)
+        users_circles_query = Q()
 
-        foreign_posts_query.add(posts_visibility_query, Q.AND)
-        
+        # Add the world circle if there's no circles filtering
 
-        timeline_posts_query.add(foreign_posts_query, Q.OR)
+        if not has_circles_filtering:
+            world_circle_query = Q(circles__id=self._get_world_circle_id())
 
+            users_circles_query.add(world_circle_query, Q.OR)
+
+        # Add the circles we're part of or the ones filtered on
+
+        if has_circles_filtering:
+            connections_circles_query = Q(creator__connections__target_user_id=self.pk,
+                                          creator__connections__target_connection__circles__in=circles_ids)
+        else:
+            connections_circles_query = Q(creator__connections__target_user_id=self.pk,
+                                          creator__connections__target_connection__circles__isnull=False)
+
+        users_circles_query.add(connections_circles_query, Q.OR)
+
+        # Add the circles query to the users posts query
+
+        users_posts_query.add(users_circles_query, Q.AND)
+
+        # Add the users query to the timeline query
+
+        timeline_posts_query.add(users_posts_query, Q.OR)
+
+        # Allow max_id for cursor based scrolling
         if max_id:
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
 
         Post = get_post_model()
 
-        if not timeline_posts_query.children:
-            timeline_posts = Post.objects.none()
-        else:
-            timeline_posts = Post.objects.filter(timeline_posts_query).distinct()
-
-        return timeline_posts
+        return Post.objects.filter(timeline_posts_query)
 
     def follow_user(self, user, lists_ids=None):
         return self.follow_user_with_id(user.pk, lists_ids)
