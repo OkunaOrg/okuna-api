@@ -18,7 +18,7 @@ class Circle(models.Model):
     name = models.CharField(_('name'), max_length=CIRCLE_MAX_LENGTH, blank=False, null=False)
     color = models.CharField(_('color'), max_length=COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
                              validators=[hex_color_validator])
-    posts = models.ManyToManyField(Post, related_name='circles')
+    posts = models.ManyToManyField(Post, related_name='circles', db_index=True)
     connections = models.ManyToManyField(Connection, related_name='circles')
     created = models.DateTimeField(editable=False)
 
