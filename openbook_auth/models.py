@@ -1383,7 +1383,7 @@ class User(AbstractUser):
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
 
         Post = get_post_model()
-        return Post.objects.filter(timeline_posts_query)
+        return Post.objects.filter(timeline_posts_query).distinct()
 
     def follow_user(self, user, lists_ids=None):
         return self.follow_user_with_id(user.pk, lists_ids)
