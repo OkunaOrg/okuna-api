@@ -15,7 +15,7 @@ class List(models.Model):
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lists')
     emoji = models.ForeignKey(Emoji, on_delete=models.SET_NULL, related_name='lists', null=True)
     name = models.CharField(_('name'), max_length=settings.LIST_MAX_LENGTH, blank=False, null=False)
-    follows = models.ManyToManyField(Follow, related_name='lists', db_index=True)
+    follows = models.ManyToManyField(Follow, related_name='lists')
     created = models.DateTimeField(editable=False)
 
     class Meta:
