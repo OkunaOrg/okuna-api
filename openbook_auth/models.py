@@ -1303,54 +1303,86 @@ class User(AbstractUser):
     def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None):
         """
         Get the timeline posts for self. The results will be dynamic based on follows and connections.
-        :param lists_ids:
-        :param circles_ids:
-        :param max_id:
-        :param post_id:
-        :param username:
-        :return:
         """
 
-        # If there's no circles or lists filters, add all posts
+        if not circles_ids and not lists_ids:
+            return self._get_timeline_posts_with_no_filters(max_id=max_id)
+
+        return self._get_timeline_posts_with_filters(max_id=max_id, circles_ids=circles_ids, lists_ids=lists_ids)
+
+    def _get_timeline_posts_with_filters(self, max_id=None, circles_ids=None, lists_ids=None):
+        world_circle_id = self._get_world_circle_id()
+
         if circles_ids:
             timeline_posts_query = Q(creator=self.pk, circles__id__in=circles_ids)
-        elif lists_ids:
+        else:
             timeline_posts_query = Q()
-        else:
-            timeline_posts_query = Q(creator_id=self.pk)
 
-        follows_related_query = self.follows.select_related('followed_user')
-
-        # If there's lists filters, filter follows with it
         if lists_ids:
-            follows = follows_related_query.filter(lists__id__in=lists_ids)
+            followed_users_query = self.follows.filter(lists__id__in=lists_ids)
         else:
-            follows = follows_related_query.all()
+            followed_users_query = self.follows.all()
 
-        for follow in follows:
-            followed_user = follow.followed_user
+        followed_users = followed_users_query.values('followed_user__id')
+
+        for followed_user in followed_users:
+
+            followed_user_id = followed_user['followed_user__id']
+
+            followed_user_query = Q(creator_id=followed_user_id)
+
             if circles_ids:
-                # Check that the user belongs to the filtered circles
-                if self.is_connected_with_user_with_id_in_circles_with_ids(followed_user.pk, circles_ids):
-                    followed_user_posts_query = self._make_get_posts_query_for_user(followed_user, )
-                    timeline_posts_query.add(followed_user_posts_query, Q.OR)
-            else:
-                followed_user_posts_query = self._make_get_posts_query_for_user(followed_user, )
-                timeline_posts_query.add(followed_user_posts_query, Q.OR)
+                followed_user_query.add(Q(creator__connections__target_connection__circles__in=circles_ids), Q.AND)
 
-        if not circles_ids and not lists_ids:
-            timeline_posts_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
+            followed_user_circles_query = Q(circles__id=world_circle_id)
+
+            followed_user_circles_query.add(Q(circles__connections__target_user_id=self.pk, ), Q.OR)
+
+            followed_user_query.add(followed_user_circles_query, Q.AND)
+
+            # Add all followed user circles
+            timeline_posts_query.add(followed_user_query, Q.OR)
+
         if max_id:
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
 
         Post = get_post_model()
+        return Post.objects.filter(timeline_posts_query).distinct()
 
-        if not timeline_posts_query.children:
-            timeline_posts = Post.objects.none()
-        else:
-            timeline_posts = Post.objects.filter(timeline_posts_query).distinct()
+    def _get_timeline_posts_with_no_filters(self, max_id=None):
+        """
+        Being the main action of the network, an optimised call of the get timeline posts call with no filtering.
+        """
+        world_circle_id = self._get_world_circle_id()
 
-        return timeline_posts
+        # Add all own posts
+        timeline_posts_query = Q(creator=self.pk)
+
+        # Add all community posts
+        timeline_posts_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
+
+        followed_users = self.follows.values('followed_user__id')
+
+        for followed_user in followed_users:
+            followed_user_id = followed_user['followed_user__id']
+
+            # Add followed user world circle posts + posts we're encircled with
+
+            followed_user_query = Q(creator_id=followed_user_id)
+
+            followed_user_circles_query = Q(circles__id=world_circle_id)
+
+            followed_user_circles_query.add(Q(circles__connections__target_user_id=self.pk, ), Q.OR)
+
+            followed_user_query.add(followed_user_circles_query, Q.AND)
+
+            timeline_posts_query.add(followed_user_query, Q.OR)
+
+        if max_id:
+            timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
+
+        Post = get_post_model()
+        return Post.objects.filter(timeline_posts_query).distinct()
 
     def follow_user(self, user, lists_ids=None):
         return self.follow_user_with_id(user.pk, lists_ids)
