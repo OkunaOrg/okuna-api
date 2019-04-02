@@ -86,9 +86,9 @@ class Posts(APIView):
 
         posts = posts.order_by('-created')[:count]
 
-        post_serializer = AuthenticatedUserPostSerializer(posts, many=True, context={"request": request})
+        post_serializer_data = AuthenticatedUserPostSerializer(posts, many=True, context={"request": request}).data
 
-        return Response(post_serializer.data, status=status.HTTP_200_OK)
+        return Response(post_serializer_data, status=status.HTTP_200_OK)
 
     def get_posts_for_unauthenticated_user(self, request):
         query_params = request.query_params.dict()

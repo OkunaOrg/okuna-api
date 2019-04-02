@@ -15,9 +15,10 @@ class ConnectionRequestNotification(models.Model):
     @classmethod
     def create_connection_request_notification(cls, connection_requester_id, owner_id):
         connection_request_notification = cls.objects.create(connection_requester_id=connection_requester_id)
-        return Notification.create_notification(type=Notification.CONNECTION_REQUEST,
-                                                content_object=connection_request_notification,
-                                                owner_id=owner_id)
+        Notification.create_notification(type=Notification.CONNECTION_REQUEST,
+                                         content_object=connection_request_notification,
+                                         owner_id=owner_id)
+        return connection_request_notification
 
     @classmethod
     def delete_connection_request_notification_for_users_with_ids(cls, user_a_id, user_b_id):
@@ -28,6 +29,3 @@ class ConnectionRequestNotification(models.Model):
         cls.objects.filter(notification_query).delete()
 
 
-@receiver(pre_delete, sender=ConnectionRequestNotification, dispatch_uid='connection_request_delete_cleanup')
-def connection_request_notification_pre_delete(sender, instance, using, **kwargs):
-    Notification.objects.filter(notification_type=Notification.CONNECTION_REQUEST, object_id=instance.pk).delete()
