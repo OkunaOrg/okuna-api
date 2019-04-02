@@ -1321,9 +1321,9 @@ class PostCommentItemAPITests(APITestCase):
         }, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        post_comment_db = PostComment.objects.get(pk=post_comment.pk)
-        self.assertTrue(post_comment_db.text == edited_post_comment_text)
-        self.assertTrue(post_comment_db.is_edited)
+        post_comment.refresh_from_db()
+        self.assertTrue(post_comment.text == edited_post_comment_text)
+        self.assertTrue(post_comment.is_edited)
 
     def test_can_edit_own_post_comment_on_others_post(self):
         """
@@ -1346,8 +1346,8 @@ class PostCommentItemAPITests(APITestCase):
         }, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        post_comment_db = PostComment.objects.get(pk=post_comment.pk)
-        self.assertTrue(post_comment_db.text == edited_post_comment_text)
+        post_comment.refresh_from_db()
+        self.assertTrue(post_comment.text == edited_post_comment_text)
 
     def test_cannot_edit_others_post_comment(self):
         """
@@ -1370,9 +1370,9 @@ class PostCommentItemAPITests(APITestCase):
         }, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        post_comment_db = PostComment.objects.get(pk=post_comment.pk)
-        self.assertTrue(post_comment_db.text == original_post_comment_text)
-        self.assertFalse(post_comment_db.is_edited)
+        post_comment.refresh_from_db()
+        self.assertTrue(post_comment.text == original_post_comment_text)
+        self.assertFalse(post_comment.is_edited)
 
     def test_cannot_edit_others_community_post_comment_even_if_admin(self):
         """
@@ -1398,9 +1398,8 @@ class PostCommentItemAPITests(APITestCase):
         }, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        post_comment_db = PostComment.objects.get(pk=post_comment.pk)
-        self.assertTrue(post_comment_db.text == original_post_comment_text)
-
+        post_comment.refresh_from_db()
+        self.assertTrue(post_comment.text == original_post_comment_text)
 
     def _get_url(self, post, post_comment):
         return reverse('post-comment', kwargs={

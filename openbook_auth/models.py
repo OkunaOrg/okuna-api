@@ -668,6 +668,7 @@ class User(AbstractUser):
         post_comment.delete()
 
     def update_comment_with_id_for_post_with_id(self, post_comment_id, post_id, text):
+        self.has_post_comment_with_id(post_comment_id)
         self._check_can_edit_comment_with_id_for_post_with_id(post_comment_id, post_id)
         PostComment = get_post_comment_model()
         post_comment = PostComment.objects.get(pk=post_comment_id)
@@ -675,6 +676,9 @@ class User(AbstractUser):
         post_comment.is_edited = True
         post_comment.save()
         return post_comment
+
+    def has_post_comment_with_id(self, post_comment_id):
+        self._check_has_post_comment_with_id(post_comment_id)
 
     def create_circle(self, name, color):
         self._check_circle_name_not_taken(name)
@@ -1928,6 +1932,7 @@ class User(AbstractUser):
                 _('The comment does not belong to the specified post.')
             )
 
+    def _check_has_post_comment_with_id(self, post_comment_id):
         if not self.posts_comments.filter(id=post_comment_id).exists():
             # The comment is not ours
             raise ValidationError(
