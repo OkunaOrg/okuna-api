@@ -12,7 +12,7 @@ from openbook_posts.views.post.serializers import GetPostCommentsSerializer, Pos
     CommentPostSerializer, DeletePostCommentSerializer, DeletePostSerializer, DeletePostReactionSerializer, \
     ReactToPostSerializer, PostReactionSerializer, GetPostReactionsSerializer, PostEmojiCountSerializer, \
     GetPostReactionsEmojiCountSerializer, PostReactionEmojiGroupSerializer, GetPostSerializer, GetPostPostSerializer, \
-    UnmutePostSerializer, MutePostSerializer, UpdatePostCommentSerializer
+    UnmutePostSerializer, MutePostSerializer, UpdatePostCommentSerializer, EditPostCommentSerializer
 
 
 # TODO Use post uuid also internally, not only as API resource identifier
@@ -234,7 +234,7 @@ class PostCommentItem(APIView):
             post_comment = user.update_comment_with_id_for_post_with_id(post_comment_id=post_comment_id,
                                                                         post_id=post_id, text=comment_text)
 
-        post_comment_serializer = PostCommentSerializer(post_comment, context={"request": request})
+        post_comment_serializer = EditPostCommentSerializer(post_comment, context={"request": request})
         return Response(post_comment_serializer.data, status=status.HTTP_200_OK)
 
 
