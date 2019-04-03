@@ -66,7 +66,19 @@ class PostCommentSerializer(serializers.ModelSerializer):
             'commenter',
             'text',
             'created',
+            'is_edited',
             'id'
+        )
+
+
+class EditPostCommentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = PostComment
+        fields = (
+            'id',
+            'text',
+            'is_edited'
         )
 
 
@@ -112,6 +124,18 @@ class DeletePostCommentSerializer(serializers.Serializer):
         validators=[post_comment_id_exists],
         required=True,
     )
+
+
+class UpdatePostCommentSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+    post_comment_id = serializers.IntegerField(
+        validators=[post_comment_id_exists],
+        required=True,
+    )
+    text = serializers.CharField(max_length=settings.POST_COMMENT_MAX_LENGTH, required=True, allow_blank=False)
 
 
 class PostReactorProfileSerializer(serializers.ModelSerializer):

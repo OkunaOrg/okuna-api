@@ -667,6 +667,19 @@ class User(AbstractUser):
         self._delete_post_comment_notification(post_comment=post_comment)
         post_comment.delete()
 
+    def update_comment_with_id_for_post_with_id(self, post_comment_id, post_id, text):
+        self.has_post_comment_with_id(post_comment_id)
+        self._check_can_edit_comment_with_id_for_post_with_id(post_comment_id, post_id)
+        PostComment = get_post_comment_model()
+        post_comment = PostComment.objects.get(pk=post_comment_id)
+        post_comment.text = text
+        post_comment.is_edited = True
+        post_comment.save()
+        return post_comment
+
+    def has_post_comment_with_id(self, post_comment_id):
+        self._check_has_post_comment_with_id(post_comment_id)
+
     def create_circle(self, name, color):
         self._check_circle_name_not_taken(name)
         Circle = get_circle_model()
@@ -1907,6 +1920,23 @@ class User(AbstractUser):
         if User.is_username_taken(username=username):
             raise ValidationError(
                 _('The username is already taken.')
+            )
+
+    def _check_can_edit_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
+        # Check that the comment belongs to the post
+        PostComment = get_post_comment_model()
+        Post = get_post_model()
+
+        if not PostComment.objects.filter(id=post_comment_id, post_id=post_id).exists():
+            raise ValidationError(
+                _('The comment does not belong to the specified post.')
+            )
+
+    def _check_has_post_comment_with_id(self, post_comment_id):
+        if not self.posts_comments.filter(id=post_comment_id).exists():
+            # The comment is not ours
+            raise ValidationError(
+                _('You cannot edit a comment that does not belong to you')
             )
 
     def _check_can_delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
