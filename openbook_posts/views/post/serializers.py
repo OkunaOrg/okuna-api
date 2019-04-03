@@ -71,6 +71,17 @@ class PostCommentSerializer(serializers.ModelSerializer):
         )
 
 
+class EditPostCommentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = PostComment
+        fields = (
+            'id',
+            'text',
+            'is_edited'
+        )
+
+
 class CommentPostSerializer(serializers.Serializer):
     post_uuid = serializers.UUIDField(
         validators=[post_uuid_exists],
