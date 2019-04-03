@@ -202,6 +202,7 @@ class PostComment(models.Model):
     created = models.DateTimeField(editable=False)
     commenter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_comments')
     text = models.CharField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False)
+    is_edited = models.BooleanField(default=False, null=False, blank=False)
 
     @classmethod
     def create_comment(cls, text, commenter, post):
