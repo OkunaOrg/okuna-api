@@ -76,9 +76,9 @@ class EditPostCommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostComment
         fields = (
+            'id',
             'text',
-            'is_edited',
-            'id'
+            'is_edited'
         )
 
 
