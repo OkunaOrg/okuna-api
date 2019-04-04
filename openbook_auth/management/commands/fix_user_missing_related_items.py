@@ -26,6 +26,11 @@ class Command(BaseCommand):
 
         for user in users:
             logger.info('Fixing circles of user with id %d and username %s' % (user.pk, user.username))
+            for connection in user.connections.all():
+                connection.delete()
+
+            for circle in user.circles.all():
+                circle.delete()
             bootstrap_user_circles(user=user)
 
     def _fix_missing_notifications_settings(self):
