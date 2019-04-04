@@ -66,7 +66,19 @@ class PostCommentSerializer(serializers.ModelSerializer):
             'commenter',
             'text',
             'created',
+            'is_edited',
             'id'
+        )
+
+
+class EditPostCommentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = PostComment
+        fields = (
+            'id',
+            'text',
+            'is_edited'
         )
 
 
@@ -86,10 +98,21 @@ class GetPostCommentsSerializer(serializers.Serializer):
     max_id = serializers.IntegerField(
         required=False,
     )
-    count = serializers.IntegerField(
+    min_id = serializers.IntegerField(
+        required=False,
+    )
+    count_max = serializers.IntegerField(
         required=False,
         max_value=20
     )
+    count_min = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
+    sort = serializers.ChoiceField(required=False, choices=[
+        'ASC',
+        'DESC'
+    ])
 
 
 class DeletePostCommentSerializer(serializers.Serializer):
@@ -101,6 +124,18 @@ class DeletePostCommentSerializer(serializers.Serializer):
         validators=[post_comment_id_exists],
         required=True,
     )
+
+
+class UpdatePostCommentSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+    post_comment_id = serializers.IntegerField(
+        validators=[post_comment_id_exists],
+        required=True,
+    )
+    text = serializers.CharField(max_length=settings.POST_COMMENT_MAX_LENGTH, required=True, allow_blank=False)
 
 
 class PostReactorProfileSerializer(serializers.ModelSerializer):

@@ -12,7 +12,7 @@ from rest_framework.test import APITestCase
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, \
     make_community
 from openbook_communities.models import Community
-from openbook_notifications.models import CommunityInviteNotification
+from openbook_notifications.models import CommunityInviteNotification, Notification
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -553,8 +553,15 @@ class JoinCommunityAPITest(APITestCase):
         other_user = make_user()
         community = make_community(creator=other_user)
 
-        other_user.invite_user_with_username_to_community_with_name(username=user.username,
-                                                                    community_name=community.name)
+        community_invite = other_user.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                                       community_name=community.name)
+
+        community_invite_notification = CommunityInviteNotification.objects.get(
+            community_invite=community_invite)
+
+        notification = Notification.objects.get(owner=user,
+                                                notification_type=Notification.COMMUNITY_INVITE,
+                                                object_id=community_invite_notification.pk)
 
         url = self._get_url(community_name=community.name)
         response = self.client.post(url, **headers)
@@ -563,6 +570,10 @@ class JoinCommunityAPITest(APITestCase):
 
         self.assertFalse(CommunityInviteNotification.objects.filter(community_invite__invited_user=user,
                                                                     community_invite__creator=other_user).exists())
+
+        self.assertFalse(
+            CommunityInviteNotification.objects.filter(pk=community_invite_notification.pk).exists())
+        self.assertFalse(Notification.objects.filter(pk=notification.pk).exists())
 
     def test_cannot_join_private_community_without_invite(self):
         """

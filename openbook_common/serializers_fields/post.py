@@ -110,9 +110,9 @@ class PostCreatorField(Field):
         post_creator_serializer = self.post_creator_serializer(post_creator, context={"request": request}).data
 
         if post_community:
-            post_creator_memberships = post_community.memberships.get(user=post_creator)
+            post_creator_memberships = post_community.memberships.filter(user=post_creator).all()
             post_creator_serializer['communities_memberships'] = self.community_membership_serializer(
-                [post_creator_memberships],
+                post_creator_memberships,
                 many=True,
                 context={
                     "request": request}).data
@@ -178,3 +178,21 @@ class IsMutedField(Field):
             is_muted = request_user.has_muted_post_with_id(post_id=post.pk)
 
         return is_muted
+
+
+class IsEncircledField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(IsEncircledField, self).__init__(**kwargs)
+
+    def to_representation(self, post):
+        request = self.context.get('request')
+        request_user = request.user
+
+        is_encircled = False
+
+        if not request_user.is_anonymous:
+            is_encircled = post.is_encircled_post()
+
+        return is_encircled

@@ -11,6 +11,12 @@ from openbook_notifications.validators import notification_id_exists
 from openbook_posts.models import PostComment, PostReaction, Post, PostImage, PostVideo
 
 
+class ReadNotificationsSerializer(serializers.Serializer):
+    max_id = serializers.IntegerField(
+        required=False,
+    )
+
+
 class GetNotificationsSerializer(serializers.Serializer):
     count = serializers.IntegerField(
         required=False,
@@ -62,9 +68,31 @@ class PostCommentPostImageSerializer(serializers.ModelSerializer):
         )
 
 
+class PostCommentCreatorProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = (
+            'id',
+            'avatar',
+        )
+
+
+class PostCommentCreatorSerializer(serializers.ModelSerializer):
+    profile = PostCommentCreatorProfileSerializer()
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'username',
+            'profile'
+        )
+
+
 class NotificationPostSerializer(serializers.ModelSerializer):
     image = PostCommentPostImageSerializer()
     video = PostCommentPostVideoSerializer()
+    creator = PostCommentCreatorSerializer()
 
     class Meta:
         model = Post
@@ -73,7 +101,9 @@ class NotificationPostSerializer(serializers.ModelSerializer):
             'uuid',
             'image',
             'text',
-            'video'
+            'video',
+            'creator',
+            'created'
         )
 
 

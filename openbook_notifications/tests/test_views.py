@@ -95,6 +95,34 @@ class ReadNotificationsAPITests(APITestCase):
         self.assertTrue(Notification.objects.filter(owner=user, read=True, id__in=notifications_ids).count() == len(
             notifications_ids))
 
+    def test_should_be_able_to_read_notifications_with_max_id(self):
+        """
+        should be able to read all notifications with a max_id and return 200
+        """
+        user = make_user()
+
+        amount_of_notifications = 5
+
+        notifications_ids = []
+
+        for i in range(0, amount_of_notifications):
+            notification = make_notification(owner=user)
+            notifications_ids.append(notification.pk)
+
+        max_id = notifications_ids[-3]
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.post(url, {
+            'max_id': max_id
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(Notification.objects.filter(owner=user, read=True, id__lte=max_id).exists())
+
+        self.assertTrue(Notification.objects.filter(owner=user, read=False, id__gt=max_id).exists())
+
     def _get_url(self):
         return reverse('read-notifications')
 

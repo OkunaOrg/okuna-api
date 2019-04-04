@@ -64,7 +64,7 @@ class Communities(APIView):
 
         user = request.user
 
-        communities = user.get_joined_communities()[offset:count]
+        communities = user.get_joined_communities()[offset:offset + count]
 
         response_serializer = CommunitiesCommunitySerializer(communities, many=True,
                                                              context={"request": request})
@@ -102,7 +102,7 @@ class JoinedCommunities(APIView):
 
         user = request.user
 
-        communities = user.get_joined_communities()[offset:count]
+        communities = user.get_joined_communities()[offset:offset + count]
 
         response_serializer = CommunitiesCommunitySerializer(communities, many=True,
                                                              context={"request": request})
@@ -148,7 +148,7 @@ class ModeratedCommunities(APIView):
 
         user = request.user
 
-        communities = user.get_moderated_communities()[offset:count]
+        communities = user.get_moderated_communities()[offset:offset + count]
 
         response_serializer = CommunitiesCommunitySerializer(communities, many=True,
                                                              context={"request": request})
@@ -171,7 +171,7 @@ class AdministratedCommunities(APIView):
 
         user = request.user
 
-        communities = user.get_administrated_communities()[offset:count]
+        communities = user.get_administrated_communities()[offset:offset + count]
 
         response_serializer = CommunitiesCommunitySerializer(communities, many=True,
                                                              context={"request": request})
@@ -192,7 +192,7 @@ class TrendingCommunities(APIView):
         category_name = data.get('category')
 
         Community = get_community_model()
-        communities = Community.get_trending_communities(category_name=category_name)[:10]
+        communities = Community.get_trending_communities(category_name=category_name)[:30]
 
         posts_serializer = CommunitiesCommunitySerializer(communities, many=True, context={"request": request})
         return Response(posts_serializer.data, status=status.HTTP_200_OK)
@@ -213,7 +213,7 @@ class FavoriteCommunities(APIView):
 
         user = request.user
 
-        communities = user.get_favorite_communities()[offset:count]
+        communities = user.get_favorite_communities()[offset:offset + count]
 
         posts_serializer = CommunitiesCommunitySerializer(communities, many=True, context={"request": request})
         return Response(posts_serializer.data, status=status.HTTP_200_OK)
@@ -229,7 +229,7 @@ class SearchCommunities(APIView):
 
         data = serializer.validated_data
 
-        count = data.get('count', 10)
+        count = data.get('count', 20)
         query = data.get('query')
 
         user = request.user

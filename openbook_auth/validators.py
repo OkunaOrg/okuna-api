@@ -37,6 +37,13 @@ def user_username_exists(username):
         )
 
 
+def user_email_exists(email):
+    if not User.objects.filter(email=email).exists():
+        raise NotFound(
+            _('No user with the provided email exists.'),
+        )
+
+
 def is_of_legal_age_validator(is_confirmed):
     if is_confirmed is False:
         raise ValidationError(

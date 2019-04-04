@@ -2,6 +2,9 @@ from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
 # Create your models here.
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
+
 from openbook_notifications.models.notification import Notification
 from openbook_posts.models import PostReaction
 

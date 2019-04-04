@@ -18,9 +18,9 @@ class PostCommenterField(Field):
         post_commenter_serializer = self.post_commenter_serializer(post_commenter, context={"request": request}).data
 
         if post_community:
-            post_creator_memberships = post_community.memberships.get(user=post_commenter)
+            post_creator_memberships = post_community.memberships.filter(user=post_commenter).all()
             post_commenter_serializer['communities_memberships'] = self.community_membership_serializer(
-                [post_creator_memberships],
+                post_creator_memberships,
                 many=True,
                 context={
                     "request": request}).data

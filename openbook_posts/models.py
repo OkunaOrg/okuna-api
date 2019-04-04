@@ -87,49 +87,49 @@ class Post(models.Model):
 
     @classmethod
     def get_emoji_counts_for_post_with_id(cls, post_id, emoji_id=None, reactor_id=None):
-        PostReaction = get_post_reaction_model()
         Emoji = get_emoji_model()
 
-        emoji_query = Q(reactions__post_id=post_id)
+        emoji_query = Q(reactions__post_id=post_id, )
 
         if emoji_id:
             emoji_query.add(Q(reactions__emoji_id=emoji_id), Q.AND)
 
-        emojis_reacted_with = Emoji.objects.filter(emoji_query).distinct()
+        if reactor_id:
+            emoji_query.add(Q(reactions__reactor_id=reactor_id), Q.AND)
 
-        emoji_counts = []
+        emojis = Emoji.objects.filter(emoji_query).annotate(Count('reactions')).distinct().order_by(
+            '-reactions__count').all()
 
-        for emoji in emojis_reacted_with:
-            reaction_query = Q(post_id=post_id, emoji_id=emoji.pk)
-
-            if reactor_id:
-                reaction_query.add(Q(reactor_id=reactor_id), Q.AND)
-
-            emoji_count = PostReaction.objects.filter(reaction_query).count()
-            emoji_counts.append({
-                'emoji': emoji,
-                'count': emoji_count
-            })
-
-        emoji_counts.sort(key=lambda x: x['count'], reverse=True)
-
-        return emoji_counts
+        return [{'emoji': emoji, 'count': emoji.reactions__count} for emoji in emojis]
 
     @classmethod
     def get_trending_posts(cls):
-        Circle = get_circle_model()
         Community = get_community_model()
-        world_circle_id = Circle.get_world_circle_id()
 
         trending_posts_query = Q(created__gte=timezone.now() - timedelta(
-            days=1))
+            hours=12))
 
-        trending_posts_query.add(Q(circles__id=world_circle_id), Q.OR)
+        trending_posts_sources_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC)
 
-        trending_posts_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC), Q.OR)
+        trending_posts_query.add(trending_posts_sources_query, Q.AND)
 
         return cls.objects.annotate(Count('reactions')).filter(trending_posts_query).order_by(
             '-reactions__count', '-created')
+
+    @classmethod
+    def get_post_comment_notification_target_users(cls, post_id, post_commenter_id):
+        """
+        Returns the users that should be notified of a post comment.
+        This includes the post creator and other post commenters
+        :param post_id:
+        :param post_commenter_id:
+        :return:
+        """
+        post_notification_target_users_query = Q(posts_comments__post_id=post_id)
+        post_notification_target_users_query.add(Q(posts__id=post_id), Q.OR)
+        post_notification_target_users_query.add(~Q(id=post_commenter_id), Q.AND)
+
+        return User.objects.filter(post_notification_target_users_query).distinct()
 
     def count_comments(self, commenter_id=None):
         return PostComment.count_comments_for_post_with_id(self.pk, commenter_id=commenter_id)
@@ -161,9 +161,12 @@ class Post(models.Model):
     def is_public_post(self):
         Circle = get_circle_model()
         world_circle_id = Circle.get_world_circle_id()
-        if self.circles.filter(id=world_circle_id).count() == 1:
+        if self.circles.filter(id=world_circle_id).exists():
             return True
         return False
+
+    def is_encircled_post(self):
+        return not self.is_public_post() and not self.community
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
@@ -182,7 +185,8 @@ class PostImage(models.Model):
                                 upload_to=upload_to_post_image_directory,
                                 width_field='width',
                                 height_field='height',
-                                blank=False, null=True, format='JPEG', options={'quality': 50}, processors=[ResizeToFit(width=1024, upscale=False)])
+                                blank=False, null=True, format='JPEG', options={'quality': 50},
+                                processors=[ResizeToFit(width=1024, upscale=False)])
     width = models.PositiveIntegerField(editable=False, null=False, blank=False)
     height = models.PositiveIntegerField(editable=False, null=False, blank=False)
 
@@ -198,6 +202,7 @@ class PostComment(models.Model):
     created = models.DateTimeField(editable=False)
     commenter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_comments')
     text = models.CharField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False)
+    is_edited = models.BooleanField(default=False, null=False, blank=False)
 
     @classmethod
     def create_comment(cls, text, commenter, post):

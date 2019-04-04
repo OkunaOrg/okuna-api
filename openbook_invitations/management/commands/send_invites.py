@@ -17,6 +17,6 @@ class Command(BaseCommand):
                 with transaction.atomic():
                     try:
                         user.send_invite_email()
-                    except SMTPException as e:
-                        self.stderr.write('Exception occurred during send_invite_email', e)
+                    except Exception as e:
+                        self.stderr.write('Exception occurred during send_invite_email')
         self.stdout.write(self.style.SUCCESS('Successfully sent invitation emails'))

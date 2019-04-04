@@ -1,8 +1,8 @@
 import csv
 import re
-
+import secrets
 from openbook_common.models import Badge
-from openbook_common.utils.model_loaders import get_user_invite_model
+from openbook_common.utils.model_loaders import get_user_invite_model, get_user_model
 
 
 def parse_kickstarter_csv(filepath):
@@ -10,14 +10,17 @@ def parse_kickstarter_csv(filepath):
         with open(filepath, newline='') as csvfile:
             backer_data_reader = csv.reader(csvfile, delimiter=',')
             header_row = next(backer_data_reader)
-            name_col, email_col, username_col, badge_keyword_col = get_column_numbers_for_kickstarter(header_row)
+            name_col, email_col, username_col, badge_keyword_col, email_kick_col = get_column_numbers_for_kickstarter(header_row)
             for row in backer_data_reader:
                 name = row[name_col]
                 email = row[email_col]
+                if email is None or email is '':
+                    email = row[email_kick_col]
                 username = sanitise_username(row[username_col])
                 if username is None or username is '':
                     print('Username was empty for:', name)
-                    continue
+                    username = get_temporary_username(email)
+                    print('Using generated random username @', username)
                 badge_keyword = row[badge_keyword_col]
                 badge = Badge.objects.get(keyword=badge_keyword)
                 UserInvite = get_user_invite_model()
@@ -37,20 +40,66 @@ def parse_indiegogo_csv(filepath):
             for row in backer_data_reader:
                 name = row[name_col]
                 email = row[email_col]
-                username = row[username_col]
+                username = sanitise_username(row[username_col])
                 badge_keyword = row[badge_keyword_col]
-                badge = Badge.objects.get(keyword=badge_keyword)
+                if badge_keyword:
+                    badge = Badge.objects.get(keyword=badge_keyword)
+                else:
+                    badge = None
                 UserInvite = get_user_invite_model()
 
-                if username is None or username is '0' or username is '':
+                if username is None or username == '0' or username is '':
                     print('Username was empty for:', name)
-                    continue
+                    username = get_temporary_username(email)
+                    print('Using generated random username @', username)
                 invited_user = UserInvite.create_invite(name=name, email=email, username=username,
-                                                        badge_keyword=badge_keyword, badge=badge)
+                                                        badge=badge)
                 invited_user.save()
     except IOError as e:
         print('Unable to read file')
         raise e
+
+
+def parse_indiegogo_csv_and_sanitise_usernames(filepath):
+    try:
+        with open(filepath, newline='') as csvfile:
+            backer_data_reader = csv.reader(csvfile, delimiter=',')
+            header_row = next(backer_data_reader)
+            name_col, email_col, username_col, badge_keyword_col = get_column_numbers_for_indiegogo(header_row)
+            for row in backer_data_reader:
+                name = row[name_col]
+                email = row[email_col]
+                username = sanitise_username(row[username_col])
+                badge_keyword = row[badge_keyword_col]
+                if badge_keyword:
+                    badge = Badge.objects.get(keyword=badge_keyword)
+                else:
+                    badge = None
+                UserInvite = get_user_invite_model()
+                if username is None or username == '0' or username is '':
+                    print('Username was empty for:', name)
+                    username = get_temporary_username(email)
+                    print('Using generated random username @', username)
+                print(username, email)
+                update_invite(name=name, email=email, username=username, badge=badge)
+    except IOError as e:
+        print('Unable to read file')
+        raise e
+
+
+def update_invite(email, name=None, username=None, badge=None):
+    UserInvite = get_user_invite_model()
+    invites = UserInvite.objects.filter(email=email)
+    if len(invites) == 2:
+        invite = invites.filter(username=username).first()
+        if invite is None:
+            invite = invites.last()
+    else:
+        invite = invites.first()
+    invite.username = username
+    invite.save()
+    print('New username is: ', invite.username)
+    return invite
 
 
 def parse_conflicts_csv(filepath):
@@ -79,7 +128,7 @@ def parse_conflicts_csv(filepath):
 
 def sanitise_username(username):
     chars = '[@#!±$%^&*()=|/><?,:;\~`{}]'
-    return re.sub(chars, '', username).lower().replace(' ', '_').replace('+', '_').replace('-', '_')
+    return re.sub(chars, '', username).lower().replace(' ', '_').replace('+', '_').replace('-', '_').replace('\\', '')
 
 
 def get_column_numbers_for_indiegogo(first_row):
@@ -109,9 +158,9 @@ def get_column_numbers_for_kickstarter(first_row):
         elif col == 'Badge Keyword':
             badge_keyword = index
         elif col == 'Email':
-            email = index
+            email_kickstarter = index
 
-    return name, email, username, badge_keyword
+    return name, email, username, badge_keyword, email_kickstarter
 
 
 def get_column_numbers_for_conflicts_csv(first_row):
@@ -122,3 +171,13 @@ def get_column_numbers_for_conflicts_csv(first_row):
             email = index
 
     return name, email
+
+
+def get_temporary_username(email):
+    username = email.split('@')[0]
+    temp_username = sanitise_username(username) + str(secrets.randbelow(9999))
+    User = get_user_model()
+    while User.is_username_taken(temp_username):
+        temp_username = username + str(secrets.randbelow(9999))
+
+    return temp_username

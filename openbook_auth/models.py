@@ -1,5 +1,6 @@
 import secrets
 from datetime import datetime, timedelta
+import re
 import jwt
 import uuid
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
@@ -9,6 +10,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import six
+from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 from imagekit.models import ProcessedImageField
@@ -16,6 +18,7 @@ from pilkit.processors import ResizeToFill, ResizeToFit
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError, NotFound, PermissionDenied, AuthenticationFailed
 from django.db.models import Q
+from django.core.mail import EmailMultiAlternatives
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
@@ -60,6 +63,8 @@ class User(AbstractUser):
     )
 
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    JWT_TOKEN_TYPE_CHANGE_EMAIL = 'CE'
+    JWT_TOKEN_TYPE_PASSWORD_RESET = 'PR'
 
     class Meta:
         verbose_name = _('user')
@@ -80,7 +85,7 @@ class User(AbstractUser):
     @classmethod
     def is_username_taken(cls, username):
         UserInvite = get_user_invite_model()
-        user_invites = UserInvite.objects.filter(username=username)
+        user_invites = UserInvite.objects.filter(username=username, created_user=None)
         users = cls.objects.filter(username=username)
         if not user_invites.exists() and not users.exists():
             return False
@@ -114,9 +119,18 @@ class User(AbstractUser):
         return cls.objects.get(username=user_username)
 
     @classmethod
+    def get_user_with_email(cls, user_email):
+        return cls.objects.get(email=user_email)
+
+    @classmethod
+    def sanitise_username(cls, username):
+        chars = '[@#!±$%^&*()=|/><?,:;\~`{}]'
+        return re.sub(chars, '', username).lower().replace(' ', '_').replace('+', '_').replace('-', '_')
+
+    @classmethod
     def get_temporary_username(cls, email):
         username = email.split('@')[0]
-        temp_username = username
+        temp_username = cls.sanitise_username(username)
         while cls.is_username_taken(temp_username):
             temp_username = username + str(secrets.randbelow(9999))
 
@@ -127,6 +141,43 @@ class User(AbstractUser):
         users_query = Q(username__icontains=query)
         users_query.add(Q(profile__name__icontains=query), Q.OR)
         return cls.objects.filter(users_query)
+
+    @classmethod
+    def get_user_for_password_reset_token(cls, password_verification_token):
+        try:
+            token_contents = jwt.decode(password_verification_token, settings.SECRET_KEY,
+                                        algorithm=settings.JWT_ALGORITHM)
+
+            token_user_id = token_contents['user_id']
+            token_type = token_contents['type']
+
+            if token_type != cls.JWT_TOKEN_TYPE_PASSWORD_RESET:
+                raise ValidationError(
+                    _('Token type does not match')
+                )
+            user = User.objects.get(pk=token_user_id)
+
+            return user
+        except jwt.InvalidSignatureError:
+            raise ValidationError(
+                _('Invalid token signature')
+            )
+        except jwt.ExpiredSignatureError:
+            raise ValidationError(
+                _('Token expired')
+            )
+        except jwt.DecodeError:
+            raise ValidationError(
+                _('Failed to decode token')
+            )
+        except User.DoesNotExist:
+            raise ValidationError(
+                _('No user found for token')
+            )
+        except KeyError:
+            raise ValidationError(
+                _('Invalid token')
+            )
 
     def count_posts(self):
         return self.posts.count()
@@ -211,18 +262,25 @@ class User(AbstractUser):
         self.set_password(password)
         self.save()
 
-    def update_email(self, email):
+    def request_email_update(self, email):
         self._check_email_not_taken(email)
-        self.email = email
-        self.is_email_verified = False
         self.save()
-        verify_token = self._make_email_verification_token_for_email(email=email)
+        verify_token = self._make_email_verification_token_for_email(new_email=email)
         return verify_token
 
     def verify_email_with_token(self, token):
-        self._check_email_verification_token_is_valid_for_email(email_verification_token=token)
-        self.is_email_verified = True
+        new_email = self._check_email_verification_token_is_valid_for_email(email_verification_token=token)
+        self.email = new_email
         self.save()
+
+    def verify_password_reset_token(self, token, password):
+        self._check_password_reset_verification_token_is_valid(password_verification_token=token)
+        self.update_password(password=password)
+
+    def request_password_reset(self):
+        password_reset_token = self._make_password_reset_verification_token()
+        self._send_password_reset_email_with_token(password_reset_token)
+        return password_reset_token
 
     def update(self,
                username=None,
@@ -520,7 +578,9 @@ class User(AbstractUser):
             post = Post.objects.filter(pk=post_id).get()
             post_reaction = post.react(reactor=self, emoji_id=emoji_id)
             if post_reaction.post.creator_id != self.pk:
-                self._create_post_reaction_notification(post_reaction=post_reaction)
+                # TODO Refactor. This check is being done twice. (Also in _send_post_reaction_push_notification)
+                if post.creator.has_reaction_notifications_enabled_for_post_with_id(post_id=post.pk):
+                    self._create_post_reaction_notification(post_reaction=post_reaction)
                 self._send_post_reaction_push_notification(post_reaction=post_reaction)
 
         return post_reaction
@@ -532,18 +592,18 @@ class User(AbstractUser):
         self._delete_post_reaction_notification(post_reaction=post_reaction)
         post_reaction.delete()
 
-    def get_comments_for_post_with_id(self, post_id, max_id=None):
-        self._check_can_get_comments_for_post_with_id(post_id)
+    def get_comments_for_post_with_id(self, post_id, min_id=None, max_id=None):
         comments_query = Q(post_id=post_id)
-
-        Post = get_post_model()
-
-        # If comments are private, return only own comments
-        if not Post.post_with_id_has_public_comments(post_id):
-            comments_query = Q(commenter_id=self.pk)
 
         if max_id:
             comments_query.add(Q(id__lt=max_id), Q.AND)
+        elif min_id:
+            comments_query.add(Q(id__gte=min_id), Q.AND)
+
+        Post = get_post_model()
+        # If comments are private, return only own comments
+        if not Post.post_with_id_has_public_comments(post_id):
+            comments_query.add(Q(commenter_id=self.pk), Q.AND)
 
         comments_query.add(~Q(reports__reporter=self.pk), Q.AND)
 
@@ -572,9 +632,38 @@ class User(AbstractUser):
         Post = get_post_model()
         post = Post.objects.filter(pk=post_id).get()
         post_comment = post.comment(text=text, commenter=self)
-        if post.creator_id != self.pk:
-            self._create_post_comment_notification(post_comment=post_comment)
-            self._send_post_comment_push_notification(post_comment=post_comment)
+        post_creator = post.creator
+        post_commenter = self
+
+        post_notification_target_users = Post.get_post_comment_notification_target_users(post_id=post.id,
+                                                                                         post_commenter_id=self.pk)
+        PostCommentNotification = get_post_comment_notification_model()
+
+        for post_notification_target_user in post_notification_target_users:
+
+            post_notification_target_user_is_post_creator = post_notification_target_user.id == post_creator.id
+            post_notification_target_has_comment_notifications_enabled = post_notification_target_user.has_comment_notifications_enabled_for_post_with_id(
+                post_id=post_comment.post_id)
+
+            if post_notification_target_has_comment_notifications_enabled:
+                PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
+                                                                         owner_id=post_notification_target_user.id)
+
+                if post_notification_target_user_is_post_creator:
+                    notification_message = {
+                        "en": _('@%(post_commenter_username)s commented on your post.') % {
+                            'post_commenter_username': post_commenter.username
+                        }}
+                else:
+                    notification_message = {
+                        "en": _('@%(post_commenter_username)s commented on a post you also commented on.') % {
+                            'post_commenter_username': post_commenter.username
+                        }}
+
+                self._send_post_comment_push_notification(post_comment=post_comment,
+                                                          notification_message=notification_message,
+                                                          notification_target_user=post_notification_target_user)
+
         return post_comment
 
     def delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
@@ -583,6 +672,19 @@ class User(AbstractUser):
         post_comment = PostComment.objects.get(pk=post_comment_id)
         self._delete_post_comment_notification(post_comment=post_comment)
         post_comment.delete()
+
+    def update_comment_with_id_for_post_with_id(self, post_comment_id, post_id, text):
+        self.has_post_comment_with_id(post_comment_id)
+        self._check_can_edit_comment_with_id_for_post_with_id(post_comment_id, post_id)
+        PostComment = get_post_comment_model()
+        post_comment = PostComment.objects.get(pk=post_comment_id)
+        post_comment.text = text
+        post_comment.is_edited = True
+        post_comment.save()
+        return post_comment
+
+    def has_post_comment_with_id(self, post_comment_id):
+        self._check_has_post_comment_with_id(post_comment_id)
 
     def create_circle(self, name, color):
         self._check_circle_name_not_taken(name)
@@ -1071,7 +1173,7 @@ class User(AbstractUser):
         # them to a circle
         linked_users_query = self._make_linked_users_query(max_id=max_id)
 
-        return User.objects.filter(linked_users_query)
+        return User.objects.filter(linked_users_query).distinct()
 
     def search_linked_users_with_query(self, query):
         linked_users_query = self._make_linked_users_query()
@@ -1081,7 +1183,7 @@ class User(AbstractUser):
 
         linked_users_query.add(names_query, Q.AND)
 
-        return User.objects.filter(linked_users_query)
+        return User.objects.filter(linked_users_query).distinct()
 
     def search_communities_with_query(self, query):
         # In the future, the user might have blocked communities which should not be displayed
@@ -1172,14 +1274,13 @@ class User(AbstractUser):
         return post
 
     def get_community_post_with_id(self, post_id):
+        Community = get_community_model()
         post_query = Q(id=post_id)
 
-        Community = get_community_model()
+        post_query_visibility_query = Q(community__memberships__user__id=self.pk)
+        post_query_visibility_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, ), Q.OR)
 
-        membership_query = Q(community__memberships__user__id=self.pk)
-        membership_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC), Q.OR)
-
-        post_query.add(membership_query, Q.AND)
+        post_query.add(post_query_visibility_query, Q.AND)
 
         Post = get_post_model()
         profile_posts = Post.objects.filter(post_query)
@@ -1221,55 +1322,98 @@ class User(AbstractUser):
     def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None):
         """
         Get the timeline posts for self. The results will be dynamic based on follows and connections.
-        :param lists_ids:
-        :param circles_ids:
-        :param max_id:
-        :param post_id:
-        :param username:
-        :return:
         """
-        # If there's no circles or lists filters, add all posts
-        if circles_ids or lists_ids:
-            timeline_posts_query = Q()
-        else:
-            timeline_posts_query = Q(creator_id=self.pk)
-
-        follows_related_query = self.follows.select_related('followed_user')
-
-        # If there's lists filters, filter follows with it
-        if lists_ids:
-            follows = follows_related_query.filter(lists__id__in=lists_ids)
-        else:
-            follows = follows_related_query.all()
-
-        for follow in follows:
-            followed_user = follow.followed_user
-            if circles_ids:
-                # Check that the user belongs to the filtered circles
-                if self.is_connected_with_user_with_id_in_circles_with_ids(followed_user.pk, circles_ids):
-                    followed_user_posts_query = self._make_get_posts_query_for_user(followed_user, )
-                    timeline_posts_query.add(followed_user_posts_query, Q.OR)
-            else:
-                followed_user_posts_query = self._make_get_posts_query_for_user(followed_user, )
-                timeline_posts_query.add(followed_user_posts_query, Q.OR)
 
         if not circles_ids and not lists_ids:
-            timeline_posts_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
+            return self._get_timeline_posts_with_no_filters(max_id=max_id)
+
+        return self._get_timeline_posts_with_filters(max_id=max_id, circles_ids=circles_ids, lists_ids=lists_ids)
+
+    def _get_timeline_posts_with_filters(self, max_id=None, circles_ids=None, lists_ids=None):
+        world_circle_id = self._get_world_circle_id()
+
+        if circles_ids:
+            timeline_posts_query = Q(creator=self.pk, circles__id__in=circles_ids)
+        else:
+            timeline_posts_query = Q()
+
+        if lists_ids:
+            followed_users_query = self.follows.filter(lists__id__in=lists_ids)
+        else:
+            followed_users_query = self.follows.all()
+
+        followed_users = followed_users_query.values('followed_user__id')
+
+        for followed_user in followed_users:
+
+            followed_user_id = followed_user['followed_user__id']
+
+            followed_user_query = Q(creator_id=followed_user_id)
+
+            if circles_ids:
+                followed_user_query.add(Q(creator__connections__target_connection__circles__in=circles_ids), Q.AND)
+
+            followed_user_circles_query = Q(circles__id=world_circle_id)
+
+            followed_user_circles_query.add(Q(circles__connections__target_user_id=self.pk, ), Q.OR)
+
+            followed_user_query.add(followed_user_circles_query, Q.AND)
+
+            # Add all followed user circles
+            timeline_posts_query.add(followed_user_query, Q.OR)
 
         if max_id:
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
 
-        PostReport = get_post_report_model()
         Post = get_post_model()
+        PostReport = get_post_report_model()
+        timeline_posts_query.add(~Q(reports__reporter=self.pk), Q.AND)
+        report_count_query = Count('reports', filter=~Q(reports__status=PostReport.REJECTED))
 
-        if not timeline_posts_query.children:
-            timeline_posts = Post.objects.none()
-        else:
-            timeline_posts_query.add(~Q(reports__reporter=self.pk), Q.AND)
-            report_count_query = Count('reports', filter=~Q(reports__status=PostReport.REJECTED))
-            timeline_posts = Post.objects.annotate(report_count=report_count_query).\
-            filter(timeline_posts_query,
-                   report_count__lte=settings.MAX_REPORTS_ALLOWED_BEFORE_POST_REMOVED).distinct()
+        timeline_posts = Post.objects.annotate(report_count=report_count_query). \
+            filter(timeline_posts_query, report_count__lte=settings.MAX_REPORTS_ALLOWED_BEFORE_POST_REMOVED).distinct()
+
+        return timeline_posts
+
+    def _get_timeline_posts_with_no_filters(self, max_id=None):
+        """
+        Being the main action of the network, an optimised call of the get timeline posts call with no filtering.
+        """
+        world_circle_id = self._get_world_circle_id()
+
+        # Add all own posts
+        timeline_posts_query = Q(creator=self.pk)
+
+        # Add all community posts
+        timeline_posts_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
+
+        followed_users = self.follows.values('followed_user__id')
+
+        for followed_user in followed_users:
+            followed_user_id = followed_user['followed_user__id']
+
+            # Add followed user world circle posts + posts we're encircled with
+
+            followed_user_query = Q(creator_id=followed_user_id)
+
+            followed_user_circles_query = Q(circles__id=world_circle_id)
+
+            followed_user_circles_query.add(Q(circles__connections__target_user_id=self.pk, ), Q.OR)
+
+            followed_user_query.add(followed_user_circles_query, Q.AND)
+
+            timeline_posts_query.add(followed_user_query, Q.OR)
+
+        if max_id:
+            timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
+
+        Post = get_post_model()
+        PostReport = get_post_report_model()
+        timeline_posts_query.add(~Q(reports__reporter=self.pk), Q.AND)
+        report_count_query = Count('reports', filter=~Q(reports__status=PostReport.REJECTED))
+
+        timeline_posts = Post.objects.annotate(report_count=report_count_query). \
+            filter(timeline_posts_query, report_count__lte=settings.MAX_REPORTS_ALLOWED_BEFORE_POST_REMOVED).distinct()
 
         return timeline_posts
 
@@ -1434,8 +1578,13 @@ class User(AbstractUser):
 
         return self.notifications.filter(notifications_query)
 
-    def read_all_notifications(self):
-        self.notifications.filter(read=False).update(read=True)
+    def read_notifications(self, max_id=None):
+        notifications_query = Q(read=False)
+
+        if max_id:
+            notifications_query.add(Q(id__lte=max_id), Q.AND)
+
+        self.notifications.filter(notifications_query).update(read=True)
 
     def read_notification_with_id(self, notification_id):
         self._check_can_read_notification_with_id(notification_id)
@@ -1497,13 +1646,32 @@ class User(AbstractUser):
         post = Post.objects.get(pk=post_id)
         return post
 
-    def _create_post_comment_notification(self, post_comment):
-        PostCommentNotification = get_post_comment_notification_model()
-        PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
-                                                                 owner_id=post_comment.post.creator_id)
+    def _generate_password_reset_link(self, token):
+        return '{0}/api/auth/password/verify?token={1}'.format(settings.EMAIL_HOST, token)
 
-    def _send_post_comment_push_notification(self, post_comment):
-        senders.send_post_comment_push_notification(post_comment=post_comment)
+    def _send_password_reset_email_with_token(self, password_reset_token):
+        mail_subject = _('Reset your password for Openbook')
+        text_content = render_to_string('openbook_auth/email/reset_password.txt', {
+            'name': self.profile.name,
+            'username': self.username,
+            'password_reset_link': self._generate_password_reset_link(password_reset_token)
+        })
+
+        html_content = render_to_string('openbook_auth/email/reset_password.html', {
+            'name': self.profile.name,
+            'username': self.username,
+            'password_reset_link': self._generate_password_reset_link(password_reset_token)
+        })
+
+        email = EmailMultiAlternatives(
+            mail_subject, text_content, to=[self.email], from_email=settings.SERVICE_EMAIL_ADDRESS)
+        email.attach_alternative(html_content, 'text/html')
+        email.send()
+
+    def _send_post_comment_push_notification(self, post_comment, notification_message, notification_target_user):
+        senders.send_post_comment_push_notification_with_message(post_comment=post_comment,
+                                                                 message=notification_message,
+                                                                 target_user=notification_target_user)
 
     def _delete_post_comment_notification(self, post_comment):
         PostCommentNotification = get_post_comment_notification_model()
@@ -1930,27 +2098,40 @@ class User(AbstractUser):
         """
         return []
 
-    def _make_email_verification_token_for_email(self, email):
-        return jwt.encode({'email': email, 'user_id': self.pk, 'exp': datetime.utcnow() + timedelta(days=1)},
+    def _make_email_verification_token_for_email(self, new_email):
+        return jwt.encode({'type': self.JWT_TOKEN_TYPE_CHANGE_EMAIL,
+                           'new_email': new_email,
+                           'email': self.email,
+                           'user_id': self.pk,
+                           'exp': datetime.utcnow() + timedelta(days=1)},
                           settings.SECRET_KEY,
                           algorithm=settings.JWT_ALGORITHM).decode('utf-8')
 
-    def _check_email_verification_token_is_valid_for_email(self, email_verification_token):
+    def _make_password_reset_verification_token(self):
+        return jwt.encode({'type': self.JWT_TOKEN_TYPE_PASSWORD_RESET,
+                           'user_id': self.pk,
+                           'exp': datetime.utcnow() + timedelta(days=1)},
+                          settings.SECRET_KEY,
+                          algorithm=settings.JWT_ALGORITHM).decode('utf-8')
+
+    def _check_password_reset_verification_token_is_valid(self, password_verification_token):
         try:
-            token_contents = jwt.decode(email_verification_token, settings.SECRET_KEY,
+            token_contents = jwt.decode(password_verification_token, settings.SECRET_KEY,
                                         algorithm=settings.JWT_ALGORITHM)
-            token_email = token_contents['email']
 
             token_user_id = token_contents['user_id']
-            if token_email != self.email:
+            token_type = token_contents['type']
+
+            if token_type != self.JWT_TOKEN_TYPE_PASSWORD_RESET:
                 raise ValidationError(
-                    _('Token email does not match')
+                    _('Token type does not match')
                 )
 
             if token_user_id != self.pk:
                 raise ValidationError(
                     _('Token user id does not match')
                 )
+            return token_user_id
         except jwt.InvalidSignatureError:
             raise ValidationError(
                 _('Invalid token signature')
@@ -1962,6 +2143,51 @@ class User(AbstractUser):
         except jwt.DecodeError:
             raise ValidationError(
                 _('Failed to decode token')
+            )
+        except KeyError:
+            raise ValidationError(
+                _('Invalid token')
+            )
+
+    def _check_email_verification_token_is_valid_for_email(self, email_verification_token):
+        try:
+            token_contents = jwt.decode(email_verification_token, settings.SECRET_KEY,
+                                        algorithm=settings.JWT_ALGORITHM)
+            token_email = token_contents['email']
+            new_email = token_contents['new_email']
+            token_user_id = token_contents['user_id']
+            token_type = token_contents['type']
+
+            if token_type != self.JWT_TOKEN_TYPE_CHANGE_EMAIL:
+                raise ValidationError(
+                    _('Token type does not match')
+                )
+
+            if token_email != self.email:
+                raise ValidationError(
+                    _('Token email does not match')
+                )
+
+            if token_user_id != self.pk:
+                raise ValidationError(
+                    _('Token user id does not match')
+                )
+            return new_email
+        except jwt.InvalidSignatureError:
+            raise ValidationError(
+                _('Invalid token signature')
+            )
+        except jwt.ExpiredSignatureError:
+            raise ValidationError(
+                _('Token expired')
+            )
+        except jwt.DecodeError:
+            raise ValidationError(
+                _('Failed to decode token')
+            )
+        except KeyError:
+            raise ValidationError(
+                _('Invalid token')
             )
 
     def _check_connection_circles_ids(self, circles_ids):
@@ -1992,6 +2218,23 @@ class User(AbstractUser):
         if User.is_username_taken(username=username):
             raise ValidationError(
                 _('The username is already taken.')
+            )
+
+    def _check_can_edit_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
+        # Check that the comment belongs to the post
+        PostComment = get_post_comment_model()
+        Post = get_post_model()
+
+        if not PostComment.objects.filter(id=post_comment_id, post_id=post_id).exists():
+            raise ValidationError(
+                _('The comment does not belong to the specified post.')
+            )
+
+    def _check_has_post_comment_with_id(self, post_comment_id):
+        if not self.posts_comments.filter(id=post_comment_id).exists():
+            # The comment is not ours
+            raise ValidationError(
+                _('You cannot edit a comment that does not belong to you')
             )
 
     def _check_can_delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
@@ -2566,9 +2809,12 @@ class User(AbstractUser):
             )
 
     def _check_can_delete_notification_with_id(self, notification_id):
+        self._check_has_notification_with_id(notification_id=notification_id)
+
+    def _check_has_notification_with_id(self, notification_id):
         if not self.has_notification_with_id(notification_id=notification_id):
             raise ValidationError(
-                _('You cannot delete a notification that doesn\'t belong to you.'),
+                _('This notification does not belong to you.'),
             )
 
     def _check_can_update_device_with_uuid(self, device_uuid):
@@ -2591,10 +2837,9 @@ class User(AbstractUser):
             raise ValidationError(
                 _('Post already muted'),
             )
-        self._check_has_post_with_id(post_id=post_id)
+        self._check_can_see_post_with_id(post_id=post_id)
 
     def _check_can_unmute_post_with_id(self, post_id):
-        self._check_has_post_with_id(post_id=post_id)
         self._check_has_muted_post_with_id(post_id=post_id)
 
     def _check_has_muted_post_with_id(self, post_id):

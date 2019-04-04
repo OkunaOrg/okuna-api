@@ -110,5 +110,47 @@
       "created": "2018-10-22 12:23:30.382913+00:00",
       "avatar": "openbook_categories/avatars/category_lifestyle-min.png"
     }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 7,
+    "fields": {
+      "order": "8",
+      "name": "entertainment",
+      "title": "Entertainment",
+      "color": "#ffe032",
+      "description_en": "For everything related to entertainment.",
+      "description_es": "Para todo lo relacionado con el entretenimiento.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_entertainment-min.png"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 8,
+    "fields": {
+      "order": "9",
+      "name": "places",
+      "title": "Places",
+      "color": "#dce3ed",
+      "description_en": "For everything related to places.",
+      "description_es": "Para todo lo relacionado con lugares.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_entertainment-min.png"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 9,
+    "fields": {
+      "order": "9",
+      "name": "food",
+      "title": "Food",
+      "color": "#ffa41f",
+      "description_en": "For everything related to food.",
+      "description_es": "Para todo lo relacionado con comida.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_food-min.png"
+    }
   }
 ]

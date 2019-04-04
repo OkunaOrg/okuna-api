@@ -2,14 +2,15 @@
 import random
 import tempfile
 import uuid
-
+from urllib.parse import urlsplit  # Python 3
 from PIL import Image
 from django.urls import reverse
 from faker import Faker
 from unittest import mock
+from django.core import mail
 from rest_framework import status
 from rest_framework.test import APITestCase
-
+from django.contrib.auth import authenticate
 from openbook_auth.models import User, UserProfile
 
 import logging
@@ -293,6 +294,169 @@ class RegistrationAPITests(APITestCase):
     def _make_user_invite_token_with_badge(self, badge):
         user_invite = UserInvite.create_invite(email=fake.email(), badge=badge)
         return user_invite.token
+
+
+class RequestPasswordResetAPITests(APITestCase):
+
+    def test_cannot_request_password_reset_with_invalid_username(self):
+        """
+        Should not be able to request password reset if no valid username exists
+        """
+        username = fake.user_name()
+        request_data = {
+            'username': username
+        }
+        url = self._get_url()
+
+        response = self.client.post(url, request_data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_cannot_request_password_reset_with_invalid_email(self):
+        """
+        Should not be able to request password reset if no valid email exists
+        """
+        email = fake.email()
+        request_data = {
+            'email': email
+        }
+        url = self._get_url()
+        with mock.patch.object(User, '_send_password_reset_email_with_token', return_value=None):
+            response = self.client.post(url, request_data, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_request_password_reset_successfully_with_valid_username(self):
+        """
+        Should generate request password reset token for username and send mail
+        """
+        user = make_user()
+        request_data = {
+            'username': user.username
+        }
+
+        url = self._get_url()
+        response = self.client.post(url, request_data, format='multipart')
+        email_message = mail.outbox[0]
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(email_message.to[0], user.email)
+        self.assertEqual(email_message.subject, 'Reset your password for Openbook')
+
+    def test_request_password_reset_successfully_with_valid_email(self):
+        """
+        Should generate request password reset token for email  and send mail
+        """
+        user = make_user()
+        request_data = {
+            'email': user.email
+        }
+
+        url = self._get_url()
+        response = self.client.post(url, request_data, format='multipart')
+        email_message = mail.outbox[0]
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(email_message.to[0], user.email)
+        self.assertEqual(email_message.subject, 'Reset your password for Openbook')
+
+    def _get_url(self):
+        return reverse('request-password-reset')
+
+
+class VerifyResetPasswordAPITests(APITestCase):
+
+    def test_can_update_password_with_valid_token(self):
+        """
+        Should update password with valid token
+        """
+        user = make_user()
+        old_password = user.password
+        user_email = user.email
+        username = user.username
+        url = self._get_url()
+
+        password_reset_token = user.request_password_reset()
+        new_password = 'testing12345'
+        request_data = {
+            'new_password': new_password,
+            'token': password_reset_token,
+        }
+
+        response = self.client.post(url, request_data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # cannot authenticate with old password
+        user = authenticate(username=username, password=old_password)
+        self.assertTrue(user is None)
+        # can authenticate with new password
+        user_new = authenticate(username=username, password=new_password)
+        self.assertEqual(user_new.email, user_email)
+
+    def test_cannot_update_password_with_invalid_token(self):
+        """
+        Should not update password with invalid token for email
+        """
+        user = make_user()
+        old_password = user.password
+        user_email = user.email
+
+        url = self._get_url()
+
+        password_reset_token = user.request_password_reset()
+        new_password = 'testing12345'
+        request_data = {
+            'new_password': new_password,
+            'token': fake.text()
+        }
+
+        response = self.client.post(url, request_data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        user_db = User.objects.get(email=user_email)
+        self.assertEqual(user_db.password, old_password)
+
+    def test_cannot_update_password_without_providing_new_password(self):
+        """
+        Should not update password without a new password
+        """
+        user = make_user()
+        old_password = user.password
+        user_email = user.email
+
+        url = self._get_url()
+
+        password_reset_token = user.request_password_reset()
+        new_password = 'testing12345'
+        request_data = {
+            'token': password_reset_token
+        }
+
+        response = self.client.post(url, request_data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        user_db = User.objects.get(email=user_email)
+        self.assertEqual(user_db.password, old_password)
+
+    def test_cannot_update_password_without_providing_token(self):
+        """
+        Should not update password without providing token
+        """
+        user = make_user()
+        old_password = user.password
+        user_email = user.email
+
+        url = self._get_url()
+
+        password_reset_token = user.request_password_reset()
+        new_password = 'testing12345'
+        request_data = {
+            'new_password': new_password,
+        }
+
+        response = self.client.post(url, request_data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        user_db = User.objects.get(email=user_email)
+        self.assertEqual(user_db.password, old_password)
+
+    def _get_url(self):
+        return reverse('verify-reset-password')
 
 
 class UsernameCheckAPITests(APITestCase):
@@ -886,6 +1050,33 @@ class AuthenticatedUserAPITests(APITestCase):
 
         self.assertEqual(new_url, user.profile.url)
 
+    def test_can_update_user_url_with_not_fully_qualified_urls(self):
+        """
+        should be able to update the authenticated user url with not fully qualified urls and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        new_url = fake.url()
+
+        parsed_url = urlsplit(new_url)
+
+        unfully_qualified_url = parsed_url.netloc
+
+        data = {
+            'url': unfully_qualified_url
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertEqual('https://' + unfully_qualified_url, user.profile.url)
+
     def _get_url(self):
         return reverse('authenticated-user')
 
@@ -1214,25 +1405,6 @@ class UserSettingsAPITests(APITestCase):
         response = self.client.patch(self.url, data, **headers)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_can_change_email_successfully(self):
-        """
-        should be able to update the authenticated user email and return 200
-        """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
-        new_email = fake.email()
-
-        data = {
-            'email': new_email
-        }
-
-        with mock.patch.object(UserSettings, 'send_confirmation_email', return_value=None):
-            response = self.client.patch(self.url, data, **headers)
-            parsed_reponse = json.loads(response.content)
-
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            self.assertEqual(parsed_reponse['email'], new_email)
-
     def test_cannot_change_email_to_existing_email(self):
         """
         should not be able to update the authenticated user email to existing email
@@ -1249,10 +1421,8 @@ class UserSettingsAPITests(APITestCase):
 
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def _get_verify_email_url(self, token):
-        return reverse('email-verify', kwargs={
-            'token': token
-        })
+
+class VerifyChangeEmailAPITests(APITestCase):
 
     def test_can_verify_email_token_successfully(self):
         """
@@ -1262,51 +1432,26 @@ class UserSettingsAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
 
         new_email = fake.email()
-        token = user.update_email(new_email)
+        token = user.request_email_update(new_email)
 
         response = self.client.get(self._get_verify_email_url(token), **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         user.refresh_from_db()
+        self.assertTrue(user.email == new_email)
 
-        self.assertTrue(user.is_email_verified)
-
-    def test_cant_verify_email_with_other_email(self):
-        """
-        should not be able to verify the authenticated user email with a token for another email
-        """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
-
-        new_email = fake.email()
-        token = user.update_email(new_email)
-
-        other_email = fake.email()
-        user.update_email(other_email)
-
-        response = self.client.get(self._get_verify_email_url(token), **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-        user.refresh_from_db()
-
-        self.assertFalse(user.is_email_verified)
-
-    def test_cant_verify_email_with_other_user_id(self):
+    def test_cannot_verify_email_with_other_user_id(self):
         """
         should not be able to verify the authenticated user email with foreign user token for same email
         """
         user = make_user()
         foreign_user = make_user()
+        original_email = user.email
+        new_email = fake.email()
+        foreign_token = foreign_user.request_email_update(new_email)
 
-        email = fake.email()
-
-        foreign_token = foreign_user.update_email(email)
-
-        foreign_user.update_email(fake.email())
-
-        user.update_email(email)
+        user.request_email_update(new_email)
         headers = make_authentication_headers_for_user(user)
 
         response = self.client.get(self._get_verify_email_url(foreign_token), **headers)
@@ -1315,8 +1460,13 @@ class UserSettingsAPITests(APITestCase):
 
         user.refresh_from_db()
 
-        self.assertFalse(user.is_email_verified)
-        self.assertEqual(user.email, email)
+        # user email should not have changed
+        self.assertTrue(user.email == original_email)
+
+    def _get_verify_email_url(self, token):
+        return reverse('email-verify', kwargs={
+            'token': token
+        })
 
 
 class LinkedUsersAPITests(APITestCase):
@@ -1446,3 +1596,5 @@ class SearchLinkedUsersAPITests(APITestCase):
 
     def _get_url(self):
         return reverse('search-linked-users')
+
+
