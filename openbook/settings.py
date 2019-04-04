@@ -18,6 +18,7 @@ import sentry_sdk
 from django.utils.translation import gettext_lazy  as _
 from dotenv import load_dotenv, find_dotenv
 from sentry_sdk.integrations.django import DjangoIntegration
+from django_replicated.settings import *
 
 # Logging config
 from openbook_common.utils.environment import EnvironmentChecker
@@ -196,8 +197,6 @@ else:
     RDS_HOSTNAME_WRITER = os.environ.get('RDS_HOSTNAME_WRITER', RDS_HOSTNAME)
     RDS_HOSTNAME_READER = os.environ.get('RDS_HOSTNAME_READER', RDS_HOSTNAME_WRITER)
 
-    DATABASE_ROUTERS = ['openbook_common.db_router.DBRouter']
-
     db_options = {
         'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         'charset': 'utf8mb4'
@@ -226,6 +225,12 @@ else:
             'OPTIONS': db_options,
         }
     }
+
+    DATABASE_ROUTERS = ['django_replicated.router.ReplicationRouter']
+
+    REPLICATED_DATABASE_SLAVES = ['Reader', ]
+
+    MIDDLEWARE.append('django_replicated.middleware.ReplicationMiddleware', )
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
