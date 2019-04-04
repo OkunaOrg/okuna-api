@@ -13,7 +13,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 onesignal_client = onesignal_sdk.Client(
-    app={"app_auth_key": settings.ONE_SIGNAL_API_KEY, "app_id": settings.ONE_SIGNAL_APP_ID})
+    app_id=settings.ONE_SIGNAL_APP_ID,
+    app_auth_key=settings.ONE_SIGNAL_API_KEY
+)
 
 
 def send_post_reaction_push_notification(post_reaction):
