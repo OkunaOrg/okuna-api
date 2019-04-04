@@ -1956,9 +1956,9 @@ class User(AbstractUser):
         PostReport.check_report_status_is_pending_for_report_with_id(report_id)
         Post = get_post_model()
 
-        if not PostReport.objects.filter(pk=report_id).exists():
+        if not PostReport.objects.filter(pk=report_id).post == post_id:
             raise ValidationError(
-                _('No report found with the supplied report id')
+                _('This report does not belong to this post')
             )
 
         post = Post.objects.select_related('community').get(pk=post_id)

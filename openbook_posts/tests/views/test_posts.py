@@ -924,9 +924,8 @@ class PostsAPITests(APITestCase):
 
         response = self.client.get(url, **headers)
         parsed_response = json.loads(response.content)
-        post_report_db = PostReport.objects.filter(post__id=post.pk, reporter=reporting_user)
         self.assertTrue(len(parsed_response) == 0)
-        self.assertTrue(len(post_report_db) == 1)
+        self.assertTrue(PostReport.objects.filter(post__id=post.pk, reporter=reporting_user).exists())
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def _get_url(self):

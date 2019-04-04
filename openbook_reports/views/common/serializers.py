@@ -35,6 +35,7 @@ class GetReportCategoriesSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReportCategory
         fields = (
+            'id',
             'name',
             'title',
             'description'
