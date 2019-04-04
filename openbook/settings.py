@@ -187,18 +187,43 @@ if IS_BUILD or TESTING:
         }
     }
 else:
+    RDS_DB_NAME = os.environ.get('RDS_DB_NAME')
+    RDS_USERNAME = os.environ.get('RDS_USERNAME')
+    RDS_PASSWORD = os.environ.get('RDS_PASSWORD')
+    RDS_PORT = os.environ.get('RDS_PORT')
+    RDS_HOSTNAME = os.environ.get('RDS_HOSTNAME')
+
+    RDS_HOSTNAME_WRITER = os.environ.get('RDS_HOSTNAME_WRITER', RDS_HOSTNAME)
+    RDS_HOSTNAME_READER = os.environ.get('RDS_HOSTNAME_READER', RDS_HOSTNAME_WRITER)
+
+    DATABASE_ROUTERS = ['openbook_common.db_router.DBRouter']
+
+    db_options = {
+        'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        'charset': 'utf8mb4'
+    }
+
+    writer_db_config = {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': RDS_DB_NAME,
+        'USER': RDS_USERNAME,
+        'PASSWORD': RDS_PASSWORD,
+        'HOST': RDS_HOSTNAME_WRITER,
+        'PORT': RDS_PORT,
+        'OPTIONS': db_options,
+    }
+
     DATABASES = {
-        'default': {
+        'default': writer_db_config,
+        'Writer': writer_db_config,
+        'Reader': {
             'ENGINE': 'django.db.backends.mysql',
-            'NAME': os.environ.get('RDS_DB_NAME'),
-            'USER': os.environ.get('RDS_USERNAME'),
-            'PASSWORD': os.environ.get('RDS_PASSWORD'),
-            'HOST': os.environ.get('RDS_HOSTNAME'),  # Or an IP Address that your DB is hosted on
-            'PORT': os.environ.get('RDS_PORT'),
-            'OPTIONS': {
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-                'charset': 'utf8mb4'
-            },
+            'NAME': RDS_DB_NAME,
+            'USER': RDS_USERNAME,
+            'PASSWORD': RDS_PASSWORD,
+            'HOST': RDS_HOSTNAME_READER,
+            'PORT': RDS_PORT,
+            'OPTIONS': db_options,
         }
     }
 
