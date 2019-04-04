@@ -11,7 +11,7 @@ If you're on an Apple iPhone download the TestFlight App and install Openbook us
 If you're on an Android device you can download and install the Openbook App directly using this link: https://play.google.com/apps/testing/social.openbook.app
 
 Step 2.
-Once the app is installed, click on the following link to setup up your account:
+Once the app is installed, copy this link and paste it in the  sign up form to setup up your account:
 {{ invite_link }}
 
 
