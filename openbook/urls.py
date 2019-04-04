@@ -48,9 +48,11 @@ from openbook_posts.views.post.views import PostComments, PostCommentItem, PostI
     PostReactionsEmojiCount, PostReactionEmojiGroups, MutePost, UnmutePost
 from openbook_posts.views.posts.views import Posts, TrendingPosts
 from openbook_importer.views import ImportItem
-from openbook_reports.views import ReportCategory, ReportPost, RejectPostReport, ConfirmPostReport, ReportedPosts, \
-    ReportedPostsCommunity, UserReports, ReportPostComment, ConfirmPostCommentReport, RejectPostCommentReport, \
-    ReportedPostCommentsCommunity
+from openbook_reports.views.common.views import ReportCategory
+from openbook_reports.views.report_post.views import ReportPost, ConfirmPostReport, RejectPostReport, ReportedPosts, \
+    ReportedPostsCommunity, UserReports
+from openbook_reports.views.report_post_comment.views import ConfirmPostCommentReport, RejectPostCommentReport, \
+    ReportPostComment, ReportedPostCommentsCommunity
 
 auth_patterns = [
     path('register/', Register.as_view(), name='register-user'),
