@@ -27,10 +27,11 @@ def send_post_reaction_push_notification(post_reaction):
     if post_creator.has_reaction_notifications_enabled_for_post_with_id(post_id=post_reaction.post_id):
         post_reactor = post_reaction.reactor
 
-        one_signal_notification = onesignal_sdk.Notification(
-            contents={"en": _('@%(post_reactor_username)s reacted to your post.') % {
+        one_signal_notification = onesignal_sdk.Notification(post_body={
+            "contents": {"en": _('@%(post_reactor_username)s reacted to your post.') % {
                 'post_reactor_username': post_reactor.username
-            }})
+            }}
+        })
 
         NotificationPostReactionSerializer = _get_push_notifications_serializers().NotificationPostReactionSerializer
 
@@ -74,10 +75,11 @@ def send_post_comment_push_notification_with_message(post_comment, message, targ
 
 def send_follow_push_notification(followed_user, following_user):
     if followed_user.has_follow_notifications_enabled():
-        one_signal_notification = onesignal_sdk.Notification(
-            contents={"en": _('@%(following_user_username)s started following you') % {
+        one_signal_notification = onesignal_sdk.Notification(post_body={
+            "contents": {"en": _('@%(following_user_username)s started following you') % {
                 'following_user_username': following_user.username
-            }})
+            }}
+        })
 
         FollowNotificationSerializer = _get_push_notifications_serializers().FollowNotificationSerializer
 
@@ -98,7 +100,7 @@ def send_follow_push_notification(followed_user, following_user):
 def send_connection_request_push_notification(connection_requester, connection_requested_for):
     if connection_requested_for.has_connection_request_notifications_enabled():
         one_signal_notification = onesignal_sdk.Notification(
-            contents={"en": _('@%(connection_requester_username)s wants to connect with you.') % {
+            post_body={"en": _('@%(connection_requester_username)s wants to connect with you.') % {
                 'connection_requester_username': connection_requester.username
             }})
 
@@ -126,7 +128,7 @@ def send_community_invite_push_notification(community_invite):
         community = community_invite.community
 
         one_signal_notification = onesignal_sdk.Notification(
-            contents={"en": _('@%(invite_creator)s has invited you to join /c/%(community_name)s.') % {
+            post_body={"en": _('@%(invite_creator)s has invited you to join /c/%(community_name)s.') % {
                 'invite_creator': invite_creator.username,
                 'community_name': community.name,
             }})
