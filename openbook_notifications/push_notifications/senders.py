@@ -58,8 +58,9 @@ def send_post_comment_push_notification_with_message(post_comment, message, targ
     notification_payload = NotificationPostCommentSerializer(post_comment).data
     notification_group = 'post_%s' % post.id
 
-    one_signal_notification = onesignal_sdk.Notification(
-        contents=message)
+    one_signal_notification = onesignal_sdk.Notification(post_body={
+        "contents": message
+    })
 
     notification_data = {
         'type': Notification.POST_COMMENT,
