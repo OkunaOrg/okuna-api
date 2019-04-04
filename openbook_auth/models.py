@@ -73,8 +73,8 @@ class User(AbstractUser):
     def create_user(cls, username, email=None, password=None, name=None, avatar=None, is_of_legal_age=None,
                     badge=None, **extra_fields):
         new_user = cls.objects.create_user(username, email=email, password=password, **extra_fields)
-        user_profile = UserProfile.objects.create(name=name, user=new_user, avatar=avatar,
-                                                  is_of_legal_age=is_of_legal_age)
+        user_profile = bootstrap_user_profile(name=name, user=new_user, avatar=avatar,
+                                              is_of_legal_age=is_of_legal_age)
 
         if badge:
             user_profile.badges.add(badge)
@@ -2567,23 +2567,22 @@ class User(AbstractUser):
             raise ValidationError('Device already exists')
 
 
-@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+@receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='bootstrap_auth_token')
 def create_auth_token(sender, instance=None, created=False, **kwargs):
     """"
     Create a token for all users
     """
     if created:
-        Token.objects.create(user=instance)
+        bootstrap_user_auth_token(instance)
 
 
-@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+@receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='bootstrap_user_circles')
 def bootstrap_circles(sender, instance=None, created=False, **kwargs):
     """"
     Bootstrap the user circles
     """
     if created:
-        Circle = get_circle_model()
-        Circle.bootstrap_circles_for_user(instance)
+        bootstrap_user_circles(instance)
 
 
 class UserProfile(models.Model):
@@ -2653,10 +2652,27 @@ class UserNotificationsSettings(models.Model):
         self.save()
 
 
-@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+@receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='bootstrap_notifications_settings')
 def create_user_notifications_settings(sender, instance=None, created=False, **kwargs):
     """"
     Create a user notifications settings for users
     """
     if created:
-        UserNotificationsSettings.create_notifications_settings(user=instance)
+        bootstrap_user_notifications_settings(instance)
+
+
+def bootstrap_user_circles(user):
+    Circle = get_circle_model()
+    Circle.bootstrap_circles_for_user(user)
+
+
+def bootstrap_user_notifications_settings(user):
+    return UserNotificationsSettings.create_notifications_settings(user=user)
+
+
+def bootstrap_user_auth_token(user):
+    return Token.objects.create(user=user)
+
+
+def bootstrap_user_profile(user, name, is_of_legal_age, avatar=None, ):
+    return UserProfile.objects.create(name=name, user=user, avatar=avatar, is_of_legal_age=is_of_legal_age, )
