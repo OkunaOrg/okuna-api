@@ -56,7 +56,7 @@ class zip_parser():
 
     def _return_mime_magic(self, extension):
 
-        mpath = 'openbook_importer/facebook_archive_parser'
+        mpath = 'openbook_importer/socialmedia_archive_parser'
 
         if not self._file_access(f"{mpath}/mimetypes.yml"):
             return False
