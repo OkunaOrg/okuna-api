@@ -13,6 +13,9 @@ from django.db.models import Count
 from pilkit.processors import ResizeToFit
 from rest_framework.exceptions import ValidationError
 
+from django.contrib.contenttypes.fields import GenericRelation
+from video_encoding.fields import VideoField
+from video_encoding.models import Format
 from django.conf import settings
 from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
@@ -73,7 +76,11 @@ class Post(models.Model):
             PostImage.objects.create(image=image, post_id=post.pk)
 
         if video:
-            PostVideo.objects.create(video=video, post_id=post.pk)
+            try:
+                PostVideo.objects.create(video=video, post_id=post.pk)
+
+            except KeyError:
+                raise ValidationError(_('Failed to process video.'))
 
         if circles_ids:
             post.circles.add(*circles_ids)
@@ -192,9 +199,17 @@ class PostImage(models.Model):
 
 
 class PostVideo(models.Model):
-    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='video')
-    video = models.FileField(_('video'), blank=False, null=False, storage=post_image_storage,
-                             upload_to=upload_to_post_video_directory)
+    width = models.PositiveIntegerField(editable=False, null=True)
+    height = models.PositiveIntegerField(editable=False, null=True)
+    duration = models.FloatField(editable=False, null=True)
+
+    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='video', null=True)
+    video = VideoField(verbose_name=_('video'), blank=False, null=True,
+                       width_field='width', height_field='height',
+                       duration_field='duration', storage=post_image_storage,
+                       upload_to=upload_to_post_video_directory)
+
+    format_set = GenericRelation(Format)
 
 
 class PostComment(models.Model):
