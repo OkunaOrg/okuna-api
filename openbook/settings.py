@@ -216,7 +216,7 @@ else:
             'HOST': os.environ.get('REDIS_HOST'),
             'PORT': os.environ.get('REDIS_PORT'),
             'DB': 0,
-            #'PASSWORD': os.environ.get('REDIS_AUTH_TOKEN'),
+            'PASSWORD': os.environ.get('REDIS_AUTH_TOKEN'),
             'DEFAULT_TIMEOUT': 360,
         }
     }
