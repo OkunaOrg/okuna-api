@@ -147,7 +147,7 @@ class PostItemAPITests(APITestCase):
 
         user.delete_post_with_id(post.id)
 
-        self.assertFalse(access(post.image.image.file.name, F_OK))
+        self.assertFalse(access(file.name, F_OK))
 
     def test_delete_video_post(self):
         """
@@ -166,7 +166,7 @@ class PostItemAPITests(APITestCase):
 
         user.delete_post_with_id(post.id)
 
-        self.assertFalse(access(post.video.video.file.name, F_OK))
+        self.assertFalse(access(file.name, F_OK))
 
 
     def test_can_delete_post_of_community_if_mod(self):
