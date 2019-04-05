@@ -138,18 +138,27 @@ class Post(models.Model):
         return PostReaction.count_reactions_for_post_with_id(self.pk, reactor_id=reactor_id)
 
     def has_text(self):
-        if self.text:
-            return True
+        if hasattr(self, 'text'):
+
+            if self.text:
+                return True
+
         return False
 
     def has_image(self):
-        if self.image:
-            return True
+        if hasattr(self, 'image'):
+
+            if self.image:
+                return True
+
         return False
 
     def has_video(self):
-        if self.video:
-            return True
+        if hasattr(self, 'video'):
+
+            if self.video:
+                return True
+
         return False
 
     def comment(self, text, commenter):
