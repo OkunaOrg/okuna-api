@@ -1,10 +1,15 @@
 # Create your tests here.
 import json
+import tempfile
+from os import access, F_OK
 
+from PIL import Image
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
 from rest_framework.test import APITestCase
+from django.core.files.images import ImageFile
+from django.core.files import File
 
 import logging
 import random
@@ -124,6 +129,45 @@ class PostItemAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(Post.objects.filter(pk=post.pk).count() == 0)
+
+    def test_delete_image_post(self):
+        """
+        should be able to delete image post and file return True
+        """
+        user = make_user()
+
+        image = Image.new('RGB', (100, 100))
+        tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
+        image.save(tmp_file)
+        tmp_file.seek(0)
+        image = ImageFile(tmp_file)
+
+        post = user.create_public_post(text=make_fake_post_text(), image=image)
+        file = post.image.image.file
+
+        user.delete_post_with_id(post.id)
+
+        self.assertFalse(access(post.image.image.file.name, F_OK))
+
+    def test_delete_video_post(self):
+        """
+        should be able to delete video post and file return True
+        """
+        user = make_user()
+
+        video = b"video_file_content"
+        tmp_file = tempfile.NamedTemporaryFile(suffix='.mp4')
+        tmp_file.write(video)
+        tmp_file.seek(0)
+        video = File(tmp_file)
+
+        post = user.create_public_post(text=make_fake_post_text(), video=video)
+        file = post.video.video.file
+
+        user.delete_post_with_id(post.id)
+
+        self.assertFalse(access(post.video.video.file.name, F_OK))
+
 
     def test_can_delete_post_of_community_if_mod(self):
         """
