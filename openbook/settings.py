@@ -232,7 +232,7 @@ else:
     MIDDLEWARE.append('django_replicated.middleware.ReplicationMiddleware', )
 
     REPLICATED_VIEWS_OVERRIDES = {
-        '/admin/*': 'default',
+        '/admin/*': 'master',
     }
 
 # Password validation
