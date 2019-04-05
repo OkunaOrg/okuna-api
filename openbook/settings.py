@@ -106,6 +106,8 @@ INSTALLED_APPS = [
     'django_nose',
     'storages',
     'imagekit',
+    'video_encoding',
+    'django_rq',
     'django_media_fixtures',
     'openbook_common',
     'openbook_auth',
@@ -186,6 +188,14 @@ if IS_BUILD or TESTING:
             'NAME': 'open-book-api'
         }
     }
+    RQ_QUEUES = {
+        'default': {
+            'HOST': 'localhost',
+            'PORT': 6379,
+            'DB': 0,
+            'DEFAULT_TIMEOUT': 360
+        }
+    }
 else:
     DATABASES = {
         'default': {
@@ -201,6 +211,30 @@ else:
             },
         }
     }
+    RQ_QUEUES = {
+        'default': {
+            'HOST': os.environ.get('REDIS_HOST'),
+            'PORT': os.environ.get('REDIS_PORT'),
+            'DB': 0,
+            #'PASSWORD': os.environ.get('REDIS_AUTH_TOKEN'),
+            'DEFAULT_TIMEOUT': 360,
+        }
+    }
+
+VIDEO_ENCODING_FORMATS = {
+    'FFmpeg': [
+        {
+            'name': 'mp4_sd',
+            'extension': 'mp4',
+            'params': [
+                '-codec:v', 'libx264', '-crf', '20', '-preset', 'medium',
+                '-b:v', '1000k', '-maxrate', '1000k', '-bufsize', '2000k',
+                '-vf', 'scale=-2:480',  # http://superuser.com/a/776254
+                '-codec:a', 'aac', '-b:a', '128k', '-strict', '-2',
+            ],
+        },
+    ]
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
