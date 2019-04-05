@@ -196,6 +196,7 @@ class PostComments(APIView):
 
 
 class PostCommentItem(APIView):
+    permission_classes = (IsAuthenticated,)
     def delete(self, request, post_uuid, post_comment_id):
         request_data = self._get_request_data(request, post_uuid, post_comment_id)
 
@@ -302,6 +303,7 @@ class PostReactions(APIView):
 
 
 class PostReactionsEmojiCount(APIView):
+
     permission_classes = (IsAuthenticated,)
 
     def get(self, request, post_uuid):
@@ -331,6 +333,8 @@ class PostReactionsEmojiCount(APIView):
 
 
 class PostReactionItem(APIView):
+    permission_classes = (IsAuthenticated,)
+
     def delete(self, request, post_uuid, post_reaction_id):
         request_data = self._get_request_data(request, post_uuid, post_reaction_id)
 

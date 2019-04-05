@@ -69,6 +69,8 @@ class DisconnectFromUser(APIView):
 
 
 class UpdateConnection(APIView):
+    permission_classes = (IsAuthenticated,)
+
     def post(self, request):
         request_data = _prepare_request_data_for_validation(request.data)
 
@@ -94,6 +96,8 @@ class UpdateConnection(APIView):
 
 
 class ConfirmConnection(APIView):
+    permission_classes = (IsAuthenticated,)
+
     def post(self, request):
         request_data = _prepare_request_data_for_validation(request.data)
 
