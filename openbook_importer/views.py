@@ -11,7 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_importer.serializers import ZipfileSerializer
-from openbook_importer.facebook_archive_parser.zipparser import zip_parser
+from openbook_importer.socialmedia_archive_parser.fb_parser import zip_parser
 
 
 class ImportItem(APIView):

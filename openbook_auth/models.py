@@ -22,7 +22,7 @@ from django.core.mail import EmailMultiAlternatives
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
 from openbook_common.models import Badge
-from openbook_common.utils.helpers import delete_image_kit_image_field
+from openbook_common.utils.helpers import delete_file_field
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, \
     get_emoji_group_model, get_user_invite_model, get_community_model, get_community_invite_model, get_tag_model, \
@@ -234,7 +234,7 @@ class User(AbstractUser):
             self.profile.save()
 
     def delete_profile_cover(self, save=True):
-        delete_image_kit_image_field(self.profile.cover)
+        delete_file_field(self.profile.cover)
         self.profile.cover = None
         self.profile.cover.delete(save=save)
 
@@ -248,7 +248,7 @@ class User(AbstractUser):
             self.profile.save()
 
     def delete_profile_avatar(self, save=True):
-        delete_image_kit_image_field(self.profile.avatar)
+        delete_file_field(self.profile.avatar)
         self.profile.avatar = None
         self.profile.avatar.delete(save=save)
 
@@ -847,7 +847,7 @@ class User(AbstractUser):
         self._check_can_update_community_with_name(community_name)
         Community = get_community_model()
         community_to_delete_avatar_from = Community.objects.get(name=community_name)
-        delete_image_kit_image_field(community_to_delete_avatar_from.avatar)
+        delete_file_field(community_to_delete_avatar_from.avatar)
         community_to_delete_avatar_from.avatar = None
         community_to_delete_avatar_from.save()
         return community_to_delete_avatar_from
@@ -871,7 +871,7 @@ class User(AbstractUser):
         Community = get_community_model()
         community_to_delete_cover_from = Community.objects.get(name=community_name)
 
-        delete_image_kit_image_field(community_to_delete_cover_from.cover)
+        delete_file_field(community_to_delete_cover_from.cover)
         community_to_delete_cover_from.cover = None
         community_to_delete_cover_from.save()
         return community_to_delete_cover_from
@@ -1237,6 +1237,16 @@ class User(AbstractUser):
     def delete_post_with_id(self, post_id):
         self._check_can_delete_post_with_id(post_id)
         Post = get_post_model()
+
+        # We have to manually delete the images / video
+        post = Post.objects.get(id=post_id)
+
+        if post.has_video():
+            delete_file_field(post.video.video)
+
+        if post.has_image():
+            delete_file_field(post.image.image)
+
         # We have to be mindful with using bulk delete as it does not call the delete() method per instance
         Post.objects.filter(id=post_id).delete()
 
