@@ -24,3 +24,10 @@ class EmojiGroupAdmin(TranslationAdmin):
 
 
 admin.site.register(EmojiGroup, EmojiGroupAdmin)
+
+
+class EmojiAdmin(TranslationAdmin):
+    pass
+
+
+admin.site.register(Emoji, EmojiAdmin)
