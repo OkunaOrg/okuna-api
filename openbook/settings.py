@@ -232,6 +232,10 @@ else:
 
     MIDDLEWARE.append('django_replicated.middleware.ReplicationMiddleware', )
 
+    REPLICATED_VIEWS_OVERRIDES = {
+        '/admin/*': 'master',
+    }
+
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
 
