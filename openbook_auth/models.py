@@ -1934,14 +1934,9 @@ class User(AbstractUser):
         PostCommentReport.check_report_status_is_pending_for_report_with_id(report_id)
         PostComment = get_post_comment_model()
 
-        if not PostComment.objects.filter(pk=post_comment_id).exists():
+        if not PostComment.objects.filter(pk=post_comment_id, post__id=post_id).exists():
             raise ValidationError(
-                _('No comment with provided id found for this post')
-            )
-
-        if not PostCommentReport.objects.filter(pk=report_id).exists():
-            raise ValidationError(
-                _('No report found with the supplied report id')
+                _('This comment does not belong to this post')
             )
 
         post_comment = PostComment.objects.select_related('post').get(pk=post_comment_id)
@@ -1956,7 +1951,7 @@ class User(AbstractUser):
         PostReport.check_report_status_is_pending_for_report_with_id(report_id)
         Post = get_post_model()
 
-        if not PostReport.objects.filter(pk=report_id).post == post_id:
+        if not PostReport.objects.filter(pk=report_id, post__id=post_id).exists():
             raise ValidationError(
                 _('This report does not belong to this post')
             )
@@ -2005,9 +2000,9 @@ class User(AbstractUser):
         PostCommentReport = get_post_report_comment_model()
         PostComment = get_post_comment_model()
 
-        if not PostComment.objects.filter(pk=post_comment_id).exists():
+        if not PostComment.objects.filter(pk=post_comment_id, post__id=post_id).exists():
             raise ValidationError(
-                _('No comment with provided id found for this post')
+                _('This comment does not belong to the post')
             )
         if PostCommentReport.objects.filter(post_comment__post__id=post_id,
                                             post_comment__id=post_comment_id, reporter=self).exists():
