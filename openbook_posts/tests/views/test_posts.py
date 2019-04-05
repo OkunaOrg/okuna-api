@@ -248,14 +248,14 @@ class PostsAPITests(APITestCase):
 
         self.assertTrue(hasattr(created_post, 'image'))
 
-    def test_create_video_post(self):
+    def test_create_video_mp4_post(self):
         """
         should be able to create a video post and return 201
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        video = SimpleUploadedFile("file.mp4", b"video_file_content", content_type="video/mp4")
+        video = SimpleUploadedFile("file.mp4", self._read_mp4(), content_type="video/mp4")
 
         data = {
             'video': video
@@ -287,7 +287,7 @@ class PostsAPITests(APITestCase):
 
         post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
 
-        video = SimpleUploadedFile("file.mp4", b"video_file_content", content_type="video/mp4")
+        video = SimpleUploadedFile("file.mp4", self._read_mp4(), content_type="video/mp4")
 
         data = {
             'text': post_text,
@@ -320,7 +320,7 @@ class PostsAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        video = SimpleUploadedFile("file.mp4", b"video_file_content", content_type="video/mp4")
+        video = SimpleUploadedFile("file.mp4", self._read_mp4(), content_type="video/mp4")
         image = Image.new('RGB', (100, 100))
         tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
         image.save(tmp_file)
@@ -888,3 +888,8 @@ class PostsAPITests(APITestCase):
 
     def _get_url(self):
         return reverse('posts')
+
+    def _read_mp4(self):
+
+        with open('openbook_posts/tests/views/Mpeg4.mp4', 'rb') as fd:
+            return fd.read()
