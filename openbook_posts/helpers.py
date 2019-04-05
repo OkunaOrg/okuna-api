@@ -88,7 +88,6 @@ def convert_video(fieldfile, force=False):
         except VideoEncodingError:
             # TODO handle with more care
             video_format.delete()
-            breakpoint()
             os.remove(target_path)
             continue
 
