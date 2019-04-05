@@ -214,7 +214,6 @@ else:
 
     DATABASES = {
         'default': writer_db_config,
-        'Writer': writer_db_config,
         'Reader': {
             'ENGINE': 'django.db.backends.mysql',
             'NAME': RDS_DB_NAME,
@@ -231,6 +230,10 @@ else:
     REPLICATED_DATABASE_SLAVES = ['Reader', ]
 
     MIDDLEWARE.append('django_replicated.middleware.ReplicationMiddleware', )
+
+    REPLICATED_VIEWS_OVERRIDES = {
+        '/admin/*': 'master',
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
