@@ -1241,15 +1241,11 @@ class User(AbstractUser):
         # We have to manually delete the images / video
         post = Post.objects.get(id=post_id)
 
-        if hasattr(post, 'video'):
+        if post.has_video():
+            delete_file_field(post.video.video)
 
-            if post.video:
-                delete_file_field(post.video)
-
-        if hasattr(post, 'image'):
-
-            if post.image:
-                delete_file_field(post.image)
+        if post.has_image():
+            delete_file_field(post.image.image)
 
         # We have to be mindful with using bulk delete as it does not call the delete() method per instance
         Post.objects.filter(id=post_id).delete()
