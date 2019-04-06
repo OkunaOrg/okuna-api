@@ -168,7 +168,6 @@ class PostItemAPITests(APITestCase):
 
         self.assertFalse(access(file.name, F_OK))
 
-
     def test_can_delete_post_of_community_if_mod(self):
         """
         should be able to delete a community post if moderator and return 200
@@ -285,6 +284,32 @@ class PostItemAPITests(APITestCase):
         post.refresh_from_db()
         self.assertEqual(post.text, edited_text)
         self.assertTrue(post.is_edited)
+
+    def test_can_edit_own_community_post(self):
+        """
+        should be able to edit own community post and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+        community_post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        url = self._get_url(community_post)
+        edited_text = make_fake_post_text()
+        data = {
+            'text': edited_text
+        }
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertTrue(response.status_code, status.HTTP_200_OK)
+        community_post.refresh_from_db()
+        self.assertEqual(community_post.text, edited_text)
+        self.assertTrue(community_post.is_edited)
 
     def test_cannot_edit_foreign_post(self):
         """
