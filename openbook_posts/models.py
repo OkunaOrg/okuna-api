@@ -35,6 +35,7 @@ class Post(models.Model):
     community = models.ForeignKey('openbook_communities.Community', on_delete=models.CASCADE, related_name='posts',
                                   null=True,
                                   blank=False)
+    is_edited = models.BooleanField(default=False)
 
     @classmethod
     def post_with_id_has_public_comments(cls, post_id):
@@ -81,6 +82,16 @@ class Post(models.Model):
             Community = get_community_model()
             post.community = Community.objects.get(name=community_name)
 
+        post.save()
+
+        return post
+
+    @classmethod
+    def update_post(cls, post_id, text=None):
+
+        post = Post.objects.get(id=post_id)
+        post.text = text
+        post.is_edited = True
         post.save()
 
         return post
