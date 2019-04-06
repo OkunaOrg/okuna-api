@@ -149,4 +149,5 @@ class CommunityPostSerializer(serializers.ModelSerializer):
             'creator',
             'community',
             'is_muted',
+            'is_edited'
         )

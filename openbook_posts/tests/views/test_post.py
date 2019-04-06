@@ -265,6 +265,50 @@ class PostItemAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(Post.objects.filter(pk=post.pk).count() == 1)
 
+    def test_can_edit_own_post(self):
+        """
+        should be able to edit own  post and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        url = self._get_url(post)
+        edited_text = make_fake_post_text()
+        data = {
+            'text': edited_text
+        }
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertTrue(response.status_code, status.HTTP_200_OK)
+        post.refresh_from_db()
+        self.assertEqual(post.text, edited_text)
+        self.assertTrue(post.is_edited)
+
+    def test_cannot_edit_foreign_post(self):
+        """
+        should not be able to edit foreign post
+        """
+        user = make_user()
+        foreign_user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        original_text = make_fake_post_text()
+        post = foreign_user.create_public_post(text=original_text)
+
+        url = self._get_url(post)
+        edited_text = make_fake_post_text()
+        data = {
+            'text': edited_text
+        }
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertTrue(response.status_code, status.HTTP_400_BAD_REQUEST)
+        post.refresh_from_db()
+        self.assertEqual(post.text, original_text)
+        self.assertFalse(post.is_edited)
+
     def _get_url(self, post):
         return reverse('post', kwargs={
             'post_uuid': post.uuid
