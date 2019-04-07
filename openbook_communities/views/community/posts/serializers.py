@@ -157,20 +157,19 @@ class CommunityPostSerializer(serializers.ModelSerializer):
     is_muted = IsMutedField()
     reaction = ReactionField(reaction_serializer=PostReactionSerializer)
 
-
-class Meta:
-    model = Post
-    fields = (
-        'id',
-        'uuid',
-        'comments_count',
-        'reactions_emoji_counts',
-        'created',
-        'text',
-        'image',
-        'video',
-        'creator',
-        'community',
-        'is_muted',
-        'reaction'
-    )
+    class Meta:
+        model = Post
+        fields = (
+            'id',
+            'uuid',
+            'comments_count',
+            'reactions_emoji_counts',
+            'created',
+            'text',
+            'image',
+            'video',
+            'creator',
+            'community',
+            'is_muted',
+            'reaction'
+        )
