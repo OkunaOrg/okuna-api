@@ -168,7 +168,6 @@ class PostItemAPITests(APITestCase):
 
         self.assertFalse(access(file.name, F_OK))
 
-
     def test_can_delete_post_of_community_if_mod(self):
         """
         should be able to delete a community post if moderator and return 200
@@ -264,6 +263,97 @@ class PostItemAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(Post.objects.filter(pk=post.pk).count() == 1)
+
+    def test_can_edit_own_post(self):
+        """
+        should be able to edit own  post and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        url = self._get_url(post)
+        edited_text = make_fake_post_text()
+        data = {
+            'text': edited_text
+        }
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertTrue(response.status_code, status.HTTP_200_OK)
+        post.refresh_from_db()
+        self.assertEqual(post.text, edited_text)
+        self.assertTrue(post.is_edited)
+
+    def test_canot_edit_to_remove_text_from_own_text_only_post(self):
+        """
+        should not be able to edit to remove the text of an own post and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        initial_text = make_fake_post_text()
+        post = user.create_public_post(text=initial_text)
+
+        url = self._get_url(post)
+        data = {
+            'text': ''
+        }
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertTrue(response.status_code, status.HTTP_400_BAD_REQUEST)
+        post.refresh_from_db()
+        self.assertEqual(post.text, initial_text)
+        self.assertFalse(post.is_edited)
+
+    def test_can_edit_own_community_post(self):
+        """
+        should be able to edit own community post and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+        community_post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        url = self._get_url(community_post)
+        edited_text = make_fake_post_text()
+        data = {
+            'text': edited_text
+        }
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertTrue(response.status_code, status.HTTP_200_OK)
+        community_post.refresh_from_db()
+        self.assertEqual(community_post.text, edited_text)
+        self.assertTrue(community_post.is_edited)
+
+    def test_cannot_edit_foreign_post(self):
+        """
+        should not be able to edit foreign post
+        """
+        user = make_user()
+        foreign_user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        original_text = make_fake_post_text()
+        post = foreign_user.create_public_post(text=original_text)
+
+        url = self._get_url(post)
+        edited_text = make_fake_post_text()
+        data = {
+            'text': edited_text
+        }
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertTrue(response.status_code, status.HTTP_400_BAD_REQUEST)
+        post.refresh_from_db()
+        self.assertEqual(post.text, original_text)
+        self.assertFalse(post.is_edited)
 
     def _get_url(self, post):
         return reverse('post', kwargs={

@@ -171,5 +171,6 @@ class CommunityPostSerializer(serializers.ModelSerializer):
             'creator',
             'community',
             'is_muted',
-            'reaction'
+            'reaction',
+            'is_edited'
         )

@@ -1223,6 +1223,13 @@ class User(AbstractUser):
                                 created=created)
         return post
 
+    def update_post(self, post_id, text=None):
+        self._check_can_update_post_with_id(post_id)
+        Post = get_post_model()
+        post = Post.objects.get(pk=post_id)
+        post.update(text=text)
+        return post
+
     def create_community_post(self, community_name, text=None, image=None, video=None, created=None):
         self._check_can_post_to_community_with_name(community_name=community_name)
         Post = get_post_model()
@@ -2055,6 +2062,9 @@ class User(AbstractUser):
 
     def _check_follow_list_id(self, list_id):
         self._check_has_list_with_id(list_id)
+
+    def _check_can_update_post_with_id(self, post_id):
+        self._check_has_post_with_id(post_id=post_id)
 
     def _check_can_post_to_circles_with_ids(self, circles_ids=None):
         for circle_id in circles_ids:
