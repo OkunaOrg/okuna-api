@@ -138,6 +138,9 @@ class Post(models.Model):
     def count_reactions(self, reactor_id=None):
         return PostReaction.count_reactions_for_post_with_id(self.pk, reactor_id=reactor_id)
 
+    def is_text_only_post(self):
+        return self.has_text() and not self.has_video() and not self.has_image()
+
     def has_text(self):
         if hasattr(self, 'text'):
 
@@ -179,6 +182,7 @@ class Post(models.Model):
         return not self.is_public_post() and not self.community
 
     def update(self, text=None):
+        self._check_can_be_updated(text=text)
         self.text = text
         self.is_edited = True
         self.save()
@@ -189,6 +193,12 @@ class Post(models.Model):
             self.created = timezone.now()
 
         return super(Post, self).save(*args, **kwargs)
+
+    def _check_can_be_updated(self, text=None):
+        if self.is_text_only_post() and not text:
+            raise ValidationError(
+                _('Cannot remove the text of a text only post. Try deleting it instead.')
+            )
 
 
 post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else default_storage
