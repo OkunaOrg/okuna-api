@@ -205,7 +205,8 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'circles',
             'community',
             'is_muted',
-            'is_encircled'
+            'is_encircled',
+            'is_edited'
         )
 
 
@@ -230,5 +231,6 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
             'video',
             'creator',
             'public_comments',
-            'public_reactions'
+            'public_reactions',
+            'is_edited'
         )

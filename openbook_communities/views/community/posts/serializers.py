@@ -4,11 +4,11 @@ from rest_framework import serializers
 from openbook_auth.models import User, UserProfile
 from openbook_common.models import Emoji, Badge
 from openbook_common.serializers_fields.post import ReactionsEmojiCountField, CommentsCountField, PostCreatorField, \
-    IsMutedField
+    IsMutedField, ReactionField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
 from openbook_communities.models import CommunityMembership, Community
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
-from openbook_posts.models import PostImage, PostVideo, Post
+from openbook_posts.models import PostImage, PostVideo, Post, PostReaction
 
 
 class GetCommunityPostsSerializer(serializers.Serializer):
@@ -125,6 +125,27 @@ class CommunityPostCommunitySerializer(serializers.ModelSerializer):
         )
 
 
+class PostReactionEmojiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Emoji
+        fields = (
+            'id',
+            'keyword',
+            'image'
+        )
+
+
+class PostReactionSerializer(serializers.ModelSerializer):
+    emoji = PostReactionEmojiSerializer(many=False)
+
+    class Meta:
+        model = PostReaction
+        fields = (
+            'emoji',
+            'id'
+        )
+
+
 class CommunityPostSerializer(serializers.ModelSerializer):
     image = CommunityPostImageSerializer(many=False)
     video = CommunityPostVideoSerializer(many=False)
@@ -134,6 +155,7 @@ class CommunityPostSerializer(serializers.ModelSerializer):
     comments_count = CommentsCountField()
     community = CommunityPostCommunitySerializer(many=False)
     is_muted = IsMutedField()
+    reaction = ReactionField(reaction_serializer=PostReactionSerializer)
 
     class Meta:
         model = Post
@@ -149,4 +171,6 @@ class CommunityPostSerializer(serializers.ModelSerializer):
             'creator',
             'community',
             'is_muted',
+            'reaction',
+            'is_edited'
         )
