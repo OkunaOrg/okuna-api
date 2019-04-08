@@ -87,16 +87,6 @@ class Post(models.Model):
         return post
 
     @classmethod
-    def update_post(cls, post_id, text=None):
-
-        post = Post.objects.get(id=post_id)
-        post.text = text
-        post.is_edited = True
-        post.save()
-
-        return post
-
-    @classmethod
     def get_emoji_counts_for_post_with_id(cls, post_id, emoji_id=None, reactor_id=None):
         Emoji = get_emoji_model()
 
@@ -187,6 +177,11 @@ class Post(models.Model):
 
     def is_encircled_post(self):
         return not self.is_public_post() and not self.community
+
+    def update(self, text=None):
+        self.text = text
+        self.is_edited = True
+        self.save()
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''

@@ -1226,7 +1226,8 @@ class User(AbstractUser):
     def update_post(self, post_id, text=None):
         self._check_can_edit_post_with_id(post_id)
         Post = get_post_model()
-        post = Post.update_post(post_id=post_id, text=text)
+        post = Post.objects.get(pk=post_id)
+        post.update(text=text)
         return post
 
     def create_community_post(self, community_name, text=None, image=None, video=None, created=None):
