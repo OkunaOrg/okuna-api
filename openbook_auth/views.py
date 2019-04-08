@@ -98,9 +98,8 @@ class EmailVerify(APIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = EmailVerifySerializer
 
-    def get(self, request, token):
+    def post(self, request):
         user = request.user
-        request.data['token'] = token
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         token = serializer.validated_data.get('token')

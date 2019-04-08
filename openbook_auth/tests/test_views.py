@@ -1434,7 +1434,7 @@ class VerifyChangeEmailAPITests(APITestCase):
         new_email = fake.email()
         token = user.request_email_update(new_email)
 
-        response = self.client.get(self._get_verify_email_url(token), **headers)
+        response = self.client.post(self._get_verify_email_url(), {'token': token}, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -1454,7 +1454,7 @@ class VerifyChangeEmailAPITests(APITestCase):
         user.request_email_update(new_email)
         headers = make_authentication_headers_for_user(user)
 
-        response = self.client.get(self._get_verify_email_url(foreign_token), **headers)
+        response = self.client.post(self._get_verify_email_url(), {'token': foreign_token}, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -1463,10 +1463,8 @@ class VerifyChangeEmailAPITests(APITestCase):
         # user email should not have changed
         self.assertTrue(user.email == original_email)
 
-    def _get_verify_email_url(self, token):
-        return reverse('email-verify', kwargs={
-            'token': token
-        })
+    def _get_verify_email_url(self):
+        return reverse('email-verify')
 
 
 class LinkedUsersAPITests(APITestCase):
