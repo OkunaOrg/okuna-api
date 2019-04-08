@@ -74,7 +74,6 @@ class PostCommentSerializer(serializers.ModelSerializer):
 
 
 class EditPostCommentSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = PostComment
         fields = (
@@ -425,7 +424,7 @@ class AuthenticatedUserEditPostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = (
-            'uuid',
+            'id',
             'text',
             'is_edited',
         )

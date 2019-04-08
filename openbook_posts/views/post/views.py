@@ -16,10 +16,9 @@ from openbook_posts.views.post.serializers import GetPostCommentsSerializer, Pos
     UnmutePostSerializer, MutePostSerializer, UpdatePostCommentSerializer, EditPostCommentSerializer, \
     EditPostSerializer, AuthenticatedUserEditPostSerializer
 
+
 # TODO Use post uuid also internally, not only as API resource identifier
 # In order to prevent enumerable posts API in alpha, this is done as a hotfix
-from openbook_posts.views.posts.serializers import AuthenticatedUserPostSerializer
-
 
 def get_post_id_for_post_uuid(post_uuid):
     Post = get_post_model()
@@ -63,7 +62,7 @@ class PostItem(APIView):
         post_id = get_post_id_for_post_uuid(post_uuid)
 
         with transaction.atomic():
-                post = user.update_post(post_id=post_id, text=text)
+            post = user.update_post(post_id=post_id, text=text)
 
         post_serializer = AuthenticatedUserEditPostSerializer(post, context={"request": request})
 
@@ -222,6 +221,7 @@ class PostComments(APIView):
 
 class PostCommentItem(APIView):
     permission_classes = (IsAuthenticated,)
+
     def delete(self, request, post_uuid, post_comment_id):
         request_data = self._get_request_data(request, post_uuid, post_comment_id)
 
@@ -262,7 +262,6 @@ class PostCommentItem(APIView):
 
         post_comment_serializer = EditPostCommentSerializer(post_comment, context={"request": request})
         return Response(post_comment_serializer.data, status=status.HTTP_200_OK)
-
 
     def _get_request_data(self, request, post_uuid, post_comment_id):
         request_data = request.data.copy()
@@ -328,7 +327,6 @@ class PostReactions(APIView):
 
 
 class PostReactionsEmojiCount(APIView):
-
     permission_classes = (IsAuthenticated,)
 
     def get(self, request, post_uuid):
