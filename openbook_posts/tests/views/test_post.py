@@ -285,6 +285,27 @@ class PostItemAPITests(APITestCase):
         self.assertEqual(post.text, edited_text)
         self.assertTrue(post.is_edited)
 
+    def test_canot_edit_to_remove_text_from_own_text_only_post(self):
+        """
+        should not be able to edit to remove the text of an own post and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        initial_text = make_fake_post_text()
+        post = user.create_public_post(text=initial_text)
+
+        url = self._get_url(post)
+        data = {
+            'text': ''
+        }
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertTrue(response.status_code, status.HTTP_400_BAD_REQUEST)
+        post.refresh_from_db()
+        self.assertEqual(post.text, initial_text)
+        self.assertFalse(post.is_edited)
+
     def test_can_edit_own_community_post(self):
         """
         should be able to edit own community post and return 200
