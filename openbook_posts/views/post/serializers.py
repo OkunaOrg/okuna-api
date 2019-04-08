@@ -425,6 +425,7 @@ class AuthenticatedUserEditPostSerializer(serializers.ModelSerializer):
         model = Post
         fields = (
             'id',
+            'uuid',
             'text',
             'is_edited',
         )
