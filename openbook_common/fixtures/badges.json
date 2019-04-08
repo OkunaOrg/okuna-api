@@ -48,5 +48,15 @@
       "keyword_description_en": "Openbook Founder",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
+  },
+  {
+    "model": "openbook_common.Badge",
+    "pk": 6,
+    "fields": {
+      "keyword": "ANGEL",
+      "keyword_description_es": "Openbook Angel",
+      "keyword_description_en": "Openbook Angel",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
   }
 ]
