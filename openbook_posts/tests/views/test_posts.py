@@ -949,13 +949,33 @@ class PostsAPITests(APITestCase):
         """
         user = make_user()
 
-        user_post = user.create_public_post(text=make_fake_post_text())
+        user_timeline_posts_amount = 5
+
+        posts_ids = []
+
+        for i in range(0, user_timeline_posts_amount):
+            foreign_user = make_user()
+            foreign_post = foreign_user.create_encircled_post(text=make_fake_post_text(),
+                                                              circles_ids=[foreign_user.connections_circle_id])
+            posts_ids.append(foreign_post.pk)
+            user.connect_with_user_with_id(user_id=foreign_user.pk)
+            foreign_user.confirm_connection_with_user_with_id(user_id=user.pk)
 
         connection_requester_user = make_user()
 
+        connection_requester_user.connect_with_user_with_id(user_id=user.pk, circles_ids=[
+            connection_requester_user.connections_circle.pk])
+
+        user.confirm_connection_with_user_with_id(user_id=connection_requester_user.pk)
+
+        connection_requester_user.disconnect_from_user_with_id(user_id=user.pk)
+
+        connection_requester_user.connect_with_user_with_id(user_id=user.pk, circles_ids=[
+            connection_requester_user.connections_circle.pk])
+
         connection_requester_user_circle = make_circle(creator=connection_requester_user)
-        connection_requester_user.connect_with_user_with_id(user_id=user.pk,
-                                                            circles_ids=[connection_requester_user_circle.pk])
+        connection_requester_user.update_connection_with_user_with_id(user_id=user.pk,
+                                                                      circles_ids=[connection_requester_user_circle.pk])
 
         connection_requester_user.create_encircled_post(text=make_fake_post_text(),
                                                         circles_ids=[connection_requester_user_circle.pk])
@@ -969,11 +989,12 @@ class PostsAPITests(APITestCase):
 
         response_posts = json.loads(response.content)
 
-        self.assertEqual(1, len(response_posts))
+        self.assertEqual(len(posts_ids), len(response_posts))
 
-        response_post = response_posts[0]
+        response_posts_ids = [post['id'] for post in response_posts]
 
-        self.assertEqual(response_post['id'], user_post.pk)
+        for post_id in posts_ids:
+            self.assertIn(post_id, response_posts_ids)
 
     def _get_url(self):
         return reverse('posts')
