@@ -2,7 +2,7 @@ from django.contrib import admin
 from modeltranslation.admin import TranslationAdmin
 
 # Register your models here.
-from openbook_common.models import Emoji, EmojiGroup
+from openbook_common.models import Emoji, EmojiGroup, Badge
 
 
 class EmojiGroupEmoji(admin.TabularInline):
@@ -31,3 +31,10 @@ class EmojiAdmin(TranslationAdmin):
 
 
 admin.site.register(Emoji, EmojiAdmin)
+
+
+class BadgeAdmin(TranslationAdmin):
+    pass
+
+
+admin.site.register(Badge, BadgeAdmin)
