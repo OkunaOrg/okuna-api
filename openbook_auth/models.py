@@ -1366,7 +1366,8 @@ class User(AbstractUser):
 
             followed_user_circles_query = Q(circles__id=world_circle_id)
 
-            followed_user_circles_query.add(Q(circles__connections__target_user_id=self.pk, ), Q.OR)
+            followed_user_circles_query.add(Q(circles__connections__target_user_id=self.pk,
+                                              circles__connections__target_connection__circles__isnull=False), Q.OR)
 
             followed_user_query.add(followed_user_circles_query, Q.AND)
 
@@ -1402,7 +1403,8 @@ class User(AbstractUser):
 
             followed_user_circles_query = Q(circles__id=world_circle_id)
 
-            followed_user_circles_query.add(Q(circles__connections__target_user_id=self.pk, ), Q.OR)
+            followed_user_circles_query.add(Q(circles__connections__target_user_id=self.pk,
+                                              circles__connections__target_connection__circles__isnull=False), Q.OR)
 
             followed_user_query.add(followed_user_circles_query, Q.AND)
 
