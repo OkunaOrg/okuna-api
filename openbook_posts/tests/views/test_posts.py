@@ -886,5 +886,94 @@ class PostsAPITests(APITestCase):
         for post_id in posts_ids:
             self.assertIn(post_id, response_posts_ids)
 
+    def test_can_retrieve_encircled_posts_of_confirmed_connection(self):
+        """
+        should be able to retrieve the encircled posts of a confirmed connection
+        """
+        user = make_user()
+        user_to_connect_to = make_user()
+
+        user.connect_with_user_with_id(user_id=user_to_connect_to.pk)
+
+        user_to_connect_to_circle = make_circle(creator=user_to_connect_to)
+        user_to_connect_to.confirm_connection_with_user_with_id(user_id=user.pk,
+                                                                circles_ids=[user_to_connect_to_circle.pk])
+
+        post = user_to_connect_to.create_encircled_post(text=make_fake_post_text(),
+                                                        circles_ids=[user_to_connect_to_circle.pk])
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(1, len(response_posts))
+
+        response_post = response_posts[0]
+
+        self.assertEqual(response_post['id'], post.pk)
+
+    def test_cant_retrieve_encircled_posts_of_unconfirmed_connection(self):
+        """
+        should not be able to retrieve encircled posts of unconfirmed co
+        """
+        user = make_user()
+        user_to_connect_to = make_user()
+
+        user.connect_with_user_with_id(user_id=user_to_connect_to.pk)
+
+        user_to_connect_to_circle = make_circle(creator=user_to_connect_to)
+
+        user_to_connect_to.create_encircled_post(text=make_fake_post_text(),
+                                                 circles_ids=[user_to_connect_to_circle.pk])
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_can_retrieve_posts_with_recent_unconfirmed_connection_encircled_post(self):
+        """
+        should be able to retrieve the timeline posts with an unconfirmed connection recent posts
+        https://github.com/OpenbookOrg/openbook-api/issues/301
+        """
+        user = make_user()
+
+        user_post = user.create_public_post(text=make_fake_post_text())
+
+        connection_requester_user = make_user()
+
+        connection_requester_user_circle = make_circle(creator=connection_requester_user)
+        connection_requester_user.connect_with_user_with_id(user_id=user.pk,
+                                                            circles_ids=[connection_requester_user_circle.pk])
+
+        connection_requester_user.create_encircled_post(text=make_fake_post_text(),
+                                                        circles_ids=[connection_requester_user_circle.pk])
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(1, len(response_posts))
+
+        response_post = response_posts[0]
+
+        self.assertEqual(response_post['id'], user_post.pk)
+
     def _get_url(self):
         return reverse('posts')
