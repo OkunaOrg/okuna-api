@@ -2250,11 +2250,14 @@ class User(AbstractUser):
     def get_follow_for_user_with_id(self, user_id):
         return self.follows.get(followed_user_id=user_id)
 
-    def get_notifications(self, max_id=None):
+    def get_notifications(self, max_id=None, types=None):
         notifications_query = Q()
 
         if max_id:
             notifications_query.add(Q(id__lt=max_id), Q.AND)
+
+        if types:
+            notifications_query.add(Q(notification_type__in=types), Q.AND)
 
         return self.notifications.filter(notifications_query)
 

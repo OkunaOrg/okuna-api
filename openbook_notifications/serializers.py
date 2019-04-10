@@ -30,6 +30,9 @@ class GetNotificationsSerializer(serializers.Serializer):
     max_id = serializers.IntegerField(
         required=False,
     )
+    types = serializers.CharField(
+        required=False,
+    )
 
 
 class PostCommentCommenterProfileSerializer(serializers.ModelSerializer):

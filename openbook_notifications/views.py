@@ -22,10 +22,11 @@ class Notifications(APIView):
 
         count = data.get('count', 10)
         max_id = data.get('max_id')
+        types = data.get('types').split(sep=",")
 
         user = request.user
 
-        notifications = user.get_notifications(max_id=max_id).order_by('-created')[:count]
+        notifications = user.get_notifications(max_id=max_id, types=types).order_by('-created')[:count]
 
         response_serializer = GetNotificationsNotificationSerializer(notifications, many=True,
                                                                      context={"request": request})
