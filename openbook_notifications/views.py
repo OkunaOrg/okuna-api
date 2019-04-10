@@ -54,9 +54,10 @@ class ReadNotifications(APIView):
         data = serializer.validated_data
 
         max_id = data.get('max_id')
+        types = data.get('types').split(sep=",")
 
         with transaction.atomic():
-            user.read_notifications(max_id=max_id)
+            user.read_notifications(max_id=max_id, types=types)
 
         return Response(status=status.HTTP_200_OK)
 

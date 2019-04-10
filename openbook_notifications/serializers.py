@@ -20,6 +20,9 @@ class ReadNotificationsSerializer(serializers.Serializer):
     max_id = serializers.IntegerField(
         required=False,
     )
+    types = serializers.CharField(
+        required=False,
+    )
 
 
 class GetNotificationsSerializer(serializers.Serializer):

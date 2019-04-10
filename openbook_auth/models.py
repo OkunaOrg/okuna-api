@@ -2261,11 +2261,13 @@ class User(AbstractUser):
 
         return self.notifications.filter(notifications_query)
 
-    def read_notifications(self, max_id=None):
+    def read_notifications(self, max_id=None, types=None):
         notifications_query = Q(read=False)
 
         if max_id:
             notifications_query.add(Q(id__lte=max_id), Q.AND)
+        if types:
+            notifications_query.add(Q(notification_type__in=types), Q.AND)
 
         self.notifications.filter(notifications_query).update(read=True)
 
