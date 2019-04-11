@@ -105,7 +105,8 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
             'following_count',
             'connections_circle_id',
             'is_member_of_communities',
-            'unread_notifications_count'
+            'unread_notifications_count',
+            'invite_count'
         )
 
 
