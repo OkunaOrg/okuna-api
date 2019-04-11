@@ -2,11 +2,12 @@ from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUserna
 from django.core.mail import EmailMultiAlternatives
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 import jwt
-from openbook.settings import USERNAME_MAX_LENGTH
+from openbook.settings import USERNAME_MAX_LENGTH, PROFILE_NAME_MAX_LENGTH
 from openbook_common.models import Badge
 from openbook_common.utils.model_loaders import get_user_invite_model
 from rest_framework.exceptions import ValidationError
@@ -15,9 +16,10 @@ from rest_framework.exceptions import ValidationError
 class UserInvite(models.Model):
     invited_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='invited_users',
                                    null=True, blank=True)
-    invited_date = models.DateField(_('invited date'), null=False, blank=False, auto_now_add=True)
+    invited_date = models.DateTimeField(_('invited datetime'), null=False, blank=False)
     created_user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
-    name = models.CharField(max_length=256, null=True, blank=True)
+    name = models.CharField(max_length=PROFILE_NAME_MAX_LENGTH, null=True, blank=True)
+    nickname = models.CharField(max_length=PROFILE_NAME_MAX_LENGTH, null=True, blank=True)
     email = models.EmailField(_('email address'), null=True, blank=True)
     username_validator = UnicodeUsernameValidator() if six.PY3 else ASCIIUsernameValidator()
     username = models.CharField(
@@ -43,6 +45,7 @@ class UserInvite(models.Model):
     def __str__(self):
         return 'UserInvite'
 
+
     @classmethod
     def is_token_valid(cls, token):
         try:
@@ -52,9 +55,10 @@ class UserInvite(models.Model):
         return True
 
     @classmethod
-    def create_invite(cls, email, name=None, username=None, badge=None):
+    def create_invite(cls, email=None, name=None, username=None, badge=None, nickname=None, invited_by=None):
         UserInvite = get_user_invite_model()
-        invite = UserInvite.objects.create(name=name, email=email, username=username, badge=badge)
+        invite = UserInvite.objects.create(nickname=nickname, name=name, email=email, username=username, badge=badge,
+                                           invited_by=invited_by)
         invite.token = invite.generate_token()
         invite.save()
         return invite
@@ -81,6 +85,11 @@ class UserInvite(models.Model):
             raise ValidationError(
                 _('The invite has been already used.')
             )
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.invited_date = timezone.now()
+        return super(UserInvite, self).save(*args, **kwargs)
 
     def send_invite_email(self):
         if self.invited_by:
@@ -137,3 +146,4 @@ class UserInvite(models.Model):
 
     def _generate_one_time_link(self):
         return '{0}/api/auth/invite?token={1}'.format(settings.EMAIL_HOST, self.token)
+

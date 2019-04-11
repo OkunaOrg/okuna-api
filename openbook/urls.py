@@ -40,6 +40,7 @@ from openbook_communities.views.community.posts.views import CommunityPosts
 from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, FavoriteCommunity
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
+from openbook_invitations.views import UserInvite, UserInvites
 from openbook_devices.views import Devices, DeviceItem
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
 from openbook_lists.views import Lists, ListItem, ListNameCheck
@@ -206,6 +207,13 @@ devices_patterns = [
     path('<str:device_uuid>/', DeviceItem.as_view(), name='device'),
 ]
 
+invites_patterns = [
+    path('', UserInvites.as_view(), name='invites'),
+    path('<str:invite_id>/', UserInvite.as_view(), name='invite'),
+    path('<str:invite_id>/email/', UserInvite.as_view(), name='send-invite-email'),
+]
+
+
 api_patterns = [
     path('auth/', include(auth_patterns)),
     path('posts/', include(posts_patterns)),
@@ -217,6 +225,7 @@ api_patterns = [
     path('follows/', include(follows_patterns)),
     path('notifications/', include(notifications_patterns)),
     path('devices/', include(devices_patterns)),
+    path('invites/', include(invites_patterns)),
     url('time/', Time.as_view(), name='time'),
     url('emojis/groups/', EmojiGroups.as_view(), name='emoji-groups'),
 ]

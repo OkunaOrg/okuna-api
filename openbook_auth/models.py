@@ -16,7 +16,7 @@ from imagekit.models import ProcessedImageField
 from pilkit.processors import ResizeToFill, ResizeToFit
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError, NotFound, PermissionDenied, AuthenticationFailed
-from django.db.models import Q
+from django.db.models import Q, F
 from django.core.mail import EmailMultiAlternatives
 
 from openbook.settings import USERNAME_MAX_LENGTH
@@ -62,6 +62,8 @@ class User(AbstractUser):
     )
 
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    invite_count = models.SmallIntegerField(default=0)
+
     JWT_TOKEN_TYPE_CHANGE_EMAIL = 'CE'
     JWT_TOKEN_TYPE_PASSWORD_RESET = 'PR'
 
@@ -221,7 +223,7 @@ class User(AbstractUser):
         self.delete()
 
     def save(self, *args, **kwargs):
-        self.full_clean()
+        self.full_clean(exclude=['invite_count'])
         return super(User, self).save(*args, **kwargs)
 
     def update_profile_cover(self, cover, save=True):
@@ -1644,6 +1646,50 @@ class User(AbstractUser):
         Post = get_post_model()
         post = Post.objects.get(pk=post_id)
         return post
+
+    def create_invite(self, nickname):
+        self._check_can_create_invite()
+        UserInvite = get_user_invite_model()
+        invite = UserInvite.create_invite(nickname=nickname, invited_by=self)
+        self.invite_count = F('invite_count') - 1
+        self.save()
+        return invite
+
+    def get_user_invites(self):
+        UserInvite = get_user_invite_model()
+        return UserInvite.objects.filter(invited_by=self)
+
+    def delete_user_invite_with_id(self, invite_id):
+        self._check_can_delete_invite_with_id(invite_id)
+        UserInvite = get_user_invite_model()
+        invite = UserInvite.objects.get(id=invite_id)
+        if not invite.created_user:
+            self.invite_count = F('invite_count') + 1
+            self.save()
+
+        invite.delete()
+
+    def send_invite_to_invite_id_with_email(self, invite_id, email):
+        self._check_can_send_email_invite_to_invite_id(invite_id)
+        UserInvite = get_user_invite_model()
+        invite = UserInvite.objects.get(id=invite_id)
+        invite.email = email
+        invite.send_invite_email()
+
+    def _check_can_create_invite(self):
+        if self.invite_count == 0:
+            raise ValidationError(_('You have no invites left'))
+
+    def _check_can_send_email_invite_to_invite_id(self, invite_id):
+        self._check_is_creator_of_invite_with_id(invite_id)
+
+    def _check_can_delete_invite_with_id(self, invite_id):
+        self._check_is_creator_of_invite_with_id(invite_id)
+
+    def _check_is_creator_of_invite_with_id(self, invite_id):
+        UserInvite = get_user_invite_model()
+        if not UserInvite.objects.filter(id=invite_id, invited_by=self).exists():
+            raise ValidationError(_('Invite was not created by you'))
 
     def _generate_password_reset_link(self, token):
         return '{0}/api/auth/password/verify?token={1}'.format(settings.EMAIL_HOST, token)
