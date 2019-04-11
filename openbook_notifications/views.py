@@ -22,7 +22,10 @@ class Notifications(APIView):
 
         count = data.get('count', 10)
         max_id = data.get('max_id')
-        types = data.get('types').split(sep=",")
+        types = data.get('types')
+
+        if types is not None:
+            types = types.split(sep=",")
 
         user = request.user
 
@@ -54,7 +57,10 @@ class ReadNotifications(APIView):
         data = serializer.validated_data
 
         max_id = data.get('max_id')
-        types = data.get('types').split(sep=",")
+        types = data.get('types')
+
+        if types is not None:
+            types = types.split(sep=",")
 
         with transaction.atomic():
             user.read_notifications(max_id=max_id, types=types)
