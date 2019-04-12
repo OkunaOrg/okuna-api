@@ -158,24 +158,54 @@ REDIS_LOCATION = '%(protocol)s%(password)s@%(host)s:%(port)d' % {'protocol': red
                                                                  'host': REDIS_HOST,
                                                                  'port': REDIS_PORT}
 
-CACHES = {
-    'default': {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": REDIS_LOCATION,
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient"
+if IS_PRODUCTION:
+    CACHES = {
+        'default': {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_LOCATION,
+            "OPTIONS": {
+                'REDIS_CLIENT_CLASS': 'rediscluster.RedisCluster',
+                'CONNECTION_POOL_CLASS': 'rediscluster.connection.ClusterConnectionPool',
+                'CONNECTION_POOL_KWARGS': {
+                    'skip_full_coverage_check': True  # AWS ElasticCache has disabled CONFIG commands
+                }
+            },
+            "KEY_PREFIX": "ob-api:",
         },
-        "KEY_PREFIX": "ob-api:"
-    },
-    'rq-queues': {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": REDIS_LOCATION,
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient"
-        },
-        "KEY_PREFIX": "ob-api-rq:"
+        'rq-queues': {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_LOCATION,
+            "OPTIONS": {
+                'REDIS_CLIENT_CLASS': 'rediscluster.RedisCluster',
+                'CONNECTION_POOL_CLASS': 'rediscluster.connection.ClusterConnectionPool',
+                'CONNECTION_POOL_KWARGS': {
+                    'skip_full_coverage_check': True  # AWS ElasticCache has disabled CONFIG commands
+                }
+            },
+            "KEY_PREFIX": "ob-api-rq:"
+        }
     }
-}
+
+    CACHEOPS_CLIENT_CLASS = 'rediscluster.RedisCluster'
+else:
+    CACHES = {
+        'default': {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_LOCATION,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient"
+            },
+            "KEY_PREFIX": "ob-api:"
+        },
+        'rq-queues': {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_LOCATION,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient"
+            },
+            "KEY_PREFIX": "ob-api-rq:"
+        }
+    }
 
 CACHEOPS_REDIS = REDIS_LOCATION
 
