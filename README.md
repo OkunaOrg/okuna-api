@@ -21,6 +21,9 @@ The API server for Openbook.
 ## Requirements
 
 * [Pipenv](https://github.com/pypa/pipenv)
+* [MySQL](https://www.mysql.com/de/products/community/)
+* [Redis](https://redis.io/)
+* [libmagic](https://www.darwinsys.com/file/)
 
 ## Project overview
 
@@ -69,7 +72,7 @@ If you're using git in your command line, you can download the handy tool [gitmo
 
 #### Clone the repository
 
-```sh
+```bash
 git clone git@github.com:OpenbookOrg/openbook-api.git
 ```
 
@@ -106,9 +109,15 @@ python manage.py collectmedia
 python manage.py loaddata circles.json emoji-groups.json emojis.json badges.json categories.json
 ```
 
-#### Serve with hot reload at http://127.0.0.1:8000
+#### Serve with hot reload
+For local API development it suffices to bind the server to localhost:
 ```bash
 python manage.py runserver
+```
+
+For app development you have to bind the server to your local network:
+```bash
+python manage.py runserver 0.0.0.0:8000
 ```
 
 <br>
@@ -123,6 +132,14 @@ Required for creating a new account.
 ```bash
 usage: manage.py create_invite [-h] [--email EMAIL] [--username USERNAME] [--name NAME] [--badge BADGE]
 ```
+
+## Troubleshooting
+
+### macOS
+
+#### The `pipenv install` command fails
+
+You probably installed openssl via [Homebew](https://brew.sh/index_de), make sure to follow the instructions that are given when you type `brew info openssl`.
 
 ## FAQ
 
