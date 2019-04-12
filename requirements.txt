@@ -14,6 +14,7 @@ django-cacheops==4.1
 django-imagekit==4.0.2
 django-media-fixtures==0.0.3
 django-nose==1.4.6
+django-redis==4.10.0
 django-replicated==2.6.1
 django-storages==1.7.1
 django==2.2
