@@ -37,6 +37,12 @@ def make_user(username=None):
     return user
 
 
+def make_user_with_invite_count(invite_count=5):
+    user = mixer.blend(User, invite_count=invite_count)
+    profile = make_profile(user)
+
+    return user
+
 def make_badge():
     return mixer.blend(Badge)
 
