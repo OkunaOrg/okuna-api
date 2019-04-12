@@ -148,7 +148,7 @@ REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.environ.get('REDIS_PORT', '6379'))
 REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
 
-redis_protocol = 'rediss://' if IS_PRODUCTION else 'redis://'
+redis_protocol = 'redis://'
 
 redis_password = '' if not REDIS_PASSWORD else ':%s' % REDIS_PASSWORD
 
