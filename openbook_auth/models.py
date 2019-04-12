@@ -1395,7 +1395,7 @@ class User(AbstractUser):
         timeline_posts_query.add(Q(circles__connections__target_user_id=self.pk,
                                    circles__connections__target_connection__circles__isnull=False), Q.OR)
 
-        followed_users = self.follows.values('followed_user_id').cache()
+        followed_users = self.follows.values('followed_user_id')
 
         followed_users_ids = [followed_user['followed_user_id'] for followed_user in followed_users]
 
