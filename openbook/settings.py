@@ -152,7 +152,7 @@ REDIS_DEFAULT_DB = int(os.environ.get('REDIS_DEFAULT_DB', '0'))
 
 redis_protocol = 'rediss://' if IS_PRODUCTION else 'redis://'
 
-REDIS_LOCATION = '%(protocol)s%(password)s@%(host)s:%(port)d' % {'protocol': redis_protocol,
+REDIS_LOCATION = '%(protocol)s:%(password)s@%(host)s:%(port)d' % {'protocol': redis_protocol,
                                                                     'password': REDIS_PASSWORD,
                                                                     'host': REDIS_HOST,
                                                                     'port': REDIS_PORT}
