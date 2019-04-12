@@ -9,7 +9,18 @@ class CreateUserInviteSerializer(serializers.Serializer):
     nickname = serializers.CharField(max_length=PROFILE_NAME_MAX_LENGTH, required=True, allow_blank=False)
 
 
+class InvitedUserSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'username'
+        )
+
+
 class GetUserInviteSerializer(serializers.ModelSerializer):
+    created_user = InvitedUserSerializer(many=False)
 
     class Meta:
         model = UserInvite
