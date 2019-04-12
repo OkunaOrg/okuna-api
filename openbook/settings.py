@@ -108,6 +108,7 @@ INSTALLED_APPS = [
     'storages',
     'imagekit',
     'django_media_fixtures',
+    'cacheops',
     'openbook_common',
     'openbook_auth',
     'openbook_posts',
@@ -143,6 +144,63 @@ AUTH_USER_MODEL = 'openbook_auth.User'
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
 JWT_ALGORITHM = os.environ.get('JWT_ALGORITHM', 'HS256')
+
+REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+REDIS_PORT = int(os.environ.get('REDIS_PORT', '6379'))
+REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
+REDIS_DEFAULT_DB = int(os.environ.get('REDIS_DEFAULT_DB', '0'))
+
+redis_protocol = 'rediss://' if IS_PRODUCTION else 'redis://'
+
+redis_password = '' if not REDIS_PASSWORD else ':%s' % REDIS_PASSWORD
+
+REDIS_LOCATION = '%(protocol)s%(password)s@%(host)s:%(port)d' % {'protocol': redis_protocol,
+                                                                 'password': redis_password,
+                                                                 'host': REDIS_HOST,
+                                                                 'port': REDIS_PORT}
+
+RQ_QUEUES_REDIS_DB = int(os.environ.get('RQ_QUEUES_REDIS_DB', '2'))
+
+CACHES = {
+    'default': {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': REDIS_DEFAULT_DB},
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient"
+        },
+        "KEY_PREFIX": "ob-api-"
+    },
+    'rq-queues': {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': RQ_QUEUES_REDIS_DB},
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient"
+        },
+        "KEY_PREFIX": "ob-api-rq-"
+    }
+}
+
+CACHEOPS_REDIS_DB = int(os.environ.get('CACHEOPS_REDIS_DB', '1'))
+
+CACHEOPS_REDIS = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': CACHEOPS_REDIS_DB}
+
+CACHEOPS_DEFAULTS = {
+    'timeout': 60 * 60
+}
+
+CACHEOPS = {
+    # Don't cache anything automatically
+    '*.*': {},
+}
+
+RQ_QUEUES = {
+    'high': {
+        'USE_REDIS_CACHE': 'rq-queues',
+    },
+    'low': {
+        'USE_REDIS_CACHE': 'rq-queues',
+    },
+}
 
 if IS_BUILD:
     NOSE_ARGS = [
