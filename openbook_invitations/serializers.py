@@ -42,6 +42,6 @@ class DeleteUserInviteSerializer(serializers.Serializer):
 class EmailUserInviteSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     invite_id = serializers.IntegerField(
-        validators=[invite_id_exists, check_invite_not_used],
+        validators=[check_invite_not_used],
         required=True,
     )

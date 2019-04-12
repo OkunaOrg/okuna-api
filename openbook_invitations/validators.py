@@ -12,6 +12,10 @@ def invite_id_exists(invite_id):
 
 
 def check_invite_not_used(invite_id):
+    if not UserInvite.objects.filter(id=invite_id).exists():
+        raise ValidationError(
+            _('The invite does not exist.'),
+        )
     invite = UserInvite.objects.get(id=invite_id)
     if invite.created_user is not None:
         raise ValidationError(

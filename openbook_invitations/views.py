@@ -80,4 +80,4 @@ class UserInvite(APIView):
                 print('Exception occurred during send_invite_email', e)
                 raise SMTPException(_('An error occurred sending the invite, please try again later'))
 
-        return ApiMessageResponse(_('Invite sent'), status=status.HTTP_200_OK)
+        return ApiMessageResponse(_('Invite email sent'), status=status.HTTP_200_OK)
