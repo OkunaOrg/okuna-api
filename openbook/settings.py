@@ -108,6 +108,7 @@ INSTALLED_APPS = [
     'storages',
     'imagekit',
     'django_media_fixtures',
+    'cacheops',
     'openbook_common',
     'openbook_auth',
     'openbook_posts',
@@ -143,6 +144,23 @@ AUTH_USER_MODEL = 'openbook_auth.User'
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
 JWT_ALGORITHM = os.environ.get('JWT_ALGORITHM', 'HS256')
+
+CACHEOPS_REDIS = {
+    'host': 'localhost',  # redis-server is on same machine
+    'port': 6379,  # default redis port
+    'db': 1,
+    'socket_timeout': 3,  # connection timeout in seconds, optional
+    # 'password': '...',  # optional
+    # 'unix_socket_path': ''  # replaces host and port
+}
+
+CACHEOPS_DEFAULTS = {
+    'timeout': 60 * 60
+}
+
+CACHEOPS = {
+    '*.*': {},
+}
 
 if IS_BUILD:
     NOSE_ARGS = [

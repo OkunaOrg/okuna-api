@@ -1387,23 +1387,41 @@ class User(AbstractUser):
         world_circle_id = self._get_world_circle_id()
 
         # Add all own posts
-        timeline_posts_query = Q(creator=self.pk, community__isnull=True)
-
-        timeline_posts_query.add(Q(creator__followers__user_id=self.pk,
-                                   circles__connections__target_user_id=self.pk,
-                                   circles__connections__target_connection__circles__isnull=False,
-                                   ), Q.OR)
-
-        timeline_posts_query.add(Q(community__isnull=False, community__memberships__user__id=self.pk), Q.OR)
-
-        timeline_posts_query.add(Q(circles__id=world_circle_id, creator__followers__user_id=self.pk), Q.OR)
-
-        if max_id:
-            timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
-
         Post = get_post_model()
 
-        return Post.objects.filter(timeline_posts_query).distinct()
+        own_posts_queryset = Post.objects.filter(creator=self.pk, community__isnull=True).cache()
+
+        community_posts_queryset = Post.objects.filter(community__isnull=False,
+                                                       community__memberships__user__id=self.pk).cache()
+
+        followed_users = self.follows.values('followed_user__id').cache().iterator()
+
+        followed_users_querysets = []
+
+        for followed_user in followed_users:
+            followed_user_id = followed_user['followed_user__id']
+
+            # Add followed user world circle posts + posts we're encircled with
+
+            followed_user_query = Q(creator_id=followed_user_id)
+
+            followed_user_circles_query = Q(circles__id=world_circle_id)
+
+            followed_user_circles_query.add(Q(circles__connections__target_user_id=self.pk,
+                                              circles__connections__target_connection__circles__isnull=False), Q.OR)
+
+            followed_user_query.add(followed_user_circles_query, Q.AND)
+
+            followed_user_queryset = Post.objects.filter(followed_user_query).cache()
+
+            followed_users_querysets.append(followed_user_queryset)
+
+        timeline_posts_queryset = own_posts_queryset.union(community_posts_queryset, *followed_users_querysets)
+
+        if max_id:
+            timeline_posts_queryset.add(Q(id__lt=max_id), Q.AND)
+
+        return timeline_posts_queryset
 
     def follow_user(self, user, lists_ids=None):
         return self.follow_user_with_id(user.pk, lists_ids)
