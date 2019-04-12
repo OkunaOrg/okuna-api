@@ -145,13 +145,17 @@ TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
 JWT_ALGORITHM = os.environ.get('JWT_ALGORITHM', 'HS256')
 
+REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+REDIS_PORT = os.environ.get('REDIS_PORT', '6379')
+REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', '')
+
+CACHEOPS_REDIS_DB = int(os.environ.get('CACHEOPS_REDIS_DB', '1'))
+
 CACHEOPS_REDIS = {
-    'host': 'localhost',  # redis-server is on same machine
-    'port': 6379,  # default redis port
-    'db': 1,
-    'socket_timeout': 3,  # connection timeout in seconds, optional
-    # 'password': '...',  # optional
-    # 'unix_socket_path': ''  # replaces host and port
+    'host': REDIS_HOST,
+    'port': REDIS_PORT,
+    'db': CACHEOPS_REDIS_DB,
+    'password': REDIS_PASSWORD,
 }
 
 CACHEOPS_DEFAULTS = {
@@ -159,6 +163,7 @@ CACHEOPS_DEFAULTS = {
 }
 
 CACHEOPS = {
+    # Don't cache anything automatically
     '*.*': {},
 }
 
