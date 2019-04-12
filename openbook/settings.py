@@ -108,6 +108,7 @@ INSTALLED_APPS = [
     'storages',
     'imagekit',
     'django_media_fixtures',
+    'cacheops',
     'openbook_common',
     'openbook_auth',
     'openbook_posts',
@@ -185,6 +186,7 @@ if IS_PRODUCTION:
         }
     }
 
+    CACHEOPS_CLIENT_CLASS = 'rediscluster.RedisCluster'
 else:
     CACHES = {
         'default': {
@@ -204,6 +206,19 @@ else:
             "KEY_PREFIX": "ob-api-rq:"
         }
     }
+
+CACHEOPS_REDIS = REDIS_LOCATION
+
+CACHEOPS_PREFIX = lambda query: 'ob-api-cacheops:'
+
+CACHEOPS_DEFAULTS = {
+    'timeout': 60 * 60
+}
+
+CACHEOPS = {
+    # Don't cache anything automatically
+    '*.*': {},
+}
 
 RQ_QUEUES = {
     'high': {
