@@ -22,6 +22,7 @@ The API server for Openbook.
 
 * [Pipenv](https://github.com/pypa/pipenv)
 * [MySQL](https://www.mysql.com/de/products/community/)
+* [Redis](https://redis.io/)
 * [libmagic](https://www.darwinsys.com/file/)
 
 ## Project overview
