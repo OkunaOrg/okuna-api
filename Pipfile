@@ -33,6 +33,8 @@ django-imagekit = "*"
 rest-framework-generic-relations = "*"
 onesignal-sdk = "*"
 django-replicated = "*"
+django-cacheops = "*"
+django-redis = "*"
 
 [pipenv]
 allow_prereleases = true
