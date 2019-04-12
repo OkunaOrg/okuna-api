@@ -148,6 +148,7 @@ JWT_ALGORITHM = os.environ.get('JWT_ALGORITHM', 'HS256')
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.environ.get('REDIS_PORT', '6379'))
 REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
+REDIS_DEFAULT_DB = int(os.environ.get('REDIS_DEFAULT_DB', '0'))
 
 redis_protocol = 'rediss://' if IS_PRODUCTION else 'redis://'
 
@@ -158,58 +159,30 @@ REDIS_LOCATION = '%(protocol)s%(password)s@%(host)s:%(port)d' % {'protocol': red
                                                                  'host': REDIS_HOST,
                                                                  'port': REDIS_PORT}
 
-if IS_PRODUCTION:
-    CACHES = {
-        'default': {
-            "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": REDIS_LOCATION,
-            "OPTIONS": {
-                'REDIS_CLIENT_CLASS': 'rediscluster.RedisCluster',
-                'CONNECTION_POOL_CLASS': 'rediscluster.connection.ClusterConnectionPool',
-                'CONNECTION_POOL_KWARGS': {
-                    'skip_full_coverage_check': True  # AWS ElasticCache has disabled CONFIG commands
-                }
-            },
-            "KEY_PREFIX": "ob-api:",
+RQ_QUEUES_REDIS_DB = int(os.environ.get('RQ_QUEUES_REDIS_DB', '2'))
+
+CACHES = {
+    'default': {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': REDIS_DEFAULT_DB},
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient"
         },
-        'rq-queues': {
-            "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": REDIS_LOCATION,
-            "OPTIONS": {
-                'REDIS_CLIENT_CLASS': 'rediscluster.RedisCluster',
-                'CONNECTION_POOL_CLASS': 'rediscluster.connection.ClusterConnectionPool',
-                'CONNECTION_POOL_KWARGS': {
-                    'skip_full_coverage_check': True  # AWS ElasticCache has disabled CONFIG commands
-                }
-            },
-            "KEY_PREFIX": "ob-api-rq:"
-        }
-    }
-
-    CACHEOPS_CLIENT_CLASS = 'rediscluster.RedisCluster'
-else:
-    CACHES = {
-        'default': {
-            "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": REDIS_LOCATION,
-            "OPTIONS": {
-                "CLIENT_CLASS": "django_redis.client.DefaultClient"
-            },
-            "KEY_PREFIX": "ob-api:"
+        "KEY_PREFIX": "ob-api-"
+    },
+    'rq-queues': {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': RQ_QUEUES_REDIS_DB},
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient"
         },
-        'rq-queues': {
-            "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": REDIS_LOCATION,
-            "OPTIONS": {
-                "CLIENT_CLASS": "django_redis.client.DefaultClient"
-            },
-            "KEY_PREFIX": "ob-api-rq:"
-        }
+        "KEY_PREFIX": "ob-api-rq-"
     }
+}
 
-CACHEOPS_REDIS = REDIS_LOCATION
+CACHEOPS_REDIS_DB = int(os.environ.get('CACHEOPS_REDIS_DB', '1'))
 
-CACHEOPS_PREFIX = lambda query: 'ob-api-cacheops:'
+CACHEOPS_REDIS = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': CACHEOPS_REDIS_DB}
 
 CACHEOPS_DEFAULTS = {
     'timeout': 60 * 60
