@@ -29,7 +29,7 @@ class GetUserInviteSerializer(serializers.ModelSerializer):
             'nickname',
             'token',
             'created_user',
-            'invited_date'
+            'created'
         )
 
 
