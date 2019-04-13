@@ -522,12 +522,18 @@ class User(AbstractUser):
         return self.post_reactions.filter(post_id=post_id).get()
 
     def get_reactions_for_post_with_id(self, post_id, max_id=None, emoji_id=None):
-        self._check_can_get_reactions_for_post_with_id(post_id)
-        reactions_query = Q(post_id=post_id)
         Post = get_post_model()
+        post = Post.objects.get(pk=post_id)
+
+        return self.get_reactions_for_post(post=post, max_id=max_id, emoji_id=emoji_id)
+
+    def get_reactions_for_post(self, post, max_id=None, emoji_id=None):
+        self._check_can_get_reactions_for_post(post=post)
+
+        reactions_query = Q(post_id=post.pk)
 
         # If reactions are private, return only own reactions
-        if not Post.post_with_id_has_public_reactions(post_id):
+        if not post.public_reactions:
             reactions_query = Q(reactor_id=self.pk)
 
         if max_id:
@@ -553,28 +559,36 @@ class User(AbstractUser):
         return PostReaction.count_reactions_for_post_with_id(post_id, commenter_id=commenter_id)
 
     def get_emoji_counts_for_post_with_id(self, post_id, emoji_id=None):
-        self._check_can_get_reactions_for_post_with_id(post_id)
         Post = get_post_model()
+        post = Post.objects.get(pk=post_id)
+        return self.get_emoji_counts_for_post(post=post, emoji_id=emoji_id)
 
+    def get_emoji_counts_for_post(self, post, emoji_id=None):
+        self._check_can_get_reactions_for_post(post)
         reactor_id = None
 
         # If reactions are private count only own reactions
-        if not Post.post_with_id_has_public_reactions(post_id):
+        if not post.public_reactions:
             reactor_id = self.pk
 
-        return Post.get_emoji_counts_for_post_with_id(post_id, emoji_id=emoji_id, reactor_id=reactor_id)
+        return post.get_emoji_counts(emoji_id=emoji_id, reactor_id=reactor_id)
 
     def react_to_post_with_id(self, post_id, emoji_id, emoji_group_id):
-        self._check_can_react_to_post_with_id(post_id)
+        Post = get_post_model()
+        post = Post.objects.get(pk=post_id)
+        return self.react_to_post(post=post, emoji_id=emoji_id, emoji_group_id=emoji_group_id)
+
+    def react_to_post(self, post, emoji_id, emoji_group_id):
+        self._check_can_react_to_post(post=post)
         self._check_can_react_with_emoji_id_and_emoji_group_id(emoji_id, emoji_group_id)
+
+        post_id = post.pk
 
         if self.has_reacted_to_post_with_id(post_id):
             post_reaction = self.post_reactions.get(post_id=post_id)
             post_reaction.emoji_id = emoji_id
             post_reaction.save()
         else:
-            Post = get_post_model()
-            post = Post.objects.filter(pk=post_id).get()
             post_reaction = post.react(reactor=self, emoji_id=emoji_id)
             if post_reaction.post.creator_id != self.pk:
                 # TODO Refactor. This check is being done twice. (Also in _send_post_reaction_push_notification)
@@ -608,27 +622,36 @@ class User(AbstractUser):
         return PostComment.objects.filter(comments_query)
 
     def get_comments_count_for_post_with_id(self, post_id):
+
         commenter_id = None
 
         Post = get_post_model()
 
+        post = Post.objects.get(pk=post_id)
+
+        return self.get_comments_count_for_post(post=post)
+
+    def get_comments_count_for_post(self, post):
+        commenter_id = None
         # If comments are private, count only own comments
         # TODO If its our post we need to circumvent this too
-        if not Post.post_with_id_has_public_comments(post_id):
+        if not post.public_comments:
             commenter_id = self.pk
 
-        PostComment = get_post_comment_model()
-
-        return PostComment.count_comments_for_post_with_id(post_id, commenter_id=commenter_id)
+        return post.count_comments(commenter_id=commenter_id)
 
     def comment_post_with_id(self, post_id, text):
-        self._check_can_comment_in_post_with_id(post_id)
         Post = get_post_model()
         post = Post.objects.filter(pk=post_id).get()
+        return self.comment_post(post=post, text=text)
+
+    def comment_post(self, post, text):
+        self._check_can_comment_in_post(post)
         post_comment = post.comment(text=text, commenter=self)
         post_creator = post.creator
         post_commenter = self
 
+        Post = get_post_model()
         post_notification_target_users = Post.get_post_comment_notification_target_users(post_id=post.id,
                                                                                          post_commenter_id=self.pk)
         PostCommentNotification = get_post_comment_notification_model()
@@ -1279,9 +1302,9 @@ class User(AbstractUser):
         return profile_posts
 
     def get_post_with_id(self, post_id):
-        self._check_can_see_post_with_id(post_id=post_id)
         Post = get_post_model()
         post = Post.objects.get(pk=post_id)
+        self._check_can_see_post(post=post)
         return post
 
     def get_community_post_with_id(self, post_id):
@@ -1406,7 +1429,8 @@ class User(AbstractUser):
 
         Post = get_post_model()
 
-        return Post.objects.filter(timeline_posts_query).distinct()
+        return Post.objects.select_related('creator', 'community').prefetch_related('circles').filter(
+            timeline_posts_query).distinct()
 
     def follow_user(self, user, lists_ids=None):
         return self.follow_user_with_id(user.pk, lists_ids)
@@ -1623,11 +1647,14 @@ class User(AbstractUser):
         self.devices.all().delete()
 
     def mute_post_with_id(self, post_id):
-        self._check_can_mute_post_with_id(post_id=post_id)
         Post = get_post_model()
-        PostMute = get_post_mute_model()
-        PostMute.create_post_mute(post_id=post_id, muter_id=self.pk)
         post = Post.objects.get(pk=post_id)
+        return self.mute_post(post=post)
+
+    def mute_post(self, post):
+        self._check_can_mute_post(post=post)
+        PostMute = get_post_mute_model()
+        PostMute.create_post_mute(post_id=post.pk, muter_id=self.pk)
         return post
 
     def unmute_post_with_id(self, post_id):
@@ -1751,40 +1778,17 @@ class User(AbstractUser):
         return posts_query
 
     def _make_get_posts_query_for_user(self, user, max_id=None):
-        posts_query = Q()
 
-        # Add the user world circle posts
+        posts_query = Q(creator_id=user.pk)
+
         world_circle_id = self._get_world_circle_id()
-        user_world_circle_posts_query = Q(creator_id=user.pk,
-                                          circles__id=world_circle_id)
-        posts_query.add(user_world_circle_posts_query, Q.OR)
 
-        is_fully_connected_with_user = self.is_fully_connected_with_user_with_id(user.pk)
+        posts_circles_query = Q(circles__id=world_circle_id)
 
-        if is_fully_connected_with_user:
-            # Add the user connections circle posts
-            user_connections_circle_query = Q(creator_id=user.pk,
-                                              circles__id=user.connections_circle_id)
+        posts_circles_query.add(Q(circles__connections__target_user_id=self.pk,
+                                  circles__connections__target_connection__circles__isnull=False), Q.OR)
 
-            posts_query.add(user_connections_circle_query, Q.OR)
-
-            # Add the user circled posts we're part of
-            Connection = get_connection_model()
-
-            connection = Connection.objects.prefetch_related(
-                'target_connection__circles'
-            ).filter(
-                user_id=self.pk,
-                target_connection__user_id=user.pk).get()
-
-            target_connection_circles = connection.target_connection.circles.all()
-
-            if target_connection_circles:
-                target_connection_circles_ids = [target_connection_circle.pk for target_connection_circle in
-                                                 target_connection_circles]
-
-                user_encircled_posts_query = Q(creator_id=user.pk, circles__id__in=target_connection_circles_ids)
-                posts_query.add(user_encircled_posts_query, Q.OR)
+        posts_query.add(posts_circles_query, Q.AND)
 
         if max_id:
             posts_query.add(Q(id__lt=max_id), Q.AND)
@@ -1982,11 +1986,8 @@ class User(AbstractUser):
                         _('You cannot remove a comment that does not belong to you')
                     )
 
-    def _check_can_get_comments_for_post_with_id(self, post_id):
-        self._check_can_see_post_with_id(post_id)
-
-    def _check_can_comment_in_post_with_id(self, post_id):
-        self._check_can_see_post_with_id(post_id)
+    def _check_can_comment_in_post(self, post):
+        self._check_can_see_post(post)
 
     def _check_can_delete_reaction_with_id_for_post_with_id(self, post_reaction_id, post_id):
         # Check if the post belongs to us
@@ -2004,8 +2005,8 @@ class User(AbstractUser):
                 _('Can\'t delete a reaction that does not belong to you.'),
             )
 
-    def _check_can_get_reactions_for_post_with_id(self, post_id):
-        self._check_can_see_post_with_id(post_id)
+    def _check_can_get_reactions_for_post(self, post):
+        self._check_can_see_post(post=post)
 
     def _check_can_react_with_emoji_id_and_emoji_group_id(self, emoji_id, emoji_group_id):
         EmojiGroup = get_emoji_group_model()
@@ -2020,18 +2021,16 @@ class User(AbstractUser):
                 _('Emoji group does not exist or is not a reaction group.'),
             )
 
-    def _check_can_react_to_post_with_id(self, post_id):
-        self._check_can_see_post_with_id(post_id)
+    def _check_can_react_to_post(self, post):
+        self._check_can_see_post(post=post)
 
-    def _check_can_see_post_with_id(self, post_id):
+    def _check_can_see_post(self, post):
         # Check if post is public
-        Post = get_post_model()
-        post = Post.objects.select_related('creator').filter(pk=post_id).get()
         if post.creator_id == self.pk or post.is_public_post():
             return
 
         if post.community:
-            if not self.get_community_post_with_id(post_id=post_id).exists():
+            if not self.get_community_post_with_id(post_id=post.pk).exists():
                 raise ValidationError(
                     _('This post is from a private community.'),
                 )
@@ -2548,12 +2547,12 @@ class User(AbstractUser):
                 _('Device not found'),
             )
 
-    def _check_can_mute_post_with_id(self, post_id):
-        if self.has_muted_post_with_id(post_id=post_id):
+    def _check_can_mute_post(self, post):
+        if self.has_muted_post_with_id(post_id=post.pk):
             raise ValidationError(
                 _('Post already muted'),
             )
-        self._check_can_see_post_with_id(post_id=post_id)
+        self._check_can_see_post(post=post)
 
     def _check_can_unmute_post_with_id(self, post_id):
         self._check_has_muted_post_with_id(post_id=post_id)

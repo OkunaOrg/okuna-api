@@ -39,11 +39,11 @@ class Post(models.Model):
 
     @classmethod
     def post_with_id_has_public_comments(cls, post_id):
-        return Post.objects.filter(pk=post_id, public_comments=True).count() == 1
+        return Post.objects.filter(pk=post_id, public_comments=True).exists()
 
     @classmethod
     def post_with_id_has_public_reactions(cls, post_id):
-        return Post.objects.filter(pk=post_id, public_reactions=True).count() == 1
+        return Post.objects.filter(pk=post_id, public_reactions=True).exists()
 
     @classmethod
     def is_post_with_id_a_community_post(cls, post_id):
@@ -180,6 +180,9 @@ class Post(models.Model):
 
     def is_encircled_post(self):
         return not self.is_public_post() and not self.community
+
+    def get_emoji_counts(self, emoji_id=None, reactor_id=None):
+        return Post.get_emoji_counts_for_post_with_id(post_id=self.pk, emoji_id=emoji_id, reactor_id=reactor_id)
 
     def update(self, text=None):
         self._check_can_be_updated(text=text)
