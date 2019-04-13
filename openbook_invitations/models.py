@@ -16,7 +16,7 @@ from rest_framework.exceptions import ValidationError
 class UserInvite(models.Model):
     invited_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='invited_users',
                                    null=True, blank=True)
-    invited_date = models.DateTimeField(_('invited datetime'), null=False, blank=False)
+    created = models.DateTimeField(_('invited datetime'), null=False, blank=False)
     created_user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=PROFILE_NAME_MAX_LENGTH, null=True, blank=True)
     nickname = models.CharField(max_length=PROFILE_NAME_MAX_LENGTH, null=True, blank=True)
@@ -88,7 +88,7 @@ class UserInvite(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.id:
-            self.invited_date = timezone.now()
+            self.created = timezone.now()
         return super(UserInvite, self).save(*args, **kwargs)
 
     def send_invite_email(self):
