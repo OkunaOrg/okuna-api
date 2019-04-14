@@ -6,7 +6,10 @@ from openbook_invitations.validators import invite_id_exists, check_invite_not_u
 
 
 class CreateUserInviteSerializer(serializers.Serializer):
-    nickname = serializers.CharField(max_length=PROFILE_NAME_MAX_LENGTH, required=True, allow_blank=False)
+    nickname = serializers.CharField(
+        max_length=PROFILE_NAME_MAX_LENGTH,
+        required=True,
+        allow_blank=False)
 
 
 class InvitedUserSerializer(serializers.ModelSerializer):

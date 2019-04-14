@@ -1648,7 +1648,7 @@ class User(AbstractUser):
         return post
 
     def create_invite(self, nickname):
-        self._check_can_create_invite()
+        self._check_can_create_invite(nickname)
         UserInvite = get_user_invite_model()
         invite = UserInvite.create_invite(nickname=nickname, invited_by=self)
         self.invite_count = F('invite_count') - 1
@@ -1676,9 +1676,13 @@ class User(AbstractUser):
         invite.email = email
         invite.send_invite_email()
 
-    def _check_can_create_invite(self):
+    def _check_can_create_invite(self, nickname):
         if self.invite_count == 0:
             raise ValidationError(_('You have no invites left'))
+
+        UserInvite = get_user_invite_model()
+        if UserInvite.objects.filter(invited_by=self, nickname=nickname).exists():
+            raise ValidationError('Nickname already in use')
 
     def _check_can_send_email_invite_to_invite_id(self, invite_id):
         self._check_is_creator_of_invite_with_id(invite_id)
