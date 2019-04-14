@@ -1413,7 +1413,7 @@ class User(AbstractUser):
         world_circle_id = self._get_world_circle_id()
 
         # Add all own posts
-        timeline_posts_query = Q(creator=self.pk)
+        timeline_posts_query = Q(creator=self.pk, community__isnull=True)
 
         # Add all community posts
         timeline_posts_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
@@ -1434,9 +1434,14 @@ class User(AbstractUser):
         elif min_id:
             timeline_posts_query.add(Q(id__gt=min_id), Q.AND)
 
-        return Post.objects.select_related('creator', 'creator__profile', 'community').prefetch_related(
-            'circles', 'creator__profile__badges').filter(
-            timeline_posts_query).distinct()
+        return Post.objects.select_related('creator', 'creator__profile', 'community', 'image').prefetch_related(
+            'circles', 'creator__profile__badges').only(
+            'text', 'id', 'uuid', 'created', 'image__width', 'image__height', 'image__image',
+            'creator__username', 'creator__id', 'creator__profile__name', 'creator__profile__avatar',
+            'creator__profile__badges__id', 'creator__profile__badges__keyword',
+            'creator__profile__id', 'community__id', 'community__name', 'community__avatar',
+            'community__title').filter(
+            timeline_posts_query)
 
     def follow_user(self, user, lists_ids=None):
         return self.follow_user_with_id(user.pk, lists_ids)
@@ -2606,6 +2611,7 @@ def bootstrap_circles(sender, instance=None, created=False, **kwargs):
 
 class UserProfile(models.Model):
     name = models.CharField(_('name'), max_length=settings.PROFILE_NAME_MAX_LENGTH, blank=False, null=False,
+                            db_index=True,
                             validators=[name_characters_validator])
     location = models.CharField(_('location'), max_length=settings.PROFILE_LOCATION_MAX_LENGTH, blank=False, null=True)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
@@ -2624,6 +2630,10 @@ class UserProfile(models.Model):
     class Meta:
         verbose_name = _('user profile')
         verbose_name_plural = _('users profiles')
+
+        index_together = [
+            ('id', 'user'),
+        ]
 
     def __repr__(self):
         return '<UserProfile %s>' % self.user.username
