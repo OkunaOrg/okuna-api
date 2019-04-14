@@ -84,7 +84,8 @@ class Posts(APIView):
                 circles_ids=circles_ids,
                 lists_ids=lists_ids,
                 max_id=max_id,
-                min_id=min_id
+                min_id=min_id,
+                count=count
             )
 
         posts = posts.order_by('-id')[:count]
