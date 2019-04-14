@@ -1418,8 +1418,8 @@ class User(AbstractUser):
         # Add all community posts
         timeline_posts_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
 
-        timeline_posts_query.add(Q(circles__connections__target_user_id=self.pk,
-                                   circles__connections__target_connection__circles__isnull=False), Q.OR)
+        timeline_posts_query.add(Q(circles__connections__target_connection__circles__isnull=False,
+                                   circles__connections__target_user=self.pk), Q.OR)
 
         followed_users = self.follows.values('followed_user_id').cache()
 
@@ -1441,7 +1441,7 @@ class User(AbstractUser):
             'creator__profile__badges__id', 'creator__profile__badges__keyword',
             'creator__profile__id', 'community__id', 'community__name', 'community__avatar', 'community__color',
             'community__title').filter(
-            timeline_posts_query).distinct()
+            timeline_posts_query)
 
     def follow_user(self, user, lists_ids=None):
         return self.follow_user_with_id(user.pk, lists_ids)
