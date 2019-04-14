@@ -1434,6 +1434,10 @@ class User(AbstractUser):
         elif min_id:
             timeline_posts_query.add(Q(id__gt=min_id), Q.AND)
 
+        posts = Post.objects.filter(timeline_posts_query).values('id').distinct().order_by('-id')[:10]
+
+        timeline_posts_ids = [post['id'] for post in posts]
+
         return Post.objects.select_related('creator', 'creator__profile', 'community', 'image').prefetch_related(
             'circles', 'creator__profile__badges').only(
             'text', 'id', 'uuid', 'created', 'image__width', 'image__height', 'image__image',
@@ -1441,7 +1445,7 @@ class User(AbstractUser):
             'creator__profile__badges__id', 'creator__profile__badges__keyword',
             'creator__profile__id', 'community__id', 'community__name', 'community__avatar', 'community__color',
             'community__title').filter(
-            timeline_posts_query)
+            id__in=timeline_posts_ids)
 
     def follow_user(self, user, lists_ids=None):
         return self.follow_user_with_id(user.pk, lists_ids)
