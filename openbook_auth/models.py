@@ -1429,7 +1429,8 @@ class User(AbstractUser):
 
         Post = get_post_model()
 
-        return Post.objects.select_related('creator', 'community').prefetch_related('circles').filter(
+        return Post.objects.select_related('creator', 'creator__profile', 'community').prefetch_related(
+            'circles', 'creator__profile__badges').filter(
             timeline_posts_query).distinct()
 
     def follow_user(self, user, lists_ids=None):
