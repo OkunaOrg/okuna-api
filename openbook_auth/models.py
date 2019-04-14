@@ -1411,12 +1411,6 @@ class User(AbstractUser):
         # Add all own posts
         timeline_posts_query = Q(creator=self.pk)
 
-        if max_id:
-            timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
-
-        if min_id:
-            timeline_posts_query.add(Q(id_gt=min_id), Q.AND)
-
         # Add all community posts
         timeline_posts_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
 
@@ -1430,6 +1424,11 @@ class User(AbstractUser):
         timeline_posts_query.add(Q(creator__in=followed_users_ids, circles__id=world_circle_id), Q.OR)
 
         Post = get_post_model()
+
+        if max_id:
+            timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
+        elif min_id:
+            timeline_posts_query.add(Q(id__gt=min_id), Q.AND)
 
         return Post.objects.select_related('creator', 'creator__profile', 'community').prefetch_related(
             'circles', 'creator__profile__badges').filter(
