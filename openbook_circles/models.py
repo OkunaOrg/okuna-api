@@ -27,7 +27,7 @@ class Circle(models.Model):
 
     @classmethod
     def create_circle(cls, name, creator=None, color=None):
-        circle = cls.objects.create(name=name, creator=creator, color=color,)
+        circle = cls.objects.create(name=name, creator=creator, color=color, )
         return circle
 
     @classmethod

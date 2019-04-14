@@ -167,12 +167,9 @@ class PostCommunitySerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'name',
-            'title',
-            'color',
             'avatar',
+            'title',
             'cover',
-            'user_adjective',
-            'users_adjective',
             'memberships',
         )
 
