@@ -84,7 +84,7 @@ class Posts(APIView):
                 max_id=max_id
             )
 
-        posts = posts.order_by('-id')[:count]
+        posts = posts.order_by('-created')[:count]
 
         post_serializer_data = AuthenticatedUserPostSerializer(posts, many=True, context={"request": request}).data
 

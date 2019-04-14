@@ -28,7 +28,7 @@ from openbook_posts.helpers import upload_to_post_image_directory, upload_to_pos
 class Post(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     text = models.CharField(_('text'), max_length=settings.POST_MAX_LENGTH, blank=False, null=True)
-    created = models.DateTimeField(editable=False)
+    created = models.DateTimeField(editable=False, db_index=True)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
     public_comments = models.BooleanField(_('public comments'), default=True, editable=False, null=False)
     public_reactions = models.BooleanField(_('public reactions'), default=True, editable=False, null=False)
@@ -227,7 +227,7 @@ class PostVideo(models.Model):
 
 class PostComment(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
-    created = models.DateTimeField(editable=False)
+    created = models.DateTimeField(editable=False, db_index=True)
     commenter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_comments')
     text = models.CharField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False)
     is_edited = models.BooleanField(default=False, null=False, blank=False)

@@ -1352,13 +1352,13 @@ class User(AbstractUser):
 
         return profile_posts
 
-    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None):
+    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None, min_id=None):
         """
         Get the timeline posts for self. The results will be dynamic based on follows and connections.
         """
 
         if not circles_ids and not lists_ids:
-            return self._get_timeline_posts_with_no_filters(max_id=max_id)
+            return self._get_timeline_posts_with_no_filters(max_id=max_id, min_id=min_id)
 
         return self._get_timeline_posts_with_filters(max_id=max_id, circles_ids=circles_ids, lists_ids=lists_ids)
 
@@ -1402,7 +1402,7 @@ class User(AbstractUser):
         Post = get_post_model()
         return Post.objects.filter(timeline_posts_query).distinct()
 
-    def _get_timeline_posts_with_no_filters(self, max_id=None):
+    def _get_timeline_posts_with_no_filters(self, max_id=None, min_id=None):
         """
         Being the main action of the network, an optimised call of the get timeline posts call with no filtering.
         """
@@ -1417,13 +1417,18 @@ class User(AbstractUser):
         timeline_posts_query.add(Q(circles__connections__target_user_id=self.pk,
                                    circles__connections__target_connection__circles__isnull=False), Q.OR)
 
-        timeline_posts_query.add(Q(creator__followers__user_id=self.pk,
-                                   circles__id=world_circle_id), Q.OR)
+        followed_users = self.follows.values('followed_user_id').cache()
+
+        followed_users_ids = [followed_user['followed_user_id'] for followed_user in followed_users]
+
+        timeline_posts_query.add(Q(creator__in=followed_users_ids, circles__id=world_circle_id), Q.OR)
+
+        Post = get_post_model()
 
         if max_id:
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
-
-        Post = get_post_model()
+        elif min_id:
+            timeline_posts_query.add(Q(id__gt=min_id), Q.AND)
 
         return Post.objects.select_related('creator', 'creator__profile', 'community').prefetch_related(
             'circles', 'creator__profile__badges').filter(
