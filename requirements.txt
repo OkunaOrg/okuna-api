@@ -11,6 +11,7 @@ coverage==5.0a4
 django-amazon-ses==2.1.0
 django-appconf==1.0.3
 django-cacheops==4.1
+django-extensions==2.1.6
 django-imagekit==4.0.2
 django-media-fixtures==0.0.3
 django-nose==1.4.6

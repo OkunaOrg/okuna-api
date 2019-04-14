@@ -28,6 +28,9 @@ class GetPostsSerializer(serializers.Serializer):
     max_id = serializers.IntegerField(
         required=False,
     )
+    min_id = serializers.IntegerField(
+        required=False,
+    )
     count = serializers.IntegerField(
         required=False,
         max_value=20
@@ -164,12 +167,9 @@ class PostCommunitySerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'name',
-            'title',
-            'color',
             'avatar',
+            'title',
             'cover',
-            'user_adjective',
-            'users_adjective',
             'memberships',
         )
 
