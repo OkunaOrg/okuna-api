@@ -99,7 +99,7 @@ class User(AbstractUser):
             return False
 
     @classmethod
-    def get_public_posts_for_user_with_username(cls, username, max_id=None):
+    def get_public_posts_for_user_with_username(cls, username, max_id=None, min_id=None):
         Circle = get_circle_model()
         world_circle_id = Circle.get_world_circle_id()
 
@@ -107,6 +107,8 @@ class User(AbstractUser):
 
         if max_id:
             final_query.add(Q(id__lt=max_id), Q.AND)
+        elif min_id:
+            final_query.add(Q(id__gt=min_id), Q.AND)
 
         Post = get_post_model()
         result = Post.objects.filter(final_query)
@@ -1362,7 +1364,7 @@ class User(AbstractUser):
 
         return self._get_timeline_posts_with_filters(max_id=max_id, circles_ids=circles_ids, lists_ids=lists_ids)
 
-    def _get_timeline_posts_with_filters(self, max_id=None, circles_ids=None, lists_ids=None):
+    def _get_timeline_posts_with_filters(self, max_id=None, min_id=None, circles_ids=None, lists_ids=None):
         world_circle_id = self._get_world_circle_id()
 
         if circles_ids:
@@ -1398,6 +1400,8 @@ class User(AbstractUser):
 
         if max_id:
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
+        elif min_id:
+            timeline_posts_query.add(Q(id__gt=min_id), Q.AND)
 
         Post = get_post_model()
         return Post.objects.filter(timeline_posts_query).distinct()

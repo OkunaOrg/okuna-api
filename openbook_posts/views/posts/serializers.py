@@ -28,6 +28,9 @@ class GetPostsSerializer(serializers.Serializer):
     max_id = serializers.IntegerField(
         required=False,
     )
+    min_id = serializers.IntegerField(
+        required=False,
+    )
     count = serializers.IntegerField(
         required=False,
         max_value=20
