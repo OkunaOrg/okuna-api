@@ -408,7 +408,7 @@ class User(AbstractUser):
     def is_following_user_with_id_in_list_with_id(self, user_id, list_id):
         return self.follows.filter(
             followed_user_id=user_id,
-            lists__id=list_id).count() == 1
+            lists__id=list_id).exists()
 
     def is_world_circle_id(self, id):
         world_circle_id = self._get_world_circle_id()
@@ -433,7 +433,7 @@ class User(AbstractUser):
         return self.circles.filter(id__in=circles_ids).count() == len(circles_ids)
 
     def has_list_with_id(self, list_id):
-        return self.lists.filter(id=list_id).count() > 0
+        return self.lists.filter(id=list_id).exists()
 
     def has_invited_user_with_username_to_community_with_name(self, username, community_name):
         return self.created_communities_invites.filter(invited_user__username=username,
@@ -466,7 +466,7 @@ class User(AbstractUser):
         return self.favorite_communities.filter(name=community_name).exists()
 
     def has_list_with_name(self, list_name):
-        return self.lists.filter(name=list_name).count() > 0
+        return self.lists.filter(name=list_name).exists()
 
     def has_lists_with_ids(self, lists_ids):
         return self.lists.filter(id__in=lists_ids).count() == len(lists_ids)
@@ -477,7 +477,7 @@ class User(AbstractUser):
         if emoji_id:
             has_reacted_query.add(Q(emoji_id=emoji_id), Q.AND)
 
-        return self.post_reactions.filter(has_reacted_query).count() > 0
+        return self.post_reactions.filter(has_reacted_query).exists()
 
     def has_commented_post_with_id(self, post_id):
         return self.posts_comments.filter(post_id=post_id).exists()
@@ -1995,13 +1995,13 @@ class User(AbstractUser):
         if self.has_post_with_id(post_id):
             # Check that the comment belongs to the post
             PostReaction = get_post_reaction_model()
-            if PostReaction.objects.filter(id=post_reaction_id, post_id=post_id).count() == 0:
+            if PostReaction.objects.filter(id=post_reaction_id, post_id=post_id).exists():
                 raise ValidationError(
                     _('That reaction does not belong to the specified post.')
                 )
             return
 
-        if self.post_reactions.filter(id=post_reaction_id).count() == 0:
+        if self.post_reactions.filter(id=post_reaction_id).exist():
             raise ValidationError(
                 _('Can\'t delete a reaction that does not belong to you.'),
             )
