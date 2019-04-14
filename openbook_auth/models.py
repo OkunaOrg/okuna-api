@@ -1439,9 +1439,9 @@ class User(AbstractUser):
             'text', 'id', 'uuid', 'created', 'image__width', 'image__height', 'image__image',
             'creator__username', 'creator__id', 'creator__profile__name', 'creator__profile__avatar',
             'creator__profile__badges__id', 'creator__profile__badges__keyword',
-            'creator__profile__id', 'community__id', 'community__name', 'community__avatar',
+            'creator__profile__id', 'community__id', 'community__name', 'community__avatar', 'community__color',
             'community__title').filter(
-            timeline_posts_query)
+            timeline_posts_query).distinct()
 
     def follow_user(self, user, lists_ids=None):
         return self.follow_user_with_id(user.pk, lists_ids)
