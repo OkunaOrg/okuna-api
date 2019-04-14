@@ -109,6 +109,7 @@ INSTALLED_APPS = [
     'imagekit',
     'django_media_fixtures',
     'cacheops',
+    'django_extensions',
     'openbook_common',
     'openbook_auth',
     'openbook_posts',
