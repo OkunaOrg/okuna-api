@@ -8,7 +8,7 @@ from openbook_auth.models import User
 
 class Notification(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
-    created = models.DateTimeField(editable=False)
+    created = models.DateTimeField(editable=False, db_index=True)
     read = models.BooleanField(default=False)
 
     POST_REACTION = 'PR'
