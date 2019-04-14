@@ -19,6 +19,9 @@ class ConnectionCircle(models.Model):
 
     class Meta:
         db_table = 'openbook_circles_circle_connections'
+        unique_together = [
+            ('connection', 'circle')
+        ]
 
 
 class Circle(models.Model):
