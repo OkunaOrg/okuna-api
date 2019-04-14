@@ -13,6 +13,7 @@ class Connection(models.Model):
         unique_together = ('user', 'target_user')
         index_together = [
             ('target_user', 'target_connection'),
+            ('target_user', 'id'),
         ]
 
     @classmethod

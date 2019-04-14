@@ -2631,6 +2631,10 @@ class UserProfile(models.Model):
         verbose_name = _('user profile')
         verbose_name_plural = _('users profiles')
 
+        index_together = [
+            ('id', 'user'),
+        ]
+
     def __repr__(self):
         return '<UserProfile %s>' % self.user.username
 

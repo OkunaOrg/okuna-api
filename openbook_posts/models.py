@@ -37,6 +37,12 @@ class Post(models.Model):
                                   blank=False)
     is_edited = models.BooleanField(default=False)
 
+    class Meta:
+        index_together = [
+            ('creator', 'community'),
+        ]
+
+
     @classmethod
     def post_with_id_has_public_comments(cls, post_id):
         return Post.objects.filter(pk=post_id, public_comments=True).exists()
