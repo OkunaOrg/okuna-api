@@ -40,7 +40,7 @@ class UserInvite(models.Model):
     is_invite_email_sent = models.BooleanField(default=False)
 
     class Meta:
-        unique_together = ('invited_by', 'email',)
+        unique_together = (('invited_by', 'email'), ('invited_by', 'nickname'),)
 
     def __str__(self):
         return 'UserInvite'
