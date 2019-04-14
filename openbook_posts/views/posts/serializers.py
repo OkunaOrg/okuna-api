@@ -170,6 +170,7 @@ class PostCommunitySerializer(serializers.ModelSerializer):
             'avatar',
             'title',
             'cover',
+            'color',
             'memberships',
         )
 
