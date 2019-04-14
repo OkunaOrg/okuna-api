@@ -367,13 +367,12 @@ class User(AbstractUser):
         return self.is_connected_with_user_with_id(user.pk)
 
     def is_connected_with_user_with_id(self, user_id):
-        return self.connections.select_related('target_connection__user_id').filter(
+        return self.connections.filter(
             target_connection__user_id=user_id).exists()
 
     def is_connected_with_user_with_username(self, username):
-        count = self.connections.select_related('target_connection__user__username').filter(
-            target_connection__user__username=username).count()
-        return count > 0
+        return self.connections.filter(
+            target_connection__user__username=username).exists()
 
     def is_connected_with_user_in_circle(self, user, circle):
         return self.is_connected_with_user_with_id_in_circle_with_id(user.pk, circle.pk)
@@ -1992,13 +1991,13 @@ class User(AbstractUser):
         if self.has_post_with_id(post_id):
             # Check that the comment belongs to the post
             PostReaction = get_post_reaction_model()
-            if PostReaction.objects.filter(id=post_reaction_id, post_id=post_id).exists():
+            if not PostReaction.objects.filter(id=post_reaction_id, post_id=post_id).exists():
                 raise ValidationError(
                     _('That reaction does not belong to the specified post.')
                 )
             return
 
-        if self.post_reactions.filter(id=post_reaction_id).exist():
+        if not self.post_reactions.filter(id=post_reaction_id).exists():
             raise ValidationError(
                 _('Can\'t delete a reaction that does not belong to you.'),
             )
