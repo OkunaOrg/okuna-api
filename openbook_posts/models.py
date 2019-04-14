@@ -26,7 +26,7 @@ from openbook_posts.helpers import upload_to_post_image_directory, upload_to_pos
 
 
 class Post(models.Model):
-    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     text = models.CharField(_('text'), max_length=settings.POST_MAX_LENGTH, blank=False, null=True)
     created = models.DateTimeField(editable=False)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
@@ -99,7 +99,7 @@ class Post(models.Model):
             emoji_query.add(Q(reactions__reactor_id=reactor_id), Q.AND)
 
         emojis = Emoji.objects.filter(emoji_query).annotate(Count('reactions')).distinct().order_by(
-            '-reactions__count').all()
+            '-reactions__count').cache().all()
 
         return [{'emoji': emoji, 'count': emoji.reactions__count} for emoji in emojis]
 
