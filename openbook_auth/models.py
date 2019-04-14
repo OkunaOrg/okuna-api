@@ -1417,8 +1417,11 @@ class User(AbstractUser):
         timeline_posts_query.add(Q(circles__connections__target_user_id=self.pk,
                                    circles__connections__target_connection__circles__isnull=False), Q.OR)
 
-        timeline_posts_query.add(Q(creator__followers__user_id=self.pk,
-                                   circles__id=world_circle_id), Q.OR)
+        followed_users = self.follows.values('followed_user_id').cache()
+
+        followed_users_ids = [followed_user['followed_user_id'] for followed_user in followed_users]
+
+        timeline_posts_query.add(Q(creator__in=followed_users_ids, circles__id=world_circle_id), Q.OR)
 
         if max_id:
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
