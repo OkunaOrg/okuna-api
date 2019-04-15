@@ -20,6 +20,7 @@ from openbook_circles.models import Circle
 from openbook_common.tests.helpers import make_user, make_users, make_fake_post_text, \
     make_authentication_headers_for_user, make_circle, make_community
 from openbook_lists.models import List
+from openbook_posts.models import Post
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -1059,6 +1060,42 @@ class PostsAPITests(APITestCase):
 
         for post_id in posts_ids:
             self.assertIn(post_id, response_posts_ids)
+
+    def test_can_retrieve_own_community_post(self):
+        """
+        should be able to retrieve an own post posted to a community
+        """
+        user = make_user()
+
+        community_creator = make_user()
+
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+
+        post_text = make_fake_post_text()
+
+        user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(1, len(response_posts))
+
+        response_post = response_posts[0]
+
+        response_post_id = response_post['id']
+
+        retrieved_post = Post.objects.get(pk=response_post_id)
+
+        self.assertEqual(retrieved_post.community_id, community.pk)
+        self.assertTrue(retrieved_post.text, post_text)
 
     def _get_url(self):
         return reverse('posts')
