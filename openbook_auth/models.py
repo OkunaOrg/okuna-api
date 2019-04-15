@@ -111,9 +111,8 @@ class User(AbstractUser):
             final_query.add(Q(id__gt=min_id), Q.AND)
 
         Post = get_post_model()
-        result = Post.objects.filter(final_query)
-
-        return result
+        return Post.objects.filter(final_query).only(
+            'id', )
 
     @classmethod
     def get_user_with_username(cls, user_username):
@@ -1350,17 +1349,16 @@ class User(AbstractUser):
         posts_query = self._make_get_posts_query_for_user(user, max_id)
 
         Post = get_post_model()
-        profile_posts = Post.objects.filter(posts_query).distinct()
+        return Post.objects.filter(posts_query).only(
+            'id', )
 
-        return profile_posts
-
-    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None, min_id=None, count=None):
+    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None, min_id=None):
         """
         Get the timeline posts for self. The results will be dynamic based on follows and connections.
         """
 
         if not circles_ids and not lists_ids:
-            return self._get_timeline_posts_with_no_filters(max_id=max_id, min_id=min_id, count=count)
+            return self._get_timeline_posts_with_no_filters(max_id=max_id, min_id=min_id)
 
         return self._get_timeline_posts_with_filters(max_id=max_id, circles_ids=circles_ids, lists_ids=lists_ids)
 
@@ -1404,9 +1402,10 @@ class User(AbstractUser):
             timeline_posts_query.add(Q(id__gt=min_id), Q.AND)
 
         Post = get_post_model()
-        return Post.objects.filter(timeline_posts_query).distinct()
+        return Post.objects.only(
+            'id', ).filter(timeline_posts_query)
 
-    def _get_timeline_posts_with_no_filters(self, max_id=None, min_id=None, count=10):
+    def _get_timeline_posts_with_no_filters(self, max_id=None, min_id=None):
         """
         Being the main action of the network, an optimised call of the get timeline posts call with no filtering.
         """
@@ -1434,18 +1433,8 @@ class User(AbstractUser):
         elif min_id:
             timeline_posts_query.add(Q(id__gt=min_id), Q.AND)
 
-        posts = Post.objects.filter(timeline_posts_query).values('id').distinct().order_by('-id')[:count]
-
-        timeline_posts_ids = [post['id'] for post in posts]
-
-        return Post.objects.select_related('creator', 'creator__profile', 'community', 'image').prefetch_related(
-            'circles', 'creator__profile__badges').only(
-            'text', 'id', 'uuid', 'created', 'image__width', 'image__height', 'image__image',
-            'creator__username', 'creator__id', 'creator__profile__name', 'creator__profile__avatar',
-            'creator__profile__badges__id', 'creator__profile__badges__keyword',
-            'creator__profile__id', 'community__id', 'community__name', 'community__avatar', 'community__color',
-            'community__title').filter(
-            id__in=timeline_posts_ids)
+        return Post.objects.only(
+            'id', ).filter(timeline_posts_query)
 
     def follow_user(self, user, lists_ids=None):
         return self.follow_user_with_id(user.pk, lists_ids)
