@@ -1097,5 +1097,36 @@ class PostsAPITests(APITestCase):
         self.assertEqual(retrieved_post.community_id, community.pk)
         self.assertTrue(retrieved_post.text, post_text)
 
+    def test_does_not_retrieve_duplicate_connections_posts_when_multiple_circles(self):
+        """
+        should not retrieve duplicate connections posts when posted to multiple circles
+        """
+        user = make_user()
+        user_to_connect_to = make_user()
+
+        circle = make_circle(creator=user)
+
+        user.connect_with_user_with_id(user_id=user_to_connect_to.pk, circles_ids=[circle.pk])
+
+        user_to_connect_to.confirm_connection_with_user_with_id(user_id=user.pk, )
+
+        post = user.create_encircled_post(text=make_fake_post_text(),
+                                          circles_ids=[circle.pk, user.connections_circle_id])
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(1, len(response_posts))
+
+        response_post = response_posts[0]
+
+        self.assertEqual(response_post['id'], post.pk)
+
     def _get_url(self):
         return reverse('posts')
