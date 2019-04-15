@@ -1,6 +1,7 @@
 from rest_framework.fields import Field
 
 from openbook_common.utils.model_loaders import get_post_model
+from openbook_communities.models import CommunityMembership
 from openbook_posts.models import PostReaction
 
 
@@ -109,14 +110,17 @@ class PostCreatorField(Field):
         post_creator_serializer = self.post_creator_serializer(post_creator, context={"request": request}).data
 
         if post_community:
-            post_creator_membership = post_community.memberships.get(user_id=post_creator.pk)
-            post_creator_serializer['communities_memberships'] = [
-                self.community_membership_serializer(
-                    post_creator_membership,
-                    many=False,
-                    context={
-                        "request": request}).data
-            ]
+            try:
+                post_creator_membership = post_community.memberships.get(user_id=post_creator.pk)
+                post_creator_serializer['communities_memberships'] = [
+                    self.community_membership_serializer(
+                        post_creator_membership,
+                        many=False,
+                        context={
+                            "request": request}).data
+                ]
+            except CommunityMembership.DoesNotExist:
+                pass
 
         return post_creator_serializer
 
