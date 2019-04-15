@@ -4,7 +4,7 @@ from datetime import timedelta
 
 from django.core.files.storage import default_storage
 from django.db import models
-from django.db.models import Q, QuerySet
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Count
@@ -18,7 +18,7 @@ from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
 from openbook_common.models import Emoji
-from openbook_common.utils.model_loaders import get_emoji_model, \
+from openbook_common.utils.model_loaders import get_post_reaction_model, get_emoji_model, \
     get_circle_model, get_community_model
 from imagekit.models import ProcessedImageField
 
@@ -41,6 +41,7 @@ class Post(models.Model):
         index_together = [
             ('creator', 'community'),
         ]
+
 
     @classmethod
     def post_with_id_has_public_comments(cls, post_id):
