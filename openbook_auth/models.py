@@ -1354,13 +1354,13 @@ class User(AbstractUser):
 
         return profile_posts
 
-    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None, min_id=None):
+    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None, min_id=None, count=None):
         """
         Get the timeline posts for self. The results will be dynamic based on follows and connections.
         """
 
         if not circles_ids and not lists_ids:
-            return self._get_timeline_posts_with_no_filters(max_id=max_id, min_id=min_id)
+            return self._get_timeline_posts_with_no_filters(max_id=max_id, min_id=min_id, count=count)
 
         return self._get_timeline_posts_with_filters(max_id=max_id, circles_ids=circles_ids, lists_ids=lists_ids)
 
@@ -1377,7 +1377,7 @@ class User(AbstractUser):
         else:
             followed_users_query = self.follows.all()
 
-        followed_users = followed_users_query.values('followed_user__id')
+        followed_users = followed_users_query.values('followed_user__id').cache()
 
         for followed_user in followed_users:
 
@@ -1406,42 +1406,60 @@ class User(AbstractUser):
         Post = get_post_model()
         return Post.objects.filter(timeline_posts_query).distinct()
 
-    def _get_timeline_posts_with_no_filters(self, max_id=None, min_id=None):
+    def _get_timeline_posts_with_no_filters(self, max_id=None, min_id=None, count=10):
         """
         Being the main action of the network, an optimised call of the get timeline posts call with no filtering.
         """
         world_circle_id = self._get_world_circle_id()
 
-        # Add all own posts
-        timeline_posts_query = Q(creator=self.pk, community__isnull=True)
+        Post = get_post_model()
 
-        # Add all community posts
-        timeline_posts_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
+        posts_select_related = ('creator', 'creator__profile', 'community', 'image')
 
-        timeline_posts_query.add(Q(circles__connections__target_user_id=self.pk,
-                                   circles__connections__target_connection__circles__isnull=False), Q.OR)
+        posts_prefetch_related = ('circles', 'creator__profile__badges')
 
-        followed_users = self.follows.values('followed_user_id').cache()
+        posts_only = ('text', 'id', 'uuid', 'created', 'image__width', 'image__height', 'image__image',
+                      'creator__username', 'creator__id', 'creator__profile__name', 'creator__profile__avatar',
+                      'creator__profile__badges__id', 'creator__profile__badges__keyword',
+                      'creator__profile__id', 'community__id', 'community__name', 'community__avatar',
+                      'community__color',
+                      'community__title')
+
+        own_posts_query = Q(community__isnull=True)
+
+        if max_id:
+            own_posts_query.add(Q(id__lt=max_id), Q.AND)
+
+        own_posts_queryset = self.posts.select_related(*posts_select_related).prefetch_related(
+            *posts_prefetch_related).only(*posts_only).filter(own_posts_query)
+
+        community_posts_query = Q(Q(community__memberships__user__id=self.pk) & ~Q(creator_id=self.pk))
+
+        if max_id:
+            community_posts_query.add(Q(id__lt=max_id), Q.AND)
+
+        community_posts_queryset = Post.objects.select_related(*posts_select_related).prefetch_related(
+            *posts_prefetch_related).only(*posts_only).filter(community_posts_query)
+
+        followed_users = self.follows.values('followed_user_id')
 
         followed_users_ids = [followed_user['followed_user_id'] for followed_user in followed_users]
 
-        timeline_posts_query.add(Q(creator__in=followed_users_ids, circles__id=world_circle_id), Q.OR)
-
-        Post = get_post_model()
+        followed_users_query = Q(creator__in=followed_users_ids)
 
         if max_id:
-            timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
-        elif min_id:
-            timeline_posts_query.add(Q(id__gt=min_id), Q.AND)
+            followed_users_query.add(Q(id__lt=max_id), Q.AND)
 
-        return Post.objects.select_related('creator', 'creator__profile', 'community', 'image').prefetch_related(
-            'circles', 'creator__profile__badges').only(
-            'text', 'id', 'uuid', 'created', 'image__width', 'image__height', 'image__image',
-            'creator__username', 'creator__id', 'creator__profile__name', 'creator__profile__avatar',
-            'creator__profile__badges__id', 'creator__profile__badges__keyword',
-            'creator__profile__id', 'community__id', 'community__name', 'community__avatar',
-            'community__title').filter(
-            timeline_posts_query)
+        followed_users_query.add(
+            Q(circles__id=world_circle_id) | Q(circles__connections__target_connection__circles__isnull=False,
+                                               circles__connections__target_user=self.pk), Q.AND)
+
+        followed_users_queryset = Post.objects.select_related(*posts_select_related).prefetch_related(
+            *posts_prefetch_related).only(*posts_only).filter(followed_users_query)
+
+        final_queryset = own_posts_queryset.union(community_posts_queryset, followed_users_queryset)
+
+        return final_queryset
 
     def follow_user(self, user, lists_ids=None):
         return self.follow_user_with_id(user.pk, lists_ids)
