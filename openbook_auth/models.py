@@ -1655,6 +1655,14 @@ class User(AbstractUser):
         self.save()
         return invite
 
+    def update_invite(self, invite_id, nickname):
+        self._check_can_update_invite(invite_id)
+        UserInvite = get_user_invite_model()
+        invite = UserInvite.objects.get(id=invite_id)
+        invite.nickname = nickname
+        invite.save()
+        return invite
+
     def get_user_invites(self):
         UserInvite = get_user_invite_model()
         return UserInvite.objects.filter(invited_by=self)
@@ -1683,6 +1691,9 @@ class User(AbstractUser):
         UserInvite = get_user_invite_model()
         if UserInvite.objects.filter(invited_by=self, nickname=nickname).exists():
             raise ValidationError('Nickname already in use')
+
+    def _check_can_update_invite(self, invite_id):
+        self._check_is_creator_of_invite_with_id(invite_id)
 
     def _check_can_send_email_invite_to_invite_id(self, invite_id):
         self._check_is_creator_of_invite_with_id(invite_id)

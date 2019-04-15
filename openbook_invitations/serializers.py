@@ -29,6 +29,8 @@ class GetUserInviteSerializer(serializers.ModelSerializer):
         model = UserInvite
         fields = (
             'id',
+            'email',
+            'is_invite_email_sent',
             'nickname',
             'token',
             'created_user',
@@ -51,6 +53,17 @@ class DeleteUserInviteSerializer(serializers.Serializer):
         validators=[invite_id_exists],
         required=True,
     )
+
+
+class EditUserInviteSerializer(serializers.Serializer):
+    invite_id = serializers.IntegerField(
+        validators=[invite_id_exists],
+        required=True,
+    )
+    nickname = serializers.CharField(
+        max_length=PROFILE_NAME_MAX_LENGTH,
+        required=True,
+        allow_blank=False)
 
 
 class EmailUserInviteSerializer(serializers.Serializer):

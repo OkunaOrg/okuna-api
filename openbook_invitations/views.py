@@ -9,7 +9,7 @@ from rest_framework import status
 
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_invitations.serializers import GetUserInviteSerializer, CreateUserInviteSerializer, \
-    GetUserInvitesSerializer, DeleteUserInviteSerializer, EmailUserInviteSerializer
+    GetUserInvitesSerializer, DeleteUserInviteSerializer, EmailUserInviteSerializer, EditUserInviteSerializer
 from openbook_common.responses import ApiMessageResponse
 
 
@@ -81,3 +81,21 @@ class UserInvite(APIView):
                 raise SMTPException(_('An error occurred sending the invite, please try again later'))
 
         return ApiMessageResponse(_('Invite email sent'), status=status.HTTP_200_OK)
+
+    def patch(self, request, invite_id):
+        request_data = normalise_request_data(request.data)
+        request_data['invite_id'] = invite_id
+        serializer = EditUserInviteSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        invite_id = serializer.validated_data.get('invite_id')
+        nickname = serializer.validated_data.get('nickname')
+
+        user = request.user
+
+        with transaction.atomic():
+            updated_invite = user.update_invite(invite_id=invite_id, nickname=nickname)
+
+        response_serializer = GetUserInviteSerializer(updated_invite, context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)

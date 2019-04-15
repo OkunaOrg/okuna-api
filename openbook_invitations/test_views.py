@@ -189,6 +189,25 @@ class UserInviteItemAPITests(APITestCase):
         self.assertEqual(user.invite_count, original_invite_count - 1)
         self.assertFalse(UserInvite.objects.filter(id=invite.pk).exists())
 
+    def test_can_update_invite(self):
+        """
+        should be able to update invite
+        """
+        user = make_user_with_invite_count()
+        nickname = fake.name()
+        invite = user.create_invite(nickname=nickname)
+
+        url = self._get_url(invite.pk)
+        headers = make_authentication_headers_for_user(user)
+        new_nickname = fake.name()
+        response = self.client.patch(url, {
+            'nickname': new_nickname
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        invite.refresh_from_db()
+        self.assertEqual(invite.nickname, new_nickname)
+
     def _get_url(self, invite_id):
         return reverse('invite', kwargs={
             'invite_id': invite_id
