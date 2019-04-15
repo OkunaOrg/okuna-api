@@ -10,7 +10,6 @@ from django.utils.translation import ugettext_lazy as _
 from django.db.models import Count
 
 # Create your views here.
-from django_group_by import GroupByMixin
 from pilkit.processors import ResizeToFit
 from rest_framework.exceptions import ValidationError
 
