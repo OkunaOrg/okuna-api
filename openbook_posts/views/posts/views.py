@@ -85,10 +85,9 @@ class Posts(APIView):
                 lists_ids=lists_ids,
                 max_id=max_id,
                 min_id=min_id,
-                count=count
             )
 
-        posts = posts.order_by('-id')[:count]
+        posts = posts.order_by('-id').distinct()[:count]
 
         post_serializer_data = AuthenticatedUserPostSerializer(posts, many=True, context={"request": request}).data
 
