@@ -1425,7 +1425,7 @@ class User(AbstractUser):
                       'community__color',
                       'community__title')
 
-        own_posts_query = Q(community__isnull=True)
+        own_posts_query = Q(creator=self.pk, community__isnull=True)
 
         if max_id:
             own_posts_query.add(Q(id__lt=max_id), Q.AND)
@@ -1433,7 +1433,7 @@ class User(AbstractUser):
         own_posts_queryset = self.posts.select_related(*posts_select_related).prefetch_related(
             *posts_prefetch_related).only(*posts_only).filter(own_posts_query)
 
-        community_posts_query = Q(Q(community__memberships__user__id=self.pk) & ~Q(creator_id=self.pk))
+        community_posts_query = Q(community__memberships__user__id=self.pk)
 
         if max_id:
             community_posts_query.add(Q(id__lt=max_id), Q.AND)
