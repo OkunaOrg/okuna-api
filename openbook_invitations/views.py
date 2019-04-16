@@ -42,7 +42,7 @@ class UserInvites(APIView):
 
         user = request.user
 
-        user_invites = user.get_user_invites()[offset:offset + count]
+        user_invites = user.get_user_invites().order_by('-pk')[offset:offset + count]
 
         response_serializer = GetUserInviteSerializer(user_invites, many=True, context={"request": request})
 

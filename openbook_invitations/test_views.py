@@ -116,12 +116,12 @@ class UserInvitesAPITests(APITestCase):
         user = make_user_with_invite_count(invite_count=original_invite_count)
         total_invites = 5
         offset = count = 2
-        offset_invited_ids = []
+        offset_invited_ids = []  # 1 2 3 4 5
 
         for i in range(total_invites):
             nickname = fake.name()
             invite = user.create_invite(nickname=nickname)
-            if i >= offset:
+            if i <= offset:
                 offset_invited_ids.append(invite.id)
 
         url = self._get_url()
