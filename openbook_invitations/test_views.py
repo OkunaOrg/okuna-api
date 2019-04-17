@@ -108,6 +108,66 @@ class UserInvitesAPITests(APITestCase):
         user.refresh_from_db()
         self.assertEqual(user.invite_count, original_invite_count - total_invites)
 
+    def test_get_invites_with_status_accepted(self):
+        """
+        get all invites with status accepted
+        """
+        original_invite_count = 5
+        user = make_user_with_invite_count(invite_count=original_invite_count)
+        nickname = fake.name()
+        invite = user.create_invite(nickname=nickname)
+
+        for i in range(original_invite_count - 1):
+            nickname = fake.name()
+            user.create_invite(nickname=nickname)
+
+        invite.created_user = make_user()
+        invite.save()
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'status': 'ACCEPTED'
+        }, **headers)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(len(parsed_response) == 1)
+        invite.refresh_from_db()
+        self.assertTrue(invite.pk == parsed_response[0]['id'])
+
+    def test_get_invites_with_status_pending(self):
+        """
+        get all invites with status pending
+        """
+        original_invite_count = 5
+        user = make_user_with_invite_count(invite_count=original_invite_count)
+        nickname = fake.name()
+        invite = user.create_invite(nickname=nickname)
+        pending_invited_ids = []
+
+        for i in range(original_invite_count - 1):
+            nickname = fake.name()
+            pending_invite = user.create_invite(nickname=nickname)
+            pending_invited_ids.append(pending_invite.id)
+
+        invite.created_user = make_user()
+        invite.save()
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'status': 'PENDING'
+        }, **headers)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(len(parsed_response) == 4)
+        for invite in parsed_response:
+            self.assertIn(invite['id'], pending_invited_ids)
+
     def test_get_invites_count_offset(self):
         """
         should be able to get invites list with count and offset for user
@@ -168,9 +228,9 @@ class UserInviteItemAPITests(APITestCase):
         self.assertEqual(user.invite_count, original_invite_count)
         self.assertFalse(UserInvite.objects.filter(id=invite.pk).exists())
 
-    def test_invite_count_doesnt_change_if_invite_deleted_with_created_user(self):
+    def test_cannot_delete_invite_if_invite_is_accepted(self):
         """
-        invite count should not increase if an invite for which a created user exists is deleted
+        should not be able to delete if an invite already has been accepted
         """
         original_invite_count = 5
         user = make_user_with_invite_count(invite_count=original_invite_count)
@@ -184,10 +244,10 @@ class UserInviteItemAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
         response = self.client.delete(url, **headers)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         user.refresh_from_db()
         self.assertEqual(user.invite_count, original_invite_count - 1)
-        self.assertFalse(UserInvite.objects.filter(id=invite.pk).exists())
+        self.assertTrue(UserInvite.objects.filter(id=invite.pk).exists())
 
     def test_can_update_invite(self):
         """

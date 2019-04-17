@@ -15,6 +15,9 @@ from openbook_common.responses import ApiMessageResponse
 
 class UserInvites(APIView):
     permission_classes = (IsAuthenticated,)
+    INVITE_STATUS_ALL = 'ALL'
+    INVITE_STATUS_PENDING = 'PENDING'
+    INVITE_STATUS_ACCEPTED = 'ACCEPTED'
 
     def put(self, request):
         serializer = CreateUserInviteSerializer(data=request.data, context={"request": request})
@@ -39,10 +42,16 @@ class UserInvites(APIView):
 
         count = data.get('count', 10)
         offset = data.get('offset', 0)
+        filter_status = data.get('status', self.INVITE_STATUS_ALL)
 
         user = request.user
-
-        user_invites = user.get_user_invites().order_by('-pk')[offset:offset + count]
+        user_invites = []
+        if filter_status == self.INVITE_STATUS_ALL:
+            user_invites = user.get_user_invites().order_by('-pk')[offset:offset + count]
+        elif filter_status == self.INVITE_STATUS_PENDING:
+            user_invites = user.get_user_invites(status_pending=True).order_by('-pk')[offset:offset + count]
+        elif filter_status == self.INVITE_STATUS_ACCEPTED:
+            user_invites = user.get_user_invites(status_accepted=True).order_by('-pk')[offset:offset + count]
 
         response_serializer = GetUserInviteSerializer(user_invites, many=True, context={"request": request})
 

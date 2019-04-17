@@ -46,6 +46,11 @@ class GetUserInvitesSerializer(serializers.Serializer):
     offset = serializers.IntegerField(
         required=False,
     )
+    status = serializers.ChoiceField(required=False, choices=[
+        'ALL',
+        'PENDING',
+        'ACCEPTED'
+    ])
 
 
 class DeleteUserInviteSerializer(serializers.Serializer):

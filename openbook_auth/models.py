@@ -1663,18 +1663,23 @@ class User(AbstractUser):
         invite.save()
         return invite
 
-    def get_user_invites(self):
+    def get_user_invites(self, status_accepted=None, status_pending=None):
+        invites_query = Q(invited_by=self)
         UserInvite = get_user_invite_model()
-        return UserInvite.objects.filter(invited_by=self)
+
+        if status_accepted:
+            invites_query.add(Q(created_user__isnull=False), Q.AND)
+        elif status_pending:
+            invites_query.add(Q(created_user__isnull=True), Q.AND)
+
+        return UserInvite.objects.filter(invites_query)
 
     def delete_user_invite_with_id(self, invite_id):
         self._check_can_delete_invite_with_id(invite_id)
         UserInvite = get_user_invite_model()
         invite = UserInvite.objects.get(id=invite_id)
-        if not invite.created_user:
-            self.invite_count = F('invite_count') + 1
-            self.save()
-
+        self.invite_count = F('invite_count') + 1
+        self.save()
         invite.delete()
 
     def send_invite_to_invite_id_with_email(self, invite_id, email):
@@ -1700,6 +1705,13 @@ class User(AbstractUser):
 
     def _check_can_delete_invite_with_id(self, invite_id):
         self._check_is_creator_of_invite_with_id(invite_id)
+        self._check_if_invite_is_not_used(invite_id)
+
+    def _check_if_invite_is_not_used(self, invite_id):
+        UserInvite = get_user_invite_model()
+        invite = UserInvite.objects.get(id=invite_id)
+        if invite.created_user:
+            raise ValidationError(_('Invite is already used and cannot be deleted'))
 
     def _check_is_creator_of_invite_with_id(self, invite_id):
         UserInvite = get_user_invite_model()
