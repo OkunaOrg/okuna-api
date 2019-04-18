@@ -607,6 +607,7 @@ class User(AbstractUser):
         post_reaction.delete()
 
     def get_comments_for_post_with_id(self, post_id, min_id=None, max_id=None):
+        self._check_can_get_comments_for_post_with_id(post_id=post_id)
         comments_query = Q(post_id=post_id)
 
         if max_id:
@@ -623,9 +624,6 @@ class User(AbstractUser):
         return PostComment.objects.filter(comments_query)
 
     def get_comments_count_for_post_with_id(self, post_id):
-
-        commenter_id = None
-
         Post = get_post_model()
 
         post = Post.objects.get(pk=post_id)
@@ -2059,6 +2057,9 @@ class User(AbstractUser):
                         _('You cannot remove a comment that does not belong to you')
                     )
 
+    def _check_can_get_comments_for_post_with_id(self, post_id):
+        self._check_can_see_post_with_id(post_id=post_id)
+
     def _check_can_comment_in_post(self, post):
         self._check_can_see_post(post)
 
@@ -2096,6 +2097,11 @@ class User(AbstractUser):
 
     def _check_can_react_to_post(self, post):
         self._check_can_see_post(post=post)
+
+    def _check_can_see_post_with_id(self, post_id):
+        Post = get_post_model()
+        post = Post.objects.get(pk=post_id)
+        return self._check_can_see_post(post=post)
 
     def _check_can_see_post(self, post):
         # Check if post is public

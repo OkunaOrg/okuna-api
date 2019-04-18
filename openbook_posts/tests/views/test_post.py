@@ -16,8 +16,7 @@ import random
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_emoji, make_emoji_group, make_reactions_emoji_group, \
-    make_community
-from openbook_communities.models import Community
+    make_community, make_private_community
 from openbook_notifications.models import PostCommentNotification, PostReactionNotification, Notification
 from openbook_posts.models import Post, PostComment, PostReaction
 
@@ -577,6 +576,250 @@ class PostCommentsAPITests(APITestCase):
     fixtures = [
         'openbook_circles/fixtures/circles.json'
     ]
+
+    def test_can_retrieve_comments_from_public_community_post(self):
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        community = make_community(creator=post_creator)
+        post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        amount_of_comments = 5
+        comments_ids = []
+
+        for i in range(0, amount_of_comments):
+            commenter = make_user()
+            commenter.join_community_with_name(community_name=community.name)
+            post_comment = commenter.comment_post(post=post, text=make_fake_post_text())
+            comments_ids.append(post_comment.pk)
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_comments = json.loads(response.content)
+
+        self.assertEqual(len(response_comments), amount_of_comments)
+
+        for response_comment in response_comments:
+            response_comment_id = response_comment.get('id')
+            self.assertIn(response_comment_id, comments_ids)
+
+    def test_cant_retrieve_comments_from_private_community_post(self):
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        community = make_private_community(creator=post_creator)
+        post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        amount_of_comments = 5
+        comments_ids = []
+
+        for i in range(0, amount_of_comments):
+            commenter = make_user()
+            post_creator.invite_user_with_username_to_community_with_name(username=commenter.username,
+                                                                          community_name=community.name)
+            commenter.join_community_with_name(community_name=community.name)
+            post_comment = commenter.comment_post(post=post, text=make_fake_post_text())
+            comments_ids.append(post_comment.pk)
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_can_retrieve_comments_from_private_community_part_of_post(self):
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        community = make_private_community(creator=post_creator)
+        post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        post_creator.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                      community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        amount_of_comments = 5
+        comments_ids = []
+
+        for i in range(0, amount_of_comments):
+            commenter = make_user()
+            post_creator.invite_user_with_username_to_community_with_name(username=commenter.username,
+                                                                          community_name=community.name)
+            commenter.join_community_with_name(community_name=community.name)
+            post_comment = commenter.comment_post(post=post, text=make_fake_post_text())
+            comments_ids.append(post_comment.pk)
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_comments = json.loads(response.content)
+
+        self.assertEqual(len(response_comments), amount_of_comments)
+
+        for response_comment in response_comments:
+            response_comment_id = response_comment.get('id')
+            self.assertIn(response_comment_id, comments_ids)
+
+    def test_can_retrieve_comments_from_public_post(self):
+        """
+         should be able to retrieve the comments from an own public post and return 200
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        amount_of_comments = 5
+        comments_ids = []
+
+        for i in range(0, amount_of_comments):
+            commenter = make_user()
+            post_comment = commenter.comment_post(post=post, text=make_fake_post_text())
+            comments_ids.append(post_comment.pk)
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_comments = json.loads(response.content)
+
+        self.assertEqual(len(response_comments), amount_of_comments)
+
+        for response_comment in response_comments:
+            response_comment_id = response_comment.get('id')
+            self.assertIn(response_comment_id, comments_ids)
+
+    def test_can_retrieve_comments_from_own_public_post(self):
+        """
+         should be able to retrieve the comments from an own public post and return 200
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        amount_of_comments = 5
+        comments_ids = []
+
+        for i in range(0, amount_of_comments):
+            commenter = make_user()
+            post_comment = commenter.comment_post(post=post, text=make_fake_post_text())
+            comments_ids.append(post_comment.pk)
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_comments = json.loads(response.content)
+
+        self.assertEqual(len(response_comments), amount_of_comments)
+
+        for response_comment in response_comments:
+            response_comment_id = response_comment.get('id')
+            self.assertIn(response_comment_id, comments_ids)
+
+    def test_can_retrieve_comments_from_own_encircled_post(self):
+        """
+         should be able to retrieve the comments from an own encircled post and return 200
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        circle = make_circle(creator=user)
+        post = user.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+
+        amount_of_comments = 5
+        comments_ids = []
+
+        for i in range(0, amount_of_comments):
+            commenter = make_user()
+            commenter.connect_with_user_with_id(user.pk)
+            user.confirm_connection_with_user_with_id(user_id=commenter.pk, circles_ids=[circle.pk])
+            post_comment = commenter.comment_post(post=post, text=make_fake_post_text())
+            comments_ids.append(post_comment.pk)
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_comments = json.loads(response.content)
+
+        self.assertEqual(len(response_comments), amount_of_comments)
+
+        for response_comment in response_comments:
+            response_comment_id = response_comment.get('id')
+            self.assertIn(response_comment_id, comments_ids)
+
+    def test_can_retrieve_comments_from_encircled_post_part_of(self):
+        """
+         should be able to retrieve the comments from an encircled post part of and return 200
+         """
+        post_creator = make_user()
+        circle = make_circle(creator=post_creator)
+        user = make_user()
+
+        user.connect_with_user_with_id(post_creator.pk)
+        post_creator.confirm_connection_with_user_with_id(user_id=user.pk, circles_ids=[circle.pk])
+
+        post = post_creator.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+
+        amount_of_comments = 5
+        comments_ids = []
+
+        for i in range(0, amount_of_comments):
+            commenter = make_user()
+            commenter.connect_with_user_with_id(post_creator.pk)
+            post_creator.confirm_connection_with_user_with_id(user_id=commenter.pk, circles_ids=[circle.pk])
+            post_comment = commenter.comment_post(post=post, text=make_fake_post_text())
+            comments_ids.append(post_comment.pk)
+
+        url = self._get_url(post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_comments = json.loads(response.content)
+
+        self.assertEqual(len(response_comments), amount_of_comments)
+
+        for response_comment in response_comments:
+            response_comment_id = response_comment.get('id')
+            self.assertIn(response_comment_id, comments_ids)
+
+    def test_cannot_retrieve_comments_from_encircled_post_not_part_of(self):
+        """
+         should not be able to retrieve the comments from an encircled post not part of and return 200
+         """
+        post_creator = make_user()
+        circle = make_circle(creator=post_creator)
+        user = make_user()
+
+        post = post_creator.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+
+        amount_of_comments = 5
+
+        for i in range(0, amount_of_comments):
+            commenter = make_user()
+            commenter.connect_with_user_with_id(post_creator.pk)
+            post_creator.confirm_connection_with_user_with_id(user_id=commenter.pk, circles_ids=[circle.pk])
+
+        url = self._get_url(post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_can_comment_in_own_post(self):
         """
