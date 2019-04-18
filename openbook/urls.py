@@ -19,12 +19,15 @@ from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
 
+from openbook_auth.views.auth.views import Register, Login, UsernameCheck, EmailCheck, EmailVerify, \
+    PasswordResetRequest, PasswordResetVerify
+from openbook_auth.views.authenticated_user.views import AuthenticatedUser, AuthenticatedUserSettings, \
+    DeleteAuthenticatedUser, AuthenticatedUserNotificationsSettings
+from openbook_auth.views.linked_users.views import LinkedUsers, SearchLinkedUsers
+from openbook_auth.views.users.views import SearchUsers, GetUser
 from openbook_categories.views import Categories
 from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups
-from openbook_auth.views import Register, UsernameCheck, EmailCheck, EmailVerify, Login, AuthenticatedUser, Users, \
-    UserSettings, LinkedUsers, SearchLinkedUsers, UserItem, AuthenticatedUserNotificationsSettings, \
-    AuthenticatedUserDelete, PasswordResetRequest, PasswordResetVerify
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
     FavoriteCommunities, SearchCommunities, JoinedCommunities, AdministratedCommunities, ModeratedCommunities, \
     SearchJoinedCommunities
@@ -57,13 +60,13 @@ auth_patterns = [
     path('email/verify/', EmailVerify.as_view(), name='email-verify'),
     path('password/reset/', PasswordResetRequest.as_view(), name='request-password-reset'),
     path('password/verify/', PasswordResetVerify.as_view(), name='verify-reset-password'),
-    path('user/settings/', UserSettings.as_view(), name='user-settings'),
+    path('user/settings/', AuthenticatedUserSettings.as_view(), name='authenticated-user-settings'),
     path('user/', AuthenticatedUser.as_view(), name='authenticated-user'),
-    path('user/delete/', AuthenticatedUserDelete.as_view(), name='authenticated-user-delete'),
+    path('user/delete/', DeleteAuthenticatedUser.as_view(), name='delete-authenticated-user'),
     path('user/notifications-settings/', AuthenticatedUserNotificationsSettings.as_view(),
          name='authenticated-user-notifications-settings'),
-    path('users/<str:user_username>/', UserItem.as_view(), name='user'),
-    path('users/', Users.as_view(), name='users'),
+    path('users/<str:user_username>/', GetUser.as_view(), name='get-user'),
+    path('users/', SearchUsers.as_view(), name='search-users'),
     path('linked-users/', LinkedUsers.as_view(), name='linked-users'),
     path('linked-users/search/', SearchLinkedUsers.as_view(), name='search-linked-users'),
 ]

@@ -16,7 +16,7 @@ from openbook_auth.models import User, UserProfile
 import logging
 import json
 
-from openbook_auth.views import UserSettings
+from openbook_auth.views.authenticated_user.views import AuthenticatedUserSettings
 from openbook_circles.models import Circle
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_user_bio, \
     make_user_location, make_user_avatar, make_user_cover, make_badge
@@ -1152,7 +1152,7 @@ class AuthenticatedUserDeleteTests(APITestCase):
         self.assertTrue(User.objects.filter(pk=user.pk).exists())
 
     def _get_url(self):
-        return reverse('authenticated-user-delete')
+        return reverse('delete-authenticated-user')
 
 
 class AuthenticatedUserNotificationsSettingsTests(APITestCase):
@@ -1259,7 +1259,7 @@ class UserAPITests(APITestCase):
         self.assertEqual(response_username, user.username)
 
     def _get_url(self, user):
-        return reverse('user', kwargs={
+        return reverse('get-user', kwargs={
             'user_username': user.username
         })
 
@@ -1324,14 +1324,14 @@ class UsersAPITests(APITestCase):
         self.assertEqual(len(parsed_reponse), limited_users)
 
     def _get_url(self):
-        return reverse('users')
+        return reverse('search-users')
 
 
 class UserSettingsAPITests(APITestCase):
     """
     User Settings API
     """
-    url = reverse('user-settings')
+    url = reverse('authenticated-user-settings')
 
     def test_can_change_password_successfully(self):
         """
@@ -1416,7 +1416,7 @@ class UserSettingsAPITests(APITestCase):
             'email': user.email
         }
 
-        with mock.patch.object(UserSettings, 'send_confirmation_email', return_value=None):
+        with mock.patch.object(AuthenticatedUserSettings, 'send_confirmation_email', return_value=None):
             response = self.client.patch(self.url, data, **headers)
 
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

@@ -1,0 +1,80 @@
+from rest_framework import serializers
+from django.conf import settings
+
+from openbook.settings import USERNAME_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, PROFILE_NAME_MAX_LENGTH
+from openbook_auth.models import UserNotificationsSettings
+from openbook_auth.validators import username_characters_validator, \
+    username_not_taken_validator, email_not_taken_validator, \
+    is_of_legal_age_validator, user_email_exists, user_username_exists
+from django.contrib.auth.password_validation import validate_password
+
+from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
+from openbook_common.validators import name_characters_validator
+
+
+class RegisterSerializer(serializers.Serializer):
+    password = serializers.CharField(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH,
+                                     validators=[validate_password])
+    is_of_legal_age = serializers.BooleanField(validators=[is_of_legal_age_validator])
+    name = serializers.CharField(max_length=PROFILE_NAME_MAX_LENGTH,
+                                 allow_blank=False, validators=[name_characters_validator])
+    avatar = RestrictedImageFileSizeField(allow_empty_file=True, required=False,
+                                          max_upload_size=settings.PROFILE_AVATAR_MAX_SIZE)
+    email = serializers.EmailField(validators=[email_not_taken_validator])
+    token = serializers.CharField()
+
+
+class UsernameCheckSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=USERNAME_MAX_LENGTH,
+                                     allow_blank=False,
+                                     validators=[username_characters_validator, username_not_taken_validator])
+
+
+class EmailCheckSerializer(serializers.Serializer):
+    email = serializers.EmailField(validators=[email_not_taken_validator])
+
+
+class EmailVerifySerializer(serializers.Serializer):
+    token = serializers.CharField()
+
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=USERNAME_MAX_LENGTH,
+                                     allow_blank=False,
+                                     validators=[username_characters_validator])
+    password = serializers.CharField(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH)
+
+
+
+class AuthenticatedUserNotificationsSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserNotificationsSettings
+        fields = (
+            'id',
+            'post_comment_notifications',
+            'post_reaction_notifications',
+            'follow_notifications',
+            'connection_request_notifications',
+            'connection_confirmed_notifications',
+            'community_invite_notifications',
+        )
+
+
+class UpdateAuthenticatedUserNotificationsSettingsSerializer(serializers.Serializer):
+    post_comment_notifications = serializers.BooleanField(required=False)
+    post_reaction_notifications = serializers.BooleanField(required=False)
+    follow_notifications = serializers.BooleanField(required=False)
+    connection_request_notifications = serializers.BooleanField(required=False)
+    connection_confirmed_notifications = serializers.BooleanField(required=False)
+    community_invite_notifications = serializers.BooleanField(required=False)
+
+
+class RequestPasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=False, validators=[user_email_exists])
+    username = serializers.CharField(max_length=USERNAME_MAX_LENGTH, required=False, validators=[user_username_exists])
+
+
+class VerifyPasswordResetSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    new_password = serializers.CharField(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH,
+                                         validators=[validate_password])
