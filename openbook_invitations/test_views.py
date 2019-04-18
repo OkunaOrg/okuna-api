@@ -205,6 +205,39 @@ class UserInvitesAPITests(APITestCase):
         return reverse('invites')
 
 
+class UserInviteSearchAPITests(APITestCase):
+
+    def test_get_search_invites(self):
+        """
+        should be able to get invites with search
+        """
+        original_invite_count = 5
+        user = make_user_with_invite_count(invite_count=original_invite_count)
+        total_invites = 5
+        invites = []
+
+        for i in range(total_invites):
+            nickname = fake.name()
+            invite = user.create_invite(nickname=nickname)
+            invites.append(invite)
+
+        search = invites[0].nickname
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'query': search,
+            'status': 'PENDING'
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_invites = json.loads(response.content)
+
+        self.assertTrue(len(response_invites) == 1)
+        self.assertEqual(response_invites[0]['id'], invites[0].id)
+
+    def _get_url(self):
+        return reverse('search-invites')
+
 class UserInviteItemAPITests(APITestCase):
     """
     UserInvitesItemAPI
