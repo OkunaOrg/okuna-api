@@ -1211,13 +1211,13 @@ class User(AbstractUser):
 
         return User.objects.filter(followers_query).distinct()
 
-    def get_following(self, max_id=None):
-        following_query = self._make_following_query()
+    def get_followings(self, max_id=None):
+        followings_query = self._make_followings_query()
 
         if max_id:
-            following_query.add(Q(id__lt=max_id), Q.AND)
+            followings_query.add(Q(id__lt=max_id), Q.AND)
 
-        return User.objects.filter(following_query).distinct()
+        return User.objects.filter(followings_query).distinct()
 
     def search_followers_with_query(self, query):
         followers_query = Q(follows__followed_user_id=self.pk)
@@ -1229,15 +1229,15 @@ class User(AbstractUser):
 
         return User.objects.filter(followers_query).distinct()
 
-    def search_following_with_query(self, query):
-        following_query = Q(followers__user_id=self.pk)
+    def search_followings_with_query(self, query):
+        followings_query = Q(followers__user_id=self.pk)
 
         names_query = Q(username__icontains=query)
         names_query.add(Q(profile__name__icontains=query), Q.OR)
 
-        following_query.add(names_query, Q.AND)
+        followings_query.add(names_query, Q.AND)
 
-        return User.objects.filter(following_query).distinct()
+        return User.objects.filter(followings_query).distinct()
 
     def search_communities_with_query(self, query):
         # In the future, the user might have blocked communities which should not be displayed
@@ -1842,7 +1842,7 @@ class User(AbstractUser):
     def _make_followers_query(self):
         return Q(follows__followed_user_id=self.pk)
 
-    def _make_following_query(self):
+    def _make_followings_query(self):
         return Q(followers__user_id=self.pk)
 
     def _make_get_post_with_id_query_for_user(self, user, post_id):

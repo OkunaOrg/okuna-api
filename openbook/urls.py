@@ -24,6 +24,7 @@ from openbook_auth.views.auth.views import Register, Login, UsernameCheck, Email
 from openbook_auth.views.authenticated_user.views import AuthenticatedUser, AuthenticatedUserSettings, \
     DeleteAuthenticatedUser, AuthenticatedUserNotificationsSettings
 from openbook_auth.views.followers.views import Followers, SearchFollowers
+from openbook_auth.views.following.views import Followings, SearchFollowings
 from openbook_auth.views.linked_users.views import LinkedUsers, SearchLinkedUsers
 from openbook_auth.views.users.views import SearchUsers, GetUser
 from openbook_categories.views import Categories
@@ -72,6 +73,8 @@ auth_patterns = [
     path('linked-users/search/', SearchLinkedUsers.as_view(), name='search-linked-users'),
     path('followers/', Followers.as_view(), name='followers'),
     path('followers/search/', SearchFollowers.as_view(), name='search-followers'),
+    path('followings/', Followings.as_view(), name='followings'),
+    path('followings/search/', SearchFollowings.as_view(), name='search-followings'),
 ]
 
 post_notifications_patters = [
