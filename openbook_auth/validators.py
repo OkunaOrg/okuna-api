@@ -1,10 +1,6 @@
 import re
-from django.conf import settings
-import jwt
 from django.utils.translation import gettext_lazy as _
-from jwt import InvalidSignatureError
-from jwt.exceptions import DecodeError, ExpiredSignatureError
-from rest_framework.exceptions import ValidationError, AuthenticationFailed, NotFound
+from rest_framework.exceptions import ValidationError, NotFound
 
 from openbook_auth.models import User
 
