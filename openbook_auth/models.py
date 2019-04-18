@@ -509,6 +509,21 @@ class User(AbstractUser):
     def has_connection_confirmed_notifications_enabled(self):
         return self.notifications_settings.connection_confirmed_notifications
 
+    def can_see_post(self, post):
+        # Check if post is public
+        if post.creator_id == self.pk or post.is_public_post():
+            return True
+
+        if post.community:
+            if self.get_community_post_with_id(post_id=post.pk).exists():
+                return True
+        else:
+            # Check if we can retrieve the post
+            if self._can_see_post(post=post):
+                return True
+
+        return False
+
     def get_lists_for_follow_for_user_with_id(self, user_id):
         self._check_is_following_user_with_id(user_id)
         follow = self.get_follow_for_user_with_id(user_id)
@@ -607,6 +622,7 @@ class User(AbstractUser):
         post_reaction.delete()
 
     def get_comments_for_post_with_id(self, post_id, min_id=None, max_id=None):
+        self._check_can_get_comments_for_post_with_id(post_id=post_id)
         comments_query = Q(post_id=post_id)
 
         if max_id:
@@ -623,9 +639,6 @@ class User(AbstractUser):
         return PostComment.objects.filter(comments_query)
 
     def get_comments_count_for_post_with_id(self, post_id):
-
-        commenter_id = None
-
         Post = get_post_model()
 
         post = Post.objects.get(pk=post_id)
@@ -658,7 +671,8 @@ class User(AbstractUser):
         PostCommentNotification = get_post_comment_notification_model()
 
         for post_notification_target_user in post_notification_target_users:
-
+            if not post_notification_target_user.can_see_post(post=post):
+                continue
             post_notification_target_user_is_post_creator = post_notification_target_user.id == post_creator.id
             post_notification_target_has_comment_notifications_enabled = post_notification_target_user.has_comment_notifications_enabled_for_post_with_id(
                 post_id=post_comment.post_id)
@@ -1202,6 +1216,42 @@ class User(AbstractUser):
         linked_users_query.add(names_query, Q.AND)
 
         return User.objects.filter(linked_users_query).distinct()
+
+    def get_followers(self, max_id=None):
+        followers_query = self._make_followers_query()
+
+        if max_id:
+            followers_query.add(Q(id__lt=max_id), Q.AND)
+
+        return User.objects.filter(followers_query).distinct()
+
+    def get_followings(self, max_id=None):
+        followings_query = self._make_followings_query()
+
+        if max_id:
+            followings_query.add(Q(id__lt=max_id), Q.AND)
+
+        return User.objects.filter(followings_query).distinct()
+
+    def search_followers_with_query(self, query):
+        followers_query = Q(follows__followed_user_id=self.pk)
+
+        names_query = Q(username__icontains=query)
+        names_query.add(Q(profile__name__icontains=query), Q.OR)
+
+        followers_query.add(names_query, Q.AND)
+
+        return User.objects.filter(followers_query).distinct()
+
+    def search_followings_with_query(self, query):
+        followings_query = Q(followers__user_id=self.pk)
+
+        names_query = Q(username__icontains=query)
+        names_query.add(Q(profile__name__icontains=query), Q.OR)
+
+        followings_query.add(names_query, Q.AND)
+
+        return User.objects.filter(followings_query).distinct()
 
     def search_communities_with_query(self, query):
         # In the future, the user might have blocked communities which should not be displayed
@@ -1793,13 +1843,21 @@ class User(AbstractUser):
         linked_users_query = Q(circles__connections__target_connection__user_id=self.pk,
                                circles__connections__target_connection__circles__isnull=False)
 
+        followers_query = self._make_followers_query()
+
         # All users following us
-        linked_users_query.add(Q(follows__followed_user_id=self.pk), Q.OR)
+        linked_users_query.add(followers_query, Q.OR)
 
         if max_id:
             linked_users_query.add(Q(id__lt=max_id), Q.AND)
 
         return linked_users_query
+
+    def _make_followers_query(self):
+        return Q(follows__followed_user_id=self.pk)
+
+    def _make_followings_query(self):
+        return Q(followers__user_id=self.pk)
 
     def _make_get_post_with_id_query_for_user(self, user, post_id):
         posts_query = self._make_get_posts_query_for_user(user)
@@ -2015,6 +2073,9 @@ class User(AbstractUser):
                         _('You cannot remove a comment that does not belong to you')
                     )
 
+    def _check_can_get_comments_for_post_with_id(self, post_id):
+        self._check_can_see_post_with_id(post_id=post_id)
+
     def _check_can_comment_in_post(self, post):
         self._check_can_see_post(post)
 
@@ -2053,22 +2114,16 @@ class User(AbstractUser):
     def _check_can_react_to_post(self, post):
         self._check_can_see_post(post=post)
 
-    def _check_can_see_post(self, post):
-        # Check if post is public
-        if post.creator_id == self.pk or post.is_public_post():
-            return
+    def _check_can_see_post_with_id(self, post_id):
+        Post = get_post_model()
+        post = Post.objects.get(pk=post_id)
+        return self._check_can_see_post(post=post)
 
-        if post.community:
-            if not self.get_community_post_with_id(post_id=post.pk).exists():
-                raise ValidationError(
-                    _('This post is from a private community.'),
-                )
-        else:
-            # Check if we can retrieve the post
-            if not self._can_see_post(post=post):
-                raise ValidationError(
-                    _('This post is private.'),
-                )
+    def _check_can_see_post(self, post):
+        if not self.can_see_post(post):
+            raise ValidationError(
+                _('This post is private.'),
+            )
 
     def _can_see_post(self, post):
         post_query = self._make_get_post_with_id_query_for_user(post.creator, post_id=post.pk)
