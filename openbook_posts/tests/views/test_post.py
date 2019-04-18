@@ -1070,6 +1070,42 @@ class PostCommentsAPITests(APITestCase):
         self.assertFalse(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
                                                                 notification__owner=foreign_user).exists())
 
+    def test_comment_in_an_encircled_post_with_a_user_removed_from_the_circle_not_notifies_it(self):
+        """
+         should not create a comment notification for a user that has been been removed from an encircled post circle
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_owner = make_user()
+        foreign_user = make_user()
+        circle = make_circle(creator=post_owner)
+
+        user.connect_with_user_with_id(user_id=post_owner.pk)
+        post_owner.confirm_connection_with_user_with_id(user_id=user.pk, circles_ids=[circle.pk])
+
+        foreign_user.connect_with_user_with_id(user_id=post_owner.pk)
+        post_owner.confirm_connection_with_user_with_id(user_id=foreign_user.pk, circles_ids=[circle.pk])
+
+        post = post_owner.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+
+        # Comment so we "subscribe" for notifications
+        foreign_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_text())
+
+        # Remove him from the circles
+        post_owner.update_connection_with_user_with_id(user_id=foreign_user.pk,
+                                                       circles_ids=[post_owner.connections_circle_id])
+
+        post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        self.assertFalse(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
+                                                                notification__owner=foreign_user).exists())
+
     def test_should_retrieve_all_comments_on_public_post(self):
         """
         should retrieve all comments on public post

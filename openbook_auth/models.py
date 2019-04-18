@@ -509,6 +509,21 @@ class User(AbstractUser):
     def has_connection_confirmed_notifications_enabled(self):
         return self.notifications_settings.connection_confirmed_notifications
 
+    def can_see_post(self, post):
+        # Check if post is public
+        if post.creator_id == self.pk or post.is_public_post():
+            return True
+
+        if post.community:
+            if self.get_community_post_with_id(post_id=post.pk).exists():
+                return True
+        else:
+            # Check if we can retrieve the post
+            if self._can_see_post(post=post):
+                return True
+
+        return False
+
     def get_lists_for_follow_for_user_with_id(self, user_id):
         self._check_is_following_user_with_id(user_id)
         follow = self.get_follow_for_user_with_id(user_id)
@@ -656,7 +671,8 @@ class User(AbstractUser):
         PostCommentNotification = get_post_comment_notification_model()
 
         for post_notification_target_user in post_notification_target_users:
-
+            if not post_notification_target_user.can_see_post(post=post):
+                continue
             post_notification_target_user_is_post_creator = post_notification_target_user.id == post_creator.id
             post_notification_target_has_comment_notifications_enabled = post_notification_target_user.has_comment_notifications_enabled_for_post_with_id(
                 post_id=post_comment.post_id)
@@ -2104,21 +2120,10 @@ class User(AbstractUser):
         return self._check_can_see_post(post=post)
 
     def _check_can_see_post(self, post):
-        # Check if post is public
-        if post.creator_id == self.pk or post.is_public_post():
-            return
-
-        if post.community:
-            if not self.get_community_post_with_id(post_id=post.pk).exists():
-                raise ValidationError(
-                    _('This post is from a private community.'),
-                )
-        else:
-            # Check if we can retrieve the post
-            if not self._can_see_post(post=post):
-                raise ValidationError(
-                    _('This post is private.'),
-                )
+        if not self.can_see_post(post):
+            raise ValidationError(
+                _('This post is private.'),
+            )
 
     def _can_see_post(self, post):
         post_query = self._make_get_post_with_id_query_for_user(post.creator, post_id=post.pk)
