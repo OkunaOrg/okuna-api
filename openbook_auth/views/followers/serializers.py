@@ -13,7 +13,7 @@ class GetFollowersSerializer(serializers.Serializer):
     )
     count = serializers.IntegerField(
         required=False,
-        max_value=10
+        max_value=20
     )
 
 
@@ -21,7 +21,7 @@ class SearchFollowersSerializer(serializers.Serializer):
     query = serializers.CharField(max_length=settings.SEARCH_QUERIES_MAX_LENGTH, required=True)
     count = serializers.IntegerField(
         required=False,
-        max_value=10
+        max_value=20
     )
 
 
