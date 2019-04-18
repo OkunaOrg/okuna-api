@@ -1674,6 +1674,17 @@ class User(AbstractUser):
 
         return UserInvite.objects.filter(invites_query)
 
+    def search_user_invites(self, query, status_accepted=None, status_pending=None):
+        invites_query = Q(invited_by=self, nickname__icontains=query)
+        UserInvite = get_user_invite_model()
+
+        if status_accepted:
+            invites_query.add(Q(created_user__isnull=False), Q.AND)
+        elif status_pending:
+            invites_query.add(Q(created_user__isnull=True), Q.AND)
+
+        return UserInvite.objects.filter(invites_query)
+
     def delete_user_invite_with_id(self, invite_id):
         self._check_can_delete_invite_with_id(invite_id)
         UserInvite = get_user_invite_model()

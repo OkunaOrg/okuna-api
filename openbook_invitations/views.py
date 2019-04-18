@@ -9,15 +9,16 @@ from rest_framework import status
 
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_invitations.serializers import GetUserInviteSerializer, CreateUserInviteSerializer, \
-    GetUserInvitesSerializer, DeleteUserInviteSerializer, EmailUserInviteSerializer, EditUserInviteSerializer
+    GetUserInvitesSerializer, DeleteUserInviteSerializer, EmailUserInviteSerializer, EditUserInviteSerializer, \
+    SearchUserInvitesSerializer
 from openbook_common.responses import ApiMessageResponse
 
+INVITE_STATUS_ALL = 'ALL'
+INVITE_STATUS_PENDING = 'PENDING'
+INVITE_STATUS_ACCEPTED = 'ACCEPTED'
 
 class UserInvites(APIView):
     permission_classes = (IsAuthenticated,)
-    INVITE_STATUS_ALL = 'ALL'
-    INVITE_STATUS_PENDING = 'PENDING'
-    INVITE_STATUS_ACCEPTED = 'ACCEPTED'
 
     def put(self, request):
         serializer = CreateUserInviteSerializer(data=request.data, context={"request": request})
@@ -42,16 +43,44 @@ class UserInvites(APIView):
 
         count = data.get('count', 10)
         offset = data.get('offset', 0)
-        filter_status = data.get('status', self.INVITE_STATUS_ALL)
+        filter_status = data.get('status', INVITE_STATUS_ALL)
 
         user = request.user
         user_invites = []
-        if filter_status == self.INVITE_STATUS_ALL:
+        if filter_status == INVITE_STATUS_ALL:
             user_invites = user.get_user_invites().order_by('-pk')[offset:offset + count]
-        elif filter_status == self.INVITE_STATUS_PENDING:
+        elif filter_status == INVITE_STATUS_PENDING:
             user_invites = user.get_user_invites(status_pending=True).order_by('-pk')[offset:offset + count]
-        elif filter_status == self.INVITE_STATUS_ACCEPTED:
+        elif filter_status == INVITE_STATUS_ACCEPTED:
             user_invites = user.get_user_invites(status_accepted=True).order_by('-pk')[offset:offset + count]
+
+        response_serializer = GetUserInviteSerializer(user_invites, many=True, context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class SearchUserInvites(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        query_params = request.query_params.dict()
+        serializer = SearchUserInvitesSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 10)
+        query = data.get('query')
+        filter_status = data.get('status', INVITE_STATUS_ALL)
+
+        user = request.user
+        user_invites = []
+        if filter_status == INVITE_STATUS_ALL:
+            user_invites = user.search_user_invites().order_by('-pk')[:count]
+        elif filter_status == INVITE_STATUS_PENDING:
+            user_invites = user.search_user_invites(status_pending=True, query=query).order_by('-pk')[:count]
+        elif filter_status == INVITE_STATUS_ACCEPTED:
+            user_invites = user.search_user_invites(status_accepted=True, query=query).order_by('-pk')[:count]
 
         response_serializer = GetUserInviteSerializer(user_invites, many=True, context={"request": request})
 

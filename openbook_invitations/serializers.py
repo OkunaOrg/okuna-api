@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import serializers
 from openbook.settings import PROFILE_NAME_MAX_LENGTH
 from openbook_invitations.models import UserInvite
@@ -51,6 +52,23 @@ class GetUserInvitesSerializer(serializers.Serializer):
         'PENDING',
         'ACCEPTED'
     ])
+
+
+class SearchUserInvitesSerializer(serializers.Serializer):
+    count = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
+    status = serializers.ChoiceField(required=False, choices=[
+        'ALL',
+        'PENDING',
+        'ACCEPTED'
+    ])
+    query = serializers.CharField(
+        max_length=settings.SEARCH_QUERIES_MAX_LENGTH,
+        allow_blank=False,
+        required=True
+    )
 
 
 class DeleteUserInviteSerializer(serializers.Serializer):
