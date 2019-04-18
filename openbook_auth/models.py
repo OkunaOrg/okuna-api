@@ -1203,6 +1203,42 @@ class User(AbstractUser):
 
         return User.objects.filter(linked_users_query).distinct()
 
+    def get_followers(self, max_id=None):
+        followers_query = self._make_followers_query()
+
+        if max_id:
+            followers_query.add(Q(id__lt=max_id), Q.AND)
+
+        return User.objects.filter(followers_query).distinct()
+
+    def get_following(self, max_id=None):
+        following_query = self._make_following_query()
+
+        if max_id:
+            following_query.add(Q(id__lt=max_id), Q.AND)
+
+        return User.objects.filter(following_query).distinct()
+
+    def search_followers_with_query(self, query):
+        followers_query = Q(follows__followed_user_id=self.pk)
+
+        names_query = Q(username__icontains=query)
+        names_query.add(Q(profile__name__icontains=query), Q.OR)
+
+        followers_query.add(names_query, Q.AND)
+
+        return User.objects.filter(followers_query).distinct()
+
+    def search_following_with_query(self, query):
+        following_query = Q(followers__user_id=self.pk)
+
+        names_query = Q(username__icontains=query)
+        names_query.add(Q(profile__name__icontains=query), Q.OR)
+
+        following_query.add(names_query, Q.AND)
+
+        return User.objects.filter(following_query).distinct()
+
     def search_communities_with_query(self, query):
         # In the future, the user might have blocked communities which should not be displayed
         Community = get_community_model()
@@ -1793,13 +1829,21 @@ class User(AbstractUser):
         linked_users_query = Q(circles__connections__target_connection__user_id=self.pk,
                                circles__connections__target_connection__circles__isnull=False)
 
+        followers_query = self._make_followers_query()
+
         # All users following us
-        linked_users_query.add(Q(follows__followed_user_id=self.pk), Q.OR)
+        linked_users_query.add(followers_query, Q.OR)
 
         if max_id:
             linked_users_query.add(Q(id__lt=max_id), Q.AND)
 
         return linked_users_query
+
+    def _make_followers_query(self):
+        return Q(follows__followed_user_id=self.pk)
+
+    def _make_following_query(self):
+        return Q(followers__user_id=self.pk)
 
     def _make_get_post_with_id_query_for_user(self, user, post_id):
         posts_query = self._make_get_posts_query_for_user(user)
