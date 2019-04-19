@@ -1,8 +1,9 @@
 from django.conf import settings
 from rest_framework import serializers
 from openbook.settings import PROFILE_NAME_MAX_LENGTH
+from openbook_common.models import Badge
 from openbook_invitations.models import UserInvite
-from openbook_auth.models import User
+from openbook_auth.models import User, UserProfile
 from openbook_invitations.validators import invite_id_exists, check_invite_not_used
 
 
@@ -13,13 +14,44 @@ class CreateUserInviteSerializer(serializers.Serializer):
         allow_blank=False)
 
 
+class BadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Badge
+        fields = (
+            'keyword',
+            'keyword_description'
+        )
+
+
+class InvitedUserProfileSerializer(serializers.ModelSerializer):
+    avatar = serializers.ImageField(max_length=None, use_url=True, allow_null=True, required=False)
+    badges = BadgeSerializer(many=True)
+
+    class Meta:
+        model = UserProfile
+        fields = (
+            'id',
+            'name',
+            'avatar',
+            'bio',
+            'url',
+            'location',
+            'cover',
+            'is_of_legal_age',
+            'followers_count_visible',
+            'badges'
+        )
+
+
 class InvitedUserSerializer(serializers.ModelSerializer):
+    profile = InvitedUserProfileSerializer()
 
     class Meta:
         model = User
         fields = (
             'id',
-            'username'
+            'username',
+            'profile'
         )
 
 
