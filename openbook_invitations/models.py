@@ -93,7 +93,7 @@ class UserInvite(models.Model):
 
     def send_invite_email(self):
         if self.invited_by:
-            mail_subject = _('You\'ve been invited by {0} to join Openbook').format(self.invited_by.profile.name)
+            mail_subject = _('You\'ve been invited to join Openbook')
             text_message_content = render_to_string('openbook_invitations/email/user_invite.txt', {
                 'name': self.name,
                 'invited_by_name': self.invited_by.profile.name,
@@ -101,6 +101,7 @@ class UserInvite(models.Model):
             })
             html_message_content = render_to_string('openbook_invitations/email/user_invite.html', {
                 'name': self.name,
+                'invited_by_name': self.invited_by.profile.name,
                 'invite_link': self._generate_one_time_link()
             })
         else:
