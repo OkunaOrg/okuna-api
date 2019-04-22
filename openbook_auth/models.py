@@ -1694,7 +1694,7 @@ class User(AbstractUser):
         invite.delete()
 
     def send_invite_to_invite_id_with_email(self, invite_id, email):
-        self._check_can_send_email_invite_to_invite_id(invite_id)
+        self._check_can_send_email_invite_to_invite_id(invite_id, email)
         UserInvite = get_user_invite_model()
         invite = UserInvite.objects.get(id=invite_id)
         invite.email = email
@@ -1711,8 +1711,12 @@ class User(AbstractUser):
     def _check_can_update_invite(self, invite_id):
         self._check_is_creator_of_invite_with_id(invite_id)
 
-    def _check_can_send_email_invite_to_invite_id(self, invite_id):
+    def _check_can_send_email_invite_to_invite_id(self, invite_id, email):
         self._check_is_creator_of_invite_with_id(invite_id)
+        UserInvite = get_user_invite_model()
+        invite = UserInvite.objects.get(id=invite_id)
+        if invite.email == email:
+            raise ValidationError(_('Invite email already sent to this address'))
 
     def _check_can_delete_invite_with_id(self, invite_id):
         self._check_is_creator_of_invite_with_id(invite_id)

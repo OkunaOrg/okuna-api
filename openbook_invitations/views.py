@@ -136,8 +136,9 @@ class SendUserInviteEmail(APIView):
         with transaction.atomic():
             try:
                 user.send_invite_to_invite_id_with_email(invite_id, email)
-            except Exception as e:
+            except SMTPException as e:
                 print('Exception occurred during send_invite_email', e)
-                raise SMTPException(_('An error occurred sending the invite, please try again later'))
+                return ApiMessageResponse(_('An error occurred sending the invite, please try again later'),
+                                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return ApiMessageResponse(_('Invite email sent'), status=status.HTTP_200_OK)
