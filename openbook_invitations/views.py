@@ -1,7 +1,9 @@
 from smtplib import SMTPException
+import logging
 
 from django.db import transaction
 from django.utils.translation import ugettext_lazy as _
+from rest_framework.exceptions import APIException
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -16,6 +18,9 @@ from openbook_common.responses import ApiMessageResponse
 INVITE_STATUS_ALL = 'ALL'
 INVITE_STATUS_PENDING = 'PENDING'
 INVITE_STATUS_ACCEPTED = 'ACCEPTED'
+
+logger = logging.getLogger(__name__)
+
 
 class UserInvites(APIView):
     permission_classes = (IsAuthenticated,)
@@ -43,16 +48,10 @@ class UserInvites(APIView):
 
         count = data.get('count', 10)
         offset = data.get('offset', 0)
-        filter_status = data.get('status', INVITE_STATUS_ALL)
+        filter_status = data.get('pending', None)
 
         user = request.user
-        user_invites = []
-        if filter_status == INVITE_STATUS_ALL:
-            user_invites = user.get_user_invites().order_by('-pk')[offset:offset + count]
-        elif filter_status == INVITE_STATUS_PENDING:
-            user_invites = user.get_user_invites(status_pending=True).order_by('-pk')[offset:offset + count]
-        elif filter_status == INVITE_STATUS_ACCEPTED:
-            user_invites = user.get_user_invites(status_accepted=True).order_by('-pk')[offset:offset + count]
+        user_invites = user.get_user_invites(status_pending=filter_status).order_by('-pk')[offset:offset + count]
 
         response_serializer = GetUserInviteSerializer(user_invites, many=True, context={"request": request})
 
@@ -71,16 +70,10 @@ class SearchUserInvites(APIView):
 
         count = data.get('count', 10)
         query = data.get('query')
-        filter_status = data.get('status', INVITE_STATUS_ALL)
+        filter_status = data.get('pending', None)
 
         user = request.user
-        user_invites = []
-        if filter_status == INVITE_STATUS_ALL:
-            user_invites = user.search_user_invites().order_by('-pk')[:count]
-        elif filter_status == INVITE_STATUS_PENDING:
-            user_invites = user.search_user_invites(status_pending=True, query=query).order_by('-pk')[:count]
-        elif filter_status == INVITE_STATUS_ACCEPTED:
-            user_invites = user.search_user_invites(status_accepted=True, query=query).order_by('-pk')[:count]
+        user_invites = user.search_user_invites(status_pending=filter_status, query=query).order_by('-pk')[:count]
 
         response_serializer = GetUserInviteSerializer(user_invites, many=True, context={"request": request})
 
@@ -137,8 +130,7 @@ class SendUserInviteEmail(APIView):
             try:
                 user.send_invite_to_invite_id_with_email(invite_id, email)
             except SMTPException as e:
-                print('Exception occurred during send_invite_email', e)
-                return ApiMessageResponse(_('An error occurred sending the invite, please try again later'),
-                                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                logger.exception('Exception occurred during send_invite_email', e)
+                raise APIException(_('An error occurred sending the invite, please try again'))
 
         return ApiMessageResponse(_('Invite email sent'), status=status.HTTP_200_OK)

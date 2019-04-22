@@ -79,11 +79,7 @@ class GetUserInvitesSerializer(serializers.Serializer):
     offset = serializers.IntegerField(
         required=False,
     )
-    status = serializers.ChoiceField(required=False, choices=[
-        'ALL',
-        'PENDING',
-        'ACCEPTED'
-    ])
+    pending = serializers.BooleanField(required=False)
 
 
 class SearchUserInvitesSerializer(serializers.Serializer):
@@ -91,11 +87,7 @@ class SearchUserInvitesSerializer(serializers.Serializer):
         required=False,
         max_value=20
     )
-    status = serializers.ChoiceField(required=False, choices=[
-        'ALL',
-        'PENDING',
-        'ACCEPTED'
-    ])
+    pending = serializers.BooleanField(required=False)
     query = serializers.CharField(
         max_length=settings.SEARCH_QUERIES_MAX_LENGTH,
         allow_blank=False,

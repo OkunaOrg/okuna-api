@@ -1761,25 +1761,21 @@ class User(AbstractUser):
         invite.save()
         return invite
 
-    def get_user_invites(self, status_accepted=None, status_pending=None):
+    def get_user_invites(self, status_pending=None):
         invites_query = Q(invited_by=self)
         UserInvite = get_user_invite_model()
 
-        if status_accepted:
-            invites_query.add(Q(created_user__isnull=False), Q.AND)
-        elif status_pending:
-            invites_query.add(Q(created_user__isnull=True), Q.AND)
+        if status_pending is not None:
+            invites_query.add(Q(created_user__isnull=status_pending), Q.AND)
 
         return UserInvite.objects.filter(invites_query)
 
-    def search_user_invites(self, query, status_accepted=None, status_pending=None):
+    def search_user_invites(self, query, status_pending=None):
         invites_query = Q(invited_by=self, nickname__icontains=query)
         UserInvite = get_user_invite_model()
 
-        if status_accepted:
-            invites_query.add(Q(created_user__isnull=False), Q.AND)
-        elif status_pending:
-            invites_query.add(Q(created_user__isnull=True), Q.AND)
+        if status_pending is not None:
+            invites_query.add(Q(created_user__isnull=status_pending), Q.AND)
 
         return UserInvite.objects.filter(invites_query)
 

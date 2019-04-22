@@ -127,7 +127,7 @@ class UserInvitesAPITests(APITestCase):
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
         response = self.client.get(url, {
-            'status': 'ACCEPTED'
+            'pending': False
         }, **headers)
 
         parsed_response = json.loads(response.content)
@@ -158,7 +158,7 @@ class UserInvitesAPITests(APITestCase):
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
         response = self.client.get(url, {
-            'status': 'PENDING'
+            'pending': True
         }, **headers)
 
         parsed_response = json.loads(response.content)
@@ -226,7 +226,7 @@ class UserInviteSearchAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
         response = self.client.get(url, {
             'query': search,
-            'status': 'PENDING'
+            'pending': True
         }, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
