@@ -24,18 +24,18 @@
         },
         "boto3": {
             "hashes": [
-                "sha256:bb69628f933a8dba22817c85289b3421b23ac643ff3202b13dd2e933c2717109",
-                "sha256:c75c45bae9dbdb2ff3fc3482d421a3901e552574a882dba1cffa064715acfbe7"
+                "sha256:883f7143bcb081a834f7c09659524059b66745ea043fffd40420e88ef0143feb",
+                "sha256:9c789a775f0499743b083ffd63e0e87dae9a727511bb37f2529da52ccd25a360"
             ],
             "index": "pypi",
-            "version": "==1.9.130"
+            "version": "==1.9.134"
         },
         "botocore": {
             "hashes": [
-                "sha256:128130b12f8ba4bf07a673b119135264060eb98f6a4a7419cbd1f2c6dc926827",
-                "sha256:59376112fdee707927b644dd44a1771861f8fe354a48d596131ced83d7a3c05b"
+                "sha256:5c4d9ea1b0fbb1dc98b6a06ed8780096fca981a1c3599bf8f03f338e6aa389ae",
+                "sha256:c59a74539eb081f4b3a307fc5c3d69d8459e30bfaf4b94aa78e74a9a05583764"
             ],
-            "version": "==1.12.130"
+            "version": "==1.12.134"
         },
         "certifi": {
             "hashes": [
@@ -223,10 +223,10 @@
         },
         "funcy": {
             "hashes": [
-                "sha256:b2d424c83cf8e0b6e90708e7325bbd6240008993479e7c273f53d8b220d18f1e",
-                "sha256:b5e399eb739afcb5a3ad38302b7817f6e7fee6f5fc79b213a5d82ea8bce0d9e6"
+                "sha256:3f3fb0387c6083ac692a8ac90565a08c257cc4283dc3b136c15bcb3a3d80ab6d",
+                "sha256:49035d5b23d01ff8b6aac15c61ce0d86f4c7ebb383763358b2aa86977e83b7a6"
             ],
-            "version": "==1.11"
+            "version": "==1.12"
         },
         "gitdb2": {
             "hashes": [
@@ -508,11 +508,11 @@
         },
         "urllib3": {
             "hashes": [
-                "sha256:61bf29cada3fc2fbefad4fdf059ea4bd1b4a86d2b6d15e1c7c0b582b9752fe39",
-                "sha256:de9529817c93f27c8ccbfead6985011db27bd0ddfcdb2d86f3f663385c6a9c22"
+                "sha256:4c291ca23bbb55c76518905869ef34bdd5f0e46af7afe6861e8375643ffee1a0",
+                "sha256:9a247273df709c4fedb38c711e44292304f73f39ab01beda9f6b9fc375669ac3"
             ],
             "markers": "python_version >= '3.4'",
-            "version": "==1.24.1"
+            "version": "==1.24.2"
         }
     },
     "develop": {}
