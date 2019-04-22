@@ -8,6 +8,7 @@ from openbook_auth.models import User, UserProfile
 from openbook_categories.models import Category
 from openbook_circles.models import Circle
 from openbook_common.models import Emoji, EmojiGroup, Badge
+from openbook_communities.models import Community
 from openbook_devices.models import Device
 from openbook_notifications.models import Notification
 
@@ -163,7 +164,7 @@ def make_community_invites_enabled():
     return fake.boolean()
 
 
-def make_community(creator, type='P'):
+def make_community(creator, type=Community.COMMUNITY_TYPE_PUBLIC):
     community = creator.create_community(name=make_community_name(), title=make_community_title(), type=type,
                                          color=fake.hex_color(), description=make_community_description(),
                                          rules=make_community_rules(), user_adjective=make_community_user_adjective(),
@@ -171,6 +172,10 @@ def make_community(creator, type='P'):
                                          categories_names=[make_category().name],
                                          invites_enabled=make_community_invites_enabled())
     return community
+
+
+def make_private_community(creator):
+    return make_community(creator=creator, type=Community.COMMUNITY_TYPE_PRIVATE)
 
 
 def make_notification(owner):

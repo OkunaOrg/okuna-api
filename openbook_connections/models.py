@@ -11,6 +11,10 @@ class Connection(models.Model):
 
     class Meta:
         unique_together = ('user', 'target_user')
+        index_together = [
+            ('target_user', 'target_connection'),
+            ('target_user', 'id'),
+        ]
 
     @classmethod
     def create_connection(cls, user_id, target_user_id, circles_ids):

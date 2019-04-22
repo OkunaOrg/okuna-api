@@ -2,11 +2,10 @@ from rest_framework import serializers
 
 from django.conf import settings
 from openbook_auth.models import User, UserProfile
-from openbook_auth.serializers import BadgeSerializer
 from openbook_auth.validators import user_username_exists, username_characters_validator
 from openbook_circles.models import Circle
 from openbook_circles.validators import circle_id_exists
-from openbook_common.models import Emoji
+from openbook_common.models import Emoji, Badge
 from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, ReactionsEmojiCountField, \
     CirclesField, PostCreatorField, IsMutedField, IsEncircledField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
@@ -26,6 +25,9 @@ class GetPostsSerializer(serializers.Serializer):
         child=serializers.IntegerField(validators=[list_id_exists])
     )
     max_id = serializers.IntegerField(
+        required=False,
+    )
+    min_id = serializers.IntegerField(
         required=False,
     )
     count = serializers.IntegerField(
@@ -54,8 +56,17 @@ class CreatePostSerializer(serializers.Serializer):
     )
 
 
+class PostCreatorProfileBadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Badge
+        fields = (
+            'keyword',
+            'keyword_description'
+        )
+
+
 class PostCreatorProfileSerializer(serializers.ModelSerializer):
-    badges = BadgeSerializer(many=True)
+    badges = PostCreatorProfileBadgeSerializer(many=True)
 
     class Meta:
         model = UserProfile
@@ -164,12 +175,10 @@ class PostCommunitySerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'name',
-            'title',
-            'color',
             'avatar',
+            'title',
             'cover',
-            'user_adjective',
-            'users_adjective',
+            'color',
             'memberships',
         )
 

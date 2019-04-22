@@ -20,6 +20,7 @@ from openbook_circles.models import Circle
 from openbook_common.tests.helpers import make_user, make_users, make_fake_post_text, \
     make_authentication_headers_for_user, make_circle, make_community
 from openbook_lists.models import List
+from openbook_posts.models import Post
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -591,6 +592,70 @@ class PostsAPITests(APITestCase):
             self.assertIn(response_post_id, all_posts_ids)
             self.assertTrue(response_post_id < max_id)
 
+    def test_get_all_posts_with_min_id_and_count(self):
+        """
+        should be able to retrieve all posts with a min id and count
+        """
+        user = mixer.blend(User)
+        auth_token = user.auth_token.key
+
+        amount_of_own_posts = 10
+
+        user_posts_ids = []
+        for i in range(amount_of_own_posts):
+            post = user.create_public_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
+            user_posts_ids.append(post.pk)
+
+        amount_of_users_to_follow = 5
+
+        lists_to_follow_in = mixer.cycle(amount_of_users_to_follow).blend(List, creator=user)
+
+        users_to_follow = mixer.cycle(amount_of_users_to_follow).blend(User)
+        users_to_follow_posts_ids = []
+
+        for index, user_to_follow in enumerate(users_to_follow):
+            user.follow_user(user_to_follow, lists_ids=[lists_to_follow_in[index].pk])
+            post = user_to_follow.create_public_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
+            users_to_follow_posts_ids.append(post.pk)
+
+        amount_of_users_to_connect = 5
+
+        circles_to_connect_in = mixer.cycle(amount_of_users_to_connect).blend(Circle, creator=user)
+
+        users_to_connect = mixer.cycle(amount_of_users_to_connect).blend(User)
+        users_to_connect_posts_ids = []
+
+        for index, user_to_connect in enumerate(users_to_connect):
+            user.connect_with_user_with_id(user_to_connect.pk, circles_ids=[circles_to_connect_in[index].pk])
+            post = user_to_connect.create_public_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
+            users_to_connect_posts_ids.append(post.pk)
+
+        headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
+
+        all_posts_ids = users_to_connect_posts_ids + users_to_follow_posts_ids + user_posts_ids
+
+        url = self._get_url()
+
+        min_id = 10
+
+        count = 3
+
+        response = self.client.get(url, {
+            'count': count,
+            'min_id': min_id
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(count, len(response_posts))
+
+        for response_post in response_posts:
+            response_post_id = response_post.get('id')
+            self.assertIn(response_post_id, all_posts_ids)
+            self.assertTrue(response_post_id > min_id)
+
     def test_get_all_public_posts_for_unconnected_user(self):
         """
         should be able to retrieve all the public posts of an unconnected user
@@ -995,6 +1060,73 @@ class PostsAPITests(APITestCase):
 
         for post_id in posts_ids:
             self.assertIn(post_id, response_posts_ids)
+
+    def test_can_retrieve_own_community_post(self):
+        """
+        should be able to retrieve an own post posted to a community
+        """
+        user = make_user()
+
+        community_creator = make_user()
+
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+
+        post_text = make_fake_post_text()
+
+        user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(1, len(response_posts))
+
+        response_post = response_posts[0]
+
+        response_post_id = response_post['id']
+
+        retrieved_post = Post.objects.get(pk=response_post_id)
+
+        self.assertEqual(retrieved_post.community_id, community.pk)
+        self.assertTrue(retrieved_post.text, post_text)
+
+    def test_does_not_retrieve_duplicate_connections_posts_when_multiple_circles(self):
+        """
+        should not retrieve duplicate connections posts when posted to multiple circles
+        """
+        user = make_user()
+        user_to_connect_to = make_user()
+
+        circle = make_circle(creator=user)
+
+        user.connect_with_user_with_id(user_id=user_to_connect_to.pk, circles_ids=[circle.pk])
+
+        user_to_connect_to.confirm_connection_with_user_with_id(user_id=user.pk, )
+
+        post = user.create_encircled_post(text=make_fake_post_text(),
+                                          circles_ids=[circle.pk, user.connections_circle_id])
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(1, len(response_posts))
+
+        response_post = response_posts[0]
+
+        self.assertEqual(response_post['id'], post.pk)
 
     def _get_url(self):
         return reverse('posts')

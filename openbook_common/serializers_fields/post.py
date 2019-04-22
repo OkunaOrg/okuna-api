@@ -1,6 +1,7 @@
 from rest_framework.fields import Field
 
 from openbook_common.utils.model_loaders import get_post_model
+from openbook_communities.models import CommunityMembership
 from openbook_posts.models import PostReaction
 
 
@@ -43,7 +44,7 @@ class CommentsCountField(Field):
             if post.public_comments:
                 comments_count = post.count_comments()
         else:
-            comments_count = request_user.get_comments_count_for_post_with_id(post.pk)
+            comments_count = request_user.get_comments_count_for_post(post=post)
 
         return comments_count
 
@@ -85,7 +86,8 @@ class CirclesField(Field):
         request = self.context.get('request')
         request_user = request.user
         circles = []
-        if request_user.has_post_with_id(post.pk):
+
+        if post.creator_id == request_user.pk:
             circles = post.circles
 
         return self.circle_serializer(circles, many=True, context={"request": request, 'post': post}).data
@@ -108,12 +110,17 @@ class PostCreatorField(Field):
         post_creator_serializer = self.post_creator_serializer(post_creator, context={"request": request}).data
 
         if post_community:
-            post_creator_memberships = post_community.memberships.filter(user=post_creator).all()
-            post_creator_serializer['communities_memberships'] = self.community_membership_serializer(
-                post_creator_memberships,
-                many=True,
-                context={
-                    "request": request}).data
+            try:
+                post_creator_membership = post_community.memberships.get(user_id=post_creator.pk)
+                post_creator_serializer['communities_memberships'] = [
+                    self.community_membership_serializer(
+                        post_creator_membership,
+                        many=False,
+                        context={
+                            "request": request}).data
+                ]
+            except CommunityMembership.DoesNotExist:
+                pass
 
         return post_creator_serializer
 

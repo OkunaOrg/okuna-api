@@ -101,7 +101,7 @@ class User(AbstractUser):
             return False
 
     @classmethod
-    def get_public_posts_for_user_with_username(cls, username, max_id=None):
+    def get_public_posts_for_user_with_username(cls, username, max_id=None, min_id=None):
         Circle = get_circle_model()
         world_circle_id = Circle.get_world_circle_id()
 
@@ -109,6 +109,8 @@ class User(AbstractUser):
 
         if max_id:
             final_query.add(Q(id__lt=max_id), Q.AND)
+        elif min_id:
+            final_query.add(Q(id__gt=min_id), Q.AND)
 
         Post = get_post_model()
         result = Post.objects.filter(final_query)
@@ -369,13 +371,12 @@ class User(AbstractUser):
         return self.is_connected_with_user_with_id(user.pk)
 
     def is_connected_with_user_with_id(self, user_id):
-        return self.connections.select_related('target_connection__user_id').filter(
+        return self.connections.filter(
             target_connection__user_id=user_id).exists()
 
     def is_connected_with_user_with_username(self, username):
-        count = self.connections.select_related('target_connection__user__username').filter(
-            target_connection__user__username=username).count()
-        return count > 0
+        return self.connections.filter(
+            target_connection__user__username=username).exists()
 
     def is_connected_with_user_in_circle(self, user, circle):
         return self.is_connected_with_user_with_id_in_circle_with_id(user.pk, circle.pk)
@@ -410,7 +411,7 @@ class User(AbstractUser):
     def is_following_user_with_id_in_list_with_id(self, user_id, list_id):
         return self.follows.filter(
             followed_user_id=user_id,
-            lists__id=list_id).count() == 1
+            lists__id=list_id).exists()
 
     def is_world_circle_id(self, id):
         world_circle_id = self._get_world_circle_id()
@@ -435,7 +436,7 @@ class User(AbstractUser):
         return self.circles.filter(id__in=circles_ids).count() == len(circles_ids)
 
     def has_list_with_id(self, list_id):
-        return self.lists.filter(id=list_id).count() > 0
+        return self.lists.filter(id=list_id).exists()
 
     def has_invited_user_with_username_to_community_with_name(self, username, community_name):
         return self.created_communities_invites.filter(invited_user__username=username,
@@ -468,7 +469,7 @@ class User(AbstractUser):
         return self.favorite_communities.filter(name=community_name).exists()
 
     def has_list_with_name(self, list_name):
-        return self.lists.filter(name=list_name).count() > 0
+        return self.lists.filter(name=list_name).exists()
 
     def has_lists_with_ids(self, lists_ids):
         return self.lists.filter(id__in=lists_ids).count() == len(lists_ids)
@@ -479,7 +480,7 @@ class User(AbstractUser):
         if emoji_id:
             has_reacted_query.add(Q(emoji_id=emoji_id), Q.AND)
 
-        return self.post_reactions.filter(has_reacted_query).count() > 0
+        return self.post_reactions.filter(has_reacted_query).exists()
 
     def has_commented_post_with_id(self, post_id):
         return self.posts_comments.filter(post_id=post_id).exists()
@@ -510,6 +511,21 @@ class User(AbstractUser):
     def has_connection_confirmed_notifications_enabled(self):
         return self.notifications_settings.connection_confirmed_notifications
 
+    def can_see_post(self, post):
+        # Check if post is public
+        if post.creator_id == self.pk or post.is_public_post():
+            return True
+
+        if post.community:
+            if self.get_community_post_with_id(post_id=post.pk).exists():
+                return True
+        else:
+            # Check if we can retrieve the post
+            if self._can_see_post(post=post):
+                return True
+
+        return False
+
     def get_lists_for_follow_for_user_with_id(self, user_id):
         self._check_is_following_user_with_id(user_id)
         follow = self.get_follow_for_user_with_id(user_id)
@@ -524,12 +540,18 @@ class User(AbstractUser):
         return self.post_reactions.filter(post_id=post_id).get()
 
     def get_reactions_for_post_with_id(self, post_id, max_id=None, emoji_id=None):
-        self._check_can_get_reactions_for_post_with_id(post_id)
-        reactions_query = Q(post_id=post_id)
         Post = get_post_model()
+        post = Post.objects.get(pk=post_id)
+
+        return self.get_reactions_for_post(post=post, max_id=max_id, emoji_id=emoji_id)
+
+    def get_reactions_for_post(self, post, max_id=None, emoji_id=None):
+        self._check_can_get_reactions_for_post(post=post)
+
+        reactions_query = Q(post_id=post.pk)
 
         # If reactions are private, return only own reactions
-        if not Post.post_with_id_has_public_reactions(post_id):
+        if not post.public_reactions:
             reactions_query = Q(reactor_id=self.pk)
 
         if max_id:
@@ -555,28 +577,36 @@ class User(AbstractUser):
         return PostReaction.count_reactions_for_post_with_id(post_id, commenter_id=commenter_id)
 
     def get_emoji_counts_for_post_with_id(self, post_id, emoji_id=None):
-        self._check_can_get_reactions_for_post_with_id(post_id)
         Post = get_post_model()
+        post = Post.objects.get(pk=post_id)
+        return self.get_emoji_counts_for_post(post=post, emoji_id=emoji_id)
 
+    def get_emoji_counts_for_post(self, post, emoji_id=None):
+        self._check_can_get_reactions_for_post(post)
         reactor_id = None
 
         # If reactions are private count only own reactions
-        if not Post.post_with_id_has_public_reactions(post_id):
+        if not post.public_reactions:
             reactor_id = self.pk
 
-        return Post.get_emoji_counts_for_post_with_id(post_id, emoji_id=emoji_id, reactor_id=reactor_id)
+        return post.get_emoji_counts(emoji_id=emoji_id, reactor_id=reactor_id)
 
     def react_to_post_with_id(self, post_id, emoji_id, emoji_group_id):
-        self._check_can_react_to_post_with_id(post_id)
+        Post = get_post_model()
+        post = Post.objects.get(pk=post_id)
+        return self.react_to_post(post=post, emoji_id=emoji_id, emoji_group_id=emoji_group_id)
+
+    def react_to_post(self, post, emoji_id, emoji_group_id):
+        self._check_can_react_to_post(post=post)
         self._check_can_react_with_emoji_id_and_emoji_group_id(emoji_id, emoji_group_id)
+
+        post_id = post.pk
 
         if self.has_reacted_to_post_with_id(post_id):
             post_reaction = self.post_reactions.get(post_id=post_id)
             post_reaction.emoji_id = emoji_id
             post_reaction.save()
         else:
-            Post = get_post_model()
-            post = Post.objects.filter(pk=post_id).get()
             post_reaction = post.react(reactor=self, emoji_id=emoji_id)
             if post_reaction.post.creator_id != self.pk:
                 # TODO Refactor. This check is being done twice. (Also in _send_post_reaction_push_notification)
@@ -594,6 +624,7 @@ class User(AbstractUser):
         post_reaction.delete()
 
     def get_comments_for_post_with_id(self, post_id, min_id=None, max_id=None):
+        self._check_can_get_comments_for_post_with_id(post_id=post_id)
         comments_query = Q(post_id=post_id)
 
         if max_id:
@@ -610,33 +641,40 @@ class User(AbstractUser):
         return PostComment.objects.filter(comments_query)
 
     def get_comments_count_for_post_with_id(self, post_id):
-        commenter_id = None
-
         Post = get_post_model()
 
+        post = Post.objects.get(pk=post_id)
+
+        return self.get_comments_count_for_post(post=post)
+
+    def get_comments_count_for_post(self, post):
+        commenter_id = None
         # If comments are private, count only own comments
         # TODO If its our post we need to circumvent this too
-        if not Post.post_with_id_has_public_comments(post_id):
+        if not post.public_comments:
             commenter_id = self.pk
 
-        PostComment = get_post_comment_model()
-
-        return PostComment.count_comments_for_post_with_id(post_id, commenter_id=commenter_id)
+        return post.count_comments(commenter_id=commenter_id)
 
     def comment_post_with_id(self, post_id, text):
-        self._check_can_comment_in_post_with_id(post_id)
         Post = get_post_model()
         post = Post.objects.filter(pk=post_id).get()
+        return self.comment_post(post=post, text=text)
+
+    def comment_post(self, post, text):
+        self._check_can_comment_in_post(post)
         post_comment = post.comment(text=text, commenter=self)
         post_creator = post.creator
         post_commenter = self
 
+        Post = get_post_model()
         post_notification_target_users = Post.get_post_comment_notification_target_users(post_id=post.id,
                                                                                          post_commenter_id=self.pk)
         PostCommentNotification = get_post_comment_notification_model()
 
         for post_notification_target_user in post_notification_target_users:
-
+            if not post_notification_target_user.can_see_post(post=post):
+                continue
             post_notification_target_user_is_post_creator = post_notification_target_user.id == post_creator.id
             post_notification_target_has_comment_notifications_enabled = post_notification_target_user.has_comment_notifications_enabled_for_post_with_id(
                 post_id=post_comment.post_id)
@@ -1181,6 +1219,42 @@ class User(AbstractUser):
 
         return User.objects.filter(linked_users_query).distinct()
 
+    def get_followers(self, max_id=None):
+        followers_query = self._make_followers_query()
+
+        if max_id:
+            followers_query.add(Q(id__lt=max_id), Q.AND)
+
+        return User.objects.filter(followers_query).distinct()
+
+    def get_followings(self, max_id=None):
+        followings_query = self._make_followings_query()
+
+        if max_id:
+            followings_query.add(Q(id__lt=max_id), Q.AND)
+
+        return User.objects.filter(followings_query).distinct()
+
+    def search_followers_with_query(self, query):
+        followers_query = Q(follows__followed_user_id=self.pk)
+
+        names_query = Q(username__icontains=query)
+        names_query.add(Q(profile__name__icontains=query), Q.OR)
+
+        followers_query.add(names_query, Q.AND)
+
+        return User.objects.filter(followers_query).distinct()
+
+    def search_followings_with_query(self, query):
+        followings_query = Q(followers__user_id=self.pk)
+
+        names_query = Q(username__icontains=query)
+        names_query.add(Q(profile__name__icontains=query), Q.OR)
+
+        followings_query.add(names_query, Q.AND)
+
+        return User.objects.filter(followings_query).distinct()
+
     def search_communities_with_query(self, query):
         # In the future, the user might have blocked communities which should not be displayed
         Community = get_community_model()
@@ -1281,9 +1355,9 @@ class User(AbstractUser):
         return profile_posts
 
     def get_post_with_id(self, post_id):
-        self._check_can_see_post_with_id(post_id=post_id)
         Post = get_post_model()
         post = Post.objects.get(pk=post_id)
+        self._check_can_see_post(post=post)
         return post
 
     def get_community_post_with_id(self, post_id):
@@ -1332,17 +1406,17 @@ class User(AbstractUser):
 
         return profile_posts
 
-    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None):
+    def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None, min_id=None, count=None):
         """
         Get the timeline posts for self. The results will be dynamic based on follows and connections.
         """
 
         if not circles_ids and not lists_ids:
-            return self._get_timeline_posts_with_no_filters(max_id=max_id)
+            return self._get_timeline_posts_with_no_filters(max_id=max_id, min_id=min_id, count=count)
 
         return self._get_timeline_posts_with_filters(max_id=max_id, circles_ids=circles_ids, lists_ids=lists_ids)
 
-    def _get_timeline_posts_with_filters(self, max_id=None, circles_ids=None, lists_ids=None):
+    def _get_timeline_posts_with_filters(self, max_id=None, min_id=None, circles_ids=None, lists_ids=None):
         world_circle_id = self._get_world_circle_id()
 
         if circles_ids:
@@ -1355,7 +1429,7 @@ class User(AbstractUser):
         else:
             followed_users_query = self.follows.all()
 
-        followed_users = followed_users_query.values('followed_user__id')
+        followed_users = followed_users_query.values('followed_user__id').cache()
 
         for followed_user in followed_users:
 
@@ -1378,45 +1452,66 @@ class User(AbstractUser):
 
         if max_id:
             timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
+        elif min_id:
+            timeline_posts_query.add(Q(id__gt=min_id), Q.AND)
 
         Post = get_post_model()
         return Post.objects.filter(timeline_posts_query).distinct()
 
-    def _get_timeline_posts_with_no_filters(self, max_id=None):
+    def _get_timeline_posts_with_no_filters(self, max_id=None, min_id=None, count=10):
         """
         Being the main action of the network, an optimised call of the get timeline posts call with no filtering.
         """
         world_circle_id = self._get_world_circle_id()
 
-        # Add all own posts
-        timeline_posts_query = Q(creator=self.pk)
+        Post = get_post_model()
 
-        # Add all community posts
-        timeline_posts_query.add(Q(community__memberships__user__id=self.pk), Q.OR)
+        posts_select_related = ('creator', 'creator__profile', 'community', 'image')
 
-        followed_users = self.follows.values('followed_user__id')
+        posts_prefetch_related = ('circles', 'creator__profile__badges')
 
-        for followed_user in followed_users:
-            followed_user_id = followed_user['followed_user__id']
+        posts_only = ('text', 'id', 'uuid', 'created', 'image__width', 'image__height', 'image__image',
+                      'creator__username', 'creator__id', 'creator__profile__name', 'creator__profile__avatar',
+                      'creator__profile__badges__id', 'creator__profile__badges__keyword',
+                      'creator__profile__id', 'community__id', 'community__name', 'community__avatar',
+                      'community__color',
+                      'community__title')
 
-            # Add followed user world circle posts + posts we're encircled with
-
-            followed_user_query = Q(creator_id=followed_user_id)
-
-            followed_user_circles_query = Q(circles__id=world_circle_id)
-
-            followed_user_circles_query.add(Q(circles__connections__target_user_id=self.pk,
-                                              circles__connections__target_connection__circles__isnull=False), Q.OR)
-
-            followed_user_query.add(followed_user_circles_query, Q.AND)
-
-            timeline_posts_query.add(followed_user_query, Q.OR)
+        own_posts_query = Q(creator=self.pk, community__isnull=True)
 
         if max_id:
-            timeline_posts_query.add(Q(id__lt=max_id), Q.AND)
+            own_posts_query.add(Q(id__lt=max_id), Q.AND)
 
-        Post = get_post_model()
-        return Post.objects.filter(timeline_posts_query).distinct()
+        own_posts_queryset = self.posts.select_related(*posts_select_related).prefetch_related(
+            *posts_prefetch_related).only(*posts_only).filter(own_posts_query)
+
+        community_posts_query = Q(community__memberships__user__id=self.pk)
+
+        if max_id:
+            community_posts_query.add(Q(id__lt=max_id), Q.AND)
+
+        community_posts_queryset = Post.objects.select_related(*posts_select_related).prefetch_related(
+            *posts_prefetch_related).only(*posts_only).filter(community_posts_query)
+
+        followed_users = self.follows.values('followed_user_id')
+
+        followed_users_ids = [followed_user['followed_user_id'] for followed_user in followed_users]
+
+        followed_users_query = Q(creator__in=followed_users_ids)
+
+        if max_id:
+            followed_users_query.add(Q(id__lt=max_id), Q.AND)
+
+        followed_users_query.add(
+            Q(circles__id=world_circle_id) | Q(circles__connections__target_connection__circles__isnull=False,
+                                               circles__connections__target_user=self.pk), Q.AND)
+
+        followed_users_queryset = Post.objects.select_related(*posts_select_related).prefetch_related(
+            *posts_prefetch_related).only(*posts_only).filter(followed_users_query)
+
+        final_queryset = own_posts_queryset.union(community_posts_queryset, followed_users_queryset)
+
+        return final_queryset
 
     def follow_user(self, user, lists_ids=None):
         return self.follow_user_with_id(user.pk, lists_ids)
@@ -1633,11 +1728,14 @@ class User(AbstractUser):
         self.devices.all().delete()
 
     def mute_post_with_id(self, post_id):
-        self._check_can_mute_post_with_id(post_id=post_id)
         Post = get_post_model()
-        PostMute = get_post_mute_model()
-        PostMute.create_post_mute(post_id=post_id, muter_id=self.pk)
         post = Post.objects.get(pk=post_id)
+        return self.mute_post(post=post)
+
+    def mute_post(self, post):
+        self._check_can_mute_post(post=post)
+        PostMute = get_post_mute_model()
+        PostMute.create_post_mute(post_id=post.pk, muter_id=self.pk)
         return post
 
     def unmute_post_with_id(self, post_id):
@@ -1833,13 +1931,21 @@ class User(AbstractUser):
         linked_users_query = Q(circles__connections__target_connection__user_id=self.pk,
                                circles__connections__target_connection__circles__isnull=False)
 
+        followers_query = self._make_followers_query()
+
         # All users following us
-        linked_users_query.add(Q(follows__followed_user_id=self.pk), Q.OR)
+        linked_users_query.add(followers_query, Q.OR)
 
         if max_id:
             linked_users_query.add(Q(id__lt=max_id), Q.AND)
 
         return linked_users_query
+
+    def _make_followers_query(self):
+        return Q(follows__followed_user_id=self.pk)
+
+    def _make_followings_query(self):
+        return Q(followers__user_id=self.pk)
 
     def _make_get_post_with_id_query_for_user(self, user, post_id):
         posts_query = self._make_get_posts_query_for_user(user)
@@ -1847,40 +1953,17 @@ class User(AbstractUser):
         return posts_query
 
     def _make_get_posts_query_for_user(self, user, max_id=None):
-        posts_query = Q()
 
-        # Add the user world circle posts
+        posts_query = Q(creator_id=user.pk)
+
         world_circle_id = self._get_world_circle_id()
-        user_world_circle_posts_query = Q(creator_id=user.pk,
-                                          circles__id=world_circle_id)
-        posts_query.add(user_world_circle_posts_query, Q.OR)
 
-        is_fully_connected_with_user = self.is_fully_connected_with_user_with_id(user.pk)
+        posts_circles_query = Q(circles__id=world_circle_id)
 
-        if is_fully_connected_with_user:
-            # Add the user connections circle posts
-            user_connections_circle_query = Q(creator_id=user.pk,
-                                              circles__id=user.connections_circle_id)
+        posts_circles_query.add(Q(circles__connections__target_user_id=self.pk,
+                                  circles__connections__target_connection__circles__isnull=False), Q.OR)
 
-            posts_query.add(user_connections_circle_query, Q.OR)
-
-            # Add the user circled posts we're part of
-            Connection = get_connection_model()
-
-            connection = Connection.objects.prefetch_related(
-                'target_connection__circles'
-            ).filter(
-                user_id=self.pk,
-                target_connection__user_id=user.pk).get()
-
-            target_connection_circles = connection.target_connection.circles.all()
-
-            if target_connection_circles:
-                target_connection_circles_ids = [target_connection_circle.pk for target_connection_circle in
-                                                 target_connection_circles]
-
-                user_encircled_posts_query = Q(creator_id=user.pk, circles__id__in=target_connection_circles_ids)
-                posts_query.add(user_encircled_posts_query, Q.OR)
+        posts_query.add(posts_circles_query, Q.AND)
 
         if max_id:
             posts_query.add(Q(id__lt=max_id), Q.AND)
@@ -2079,29 +2162,29 @@ class User(AbstractUser):
                     )
 
     def _check_can_get_comments_for_post_with_id(self, post_id):
-        self._check_can_see_post_with_id(post_id)
+        self._check_can_see_post_with_id(post_id=post_id)
 
-    def _check_can_comment_in_post_with_id(self, post_id):
-        self._check_can_see_post_with_id(post_id)
+    def _check_can_comment_in_post(self, post):
+        self._check_can_see_post(post)
 
     def _check_can_delete_reaction_with_id_for_post_with_id(self, post_reaction_id, post_id):
         # Check if the post belongs to us
         if self.has_post_with_id(post_id):
             # Check that the comment belongs to the post
             PostReaction = get_post_reaction_model()
-            if PostReaction.objects.filter(id=post_reaction_id, post_id=post_id).count() == 0:
+            if not PostReaction.objects.filter(id=post_reaction_id, post_id=post_id).exists():
                 raise ValidationError(
                     _('That reaction does not belong to the specified post.')
                 )
             return
 
-        if self.post_reactions.filter(id=post_reaction_id).count() == 0:
+        if not self.post_reactions.filter(id=post_reaction_id).exists():
             raise ValidationError(
                 _('Can\'t delete a reaction that does not belong to you.'),
             )
 
-    def _check_can_get_reactions_for_post_with_id(self, post_id):
-        self._check_can_see_post_with_id(post_id)
+    def _check_can_get_reactions_for_post(self, post):
+        self._check_can_see_post(post=post)
 
     def _check_can_react_with_emoji_id_and_emoji_group_id(self, emoji_id, emoji_group_id):
         EmojiGroup = get_emoji_group_model()
@@ -2116,27 +2199,19 @@ class User(AbstractUser):
                 _('Emoji group does not exist or is not a reaction group.'),
             )
 
-    def _check_can_react_to_post_with_id(self, post_id):
-        self._check_can_see_post_with_id(post_id)
+    def _check_can_react_to_post(self, post):
+        self._check_can_see_post(post=post)
 
     def _check_can_see_post_with_id(self, post_id):
-        # Check if post is public
         Post = get_post_model()
-        post = Post.objects.select_related('creator').filter(pk=post_id).get()
-        if post.creator_id == self.pk or post.is_public_post():
-            return
+        post = Post.objects.get(pk=post_id)
+        return self._check_can_see_post(post=post)
 
-        if post.community:
-            if not self.get_community_post_with_id(post_id=post_id).exists():
-                raise ValidationError(
-                    _('This post is from a private community.'),
-                )
-        else:
-            # Check if we can retrieve the post
-            if not self._can_see_post(post=post):
-                raise ValidationError(
-                    _('This post is private.'),
-                )
+    def _check_can_see_post(self, post):
+        if not self.can_see_post(post):
+            raise ValidationError(
+                _('This post is private.'),
+            )
 
     def _can_see_post(self, post):
         post_query = self._make_get_post_with_id_query_for_user(post.creator, post_id=post.pk)
@@ -2644,12 +2719,12 @@ class User(AbstractUser):
                 _('Device not found'),
             )
 
-    def _check_can_mute_post_with_id(self, post_id):
-        if self.has_muted_post_with_id(post_id=post_id):
+    def _check_can_mute_post(self, post):
+        if self.has_muted_post_with_id(post_id=post.pk):
             raise ValidationError(
                 _('Post already muted'),
             )
-        self._check_can_see_post_with_id(post_id=post_id)
+        self._check_can_see_post(post=post)
 
     def _check_can_unmute_post_with_id(self, post_id):
         self._check_has_muted_post_with_id(post_id=post_id)
@@ -2697,6 +2772,7 @@ def bootstrap_circles(sender, instance=None, created=False, **kwargs):
 
 class UserProfile(models.Model):
     name = models.CharField(_('name'), max_length=settings.PROFILE_NAME_MAX_LENGTH, blank=False, null=False,
+                            db_index=True,
                             validators=[name_characters_validator])
     location = models.CharField(_('location'), max_length=settings.PROFILE_LOCATION_MAX_LENGTH, blank=False, null=True)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
@@ -2715,6 +2791,10 @@ class UserProfile(models.Model):
     class Meta:
         verbose_name = _('user profile')
         verbose_name_plural = _('users profiles')
+
+        index_together = [
+            ('id', 'user'),
+        ]
 
     def __repr__(self):
         return '<UserProfile %s>' % self.user.username

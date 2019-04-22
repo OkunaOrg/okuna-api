@@ -26,9 +26,9 @@ from openbook_posts.helpers import upload_to_post_image_directory, upload_to_pos
 
 
 class Post(models.Model):
-    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     text = models.CharField(_('text'), max_length=settings.POST_MAX_LENGTH, blank=False, null=True)
-    created = models.DateTimeField(editable=False)
+    created = models.DateTimeField(editable=False, db_index=True)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
     public_comments = models.BooleanField(_('public comments'), default=True, editable=False, null=False)
     public_reactions = models.BooleanField(_('public reactions'), default=True, editable=False, null=False)
@@ -37,13 +37,19 @@ class Post(models.Model):
                                   blank=False)
     is_edited = models.BooleanField(default=False)
 
+    class Meta:
+        index_together = [
+            ('creator', 'community'),
+        ]
+
+
     @classmethod
     def post_with_id_has_public_comments(cls, post_id):
-        return Post.objects.filter(pk=post_id, public_comments=True).count() == 1
+        return Post.objects.filter(pk=post_id, public_comments=True).exists()
 
     @classmethod
     def post_with_id_has_public_reactions(cls, post_id):
-        return Post.objects.filter(pk=post_id, public_reactions=True).count() == 1
+        return Post.objects.filter(pk=post_id, public_reactions=True).exists()
 
     @classmethod
     def is_post_with_id_a_community_post(cls, post_id):
@@ -99,7 +105,7 @@ class Post(models.Model):
             emoji_query.add(Q(reactions__reactor_id=reactor_id), Q.AND)
 
         emojis = Emoji.objects.filter(emoji_query).annotate(Count('reactions')).distinct().order_by(
-            '-reactions__count').all()
+            '-reactions__count').cache().all()
 
         return [{'emoji': emoji, 'count': emoji.reactions__count} for emoji in emojis]
 
@@ -181,6 +187,9 @@ class Post(models.Model):
     def is_encircled_post(self):
         return not self.is_public_post() and not self.community
 
+    def get_emoji_counts(self, emoji_id=None, reactor_id=None):
+        return Post.get_emoji_counts_for_post_with_id(post_id=self.pk, emoji_id=emoji_id, reactor_id=reactor_id)
+
     def update(self, text=None):
         self._check_can_be_updated(text=text)
         self.text = text
@@ -224,7 +233,7 @@ class PostVideo(models.Model):
 
 class PostComment(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
-    created = models.DateTimeField(editable=False)
+    created = models.DateTimeField(editable=False, db_index=True)
     commenter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_comments')
     text = models.CharField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False)
     is_edited = models.BooleanField(default=False, null=False, blank=False)

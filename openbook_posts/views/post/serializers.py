@@ -2,14 +2,11 @@ from rest_framework import serializers
 from django.conf import settings
 
 from openbook_auth.models import UserProfile, User
-from openbook_auth.serializers import BadgeSerializer
 from openbook_circles.models import Circle
-from openbook_circles.validators import circle_id_exists
-from openbook_common.models import Emoji, EmojiGroup
+from openbook_common.models import Emoji, EmojiGroup, Badge
 from openbook_common.serializers_fields.post import PostCreatorField, ReactionsEmojiCountField, ReactionField, \
     CommentsCountField, CirclesField, IsMutedField
 from openbook_common.serializers_fields.post_comment import PostCommenterField
-from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
 from openbook_common.validators import emoji_id_exists, emoji_group_id_exists
 from openbook_communities.models import CommunityMembership, Community
 from openbook_communities.serializers_fields import CommunityMembershipsField
@@ -293,9 +290,17 @@ class UnmutePostSerializer(serializers.Serializer):
         required=True,
     )
 
+class PostCreatorProfileBadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Badge
+        fields = (
+            'keyword',
+            'keyword_description'
+        )
+
 
 class PostCreatorProfileSerializer(serializers.ModelSerializer):
-    badges = BadgeSerializer(many=True)
+    badges = PostCreatorProfileBadgeSerializer(many=True)
 
     class Meta:
         model = UserProfile

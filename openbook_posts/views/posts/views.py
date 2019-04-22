@@ -61,6 +61,7 @@ class Posts(APIView):
         circles_ids = data.get('circle_id')
         lists_ids = data.get('list_id')
         max_id = data.get('max_id')
+        min_id = data.get('min_id')
         count = data.get('count', 10)
         username = data.get('username')
 
@@ -73,6 +74,7 @@ class Posts(APIView):
                 User = get_user_model()
                 posts = User.get_public_posts_for_user_with_username(
                     max_id=max_id,
+                    min_id=min_id,
                     username=username
                 )
             else:
@@ -81,10 +83,12 @@ class Posts(APIView):
             posts = user.get_timeline_posts(
                 circles_ids=circles_ids,
                 lists_ids=lists_ids,
-                max_id=max_id
+                max_id=max_id,
+                min_id=min_id,
+                count=count
             )
 
-        posts = posts.order_by('-created')[:count]
+        posts = posts.order_by('-id')[:count]
 
         post_serializer_data = AuthenticatedUserPostSerializer(posts, many=True, context={"request": request}).data
 
