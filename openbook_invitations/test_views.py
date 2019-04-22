@@ -11,7 +11,7 @@ from faker import Faker
 import logging
 import json
 
-from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_user_with_invite_count
+from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user
 from openbook_invitations.models import UserInvite
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ class UserInvitesAPITests(APITestCase):
         should be able to create an invite and return 201
         """
         original_invite_count = 5
-        user = make_user_with_invite_count(invite_count=original_invite_count)
+        user = make_user(invite_count=original_invite_count)
         nickname = fake.name()
         data = {
             'nickname': nickname
@@ -71,7 +71,7 @@ class UserInvitesAPITests(APITestCase):
         """
         should not be able to create an invite if no nickname is provided
         """
-        user = make_user_with_invite_count()
+        user = make_user(invite_count=5)
 
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
@@ -85,7 +85,7 @@ class UserInvitesAPITests(APITestCase):
         should be able to get invites list for user
         """
         original_invite_count = 5
-        user = make_user_with_invite_count(invite_count=original_invite_count)
+        user = make_user(invite_count=original_invite_count)
         total_invites = 5
         invited_ids = []
 
@@ -113,7 +113,7 @@ class UserInvitesAPITests(APITestCase):
         get all invites with status accepted
         """
         original_invite_count = 5
-        user = make_user_with_invite_count(invite_count=original_invite_count)
+        user = make_user(invite_count=original_invite_count)
         nickname = fake.name()
         invite = user.create_invite(nickname=nickname)
 
@@ -142,7 +142,7 @@ class UserInvitesAPITests(APITestCase):
         get all invites with status pending
         """
         original_invite_count = 5
-        user = make_user_with_invite_count(invite_count=original_invite_count)
+        user = make_user(invite_count=original_invite_count)
         nickname = fake.name()
         invite = user.create_invite(nickname=nickname)
         pending_invited_ids = []
@@ -173,7 +173,7 @@ class UserInvitesAPITests(APITestCase):
         should be able to get invites list with count and offset for user
         """
         original_invite_count = 5
-        user = make_user_with_invite_count(invite_count=original_invite_count)
+        user = make_user(invite_count=original_invite_count)
         total_invites = 5
         offset = count = 2
         offset_invited_ids = []  # 1 2 3 4 5
@@ -212,7 +212,7 @@ class UserInviteSearchAPITests(APITestCase):
         should be able to get invites with search
         """
         original_invite_count = 5
-        user = make_user_with_invite_count(invite_count=original_invite_count)
+        user = make_user(invite_count=original_invite_count)
         total_invites = 5
         invites = []
 
@@ -248,7 +248,7 @@ class UserInviteItemAPITests(APITestCase):
         should be able to delete invite
         """
         original_invite_count = 5
-        user = make_user_with_invite_count(invite_count=original_invite_count)
+        user = make_user(invite_count=original_invite_count)
         nickname = fake.name()
         invite = user.create_invite(nickname=nickname)
 
@@ -266,7 +266,7 @@ class UserInviteItemAPITests(APITestCase):
         should not be able to delete if an invite already has been accepted
         """
         original_invite_count = 5
-        user = make_user_with_invite_count(invite_count=original_invite_count)
+        user = make_user(invite_count=original_invite_count)
         nickname = fake.name()
         invite = user.create_invite(nickname=nickname)
 
@@ -286,7 +286,7 @@ class UserInviteItemAPITests(APITestCase):
         """
         should be able to update invite
         """
-        user = make_user_with_invite_count()
+        user = make_user(invite_count=5)
         nickname = fake.name()
         invite = user.create_invite(nickname=nickname)
 
@@ -329,7 +329,7 @@ class UserInviteItemEmailAPI(APITestCase):
         """
         should be able to send invite email to invitee
         """
-        user = make_user_with_invite_count()
+        user = make_user(invite_count=5)
         nickname = fake.name()
         invite = user.create_invite(nickname=nickname)
 

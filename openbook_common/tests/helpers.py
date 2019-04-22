@@ -27,20 +27,17 @@ def make_fake_post_comment_text():
     return fake.text(max_nb_chars=settings.POST_COMMENT_MAX_LENGTH)
 
 
-def make_user(username=None):
-    if username:
+def make_user(username=None, invite_count=None):
+    if username and invite_count:
+        user = mixer.blend(User, username=username, invite_count=invite_count)
+    elif username:
         user = mixer.blend(User, username=username)
+    elif invite_count:
+        user = mixer.blend(User, invite_count=invite_count)
     else:
         user = mixer.blend(User)
 
     profile = make_profile(user)
-    return user
-
-
-def make_user_with_invite_count(invite_count=5):
-    user = mixer.blend(User, invite_count=invite_count)
-    profile = make_profile(user)
-
     return user
 
 def make_badge():
