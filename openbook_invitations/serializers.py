@@ -112,7 +112,7 @@ class DeleteUserInviteSerializer(serializers.Serializer):
 
 class EditUserInviteSerializer(serializers.Serializer):
     invite_id = serializers.IntegerField(
-        validators=[invite_id_exists],
+        validators=[check_invite_not_used, invite_id_exists],
         required=True,
     )
     nickname = serializers.CharField(
@@ -124,6 +124,6 @@ class EditUserInviteSerializer(serializers.Serializer):
 class EmailUserInviteSerializer(serializers.Serializer):
     email = serializers.EmailField(required=True)
     invite_id = serializers.IntegerField(
-        validators=[check_invite_not_used],
+        validators=[check_invite_not_used, invite_id_exists],
         required=True,
     )

@@ -40,7 +40,7 @@ from openbook_communities.views.community.posts.views import CommunityPosts
 from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, FavoriteCommunity
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
-from openbook_invitations.views import UserInvite, UserInvites, SearchUserInvites
+from openbook_invitations.views import UserInvite, UserInvites, SearchUserInvites, SendUserInviteEmail
 from openbook_devices.views import Devices, DeviceItem
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
 from openbook_lists.views import Lists, ListItem, ListNameCheck
@@ -211,7 +211,7 @@ invites_patterns = [
     path('', UserInvites.as_view(), name='invites'),
     path('search/', SearchUserInvites.as_view(), name='search-invites'),
     path('<str:invite_id>/', UserInvite.as_view(), name='invite'),
-    path('<str:invite_id>/email/', UserInvite.as_view(), name='send-invite-email'),
+    path('<str:invite_id>/email/', SendUserInviteEmail.as_view(), name='send-invite-email'),
 ]
 
 
