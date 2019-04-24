@@ -633,10 +633,6 @@ class User(AbstractUser):
             comments_query.add(Q(id__gte=min_id), Q.AND)
 
         Post = get_post_model()
-        # If comments are private, return only own comments
-        if not Post.post_with_id_has_public_comments(post_id):
-            comments_query.add(Q(commenter_id=self.pk), Q.AND)
-
         PostComment = get_post_comment_model()
         return PostComment.objects.filter(comments_query)
 
@@ -647,14 +643,32 @@ class User(AbstractUser):
 
         return self.get_comments_count_for_post(post=post)
 
-    def get_comments_count_for_post(self, post):
-        commenter_id = None
-        # If comments are private, count only own comments
-        # TODO If its our post we need to circumvent this too
-        if not post.public_comments:
-            commenter_id = self.pk
+    def enable_comments_for_post_with_id(self, post_id):
+        Post = get_post_model()
+        if not Post.is_post_with_id_a_community_post(post_id):
+            raise ValidationError('Post is not a community post')
 
-        return post.count_comments(commenter_id=commenter_id)
+        post = Post.objects.select_related('community').get(pk=post_id)
+        self._check_can_enable_disable_comments_for_post_in_community_with_name(community_name=post.community.name)
+        post.comments_enabled = True
+        post.save()
+
+        return post
+
+    def disable_comments_for_post_with_id(self, post_id):
+        Post = get_post_model()
+        if not Post.is_post_with_id_a_community_post(post_id):
+            raise ValidationError('Post is not a community post')
+
+        post = Post.objects.select_related('community').get(pk=post_id)
+        self._check_can_enable_disable_comments_for_post_in_community_with_name(community_name=post.community.name)
+        post.comments_enabled = False
+        post.save()
+
+        return post
+
+    def get_comments_count_for_post(self, post):
+        return post.count_comments()
 
     def comment_post_with_id(self, post_id, text):
         Post = get_post_model()
@@ -710,6 +724,7 @@ class User(AbstractUser):
     def update_comment_with_id_for_post_with_id(self, post_comment_id, post_id, text):
         self.has_post_comment_with_id(post_comment_id)
         self._check_can_edit_comment_with_id_for_post_with_id(post_comment_id, post_id)
+        self._check_comments_enabled_for_post_with_id(post_id)
         PostComment = get_post_comment_model()
         post_comment = PostComment.objects.get(pk=post_comment_id)
         post_comment.text = text
@@ -2162,6 +2177,7 @@ class User(AbstractUser):
 
     def _check_can_comment_in_post(self, post):
         self._check_can_see_post(post)
+        self._check_comments_enabled_for_post_with_id(post.id)
 
     def _check_can_delete_reaction_with_id_for_post_with_id(self, post_reaction_id, post_id):
         # Check if the post belongs to us
@@ -2239,6 +2255,26 @@ class User(AbstractUser):
             raise ValidationError(
                 _('You cannot post to a community you\'re not member of '),
             )
+
+    def _check_can_enable_disable_comments_for_post_in_community_with_name(self, community_name):
+        if not self.is_moderator_of_community_with_name(community_name) and \
+                not self.is_administrator_of_community_with_name(community_name):
+            raise ValidationError(
+                _('Only moderators/administrators can enable/disable comments'),
+            )
+
+    def _check_comments_enabled_for_post_with_id(self, post_id):
+        Post = get_post_model()
+        post = Post.objects.select_related('community').get(id=post_id)
+        is_community_post = Post.is_post_with_id_a_community_post(post_id)
+        if is_community_post:
+            is_administrator = self.is_administrator_of_community_with_name(post.community.name)
+            is_moderator = self.is_moderator_of_community_with_name(post.community.name)
+
+            if not is_administrator and not is_moderator and not post.comments_enabled:
+                raise ValidationError(
+                    _('Comments are disabled for this post')
+                )
 
     def _check_list_data(self, name, emoji_id):
         if name:
