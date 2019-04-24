@@ -50,7 +50,7 @@ from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFoll
 from openbook_lists.views import Lists, ListItem, ListNameCheck
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
 from openbook_posts.views.post.views import PostComments, PostCommentItem, PostItem, PostReactions, PostReactionItem, \
-    PostReactionsEmojiCount, PostReactionEmojiGroups, MutePost, UnmutePost
+    PostReactionsEmojiCount, PostReactionEmojiGroups, MutePost, UnmutePost, PostCommentsDisable, PostCommentsEnable
 from openbook_posts.views.posts.views import Posts, TrendingPosts
 from openbook_importer.views import ImportItem
 
@@ -86,6 +86,8 @@ post_patterns = [
     path('', PostItem.as_view(), name='post'),
     path('notifications/', include(post_notifications_patters)),
     path('comments/', PostComments.as_view(), name='post-comments'),
+    path('comments/disable/', PostCommentsDisable.as_view(), name='disable-post-comments'),
+    path('comments/enable/', PostCommentsEnable.as_view(), name='enable-post-comments'),
     path('comments/<int:post_comment_id>/', PostCommentItem.as_view(), name='post-comment'),
     path('reactions/', PostReactions.as_view(), name='post-reactions'),
     path('reactions/emoji-count/', PostReactionsEmojiCount.as_view(), name='post-reactions-emoji-count'),
