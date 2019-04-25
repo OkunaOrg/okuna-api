@@ -41,16 +41,16 @@ Such diversity is one of the greatest strengths of our society; it allows us to 
 Because we embrace diversity we have a list of _**13 protected differences**_ we hope members of Openbook at best embrace and at least, tolerate.
 
 * Age
-* Disability
-* Gender identity
-* Ethnicity
-* Marriage
+* Belief <sup>[*](#on-harmful-beliefs)</sup>
 * Civil partnership
-* Pregnancy
+* Disability
+* Ethnicity
+* Gender identity
+* Marriage
 * Maternity
+* Pregnancy
 * Race
 * Religion
-* Belief <sup>[*](#on-harmful-beliefs)</sup>
 * Sex
 * Sexual orientation
 
@@ -170,6 +170,7 @@ Special thanks to [Trevor Barton (@trevor)](https://trevorbarton.co.uk/) for cre
 
 Thanks to the volunteers who with their comments, suggestions and proof-reading helped make this document possible.
 
+* Benny | @benny
 * Trud Antzée | @antzee
 * Andrew | @a
 * Russ Broomell | @russ
