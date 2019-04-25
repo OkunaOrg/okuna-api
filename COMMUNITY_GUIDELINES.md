@@ -24,10 +24,11 @@ We also aim to make the process of enforcing these guidelines transparent and op
 
 Making Openbook a healthy and welcoming community for everyone is a shared responsibility.
 
-When everything calls for anger, engage in discussion.
-When something doesn’t look right, report it.
-When creating a community, own your community: arm it with moderators and administrators capable and informed to enforce the guidelines of the platform.
-Have a great idea? Suggest it on the feature board. Found a bug? Report it on the bug tracker.
+* When everything calls for anger, engage in discussion.
+* When something doesn’t look right, report it.
+* When creating a community, own your community: arm it with moderators and administrators capable and informed to enforce the guidelines of the platform.
+* Have a great idea? Suggest it on the feature board. Found a bug? Report it on the bug tracker.
+* Have a great idea? Suggest it on the feature board. Found a bug? Report it on the bug tracker.
 
 **It’s up to each of us to create a digital space we’re proud and happy to be part of. We’re glad you’re here.**
 
