@@ -172,6 +172,7 @@ Thanks to the volunteers who with their comments, suggestions and proof-reading 
 
 * Trud Antzée | @antzee
 * Andrew | @a
+* Russ Broomell | @russ
 * Élaïs Moreau | @elaismoreau
 
 ## License
