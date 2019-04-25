@@ -1,7 +1,5 @@
 <img alt="Openbook logo" src="https://snag.gy/oaVCPq.jpg" width="200">
 
-<a href="" target="_blank" rel="noopener noreferrer"><img src="https://licensebuttons.net/l/by/3.0/88x31.png" alt="Creative commons 4.0 license"></a>
-
 We created these guidelines together with the community to ensure we can all achieve a mutually peaceful, respectful, supportive and kind existence under this digital home we call Openbook.
 
 In short:
@@ -177,4 +175,6 @@ Thanks to the volunteers who with their comments, suggestions and proof-reading 
 
 ## License
  
+ <a href="" target="_blank" rel="noopener noreferrer"><img src="https://licensebuttons.net/l/by/3.0/88x31.png" alt="Creative commons 4.0 license"></a>
+
 This document is released under the [Creative Commons 4.0 license](https://creativecommons.org/licenses/by/4.0/). Changes, revisions or improvements can be contributed [on Github](https://github.com/OpenbookOrg/openbook-api).
