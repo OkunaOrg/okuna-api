@@ -12,25 +12,14 @@ In short:
 [avoid spamming](#avoid-spamming),
 [keep the bots out](#keep-the-bots-out),
 [ditch the pornography](#ditch-the-pornography)
-—and [keep content legal](#keep-content-legal).
+[keep content legal](#keep-content-legal)
+—and [embrace the shared responsibility](#embrace-the-shared-responsibility).
 
 Below, these points are explained in more detail. Please read them.
 
-People found acting outside these guidelines risk having their account/content suspended or deleted.
-
+Those acting outside these guidelines risk having their accounts/content suspended or deleted.
+ 
 We also aim to make the process of enforcing these guidelines transparent and open to debate.
-
-## Embrace the shared responsibility
-
-Making Openbook a healthy and welcoming community for everyone is a shared responsibility.
-
-* When everything calls for anger, engage in discussion.
-* When something doesn’t look right, report it.
-* When creating a community, own your community: arm it with moderators and administrators capable and informed to enforce the guidelines of the platform.
-* Have a great idea? [Suggest it on the feature board](https://openbook.canny.io/feature-requests).
-* Found a bug? [Report it on the bug tracker](https://openbook.canny.io/bugs).
-
-**It’s up to each of us to create a digital space we’re proud and happy to be part of. We’re glad you’re here.**
 
 ## Embrace diversity
 
@@ -54,15 +43,15 @@ Because we embrace diversity we have a list of _**13 protected differences**_ we
 * Sex
 * Sexual orientation
 
-Ideologies that by nature are not embracing or tolerant of these differences such as nazism or neo-nazism have no place nor ever will have at Openbook.
+Ideologies that by nature are not embracing, or tolerant of, these differences such as nazism or neo-nazism have no place—and never will have—at Openbook. This includes sharing associated symbols or imagery.
 
 ## Drop the labels and stereotypes
 
 > Labelling and stereotyping consists of assigning a certain set of behaviours and characteristics to a person based on an attribute—such as nationality or political inclination.
 
-The first step to a successful co-existence is the willingness to engage with each other. Labels get on the way of this by loading us up with prejudices and assumptions not necessarily true about the person we’re interacting with. 
+The first step to a successful co-existence is the willingness to engage with each other. Labels get in the way of this by loading us up with prejudices and assumptions not necessarily true about the person we’re interacting with. 
 
-## Be courteous, polite and respectful.
+## Be courteous, polite and respectful
 
 Show friendliness, concern and respect for others in manners, speech and behaviour.
 
@@ -76,21 +65,21 @@ Regardless the situation…
 If you’re reading something that makes you feel uncomfortable…
 
 * **Does it comply with the guidelines?** If not, stop here and report it.
-* **Are you willing to have a civil and possibly time consuming discussion?** If not, stop here and scroll along.
+* **Are you willing to have a civil—and possibly time consuming—discussion.** If not, stop here and scroll along.
 * **Engage in the conversation.** Keep the points below in mind.
 
 When replying to someone’s comment or post…
 
-* **Keep these guidelines in mind.** At minimum the TLDR; section.
+* **Keep these guidelines in mind.** At minimum the in short section.
 * **Did you read that right?** Give it another look.
 * **Are you in doubt about what it means?** Kindly ask the person for more information.
 * **Find something in common and share it if possible.** Finding something in common between you and the original poster makes sure both of you see a human on the other side. This facilitates empathy and compassion.
 
 When the discussion is going nowhere…
 
-* **Take a break.** If the discussion has been going for some time, taking a break or sleeping on it might help bring fresh renewed perspective on the subject. Taking a shower might also work wonders.
+* **Take a break.** If the discussion has been going for some time, taking a break or sleeping on it might help bring fresh, renewed perspective on the subject. Taking a shower might also work wonders.
 * **It’s not about winning or losing.** Discussions are an opportunity for all sides to learn something new.
-* **Gracefully exit the conversation.** If you've tried it all and the conversation is going nowhere, you migh want to exit gracefully with something like "Thank you for your opinion. I think differently, but I respect your views. I'd like to finish this topic here. Thank you very much!"
+* **Gracefully exit the conversation.** If you've tried it all and the conversation is going nowhere, you might want to exit gracefully with something like: "Thank you for your opinion. I think differently, but I respect your views. I'd like to finish this topic here. Thank you very much!"
 * **As a last resort, consider blocking.** As in real life, there might be cases where people just can’t get along. Consider blocking instead of escalating discussions.
 
 If the discussion becomes aggressive…
@@ -111,7 +100,8 @@ Do not share people's
 ## Curb hate
 
 We want Openbook to be a welcoming and friendly place for everyone to surf with peace of mind.
-Speech containing demeaning, denigrating, humiliating or brutalising comments, whether personal or in general, have no place on Openbook.
+
+Speech containing demeaning, denigrating, humiliating or brutalising comments—whether personal or in general—have no place on Openbook.
 
 ## Avoid spamming
 
@@ -140,20 +130,20 @@ Sharing any of these will lead to the immediate closure of your account and repo
 ## Ditch the pornography
 
 Printed or visual material containing the explicit description or display of sexual organs or activity are not allowed.
- 
-## Notes 
 
-### On harmful beliefs
-Some beliefs can cause real life harm. For example, the now unfortunately wide-spread belief that vaccination causes autism (it doesn’t) resulting in the resurgence of measles outbreaks.
-Beliefs like this example are exempted from the protected status and we will do our best to prevent their spreading on the platform.
+## Embrace the shared responsibility
 
-We will also determine a belief to be harmful—and therefore not protected—if:
+Making Openbook a healthy and welcoming community for everyone is a shared responsibility.
 
-* its harm has been widely and independently scientifically proven (such as in the anti-vaccination case cited)
-* results in the direct physical harm of people (such as in the claim a soap pod was edible resulting in the deaths of seven people and over seven thousand cases of poisoning)
-* its both proselytised widely on the platform and also exclusionary of other protected statuses
- 
-As with all other guidelines, we aim to make the process transparent and always open to debate.
+* When everything calls for anger, engage in discussion.
+* When something doesn’t look right, report it.
+* When creating a community, own your community: arm it with moderators and administrators capable and informed to enforce the guidelines of the platform.
+* Have a great idea? [Suggest it on the feature board](https://openbook.canny.io/feature-requests).
+* Found a bug? [Report it on the bug tracker](https://openbook.canny.io/bugs).
+
+**It’s up to each of us to create a digital space we’re proud and happy to be part of. We’re glad you’re here.**
+
+## Notes
 
 ### On photos of children
 
@@ -163,6 +153,18 @@ As with all other guidelines, we aim to make the process transparent and always 
 * **Always ask the children.** Ask them understandable things like "Do you think it's okay to share this picture with my family or friends?" and respect their answer.
  
 Points borrowed from the [Norwegian Data Protection Authority](https://www.datatilsynet.no/personvern-pa-ulike-omrader/internett-og-apper/bilder-pa-nett/bilder-av-barn/).
+
+### On harmful beliefs
+Some beliefs can cause real life harm. For example, the now unfortunately wide-spread belief that vaccination causes autism (it doesn’t) resulting in the resurgence of measles outbreaks.
+Beliefs like this example are exempted from the protected status and we will do our best to prevent their spreading on the platform.
+
+We will also determine a belief to be harmful—and therefore not protected—if:
+
+* its harm has been widely and independently scientifically proven (such as in the anti-vaccination case cited)
+* it results in the direct physical harm of people (such as in the claim a soap pod was edible resulting in the deaths of seven people and over seven thousand cases of poisoning)
+* it's both proselytised widely on the platform and also exclusionary of other protected statuses
+ 
+As with all other guidelines, we aim to make the process transparent and always open to debate.
 
 ## Contributors
 
