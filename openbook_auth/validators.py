@@ -6,9 +6,9 @@ from openbook_auth.models import User
 
 
 def username_characters_validator(username):
-    if not re.match('^[a-zA-Z0-9_.]*$', username):
+    if not re.match('^(?!\.)[a-zA-Z0-9_.]*(?<!\.)$', username):
         raise ValidationError(
-            _('Usernames can only contain alphanumeric characters, periods and underscores.'),
+            _('Usernames can only contain alphanumeric characters, periods and underscores. They must not begin or end with a period.'),
         )
 
 
