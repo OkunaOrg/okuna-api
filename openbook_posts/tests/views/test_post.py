@@ -1386,9 +1386,9 @@ class PostCommentItemAPITests(APITestCase):
         'openbook_circles/fixtures/circles.json'
     ]
 
-    def test_can_delete_foreign_comment_in_own_post(self):
+    def test_cannot_delete_foreign_comment_in_own_post(self):
         """
-          should be able to delete a foreign comment in own post and return 200
+          should not be able to delete a foreign comment in own post and return 200
         """
         user = make_user()
 
@@ -1405,8 +1405,8 @@ class PostCommentItemAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
         response = self.client.delete(url, **headers)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(PostComment.objects.filter(id=post_comment.pk).count() == 0)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(PostComment.objects.filter(id=post_comment.pk).count() == 1)
 
     def test_can_delete_community_post_comment_if_mod(self):
         """
@@ -1780,7 +1780,7 @@ class PostCommentItemAPITests(APITestCase):
 
         url = self._get_url(post_comment=post_comment, post=post)
 
-        headers = make_authentication_headers_for_user(user)
+        headers = make_authentication_headers_for_user(commenter)
         self.client.delete(url, **headers)
 
         self.assertFalse(PostCommentNotification.objects.filter(pk=post_comment_notification.pk).exists())
