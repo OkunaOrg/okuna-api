@@ -653,6 +653,7 @@ class User(AbstractUser):
 
         post = Post.objects.select_related('community').get(pk=post_id)
         self._check_can_enable_disable_comments_for_post_in_community_with_name(community_name=post.community.name)
+        post.community.create_enable_post_comments_log(source_user=self, target_user=post.creator, post=post)
         post.comments_enabled = True
         post.save()
 
@@ -665,6 +666,7 @@ class User(AbstractUser):
 
         post = Post.objects.select_related('community').get(pk=post_id)
         self._check_can_enable_disable_comments_for_post_in_community_with_name(community_name=post.community.name)
+        post.community.create_disable_post_comments_log(source_user=self, target_user=post.creator, post=post)
         post.comments_enabled = False
         post.save()
 
