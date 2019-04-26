@@ -32,7 +32,7 @@ Such diversity is one of the greatest strengths of our society; it allows us to 
 Because we embrace diversity we have a list of _**13 protected differences**_ we hope members of Openbook at best embrace and at least, tolerate.
 
 * Age
-* Belief <sup>[*](#on-harmful-beliefs)</sup>
+* Belief [*](#on-harmful-beliefs)
 * Civil partnership
 * Disability
 * Ethnicity
