@@ -4,7 +4,7 @@ We created these guidelines together with the community to ensure we can all ach
 
 In short:
 
-> [Embrace diversity](#embrace-the-shared-responsibility),
+> [Embrace diversity](#embrace-diversity),
 [drop the labels and stereotypes](#drop-the-labels-and-stereotypes),
 [be courteous and polite](#be-courteous-polite-and-respectful),
 [respect people’s privacy](#respect-peoples-privacy),
@@ -143,9 +143,11 @@ Making Openbook a healthy and welcoming community for everyone is a shared respo
 
 **It’s up to each of us to create a digital space we’re proud and happy to be part of. We’re glad you’re here.**
 
-## Notes
+---
 
-### On photos of children
+### Notes
+
+#### On photos of children
 
 * **Never share pictures of other people's children without the consent of their superiors.**
 * **Share the fewest possible pictures.**
@@ -154,7 +156,7 @@ Making Openbook a healthy and welcoming community for everyone is a shared respo
  
 Points borrowed from the [Norwegian Data Protection Authority](https://www.datatilsynet.no/personvern-pa-ulike-omrader/internett-og-apper/bilder-pa-nett/bilder-av-barn/).
 
-### On harmful beliefs
+#### On harmful beliefs
 Some beliefs can cause real life harm. For example, the now unfortunately wide-spread belief that vaccination causes autism (it doesn’t) resulting in the resurgence of measles outbreaks.
 Beliefs like this example are exempted from the protected status and we will do our best to prevent their spreading on the platform.
 
@@ -166,7 +168,9 @@ We will also determine a belief to be harmful—and therefore not protected—if
  
 As with all other guidelines, we aim to make the process transparent and always open to debate.
 
-## Contributors
+---
+
+### Contributors
 
 Special thanks to [Trevor Barton (@trevor)](https://trevorbarton.co.uk/) for creating the first ever draft these guidelines were built upon and for his consequent contributions.
 
@@ -180,7 +184,9 @@ Thanks to the volunteers who with their comments, suggestions and proof-reading 
 * Élaïs Moreau | @elaismoreau
 * Mike | @Muke
 
-## License
+---
+
+### License
  
  <a href="" target="_blank" rel="noopener noreferrer"><img src="https://licensebuttons.net/l/by/3.0/88x31.png" alt="Creative commons 4.0 license"></a>
 
