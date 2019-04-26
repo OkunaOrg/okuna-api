@@ -92,6 +92,8 @@ post_patterns = [
     path('reactions/', PostReactions.as_view(), name='post-reactions'),
     path('reactions/emoji-count/', PostReactionsEmojiCount.as_view(), name='post-reactions-emoji-count'),
     path('reactions/<int:post_reaction_id>/', PostReactionItem.as_view(), name='post-reaction'),
+    path('close/', PostClose.as_view(), name='close-post'),
+    path('open/', PostOpen.as_view(), name='open-post'),
 ]
 
 posts_patterns = [

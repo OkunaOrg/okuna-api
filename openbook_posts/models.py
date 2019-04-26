@@ -36,6 +36,7 @@ class Post(models.Model):
                                   null=True,
                                   blank=False)
     is_edited = models.BooleanField(default=False)
+    is_closed = models.BooleanField(default=False)
 
     class Meta:
         index_together = [

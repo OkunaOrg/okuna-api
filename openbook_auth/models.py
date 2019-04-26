@@ -1346,6 +1346,24 @@ class User(AbstractUser):
         # We have to be mindful with using bulk delete as it does not call the delete() method per instance
         Post.objects.filter(id=post_id).delete()
 
+    def open_post_with_id(self, post_id):
+        self._check_can_open_post_with_id(post_id)
+        Post = get_post_model()
+        post = Post.objects.get(id=post_id)
+        post.is_closed = False
+        post.save()
+
+        return post
+
+    def close_post_with_id(self, post_id):
+        self._check_can_close_post_with_id(post_id)
+        Post = get_post_model()
+        post = Post.objects.get(id=post_id)
+        post.is_closed = True
+        post.save()
+
+        return post
+
     def get_posts_for_community_with_name(self, community_name, max_id=None):
         """
         :param community_name:
@@ -2190,6 +2208,40 @@ class User(AbstractUser):
                 raise ValidationError(
                     _('Comments are disabled for this post')
                 )
+
+    def _check_can_open_post_with_id(self, post_id):
+        Post = get_post_model()
+        post = Post.objects.select_related('community').get(id=post_id)
+        is_community_post = Post.is_post_with_id_a_community_post(post_id)
+        if not is_community_post:
+            raise ValidationError(
+                _('Only community posts can be opened/closed')
+            )
+
+        is_administrator = self.is_administrator_of_community_with_name(post.community.name)
+        is_moderator = self.is_moderator_of_community_with_name(post.community.name)
+
+        if not is_administrator and not is_moderator:
+            raise ValidationError(
+                _('Only administrators/moderators can open this post')
+            )
+
+    def _check_can_close_post_with_id(self, post_id):
+        Post = get_post_model()
+        post = Post.objects.select_related('community').get(id=post_id)
+        is_community_post = Post.is_post_with_id_a_community_post(post_id)
+        if not is_community_post:
+            raise ValidationError(
+                _('Only community posts can be opened/closed')
+            )
+
+        is_administrator = self.is_administrator_of_community_with_name(post.community.name)
+        is_moderator = self.is_moderator_of_community_with_name(post.community.name)
+
+        if not is_administrator and not is_moderator:
+            raise ValidationError(
+                _('Only administrators/moderators can close this post')
+            )
 
     def _check_list_data(self, name, emoji_id):
         if name:
