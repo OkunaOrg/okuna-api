@@ -110,7 +110,7 @@ Following, connecting and commenting with the purposes of advertising, phishing 
 
 ## Be you
 
-It’s okay to be yourself or an anonymous version of yourself in Openbook. What’s not all right is pretending to be someone you’re not. Much as Joel Hernandez wants to look like Christopher Hemsworth, impersonating him online isn’t going to win him friends IRL or build him the same quantity of arm muscle.
+It’s okay to be yourself or an anonymous version of yourself in Openbook. What’s not all right is pretending to be someone you’re not. Impersonating Christopher Hemsworth online won't get you friends IRL or build you the same quantity of arm muscle.
 
 ## Keep the bots out
 
