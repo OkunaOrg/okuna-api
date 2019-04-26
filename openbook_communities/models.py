@@ -368,9 +368,22 @@ class Community(models.Model):
                                 source_user=source_user,
                                 target_user=target_user)
 
-    def _create_log(self, action_type, source_user, target_user):
+    def create_disable_post_comments_log(self, source_user, target_user, post):
+        return self._create_log(action_type='DPC',
+                                post=post,
+                                source_user=source_user,
+                                target_user=target_user)
+
+    def create_enable_post_comments_log(self, source_user, target_user, post):
+        return self._create_log(action_type='EPC',
+                                post=post,
+                                source_user=source_user,
+                                target_user=target_user)
+
+    def _create_log(self, action_type, source_user, target_user, post=None):
         CommunityModeratorUserActionLog = get_community_log_model()
         return CommunityModeratorUserActionLog.create_community_log(community=self,
+                                                                    post=post,
                                                                     target_user=target_user,
                                                                     action_type=action_type,
                                                                     source_user=source_user)
@@ -431,6 +444,7 @@ class CommunityLog(models.Model):
                                     blank=False)
     target_user = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='+', null=True,
                                     blank=False)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='+', null=True, blank=True)
     community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='logs',
                                   null=False,
                                   blank=False)
@@ -445,13 +459,15 @@ class CommunityLog(models.Model):
         ('RA', 'Remove Administrator'),
         ('RP', 'Remove Post'),
         ('RPC', 'Remove Post Comment'),
+        ('DPC', 'Disable Post Comments'),
+        ('EPC', 'Enable Post Comments'),
     )
     action_type = models.CharField(editable=False, blank=False, null=False, choices=ACTION_TYPES, max_length=5)
 
     @classmethod
-    def create_community_log(cls, community, action_type, source_user, target_user):
+    def create_community_log(cls, community, action_type, source_user, target_user, post=None):
         return cls.objects.create(community=community, action_type=action_type, source_user=source_user,
-                                  target_user=target_user)
+                                  target_user=target_user, post=post)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''

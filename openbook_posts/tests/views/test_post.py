@@ -931,7 +931,7 @@ class PostCommentsAPITests(APITestCase):
 
     def test_administrator_can_comment_in_community_post_with_disabled_comments(self):
         """
-         should be able to comment in the community post with comments disabled if administrator/moderator
+         should be able to comment in the community post with comments disabled if administrator
          """
         user = make_user()
         admin = make_user()
@@ -951,6 +951,35 @@ class PostCommentsAPITests(APITestCase):
 
         response_id = parsed_response['id']
         post_comment = PostComment.objects.get(post_id=post.pk, text=post_comment_text, commenter=admin)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(PostComment.objects.filter(post_id=post.pk, text=post_comment_text).exists())
+        self.assertEqual(response_id, post_comment.id)
+
+    def test_moderator_can_comment_in_community_post_with_disabled_comments(self):
+        """
+         should be able to comment in the community post with comments disabled if moderator
+         """
+        user = make_user()
+        admin = make_user()
+        moderator = make_user()
+
+        community = make_community(admin)
+        user.join_community_with_name(community_name=community.name)
+        moderator.join_community_with_name(community_name=community.name)
+        admin.add_moderator_with_username_to_community_with_name(username=moderator.username, community_name=community.name)
+        post = user.create_community_post(community.name, text=make_fake_post_text())
+        post.comments_enabled = False
+        post.save()
+        post_comment_text = make_fake_post_comment_text()
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(moderator)
+        response = self.client.put(url, data, **headers)
+        parsed_response = json.loads(response.content)
+
+        response_id = parsed_response['id']
+        post_comment = PostComment.objects.get(post_id=post.pk, text=post_comment_text, commenter=moderator)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(PostComment.objects.filter(post_id=post.pk, text=post_comment_text).exists())
         self.assertEqual(response_id, post_comment.id)
@@ -2755,6 +2784,28 @@ class PostCommentsEnableAPITests(APITestCase):
         self.assertTrue(post.comments_enabled)
         self.assertTrue(parsed_response['comments_enabled'])
 
+    def test_logs_enabled_comments_on_post_by_administrator_of_community(self):
+        """
+         should log enable comments by administrator of a community
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        post = community_post_creator.create_community_post(community.name, text=make_fake_post_text())
+        post.comments_enabled = False
+        post.save()
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        self.client.post(url, **headers)
+
+        self.assertTrue(community.logs.filter(action_type='EPC',
+                                              post=post,
+                                              source_user=admin,
+                                              target_user=community_post_creator).exists())
+
     def test_cannot_enable_comments_on_post_if_not_administrator_or_moderator_of_community(self):
         """
          should not be able to enable comments if not administrator/moderator
@@ -2832,6 +2883,26 @@ class PostCommentsDisableAPITests(APITestCase):
         post.refresh_from_db()
         self.assertFalse(post.comments_enabled)
         self.assertFalse(parsed_response['comments_enabled'])
+
+    def test_logs_disabled_comments_on_post_by_administrator_of_community(self):
+        """
+         should log disable comments by administrator of a community
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        post = community_post_creator.create_community_post(community.name, text=make_fake_post_text())
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        self.client.post(url, **headers)
+
+        self.assertTrue(community.logs.filter(action_type='DPC',
+                                              post=post,
+                                              source_user=admin,
+                                              target_user=community_post_creator).exists())
 
     def test_cannot_disable_comments_on_post_if_not_administrator_or_moderator_of_community(self):
         """
