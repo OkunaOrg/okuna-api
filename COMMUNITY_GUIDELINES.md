@@ -13,7 +13,7 @@ In short:
 [curb hate](#curb-hate),
 [avoid spamming](#avoid-spamming),
 [keep the bots out](#keep-the-bots-out),
-[ditch the pornography](#ditch-the-pornography)
+[ditch the pornography](#ditch-the-pornography),
 [keep content legal](#keep-content-legal)
 —and [embrace the shared responsibility](#embrace-the-shared-responsibility).
 
