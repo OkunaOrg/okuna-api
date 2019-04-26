@@ -459,3 +459,28 @@ class AuthenticatedUserEditPostSerializer(serializers.ModelSerializer):
             'text',
             'is_edited',
         )
+
+
+class ClosePostSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+
+
+class OpenPostSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+
+
+class OpenClosePostSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Post
+        fields = (
+            'id',
+            'uuid',
+            'is_closed',
+        )
