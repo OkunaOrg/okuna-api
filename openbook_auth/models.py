@@ -1351,7 +1351,8 @@ class User(AbstractUser):
     def open_post_with_id(self, post_id):
         self._check_can_open_post_with_id(post_id)
         Post = get_post_model()
-        post = Post.objects.get(id=post_id)
+        post = Post.objects.select_related('community').get(id=post_id)
+        post.community.create_open_post_log(source_user=self, target_user=post.creator, post=post)
         post.is_closed = False
         post.save()
 
@@ -1360,7 +1361,8 @@ class User(AbstractUser):
     def close_post_with_id(self, post_id):
         self._check_can_close_post_with_id(post_id)
         Post = get_post_model()
-        post = Post.objects.get(id=post_id)
+        post = Post.objects.select_related('community').get(id=post_id)
+        post.community.create_close_post_log(source_user=self, target_user=post.creator, post=post)
         post.is_closed = True
         post.save()
 
@@ -1377,7 +1379,22 @@ class User(AbstractUser):
         Community = get_community_model()
         community = Community.objects.get(name=community_name)
 
-        posts_query = Q(community__id=community.pk)
+        posts_query = Q(community__id=community.pk, is_closed=False)
+
+        if max_id:
+            posts_query.add(Q(id__lt=max_id), Q.AND)
+
+        Post = get_post_model()
+        profile_posts = Post.objects.filter(posts_query).distinct()
+
+        return profile_posts
+
+    def get_closed_posts_for_community_with_name(self, community_name, max_id=None):
+        self._check_can_get_closed_posts_for_community_with_name(community_name=community_name)
+        Community = get_community_model()
+        community = Community.objects.get(name=community_name)
+
+        posts_query = Q(community__id=community.pk, is_closed=True)
 
         if max_id:
             posts_query.add(Q(id__lt=max_id), Q.AND)
@@ -1518,7 +1535,7 @@ class User(AbstractUser):
         own_posts_queryset = self.posts.select_related(*posts_select_related).prefetch_related(
             *posts_prefetch_related).only(*posts_only).filter(own_posts_query)
 
-        community_posts_query = Q(community__memberships__user__id=self.pk)
+        community_posts_query = Q(community__memberships__user__id=self.pk, is_closed=False)
 
         if max_id:
             community_posts_query.add(Q(id__lt=max_id), Q.AND)
@@ -2405,6 +2422,13 @@ class User(AbstractUser):
             community_name=community_name):
             raise ValidationError(
                 _('The community is private. You must become a member to retrieve its posts.'),
+            )
+
+    def _check_can_get_closed_posts_for_community_with_name(self, community_name):
+        if not self.is_administrator_of_community_with_name(community_name=community_name) and \
+                not self.is_moderator_of_community_with_name(community_name=community_name):
+            raise ValidationError(
+                _('Only administrators/moderators can view closed posts'),
             )
 
     def _check_can_get_community_with_name_members(self, community_name):
