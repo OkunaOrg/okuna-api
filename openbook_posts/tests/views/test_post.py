@@ -2927,3 +2927,205 @@ class PostCommentsDisableAPITests(APITestCase):
         return reverse('disable-post-comments', kwargs={
             'post_uuid': post.uuid
         })
+
+
+class PostCloseAPITests(APITestCase):
+    """
+    PostCloseAPITests APITests
+    """
+
+    def test_can_close_post_if_administrator_of_community(self):
+        """
+         should be able to close post if administrator of a community
+        """
+        user = make_user()
+        admin = make_user()
+        community = make_community(admin)
+
+        user.join_community_with_name(community_name=community.name)
+        post = user.create_community_post(community.name, text=make_fake_post_text())
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        response = self.client.post(url, **headers)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertTrue(response.status_code, status.HTTP_200_OK)
+        post.refresh_from_db()
+        self.assertTrue(post.is_closed)
+        self.assertTrue(parsed_response['is_closed'])
+
+    def test_can_close_post_if_moderator_of_community(self):
+        """
+         should be able to close post if moderator of a community
+        """
+        user = make_user()
+        admin = make_user()
+        moderator = make_user()
+        community = make_community(admin)
+
+        user.join_community_with_name(community_name=community.name)
+        moderator.join_community_with_name(community_name=community.name)
+        admin.add_moderator_with_username_to_community_with_name(username=moderator.username,
+                                                                 community_name=community.name)
+        post = user.create_community_post(community.name, text=make_fake_post_text())
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(moderator)
+        response = self.client.post(url, **headers)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertTrue(response.status_code, status.HTTP_200_OK)
+        post.refresh_from_db()
+        self.assertTrue(post.is_closed)
+        self.assertTrue(parsed_response['is_closed'])
+
+    def test_cannot_close_post_if_not_administrator_or_moderator_of_community(self):
+        """
+         should not be able to close post if not moderator/administrator of a community
+        """
+        user = make_user()
+        admin = make_user()
+        community = make_community(admin)
+
+        user.join_community_with_name(community_name=community.name)
+        post = user.create_community_post(community.name, text=make_fake_post_text())
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.post(url, **headers)
+
+        self.assertTrue(response.status_code, status.HTTP_400_BAD_REQUEST)
+        post.refresh_from_db()
+        self.assertFalse(post.is_closed)
+
+    def test_logs_close_post_by_administrator_of_community(self):
+        """
+         should log close post by administrator of a community
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        post = community_post_creator.create_community_post(community.name, text=make_fake_post_text())
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        self.client.post(url, **headers)
+
+        self.assertTrue(community.logs.filter(action_type='CP',
+                                              post=post,
+                                              source_user=admin,
+                                              target_user=community_post_creator).exists())
+
+    def _get_url(self, post):
+        return reverse('close-post', kwargs={
+            'post_uuid': post.uuid
+        })
+
+
+class PostOpenAPITests(APITestCase):
+    """
+    PostOpenAPITests APITests
+    """
+
+    def test_can_open_post_if_administrator_of_community(self):
+        """
+         should be able to open post if administrator of a community
+        """
+        user = make_user()
+        admin = make_user()
+        community = make_community(admin)
+
+        user.join_community_with_name(community_name=community.name)
+        post = user.create_community_post(community.name, text=make_fake_post_text())
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        response = self.client.post(url, **headers)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertTrue(response.status_code, status.HTTP_200_OK)
+        post.refresh_from_db()
+        self.assertFalse(post.is_closed)
+        self.assertFalse(parsed_response['is_closed'])
+
+    def test_can_open_post_if_moderator_of_community(self):
+        """
+         should be able to open post if moderator of a community
+        """
+        user = make_user()
+        admin = make_user()
+        moderator = make_user()
+        community = make_community(admin)
+
+        user.join_community_with_name(community_name=community.name)
+        moderator.join_community_with_name(community_name=community.name)
+        admin.add_moderator_with_username_to_community_with_name(username=moderator.username,
+                                                                 community_name=community.name)
+        post = user.create_community_post(community.name, text=make_fake_post_text())
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(moderator)
+        response = self.client.post(url, **headers)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertTrue(response.status_code, status.HTTP_200_OK)
+        post.refresh_from_db()
+        self.assertFalse(post.is_closed)
+        self.assertFalse(parsed_response['is_closed'])
+
+    def test_cannot_open_post_if_not_administrator_or_moderator_of_community(self):
+        """
+         should not be able to open post if not moderator/administrator of a community
+        """
+        user = make_user()
+        admin = make_user()
+        community = make_community(admin)
+
+        user.join_community_with_name(community_name=community.name)
+        post = user.create_community_post(community.name, text=make_fake_post_text())
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.post(url, **headers)
+
+        self.assertTrue(response.status_code, status.HTTP_400_BAD_REQUEST)
+        post.refresh_from_db()
+        self.assertTrue(post.is_closed)
+
+    def test_logs_open_post_by_administrator_of_community(self):
+        """
+         should log open post by administrator of a community
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        post = community_post_creator.create_community_post(community.name, text=make_fake_post_text())
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        self.client.post(url, **headers)
+
+        self.assertTrue(community.logs.filter(action_type='OP',
+                                              post=post,
+                                              source_user=admin,
+                                              target_user=community_post_creator).exists())
+
+    def _get_url(self, post):
+        return reverse('open-post', kwargs={
+            'post_uuid': post.uuid
+        })
