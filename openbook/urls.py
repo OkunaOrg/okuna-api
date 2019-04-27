@@ -41,7 +41,7 @@ from openbook_communities.views.community.members.views import CommunityMembers,
     LeaveCommunity, InviteCommunityMember, SearchCommunityMembers, UninviteCommunityMember
 from openbook_communities.views.community.moderators.views import CommunityModeratorItem, CommunityModerators, \
     SearchCommunityModerators
-from openbook_communities.views.community.posts.views import CommunityPosts
+from openbook_communities.views.community.posts.views import CommunityPosts, ClosedCommunityPosts
 from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, FavoriteCommunity
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
