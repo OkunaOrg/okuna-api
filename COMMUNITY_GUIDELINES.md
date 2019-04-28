@@ -1,17 +1,19 @@
 <img alt="Openbook logo" src="https://snag.gy/oaVCPq.jpg" width="200">
 
+# Community Guidelines
+
 We created these guidelines together with the community to ensure we can all achieve a mutually peaceful, respectful, supportive and kind existence under this digital home we call Openbook.
 
 In short:
 
-> [Embrace diversity](#embrace-the-shared-responsibility),
+> [Embrace diversity](#embrace-diversity),
 [drop the labels and stereotypes](#drop-the-labels-and-stereotypes),
 [be courteous and polite](#be-courteous-polite-and-respectful),
 [respect people’s privacy](#respect-peoples-privacy),
 [curb hate](#curb-hate),
 [avoid spamming](#avoid-spamming),
 [keep the bots out](#keep-the-bots-out),
-[ditch the pornography](#ditch-the-pornography)
+[ditch the pornography](#ditch-the-pornography),
 [keep content legal](#keep-content-legal)
 —and [embrace the shared responsibility](#embrace-the-shared-responsibility).
 
@@ -30,7 +32,7 @@ Such diversity is one of the greatest strengths of our society; it allows us to 
 Because we embrace diversity we have a list of _**13 protected differences**_ we hope members of Openbook at best embrace and at least, tolerate.
 
 * Age
-* Belief <sup>[*](#on-harmful-beliefs)</sup>
+* Belief [*](#on-harmful-beliefs)
 * Civil partnership
 * Disability
 * Ethnicity
@@ -65,7 +67,7 @@ Regardless the situation…
 If you’re reading something that makes you feel uncomfortable…
 
 * **Does it comply with the guidelines?** If not, stop here and report it.
-* **Are you willing to have a civil—and possibly time consuming—discussion.** If not, stop here and scroll along.
+* **Are you willing to have a civil—and possibly time consuming—discussion?** If not, stop here and scroll along.
 * **Engage in the conversation.** Keep the points below in mind.
 
 When replying to someone’s comment or post…
@@ -110,7 +112,7 @@ Following, connecting and commenting with the purposes of advertising, phishing 
 
 ## Be you
 
-It’s okay to be yourself or an anonymous version of yourself in Openbook. What’s not all right is pretending to be someone you’re not. Much as Joel Hernandez wants to look like Christopher Hemsworth, impersonating him online isn’t going to win him friends IRL or build him the same quantity of arm muscle.
+It’s okay to be yourself or an anonymous version of yourself in Openbook. What’s not all right is pretending to be someone you’re not. Impersonating Christopher Hemsworth online won't get you friends IRL or build you the same quantity of arm muscle.
 
 ## Keep the bots out
 
@@ -143,9 +145,11 @@ Making Openbook a healthy and welcoming community for everyone is a shared respo
 
 **It’s up to each of us to create a digital space we’re proud and happy to be part of. We’re glad you’re here.**
 
-## Notes
+---
 
-### On photos of children
+### Notes
+
+#### On photos of children
 
 * **Never share pictures of other people's children without the consent of their superiors.**
 * **Share the fewest possible pictures.**
@@ -154,8 +158,8 @@ Making Openbook a healthy and welcoming community for everyone is a shared respo
  
 Points borrowed from the [Norwegian Data Protection Authority](https://www.datatilsynet.no/personvern-pa-ulike-omrader/internett-og-apper/bilder-pa-nett/bilder-av-barn/).
 
-### On harmful beliefs
-Some beliefs can cause real life harm. For example, the now unfortunately wide-spread belief that vaccination causes autism (it doesn’t) resulting in the resurgence of measles outbreaks.
+#### On harmful beliefs
+Some beliefs can cause real life harm. For example, the now unfortunately wide-spread belief that vaccination causes autism [(it doesn’t as overwhelmingly proven by numeours and independent studies)](https://www.healthychildren.org/English/safety-prevention/immunizations/Pages/Vaccine-Studies-Examine-the-Evidence.aspx) [resulting](https://jamanetwork.com/journals/jama/fullarticle/2656158?appId=scweb) in the [resurgence of measles outbreaks](https://www.unicef.org/press-releases/over-20-million-children-worldwide-missed-out-measles-vaccine-annually-past-8-years).
 Beliefs like this example are exempted from the protected status and we will do our best to prevent their spreading on the platform.
 
 We will also determine a belief to be harmful—and therefore not protected—if:
@@ -166,7 +170,9 @@ We will also determine a belief to be harmful—and therefore not protected—if
  
 As with all other guidelines, we aim to make the process transparent and always open to debate.
 
-## Contributors
+---
+
+### Contributors
 
 Special thanks to [Trevor Barton (@trevor)](https://trevorbarton.co.uk/) for creating the first ever draft these guidelines were built upon and for his consequent contributions.
 
@@ -180,8 +186,11 @@ Thanks to the volunteers who with their comments, suggestions and proof-reading 
 * Élaïs Moreau | @elaismoreau
 * Mike | @Muke
 
-## License
+---
+
+### License
  
- <a href="" target="_blank" rel="noopener noreferrer"><img src="https://licensebuttons.net/l/by/3.0/88x31.png" alt="Creative commons 4.0 license"></a>
+ [![CC 4.0 License](https://licensebuttons.net/l/by/3.0/88x31.png)](https://creativecommons.org/licenses/by/4.0/)
+
 
 This document is released under the [Creative Commons 4.0 license](https://creativecommons.org/licenses/by/4.0/). Changes, revisions or improvements can be contributed [on Github](https://github.com/OpenbookOrg/openbook-api).
