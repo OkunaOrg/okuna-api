@@ -46,6 +46,7 @@ class User(AbstractUser):
 
     username_validator = UnicodeUsernameValidator() if six.PY3 else ASCIIUsernameValidator()
     is_email_verified = models.BooleanField(default=False)
+    are_guidelines_accepted = models.BooleanField(default=False)
 
     username = models.CharField(
         _('username'),
@@ -73,8 +74,21 @@ class User(AbstractUser):
 
     @classmethod
     def create_user(cls, username, email=None, password=None, name=None, avatar=None, is_of_legal_age=None,
-                    badge=None, **extra_fields):
-        new_user = cls.objects.create_user(username, email=email, password=password, **extra_fields)
+                    are_guidelines_accepted=None,
+                    badge=None):
+
+        if not is_of_legal_age:
+            raise ValidationError(
+                _('You must confirm you are over 16 years old to make an account'),
+            )
+
+        if not are_guidelines_accepted:
+            raise ValidationError(
+                _('You must accept the guidelines to make an account'),
+            )
+
+        new_user = cls.objects.create_user(username, email=email, password=password,
+                                           are_guidelines_accepted=are_guidelines_accepted)
         user_profile = bootstrap_user_profile(name=name, user=new_user, avatar=avatar,
                                               is_of_legal_age=is_of_legal_age)
 
