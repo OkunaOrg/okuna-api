@@ -64,6 +64,7 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
             'profile',
             'posts_count',
             'invite_count',
+            'are_guidelines_accepted',
             'followers_count',
             'following_count',
             'connections_circle_id',
