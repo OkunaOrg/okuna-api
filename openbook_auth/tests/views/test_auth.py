@@ -254,6 +254,26 @@ class RegistrationAPITests(APITestCase):
         # Check we have a circles related manager
         self.assertTrue(hasattr(user, 'circles'))
 
+    def test_user_guidelines_are_accepted(self):
+        """
+        should create a User model instance
+        """
+        url = self._get_url()
+        token = self._make_user_invite_token()
+        email = fake.email()
+        first_request_data = {'name': 'Joel Hernandez', 'email': email,
+                              'password': 'secretPassword123', 'is_of_legal_age': True, 'token': token,
+                              'are_guidelines_accepted': True}
+        response = self.client.post(url, first_request_data, format='multipart')
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        username = parsed_response['username']
+
+        user = User.objects.get(username=username)
+        self.assertTrue(user.are_guidelines_accepted)
+
     def test_user_avatar(self):
         """
         Should accept an avatar file and store it on the UserProfile
@@ -464,7 +484,6 @@ class VerifyResetPasswordAPITests(APITestCase):
 
         url = self._get_url()
 
-        password_reset_token = user.request_password_reset()
         new_password = 'testing12345'
         request_data = {
             'new_password': new_password,

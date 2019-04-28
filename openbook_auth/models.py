@@ -290,6 +290,11 @@ class User(AbstractUser):
         self.email = new_email
         self.save()
 
+    def accept_guidelines(self):
+        self._check_can_accept_guidelines()
+        self.are_guidelines_accepted = True
+        self.save()
+
     def verify_password_reset_token(self, token, password):
         self._check_password_reset_verification_token_is_valid(password_verification_token=token)
         self.update_password(password=password)
@@ -2797,6 +2802,10 @@ class User(AbstractUser):
     def _check_device_with_uuid_does_not_exist(self, device_uuid):
         if self.devices.filter(uuid=device_uuid).exists():
             raise ValidationError('Device already exists')
+
+    def _check_can_accept_guidelines(self):
+        if self.are_guidelines_accepted:
+            raise ValidationError('Guidelines were already accepted')
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='bootstrap_auth_token')
