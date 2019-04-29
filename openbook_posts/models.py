@@ -30,7 +30,7 @@ class Post(models.Model):
     text = models.CharField(_('text'), max_length=settings.POST_MAX_LENGTH, blank=False, null=True)
     created = models.DateTimeField(editable=False, db_index=True)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
-    public_comments = models.BooleanField(_('public comments'), default=True, editable=False, null=False)
+    comments_enabled = models.BooleanField(_('comments enabled'), default=True, editable=False, null=False)
     public_reactions = models.BooleanField(_('public reactions'), default=True, editable=False, null=False)
     community = models.ForeignKey('openbook_communities.Community', on_delete=models.CASCADE, related_name='posts',
                                   null=True,
@@ -41,11 +41,6 @@ class Post(models.Model):
         index_together = [
             ('creator', 'community'),
         ]
-
-
-    @classmethod
-    def post_with_id_has_public_comments(cls, post_id):
-        return Post.objects.filter(pk=post_id, public_comments=True).exists()
 
     @classmethod
     def post_with_id_has_public_reactions(cls, post_id):
@@ -138,8 +133,8 @@ class Post(models.Model):
 
         return User.objects.filter(post_notification_target_users_query).distinct()
 
-    def count_comments(self, commenter_id=None):
-        return PostComment.count_comments_for_post_with_id(self.pk, commenter_id=commenter_id)
+    def count_comments(self):
+        return PostComment.count_comments_for_post_with_id(self.pk)
 
     def count_reactions(self, reactor_id=None):
         return PostReaction.count_reactions_for_post_with_id(self.pk, reactor_id=reactor_id)
@@ -243,11 +238,8 @@ class PostComment(models.Model):
         return PostComment.objects.create(text=text, commenter=commenter, post=post)
 
     @classmethod
-    def count_comments_for_post_with_id(cls, post_id, commenter_id=None):
+    def count_comments_for_post_with_id(cls, post_id):
         count_query = Q(post_id=post_id)
-
-        if commenter_id:
-            count_query.add(Q(commenter_id=commenter_id), Q.AND)
 
         return cls.objects.filter(count_query).count()
 

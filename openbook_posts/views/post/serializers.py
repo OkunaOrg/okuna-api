@@ -22,6 +22,20 @@ class DeletePostSerializer(serializers.Serializer):
     )
 
 
+class DisableCommentsPostSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+
+
+class EnableCommentsPostSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+
+
 class PostCommenterProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
@@ -408,12 +422,23 @@ class GetPostPostSerializer(serializers.ModelSerializer):
             'video',
             'creator',
             'reaction',
-            'public_comments',
+            'comments_enabled',
             'public_reactions',
             'circles',
             'community',
             'is_muted',
             'is_edited'
+        )
+
+
+class EnableDisableCommentsPostSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Post
+        fields = (
+            'id',
+            'uuid',
+            'comments_enabled'
         )
 
 

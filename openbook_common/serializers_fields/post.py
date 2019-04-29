@@ -41,8 +41,7 @@ class CommentsCountField(Field):
         comments_count = None
 
         if request_user.is_anonymous:
-            if post.public_comments:
-                comments_count = post.count_comments()
+            comments_count = post.count_comments()
         else:
             comments_count = request_user.get_comments_count_for_post(post=post)
 
