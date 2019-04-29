@@ -17,6 +17,7 @@ import random
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_emoji, make_emoji_group, make_reactions_emoji_group, \
     make_community, make_private_community
+from openbook_communities.models import Community
 from openbook_notifications.models import PostCommentNotification, PostReactionNotification, Notification
 from openbook_posts.models import Post, PostComment, PostReaction
 
@@ -85,6 +86,122 @@ class PostItemAPITests(APITestCase):
 
         user.connect_with_user_with_id(foreign_user.pk)
         foreign_user.confirm_connection_with_user_with_id(user.pk, circles_ids=[circle.pk])
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_post = json.loads(response.content)
+
+        self.assertEqual(response_post['id'], post.pk)
+
+    def test_can_retrieve_public_community_not_member_of_post(self):
+        """
+        should be able to retrieve a public community not member of post and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+
+        post = community_owner.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_post = json.loads(response.content)
+
+        self.assertEqual(response_post['id'], post.pk)
+
+    def test_can_retrieve_public_community_member_of_post(self):
+        """
+        should be able to retrieve a public community member of post and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+
+        post = community_owner.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        user.join_community_with_name(community_name=community.name)
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_post = json.loads(response.content)
+
+        self.assertEqual(response_post['id'], post.pk)
+
+    def test_cant_retrieve_community_banned_from_post(self):
+        """
+        should not be able to retrieve a community banned from post and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+
+        post = community_owner.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        user.join_community_with_name(community_name=community.name)
+        user.comment_post(post, text=make_fake_post_comment_text())
+
+        community_owner.ban_user_with_username_from_community_with_name(username=user.username,
+                                                                        community_name=community.name)
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        print(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cant_retrieve_private_community_not_member_of_post(self):
+        """
+        should not be able to retrieve a private community not member of post and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        post = community_owner.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_can_retrieve_private_community_member_of_post(self):
+        """
+        should be able to retrieve a private community member of post and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        post = community_owner.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                         community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
 
         url = self._get_url(post)
 
@@ -966,7 +1083,8 @@ class PostCommentsAPITests(APITestCase):
         community = make_community(admin)
         user.join_community_with_name(community_name=community.name)
         moderator.join_community_with_name(community_name=community.name)
-        admin.add_moderator_with_username_to_community_with_name(username=moderator.username, community_name=community.name)
+        admin.add_moderator_with_username_to_community_with_name(username=moderator.username,
+                                                                 community_name=community.name)
         post = user.create_community_post(community.name, text=make_fake_post_text())
         post.comments_enabled = False
         post.save()
@@ -1079,6 +1197,35 @@ class PostCommentsAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(PostComment.objects.filter(post_id=followed_user_post.pk, text=post_comment_text).count() == 0)
+
+    def test_cannot_comment_in_post_from_community_banned_from(self):
+        """
+          should not be able to comment in the post of a community banned from and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+
+        user.join_community_with_name(community_name=community.name)
+
+        post = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        user.comment_post(post=post, text=make_fake_post_comment_text())
+
+        community_owner.ban_user_with_username_from_community_with_name(username=user.username,
+                                                                        community_name=community.name)
+
+        new_post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(new_post_comment_text)
+
+        url = self._get_url(post)
+        response = self.client.put(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(PostComment.objects.filter(post_id=post.pk, text=new_post_comment_text).count() == 0)
 
     def test_commenting_in_foreign_post_creates_notification(self):
         """
@@ -2165,6 +2312,38 @@ class PostReactionsAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(
             PostReaction.objects.filter(post_id=followed_user_post.pk, emoji_id=post_reaction_emoji_id,
+                                        reactor_id=user.pk).count() == 0)
+
+    def test_cannot_react_in_post_from_community_banned_from(self):
+        """
+          should not be able to react in the post of a community banned from and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+
+        user.join_community_with_name(community_name=community.name)
+
+        post = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        community_owner.ban_user_with_username_from_community_with_name(username=user.username,
+                                                                        community_name=community.name)
+
+        emoji_group = make_reactions_emoji_group()
+
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id, emoji_group.pk)
+
+        url = self._get_url(post)
+        response = self.client.put(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(
+            PostReaction.objects.filter(post_id=post.pk, emoji_id=post_reaction_emoji_id,
                                         reactor_id=user.pk).count() == 0)
 
     def test_can_react_to_post_only_once(self):

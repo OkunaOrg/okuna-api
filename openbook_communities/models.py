@@ -90,20 +90,52 @@ class Community(models.Model):
         return cls.objects.filter(name=community_name, type='T').exists()
 
     @classmethod
+    def get_community_with_name_for_user_with_id(cls, community_name, user_id):
+        query = Q(name=community_name)
+        query.add(~Q(banned_users__id=user_id), Q.AND)
+        return cls.objects.get(query)
+
+    @classmethod
     def search_communities_with_query(cls, query):
+        query = cls._make_search_communities_query(query=query)
+        return cls.objects.filter(query)
+
+    @classmethod
+    def search_communities_with_query_for_user_with_id(cls, query, user_id):
+        query = cls._make_search_communities_query(query=query)
+        query.add(~Q(banned_users__id=user_id), Q.AND)
+        return cls.objects.filter(query)
+
+    @classmethod
+    def _make_search_communities_query(cls, query):
         communities_query = Q(name__icontains=query)
         communities_query.add(Q(title__icontains=query), Q.OR)
-        return cls.objects.filter(communities_query)
+        return communities_query
+
+    @classmethod
+    def get_trending_communities_for_user_with_id(cls, user_id, category_name=None):
+        trending_communities_query = cls._make_trending_communities_query(category_name=category_name)
+        trending_communities_query.add(~Q(banned_users__id=user_id), Q.AND)
+        return cls._get_trending_communities_with_query(query=trending_communities_query)
 
     @classmethod
     def get_trending_communities(cls, category_name=None):
-        trending_communities_query = Q()
+        trending_communities_query = cls._make_trending_communities_query(category_name=category_name)
+        return cls._get_trending_communities_with_query(query=trending_communities_query)
+
+    @classmethod
+    def _get_trending_communities_with_query(cls, query):
+        return cls.objects.annotate(Count('memberships')).filter(query).order_by(
+            '-memberships__count', '-created')
+
+    @classmethod
+    def _make_trending_communities_query(cls, category_name=None):
+        trending_communities_query = Q(type=cls.COMMUNITY_TYPE_PUBLIC)
 
         if category_name:
             trending_communities_query.add(Q(categories__name=category_name), Q.AND)
 
-        return cls.objects.annotate(Count('memberships')).filter(trending_communities_query).order_by(
-            '-memberships__count', '-created')
+        return trending_communities_query
 
     @classmethod
     def create_community(cls, name, title, creator, color, type=None, user_adjective=None, users_adjective=None,
