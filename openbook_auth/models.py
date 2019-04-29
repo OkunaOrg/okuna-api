@@ -2849,6 +2849,7 @@ class User(AbstractUser):
 
     def _check_can_unmute_post_with_id(self, post_id):
         self._check_has_muted_post_with_id(post_id=post_id)
+        self._check_can_see_post_with_id(post_id)
 
     def _check_has_muted_post_with_id(self, post_id):
         if not self.has_muted_post_with_id(post_id=post_id):
