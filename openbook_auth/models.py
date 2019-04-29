@@ -2170,6 +2170,7 @@ class User(AbstractUser):
             )
 
     def _check_can_edit_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
+        self._check_can_see_post_with_id(post_id)
         # Check that the comment belongs to the post
         PostComment = get_post_comment_model()
         Post = get_post_model()
@@ -2187,6 +2188,7 @@ class User(AbstractUser):
             )
 
     def _check_can_delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
+        self._check_can_see_post_with_id(post_id)
 
         # Check that the comment belongs to the post
         PostComment = get_post_comment_model()
@@ -2225,6 +2227,7 @@ class User(AbstractUser):
         self._check_comments_enabled_for_post_with_id(post.id)
 
     def _check_can_delete_reaction_with_id_for_post_with_id(self, post_reaction_id, post_id):
+        self._check_can_see_post_with_id(post_id)
         # Check if the post belongs to us
         if self.has_post_with_id(post_id):
             # Check that the comment belongs to the post
@@ -2267,7 +2270,7 @@ class User(AbstractUser):
     def _check_can_see_post(self, post):
         if not self.can_see_post(post):
             raise ValidationError(
-                _('This post is private.'),
+                _('This post is private or has been closed.'),
             )
 
     def _can_see_post(self, post):
