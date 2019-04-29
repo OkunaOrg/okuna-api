@@ -214,4 +214,154 @@ class CommunityPostsAPITest(APITestCase):
             'community_name': community_name
         })
 
-# Test creating posts
+
+class CommunityClosedPostsAPITest(APITestCase):
+
+    def test_can_retrieve_closed_posts_from_community_if_administrator(self):
+        """
+        should be able to retrieve closed posts for a community if administrator
+        """
+
+        admin = make_user()
+        community = make_community(creator=admin, type='P')
+        community_name = community.name
+
+        amount_of_community_posts = 5
+        community_posts_ids = []
+
+        for i in range(0, amount_of_community_posts):
+            community_member = make_user()
+            community_member.join_community_with_name(community_name=community_name)
+            community_member_post = community_member.create_community_post(community_name=community.name,
+                                                                           text=make_fake_post_text())
+            community_member_post.is_closed = True
+            community_member_post.save()
+            community_posts_ids.append(community_member_post.pk)
+
+        headers = make_authentication_headers_for_user(admin)
+        url = self._get_url(community_name=community.name)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), len(community_posts_ids))
+
+        for response_post in response_posts:
+            response_post_id = response_post.get('id')
+            self.assertIn(response_post_id, community_posts_ids)
+
+    def test_can_retrieve_closed_posts_from_community_if_moderator(self):
+        """
+        should be able to retrieve closed posts for a community if moderator
+        """
+
+        moderator = make_user()
+        admin = make_user()
+        community = make_community(creator=admin, type='P')
+
+        moderator.join_community_with_name(community_name=community.name)
+        admin.add_moderator_with_username_to_community_with_name(username=moderator.username,
+                                                                 community_name=community.name)
+
+        community_name = community.name
+
+        amount_of_community_posts = 5
+        community_posts_ids = []
+
+        for i in range(0, amount_of_community_posts):
+            community_member = make_user()
+            community_member.join_community_with_name(community_name=community_name)
+            community_member_post = community_member.create_community_post(community_name=community.name,
+                                                                           text=make_fake_post_text())
+            community_member_post.is_closed = True
+            community_member_post.save()
+            community_posts_ids.append(community_member_post.pk)
+
+        headers = make_authentication_headers_for_user(moderator)
+        url = self._get_url(community_name=community.name)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), len(community_posts_ids))
+
+        for response_post in response_posts:
+            response_post_id = response_post.get('id')
+            self.assertIn(response_post_id, community_posts_ids)
+
+    def test_can_retrieve_closed_posts_with_max_id_and_count(self):
+        """
+        should be able to retrieve community closed posts with a max id and count if administrator/moderator
+        """
+        admin = make_user()
+        community = make_community(creator=admin, type='P')
+        community_name = community.name
+
+        amount_of_community_posts = 10
+        count = 5
+        max_id = 6
+        community_posts_ids = []
+
+        for i in range(0, amount_of_community_posts):
+            community_member = make_user()
+            community_member.join_community_with_name(community_name=community_name)
+            community_member_post = community_member.create_community_post(community_name=community.name,
+                                                                           text=make_fake_post_text())
+            community_member_post.is_closed = True
+            community_member_post.save()
+            community_posts_ids.append(community_member_post.pk)
+
+        url = self._get_url(community_name=community.name)
+        headers = make_authentication_headers_for_user(admin)
+        response = self.client.get(url, {
+            'count': count,
+            'max_id': max_id
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(count, len(response_posts))
+
+        for response_post in response_posts:
+            response_post_id = response_post.get('id')
+            self.assertTrue(response_post_id < max_id)
+
+    def test_cannot_retrieve_closed_posts_from_community_if_member(self):
+        """
+        should not be able to retrieve closed posts for a community if just a member
+        """
+
+        admin = make_user()
+        community = make_community(creator=admin, type='P')
+
+        community_name = community.name
+
+        community_member = make_user()
+        community_member.join_community_with_name(community_name=community_name)
+
+        amount_of_community_posts = 5
+        community_posts_ids = []
+
+        for i in range(0, amount_of_community_posts):
+            community_member_post = community_member.create_community_post(community_name=community.name,
+                                                                           text=make_fake_post_text())
+            community_member_post.is_closed = True
+            community_member_post.save()
+            community_posts_ids.append(community_member_post.pk)
+
+        headers = make_authentication_headers_for_user(community_member)
+        url = self._get_url(community_name=community.name)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def _get_url(self, community_name):
+        return reverse('closed-community-posts', kwargs={
+            'community_name': community_name
+        })
