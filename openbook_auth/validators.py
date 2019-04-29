@@ -38,10 +38,3 @@ def user_email_exists(email):
         raise NotFound(
             _('No user with the provided email exists.'),
         )
-
-
-def is_of_legal_age_validator(is_confirmed):
-    if is_confirmed is False:
-        raise ValidationError(
-            _('You must confirm you are over 16 years old to make an account'),
-        )

@@ -46,6 +46,7 @@ class User(AbstractUser):
 
     username_validator = UnicodeUsernameValidator() if six.PY3 else ASCIIUsernameValidator()
     is_email_verified = models.BooleanField(default=False)
+    are_guidelines_accepted = models.BooleanField(default=False)
 
     username = models.CharField(
         _('username'),
@@ -73,8 +74,21 @@ class User(AbstractUser):
 
     @classmethod
     def create_user(cls, username, email=None, password=None, name=None, avatar=None, is_of_legal_age=None,
-                    badge=None, **extra_fields):
-        new_user = cls.objects.create_user(username, email=email, password=password, **extra_fields)
+                    are_guidelines_accepted=None,
+                    badge=None):
+
+        if not is_of_legal_age:
+            raise ValidationError(
+                _('You must confirm you are over 16 years old to make an account'),
+            )
+
+        if not are_guidelines_accepted:
+            raise ValidationError(
+                _('You must accept the guidelines to make an account'),
+            )
+
+        new_user = cls.objects.create_user(username, email=email, password=password,
+                                           are_guidelines_accepted=are_guidelines_accepted)
         user_profile = bootstrap_user_profile(name=name, user=new_user, avatar=avatar,
                                               is_of_legal_age=is_of_legal_age)
 
@@ -274,6 +288,11 @@ class User(AbstractUser):
     def verify_email_with_token(self, token):
         new_email = self._check_email_verification_token_is_valid_for_email(email_verification_token=token)
         self.email = new_email
+        self.save()
+
+    def accept_guidelines(self):
+        self._check_can_accept_guidelines()
+        self.are_guidelines_accepted = True
         self.save()
 
     def verify_password_reset_token(self, token, password):
@@ -2783,6 +2802,10 @@ class User(AbstractUser):
     def _check_device_with_uuid_does_not_exist(self, device_uuid):
         if self.devices.filter(uuid=device_uuid).exists():
             raise ValidationError('Device already exists')
+
+    def _check_can_accept_guidelines(self):
+        if self.are_guidelines_accepted:
+            raise ValidationError('Guidelines were already accepted')
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='bootstrap_auth_token')
