@@ -516,9 +516,18 @@ class User(AbstractUser):
         if post.creator_id == self.pk or post.is_public_post():
             return True
 
+        # @todo: find better way for checking is_closed
         if post.community:
-            if self.get_community_post_with_id(post_id=post.pk).exists():
-                return True
+            posts = self.get_community_post_with_id(post_id=post.pk)
+            if posts.exists():
+                post = posts[0]
+                community_name = post.community.name
+                is_moderator = self.is_moderator_of_community_with_name(community_name=community_name)
+                is_administrator = self.is_administrator_of_community_with_name(community_name=community_name)
+                if post.is_closed and (is_moderator or is_administrator or post.creator.pk == self.pk):
+                    return True
+                elif not post.is_closed:
+                    return True
         else:
             # Check if we can retrieve the post
             if self._can_see_post(post=post):
@@ -1417,12 +1426,12 @@ class User(AbstractUser):
         post_query = Q(id=post_id)
 
         post_query_visibility_query = Q(community__memberships__user__id=self.pk)
-        post_query_visibility_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, ), Q.OR)
+        post_query_visibility_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC), Q.OR)
 
         post_query.add(post_query_visibility_query, Q.AND)
 
         Post = get_post_model()
-        profile_posts = Post.objects.filter(post_query)
+        profile_posts = Post.objects.select_related('community').filter(post_query)
 
         return profile_posts
 
