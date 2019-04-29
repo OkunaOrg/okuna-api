@@ -1291,14 +1291,22 @@ class User(AbstractUser):
 
         return User.objects.filter(followings_query).distinct()
 
-    def search_communities_with_query(self, query):
-        # In the future, the user might have blocked communities which should not be displayed
+    def get_trending_posts(self):
+        Post = get_post_model()
+        return Post.get_trending_posts_for_user_with_id(user_id=self.pk)
+
+    def get_trending_communities(self, category_name=None):
         Community = get_community_model()
-        return Community.search_communities_with_query(query)
+        return Community.get_trending_communities_for_user_with_id(user_id=self.pk, category_name=category_name)
+
+    def search_communities_with_query(self, query):
+        Community = get_community_model()
+        return Community.search_communities_with_query_for_user_with_id(query, user_id=self.pk)
 
     def get_community_with_name(self, community_name):
+        self._check_can_get_community_with_name(community_name=community_name)
         Community = get_community_model()
-        return Community.objects.get(name=community_name)
+        return Community.get_community_with_name_for_user_with_id(community_name=community_name, user_id=self.pk)
 
     def get_joined_communities(self):
         Community = get_community_model()
@@ -1399,6 +1407,8 @@ class User(AbstractUser):
     def get_community_post_with_id(self, post_id):
         Community = get_community_model()
         post_query = Q(id=post_id)
+
+        post_query.add(~Q(community__banned_users__id=self.pk), Q.AND)
 
         post_query_visibility_query = Q(community__memberships__user__id=self.pk)
         post_query_visibility_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, ), Q.OR)
@@ -2450,6 +2460,7 @@ class User(AbstractUser):
             )
 
     def _check_can_get_posts_for_community_with_name(self, community_name):
+        self._check_is_not_banned_from_community_with_name(community_name=community_name)
         Community = get_community_model()
         if Community.is_community_with_name_private(
                 community_name=community_name) and not self.is_member_of_community_with_name(
@@ -2459,8 +2470,7 @@ class User(AbstractUser):
             )
 
     def _check_can_get_community_with_name_members(self, community_name):
-        if self.is_banned_from_community_with_name(community_name):
-            raise ValidationError('You can\'t get the members of a community you have been banned from.')
+        self._check_is_not_banned_from_community_with_name(community_name=community_name)
 
         Community = get_community_model()
 
@@ -2611,8 +2621,7 @@ class User(AbstractUser):
             )
 
     def _check_can_get_community_with_name_administrators(self, community_name):
-        # Anyone can get the administrators of the community
-        return True
+        self._check_is_not_banned_from_community_with_name(community_name=community_name)
 
     def _check_can_add_moderator_with_username_to_community_with_name(self, username, community_name):
         if not self.is_administrator_of_community_with_name(community_name=community_name):
@@ -2655,8 +2664,11 @@ class User(AbstractUser):
             )
 
     def _check_can_get_community_with_name_moderators(self, community_name):
-        # Anyone can see community moderators
-        return True
+        self._check_is_not_banned_from_community_with_name(community_name=community_name)
+
+    def _check_is_not_banned_from_community_with_name(self, community_name):
+        if self.is_banned_from_community_with_name(community_name):
+            raise PermissionDenied('You have been banned from this community.')
 
     def _check_can_update_circle_with_id(self, circle_id):
         if not self.has_circle_with_id(circle_id):
@@ -2806,6 +2818,9 @@ class User(AbstractUser):
     def _check_can_accept_guidelines(self):
         if self.are_guidelines_accepted:
             raise ValidationError('Guidelines were already accepted')
+
+    def _check_can_get_community_with_name(self, community_name):
+        self._check_is_not_banned_from_community_with_name(community_name=community_name)
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='bootstrap_auth_token')
