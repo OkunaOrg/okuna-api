@@ -502,6 +502,97 @@ class MutePostAPITests(APITestCase):
 
         self.assertTrue(user.has_muted_post_with_id(post.pk))
 
+    def test_cannot_mute_closed_community_post(self):
+        """
+        should not be able to mute closed post if not admin/mod or post creator in community
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        community = make_community(creator=foreign_user)
+        user.join_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(user)
+        post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(user.has_muted_post_with_id(post.pk))
+
+    def test_can_mute_closed_community_post_if_creator(self):
+        """
+        should be able to mute closed post if post creator in community
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        community = make_community(creator=foreign_user)
+        user.join_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(user.has_muted_post_with_id(post.pk))
+
+    def test_can_mute_closed_community_post_administrator(self):
+        """
+        should be able to mute closed post if administrator in community
+        """
+        user = make_user()
+
+        admin = make_user()
+        community = make_community(creator=admin)
+        user.join_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(admin)
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(admin.has_muted_post_with_id(post.pk))
+
+    def test_can_mute_closed_community_post_if_moderator(self):
+        """
+        should be able to mute closed post if moderator in community
+        """
+        user = make_user()
+
+        admin = make_user()
+        moderator = make_user()
+        community = make_community(creator=admin)
+        user.join_community_with_name(community_name=community.name)
+        moderator.join_community_with_name(community_name=community.name)
+        admin.add_moderator_with_username_to_community_with_name(username=moderator.username, community_name=community.name)
+
+        headers = make_authentication_headers_for_user(moderator)
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(moderator.has_muted_post_with_id(post.pk))
+
     def test_cant_mute_community_post_if_private_and_not_member(self):
         user = make_user()
 
@@ -589,6 +680,101 @@ class UnmutePostAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         self.assertFalse(user.has_muted_post_with_id(post.pk))
+
+    def test_cannot_unmute_closed_community_post(self):
+        """
+        should not be able to unmute closed post if not admin/mod or post creator in community
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        community = make_community(creator=foreign_user)
+        user.join_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(user)
+        post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        user.mute_post_with_id(post.pk)
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(user.has_muted_post_with_id(post.pk))
+
+    def test_can_unmute_closed_community_post_if_creator(self):
+        """
+        should be able to unmute closed post if post creator in community
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        community = make_community(creator=foreign_user)
+        user.join_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        user.mute_post_with_id(post.pk)
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(user.has_muted_post_with_id(post.pk))
+
+    def test_can_unmute_closed_community_post_administrator(self):
+        """
+        should be able to unmute closed post if administrator in community
+        """
+        user = make_user()
+
+        admin = make_user()
+        community = make_community(creator=admin)
+        user.join_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(admin)
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        admin.mute_post_with_id(post.pk)
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(admin.has_muted_post_with_id(post.pk))
+
+    def test_can_unmute_closed_community_post_if_moderator(self):
+        """
+        should be able to unmute closed post if moderator in community
+        """
+        user = make_user()
+
+        admin = make_user()
+        moderator = make_user()
+        community = make_community(creator=admin)
+        user.join_community_with_name(community_name=community.name)
+        moderator.join_community_with_name(community_name=community.name)
+        admin.add_moderator_with_username_to_community_with_name(username=moderator.username, community_name=community.name)
+
+        headers = make_authentication_headers_for_user(moderator)
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        moderator.mute_post_with_id(post.pk)
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(moderator.has_muted_post_with_id(post.pk))
 
     def _get_url(self, post):
         return reverse('unmute-post', kwargs={
