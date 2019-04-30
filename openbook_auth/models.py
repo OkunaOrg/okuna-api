@@ -529,10 +529,9 @@ class User(AbstractUser):
 
     def can_see_post(self, post):
         # Check if post is public
-        if post.creator_id == self.pk or post.is_public_post():
+        if post.creator_id == self.pk:
             return True
-
-        if post.community:
+        elif post.community:
             if self._can_see_community_with_id_post_with_id(community_id=post.community_id, post_id=post.pk):
                 return True
         else:
@@ -1521,6 +1520,9 @@ class User(AbstractUser):
 
         community_posts_query = Q(community__memberships__user__id=self.pk)
 
+        community_posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
+            creator__user_blocks__blocked_user_id=self.pk)), Q.AND)
+
         if max_id:
             community_posts_query.add(Q(id__lt=max_id), Q.AND)
 
@@ -2014,7 +2016,6 @@ class User(AbstractUser):
                                   circles__connections__target_connection__circles__isnull=False), Q.OR)
 
         posts_query.add(posts_circles_query, Q.AND)
-
         posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
             creator__user_blocks__blocked_user_id=self.pk)), Q.AND)
 

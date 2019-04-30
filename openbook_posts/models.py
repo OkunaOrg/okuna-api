@@ -18,7 +18,7 @@ from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
 from openbook_common.models import Emoji
-from openbook_common.utils.model_loaders import get_post_reaction_model, get_emoji_model, \
+from openbook_common.utils.model_loaders import get_emoji_model, \
     get_circle_model, get_community_model
 from imagekit.models import ProcessedImageField
 
