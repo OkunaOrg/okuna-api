@@ -36,10 +36,13 @@ class SearchUsersAPITests(APITestCase):
         user_d.username = 'lolwayne'
         user_d.save()
 
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
         url = self._get_url()
         response = self.client.get(url, {
             'query': 'lil'
-        })
+        }, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -61,11 +64,14 @@ class SearchUsersAPITests(APITestCase):
             user.profile.name = 'John Cena'
             user.profile.save()
 
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
         url = self._get_url()
         response = self.client.get(url, {
             'query': 'john',
             'count': limited_users
-        })
+        }, **headers)
 
         parsed_reponse = json.loads(response.content)
 

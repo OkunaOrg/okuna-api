@@ -22,7 +22,7 @@ def get_post_mute_model():
 
 
 def get_user_block_model():
-    return apps.get_model('openbook_users.UserBlock')
+    return apps.get_model('openbook_auth.UserBlock')
 
 
 def get_list_model():

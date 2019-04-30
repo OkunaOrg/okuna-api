@@ -113,7 +113,7 @@ class PostItemAPITests(APITestCase):
 
         response = self.client.get(url, **headers)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
 
         response_post = json.loads(response.content)
 
