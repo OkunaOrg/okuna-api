@@ -159,7 +159,7 @@ class PasswordResetRequest(APIView):
         user = None
         if has_username:
             username = data.get('username')
-            user = User.get_user_with_username(username)
+            user = User.objects.get(username=username)
 
         if has_email:
             email = data.get('email')

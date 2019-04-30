@@ -132,10 +132,6 @@ class User(AbstractUser):
         return result
 
     @classmethod
-    def get_user_with_username(cls, user_username):
-        return cls.objects.get(username=user_username)
-
-    @classmethod
     def get_user_with_email(cls, user_email):
         return cls.objects.get(email=user_email)
 
@@ -152,12 +148,6 @@ class User(AbstractUser):
             temp_username = username + str(secrets.randbelow(9999))
 
         return temp_username
-
-    @classmethod
-    def get_public_users_with_query(cls, query):
-        users_query = Q(username__icontains=query)
-        users_query.add(Q(profile__name__icontains=query), Q.OR)
-        return cls.objects.filter(users_query)
 
     @classmethod
     def get_user_for_password_reset_token(cls, password_verification_token):
@@ -454,6 +444,10 @@ class User(AbstractUser):
     def has_blocked_user_with_id(self, user_id):
         return self.user_blocks.filter(blocked_user_id=user_id).exists()
 
+    def is_blocked_with_user_with_id(self, user_id):
+        UserBlock = get_user_block_model()
+        return UserBlock.users_are_blocked(user_a_id=self.pk, user_b_id=user_id)
+
     def has_circles_with_ids(self, circles_ids):
         return self.circles.filter(id__in=circles_ids).count() == len(circles_ids)
 
@@ -475,10 +469,6 @@ class User(AbstractUser):
 
     def is_banned_from_community_with_name(self, community_name):
         return self.banned_of_communities.filter(name=community_name).exists()
-
-    def is_blocked_by_user_with_id(self, user_id):
-        UserBlock = get_user_block_model()
-        return UserBlock.objects.filter(blocked_user_id=self.pk, blocker_id=user_id).exists()
 
     def is_creator_of_community_with_name(self, community_name):
         return self.created_communities.filter(name=community_name).exists()
@@ -543,7 +533,7 @@ class User(AbstractUser):
             return True
 
         if post.community:
-            if self.get_community_post_with_id(post_id=post.pk).exists():
+            if self._can_see_community_with_id_post_with_id(community_id=post.community_id, post_id=post.pk):
                 return True
         else:
             # Check if we can retrieve the post
@@ -1242,7 +1232,10 @@ class User(AbstractUser):
 
     def search_users_with_query(self, query):
         # In the future, the user might have blocked users which should not be displayed
-        return User.get_public_users_with_query(query)
+        users_query = Q(username__icontains=query)
+        users_query.add(Q(profile__name__icontains=query), Q.OR)
+        users_query.add(~Q(blocked_by_users__blocker_id=self.pk) & ~Q(user_blocks__blocked_user_id=self.pk), Q.AND)
+        return User.objects.filter(users_query)
 
     def get_linked_users(self, max_id=None):
         # All users which are connected with us and we have accepted by adding
@@ -1383,6 +1376,11 @@ class User(AbstractUser):
         # We have to be mindful with using bulk delete as it does not call the delete() method per instance
         Post.objects.filter(id=post_id).delete()
 
+    def get_user_with_username(self, username):
+        user = User.objects.get(username=username)
+        self._check_is_not_blocked_with_user_with_id(user_id=user.pk)
+        return user
+
     def get_posts_for_community_with_name(self, community_name, max_id=None):
         """
         :param community_name:
@@ -1394,13 +1392,13 @@ class User(AbstractUser):
         Community = get_community_model()
         community = Community.objects.get(name=community_name)
 
-        posts_query = Q(community__id=community.pk)
+        community_posts_query = self._make_get_community_with_id_posts_query(community_id=community.pk)
 
         if max_id:
-            posts_query.add(Q(id__lt=max_id), Q.AND)
+            community_posts_query.add(Q(id__lt=max_id), Q.AND)
 
         Post = get_post_model()
-        profile_posts = Post.objects.filter(posts_query).distinct()
+        profile_posts = Post.objects.filter(community_posts_query).distinct()
 
         return profile_posts
 
@@ -1409,22 +1407,6 @@ class User(AbstractUser):
         post = Post.objects.get(pk=post_id)
         self._check_can_see_post(post=post)
         return post
-
-    def get_community_post_with_id(self, post_id):
-        Community = get_community_model()
-        post_query = Q(id=post_id)
-
-        post_query.add(~Q(community__banned_users__id=self.pk), Q.AND)
-
-        post_query_visibility_query = Q(community__memberships__user__id=self.pk)
-        post_query_visibility_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, ), Q.OR)
-
-        post_query.add(post_query_visibility_query, Q.AND)
-
-        Post = get_post_model()
-        profile_posts = Post.objects.filter(post_query)
-
-        return profile_posts
 
     def get_posts(self, max_id=None):
         """
@@ -1801,9 +1783,14 @@ class User(AbstractUser):
         self._check_can_block_user_with_id(user_id=user_id)
 
         if self.is_connected_with_user_with_id(user_id=user_id):
+            # This does unfollow too
             self.disconnect_from_user_with_id(user_id=user_id)
         elif self.is_following_user_with_id(user_id=user_id):
             self.unfollow_user_with_id(user_id=user_id)
+
+        user_to_block = User.objects.get(pk=user_id)
+        if user_to_block.is_following_user_with_id(user_id=self.pk):
+            user_to_block.unfollow_user_with_id(self.pk)
 
         UserBlock = get_user_block_model()
         UserBlock.create_user_block(blocker_id=self.pk, blocked_user_id=self.pk)
@@ -2027,6 +2014,9 @@ class User(AbstractUser):
                                   circles__connections__target_connection__circles__isnull=False), Q.OR)
 
         posts_query.add(posts_circles_query, Q.AND)
+
+        posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
+            creator__user_blocks__blocked_user_id=self.pk)), Q.AND)
 
         if max_id:
             posts_query.add(Q(id__lt=max_id), Q.AND)
@@ -2284,6 +2274,42 @@ class User(AbstractUser):
 
         return profile_posts.exists()
 
+    def _can_see_community_with_id_post_with_id(self, community_id, post_id):
+        community_posts_query = self._make_get_community_with_id_posts_query(community_id=community_id)
+
+        community_posts_query.add(Q(pk=post_id), Q.AND)
+
+        Post = get_post_model()
+        return Post.objects.filter(community_posts_query).exists()
+
+    def _make_get_community_with_id_posts_query(self, community_id):
+        # Retrieve posts from the given community name
+        community_posts_query = Q(community_id=community_id)
+
+        # Only retrieve posts if we're not banned
+        community_posts_query.add(~Q(community__banned_users__id=self.pk), Q.AND)
+
+        # Ensure public/private visibility is respected
+        community_posts_visibility_query = Q(community__memberships__user__id=self.pk)
+        Community = get_community_model()
+        community_posts_visibility_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, ), Q.OR)
+
+        community_posts_query.add(community_posts_visibility_query, Q.AND)
+
+        # Don't retrieve posts of blocked users, except if they're staff members
+        blocked_users_query = ~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
+            creator__user_blocks__blocked_user_id=self.pk))
+
+        blocked_users_query_staff_members = Q(creator__communities_memberships__community_id=community_id)
+        blocked_users_query_staff_members.add(Q(creator__communities_memberships__is_administrator=True) | Q(
+            creator__communities_memberships__is_moderator=True), Q.AND)
+
+        blocked_users_query.add(~blocked_users_query_staff_members, Q.AND)
+
+        community_posts_query.add(blocked_users_query, Q.AND)
+
+        return community_posts_query
+
     def _check_follow_lists_ids(self, lists_ids):
         for list_id in lists_ids:
             self._check_follow_list_id(list_id)
@@ -2340,7 +2366,7 @@ class User(AbstractUser):
             self._check_circle_name_not_taken(name)
 
     def _check_can_follow_user_with_id(self, user_id):
-        self._check_is_not_blocked_by_user_with_id(user_id=user_id)
+        self._check_is_not_blocked_with_user_with_id(user_id=user_id)
         self._check_is_not_following_user_with_id(user_id)
         self._check_has_not_reached_max_follows()
 
@@ -2378,10 +2404,6 @@ class User(AbstractUser):
                 _('Not following user.'),
             )
 
-    def _check_can_connect_with_user_with_id(self, user_id):
-        self._check_is_not_connected_with_user_with_id(user_id)
-        self._check_has_not_reached_max_connections()
-
     def _check_has_not_reached_max_connections(self):
         if self.count_connections() > settings.USER_MAX_CONNECTIONS:
             raise ValidationError(
@@ -2389,8 +2411,9 @@ class User(AbstractUser):
             )
 
     def _check_can_connect_with_user_with_id(self, user_id):
-        self._check_is_not_blocked_by_user_with_id(user_id=user_id)
+        self._check_is_not_blocked_with_user_with_id(user_id=user_id)
         self._check_is_not_connected_with_user_with_id(user_id=user_id)
+        self._check_has_not_reached_max_connections()
 
     def _check_is_not_connected_with_user_with_id(self, user_id):
         if self.is_connected_with_user_with_id(user_id):
@@ -2849,16 +2872,18 @@ class User(AbstractUser):
         self._check_is_not_banned_from_community_with_name(community_name=community_name)
 
     def _check_can_block_user_with_id(self, user_id):
-        if self.has_blocked_user_with_id(user_id=user_id):
-            raise ValidationError(_('You have already blocked this account.'))
+        self._check_is_not_blocked_with_user_with_id(user_id=user_id)
 
     def _check_can_unblock_user_with_id(self, user_id):
         if not self.has_blocked_user_with_id(user_id=user_id):
             raise ValidationError(_('You cannot unblock and account you have not blocked.'))
 
-    def _check_is_not_blocked_by_user_with_id(self, user_id):
-        if self.is_blocked_by_user_with_id(user_id=user_id):
-            raise PermissionDenied(_('You have been blocked by this account.'))
+    def _check_is_not_blocked_with_user_with_id(self, user_id):
+        """
+        Checks that there is not a block between us and the given user_id
+        """
+        if self.is_blocked_with_user_with_id(user_id=user_id):
+            raise PermissionDenied(_('Blocked.'))
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='bootstrap_auth_token')
@@ -2952,7 +2977,7 @@ class UserNotificationsSettings(models.Model):
 
 
 class UserBlock(models.Model):
-    blocked_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
+    blocked_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='blocked_by_users')
     blocker = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_blocks')
 
     class Meta:
@@ -2961,6 +2986,11 @@ class UserBlock(models.Model):
     @classmethod
     def create_user_block(cls, user_id, blocked_user_id):
         return cls.objects.create(user_id=user_id, blocked_user_id=blocked_user_id)
+
+    @classmethod
+    def users_are_blocked(cls, user_a_id, user_b_id):
+        return cls.objects.filter(Q(blocked_user_id=user_a_id, blocker_id=user_b_id) | Q(blocked_user_id=user_b_id,
+                                                                                         blocker_id=user_a_id)).exists()
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='bootstrap_notifications_settings')
