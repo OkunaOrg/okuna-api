@@ -1793,7 +1793,7 @@ class User(AbstractUser):
             user_to_block.unfollow_user_with_id(self.pk)
 
         UserBlock = get_user_block_model()
-        UserBlock.create_user_block(blocker_id=self.pk, blocked_user_id=self.pk)
+        UserBlock.create_user_block(blocker_id=self.pk, blocked_user_id=user_id)
 
     def unblock_user_with_id(self, user_id):
         self._check_can_unblock_user_with_id(user_id=user_id)
@@ -2872,6 +2872,8 @@ class User(AbstractUser):
         self._check_is_not_banned_from_community_with_name(community_name=community_name)
 
     def _check_can_block_user_with_id(self, user_id):
+        if user_id == self.pk:
+            raise ValidationError(_('You cannot block yourself.'))
         self._check_is_not_blocked_with_user_with_id(user_id=user_id)
 
     def _check_can_unblock_user_with_id(self, user_id):
@@ -2984,8 +2986,8 @@ class UserBlock(models.Model):
         unique_together = ('blocked_user', 'blocker',)
 
     @classmethod
-    def create_user_block(cls, user_id, blocked_user_id):
-        return cls.objects.create(user_id=user_id, blocked_user_id=blocked_user_id)
+    def create_user_block(cls, blocker_id, blocked_user_id):
+        return cls.objects.create(blocker_id=blocker_id, blocked_user_id=blocked_user_id)
 
     @classmethod
     def users_are_blocked(cls, user_a_id, user_b_id):

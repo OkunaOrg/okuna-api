@@ -55,6 +55,44 @@ class SearchUsersAPITests(APITestCase):
         for lil_user in lil_users:
             self.assertIn(lil_user.username, response_usernames)
 
+    def test_cant_query_blocked_user(self):
+        user = make_user()
+
+        user_to_query = make_user()
+        user.block_user_with_id(user_id=user_to_query.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+        response = self.client.get(url, {
+            'query': user_to_query.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(len(parsed_response), 0)
+
+    def test_cant_query_blocking_user(self):
+        user = make_user()
+
+        user_to_query = make_user()
+        user_to_query.block_user_with_id(user_id=user.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+        response = self.client.get(url, {
+            'query': user_to_query.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(len(parsed_response), 0)
+
     def test_can_limit_amount_of_queried_users(self):
         total_users = 10
         limited_users = 5
@@ -104,6 +142,38 @@ class GetUserAPITests(APITestCase):
         self.assertIn('username', parsed_response)
         response_username = parsed_response['username']
         self.assertEqual(response_username, user.username)
+
+    def test_cant_retrieve_blocked_user(self):
+        """
+        should not be able to retrieve a blocked user and return 403
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user_to_retrieve = make_user()
+        user.block_user_with_id(user_id=user_to_retrieve.pk)
+
+        url = self._get_url(user_to_retrieve)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_cant_retrieve_blocking_user(self):
+        """
+        should not be able to retrieve a blocking user and return 403
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user_to_retrieve = make_user()
+        user_to_retrieve.block_user_with_id(user_id=user.pk)
+
+        url = self._get_url(user_to_retrieve)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def _get_url(self, user):
         return reverse('get-user', kwargs={
