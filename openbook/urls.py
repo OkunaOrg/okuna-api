@@ -22,7 +22,7 @@ from django.conf.urls.static import static
 from openbook_auth.views.auth.views import Register, Login, UsernameCheck, EmailCheck, EmailVerify, \
     PasswordResetRequest, PasswordResetVerify
 from openbook_auth.views.authenticated_user.views import AuthenticatedUser, AuthenticatedUserSettings, \
-    DeleteAuthenticatedUser, AuthenticatedUserNotificationsSettings
+    DeleteAuthenticatedUser, AuthenticatedUserNotificationsSettings, AuthenticatedUserAcceptGuidelines
 from openbook_auth.views.followers.views import Followers, SearchFollowers
 from openbook_auth.views.following.views import Followings, SearchFollowings
 from openbook_auth.views.linked_users.views import LinkedUsers, SearchLinkedUsers
@@ -69,6 +69,8 @@ auth_patterns = [
     path('user/delete/', DeleteAuthenticatedUser.as_view(), name='delete-authenticated-user'),
     path('user/notifications-settings/', AuthenticatedUserNotificationsSettings.as_view(),
          name='authenticated-user-notifications-settings'),
+    path('user/accept-guidelines/', AuthenticatedUserAcceptGuidelines.as_view(),
+         name='authenticated-user-accept-guidelines'),
     path('users/<str:user_username>/', GetUser.as_view(), name='get-user'),
     path('users/', SearchUsers.as_view(), name='search-users'),
     path('linked-users/', LinkedUsers.as_view(), name='linked-users'),
@@ -228,7 +230,6 @@ invites_patterns = [
     path('<str:invite_id>/', UserInvite.as_view(), name='invite'),
     path('<str:invite_id>/email/', SendUserInviteEmail.as_view(), name='send-invite-email'),
 ]
-
 
 api_patterns = [
     path('auth/', include(auth_patterns)),

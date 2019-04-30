@@ -133,6 +133,33 @@ class CommunityModeratorsAPITest(APITestCase):
             response_moderator_id = response_moderator.get('id')
             self.assertIn(response_moderator_id, moderators_ids)
 
+    def test_cant_get_community_moderators_if_banned(self):
+        """
+        should not be able to retrieve the community moderators if user has been banned from community
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+        community_name = community.name
+
+        user.join_community_with_name(community_name)
+        community_owner.ban_user_with_username_from_community_with_name(username=user.username,
+                                                                        community_name=community.name)
+        amount_of_moderators = 5
+
+        for i in range(0, amount_of_moderators):
+            community_member = make_user()
+            community_member.join_community_with_name(community_name)
+            community_owner.add_moderator_with_username_to_community_with_name(username=community_member,
+                                                                               community_name=community.name)
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_can_add_community_moderator_if_creator(self):
         """
         should be able to add a community moderator if user is creator of community

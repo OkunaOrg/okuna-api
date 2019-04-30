@@ -146,6 +146,29 @@ class CommunityPostsAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_cannot_retrieve_posts_from_community_banned_from(self):
+        """
+        should not be able to retrieve the posts for a community banned from and return 403
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+
+        community_owner.create_community_post(community_name=community.name,
+                                              text=make_fake_post_text())
+
+        user.join_community_with_name(community_name=community.name)
+
+        community_owner.ban_user_with_username_from_community_with_name(username=user.username,
+                                                                        community_name=community.name)
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_can_create_community_text_post_part_of(self):
         """
         should be able to create a post for a community part of and return 201

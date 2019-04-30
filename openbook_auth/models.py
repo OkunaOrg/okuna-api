@@ -46,6 +46,7 @@ class User(AbstractUser):
 
     username_validator = UnicodeUsernameValidator() if six.PY3 else ASCIIUsernameValidator()
     is_email_verified = models.BooleanField(default=False)
+    are_guidelines_accepted = models.BooleanField(default=False)
 
     username = models.CharField(
         _('username'),
@@ -73,8 +74,21 @@ class User(AbstractUser):
 
     @classmethod
     def create_user(cls, username, email=None, password=None, name=None, avatar=None, is_of_legal_age=None,
-                    badge=None, **extra_fields):
-        new_user = cls.objects.create_user(username, email=email, password=password, **extra_fields)
+                    are_guidelines_accepted=None,
+                    badge=None):
+
+        if not is_of_legal_age:
+            raise ValidationError(
+                _('You must confirm you are over 16 years old to make an account'),
+            )
+
+        if not are_guidelines_accepted:
+            raise ValidationError(
+                _('You must accept the guidelines to make an account'),
+            )
+
+        new_user = cls.objects.create_user(username, email=email, password=password,
+                                           are_guidelines_accepted=are_guidelines_accepted)
         user_profile = bootstrap_user_profile(name=name, user=new_user, avatar=avatar,
                                               is_of_legal_age=is_of_legal_age)
 
@@ -274,6 +288,11 @@ class User(AbstractUser):
     def verify_email_with_token(self, token):
         new_email = self._check_email_verification_token_is_valid_for_email(email_verification_token=token)
         self.email = new_email
+        self.save()
+
+    def accept_guidelines(self):
+        self._check_can_accept_guidelines()
+        self.are_guidelines_accepted = True
         self.save()
 
     def verify_password_reset_token(self, token, password):
@@ -516,8 +535,9 @@ class User(AbstractUser):
         if post.creator_id == self.pk or post.is_public_post():
             return True
 
-        if post.community and self.get_community_post_with_id(post_id=post.pk).exists():
-            return True
+        if post.community:
+            if self.get_community_post_with_id(post_id=post.pk).exists():
+                return True
         else:
             # Check if we can retrieve the post
             if self._can_see_post(post=post):
@@ -1271,14 +1291,22 @@ class User(AbstractUser):
 
         return User.objects.filter(followings_query).distinct()
 
-    def search_communities_with_query(self, query):
-        # In the future, the user might have blocked communities which should not be displayed
+    def get_trending_posts(self):
+        Post = get_post_model()
+        return Post.get_trending_posts_for_user_with_id(user_id=self.pk)
+
+    def get_trending_communities(self, category_name=None):
         Community = get_community_model()
-        return Community.search_communities_with_query(query)
+        return Community.get_trending_communities_for_user_with_id(user_id=self.pk, category_name=category_name)
+
+    def search_communities_with_query(self, query):
+        Community = get_community_model()
+        return Community.search_communities_with_query_for_user_with_id(query, user_id=self.pk)
 
     def get_community_with_name(self, community_name):
+        self._check_can_get_community_with_name(community_name=community_name)
         Community = get_community_model()
-        return Community.objects.get(name=community_name)
+        return Community.get_community_with_name_for_user_with_id(community_name=community_name, user_id=self.pk)
 
     def get_joined_communities(self):
         Community = get_community_model()
@@ -1415,6 +1443,10 @@ class User(AbstractUser):
         Community = get_community_model()
         post_query = Q(id=post_id)
 
+        post_query.add(~Q(community__banned_users__id=self.pk), Q.AND)
+
+        post_query_visibility_query = Q(community__memberships__user__id=self.pk)
+        post_query_visibility_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, ), Q.OR)
         post_query_visibility_query = Q(community__memberships__user__id=self.pk, is_closed=False)
 
         post_query_visibility_query.add(Q(community__memberships__user__id=self.pk,
@@ -1432,7 +1464,7 @@ class User(AbstractUser):
         post_query.add(post_query_visibility_query, Q.AND)
 
         Post = get_post_model()
-        profile_posts = Post.objects.select_related('community').filter(post_query)
+        profile_posts = Post.objects.filter(post_query)
 
         return profile_posts
 
@@ -2513,6 +2545,7 @@ class User(AbstractUser):
             )
 
     def _check_can_get_posts_for_community_with_name(self, community_name):
+        self._check_is_not_banned_from_community_with_name(community_name=community_name)
         Community = get_community_model()
         if Community.is_community_with_name_private(
                 community_name=community_name) and not self.is_member_of_community_with_name(
@@ -2529,8 +2562,7 @@ class User(AbstractUser):
             )
 
     def _check_can_get_community_with_name_members(self, community_name):
-        if self.is_banned_from_community_with_name(community_name):
-            raise ValidationError('You can\'t get the members of a community you have been banned from.')
+        self._check_is_not_banned_from_community_with_name(community_name=community_name)
 
         Community = get_community_model()
 
@@ -2681,8 +2713,7 @@ class User(AbstractUser):
             )
 
     def _check_can_get_community_with_name_administrators(self, community_name):
-        # Anyone can get the administrators of the community
-        return True
+        self._check_is_not_banned_from_community_with_name(community_name=community_name)
 
     def _check_can_add_moderator_with_username_to_community_with_name(self, username, community_name):
         if not self.is_administrator_of_community_with_name(community_name=community_name):
@@ -2725,8 +2756,11 @@ class User(AbstractUser):
             )
 
     def _check_can_get_community_with_name_moderators(self, community_name):
-        # Anyone can see community moderators
-        return True
+        self._check_is_not_banned_from_community_with_name(community_name=community_name)
+
+    def _check_is_not_banned_from_community_with_name(self, community_name):
+        if self.is_banned_from_community_with_name(community_name):
+            raise PermissionDenied('You have been banned from this community.')
 
     def _check_can_update_circle_with_id(self, circle_id):
         if not self.has_circle_with_id(circle_id):
@@ -2873,6 +2907,13 @@ class User(AbstractUser):
     def _check_device_with_uuid_does_not_exist(self, device_uuid):
         if self.devices.filter(uuid=device_uuid).exists():
             raise ValidationError('Device already exists')
+
+    def _check_can_accept_guidelines(self):
+        if self.are_guidelines_accepted:
+            raise ValidationError('Guidelines were already accepted')
+
+    def _check_can_get_community_with_name(self, community_name):
+        self._check_is_not_banned_from_community_with_name(community_name=community_name)
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='bootstrap_auth_token')

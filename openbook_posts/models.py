@@ -106,18 +106,28 @@ class Post(models.Model):
         return [{'emoji': emoji, 'count': emoji.reactions__count} for emoji in emojis]
 
     @classmethod
-    def get_trending_posts(cls):
-        Community = get_community_model()
+    def get_trending_posts_for_user_with_id(cls, user_id):
+        trending_posts_query = cls._get_trending_posts_query()
+        trending_posts_query.add(~Q(community__banned_users__id=user_id), Q.AND)
+        return cls._get_trending_posts_with_query(query=trending_posts_query)
 
+    @classmethod
+    def _get_trending_posts_with_query(cls, query):
+        return cls.objects.annotate(Count('reactions')).filter(query).order_by(
+            '-reactions__count', '-created')
+
+    @classmethod
+    def _get_trending_posts_query(cls):
         trending_posts_query = Q(created__gte=timezone.now() - timedelta(
             hours=12))
+
+        Community = get_community_model()
 
         trending_posts_sources_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC)
 
         trending_posts_query.add(trending_posts_sources_query, Q.AND)
 
-        return cls.objects.annotate(Count('reactions')).filter(trending_posts_query).order_by(
-            '-reactions__count', '-created')
+        return trending_posts_query
 
     @classmethod
     def get_post_comment_notification_target_users(cls, post_id, post_commenter_id):
