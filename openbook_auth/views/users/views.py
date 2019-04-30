@@ -1,11 +1,15 @@
+from django.db import transaction
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from openbook_auth.views.authenticated_user.serializers import GetAuthenticatedUserSerializer
 from openbook_auth.views.users.serializers import SearchUsersSerializer, SearchUsersUserSerializer, GetUserSerializer, \
     GetUserUserSerializer
+from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.model_loaders import get_user_model
+from django.utils.translation import ugettext_lazy as _
 
 
 class SearchUsers(APIView):
@@ -57,3 +61,43 @@ class GetUser(APIView):
             user_serializer = GetUserUserSerializer(user, context={"request": request})
 
         return Response(user_serializer.data, status=status.HTTP_200_OK)
+
+
+class BlockUser(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, user_username):
+        request_data = request.data.copy()
+        request_data['username'] = user_username
+
+        serializer = GetUserSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        username = data.get('username')
+
+        user = request.user
+
+        with transaction.atomic():
+            user.block_user_with_username(username)
+
+        return ApiMessageResponse(_('Blocked account.'))
+
+
+class UnblockUser(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, user_username):
+        request_data = request.data.copy()
+        request_data['username'] = user_username
+
+        serializer = GetUserSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        username = data.get('username')
+
+        user = request.user
+
+        with transaction.atomic():
+            user.unblock_user_with_username(username)
+
+        return ApiMessageResponse(_('Unblocked account.'))
