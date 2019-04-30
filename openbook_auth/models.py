@@ -28,7 +28,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_emoji_group_model, get_user_invite_model, get_community_model, get_community_invite_model, get_tag_model, \
     get_post_comment_notification_model, get_follow_notification_model, get_connection_confirmed_notification_model, \
     get_connection_request_notification_model, get_post_reaction_notification_model, get_device_model, \
-    get_post_mute_model, get_community_invite_notification_model
+    get_post_mute_model, get_community_invite_notification_model, get_user_block_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications.push_notifications import senders
 
@@ -451,6 +451,9 @@ class User(AbstractUser):
     def has_muted_post_with_id(self, post_id):
         return self.post_mutes.filter(post_id=post_id).exists()
 
+    def has_blocked_user_with_id(self, user_id):
+        return self.user_blocks.filter(blocked_user_id=user_id).exists()
+
     def has_circles_with_ids(self, circles_ids):
         return self.circles.filter(id__in=circles_ids).count() == len(circles_ids)
 
@@ -472,6 +475,10 @@ class User(AbstractUser):
 
     def is_banned_from_community_with_name(self, community_name):
         return self.banned_of_communities.filter(name=community_name).exists()
+
+    def is_blocked_by_user_with_id(self, user_id):
+        UserBlock = get_user_block_model()
+        return UserBlock.objects.filter(blocked_user_id=self.pk, blocker_id=user_id).exists()
 
     def is_creator_of_community_with_name(self, community_name):
         return self.created_communities.filter(name=community_name).exists()
@@ -651,7 +658,6 @@ class User(AbstractUser):
         elif min_id:
             comments_query.add(Q(id__gte=min_id), Q.AND)
 
-        Post = get_post_model()
         PostComment = get_post_comment_model()
         return PostComment.objects.filter(comments_query)
 
@@ -1625,7 +1631,7 @@ class User(AbstractUser):
         return follow
 
     def connect_with_user_with_id(self, user_id, circles_ids=None):
-        self._check_is_not_connected_with_user_with_id(user_id)
+        self._check_can_connect_with_user_with_id(user_id)
 
         if not circles_ids:
             circles_ids = self._get_default_connection_circles()
@@ -1790,6 +1796,21 @@ class User(AbstractUser):
         Post = get_post_model()
         post = Post.objects.get(pk=post_id)
         return post
+
+    def block_user_with_id(self, user_id):
+        self._check_can_block_user_with_id(user_id=user_id)
+
+        if self.is_connected_with_user_with_id(user_id=user_id):
+            self.disconnect_from_user_with_id(user_id=user_id)
+        elif self.is_following_user_with_id(user_id=user_id):
+            self.unfollow_user_with_id(user_id=user_id)
+
+        UserBlock = get_user_block_model()
+        UserBlock.create_user_block(blocker_id=self.pk, blocked_user_id=self.pk)
+
+    def unblock_user_with_id(self, user_id):
+        self._check_can_unblock_user_with_id(user_id=user_id)
+        self.user_blocks.filter(user_id=user_id).delete()
 
     def create_invite(self, nickname):
         self._check_can_create_invite(nickname)
@@ -2319,6 +2340,7 @@ class User(AbstractUser):
             self._check_circle_name_not_taken(name)
 
     def _check_can_follow_user_with_id(self, user_id):
+        self._check_is_not_blocked_by_user_with_id(user_id=user_id)
         self._check_is_not_following_user_with_id(user_id)
         self._check_has_not_reached_max_follows()
 
@@ -2365,6 +2387,10 @@ class User(AbstractUser):
             raise ValidationError(
                 _('Maximum number of connections reached.'),
             )
+
+    def _check_can_connect_with_user_with_id(self, user_id):
+        self._check_is_not_blocked_by_user_with_id(user_id=user_id)
+        self._check_is_not_connected_with_user_with_id(user_id=user_id)
 
     def _check_is_not_connected_with_user_with_id(self, user_id):
         if self.is_connected_with_user_with_id(user_id):
@@ -2822,6 +2848,18 @@ class User(AbstractUser):
     def _check_can_get_community_with_name(self, community_name):
         self._check_is_not_banned_from_community_with_name(community_name=community_name)
 
+    def _check_can_block_user_with_id(self, user_id):
+        if self.has_blocked_user_with_id(user_id=user_id):
+            raise ValidationError(_('You have already blocked this account.'))
+
+    def _check_can_unblock_user_with_id(self, user_id):
+        if not self.has_blocked_user_with_id(user_id=user_id):
+            raise ValidationError(_('You cannot unblock and account you have not blocked.'))
+
+    def _check_is_not_blocked_by_user_with_id(self, user_id):
+        if self.is_blocked_by_user_with_id(user_id=user_id):
+            raise PermissionDenied(_('You have been blocked by this account.'))
+
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='bootstrap_auth_token')
 def create_auth_token(sender, instance=None, created=False, **kwargs):
@@ -2911,6 +2949,18 @@ class UserNotificationsSettings(models.Model):
             self.community_invite_notifications = community_invite_notifications
 
         self.save()
+
+
+class UserBlock(models.Model):
+    blocked_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
+    blocker = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_blocks')
+
+    class Meta:
+        unique_together = ('blocked_user', 'blocker',)
+
+    @classmethod
+    def create_user_block(cls, user_id, blocked_user_id):
+        return cls.objects.create(user_id=user_id, blocked_user_id=blocked_user_id)
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='bootstrap_notifications_settings')
