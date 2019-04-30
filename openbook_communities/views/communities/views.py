@@ -191,8 +191,9 @@ class TrendingCommunities(APIView):
         data = serializer.data
         category_name = data.get('category')
 
-        Community = get_community_model()
-        communities = Community.get_trending_communities(category_name=category_name)[:30]
+        user = request.user
+
+        communities = user.get_trending_communities(category_name=category_name)[:30]
 
         posts_serializer = CommunitiesCommunitySerializer(communities, many=True, context={"request": request})
         return Response(posts_serializer.data, status=status.HTTP_200_OK)
