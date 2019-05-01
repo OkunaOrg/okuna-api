@@ -18,7 +18,7 @@ from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
 from openbook_common.models import Emoji
-from openbook_common.utils.model_loaders import get_post_reaction_model, get_emoji_model, \
+from openbook_common.utils.model_loaders import get_emoji_model, \
     get_circle_model, get_community_model
 from imagekit.models import ProcessedImageField
 
@@ -89,7 +89,7 @@ class Post(models.Model):
         return post
 
     @classmethod
-    def get_emoji_counts_for_post_with_id(cls, post_id, emoji_id=None, reactor_id=None):
+    def get_public_emoji_counts_for_post_with_id(cls, post_id, emoji_id=None, reactor_id=None):
         Emoji = get_emoji_model()
 
         emoji_query = Q(reactions__post_id=post_id, )
@@ -109,6 +109,9 @@ class Post(models.Model):
     def get_trending_posts_for_user_with_id(cls, user_id):
         trending_posts_query = cls._get_trending_posts_query()
         trending_posts_query.add(~Q(community__banned_users__id=user_id), Q.AND)
+
+        trending_posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=user_id) | Q(
+            creator__user_blocks__blocked_user_id=user_id)), Q.AND)
         return cls._get_trending_posts_with_query(query=trending_posts_query)
 
     @classmethod
@@ -192,9 +195,6 @@ class Post(models.Model):
 
     def is_encircled_post(self):
         return not self.is_public_post() and not self.community
-
-    def get_emoji_counts(self, emoji_id=None, reactor_id=None):
-        return Post.get_emoji_counts_for_post_with_id(post_id=self.pk, emoji_id=emoji_id, reactor_id=reactor_id)
 
     def update(self, text=None):
         self._check_can_be_updated(text=text)
