@@ -608,8 +608,9 @@ class User(AbstractUser):
                     reactions__reactor__user_blocks__blocked_user_id=self.pk))
                 blocked_users_query_staff_members = Q(
                     reactions__reactor__communities_memberships__community_id=post_community.pk)
-                blocked_users_query_staff_members.add(Q(reactions__reactor__communities_memberships__is_administrator=True) | Q(
-                    reactions__reactor__communities_memberships__is_moderator=True), Q.AND)
+                blocked_users_query_staff_members.add(
+                    Q(reactions__reactor__communities_memberships__is_administrator=True) | Q(
+                        reactions__reactor__communities_memberships__is_moderator=True), Q.AND)
 
                 blocked_users_query.add(~blocked_users_query_staff_members, Q.AND)
                 emoji_query.add(blocked_users_query, Q.AND)
@@ -1832,6 +1833,8 @@ class User(AbstractUser):
         UserBlock = get_user_block_model()
         UserBlock.create_user_block(blocker_id=self.pk, blocked_user_id=user_id)
 
+        return user_to_block
+
     def unblock_user_with_username(self, username):
         user = User.objects.get(username=username)
         return self.unblock_user_with_id(user_id=user.pk)
@@ -1839,6 +1842,7 @@ class User(AbstractUser):
     def unblock_user_with_id(self, user_id):
         self._check_can_unblock_user_with_id(user_id=user_id)
         self.user_blocks.filter(blocked_user_id=user_id).delete()
+        return User.objects.get(pk=user_id)
 
     def create_invite(self, nickname):
         self._check_can_create_invite(nickname)
