@@ -1257,6 +1257,21 @@ class User(AbstractUser):
 
         return User.objects.filter(linked_users_query).distinct()
 
+    def get_blocked_users(self, max_id=None):
+        blocked_users_query = self._make_blocked_users_query(max_id=max_id)
+
+        return User.objects.filter(blocked_users_query).distinct()
+
+    def search_blocked_users_with_query(self, query):
+        blocked_users_query = self._make_blocked_users_query()
+
+        names_query = Q(username__icontains=query)
+        names_query.add(Q(profile__name__icontains=query), Q.OR)
+
+        blocked_users_query.add(names_query, Q.AND)
+
+        return User.objects.filter(blocked_users_query).distinct()
+
     def get_followers(self, max_id=None):
         followers_query = self._make_followers_query()
 
@@ -2010,6 +2025,14 @@ class User(AbstractUser):
 
     def _make_followings_query(self):
         return Q(followers__user_id=self.pk)
+
+    def _make_blocked_users_query(self, max_id=None):
+        blocked_users_query = Q(blocked_by_users__blocker_id=self.pk, )
+
+        if max_id:
+            blocked_users_query.add(Q(id__lt=max_id), Q.AND)
+
+        return blocked_users_query
 
     def _make_get_post_with_id_query_for_user(self, user, post_id):
         posts_query = self._make_get_posts_query_for_user(user)

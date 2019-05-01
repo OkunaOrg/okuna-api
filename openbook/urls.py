@@ -23,6 +23,7 @@ from openbook_auth.views.auth.views import Register, Login, UsernameCheck, Email
     PasswordResetRequest, PasswordResetVerify
 from openbook_auth.views.authenticated_user.views import AuthenticatedUser, AuthenticatedUserSettings, \
     DeleteAuthenticatedUser, AuthenticatedUserNotificationsSettings, AuthenticatedUserAcceptGuidelines
+from openbook_auth.views.blocked_users.views import BlockedUsers, SearchBlockedUsers
 from openbook_auth.views.followers.views import Followers, SearchFollowers
 from openbook_auth.views.following.views import Followings, SearchFollowings
 from openbook_auth.views.linked_users.views import LinkedUsers, SearchLinkedUsers
@@ -86,6 +87,11 @@ auth_users_patterns = [
     path('<str:user_username>/', include(auth_users_user_patterns)),
 ]
 
+auth_blocked_users_patterns = [
+    path('', BlockedUsers.as_view(), name='blocked-users'),
+    path('search/', SearchBlockedUsers.as_view(), name='search-blocked-users'),
+]
+
 auth_linked_users_patterns = [
     path('', LinkedUsers.as_view(), name='linked-users'),
     path('search/', SearchLinkedUsers.as_view(), name='search-linked-users'),
@@ -106,6 +112,7 @@ auth_patterns = [
     path('followings/', include(auth_followings_patterns)),
     path('followers/', include(auth_followers_patterns)),
     path('linked-users/', include(auth_linked_users_patterns)),
+    path('blocked-users/', include(auth_blocked_users_patterns)),
     path('users/', include(auth_users_patterns)),
     path('user/', include(auth_user_patterns)),
 ]
