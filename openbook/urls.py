@@ -23,10 +23,11 @@ from openbook_auth.views.auth.views import Register, Login, UsernameCheck, Email
     PasswordResetRequest, PasswordResetVerify
 from openbook_auth.views.authenticated_user.views import AuthenticatedUser, AuthenticatedUserSettings, \
     DeleteAuthenticatedUser, AuthenticatedUserNotificationsSettings, AuthenticatedUserAcceptGuidelines
+from openbook_auth.views.blocked_users.views import BlockedUsers, SearchBlockedUsers
 from openbook_auth.views.followers.views import Followers, SearchFollowers
 from openbook_auth.views.following.views import Followings, SearchFollowings
 from openbook_auth.views.linked_users.views import LinkedUsers, SearchLinkedUsers
-from openbook_auth.views.users.views import SearchUsers, GetUser
+from openbook_auth.views.users.views import SearchUsers, GetUser, BlockUser, UnblockUser
 from openbook_categories.views import Categories
 from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups
@@ -55,7 +56,7 @@ from openbook_posts.views.post.views import PostComments, PostCommentItem, PostI
 from openbook_posts.views.posts.views import Posts, TrendingPosts
 from openbook_importer.views import ImportItem
 
-auth_patterns = [
+auth_auth_patterns = [
     path('register/', Register.as_view(), name='register-user'),
     path('login/', Login.as_view(), name='login-user'),
     path('username-check/', UsernameCheck.as_view(), name='username-check'),
@@ -63,21 +64,57 @@ auth_patterns = [
     path('email/verify/', EmailVerify.as_view(), name='email-verify'),
     path('password/reset/', PasswordResetRequest.as_view(), name='request-password-reset'),
     path('password/verify/', PasswordResetVerify.as_view(), name='verify-reset-password'),
-    path('user/settings/', AuthenticatedUserSettings.as_view(), name='authenticated-user-settings'),
-    path('user/', AuthenticatedUser.as_view(), name='authenticated-user'),
-    path('user/delete/', DeleteAuthenticatedUser.as_view(), name='delete-authenticated-user'),
-    path('user/notifications-settings/', AuthenticatedUserNotificationsSettings.as_view(),
+]
+
+auth_user_patterns = [
+    path('', AuthenticatedUser.as_view(), name='authenticated-user'),
+    path('settings/', AuthenticatedUserSettings.as_view(), name='authenticated-user-settings'),
+    path('delete/', DeleteAuthenticatedUser.as_view(), name='delete-authenticated-user'),
+    path('notifications-settings/', AuthenticatedUserNotificationsSettings.as_view(),
          name='authenticated-user-notifications-settings'),
-    path('user/accept-guidelines/', AuthenticatedUserAcceptGuidelines.as_view(),
+    path('accept-guidelines/', AuthenticatedUserAcceptGuidelines.as_view(),
          name='authenticated-user-accept-guidelines'),
-    path('users/<str:user_username>/', GetUser.as_view(), name='get-user'),
-    path('users/', SearchUsers.as_view(), name='search-users'),
-    path('linked-users/', LinkedUsers.as_view(), name='linked-users'),
-    path('linked-users/search/', SearchLinkedUsers.as_view(), name='search-linked-users'),
-    path('followers/', Followers.as_view(), name='followers'),
-    path('followers/search/', SearchFollowers.as_view(), name='search-followers'),
-    path('followings/', Followings.as_view(), name='followings'),
-    path('followings/search/', SearchFollowings.as_view(), name='search-followings'),
+]
+
+auth_users_user_patterns = [
+    path('', GetUser.as_view(), name='get-user'),
+    path('block/', BlockUser.as_view(), name='block-user'),
+    path('unblock/', UnblockUser.as_view(), name='unblock-user'),
+]
+
+auth_users_patterns = [
+    path('', SearchUsers.as_view(), name='search-users'),
+    path('<str:user_username>/', include(auth_users_user_patterns)),
+]
+
+auth_blocked_users_patterns = [
+    path('', BlockedUsers.as_view(), name='blocked-users'),
+    path('search/', SearchBlockedUsers.as_view(), name='search-blocked-users'),
+]
+
+auth_linked_users_patterns = [
+    path('', LinkedUsers.as_view(), name='linked-users'),
+    path('search/', SearchLinkedUsers.as_view(), name='search-linked-users'),
+]
+
+auth_followers_patterns = [
+    path('', Followers.as_view(), name='followers'),
+    path('search/', SearchFollowers.as_view(), name='search-followers'),
+]
+
+auth_followings_patterns = [
+    path('', Followings.as_view(), name='followings'),
+    path('search/', SearchFollowings.as_view(), name='search-followings'),
+]
+
+auth_patterns = [
+    path('', include(auth_auth_patterns)),
+    path('followings/', include(auth_followings_patterns)),
+    path('followers/', include(auth_followers_patterns)),
+    path('linked-users/', include(auth_linked_users_patterns)),
+    path('blocked-users/', include(auth_blocked_users_patterns)),
+    path('users/', include(auth_users_patterns)),
+    path('user/', include(auth_user_patterns)),
 ]
 
 post_notifications_patters = [
