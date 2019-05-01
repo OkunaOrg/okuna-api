@@ -567,17 +567,7 @@ class User(AbstractUser):
     def get_reactions_for_post(self, post, max_id=None, emoji_id=None):
         self._check_can_get_reactions_for_post(post=post)
 
-        reactions_query = Q(post_id=post.pk)
-
-        # If reactions are private, return only own reactions
-        if not post.public_reactions:
-            reactions_query = Q(reactor_id=self.pk)
-
-        if max_id:
-            reactions_query.add(Q(id__lt=max_id), Q.AND)
-
-        if emoji_id:
-            reactions_query.add(Q(emoji_id=emoji_id), Q.AND)
+        reactions_query = self._make_get_reactions_for_post_query(post=post, emoji_id=emoji_id, max_id=max_id)
 
         PostReaction = get_post_reaction_model()
         return PostReaction.objects.filter(reactions_query)
@@ -643,13 +633,12 @@ class User(AbstractUser):
         post_reaction.delete()
 
     def get_comments_for_post_with_id(self, post_id, min_id=None, max_id=None):
-        self._check_can_get_comments_for_post_with_id(post_id=post_id)
-        comments_query = Q(post_id=post_id)
+        Post = get_post_model()
+        post = Post.objects.get(pk=post_id)
 
-        if max_id:
-            comments_query.add(Q(id__lt=max_id), Q.AND)
-        elif min_id:
-            comments_query.add(Q(id__gte=min_id), Q.AND)
+        self._check_can_get_comments_for_post(post=post)
+
+        comments_query = self._make_get_comments_for_post_query(post=post, max_id=max_id, min_id=min_id)
 
         PostComment = get_post_comment_model()
         return PostComment.objects.filter(comments_query)
@@ -2249,8 +2238,8 @@ class User(AbstractUser):
                     _('You cannot remove a comment that does not belong to you')
                 )
 
-    def _check_can_get_comments_for_post_with_id(self, post_id):
-        self._check_can_see_post_with_id(post_id=post_id)
+    def _check_can_get_comments_for_post(self, post):
+        self._check_can_see_post(post=post)
 
     def _check_can_comment_in_post(self, post):
         self._check_can_see_post(post)
@@ -2291,11 +2280,6 @@ class User(AbstractUser):
     def _check_can_react_to_post(self, post):
         self._check_can_see_post(post=post)
 
-    def _check_can_see_post_with_id(self, post_id):
-        Post = get_post_model()
-        post = Post.objects.get(pk=post_id)
-        return self._check_can_see_post(post=post)
-
     def _check_can_see_post(self, post):
         if not self.can_see_post(post):
             raise ValidationError(
@@ -2317,6 +2301,61 @@ class User(AbstractUser):
 
         Post = get_post_model()
         return Post.objects.filter(community_posts_query).exists()
+
+    def _make_get_reactions_for_post_query(self, post, max_id=None, emoji_id=None):
+        reactions_query = Q(post_id=post.pk)
+
+        # If reactions are private, return only own reactions
+        if not post.public_reactions:
+            reactions_query = Q(reactor_id=self.pk)
+
+        post_community = post.community
+
+        if post_community and not self.is_staff_of_community_with_name(community_name=post_community.name):
+            # Don't retrieve comments of blocked users, except if they're staff members
+            blocked_users_query = ~Q(Q(reactor__blocked_by_users__blocker_id=self.pk) | Q(
+                reactor__user_blocks__blocked_user_id=self.pk))
+
+            blocked_users_query_staff_members = Q(reactor__communities_memberships__community_id=post_community.pk)
+            blocked_users_query_staff_members.add(Q(reactor__communities_memberships__is_administrator=True) | Q(
+                reactor__communities_memberships__is_moderator=True), Q.AND)
+
+            blocked_users_query.add(~blocked_users_query_staff_members, Q.AND)
+
+            reactions_query.add(blocked_users_query, Q.AND)
+
+        if max_id:
+            reactions_query.add(Q(id__lt=max_id), Q.AND)
+
+        if emoji_id:
+            reactions_query.add(Q(emoji_id=emoji_id), Q.AND)
+
+        return reactions_query
+
+    def _make_get_comments_for_post_query(self, post, max_id=None, min_id=None):
+        comments_query = Q(post_id=post.pk)
+
+        post_community = post.community
+
+        if post_community and not self.is_staff_of_community_with_name(community_name=post_community.name):
+            # Don't retrieve comments of blocked users, except if they're staff members
+            blocked_users_query = ~Q(Q(commenter__blocked_by_users__blocker_id=self.pk) | Q(
+                commenter__user_blocks__blocked_user_id=self.pk))
+
+            blocked_users_query_staff_members = Q(commenter__communities_memberships__community_id=post_community.pk)
+            blocked_users_query_staff_members.add(Q(commenter__communities_memberships__is_administrator=True) | Q(
+                commenter__communities_memberships__is_moderator=True), Q.AND)
+
+            blocked_users_query.add(~blocked_users_query_staff_members, Q.AND)
+
+            comments_query.add(blocked_users_query, Q.AND)
+
+        if max_id:
+            comments_query.add(Q(id__lt=max_id), Q.AND)
+        elif min_id:
+            comments_query.add(Q(id__gte=min_id), Q.AND)
+
+        return comments_query
 
     def _make_get_community_with_id_posts_query(self, community):
         # Retrieve posts from the given community name
@@ -2922,7 +2961,7 @@ class User(AbstractUser):
         Checks that there is not a block between us and the given user_id
         """
         if self.is_blocked_with_user_with_id(user_id=user_id):
-            raise PermissionDenied(_('Blocked.'))
+            raise PermissionDenied(_('This account is blocked.'))
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='bootstrap_auth_token')
