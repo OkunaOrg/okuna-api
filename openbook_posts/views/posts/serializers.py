@@ -215,7 +215,8 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'community',
             'is_muted',
             'is_encircled',
-            'is_edited'
+            'is_edited',
+            'is_closed'
         )
 
 
