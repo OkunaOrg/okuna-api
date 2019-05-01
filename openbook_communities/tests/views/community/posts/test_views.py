@@ -283,6 +283,66 @@ class CommunityPostsAPITest(APITestCase):
         response_post_id = response_post.get('id')
         self.assertEqual(response_post_id, post.pk)
 
+    def test_can_retrieve_posts_from_blocking_member_if_staff(self):
+        """
+        should be able to retrieve the community posts of a blocking member if staff and return 200
+        """
+        user = make_user()
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+
+        user.join_community_with_name(community_name=community.name)
+        post = user.create_community_post(community_name=community.name,
+                                          text=make_fake_post_text())
+
+        user.block_user_with_id(user_id=community_owner.pk)
+
+        headers = make_authentication_headers_for_user(community_owner)
+        url = self._get_url(community_name=community.name)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(1, len(response_posts))
+
+        response_post = response_posts[0]
+
+        response_post_id = response_post.get('id')
+        self.assertEqual(response_post_id, post.pk)
+
+    def test_can_retrieve_posts_from_blocked_member_if_staff(self):
+        """
+        should be able to retrieve the community posts of a blocked member if staff and return 200
+        """
+        user = make_user()
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+
+        user.join_community_with_name(community_name=community.name)
+        post = user.create_community_post(community_name=community.name,
+                                          text=make_fake_post_text())
+
+        community_owner.block_user_with_id(user_id=user.pk)
+
+        headers = make_authentication_headers_for_user(community_owner)
+        url = self._get_url(community_name=community.name)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(1, len(response_posts))
+
+        response_post = response_posts[0]
+
+        response_post_id = response_post.get('id')
+        self.assertEqual(response_post_id, post.pk)
+
     def test_can_create_community_text_post_part_of(self):
         """
         should be able to create a post for a community part of and return 201
