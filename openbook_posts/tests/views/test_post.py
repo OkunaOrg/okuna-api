@@ -1070,6 +1070,174 @@ class PostCommentsAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_cannot_retrieve_comments_from_blocked_user(self):
+        """
+         should not be able to retrieve the comments from a blocked user
+         """
+        user = make_user()
+
+        post_creator = make_user()
+        blocked_user = make_user()
+
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        blocked_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+        user.block_user_with_id(user_id=blocked_user.pk)
+
+        url = self._get_url(post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_comments = json.loads(response.content)
+
+        self.assertEqual(len(response_comments), 0)
+
+    def test_cannot_retrieve_comments_from_blocking_user(self):
+        """
+         should not be able to retrieve the comments from a blocking user
+         """
+        user = make_user()
+
+        post_creator = make_user()
+        blocking_user = make_user()
+
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        blocking_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+        blocking_user.block_user_with_id(user_id=user.pk)
+
+        url = self._get_url(post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_comments = json.loads(response.content)
+
+        self.assertEqual(len(response_comments), 0)
+
+    def test_cannot_retrieve_comments_from_blocked_user_in_a_community(self):
+        """
+         should not be able to retrieve the comments from a blocked user in a community
+         """
+        user = make_user()
+
+        post_creator = make_user()
+        community = make_community(creator=post_creator)
+
+        blocked_user = make_user()
+
+        post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        blocked_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+        user.block_user_with_id(user_id=blocked_user.pk)
+
+        url = self._get_url(post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_comments = json.loads(response.content)
+
+        self.assertEqual(len(response_comments), 0)
+
+    def test_cannot_retrieve_comments_from_blocking_user_in_a_community(self):
+        """
+         should not be able to retrieve the comments from a blocking user in a community
+         """
+        user = make_user()
+
+        post_creator = make_user()
+        community = make_community(creator=post_creator)
+
+        blocking_user = make_user()
+
+        post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        blocking_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+        blocking_user.block_user_with_id(user_id=user.pk)
+
+        url = self._get_url(post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_comments = json.loads(response.content)
+
+        self.assertEqual(len(response_comments), 0)
+
+    def test_can_retrieve_comments_from_blocked_user_in_a_community_if_staff(self):
+        """
+         should be able to retrieve the comments from a blocked user in a community if staff member
+         """
+        user = make_user()
+        community = make_community(creator=user)
+        post_creator = make_user()
+        blocked_user = make_user()
+
+        post_creator.join_community_with_name(community_name=community.name)
+
+        post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        post_comment = blocked_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+        user.block_user_with_id(user_id=blocked_user.pk)
+
+        url = self._get_url(post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_comments = json.loads(response.content)
+
+        self.assertEqual(1, len(response_comments))
+
+        self.assertEqual(response_comments[0]['id'], post_comment.pk)
+
+    def test_can_retrieve_comments_from_blocking_user_in_a_community_if_staff(self):
+        """
+         should be able to retrieve the comments from a blocking user in a community if staff member
+         """
+        user = make_user()
+        community = make_community(creator=user)
+        post_creator = make_user()
+        blocking_user = make_user()
+
+        post_creator.join_community_with_name(community_name=community.name)
+
+        post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        post_comment = blocking_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+        blocking_user.block_user_with_id(user_id=user.pk)
+
+        url = self._get_url(post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_comments = json.loads(response.content)
+
+        self.assertEqual(1, len(response_comments))
+
+        self.assertEqual(response_comments[0]['id'], post_comment.pk)
+
     def test_can_comment_in_own_post(self):
         """
          should be able to comment in own post and return 201
@@ -3330,6 +3498,198 @@ class PostReactionsEmojiCountAPITests(APITestCase):
             self.assertIsNotNone(reaction_emoji)
             reaction_count = reaction['count']
             self.assertEqual(count, reaction_count)
+
+    def test_cannot_retrieve_reaction_from_blocked_user(self):
+        """
+         should not be able to retrieve the reaction from a blocked user
+         """
+        user = make_user()
+
+        post_creator = make_user()
+        blocked_user = make_user()
+
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+        blocked_user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, emoji_group_id=emoji_group.pk)
+
+        user.block_user_with_id(user_id=blocked_user.pk)
+
+        url = self._get_url(post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_reactions = json.loads(response.content)
+
+        self.assertEqual(len(response_reactions), 0)
+
+    def test_cannot_retrieve_reactions_from_blocking_user(self):
+        """
+         should not be able to retrieve the reactions from a blocking user
+         """
+        user = make_user()
+
+        post_creator = make_user()
+        blocking_user = make_user()
+
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+        blocking_user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, emoji_group_id=emoji_group.pk)
+
+        blocking_user.block_user_with_id(user_id=user.pk)
+
+        url = self._get_url(post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_reactions = json.loads(response.content)
+
+        self.assertEqual(len(response_reactions), 0)
+
+    def test_cannot_retrieve_reactions_from_blocked_user_in_a_community(self):
+        """
+         should not be able to retrieve the reactions from a blocked user in a community
+         """
+        user = make_user()
+
+        post_creator = make_user()
+        community = make_community(creator=post_creator)
+
+        blocked_user = make_user()
+
+        post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+        blocked_user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, emoji_group_id=emoji_group.pk)
+
+        user.block_user_with_id(user_id=blocked_user.pk)
+
+        url = self._get_url(post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_reactions = json.loads(response.content)
+
+        self.assertEqual(len(response_reactions), 0)
+
+    def test_cannot_retrieve_reactions_from_blocking_user_in_a_community(self):
+        """
+         should not be able to retrieve the reactions from a blocking user in a community
+         """
+        user = make_user()
+
+        post_creator = make_user()
+        community = make_community(creator=post_creator)
+
+        blocking_user = make_user()
+
+        post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+        blocking_user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, emoji_group_id=emoji_group.pk)
+
+        blocking_user.block_user_with_id(user_id=user.pk)
+
+        url = self._get_url(post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_reactions = json.loads(response.content)
+
+        self.assertEqual(len(response_reactions), 0)
+
+    def test_can_retrieve_reactions_from_blocked_user_in_a_community_if_staff(self):
+        """
+         should be able to retrieve the reactions from a blocked user in a community if staff member
+         """
+        user = make_user()
+        community = make_community(creator=user)
+        post_creator = make_user()
+        blocked_user = make_user()
+
+        post_creator.join_community_with_name(community_name=community.name)
+
+        post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+        blocked_user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, emoji_group_id=emoji_group.pk)
+
+        user.block_user_with_id(user_id=blocked_user.pk)
+
+        url = self._get_url(post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_emoji_counts = json.loads(response.content)
+
+        self.assertEqual(1, len(response_emoji_counts))
+
+        response_emoji_count = response_emoji_counts[0]
+
+        response_emoji_id = response_emoji_count.get('emoji').get('id')
+        response_emoji_count = response_emoji_count.get('count')
+
+        self.assertEqual(response_emoji_id, emoji.pk)
+        self.assertEqual(1, response_emoji_count)
+
+    def test_can_retrieve_reactions_from_blocking_user_in_a_community_if_staff(self):
+        """
+         should be able to retrieve the reactions from a blocking user in a community if staff member
+         """
+        user = make_user()
+        community = make_community(creator=user)
+        post_creator = make_user()
+        blocking_user = make_user()
+
+        post_creator.join_community_with_name(community_name=community.name)
+
+        post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+        blocking_user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, emoji_group_id=emoji_group.pk)
+
+        blocking_user.block_user_with_id(user_id=user.pk)
+
+        url = self._get_url(post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_emoji_counts = json.loads(response.content)
+
+        self.assertEqual(1, len(response_emoji_counts))
+
+        response_emoji_count = response_emoji_counts[0]
+
+        response_emoji_id = response_emoji_count.get('emoji').get('id')
+        response_emoji_count = response_emoji_count.get('count')
+
+        self.assertEqual(response_emoji_id, emoji.pk)
+        self.assertEqual(1, response_emoji_count)
 
     def _get_url(self, post):
         return reverse('post-reactions-emoji-count', kwargs={

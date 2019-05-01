@@ -88,7 +88,7 @@ class Post(models.Model):
         return post
 
     @classmethod
-    def get_emoji_counts_for_post_with_id(cls, post_id, emoji_id=None, reactor_id=None):
+    def get_public_emoji_counts_for_post_with_id(cls, post_id, emoji_id=None, reactor_id=None):
         Emoji = get_emoji_model()
 
         emoji_query = Q(reactions__post_id=post_id, )
@@ -194,9 +194,6 @@ class Post(models.Model):
 
     def is_encircled_post(self):
         return not self.is_public_post() and not self.community
-
-    def get_emoji_counts(self, emoji_id=None, reactor_id=None):
-        return Post.get_emoji_counts_for_post_with_id(post_id=self.pk, emoji_id=emoji_id, reactor_id=reactor_id)
 
     def update(self, text=None):
         self._check_can_be_updated(text=text)
