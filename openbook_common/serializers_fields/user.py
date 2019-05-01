@@ -51,6 +51,23 @@ class IsConnectedField(Field):
         return False
 
 
+class IsBlockedField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(IsBlockedField, self).__init__(**kwargs)
+
+    def to_representation(self, value):
+        request = self.context.get('request')
+
+        if not request.user.is_anonymous:
+            if request.user.pk == value.pk:
+                return False
+            return request.user.has_blocked_user_with_id(value.pk)
+
+        return False
+
+
 class IsFullyConnectedField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'

@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 
 from openbook_auth.views.authenticated_user.serializers import GetAuthenticatedUserSerializer
 from openbook_auth.views.users.serializers import SearchUsersSerializer, SearchUsersUserSerializer, GetUserSerializer, \
-    GetUserUserSerializer
+    GetUserUserSerializer, GetBlockedUserSerializer
 from openbook_common.responses import ApiMessageResponse
 from django.utils.translation import ugettext_lazy as _
 
@@ -71,9 +71,11 @@ class BlockUser(APIView):
         user = request.user
 
         with transaction.atomic():
-            user.block_user_with_username(username)
+            blocked_user = user.block_user_with_username(username)
 
-        return ApiMessageResponse(_('Blocked account.'))
+        user_serializer = GetBlockedUserSerializer(blocked_user, context={"request": request})
+
+        return Response(user_serializer.data, status=status.HTTP_200_OK)
 
 
 class UnblockUser(APIView):
@@ -91,6 +93,8 @@ class UnblockUser(APIView):
         user = request.user
 
         with transaction.atomic():
-            user.unblock_user_with_username(username)
+            unblocked_user = user.unblock_user_with_username(username)
 
-        return ApiMessageResponse(_('Unblocked account.'))
+        user_serializer = GetBlockedUserSerializer(unblocked_user, context={"request": request})
+
+        return Response(user_serializer.data, status=status.HTTP_200_OK)
