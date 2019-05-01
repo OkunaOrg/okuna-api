@@ -461,6 +461,10 @@ class User(AbstractUser):
     def is_administrator_of_community_with_name(self, community_name):
         return self.communities_memberships.filter(community__name=community_name, is_administrator=True).exists()
 
+    def is_staff_of_community_with_name(self, community_name):
+        return self.is_administrator_of_community_with_name(
+            community_name=community_name) or self.is_moderator_of_community_with_name(community_name=community_name)
+
     def is_member_of_communities(self):
         return self.communities_memberships.all().exists()
 
@@ -532,7 +536,7 @@ class User(AbstractUser):
         if post.creator_id == self.pk:
             return True
         elif post.community:
-            if self._can_see_community_with_id_post_with_id(community_id=post.community_id, post_id=post.pk):
+            if self._can_see_community_post_with_id(community=post.community, post_id=post.pk):
                 return True
         else:
             # Check if we can retrieve the post
@@ -1391,7 +1395,7 @@ class User(AbstractUser):
         Community = get_community_model()
         community = Community.objects.get(name=community_name)
 
-        community_posts_query = self._make_get_community_with_id_posts_query(community_id=community.pk)
+        community_posts_query = self._make_get_community_with_id_posts_query(community=community)
 
         if max_id:
             community_posts_query.add(Q(id__lt=max_id), Q.AND)
@@ -2275,17 +2279,17 @@ class User(AbstractUser):
 
         return profile_posts.exists()
 
-    def _can_see_community_with_id_post_with_id(self, community_id, post_id):
-        community_posts_query = self._make_get_community_with_id_posts_query(community_id=community_id)
+    def _can_see_community_post_with_id(self, community, post_id):
+        community_posts_query = self._make_get_community_with_id_posts_query(community=community)
 
         community_posts_query.add(Q(pk=post_id), Q.AND)
 
         Post = get_post_model()
         return Post.objects.filter(community_posts_query).exists()
 
-    def _make_get_community_with_id_posts_query(self, community_id):
+    def _make_get_community_with_id_posts_query(self, community):
         # Retrieve posts from the given community name
-        community_posts_query = Q(community_id=community_id)
+        community_posts_query = Q(community_id=community.pk)
 
         # Only retrieve posts if we're not banned
         community_posts_query.add(~Q(community__banned_users__id=self.pk), Q.AND)
@@ -2297,17 +2301,18 @@ class User(AbstractUser):
 
         community_posts_query.add(community_posts_visibility_query, Q.AND)
 
-        # Don't retrieve posts of blocked users, except if they're staff members
-        blocked_users_query = ~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
-            creator__user_blocks__blocked_user_id=self.pk))
+        if not self.is_staff_of_community_with_name(community_name=community.name):
+            # Don't retrieve posts of blocked users, except if they're staff members
+            blocked_users_query = ~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
+                creator__user_blocks__blocked_user_id=self.pk))
 
-        blocked_users_query_staff_members = Q(creator__communities_memberships__community_id=community_id)
-        blocked_users_query_staff_members.add(Q(creator__communities_memberships__is_administrator=True) | Q(
-            creator__communities_memberships__is_moderator=True), Q.AND)
+            blocked_users_query_staff_members = Q(creator__communities_memberships__community_id=community)
+            blocked_users_query_staff_members.add(Q(creator__communities_memberships__is_administrator=True) | Q(
+                creator__communities_memberships__is_moderator=True), Q.AND)
 
-        blocked_users_query.add(~blocked_users_query_staff_members, Q.AND)
+            blocked_users_query.add(~blocked_users_query_staff_members, Q.AND)
 
-        community_posts_query.add(blocked_users_query, Q.AND)
+            community_posts_query.add(blocked_users_query, Q.AND)
 
         return community_posts_query
 
