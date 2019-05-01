@@ -2,7 +2,7 @@
 
 # 📖 Community Guidelines
 
-We created these guidelines together with the community to ensure we can all achieve a mutually peaceful, respectful, supportive and kind existence under this digital home we call Openbook.
+We created these guidelines together with the community to ensure we can all achieve a mutually peaceful, respectful, supportive and kind existence under this digital home we call Openbook. This is actually just a test.
 
 In short:
 
