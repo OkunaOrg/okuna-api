@@ -412,6 +412,18 @@ class Community(models.Model):
                                 source_user=source_user,
                                 target_user=target_user)
 
+    def create_open_post_log(self, source_user, target_user, post):
+        return self._create_log(action_type='OP',
+                                post=post,
+                                source_user=source_user,
+                                target_user=target_user)
+
+    def create_close_post_log(self, source_user, target_user, post):
+        return self._create_log(action_type='CP',
+                                post=post,
+                                source_user=source_user,
+                                target_user=target_user)
+
     def _create_log(self, action_type, source_user, target_user, post=None):
         CommunityModeratorUserActionLog = get_community_log_model()
         return CommunityModeratorUserActionLog.create_community_log(community=self,
@@ -489,6 +501,8 @@ class CommunityLog(models.Model):
         ('RM', 'Remove Moderator'),
         ('AA', 'Add Administrator'),
         ('RA', 'Remove Administrator'),
+        ('OP', 'Open Post'),
+        ('CP', 'Close Post'),
         ('RP', 'Remove Post'),
         ('RPC', 'Remove Post Comment'),
         ('DPC', 'Disable Post Comments'),

@@ -42,7 +42,7 @@ from openbook_communities.views.community.members.views import CommunityMembers,
     LeaveCommunity, InviteCommunityMember, SearchCommunityMembers, UninviteCommunityMember
 from openbook_communities.views.community.moderators.views import CommunityModeratorItem, CommunityModerators, \
     SearchCommunityModerators
-from openbook_communities.views.community.posts.views import CommunityPosts
+from openbook_communities.views.community.posts.views import CommunityPosts, ClosedCommunityPosts
 from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, FavoriteCommunity
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
@@ -52,7 +52,8 @@ from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFoll
 from openbook_lists.views import Lists, ListItem, ListNameCheck
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
 from openbook_posts.views.post.views import PostComments, PostCommentItem, PostItem, PostReactions, PostReactionItem, \
-    PostReactionsEmojiCount, PostReactionEmojiGroups, MutePost, UnmutePost, PostCommentsDisable, PostCommentsEnable
+    PostReactionsEmojiCount, PostReactionEmojiGroups, MutePost, UnmutePost, PostCommentsDisable, PostCommentsEnable, \
+    PostOpen, PostClose
 from openbook_posts.views.posts.views import Posts, TrendingPosts
 from openbook_importer.views import ImportItem
 
@@ -132,6 +133,8 @@ post_patterns = [
     path('reactions/', PostReactions.as_view(), name='post-reactions'),
     path('reactions/emoji-count/', PostReactionsEmojiCount.as_view(), name='post-reactions-emoji-count'),
     path('reactions/<int:post_reaction_id>/', PostReactionItem.as_view(), name='post-reaction'),
+    path('close/', PostClose.as_view(), name='close-post'),
+    path('open/', PostOpen.as_view(), name='open-post'),
 ]
 
 posts_patterns = [
@@ -172,6 +175,7 @@ community_members_patterns = [
 
 community_posts_patterns = [
     path('', CommunityPosts.as_view(), name='community-posts'),
+    path('closed/', ClosedCommunityPosts.as_view(), name='closed-community-posts'),
 ]
 
 community_banned_users_patterns = [

@@ -580,6 +580,34 @@ class PostItemAPITests(APITestCase):
         self.assertEqual(community_post.text, edited_text)
         self.assertTrue(community_post.is_edited)
 
+    def test_can_edit_own_community_post_which_is_closed(self):
+        """
+        should be able to edit own closed community post and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+        community_post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        community_post.is_closed = True
+        community_post.save()
+
+        url = self._get_url(community_post)
+        edited_text = make_fake_post_text()
+        data = {
+            'text': edited_text
+        }
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertTrue(response.status_code, status.HTTP_200_OK)
+        community_post.refresh_from_db()
+        self.assertEqual(community_post.text, edited_text)
+        self.assertTrue(community_post.is_edited)
+
     def test_cannot_edit_foreign_post(self):
         """
         should not be able to edit foreign post
@@ -723,6 +751,97 @@ class MutePostAPITests(APITestCase):
 
         self.assertTrue(user.has_muted_post_with_id(post.pk))
 
+    def test_cannot_mute_closed_community_post(self):
+        """
+        should not be able to mute closed post if not admin/mod or post creator in community
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        community = make_community(creator=foreign_user)
+        user.join_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(user)
+        post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(user.has_muted_post_with_id(post.pk))
+
+    def test_can_mute_closed_community_post_if_creator(self):
+        """
+        should be able to mute closed post if post creator in community
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        community = make_community(creator=foreign_user)
+        user.join_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(user.has_muted_post_with_id(post.pk))
+
+    def test_can_mute_closed_community_post_administrator(self):
+        """
+        should be able to mute closed post if administrator in community
+        """
+        user = make_user()
+
+        admin = make_user()
+        community = make_community(creator=admin)
+        user.join_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(admin)
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(admin.has_muted_post_with_id(post.pk))
+
+    def test_can_mute_closed_community_post_if_moderator(self):
+        """
+        should be able to mute closed post if moderator in community
+        """
+        user = make_user()
+
+        admin = make_user()
+        moderator = make_user()
+        community = make_community(creator=admin)
+        user.join_community_with_name(community_name=community.name)
+        moderator.join_community_with_name(community_name=community.name)
+        admin.add_moderator_with_username_to_community_with_name(username=moderator.username, community_name=community.name)
+
+        headers = make_authentication_headers_for_user(moderator)
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(moderator.has_muted_post_with_id(post.pk))
+
     def test_cant_mute_community_post_if_private_and_not_member(self):
         user = make_user()
 
@@ -811,6 +930,101 @@ class UnmutePostAPITests(APITestCase):
 
         self.assertFalse(user.has_muted_post_with_id(post.pk))
 
+    def test_cannot_unmute_closed_community_post(self):
+        """
+        should not be able to unmute closed post if not admin/mod or post creator in community
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        community = make_community(creator=foreign_user)
+        user.join_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(user)
+        post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        user.mute_post_with_id(post.pk)
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(user.has_muted_post_with_id(post.pk))
+
+    def test_can_unmute_closed_community_post_if_creator(self):
+        """
+        should be able to unmute closed post if post creator in community
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        community = make_community(creator=foreign_user)
+        user.join_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        user.mute_post_with_id(post.pk)
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(user.has_muted_post_with_id(post.pk))
+
+    def test_can_unmute_closed_community_post_administrator(self):
+        """
+        should be able to unmute closed post if administrator in community
+        """
+        user = make_user()
+
+        admin = make_user()
+        community = make_community(creator=admin)
+        user.join_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(admin)
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        admin.mute_post_with_id(post.pk)
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(admin.has_muted_post_with_id(post.pk))
+
+    def test_can_unmute_closed_community_post_if_moderator(self):
+        """
+        should be able to unmute closed post if moderator in community
+        """
+        user = make_user()
+
+        admin = make_user()
+        moderator = make_user()
+        community = make_community(creator=admin)
+        user.join_community_with_name(community_name=community.name)
+        moderator.join_community_with_name(community_name=community.name)
+        admin.add_moderator_with_username_to_community_with_name(username=moderator.username, community_name=community.name)
+
+        headers = make_authentication_headers_for_user(moderator)
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        moderator.mute_post_with_id(post.pk)
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(moderator.has_muted_post_with_id(post.pk))
+
     def _get_url(self, post):
         return reverse('unmute-post', kwargs={
             'post_uuid': post.uuid
@@ -845,6 +1059,119 @@ class PostCommentsAPITests(APITestCase):
 
         url = self._get_url(post)
 
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_comments = json.loads(response.content)
+
+        self.assertEqual(len(response_comments), amount_of_comments)
+
+        for response_comment in response_comments:
+            response_comment_id = response_comment.get('id')
+            self.assertIn(response_comment_id, comments_ids)
+
+    def test_can_retrieve_comments_from_closed_public_community_post_if_creator(self):
+        """
+        should be able to retrieve comments for closed posts if creator
+        """
+
+        post_creator = make_user()
+        admin = make_user()
+        headers = make_authentication_headers_for_user(post_creator)
+        community = make_community(creator=admin)
+        post_creator.join_community_with_name(community_name=community.name)
+        post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        amount_of_comments = 5
+        comments_ids = []
+
+        for i in range(0, amount_of_comments):
+            commenter = make_user()
+            commenter.join_community_with_name(community_name=community.name)
+            post_comment = commenter.comment_post(post=post, text=make_fake_post_text())
+            comments_ids.append(post_comment.pk)
+
+        url = self._get_url(post)
+        # now close the post
+        post.is_closed = True
+        post.save()
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_comments = json.loads(response.content)
+
+        self.assertEqual(len(response_comments), amount_of_comments)
+
+        for response_comment in response_comments:
+            response_comment_id = response_comment.get('id')
+            self.assertIn(response_comment_id, comments_ids)
+
+    def test_can_retrieve_comments_from_closed_public_community_post_if_administrator(self):
+        """
+        should be able to retrieve comments for closed posts if administrator
+        """
+
+        post_creator = make_user()
+        admin = make_user()
+        headers = make_authentication_headers_for_user(admin)
+        community = make_community(creator=admin)
+        post_creator.join_community_with_name(community_name=community.name)
+        post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        amount_of_comments = 5
+        comments_ids = []
+
+        for i in range(0, amount_of_comments):
+            commenter = make_user()
+            commenter.join_community_with_name(community_name=community.name)
+            post_comment = commenter.comment_post(post=post, text=make_fake_post_text())
+            comments_ids.append(post_comment.pk)
+
+        url = self._get_url(post)
+        # now close the post
+        post.is_closed = True
+        post.save()
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_comments = json.loads(response.content)
+
+        self.assertEqual(len(response_comments), amount_of_comments)
+
+        for response_comment in response_comments:
+            response_comment_id = response_comment.get('id')
+            self.assertIn(response_comment_id, comments_ids)
+
+    def test_can_retrieve_comments_from_closed_public_community_post_if_moderator(self):
+        """
+        should be able to retrieve comments for closed posts if moderator
+        """
+
+        post_creator = make_user()
+        admin = make_user()
+        moderator = make_user()
+        headers = make_authentication_headers_for_user(moderator)
+        community = make_community(creator=admin)
+
+        moderator.join_community_with_name(community_name=community.name)
+        admin.add_moderator_with_username_to_community_with_name(username=moderator.username, community_name=community.name)
+
+        post_creator.join_community_with_name(community_name=community.name)
+        post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        amount_of_comments = 5
+        comments_ids = []
+
+        for i in range(0, amount_of_comments):
+            commenter = make_user()
+            commenter.join_community_with_name(community_name=community.name)
+            post_comment = commenter.comment_post(post=post, text=make_fake_post_text())
+            comments_ids.append(post_comment.pk)
+
+        url = self._get_url(post)
+        # now close the post
+        post.is_closed = True
+        post.save()
         response = self.client.get(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -1566,6 +1893,107 @@ class PostCommentsAPITests(APITestCase):
         self.assertTrue(PostComment.objects.filter(post_id=post.pk, text=post_comment_text).exists())
         self.assertEqual(response_id, post_comment.id)
 
+    def test_owner_can_comment_on_closed_community_post(self):
+        """
+         should be able to comment in the community post which is closed
+         """
+        user = make_user()
+        admin = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community = make_community(admin)
+        user.join_community_with_name(community_name=community.name)
+        post = user.create_community_post(community.name, text=make_fake_post_text())
+        post.is_closed = True
+        post.save()
+        post_comment_text = make_fake_post_comment_text()
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        response = self.client.put(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(PostComment.objects.filter(post_id=post.pk, text=post_comment_text).exists())
+
+    def test_foreign_user_cannot_comment_on_closed_community_post(self):
+        """
+         should not be able to comment in the community post that is closed
+         """
+        user = make_user()
+        foreign_user = make_user()
+        admin = make_user()
+        headers = make_authentication_headers_for_user(foreign_user)
+
+        community = make_community(admin)
+        user.join_community_with_name(community_name=community.name)
+        foreign_user.join_community_with_name(community_name=community.name)
+        post = user.create_community_post(community.name, text=make_fake_post_text())
+        post.is_closed = True
+        post.save()
+        post_comment_text = make_fake_post_comment_text()
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        response = self.client.put(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(PostComment.objects.filter(post_id=post.pk, text=post_comment_text).exists())
+
+    def test_moderator_can_comment_on_closed_community_post(self):
+        """
+         should be able to comment on the community post which is closed if moderator
+         """
+        user = make_user()
+        admin = make_user()
+        moderator = make_user()
+
+        community = make_community(admin)
+        user.join_community_with_name(community_name=community.name)
+        moderator.join_community_with_name(community_name=community.name)
+        admin.add_moderator_with_username_to_community_with_name(username=moderator.username, community_name=community.name)
+        post = user.create_community_post(community.name, text=make_fake_post_text())
+        post.comments_enabled = False
+        post.save()
+        post_comment_text = make_fake_post_comment_text()
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(moderator)
+        response = self.client.put(url, data, **headers)
+        parsed_response = json.loads(response.content)
+
+        response_id = parsed_response['id']
+        post_comment = PostComment.objects.get(post_id=post.pk, text=post_comment_text, commenter=moderator)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(PostComment.objects.filter(post_id=post.pk, text=post_comment_text).exists())
+        self.assertEqual(response_id, post_comment.id)
+
+    def test_administrator_can_comment_on_closed_community_post(self):
+        """
+         should be able to comment in the community post which is closed if administrator
+         """
+        user = make_user()
+        admin = make_user()
+        headers = make_authentication_headers_for_user(admin)
+
+        community = make_community(admin)
+        user.join_community_with_name(community_name=community.name)
+        post = user.create_community_post(community.name, text=make_fake_post_text())
+        post.is_closed = True
+        post.save()
+        post_comment_text = make_fake_post_comment_text()
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        response = self.client.put(url, data, **headers)
+        parsed_response = json.loads(response.content)
+
+        response_id = parsed_response['id']
+        post_comment = PostComment.objects.get(post_id=post.pk, text=post_comment_text, commenter=admin)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(PostComment.objects.filter(post_id=post.pk, text=post_comment_text).exists())
+        self.assertEqual(response_id, post_comment.id)
+
     def test_can_comment_in_connected_user_encircled_post_part_of(self):
         """
           should be able to comment in the encircled post of a connected user which the user is part of and return 201
@@ -2110,6 +2538,235 @@ class PostCommentItemAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(PostComment.objects.filter(id=post_comment.pk).exists())
 
+    def test_can_delete_community_post_comment_for_post_with_disabled_comments_if_comment_owner(self):
+        """
+         should be able to delete a community post comment for post with disabled comments if comment owner
+         """
+        user = make_user()
+
+        admin = make_user()
+        community = make_community(creator=admin)
+
+        user.join_community_with_name(community_name=community.name)
+
+        community_post_creator = make_user()
+        community_post_creator.join_community_with_name(community_name=community.name)
+
+        commenter = make_user()
+        commenter.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post_comment = commenter.comment_post_with_id(text=make_fake_post_comment_text(),
+                                                      post_id=post.pk)
+
+        post.comments_enabled = False
+        post.save()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        headers = make_authentication_headers_for_user(commenter)
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(PostComment.objects.filter(id=post_comment.pk).exists())
+
+    def test_can_delete_community_post_comment_with_disabled_comments_if_admin(self):
+        """
+         should be able to delete a community post comment for post with comments disabled if administrator
+         """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+        community_creator.add_administrator_with_username_to_community_with_name(username=user.username,
+                                                                                 community_name=community.name)
+
+        community_post_creator = make_user()
+        community_post_creator.join_community_with_name(community_name=community.name)
+
+        community_post_commentator = make_user()
+        community_post_commentator.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post_comment = community_post_commentator.comment_post_with_id(text=make_fake_post_comment_text(),
+                                                                       post_id=post.pk)
+
+        post.comments_enabled = False
+        post.save()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(PostComment.objects.filter(id=post_comment.pk).exists())
+
+    def test_can_delete_community_post_comment_for_post_with_disabled_comments_if_moderator(self):
+        """
+         should be able to delete a community post comment for post with disabled comments if moderator
+         """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(username=user.username,
+                                                                             community_name=community.name)
+
+        community_post_creator = make_user()
+        community_post_creator.join_community_with_name(community_name=community.name)
+
+        community_post_commentator = make_user()
+        community_post_commentator.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post_comment = community_post_commentator.comment_post_with_id(text=make_fake_post_comment_text(),
+                                                                       post_id=post.pk)
+
+        post.comments_enabled = False
+        post.save()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(PostComment.objects.filter(id=post_comment.pk).exists())
+
+    def test_can_delete_community_post_comment_with_closed_post_if_admin(self):
+        """
+         should be able to delete a community post comment for closed post if administrator
+         """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+        community_creator.add_administrator_with_username_to_community_with_name(username=user.username,
+                                                                                 community_name=community.name)
+
+        community_post_creator = make_user()
+        community_post_creator.join_community_with_name(community_name=community.name)
+
+        community_post_commentator = make_user()
+        community_post_commentator.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post_comment = community_post_commentator.comment_post_with_id(text=make_fake_post_comment_text(),
+                                                                       post_id=post.pk)
+
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(PostComment.objects.filter(id=post_comment.pk).exists())
+
+    def test_can_delete_community_post_comment_for_closed_post_if_moderator(self):
+        """
+         should be able to delete a community post comment for closed post if moderator
+         """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(username=user.username,
+                                                                             community_name=community.name)
+
+        community_post_creator = make_user()
+        community_post_creator.join_community_with_name(community_name=community.name)
+
+        community_post_commentator = make_user()
+        community_post_commentator.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post_comment = community_post_commentator.comment_post_with_id(text=make_fake_post_comment_text(),
+                                                                       post_id=post.pk)
+
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(PostComment.objects.filter(id=post_comment.pk).exists())
+
+    def test_cannot_delete_community_post_comment_for_closed_post_if_comment_owner(self):
+        """
+         should NOT be able to delete a community post comment for closed post if comment owner
+         """
+        user = make_user()
+
+        admin = make_user()
+        community = make_community(creator=admin)
+
+        user.join_community_with_name(community_name=community.name)
+
+        community_post_creator = make_user()
+        community_post_creator.join_community_with_name(community_name=community.name)
+
+        commenter = make_user()
+        commenter.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post_comment = commenter.comment_post_with_id(text=make_fake_post_comment_text(),
+                                                                       post_id=post.pk)
+
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        headers = make_authentication_headers_for_user(commenter)
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(PostComment.objects.filter(id=post_comment.pk).exists())
+
+    def test_can_delete_own_community_post_comment_for_closed_post_if_post_creator(self):
+        """
+         should be able to delete own community post comment for closed post if post creator
+         """
+        user = make_user()
+
+        admin = make_user()
+        community = make_community(creator=admin)
+
+        user.join_community_with_name(community_name=community.name)
+
+        community_post_creator = make_user()
+        community_post_creator.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post_comment = community_post_creator.comment_post_with_id(text=make_fake_post_comment_text(),
+                                                      post_id=post.pk)
+
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        headers = make_authentication_headers_for_user(community_post_creator)
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(PostComment.objects.filter(id=post_comment.pk).exists())
+
     def test_logs_community_post_comment_deleted_by_non_creator(self):
         """
         should create a log when a community post comment was deleted by an admin/moderator
@@ -2530,6 +3187,37 @@ class PostCommentItemAPITests(APITestCase):
         self.assertTrue(post_comment.text == original_post_comment_text)
         self.assertFalse(post_comment.is_edited)
 
+    def test_cannot_edit_post_comment_if_post_closed_and_not_not_post_creator(self):
+        """
+            should NOT be able to edit own comment if post is closed and not post creator
+        """
+
+        admin = make_user()
+        user = make_user()
+        community = make_community(admin)
+        user.join_community_with_name(community_name=community.name)
+        post = admin.create_community_post(community.name, text=make_fake_post_text())
+
+        original_post_comment_text = make_fake_post_comment_text()
+        post_comment = user.comment_post_with_id(post.pk, text=original_post_comment_text)
+
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        edited_post_comment_text = make_fake_post_comment_text()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.patch(url, {
+            'text': edited_post_comment_text
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        post_comment.refresh_from_db()
+        self.assertTrue(post_comment.text == original_post_comment_text)
+        self.assertFalse(post_comment.is_edited)
+
     def test_cannot_edit_others_community_post_comment_even_if_admin(self):
         """
             should not be able to edit someone else's comment even if community admin
@@ -2809,6 +3497,66 @@ class PostReactionsAPITests(APITestCase):
         self.assertTrue(
             PostReaction.objects.filter(post_id=post.pk, emoji_id=post_reaction_emoji_id,
                                         reactor_id=user.pk).count() == 0)
+
+    def test_cannot_react_to_closed_community_post_if_not_creator(self):
+        """
+          should NOT be able to react in a closed community post if not creator
+        """
+        user = make_user()
+        admin = make_user()
+        community = make_community(admin)
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        post_creator.join_community_with_name(community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        community_post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_comment_text())
+        community_post.is_closed = True
+        community_post.save()
+
+        emoji_group = make_reactions_emoji_group()
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id, emoji_group.pk)
+
+        url = self._get_url(community_post)
+        response = self.client.put(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(
+            PostReaction.objects.filter(post_id=community_post.pk, emoji_id=post_reaction_emoji_id,
+                                        reactor_id=user.pk).count() == 0)
+
+    def test_can_react_to_closed_community_post_if_creator(self):
+        """
+          should be able to react in a closed community post if creator
+        """
+        user = make_user()
+        admin = make_user()
+        community = make_community(admin)
+
+        post_creator = make_user()
+        post_creator.join_community_with_name(community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        community_post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_comment_text())
+        community_post.is_closed = True
+        community_post.save()
+
+        emoji_group = make_reactions_emoji_group()
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id, emoji_group.pk)
+
+        headers = make_authentication_headers_for_user(post_creator)
+        url = self._get_url(community_post)
+        response = self.client.put(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(
+            PostReaction.objects.filter(post_id=community_post.pk, emoji_id=post_reaction_emoji_id,
+                                        reactor_id=post_creator.pk).count() == 1)
 
     def test_cannot_react_to_blocked_user_post(self):
         """
@@ -3163,6 +3911,70 @@ class PostReactionItemAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(PostReaction.objects.filter(id=post_reaction.pk).count() == 1)
+
+    def test_cannot_delete_reaction_in_closed_community_post_when_not_creator(self):
+        """
+          should NOT be able to delete reaction in closed community post if not creator
+        """
+        user = make_user()
+        admin = make_user()
+        community = make_community(admin)
+
+        post_creator = make_user()
+        post_creator.join_community_with_name(community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        community_post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_comment_text())
+
+        emoji_group = make_reactions_emoji_group()
+
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        post_reaction = user.react_to_post_with_id(community_post.pk, emoji_id=post_reaction_emoji_id,
+                                                           emoji_group_id=emoji_group.pk)
+        # now close the post
+        community_post.is_closed = True
+        community_post.save()
+
+        url = self._get_url(post_reaction=post_reaction, post=community_post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(PostReaction.objects.filter(id=post_reaction.pk).count() == 1)
+
+    def test_can_delete_reaction_in_closed_community_post_if_creator(self):
+        """
+          should be able to delete reaction in closed community post if creator
+        """
+        user = make_user()
+        admin = make_user()
+        community = make_community(admin)
+
+        post_creator = make_user()
+        post_creator.join_community_with_name(community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        community_post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_comment_text())
+
+        emoji_group = make_reactions_emoji_group()
+
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        post_reaction = user.react_to_post_with_id(community_post.pk, emoji_id=post_reaction_emoji_id,
+                                                   emoji_group_id=emoji_group.pk)
+        # now close the post
+        community_post.is_closed = True
+        community_post.save()
+
+        url = self._get_url(post_reaction=post_reaction, post=community_post)
+
+        headers = make_authentication_headers_for_user(post_creator)
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(PostReaction.objects.filter(id=post_reaction.pk).count() == 0)
 
     def test_can_delete_own_reaction_in_connected_user_public_post(self):
         """
@@ -3950,5 +4762,207 @@ class PostCommentsDisableAPITests(APITestCase):
 
     def _get_url(self, post):
         return reverse('disable-post-comments', kwargs={
+            'post_uuid': post.uuid
+        })
+
+
+class PostCloseAPITests(APITestCase):
+    """
+    PostCloseAPITests APITests
+    """
+
+    def test_can_close_post_if_administrator_of_community(self):
+        """
+         should be able to close post if administrator of a community
+        """
+        user = make_user()
+        admin = make_user()
+        community = make_community(admin)
+
+        user.join_community_with_name(community_name=community.name)
+        post = user.create_community_post(community.name, text=make_fake_post_text())
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        response = self.client.post(url, **headers)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertTrue(response.status_code, status.HTTP_200_OK)
+        post.refresh_from_db()
+        self.assertTrue(post.is_closed)
+        self.assertTrue(parsed_response['is_closed'])
+
+    def test_can_close_post_if_moderator_of_community(self):
+        """
+         should be able to close post if moderator of a community
+        """
+        user = make_user()
+        admin = make_user()
+        moderator = make_user()
+        community = make_community(admin)
+
+        user.join_community_with_name(community_name=community.name)
+        moderator.join_community_with_name(community_name=community.name)
+        admin.add_moderator_with_username_to_community_with_name(username=moderator.username,
+                                                                 community_name=community.name)
+        post = user.create_community_post(community.name, text=make_fake_post_text())
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(moderator)
+        response = self.client.post(url, **headers)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertTrue(response.status_code, status.HTTP_200_OK)
+        post.refresh_from_db()
+        self.assertTrue(post.is_closed)
+        self.assertTrue(parsed_response['is_closed'])
+
+    def test_cannot_close_post_if_not_administrator_or_moderator_of_community(self):
+        """
+         should not be able to close post if not moderator/administrator of a community
+        """
+        user = make_user()
+        admin = make_user()
+        community = make_community(admin)
+
+        user.join_community_with_name(community_name=community.name)
+        post = user.create_community_post(community.name, text=make_fake_post_text())
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.post(url, **headers)
+
+        self.assertTrue(response.status_code, status.HTTP_400_BAD_REQUEST)
+        post.refresh_from_db()
+        self.assertFalse(post.is_closed)
+
+    def test_logs_close_post_by_administrator_of_community(self):
+        """
+         should log close post by administrator of a community
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        post = community_post_creator.create_community_post(community.name, text=make_fake_post_text())
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        self.client.post(url, **headers)
+
+        self.assertTrue(community.logs.filter(action_type='CP',
+                                              post=post,
+                                              source_user=admin,
+                                              target_user=community_post_creator).exists())
+
+    def _get_url(self, post):
+        return reverse('close-post', kwargs={
+            'post_uuid': post.uuid
+        })
+
+
+class PostOpenAPITests(APITestCase):
+    """
+    PostOpenAPITests APITests
+    """
+
+    def test_can_open_post_if_administrator_of_community(self):
+        """
+         should be able to open post if administrator of a community
+        """
+        user = make_user()
+        admin = make_user()
+        community = make_community(admin)
+
+        user.join_community_with_name(community_name=community.name)
+        post = user.create_community_post(community.name, text=make_fake_post_text())
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        response = self.client.post(url, **headers)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertTrue(response.status_code, status.HTTP_200_OK)
+        post.refresh_from_db()
+        self.assertFalse(post.is_closed)
+        self.assertFalse(parsed_response['is_closed'])
+
+    def test_can_open_post_if_moderator_of_community(self):
+        """
+         should be able to open post if moderator of a community
+        """
+        user = make_user()
+        admin = make_user()
+        moderator = make_user()
+        community = make_community(admin)
+
+        user.join_community_with_name(community_name=community.name)
+        moderator.join_community_with_name(community_name=community.name)
+        admin.add_moderator_with_username_to_community_with_name(username=moderator.username,
+                                                                 community_name=community.name)
+        post = user.create_community_post(community.name, text=make_fake_post_text())
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(moderator)
+        response = self.client.post(url, **headers)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertTrue(response.status_code, status.HTTP_200_OK)
+        post.refresh_from_db()
+        self.assertFalse(post.is_closed)
+        self.assertFalse(parsed_response['is_closed'])
+
+    def test_cannot_open_post_if_not_administrator_or_moderator_of_community(self):
+        """
+         should not be able to open post if not moderator/administrator of a community
+        """
+        user = make_user()
+        admin = make_user()
+        community = make_community(admin)
+
+        user.join_community_with_name(community_name=community.name)
+        post = user.create_community_post(community.name, text=make_fake_post_text())
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.post(url, **headers)
+
+        self.assertTrue(response.status_code, status.HTTP_400_BAD_REQUEST)
+        post.refresh_from_db()
+        self.assertTrue(post.is_closed)
+
+    def test_logs_open_post_by_administrator_of_community(self):
+        """
+         should log open post by administrator of a community
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        post = community_post_creator.create_community_post(community.name, text=make_fake_post_text())
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        self.client.post(url, **headers)
+
+        self.assertTrue(community.logs.filter(action_type='OP',
+                                              post=post,
+                                              source_user=admin,
+                                              target_user=community_post_creator).exists())
+
+    def _get_url(self, post):
+        return reverse('open-post', kwargs={
             'post_uuid': post.uuid
         })

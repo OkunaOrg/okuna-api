@@ -15,7 +15,8 @@ from openbook_posts.views.post.serializers import GetPostCommentsSerializer, Pos
     GetPostReactionsEmojiCountSerializer, PostReactionEmojiGroupSerializer, GetPostSerializer, GetPostPostSerializer, \
     UnmutePostSerializer, MutePostSerializer, UpdatePostCommentSerializer, EditPostCommentSerializer, \
     EditPostSerializer, AuthenticatedUserEditPostSerializer, DisableCommentsPostSerializer, \
-    EnableCommentsPostSerializer, EnableDisableCommentsPostSerializer
+    EnableCommentsPostSerializer, EnableDisableCommentsPostSerializer, OpenClosePostSerializer, OpenPostSerializer, \
+    ClosePostSerializer
 
 
 # TODO Use post uuid also internally, not only as API resource identifier
@@ -437,3 +438,50 @@ class PostReactionEmojiGroups(APIView):
         serializer = PostReactionEmojiGroupSerializer(emoji_groups, many=True, context={'request': request})
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class PostClose(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, post_uuid):
+        request_data = request.data.copy()
+        request_data['post_uuid'] = post_uuid
+
+        serializer = ClosePostSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        data = serializer.validated_data
+        post_uuid = data.get('post_uuid')
+        post_id = get_post_id_for_post_uuid(post_uuid)
+
+        with transaction.atomic():
+            post = user.close_post_with_id(post_id=post_id)
+
+        post_serializer = OpenClosePostSerializer(post, context={'request': request})
+
+        return Response(post_serializer.data, status=status.HTTP_200_OK)
+
+
+class PostOpen(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, post_uuid):
+        request_data = request.data.copy()
+        request_data['post_uuid'] = post_uuid
+
+        serializer = OpenPostSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        data = serializer.validated_data
+        post_uuid = data.get('post_uuid')
+        post_id = get_post_id_for_post_uuid(post_uuid)
+
+        with transaction.atomic():
+            post = user.open_post_with_id(post_id=post_id)
+
+        post_serializer = OpenClosePostSerializer(post, context={'request': request})
+
+        return Response(post_serializer.data, status=status.HTTP_200_OK)
+
