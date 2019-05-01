@@ -1445,23 +1445,23 @@ class User(AbstractUser):
 
         post_query.add(~Q(community__banned_users__id=self.pk), Q.AND)
 
+        # Check we have membership or its a public community
         post_query_visibility_query = Q(community__memberships__user__id=self.pk)
         post_query_visibility_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, ), Q.OR)
-        post_query_visibility_query = Q(community__memberships__user__id=self.pk, is_closed=False)
-
-        post_query_visibility_query.add(Q(community__memberships__user__id=self.pk,
-                                          community__memberships__is_administrator=True,
-                                          is_closed=True), Q.OR)
-        post_query_visibility_query.add(Q(community__memberships__user__id=self.pk,
-                                          community__memberships__is_moderator=True,
-                                          is_closed=True), Q.OR)
-        post_query_visibility_query.add(Q(community__memberships__user__id=self.pk,
-                                          creator=self,
-                                          is_closed=True), Q.OR)
-
-        post_query_visibility_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, is_closed=False), Q.OR)
 
         post_query.add(post_query_visibility_query, Q.AND)
+
+        # Check its not closed or we are community staff
+        post_query_closed_query = Q(is_closed=False)
+
+        post_query_closed_staff_query = Q(community__memberships__user__id=self.pk,
+                                          community__memberships__is_administrator=True) | Q(
+            community__memberships__user__id=self.pk,
+            community__memberships__is_moderator=True)
+
+        post_query_closed_query.add(post_query_closed_staff_query, Q.OR)
+
+        post_query.add(post_query_closed_query, Q.AND)
 
         Post = get_post_model()
         profile_posts = Post.objects.filter(post_query)
