@@ -16,7 +16,7 @@ from imagekit.models import ProcessedImageField
 from pilkit.processors import ResizeToFill, ResizeToFit
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError, NotFound, PermissionDenied, AuthenticationFailed
-from django.db.models import Q, F
+from django.db.models import Q, F, Count
 from django.core.mail import EmailMultiAlternatives
 
 from openbook.settings import USERNAME_MAX_LENGTH
@@ -28,7 +28,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_emoji_group_model, get_user_invite_model, get_community_model, get_community_invite_model, get_tag_model, \
     get_post_comment_notification_model, get_follow_notification_model, get_connection_confirmed_notification_model, \
     get_connection_request_notification_model, get_post_reaction_notification_model, get_device_model, \
-    get_post_mute_model, get_community_invite_notification_model, get_user_block_model
+    get_post_mute_model, get_community_invite_notification_model, get_user_block_model, get_emoji_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications.push_notifications import senders
 
@@ -587,18 +587,41 @@ class User(AbstractUser):
 
     def get_emoji_counts_for_post_with_id(self, post_id, emoji_id=None):
         Post = get_post_model()
-        post = Post.objects.get(pk=post_id)
+        post = Post.objects.select_related('community').get(pk=post_id)
         return self.get_emoji_counts_for_post(post=post, emoji_id=emoji_id)
 
     def get_emoji_counts_for_post(self, post, emoji_id=None):
         self._check_can_get_reactions_for_post(post)
-        reactor_id = None
 
-        # If reactions are private count only own reactions
-        if not post.public_reactions:
-            reactor_id = self.pk
+        Emoji = get_emoji_model()
 
-        return post.get_emoji_counts(emoji_id=emoji_id, reactor_id=reactor_id)
+        emoji_query = Q(reactions__post_id=post.pk, )
+
+        if emoji_id:
+            emoji_query.add(Q(reactions__emoji_id=emoji_id), Q.AND)
+
+        post_community = post.community
+
+        if post_community:
+            if not self.is_staff_of_community_with_name(community_name=post_community.name):
+                blocked_users_query = ~Q(Q(reactions__reactor__blocked_by_users__blocker_id=self.pk) | Q(
+                    reactions__reactor__user_blocks__blocked_user_id=self.pk))
+                blocked_users_query_staff_members = Q(
+                    reactions__reactor__communities_memberships__community_id=post_community.pk)
+                blocked_users_query_staff_members.add(Q(reactions__reactor__communities_memberships__is_administrator=True) | Q(
+                    reactions__reactor__communities_memberships__is_moderator=True), Q.AND)
+
+                blocked_users_query.add(~blocked_users_query_staff_members, Q.AND)
+                emoji_query.add(blocked_users_query, Q.AND)
+        else:
+            blocked_users_query = ~Q(Q(reactions__reactor__blocked_by_users__blocker_id=self.pk) | Q(
+                reactions__reactor__user_blocks__blocked_user_id=self.pk))
+            emoji_query.add(blocked_users_query, Q.AND)
+
+        emojis = Emoji.objects.filter(emoji_query).annotate(Count('reactions')).distinct().order_by(
+            '-reactions__count').cache().all()
+
+        return [{'emoji': emoji, 'count': emoji.reactions__count} for emoji in emojis]
 
     def react_to_post_with_id(self, post_id, emoji_id, emoji_group_id):
         Post = get_post_model()
@@ -2311,17 +2334,20 @@ class User(AbstractUser):
 
         post_community = post.community
 
-        if post_community and not self.is_staff_of_community_with_name(community_name=post_community.name):
-            # Don't retrieve comments of blocked users, except if they're staff members
+        if post_community:
+            if not self.is_staff_of_community_with_name(community_name=post_community.name):
+                blocked_users_query = ~Q(Q(reactor__blocked_by_users__blocker_id=self.pk) | Q(
+                    reactor__user_blocks__blocked_user_id=self.pk))
+                blocked_users_query_staff_members = Q(
+                    reactor__communities_memberships__community_id=post_community.pk)
+                blocked_users_query_staff_members.add(Q(reactor__communities_memberships__is_administrator=True) | Q(
+                    reactor__communities_memberships__is_moderator=True), Q.AND)
+
+                blocked_users_query.add(~blocked_users_query_staff_members, Q.AND)
+                reactions_query.add(blocked_users_query, Q.AND)
+        else:
             blocked_users_query = ~Q(Q(reactor__blocked_by_users__blocker_id=self.pk) | Q(
                 reactor__user_blocks__blocked_user_id=self.pk))
-
-            blocked_users_query_staff_members = Q(reactor__communities_memberships__community_id=post_community.pk)
-            blocked_users_query_staff_members.add(Q(reactor__communities_memberships__is_administrator=True) | Q(
-                reactor__communities_memberships__is_moderator=True), Q.AND)
-
-            blocked_users_query.add(~blocked_users_query_staff_members, Q.AND)
-
             reactions_query.add(blocked_users_query, Q.AND)
 
         if max_id:
@@ -2337,17 +2363,20 @@ class User(AbstractUser):
 
         post_community = post.community
 
-        if post_community and not self.is_staff_of_community_with_name(community_name=post_community.name):
-            # Don't retrieve comments of blocked users, except if they're staff members
+        if post_community:
+            if not self.is_staff_of_community_with_name(community_name=post_community.name):
+                blocked_users_query = ~Q(Q(commenter__blocked_by_users__blocker_id=self.pk) | Q(
+                    commenter__user_blocks__blocked_user_id=self.pk))
+                blocked_users_query_staff_members = Q(
+                    commenter__communities_memberships__community_id=post_community.pk)
+                blocked_users_query_staff_members.add(Q(commenter__communities_memberships__is_administrator=True) | Q(
+                    commenter__communities_memberships__is_moderator=True), Q.AND)
+
+                blocked_users_query.add(~blocked_users_query_staff_members, Q.AND)
+                comments_query.add(blocked_users_query, Q.AND)
+        else:
             blocked_users_query = ~Q(Q(commenter__blocked_by_users__blocker_id=self.pk) | Q(
                 commenter__user_blocks__blocked_user_id=self.pk))
-
-            blocked_users_query_staff_members = Q(commenter__communities_memberships__community_id=post_community.pk)
-            blocked_users_query_staff_members.add(Q(commenter__communities_memberships__is_administrator=True) | Q(
-                commenter__communities_memberships__is_moderator=True), Q.AND)
-
-            blocked_users_query.add(~blocked_users_query_staff_members, Q.AND)
-
             comments_query.add(blocked_users_query, Q.AND)
 
         if max_id:
