@@ -1,6 +1,6 @@
 <img alt="Openbook logo" src="https://snag.gy/oaVCPq.jpg" width="200">
 
-# Community Guidelines
+# 📖 Community Guidelines
 
 We created these guidelines together with the community to ensure we can all achieve a mutually peaceful, respectful, supportive and kind existence under this digital home we call Openbook.
 
@@ -23,7 +23,7 @@ Those acting outside these guidelines risk having their accounts/content suspend
  
 We also aim to make the process of enforcing these guidelines transparent and open to debate.
 
-## Embrace diversity
+## 🌎 Embrace diversity
 
 In a boring world, we would all look, think and act the same way.
 Luckily, we all look, think and act differently and the world isn’t boring.
@@ -47,13 +47,13 @@ Because we embrace diversity we have a list of _**13 protected differences**_ we
 
 Ideologies that by nature are not embracing, or tolerant of, these differences such as nazism or neo-nazism have no place—and never will have—at Openbook. This includes sharing associated symbols or imagery.
 
-## Drop the labels and stereotypes
+## 🏷 Drop the labels and stereotypes
 
 > Labelling and stereotyping consists of assigning a certain set of behaviours and characteristics to a person based on an attribute—such as nationality or political inclination.
 
 The first step to a successful co-existence is the willingness to engage with each other. Labels get in the way of this by loading us up with prejudices and assumptions not necessarily true about the person we’re interacting with. 
 
-## Be courteous, polite and respectful
+## ✌️ Be courteous, polite and respectful
 
 Show friendliness, concern and respect for others in manners, speech and behaviour.
 
@@ -88,7 +88,7 @@ If the discussion becomes aggressive…
 
 * **Stop immediately and report.** Aggression only leads to more aggression. 
 
-## Respect people’s privacy
+## 🕴 Respect people’s privacy
 
 As a privacy-first social network, we take privacy seriously. Please respect people’s privacy.
 
@@ -99,26 +99,26 @@ Do not share people's
 * privately uploaded content
 * photos of them without their consent
 
-## Curb hate
+## 🕊 Curb hate
 
 We want Openbook to be a welcoming and friendly place for everyone to surf with peace of mind.
 
 Speech containing demeaning, denigrating, humiliating or brutalising comments—whether personal or in general—have no place on Openbook.
 
-## Avoid spamming
+## 😬 Avoid spamming
 
 Following, connecting and commenting with the purposes of advertising, phishing and spreading malware are all spam-like activity. Avoid spam activity.
 
 
-## Be you
+## 🥳 Be you
 
 It’s okay to be yourself or an anonymous version of yourself in Openbook. What’s not all right is pretending to be someone you’re not. Impersonating Christopher Hemsworth online won't get you friends IRL or build you the same quantity of arm muscle.
 
-## Keep the bots out
+## 🤖 Keep the bots out
 
 Scripts or bots that interact with the social network in any way will be found and removed. Associated accounts may also be blocked or removed.
 
-## Keep content legal
+## 🙏 Keep content legal
 
 By illegal content we mean:
 
@@ -129,11 +129,11 @@ By illegal content we mean:
 
 Sharing any of these will lead to the immediate closure of your account and reporting to the authorities where applicable.
 
-## Ditch the pornography
+## 🚮 Ditch the pornography
 
 Printed or visual material containing the explicit description or display of sexual organs or activity are not allowed.
 
-## Embrace the shared responsibility
+## 🏡 Embrace the shared responsibility
 
 Making Openbook a healthy and welcoming community for everyone is a shared responsibility.
 
@@ -147,7 +147,7 @@ Making Openbook a healthy and welcoming community for everyone is a shared respo
 
 ---
 
-### Notes
+### 📝 Notes
 
 #### On photos of children
 
@@ -172,7 +172,7 @@ As with all other guidelines, we aim to make the process transparent and always 
 
 ---
 
-### Contributors
+### 👯‍♀️ Contributors
 
 Special thanks to [Trevor Barton (@trevor)](https://trevorbarton.co.uk/) for creating the first ever draft these guidelines were built upon and for his consequent contributions.
 
@@ -188,7 +188,7 @@ Thanks to the volunteers who with their comments, suggestions and proof-reading 
 
 ---
 
-### License
+### 🧾 License
  
  [![CC 4.0 License](https://licensebuttons.net/l/by/3.0/88x31.png)](https://creativecommons.org/licenses/by/4.0/)
 
