@@ -8,7 +8,6 @@ from openbook_auth.views.authenticated_user.serializers import GetAuthenticatedU
 from openbook_auth.views.users.serializers import SearchUsersSerializer, SearchUsersUserSerializer, GetUserSerializer, \
     GetUserUserSerializer
 from openbook_common.responses import ApiMessageResponse
-from openbook_common.utils.model_loaders import get_user_model
 from django.utils.translation import ugettext_lazy as _
 
 
@@ -60,7 +59,7 @@ class GetUser(APIView):
 class BlockUser(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def get(self, request, user_username):
+    def post(self, request, user_username):
         request_data = request.data.copy()
         request_data['username'] = user_username
 
@@ -80,7 +79,7 @@ class BlockUser(APIView):
 class UnblockUser(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def get(self, request, user_username):
+    def post(self, request, user_username):
         request_data = request.data.copy()
         request_data['username'] = user_username
 

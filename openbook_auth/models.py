@@ -1785,6 +1785,10 @@ class User(AbstractUser):
         post = Post.objects.get(pk=post_id)
         return post
 
+    def block_user_with_username(self, username):
+        user = User.objects.get(username=username)
+        return self.block_user_with_id(user_id=user.pk)
+
     def block_user_with_id(self, user_id):
         self._check_can_block_user_with_id(user_id=user_id)
 
@@ -1801,9 +1805,13 @@ class User(AbstractUser):
         UserBlock = get_user_block_model()
         UserBlock.create_user_block(blocker_id=self.pk, blocked_user_id=user_id)
 
+    def unblock_user_with_username(self, username):
+        user = User.objects.get(username=username)
+        return self.unblock_user_with_id(user_id=user.pk)
+
     def unblock_user_with_id(self, user_id):
         self._check_can_unblock_user_with_id(user_id=user_id)
-        self.user_blocks.filter(user_id=user_id).delete()
+        self.user_blocks.filter(blocked_user_id=user_id).delete()
 
     def create_invite(self, nickname):
         self._check_can_create_invite(nickname)
