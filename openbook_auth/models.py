@@ -1445,23 +1445,38 @@ class User(AbstractUser):
 
         post_query.add(~Q(community__banned_users__id=self.pk), Q.AND)
 
-        post_query_visibility_query = Q(community__memberships__user__id=self.pk)
-        post_query_visibility_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, ), Q.OR)
-        post_query_visibility_query = Q(community__memberships__user__id=self.pk, is_closed=False)
+        is_community_member_query = Q(community__memberships__user__id=self.pk)
+        is_community_administrator_query = Q(community__memberships__is_administrator=True)
+        is_community_moderator_query = Q(community__memberships__is_moderator=True)
+        is_creator_query = Q(creator=self)
+        is_closed_query = Q(is_closed=True)
+        is_open_query = Q(is_closed=False)
+        is_public_community_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC)
 
-        post_query_visibility_query.add(Q(community__memberships__user__id=self.pk,
-                                          community__memberships__is_administrator=True,
-                                          is_closed=True), Q.OR)
-        post_query_visibility_query.add(Q(community__memberships__user__id=self.pk,
-                                          community__memberships__is_moderator=True,
-                                          is_closed=True), Q.OR)
-        post_query_visibility_query.add(Q(community__memberships__user__id=self.pk,
-                                          creator=self,
-                                          is_closed=True), Q.OR)
+        post_query_public_community_post_query = is_open_query & \
+                                                          is_public_community_query
 
-        post_query_visibility_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, is_closed=False), Q.OR)
+        post_query_visible_community_post_query = is_community_member_query & is_open_query
 
-        post_query.add(post_query_visibility_query, Q.AND)
+        post_query_is_closed_but_community_admin_query = is_community_member_query & \
+                                                         is_closed_query & \
+                                                         is_community_administrator_query
+
+        post_query_is_closed_but_community_moderator_query = is_community_member_query & \
+                                                         is_closed_query & \
+                                                         is_community_moderator_query
+
+        post_query_is_closed_but_creator_query = is_community_member_query & \
+                                                 is_closed_query & \
+                                                 is_creator_query
+
+
+        post_query_visible_community_post_query.add(post_query_public_community_post_query, Q.OR)
+        post_query_visible_community_post_query.add(post_query_is_closed_but_community_admin_query, Q.OR)
+        post_query_visible_community_post_query.add(post_query_is_closed_but_community_moderator_query, Q.OR)
+        post_query_visible_community_post_query.add(post_query_is_closed_but_creator_query, Q.OR)
+
+        post_query.add(post_query_visible_community_post_query, Q.AND)
 
         Post = get_post_model()
         profile_posts = Post.objects.filter(post_query)
