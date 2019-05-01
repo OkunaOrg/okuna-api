@@ -650,7 +650,9 @@ class User(AbstractUser):
         return post_reaction
 
     def delete_reaction_with_id_for_post_with_id(self, post_reaction_id, post_id):
-        self._check_can_delete_reaction_with_id_for_post_with_id(post_reaction_id, post_id)
+        Post = get_post_model()
+        post = Post.objects.get(pk=post_id)
+        self._check_can_delete_reaction_with_id_for_post(post_reaction_id=post_reaction_id, post=post)
         PostReaction = get_post_reaction_model()
         post_reaction = PostReaction.objects.filter(pk=post_reaction_id).get()
         self._delete_post_reaction_notification(post_reaction=post_reaction)
@@ -748,25 +750,27 @@ class User(AbstractUser):
         return post_comment
 
     def delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
-        self._check_can_delete_comment_with_id_for_post_with_id(post_comment_id, post_id)
+        Post = get_post_model()
+        post = Post.objects.get(pk=post_id)
+        self._check_can_delete_comment_with_id_for_post(post_comment_id, post=post)
         PostComment = get_post_comment_model()
         post_comment = PostComment.objects.get(pk=post_comment_id)
         self._delete_post_comment_notification(post_comment=post_comment)
         post_comment.delete()
 
     def update_comment_with_id_for_post_with_id(self, post_comment_id, post_id, text):
-        self.has_post_comment_with_id(post_comment_id)
-        self._check_can_edit_comment_with_id_for_post_with_id(post_comment_id, post_id)
-        self._check_comments_enabled_for_post_with_id(post_id)
+        self._check_has_post_comment_with_id(post_comment_id=post_comment_id)
+        self._check_comments_enabled_for_post_with_id(post_id=post_id)
+        Post = get_post_model()
+        post = Post.objects.get(pk=post_id)
+        self._check_can_edit_comment_with_id_for_post(post_comment_id=post_comment_id, post=post)
+
         PostComment = get_post_comment_model()
         post_comment = PostComment.objects.get(pk=post_comment_id)
         post_comment.text = text
         post_comment.is_edited = True
         post_comment.save()
         return post_comment
-
-    def has_post_comment_with_id(self, post_comment_id):
-        self._check_has_post_comment_with_id(post_comment_id)
 
     def create_circle(self, name, color):
         self._check_circle_name_not_taken(name)
@@ -1443,8 +1447,10 @@ class User(AbstractUser):
         Community = get_community_model()
         community = Community.objects.get(name=community_name)
 
-        community_posts_query = self._make_get_community_with_id_posts_query(community=community)
-        #posts_query = Q(community__id=community.pk, is_closed=False)
+        # We don't want to see closed posts in the community timeline if we're staff members
+        community_posts_query = self._make_get_community_with_id_posts_query(community=community,
+                                                                             include_closed_posts_for_staff=False)
+
         if max_id:
             community_posts_query.add(Q(id__lt=max_id), Q.AND)
 
@@ -1842,10 +1848,11 @@ class User(AbstractUser):
         return post
 
     def unmute_post_with_id(self, post_id):
-        self._check_can_unmute_post_with_id(post_id=post_id)
-        self.post_mutes.filter(post_id=post_id).delete()
         Post = get_post_model()
         post = Post.objects.get(pk=post_id)
+
+        self._check_can_unmute_post(post=post)
+        self.post_mutes.filter(post_id=post_id).delete()
         return post
 
     def block_user_with_username(self, username):
@@ -2252,13 +2259,12 @@ class User(AbstractUser):
                 _('The username is already taken.')
             )
 
-    def _check_can_edit_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
-        self._check_can_see_post_with_id(post_id)
+    def _check_can_edit_comment_with_id_for_post(self, post_comment_id, post):
+        self._check_can_see_post(post=post)
         # Check that the comment belongs to the post
         PostComment = get_post_comment_model()
-        Post = get_post_model()
 
-        if not PostComment.objects.filter(id=post_comment_id, post_id=post_id).exists():
+        if not PostComment.objects.filter(id=post_comment_id, post_id=post.pk).exists():
             raise ValidationError(
                 _('The comment does not belong to the specified post.')
             )
@@ -2270,23 +2276,22 @@ class User(AbstractUser):
                 _('You cannot edit a comment that does not belong to you')
             )
 
-    def _check_can_delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
-        self._check_can_see_post_with_id(post_id)
+    def _check_can_delete_comment_with_id_for_post(self, post_comment_id, post):
+        self._check_can_see_post(post=post)
 
         # Check that the comment belongs to the post
         PostComment = get_post_comment_model()
         Post = get_post_model()
 
-        if not PostComment.objects.filter(id=post_comment_id, post_id=post_id).exists():
+        if not PostComment.objects.filter(id=post_comment_id, post_id=post.pk).exists():
             raise ValidationError(
                 _('The comment does not belong to the specified post.')
             )
 
         if not self.posts_comments.filter(id=post_comment_id).exists():
             # The comment is not ours
-            if Post.is_post_with_id_a_community_post(post_id):
+            if post.community:
                 # If the comment is in a community, check if we're moderators
-                post = Post.objects.select_related('community').get(pk=post_id)
                 if not self.is_moderator_of_community_with_name(
                         post.community.name) and not self.is_administrator_of_community_with_name(
                     post.community.name):
@@ -2309,13 +2314,13 @@ class User(AbstractUser):
         self._check_can_see_post(post)
         self._check_comments_enabled_for_post_with_id(post.id)
 
-    def _check_can_delete_reaction_with_id_for_post_with_id(self, post_reaction_id, post_id):
-        self._check_can_see_post_with_id(post_id)
+    def _check_can_delete_reaction_with_id_for_post(self, post_reaction_id, post):
+        self._check_can_see_post(post=post)
         # Check if the post belongs to us
-        if self.has_post_with_id(post_id):
+        if self.has_post_with_id(post_id=post.pk):
             # Check that the comment belongs to the post
             PostReaction = get_post_reaction_model()
-            if not PostReaction.objects.filter(id=post_reaction_id, post_id=post_id).exists():
+            if not PostReaction.objects.filter(id=post_reaction_id, post_id=post.pk).exists():
                 raise ValidationError(
                     _('That reaction does not belong to the specified post.')
                 )
@@ -2428,7 +2433,7 @@ class User(AbstractUser):
 
         return comments_query
 
-    def _make_get_community_with_id_posts_query(self, community):
+    def _make_get_community_with_id_posts_query(self, community, include_closed_posts_for_staff=True):
         # Retrieve posts from the given community name
         community_posts_query = Q(community_id=community.pk)
 
@@ -2443,6 +2448,9 @@ class User(AbstractUser):
         community_posts_query.add(community_posts_visibility_query, Q.AND)
 
         if not self.is_staff_of_community_with_name(community_name=community.name):
+            # Dont retrieve closed posts
+            community_posts_query.add(Q(is_closed=False), Q.AND)
+
             # Don't retrieve posts of blocked users, except if they're staff members
             blocked_users_query = ~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
                 creator__user_blocks__blocked_user_id=self.pk))
@@ -2454,6 +2462,9 @@ class User(AbstractUser):
             blocked_users_query.add(~blocked_users_query_staff_members, Q.AND)
 
             community_posts_query.add(blocked_users_query, Q.AND)
+        else:
+            if not include_closed_posts_for_staff:
+                community_posts_query.add(Q(is_closed=False), Q.AND)
 
         return community_posts_query
 
@@ -3027,9 +3038,9 @@ class User(AbstractUser):
             )
         self._check_can_see_post(post=post)
 
-    def _check_can_unmute_post_with_id(self, post_id):
-        self._check_has_muted_post_with_id(post_id=post_id)
-        self._check_can_see_post_with_id(post_id)
+    def _check_can_unmute_post(self, post):
+        self._check_has_muted_post_with_id(post_id=post.pk)
+        self._check_can_see_post(post)
 
     def _check_has_muted_post_with_id(self, post_id):
         if not self.has_muted_post_with_id(post_id=post_id):
