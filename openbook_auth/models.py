@@ -1335,7 +1335,7 @@ class User(AbstractUser):
 
     def search_communities_with_query(self, query):
         Community = get_community_model()
-        return Community.search_communities_with_query_for_user_with_id(query, user_id=self.pk)
+        return Community.search_communities_with_query(query)
 
     def get_community_with_name(self, community_name):
         self._check_can_get_community_with_name(community_name=community_name)

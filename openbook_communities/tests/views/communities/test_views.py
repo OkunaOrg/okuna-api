@@ -1070,9 +1070,9 @@ class SearchCommunitiesAPITests(APITestCase):
             self.assertEqual(retrieved_community['title'], community_title)
             community.delete()
 
-    def test_cannot_search_communities_banned_from(self):
+    def test_can_search_communities_banned_from(self):
         """
-        should not be able to search for communities banned from and return 200
+        should be able to search for communities banned from and return 200
         """
         user = make_user()
 
@@ -1095,7 +1095,10 @@ class SearchCommunitiesAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         parsed_response = json.loads(response.content)
-        self.assertEqual(len(parsed_response), 0)
+        self.assertEqual(len(parsed_response), 1)
+
+        retrieved_community = parsed_response[0]
+        self.assertEqual(retrieved_community['name'], community.name)
 
     def _get_url(self):
         return reverse('search-communities')
