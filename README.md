@@ -133,6 +133,32 @@ Required for creating a new account.
 usage: manage.py create_invite [-h] [--email EMAIL] [--username USERNAME] [--name NAME] [--badge BADGE]
 ```
 
+### `manage.py import_invites`
+
+Imports user invites from a kickstarter/indiegogo csv
+
+```bash
+usage: manage.py import_invites [-h] [--indiegogo PATH_TO_CSV] [--kickstarter PATH_TO_CSV]
+```
+
+
+### `manage.py send_invites`
+
+Send invite emails to all user invites who have not been sent the email. 
+
+```bash
+usage: manage.py send_invites [-h]
+```
+
+### `manage.py allocate_invites`
+
+Assign user invites to all or specific users. 
+
+```bash
+usage: manage.py allocate_invites [-h] [--count INCREMENT_INVITES_BY_COUNT] [--total TOTAL_INVITE_COUNT_TO_SET] [--username USERNAME]
+```
+
+
 ## Troubleshooting
 
 ### macOS
@@ -150,6 +176,9 @@ The local development server runs a separate process for the auto-reloader. You 
 ````bash
 python manage.py runserver --noreload
 ````
+
+
+
 
 #### Happy coding 🎉!
 
