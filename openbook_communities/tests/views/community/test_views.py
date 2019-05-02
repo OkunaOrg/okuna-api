@@ -67,6 +67,27 @@ class CommunityAPITests(APITestCase):
         response_name = parsed_response['name']
         self.assertEqual(response_name, community_name)
 
+    def test_cannot_retrieve_community_banned_from(self):
+        """
+        should not be able to retrieve a community banned from and return 403
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+        community_name = community.name
+
+        user.join_community_with_name(community_name=community.name)
+
+        community_owner.ban_user_with_username_from_community_with_name(username=user.username,
+                                                                        community_name=community.name)
+        url = self._get_url(community_name=community_name)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_non_member_cannot_update_community(self):
         """
         a non member of a community should not be able to update a community

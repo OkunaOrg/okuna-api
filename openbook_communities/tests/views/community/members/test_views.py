@@ -68,6 +68,26 @@ class CommunityMembersAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_cannot_retrieve_members_of_community_banned_from(self):
+        """
+        should not be able to retrieve the community members if user has been banned from community
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+        community_name = community.name
+
+        user.join_community_with_name(community_name)
+        community_owner.ban_user_with_username_from_community_with_name(username=user.username,
+                                                                        community_name=community.name)
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_can_retrieve_members_of_private_community_part_of(self):
         """
         should be able to retrieve the members of a private community part of

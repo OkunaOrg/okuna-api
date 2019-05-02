@@ -163,6 +163,7 @@ class CommunityPostSerializer(serializers.ModelSerializer):
             'id',
             'uuid',
             'comments_count',
+            'comments_enabled',
             'reactions_emoji_counts',
             'created',
             'text',
@@ -172,5 +173,6 @@ class CommunityPostSerializer(serializers.ModelSerializer):
             'community',
             'is_muted',
             'reaction',
-            'is_edited'
+            'is_edited',
+            'is_closed'
         )

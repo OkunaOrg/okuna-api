@@ -31,6 +31,7 @@ class Register(APIView):
         email = data.get('email')
         password = data.get('password')
         is_of_legal_age = data.get('is_of_legal_age')
+        are_guidelines_accepted = data.get('are_guidelines_accepted')
         name = data.get('name')
         avatar = data.get('avatar')
         token = data.get('token')
@@ -46,7 +47,8 @@ class Register(APIView):
 
         with transaction.atomic():
             new_user = User.create_user(username=username, email=email, password=password, name=name, avatar=avatar,
-                                        is_of_legal_age=is_of_legal_age, badge=user_invite.badge)
+                                        is_of_legal_age=is_of_legal_age, badge=user_invite.badge,
+                                        are_guidelines_accepted=are_guidelines_accepted)
             user_invite.created_user = new_user
             user_invite.save()
 
@@ -157,7 +159,7 @@ class PasswordResetRequest(APIView):
         user = None
         if has_username:
             username = data.get('username')
-            user = User.get_user_with_username(username)
+            user = User.objects.get(username=username)
 
         if has_email:
             email = data.get('email')

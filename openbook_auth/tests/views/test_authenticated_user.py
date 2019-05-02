@@ -613,7 +613,6 @@ class AuthenticatedUserNotificationsSettingsTests(APITestCase):
         return reverse('authenticated-user-notifications-settings')
 
 
-
 class AuthenticatedUserSettingsAPITests(APITestCase):
     """
     User Settings API
@@ -708,3 +707,41 @@ class AuthenticatedUserSettingsAPITests(APITestCase):
 
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+
+class AuthenticatedUserAcceptGuidelines(APITestCase):
+    """
+    AuthenticatedUserAcceptGuidelines API
+    """
+    url = reverse('authenticated-user-accept-guidelines')
+
+    def test_can_accept_guidelines(self):
+        """
+        should be able to accept the guidelines and return 200
+        """
+        user = make_user()
+        user.are_guidelines_accepted = False
+        user.save()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.post(self.url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+        self.assertTrue(user.are_guidelines_accepted)
+
+    def test_cant_accept_guidelines_if_aleady_accepted(self):
+        """
+        should not be able to accept the guidelines if already accepted and return 400
+        """
+        user = make_user()
+        user.are_guidelines_accepted = True
+        user.save()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.post(self.url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        user.refresh_from_db()
+        self.assertTrue(user.are_guidelines_accepted)

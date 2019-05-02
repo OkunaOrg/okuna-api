@@ -209,13 +209,14 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'video',
             'creator',
             'reaction',
-            'public_comments',
+            'comments_enabled',
             'public_reactions',
             'circles',
             'community',
             'is_muted',
             'is_encircled',
-            'is_edited'
+            'is_edited',
+            'is_closed'
         )
 
 
@@ -239,7 +240,7 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
             'image',
             'video',
             'creator',
-            'public_comments',
+            'comments_enabled',
             'public_reactions',
             'is_edited'
         )

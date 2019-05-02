@@ -18,7 +18,7 @@ from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
 from openbook_common.models import Emoji
-from openbook_common.utils.model_loaders import get_post_reaction_model, get_emoji_model, \
+from openbook_common.utils.model_loaders import get_emoji_model, \
     get_circle_model, get_community_model
 from imagekit.models import ProcessedImageField
 
@@ -30,22 +30,18 @@ class Post(models.Model):
     text = models.CharField(_('text'), max_length=settings.POST_MAX_LENGTH, blank=False, null=True)
     created = models.DateTimeField(editable=False, db_index=True)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
-    public_comments = models.BooleanField(_('public comments'), default=True, editable=False, null=False)
+    comments_enabled = models.BooleanField(_('comments enabled'), default=True, editable=False, null=False)
     public_reactions = models.BooleanField(_('public reactions'), default=True, editable=False, null=False)
     community = models.ForeignKey('openbook_communities.Community', on_delete=models.CASCADE, related_name='posts',
                                   null=True,
                                   blank=False)
     is_edited = models.BooleanField(default=False)
+    is_closed = models.BooleanField(default=False)
 
     class Meta:
         index_together = [
             ('creator', 'community'),
         ]
-
-
-    @classmethod
-    def post_with_id_has_public_comments(cls, post_id):
-        return Post.objects.filter(pk=post_id, public_comments=True).exists()
 
     @classmethod
     def post_with_id_has_public_reactions(cls, post_id):
@@ -93,7 +89,7 @@ class Post(models.Model):
         return post
 
     @classmethod
-    def get_emoji_counts_for_post_with_id(cls, post_id, emoji_id=None, reactor_id=None):
+    def get_public_emoji_counts_for_post_with_id(cls, post_id, emoji_id=None, reactor_id=None):
         Emoji = get_emoji_model()
 
         emoji_query = Q(reactions__post_id=post_id, )
@@ -110,18 +106,32 @@ class Post(models.Model):
         return [{'emoji': emoji, 'count': emoji.reactions__count} for emoji in emojis]
 
     @classmethod
-    def get_trending_posts(cls):
-        Community = get_community_model()
+    def get_trending_posts_for_user_with_id(cls, user_id):
+        trending_posts_query = cls._get_trending_posts_query()
+        trending_posts_query.add(~Q(community__banned_users__id=user_id), Q.AND)
+        trending_posts_query.add(Q(is_closed=False), Q.AND)
 
+        trending_posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=user_id) | Q(
+            creator__user_blocks__blocked_user_id=user_id)), Q.AND)
+        return cls._get_trending_posts_with_query(query=trending_posts_query)
+
+    @classmethod
+    def _get_trending_posts_with_query(cls, query):
+        return cls.objects.annotate(Count('reactions')).filter(query).order_by(
+            '-reactions__count', '-created')
+
+    @classmethod
+    def _get_trending_posts_query(cls):
         trending_posts_query = Q(created__gte=timezone.now() - timedelta(
             hours=12))
+
+        Community = get_community_model()
 
         trending_posts_sources_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC)
 
         trending_posts_query.add(trending_posts_sources_query, Q.AND)
 
-        return cls.objects.annotate(Count('reactions')).filter(trending_posts_query).order_by(
-            '-reactions__count', '-created')
+        return trending_posts_query
 
     @classmethod
     def get_post_comment_notification_target_users(cls, post_id, post_commenter_id):
@@ -138,8 +148,8 @@ class Post(models.Model):
 
         return User.objects.filter(post_notification_target_users_query).distinct()
 
-    def count_comments(self, commenter_id=None):
-        return PostComment.count_comments_for_post_with_id(self.pk, commenter_id=commenter_id)
+    def count_comments(self):
+        return PostComment.count_comments_for_post_with_id(self.pk)
 
     def count_reactions(self, reactor_id=None):
         return PostReaction.count_reactions_for_post_with_id(self.pk, reactor_id=reactor_id)
@@ -186,9 +196,6 @@ class Post(models.Model):
 
     def is_encircled_post(self):
         return not self.is_public_post() and not self.community
-
-    def get_emoji_counts(self, emoji_id=None, reactor_id=None):
-        return Post.get_emoji_counts_for_post_with_id(post_id=self.pk, emoji_id=emoji_id, reactor_id=reactor_id)
 
     def update(self, text=None):
         self._check_can_be_updated(text=text)
@@ -243,11 +250,8 @@ class PostComment(models.Model):
         return PostComment.objects.create(text=text, commenter=commenter, post=post)
 
     @classmethod
-    def count_comments_for_post_with_id(cls, post_id, commenter_id=None):
+    def count_comments_for_post_with_id(cls, post_id):
         count_query = Q(post_id=post_id)
-
-        if commenter_id:
-            count_query.add(Q(commenter_id=commenter_id), Q.AND)
 
         return cls.objects.filter(count_query).count()
 

@@ -13,6 +13,7 @@ from openbook_auth.views.auth.serializers import AuthenticatedUserNotificationsS
     UpdateAuthenticatedUserNotificationsSettingsSerializer
 from openbook_auth.views.authenticated_user.serializers import GetAuthenticatedUserSerializer, \
     UpdateAuthenticatedUserSerializer, DeleteAuthenticatedUserSerializer, UpdateAuthenticatedUserSettingsSerializer
+from openbook_common.responses import ApiMessageResponse
 
 
 class AuthenticatedUser(APIView):
@@ -169,3 +170,18 @@ class AuthenticatedUserSettings(APIView):
 
     def generate_confirmation_link(self, token):
         return '{0}/api/auth/email/verify/{1}'.format(settings.EMAIL_HOST, token)
+
+
+class AuthenticatedUserAcceptGuidelines(APIView):
+    """
+    The API to accept the guidelines
+    """
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        user = request.user
+
+        with transaction.atomic():
+            user.accept_guidelines()
+
+        return ApiMessageResponse(_('Guidelines successfully accepted'), status=status.HTTP_200_OK)

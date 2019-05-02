@@ -1130,3 +1130,173 @@ class PostsAPITests(APITestCase):
 
     def _get_url(self):
         return reverse('posts')
+
+
+class TrendingPostsAPITests(APITestCase):
+    """
+    TrendingPostsAPITests
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
+    def test_displays_community_posts_only(self):
+        """
+        should display community posts only and return 200
+        """
+        user = make_user()
+        community = make_community(creator=user)
+
+        user.create_public_post(text=make_fake_post_text())
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(1, len(response_posts))
+
+        response_post = response_posts[0]
+
+        self.assertEqual(response_post['id'], post.pk)
+
+    def test_does_not_display_closed_community_posts(self):
+        """
+        should not display community posts that are closed
+        """
+        user = make_user()
+        community = make_community(creator=user)
+
+        user.create_public_post(text=make_fake_post_text())
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two.is_closed = True
+        post_two.save()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(1, len(response_posts))
+
+        response_post = response_posts[0]
+
+        self.assertEqual(response_post['id'], post.pk)
+
+    def test_does_not_display_post_from_community_banned_from(self):
+        """
+        should not display posts from a community banned from and return 200
+        """
+        user = make_user()
+        community_owner = make_user()
+
+        community = make_community(creator=community_owner)
+
+        user.join_community_with_name(community_name=community.name)
+
+        community_owner.ban_user_with_username_from_community_with_name(username=user.username,
+                                                                        community_name=community.name)
+
+        community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_post_of_blocked_user(self):
+        """
+        should not be able to retrieve posts of a blocked user
+        """
+        user = make_user()
+
+        user_to_retrieve_posts_from = make_user()
+        user_to_retrieve_posts_from.create_public_post(text=make_fake_post_text())
+
+        user.follow_user_with_id(user_id=user_to_retrieve_posts_from.pk)
+
+        user.block_user_with_id(user_id=user_to_retrieve_posts_from.pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_post_of_blocking_user(self):
+        """
+        should not be able to retrieve posts of a blocking user
+        """
+        user = make_user()
+
+        user_to_retrieve_posts_from = make_user()
+        user_to_retrieve_posts_from.create_public_post(text=make_fake_post_text())
+
+        user.follow_user_with_id(user_id=user_to_retrieve_posts_from.pk)
+
+        user_to_retrieve_posts_from.block_user_with_id(user_id=user.pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_post_of_blocked_community_staff_member(self):
+        """
+        should not be able to retrieve posts of a blocked community staff member
+        """
+        user = make_user()
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+
+        user.join_community_with_name(community_name=community.name)
+
+        community_owner.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        user.block_user_with_id(user_id=community_owner.pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def _get_url(self):
+        return reverse('trending-posts')
