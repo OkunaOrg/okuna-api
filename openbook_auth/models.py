@@ -2449,7 +2449,7 @@ class User(AbstractUser):
 
         if not self.is_staff_of_community_with_name(community_name=community.name):
             # Dont retrieve closed posts
-            community_posts_query.add(Q(is_closed=False), Q.AND)
+            community_posts_query.add(Q(is_closed=False) | Q(creator_id=self.pk), Q.AND)
 
             # Don't retrieve posts of blocked users, except if they're staff members
             blocked_users_query = ~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
