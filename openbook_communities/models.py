@@ -464,6 +464,10 @@ class CommunityMembership(models.Model):
 
     class Meta:
         unique_together = (('user', 'community'),)
+        indexes = [
+            models.Index(fields=['community', 'user', 'is_administrator']),
+            models.Index(fields=['community', 'user', 'is_moderator']),
+        ]
 
     @classmethod
     def create_membership(cls, user, community, is_administrator=False, is_moderator=False):
