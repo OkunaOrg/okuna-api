@@ -3184,6 +3184,9 @@ class UserBlock(models.Model):
 
     class Meta:
         unique_together = ('blocked_user', 'blocker',)
+        indexes = [
+            models.Index(fields=['blocked_user', 'blocker']),
+        ]
 
     @classmethod
     def create_user_block(cls, blocker_id, blocked_user_id):
