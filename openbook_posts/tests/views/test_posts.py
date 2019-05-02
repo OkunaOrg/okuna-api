@@ -1167,6 +1167,35 @@ class TrendingPostsAPITests(APITestCase):
 
         self.assertEqual(response_post['id'], post.pk)
 
+    def test_does_not_display_closed_community_posts(self):
+        """
+        should not display community posts that are closed
+        """
+        user = make_user()
+        community = make_community(creator=user)
+
+        user.create_public_post(text=make_fake_post_text())
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two.is_closed = True
+        post_two.save()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(1, len(response_posts))
+
+        response_post = response_posts[0]
+
+        self.assertEqual(response_post['id'], post.pk)
+
     def test_does_not_display_post_from_community_banned_from(self):
         """
         should not display posts from a community banned from and return 200
