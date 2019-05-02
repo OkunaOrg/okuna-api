@@ -533,11 +533,11 @@ class User(AbstractUser):
 
     def can_see_post(self, post):
         # Check if post is public
-        if post.creator_id == self.pk:
-            return True
-        elif post.community:
+        if post.community:
             if self._can_see_community_post_with_id(community=post.community, post_id=post.pk):
                 return True
+        elif post.creator_id == self.pk:
+            return True
         else:
             # Check if we can retrieve the post
             if self._can_see_post(post=post):

@@ -2119,6 +2119,33 @@ class PostCommentsAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(PostComment.objects.filter(post_id=post.pk, text=new_post_comment_text).count() == 0)
 
+    def test_cannot_comment_in_own_post_from_community_banned_from(self):
+        """
+          should not be able to comment in own post of a community banned from and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+
+        user.join_community_with_name(community_name=community.name)
+
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        community_owner.ban_user_with_username_from_community_with_name(username=user.username,
+                                                                        community_name=community.name)
+
+        new_post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(new_post_comment_text)
+
+        url = self._get_url(post)
+        response = self.client.put(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(PostComment.objects.filter(post_id=post.pk, text=new_post_comment_text).count() == 0)
+
     def test_commenting_in_foreign_post_creates_notification(self):
         """
          should create a notification when commenting on a foreign post
