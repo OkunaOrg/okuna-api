@@ -101,9 +101,8 @@ class Community(models.Model):
         return cls.objects.filter(query)
 
     @classmethod
-    def search_communities_with_query_for_user_with_id(cls, query, user_id):
+    def search_communities_with_query(cls, query):
         query = cls._make_search_communities_query(query=query)
-        query.add(~Q(banned_users__id=user_id), Q.AND)
         return cls.objects.filter(query)
 
     @classmethod
@@ -465,6 +464,11 @@ class CommunityMembership(models.Model):
 
     class Meta:
         unique_together = (('user', 'community'),)
+        indexes = [
+            models.Index(fields=['community', 'user']),
+            models.Index(fields=['community', 'user', 'is_administrator']),
+            models.Index(fields=['community', 'user', 'is_moderator']),
+        ]
 
     @classmethod
     def create_membership(cls, user, community, is_administrator=False, is_moderator=False):
