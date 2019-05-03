@@ -53,7 +53,7 @@ from openbook_lists.views import Lists, ListItem, ListNameCheck
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
 from openbook_posts.views.post.views import PostComments, PostCommentItem, PostItem, PostReactions, PostReactionItem, \
     PostReactionsEmojiCount, PostReactionEmojiGroups, MutePost, UnmutePost, PostCommentsDisable, PostCommentsEnable, \
-    PostOpen, PostClose
+    PostOpen, PostClose, PostCommentReplies
 from openbook_posts.views.posts.views import Posts, TrendingPosts
 from openbook_importer.views import ImportItem
 
@@ -123,13 +123,18 @@ post_notifications_patters = [
     path('unmute/', UnmutePost.as_view(), name='unmute-post'),
 ]
 
+post_comment_patterns = [
+    path('', PostCommentItem.as_view(), name='post-comment'),
+    path('replies/', PostCommentReplies.as_view(), name='post-comment-replies'),
+]
+
 post_patterns = [
     path('', PostItem.as_view(), name='post'),
     path('notifications/', include(post_notifications_patters)),
     path('comments/', PostComments.as_view(), name='post-comments'),
     path('comments/disable/', PostCommentsDisable.as_view(), name='disable-post-comments'),
     path('comments/enable/', PostCommentsEnable.as_view(), name='enable-post-comments'),
-    path('comments/<int:post_comment_id>/', PostCommentItem.as_view(), name='post-comment'),
+    path('comments/<int:post_comment_id>/', include(post_comment_patterns)),
     path('reactions/', PostReactions.as_view(), name='post-reactions'),
     path('reactions/emoji-count/', PostReactionsEmojiCount.as_view(), name='post-reactions-emoji-count'),
     path('reactions/<int:post_reaction_id>/', PostReactionItem.as_view(), name='post-reaction'),
