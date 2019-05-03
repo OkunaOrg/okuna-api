@@ -159,7 +159,7 @@ Making Openbook a healthy and welcoming community for everyone is a shared respo
  
 Points borrowed from the [Norwegian Data Protection Authority](https://www.datatilsynet.no/personvern-pa-ulike-omrader/internett-og-apper/bilder-pa-nett/bilder-av-barn/).
 
-#### <a name="on-harmful-beliefs"></a>On harmful beliefs
+#### <a name="on-harmful-beliefs"></a>* On harmful beliefs
 Some beliefs can cause real life harm. For example, the now unfortunately wide-spread belief that vaccination causes autism [(it doesn’t as overwhelmingly proven by numeours and independent studies)](https://www.healthychildren.org/English/safety-prevention/immunizations/Pages/Vaccine-Studies-Examine-the-Evidence.aspx) [resulting](https://jamanetwork.com/journals/jama/fullarticle/2656158?appId=scweb) in the [resurgence of measles outbreaks](https://www.unicef.org/press-releases/over-20-million-children-worldwide-missed-out-measles-vaccine-annually-past-8-years).
 Beliefs like this example are exempted from the protected status and we will do our best to prevent their spreading on the platform.
 
