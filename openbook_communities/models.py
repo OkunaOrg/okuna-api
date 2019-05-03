@@ -1,3 +1,5 @@
+import string
+
 from django.conf import settings
 from django.db import models
 
@@ -439,10 +441,10 @@ class Community(models.Model):
         self.name = self.name.lower()
 
         if self.user_adjective:
-            self.user_adjective = self.user_adjective.title()
+            self.user_adjective = string.capwords(self.user_adjective, ' ')
 
         if self.users_adjective:
-            self.users_adjective = self.users_adjective.title()
+            self.users_adjective = string.capwords(self.users_adjective, ' ')
 
         return super(Community, self).save(*args, **kwargs)
 
