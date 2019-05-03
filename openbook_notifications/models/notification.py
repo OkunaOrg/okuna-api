@@ -13,6 +13,7 @@ class Notification(models.Model):
 
     POST_REACTION = 'PR'
     POST_COMMENT = 'PC'
+    POST_COMMENT_REPLY = 'PCR'
     CONNECTION_REQUEST = 'CR'
     CONNECTION_CONFIRMED = 'CC'
     FOLLOW = 'F'
@@ -21,6 +22,7 @@ class Notification(models.Model):
     NOTIFICATION_TYPES = (
         (POST_REACTION, 'Post Reaction'),
         (POST_COMMENT, 'Post Comment'),
+        (POST_COMMENT_REPLY, 'Post Comment Reply'),
         (CONNECTION_REQUEST, 'Connection Request'),
         (CONNECTION_CONFIRMED, 'Connection Confirmed'),
         (FOLLOW, 'Follow'),

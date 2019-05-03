@@ -5,8 +5,9 @@ from openbook_auth.models import User, UserProfile
 from openbook_common.models import Emoji
 from openbook_communities.models import Community, CommunityInvite
 from openbook_notifications.models import Notification, PostCommentNotification, ConnectionRequestNotification, \
-    ConnectionConfirmedNotification, FollowNotification, CommunityInviteNotification
+    ConnectionConfirmedNotification, FollowNotification, CommunityInviteNotification, PostCommentReplyNotification
 from openbook_notifications.models.post_reaction_notification import PostReactionNotification
+from openbook_notifications.serializer_fields import ParentCommentField
 from openbook_notifications.validators import notification_id_exists
 from openbook_posts.models import PostComment, PostReaction, Post, PostImage, PostVideo
 
@@ -129,6 +130,32 @@ class PostCommentNotificationSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'post_comment'
+        )
+
+
+class PostCommentReplyParentCommentSerializer(serializers.ModelSerializer):
+    commenter = PostCommentCommenterSerializer()
+
+    class Meta:
+        model = PostComment
+        fields = (
+            'id',
+            'text',
+            'commenter',
+            'is_edited'
+        )
+
+
+class PostCommentReplyNotificationSerializer(serializers.ModelSerializer):
+    post_comment = PostCommentSerializer()
+    parent_comment = ParentCommentField(parent_comment_serializer=PostCommentReplyParentCommentSerializer)
+
+    class Meta:
+        model = PostCommentReplyNotification
+        fields = (
+            'id',
+            'post_comment',
+            'parent_comment'
         )
 
 
@@ -346,6 +373,7 @@ class CommunityInviteNotificationSerializer(serializers.ModelSerializer):
 class GetNotificationsNotificationSerializer(serializers.ModelSerializer):
     content_object = GenericRelatedField({
         PostCommentNotification: PostCommentNotificationSerializer(),
+        PostCommentReplyNotification: PostCommentReplyNotificationSerializer(),
         PostReactionNotification: PostReactionNotificationSerializer(),
         ConnectionRequestNotification: ConnectionRequestNotificationSerializer(),
         ConnectionConfirmedNotification: ConnectionConfirmedNotificationSerializer(),

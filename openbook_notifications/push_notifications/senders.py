@@ -74,6 +74,31 @@ def send_post_comment_push_notification_with_message(post_comment, message, targ
     _send_notification_to_user(notification=one_signal_notification, user=target_user)
 
 
+def send_post_comment_reply_push_notification_with_message(post_comment, message, target_user):
+    Notification = get_notification_model()
+    NotificationPostCommentReplySerializer = _get_push_notifications_serializers().NotificationPostCommentReplySerializer
+
+    post = post_comment.post
+
+    notification_payload = NotificationPostCommentReplySerializer(post_comment).data
+    notification_group = 'post_%s' % post.id
+
+    one_signal_notification = onesignal_sdk.Notification(post_body={
+        "contents": message
+    })
+
+    notification_data = {
+        'type': Notification.POST_COMMENT_REPLY,
+        'payload': notification_payload
+    }
+
+    one_signal_notification.set_parameter('data', notification_data)
+    one_signal_notification.set_parameter('!thread_id', notification_group)
+    one_signal_notification.set_parameter('android_group', notification_group)
+
+    _send_notification_to_user(notification=one_signal_notification, user=target_user)
+
+
 def send_follow_push_notification(followed_user, following_user):
     if followed_user.has_follow_notifications_enabled():
         one_signal_notification = onesignal_sdk.Notification(post_body={
