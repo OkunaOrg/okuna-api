@@ -73,7 +73,7 @@ If you’re reading something that makes you feel uncomfortable…
 When replying to someone’s comment or post…
 
 * **Keep these guidelines in mind.** At minimum the in short section.
-* **Did you read that right?** Give it another look.
+* **Did you read the comment or post right?** Give it another look.
 * **Are you in doubt about what it means?** Kindly ask the person for more information.
 * **Find something in common and share it if possible.** Finding something in common between you and the original poster makes sure both of you see a human on the other side. This facilitates empathy and compassion.
 
