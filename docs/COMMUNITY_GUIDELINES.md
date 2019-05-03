@@ -12,6 +12,7 @@ In short:
 [respect people’s privacy](#respect-peoples-privacy),
 [curb hate](#curb-hate),
 [avoid spamming](#avoid-spamming),
+[be you](#be-you),
 [keep the bots out](#keep-the-bots-out),
 [ditch the pornography](#ditch-the-pornography),
 [keep content legal](#keep-content-legal)
@@ -23,7 +24,7 @@ Those acting outside these guidelines risk having their accounts/content suspend
  
 We also aim to make the process of enforcing these guidelines transparent and open to debate.
 
-## 🌎 Embrace diversity
+## <a name="embrace-diversity"></a>🌎 Embrace diversity
 
 In a boring world, we would all look, think and act the same way.
 Luckily, we all look, think and act differently and the world isn’t boring.
@@ -47,13 +48,13 @@ Because we embrace diversity we have a list of _**13 protected differences**_ we
 
 Ideologies that by nature are not embracing, or tolerant of, these differences such as nazism or neo-nazism have no place—and never will have—at Openbook. This includes sharing associated symbols or imagery.
 
-## 🏷 Drop the labels and stereotypes
+## <a name="drop-the-labels-and-stereotypes"></a>🏷 Drop the labels and stereotypes
 
 > Labelling and stereotyping consists of assigning a certain set of behaviours and characteristics to a person based on an attribute—such as nationality or political inclination.
 
 The first step to a successful co-existence is the willingness to engage with each other. Labels get in the way of this by loading us up with prejudices and assumptions not necessarily true about the person we’re interacting with. 
 
-## ✌️ Be courteous, polite and respectful
+## <a name="be-courteous-polite-and-respectful"></a>✌️ Be courteous, polite and respectful
 
 Show friendliness, concern and respect for others in manners, speech and behaviour.
 
@@ -88,7 +89,7 @@ If the discussion becomes aggressive…
 
 * **Stop immediately and report.** Aggression only leads to more aggression. 
 
-## 🕴 Respect people’s privacy
+## <a name="respect-peoples-privacy"></a>🕴 Respect people’s privacy
 
 As a privacy-first social network, we take privacy seriously. Please respect people’s privacy.
 
@@ -99,26 +100,30 @@ Do not share people's
 * privately uploaded content
 * photos of them without their consent
 
-## 🕊 Curb hate
+## <a name="curb-hate"></a>🕊 Curb hate
 
 We want Openbook to be a welcoming and friendly place for everyone to surf with peace of mind.
 
 Speech containing demeaning, denigrating, humiliating or brutalising comments—whether personal or in general—have no place on Openbook.
 
-## 😬 Avoid spamming
+## <a name="avoid-spamming"></a>😬 Avoid spamming
 
 Following, connecting and commenting with the purposes of advertising, phishing and spreading malware are all spam-like activity. Avoid spam activity.
 
 
-## 🥳 Be you
+## <a name="be-you"></a>🥳 Be you
 
 It’s okay to be yourself or an anonymous version of yourself in Openbook. What’s not all right is pretending to be someone you’re not. Impersonating Christopher Hemsworth online won't get you friends IRL or build you the same quantity of arm muscle.
 
-## 🤖 Keep the bots out
+## <a name="keep-the-bots-out"></a>🤖 Keep the bots out
 
 Scripts or bots that interact with the social network in any way will be found and removed. Associated accounts may also be blocked or removed.
 
-## 🙏 Keep content legal
+## <a name="ditch-the-pornography"></a>🚮 Ditch the pornography
+
+Printed or visual material containing the explicit description or display of sexual organs or activity are not allowed.
+
+## <a name="keep-content-legal"></a>🙏 Keep content legal
 
 By illegal content we mean:
 
@@ -129,11 +134,7 @@ By illegal content we mean:
 
 Sharing any of these will lead to the immediate closure of your account and reporting to the authorities where applicable.
 
-## 🚮 Ditch the pornography
-
-Printed or visual material containing the explicit description or display of sexual organs or activity are not allowed.
-
-## 🏡 Embrace the shared responsibility
+## <a name="embrace-the-shared-responsibility"></a>🏡 Embrace the shared responsibility
 
 Making Openbook a healthy and welcoming community for everyone is a shared responsibility.
 
@@ -158,7 +159,7 @@ Making Openbook a healthy and welcoming community for everyone is a shared respo
  
 Points borrowed from the [Norwegian Data Protection Authority](https://www.datatilsynet.no/personvern-pa-ulike-omrader/internett-og-apper/bilder-pa-nett/bilder-av-barn/).
 
-#### On harmful beliefs
+#### <a name="on-harmful-beliefs"></a>* On harmful beliefs
 Some beliefs can cause real life harm. For example, the now unfortunately wide-spread belief that vaccination causes autism [(it doesn’t as overwhelmingly proven by numeours and independent studies)](https://www.healthychildren.org/English/safety-prevention/immunizations/Pages/Vaccine-Studies-Examine-the-Evidence.aspx) [resulting](https://jamanetwork.com/journals/jama/fullarticle/2656158?appId=scweb) in the [resurgence of measles outbreaks](https://www.unicef.org/press-releases/over-20-million-children-worldwide-missed-out-measles-vaccine-annually-past-8-years).
 Beliefs like this example are exempted from the protected status and we will do our best to prevent their spreading on the platform.
 
