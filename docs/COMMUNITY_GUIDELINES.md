@@ -151,7 +151,7 @@ Making Openbook a healthy and welcoming community for everyone is a shared respo
 
 #### On photos of children
 
-* **Never share pictures of other people's children without the consent of their superiors.**
+* **Never share pictures of other people's children without the consent of their parent or guardian.**
 * **Share the fewest possible pictures.**
 * **Double-check who can see the pictures.** Preferably share only to your private circles.
 * **Always ask the children.** Ask them understandable things like "Do you think it's okay to share this picture with my family or friends?" and respect their answer.
