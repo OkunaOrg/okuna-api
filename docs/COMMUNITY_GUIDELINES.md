@@ -174,7 +174,7 @@ As with all other guidelines, we aim to make the process transparent and always 
 
 We might allow such thing in the future, however not before having a solid content reporting and filtering mechanisms in place.
 
-If it's not on a painting or sculpture, please abstain yourself from sharing any kind of nudity for now.
+If it's not on a painting or sculpture, please abstain yourself from sharing any kind of nudity on the platform.
 
 Reports on this subject will most likely require personal judgement from the community moderators.
 
