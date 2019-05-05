@@ -176,6 +176,8 @@ We might allow such thing in the future, however not before having a solid conte
 
 If it's not on a painting or sculpture, please abstain yourself from sharing any kind of nudity for now.
 
+Reports on this subject will most likely require personal judgement from the community moderators.
+
 ---
 
 ### 👯‍♀️ Contributors
