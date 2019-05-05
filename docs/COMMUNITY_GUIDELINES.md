@@ -170,11 +170,11 @@ We will also determine a belief to be harmful—and therefore not protected—if
  
 As with all other guidelines, we aim to make the process transparent and always open to debate.
 
-#### On artistic, non-sexual nudity
+#### On non-sexual nudity
 
-We might allow such things in the future, however not before having a solid content reporting and filtering mechanisms in place.
+We might allow such thing in the future, however not before having a solid content reporting and filtering mechanisms in place.
 
-Please abstain yourself from sharing any kind of nudity for now.
+If it's not on a painting or sculpture, please abstain yourself from sharing any kind of nudity for now.
 
 ---
 
