@@ -172,7 +172,7 @@ As with all other guidelines, we aim to make the process transparent and always 
 
 #### On artistic, non-sexual nudity
 
-We plan on allowing such things in the future, however not before we have a reliable content reporting and filtering mechanism.
+We might allow such things in the future, however not before having a solid content reporting and filtering mechanisms in place.
 
 Please abstain yourself from sharing any kind of nudity for now.
 
