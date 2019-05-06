@@ -202,8 +202,11 @@ def make_private_community(creator):
     return make_community(creator=creator, type=Community.COMMUNITY_TYPE_PRIVATE)
 
 
-def make_notification(owner):
-    return mixer.blend(Notification, owner=owner)
+def make_notification(owner, notification_type=None):
+    if notification_type:
+        return mixer.blend(Notification, owner=owner, notification_type=notification_type)
+    else:
+        return mixer.blend(Notification, owner=owner)
 
 
 def make_device(owner):
