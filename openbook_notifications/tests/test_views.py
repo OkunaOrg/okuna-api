@@ -88,7 +88,7 @@ class ReadNotificationsAPITests(APITestCase):
 
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
-        response = self.client.post(url, **headers)
+        response = self.client.post(url, {}, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 

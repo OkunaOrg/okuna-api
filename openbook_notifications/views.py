@@ -17,7 +17,7 @@ class Notifications(APIView):
         user = request.user
         query_params = request.query_params.dict()
 
-        if query_params['types'] is not None:
+        if 'types' in query_params:
             query_params['types'] = query_params['types'].split(sep=",")
 
         serializer = GetNotificationsSerializer(data=query_params)
@@ -52,7 +52,7 @@ class ReadNotifications(APIView):
         user = request.user
         query_data = request.data.dict()
 
-        if query_data['types'] is not None:
+        if 'types' in query_data:
             query_data['types'] = query_data['types'].split(sep=",")
 
         serializer = ReadNotificationsSerializer(data=query_data)
