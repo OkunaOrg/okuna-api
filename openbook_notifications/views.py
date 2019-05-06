@@ -14,7 +14,12 @@ class Notifications(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
+        user = request.user
         query_params = request.query_params.dict()
+
+        if query_params['types'] is not None:
+            query_params['types'] = query_params['types'].split(sep=",")
+
         serializer = GetNotificationsSerializer(data=query_params)
         serializer.is_valid(raise_exception=True)
 
@@ -23,11 +28,6 @@ class Notifications(APIView):
         count = data.get('count', 10)
         max_id = data.get('max_id')
         types = data.get('types')
-
-        if types is not None:
-            types = types.split(sep=",")
-
-        user = request.user
 
         notifications = user.get_notifications(max_id=max_id, types=types).order_by('-created')[:count]
 
@@ -50,17 +50,18 @@ class ReadNotifications(APIView):
 
     def post(self, request):
         user = request.user
+        query_data = request.data.dict()
 
-        serializer = ReadNotificationsSerializer(data=request.data)
+        if query_data['types'] is not None:
+            query_data['types'] = query_data['types'].split(sep=",")
+
+        serializer = ReadNotificationsSerializer(data=query_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
 
         max_id = data.get('max_id')
         types = data.get('types')
-
-        if types is not None:
-            types = types.split(sep=",")
 
         with transaction.atomic():
             user.read_notifications(max_id=max_id, types=types)
