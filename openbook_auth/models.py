@@ -2372,14 +2372,18 @@ class User(AbstractUser):
                 # If the comment is in a community, check if we're moderators
                 if not self.is_moderator_of_community_with_name(
                         post.community.name) and not self.is_administrator_of_community_with_name(
-                    post.community.name):
+                        post.community.name):
                     raise ValidationError(
                         _('Only moderators/administrators can remove community posts.'),
                     )
                 else:
                     post_comment = PostComment.objects.select_related('commenter').get(pk=post_comment_id)
-                    post.community.create_remove_post_comment_log(source_user=self,
-                                                                  target_user=post_comment.commenter)
+                    if post_comment.parent_comment is not None:
+                        post.community.create_remove_post_comment_reply_log(source_user=self,
+                                                                            target_user=post_comment.commenter)
+                    else:
+                        post.community.create_remove_post_comment_log(source_user=self,
+                                                                      target_user=post_comment.commenter)
             else:
                 raise ValidationError(
                     _('You cannot remove a comment that does not belong to you')

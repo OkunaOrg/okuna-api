@@ -400,6 +400,11 @@ class Community(models.Model):
                                 source_user=source_user,
                                 target_user=target_user)
 
+    def create_remove_post_comment_reply_log(self, source_user, target_user):
+        return self._create_log(action_type='RPCR',
+                                source_user=source_user,
+                                target_user=target_user)
+
     def create_disable_post_comments_log(self, source_user, target_user, post):
         return self._create_log(action_type='DPC',
                                 post=post,
