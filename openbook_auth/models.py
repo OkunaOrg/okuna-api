@@ -2524,28 +2524,10 @@ class User(AbstractUser):
     def _make_get_replies_for_post_comment_query(self, post_comment, max_id=None, min_id=None):
         comment_replies_query = Q(parent_comment__id=post_comment.pk)
 
-        post_community = post_comment.post.community
+        post = post_comment.post
+        comments_query = self._make_get_comments_for_post_query(post=post, max_id=max_id, min_id=min_id)
 
-        if post_community:
-            if not self.is_staff_of_community_with_name(community_name=post_community.name):
-                blocked_users_query = ~Q(Q(commenter__blocked_by_users__blocker_id=self.pk) | Q(
-                    commenter__user_blocks__blocked_user_id=self.pk))
-                blocked_users_query_staff_members = Q(
-                    commenter__communities_memberships__community_id=post_community.pk)
-                blocked_users_query_staff_members.add(Q(commenter__communities_memberships__is_administrator=True) | Q(
-                    commenter__communities_memberships__is_moderator=True), Q.AND)
-
-                blocked_users_query.add(~blocked_users_query_staff_members, Q.AND)
-                comment_replies_query.add(blocked_users_query, Q.AND)
-        else:
-            blocked_users_query = ~Q(Q(commenter__blocked_by_users__blocker_id=self.pk) | Q(
-                commenter__user_blocks__blocked_user_id=self.pk))
-            comment_replies_query.add(blocked_users_query, Q.AND)
-
-        if max_id:
-            comment_replies_query.add(Q(id__lt=max_id), Q.AND)
-        elif min_id:
-            comment_replies_query.add(Q(id__gte=min_id), Q.AND)
+        comment_replies_query.add(comments_query, Q.AND)
 
         return comment_replies_query
 
