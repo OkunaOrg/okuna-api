@@ -9,3 +9,12 @@ def notification_id_exists(notification_id):
         raise ValidationError(
             _('No notification with the provided id exists.'),
         )
+
+
+def notification_type_exists(notification_type):
+    matches = [a == notification_type for (a, b) in Notification.NOTIFICATION_TYPES]
+
+    if not any(matches):
+        raise ValidationError(
+            _('The provided notification type is invalid.'),
+        )
