@@ -2502,8 +2502,8 @@ class User(AbstractUser):
 
         return reactions_query
 
-    def _make_get_comments_for_post_query(self, post, max_id=None, min_id=None):
-        comments_query = Q(post_id=post.pk, parent_comment__isnull=True)
+    def _make_get_comments_slice_for_post_query(self, post, max_id=None, min_id=None):
+        comments_query = Q(post_id=post.pk)
 
         post_community = post.community
 
@@ -2530,13 +2530,21 @@ class User(AbstractUser):
 
         return comments_query
 
+    def _make_get_comments_for_post_query(self, post, max_id=None, min_id=None):
+        comments_query = Q(post_id=post.pk, parent_comment__isnull=True)
+        comments_slice_query = self._make_get_comments_slice_for_post_query(post=post, max_id=max_id, min_id=min_id)
+
+        comments_query.add(comments_slice_query, Q.AND)
+
+        return comments_query
+
     def _make_get_replies_for_post_comment_query(self, post_comment, max_id=None, min_id=None):
         comment_replies_query = Q(parent_comment__id=post_comment.pk)
 
         post = post_comment.post
-        comments_query = self._make_get_comments_for_post_query(post=post, max_id=max_id, min_id=min_id)
+        comments_slice_query = self._make_get_comments_slice_for_post_query(post=post, max_id=max_id, min_id=min_id)
 
-        comment_replies_query.add(comments_query, Q.AND)
+        comment_replies_query.add(comments_slice_query, Q.AND)
 
         return comment_replies_query
 
