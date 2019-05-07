@@ -695,6 +695,11 @@ class User(AbstractUser):
     def get_comments_count_for_post(self, post):
         return post.count_comments()
 
+    def get_replies_count_for_post_comment(self, post_comment):
+        PostComment = get_post_comment_model()
+        return PostComment.count_comment_replies_for_post_with_id_for_comment_with_id(post_comment.post.pk,
+                                                                                      post_comment.pk)
+
     def enable_comments_for_post_with_id(self, post_id):
         Post = get_post_model()
         if not Post.is_post_with_id_a_community_post(post_id):
@@ -2498,7 +2503,7 @@ class User(AbstractUser):
         return reactions_query
 
     def _make_get_comments_for_post_query(self, post, max_id=None, min_id=None):
-        comments_query = Q(post_id=post.pk)
+        comments_query = Q(post_id=post.pk, parent_comment__isnull=True)
 
         post_community = post.community
 

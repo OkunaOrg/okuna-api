@@ -6,6 +6,7 @@ from openbook_common.serializers_fields.post_comment import PostCommenterField
 from openbook_communities.models import CommunityMembership
 from openbook_posts.models import PostComment, Post
 from openbook_posts.validators import post_uuid_exists
+from openbook_posts.views.post_comments.serializer_fields import RepliesCountField
 
 
 class PostCommenterProfileSerializer(serializers.ModelSerializer):
@@ -41,7 +42,7 @@ class PostCommenterCommunityMembershipSerializer(serializers.ModelSerializer):
         )
 
 
-class PostCommentSerializer(serializers.ModelSerializer):
+class PostCommentReplySerializer(serializers.ModelSerializer):
     commenter = PostCommenterField(post_commenter_serializer=PostCommentCommenterSerializer,
                                    community_membership_serializer=PostCommenterCommunityMembershipSerializer)
 
@@ -51,6 +52,25 @@ class PostCommentSerializer(serializers.ModelSerializer):
             'commenter',
             'text',
             'created',
+            'is_edited',
+            'id'
+        )
+
+
+class PostCommentSerializer(serializers.ModelSerializer):
+    commenter = PostCommenterField(post_commenter_serializer=PostCommentCommenterSerializer,
+                                   community_membership_serializer=PostCommenterCommunityMembershipSerializer)
+    replies_count = RepliesCountField()
+    replies = PostCommentReplySerializer(many=True)
+
+    class Meta:
+        model = PostComment
+        fields = (
+            'commenter',
+            'text',
+            'created',
+            'replies_count',
+            'replies',
             'is_edited',
             'id'
         )
