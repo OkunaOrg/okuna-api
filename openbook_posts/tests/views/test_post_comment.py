@@ -2326,6 +2326,30 @@ class PostCommentRepliesAPITests(APITestCase):
                                                    post_id=post.pk,
                                                    text=reply_comment_text).count() == 1)
 
+    def test_cannot_reply_to_a_reply_in_post(self):
+        """
+         should NOT be able to reply to an existing reply in post
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+        post_comment_reply = user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
+                                                                            post_comment_id=post_comment.pk,
+                                                                            text=make_fake_post_comment_text())
+
+        reply_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(reply_comment_text)
+
+        url = self._get_url(post, post_comment_reply)
+        response = self.client.put(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(PostComment.objects.filter(parent_comment_id=post_comment_reply.pk,
+                                                    post_id=post.pk,
+                                                    text=reply_comment_text).exists())
+
     def test_cannot_reply_comment_in_foreign_post(self):
         """
          should not be able to reply comment in a foreign encircled post and return 400
