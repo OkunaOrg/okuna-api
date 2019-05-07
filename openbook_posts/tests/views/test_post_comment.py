@@ -2564,7 +2564,7 @@ class PostCommentRepliesAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(PostComment.objects.filter(post_id=post.pk, text=reply_comment_text).count() == 1)
 
-    def test_owner_cannot_comment_in_community_post_with_disabled_comments(self):
+    def test_owner_cannot_comment_reply_in_community_post_with_disabled_comments(self):
         """
          should not be able to comment reply in the community post with comments disabled even if owner of post
          """
@@ -3042,6 +3042,66 @@ class PostCommentRepliesAPITests(APITestCase):
 
         self.assertFalse(PostCommentReplyNotification.objects.filter(post_comment__text=reply_comment_text,
                                                                      notification__owner=foreign_user).exists())
+
+    def test_reply_in_community_post_by_foreign_user_does_not_create_foreign_notification_when_closed(self):
+        """
+         should NOT create a notification when a creator comments reply in a CLOSED community post where a foreign user commented
+         """
+        post_creator = make_user()
+        admin = make_user()
+        community = make_community(creator=admin)
+        post_creator.join_community_with_name(community_name=community.name)
+        post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        foreign_user = make_user()
+        foreign_user.join_community_with_name(community_name=community.name)
+        post_comment = post_creator.comment_post(post=post, text=make_fake_post_text())
+        # subscribe to notifications
+        foreign_user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
+                                                               post_comment_id=post_comment.pk,
+                                                               text=make_fake_post_comment_text())
+        # post will be closed now
+        post.is_closed = True
+        post.save()
+
+        reply_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(reply_comment_text)
+        headers = make_authentication_headers_for_user(post_creator)
+        url = self._get_url(post, post_comment)
+        self.client.put(url, data, **headers)
+
+        self.assertFalse(PostCommentReplyNotification.objects.filter(post_comment__text=reply_comment_text,
+                                                                     notification__owner=foreign_user).exists())
+
+    def test_reply_in_community_post_by_admin_does_create_notification_when_closed(self):
+        """
+         should create a notification to a community post creator when an admin comments in a CLOSED post
+         """
+        post_creator = make_user()
+        admin = make_user()
+        community = make_community(creator=admin)
+        post_creator.join_community_with_name(community_name=community.name)
+        post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        post_comment = post_creator.comment_post(post=post, text=make_fake_post_text())
+        # subscribe to notifications
+        post_creator.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
+                                                               post_comment_id=post_comment.pk,
+                                                               text=make_fake_post_comment_text())
+        # post will be closed now
+        post.is_closed = True
+        post.save()
+
+        reply_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(reply_comment_text)
+        headers = make_authentication_headers_for_user(admin)
+        url = self._get_url(post, post_comment)
+        self.client.put(url, data, **headers)
+
+        self.assertTrue(PostCommentReplyNotification.objects.filter(post_comment__text=reply_comment_text,
+                                                                    notification__owner=post_creator).exists())
 
     def test_comment_reply_in_an_encircled_post_with_a_user_removed_from_the_circle_not_notifies_it(self):
         """
