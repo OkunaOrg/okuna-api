@@ -53,9 +53,19 @@ class CommentRepliesPostSerializer(serializers.Serializer):
     text = serializers.CharField(max_length=settings.POST_COMMENT_MAX_LENGTH, required=True, allow_blank=False)
 
 
+class PostCommentReplyParentSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = PostComment
+        fields = (
+            'id',
+        )
+
+
 class PostCommentReplySerializer(serializers.ModelSerializer):
     commenter = PostCommenterField(post_commenter_serializer=PostCommentCommenterSerializer,
                                    community_membership_serializer=PostCommenterCommunityMembershipSerializer)
+    parent_comment = PostCommentReplyParentSerializer()
 
     class Meta:
         model = PostComment
