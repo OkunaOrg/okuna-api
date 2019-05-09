@@ -427,7 +427,8 @@ class GetPostPostSerializer(serializers.ModelSerializer):
             'circles',
             'community',
             'is_muted',
-            'is_edited'
+            'is_edited',
+            'is_closed',
         )
 
 
