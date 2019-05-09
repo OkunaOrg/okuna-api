@@ -172,7 +172,7 @@ As with all other guidelines, we aim to make the process transparent and always 
 
 #### On non-sexual nudity
 
-We might allow such thing in the future, however not before having a solid content reporting and filtering mechanisms in place.
+We might allow this in the future, however not before we have solid content reporting and filtering mechanisms in place
 
 If it's not on a painting or sculpture, please abstain yourself from sharing any kind of nudity on the platform.
 
