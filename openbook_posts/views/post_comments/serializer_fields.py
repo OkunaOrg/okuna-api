@@ -21,7 +21,7 @@ class RepliesField(Field):
         'DESC': '-created',
         'ASC': 'created'
     }
-    DEFAULT_REPLY_COUNT = 5
+    DEFAULT_REPLY_COUNT = 2
 
     def __init__(self, post_comment_reply_serializer=None, **kwargs):
         kwargs['source'] = '*'

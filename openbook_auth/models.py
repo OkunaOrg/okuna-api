@@ -676,6 +676,10 @@ class User(AbstractUser):
 
     def get_comment_replies_for_post_with_id_for_comment_with_id(self, post_id, post_comment_id, min_id=None, max_id=None):
         PostComment = get_post_comment_model()
+        if not PostComment.objects.filter(id=post_comment_id, post__id=post_id).exists():
+            raise ValidationError(
+                _('The comment does not belong to the specified post.')
+            )
         post_comment = PostComment.objects.get(post__id=post_id, pk=post_comment_id)
 
         self._check_can_get_comment_replies_for_post_comment(post_comment=post_comment)
