@@ -23,8 +23,7 @@ from openbook_posts.views.post.serializers import GetPostCommentsSerializer, Pos
 
 def get_post_id_for_post_uuid(post_uuid):
     Post = get_post_model()
-    post = Post.objects.values('id').get(uuid=post_uuid)
-    return post['id']
+    return Post.get_post_id_for_post_with_uuid(post_uuid=post_uuid)
 
 
 class PostItem(APIView):
@@ -483,4 +482,3 @@ class PostOpen(APIView):
         post_serializer = OpenClosePostSerializer(post, context={'request': request})
 
         return Response(post_serializer.data, status=status.HTTP_200_OK)
-

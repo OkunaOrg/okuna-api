@@ -44,6 +44,11 @@ class Post(models.Model):
         ]
 
     @classmethod
+    def get_post_id_for_post_with_uuid(cls, post_uuid):
+        post = cls.objects.values('id').get(uuid=post_uuid)
+        return post['id']
+
+    @classmethod
     def post_with_id_has_public_reactions(cls, post_id):
         return Post.objects.filter(pk=post_id, public_reactions=True).exists()
 
