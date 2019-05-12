@@ -3,7 +3,7 @@ from openbook_moderation.models import ModerationCategory
 
 
 class ModerationCategoryTranslationOptions(TranslationOptions):
-    fields = ('description',)
+    fields = ('description', 'title')
 
 
 translator.register(ModerationCategory, ModerationCategoryTranslationOptions)
