@@ -124,6 +124,7 @@ INSTALLED_APPS = [
     'openbook_categories',
     'openbook_notifications',
     'openbook_devices',
+    'openbook_moderation',
 ]
 
 MIDDLEWARE = [
@@ -421,6 +422,7 @@ SEARCH_QUERIES_MAX_LENGTH = 120
 FEATURE_VIDEO_POSTS_ENABLED = os.environ.get('FEATURE_VIDEO_POSTS_ENABLED', 'True') == 'True'
 FEATURE_IMPORTER_ENABLED = os.environ.get('FEATURE_IMPORTER_ENABLED', 'True') == 'True'
 MODERATION_REPORT_DESCRIPTION_MAX_LENGTH = 1000
+MODERATED_OBJECT_DESCRIPTION_MAX_LENGTH = 1000
 
 # Email Config
 

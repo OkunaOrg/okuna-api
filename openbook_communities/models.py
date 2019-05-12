@@ -53,6 +53,11 @@ class Community(models.Model):
     users_adjective = models.CharField(_('users adjective'), max_length=settings.COMMUNITY_USERS_ADJECTIVE_MAX_LENGTH,
                                        blank=False, null=True)
     invites_enabled = models.BooleanField(_('invites enabled'), default=True)
+    hide_content_after_reports_amount = models.PositiveSmallIntegerField(_('hide content after reports amount'),
+                                                                         blank=False, null=True)
+    lock_down_after_pending_moderation_amount = models.PositiveSmallIntegerField(
+        _('lockdown after amount of pending moderation'), blank=False, null=True)
+    is_locked_down = models.BooleanField(_('is locked down'), default=False, blank=False, null=False)
 
     class Meta:
         verbose_name_plural = 'communities'

@@ -772,6 +772,11 @@ class User(AbstractUser):
         post_comment.save()
         return post_comment
 
+    def report_comment_with_id(self, post_comment_id, moderation_category_id):
+        self._check_can_report_comment_with_id(post_comment_id=post_comment_id)
+
+
+
     def create_circle(self, name, color):
         self._check_circle_name_not_taken(name)
         Circle = get_circle_model()

@@ -38,7 +38,7 @@ class ModerationCategory(models.Model):
 
 
 class ModeratedObject(models.Model):
-    description = models.CharField(_('description'), max_length=settings.MODERATION_OUTCOME_DESCRIPTION_MAX_LENGTH,
+    description = models.CharField(_('description'), max_length=settings.MODERATED_OBJECT_DESCRIPTION_MAX_LENGTH,
                                    blank=False, null=True)
 
     approved = models.BooleanField(_('approved'), default=False,
@@ -148,9 +148,9 @@ class ModeratedObjectCategoryChangedLog(models.Model):
 
 class ModeratedObjectDescriptionChangedLog(models.Model):
     log = GenericRelation(ModeratedObjectLog)
-    changed_from = models.CharField(_('changed from'), max_length=settings.MODERATION_OUTCOME_DESCRIPTION_MAX_LENGTH,
+    changed_from = models.CharField(_('changed from'), max_length=settings.MODERATION_REPORT_DESCRIPTION_MAX_LENGTH,
                                     blank=False, null=False)
-    changed_to = models.CharField(_('changed to'), max_length=settings.MODERATION_OUTCOME_DESCRIPTION_MAX_LENGTH,
+    changed_to = models.CharField(_('changed to'), max_length=settings.MODERATION_REPORT_DESCRIPTION_MAX_LENGTH,
                                   blank=False, null=False)
 
     @classmethod
