@@ -92,8 +92,6 @@ class ModerationPenalty(models.Model):
         (TYPE_SUSPENSION, 'Suspension'),
     )
 
-    object_type = models.CharField(max_length=5, choices=TYPES)
-
 
 class ModeratedObjectLog(models.Model):
     LOG_TYPE_DESCRIPTION_CHANGED = 'DC'
@@ -101,6 +99,7 @@ class ModeratedObjectLog(models.Model):
     LOG_TYPE_TYPE_CHANGED = 'TC'
     LOG_TYPE_SUBMITTED_CHANGED = 'SC'
     LOG_TYPE_VERIFIED_CHANGED = 'VC'
+    LOG_TYPE_CATEGORY_CHANGED = 'CC'
 
     LOG_TYPES = (
         (LOG_TYPE_DESCRIPTION_CHANGED, 'Description Changed'),
@@ -108,6 +107,7 @@ class ModeratedObjectLog(models.Model):
         (LOG_TYPE_TYPE_CHANGED, 'Type Changed'),
         (LOG_TYPE_SUBMITTED_CHANGED, 'Submitted Changed'),
         (LOG_TYPE_VERIFIED_CHANGED, 'Verified Changed'),
+        (LOG_TYPE_CATEGORY_CHANGED, 'Category Changed'),
     )
 
     log_type = models.CharField(max_length=5, choices=LOG_TYPES)
@@ -119,6 +119,10 @@ class ModeratedObjectLog(models.Model):
 
     moderated_object = models.ForeignKey(ModeratedObject, on_delete=models.CASCADE, related_name='logs')
     created = models.DateTimeField(editable=False, db_index=True)
+
+    @classmethod
+    def create_moderated_object_log(cls, moderated_object_id, type, content_object):
+        return cls.objects.create(log_type=type, content_object=content_object, moderated_object_id=moderated_object_id)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
@@ -133,6 +137,14 @@ class ModeratedObjectCategoryChangedLog(models.Model):
     changed_from = models.ForeignKey(ModerationCategory, on_delete=models.CASCADE, related_name='+')
     changed_to = models.ForeignKey(ModerationCategory, on_delete=models.CASCADE, related_name='+')
 
+    @classmethod
+    def create_moderated_object_category_changed_log(cls, moderated_object_id, changed_from_id, changed_to_id):
+        moderated_object_category_changed_log = cls.objects.create(changed_from_id=changed_from_id,
+                                                                   changed_to_id=changed_to_id)
+        ModeratedObjectLog.create_moderated_object_log(type=ModeratedObjectLog.LOG_TYPE_CATEGORY_CHANGED,
+                                                       content_object=moderated_object_category_changed_log,
+                                                       moderated_object_id=moderated_object_id)
+
 
 class ModeratedObjectDescriptionChangedLog(models.Model):
     log = GenericRelation(ModeratedObjectLog)
@@ -140,6 +152,14 @@ class ModeratedObjectDescriptionChangedLog(models.Model):
                                     blank=False, null=False)
     changed_to = models.CharField(_('changed to'), max_length=settings.MODERATION_OUTCOME_DESCRIPTION_MAX_LENGTH,
                                   blank=False, null=False)
+
+    @classmethod
+    def create_moderated_object_description_changed_log(cls, moderated_object_id, changed_from, changed_to_id):
+        moderated_object_description_changed_log = cls.objects.create(changed_from=changed_from,
+                                                                      changed_to_id=changed_to_id)
+        ModeratedObjectLog.create_moderated_object_log(type=ModeratedObjectLog.LOG_TYPE_DESCRIPTION_CHANGED,
+                                                       content_object=moderated_object_description_changed_log,
+                                                       moderated_object_id=moderated_object_id)
 
 
 class ModeratedObjectApprovedChangedLog(models.Model):
@@ -149,6 +169,14 @@ class ModeratedObjectApprovedChangedLog(models.Model):
     changed_to = models.BooleanField(_('changed to'),
                                      blank=False, null=False)
 
+    @classmethod
+    def create_moderated_object_approved_changed_log(cls, moderated_object_id, changed_from, changed_to):
+        moderated_object_description_changed_log = cls.objects.create(changed_from=changed_from,
+                                                                      changed_to=changed_to)
+        ModeratedObjectLog.create_moderated_object_log(type=ModeratedObjectLog.LOG_TYPE_APPROVED_CHANGED,
+                                                       content_object=moderated_object_description_changed_log,
+                                                       moderated_object_id=moderated_object_id)
+
 
 class ModeratedObjectVerifiedChangedLog(models.Model):
     log = GenericRelation(ModeratedObjectLog)
@@ -157,6 +185,14 @@ class ModeratedObjectVerifiedChangedLog(models.Model):
     changed_to = models.BooleanField(_('changed to'),
                                      blank=False, null=False)
 
+    @classmethod
+    def create_moderated_object_verified_changed_log(cls, moderated_object_id, changed_from, changed_to):
+        moderated_object_description_changed_log = cls.objects.create(changed_from=changed_from,
+                                                                      changed_to=changed_to)
+        ModeratedObjectLog.create_moderated_object_log(type=ModeratedObjectLog.LOG_TYPE_VERIFIED_CHANGED,
+                                                       content_object=moderated_object_description_changed_log,
+                                                       moderated_object_id=moderated_object_id)
+
 
 class ModeratedObjectSubmittedChangedLog(models.Model):
     log = GenericRelation(ModeratedObjectLog)
@@ -164,3 +200,11 @@ class ModeratedObjectSubmittedChangedLog(models.Model):
                                        blank=False, null=False)
     changed_to = models.BooleanField(_('changed to'),
                                      blank=False, null=False)
+
+    @classmethod
+    def create_moderated_object_submitted_changed_log(cls, moderated_object_id, changed_from, changed_to):
+        moderated_object_description_changed_log = cls.objects.create(changed_from=changed_from,
+                                                                      changed_to=changed_to)
+        ModeratedObjectLog.create_moderated_object_log(type=ModeratedObjectLog.LOG_TYPE_SUBMITTED_CHANGED,
+                                                       content_object=moderated_object_description_changed_log,
+                                                       moderated_object_id=moderated_object_id)
