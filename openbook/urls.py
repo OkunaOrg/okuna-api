@@ -50,6 +50,7 @@ from openbook_invitations.views import UserInvite, UserInvites, SearchUserInvite
 from openbook_devices.views import Devices, DeviceItem
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
 from openbook_lists.views import Lists, ListItem, ListNameCheck
+from openbook_moderation.views.moderation_categories.views import ModerationCategories
 from openbook_moderation.views.report.views import ReportUser, ReportPost, ReportCommunity
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
 from openbook_posts.views.post.views import PostComments, PostCommentItem, PostItem, PostReactions, PostReactionItem, \
@@ -270,6 +271,10 @@ invites_patterns = [
     path('search/', SearchUserInvites.as_view(), name='search-invites'),
     path('<str:invite_id>/', UserInvite.as_view(), name='invite'),
     path('<str:invite_id>/email/', SendUserInviteEmail.as_view(), name='send-invite-email'),
+]
+
+moderation_patterns = [
+    path('categories/', ModerationCategories.as_view(), name='moderation-categories')
 ]
 
 api_patterns = [
