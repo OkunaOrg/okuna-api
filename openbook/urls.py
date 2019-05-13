@@ -50,6 +50,7 @@ from openbook_invitations.views import UserInvite, UserInvites, SearchUserInvite
 from openbook_devices.views import Devices, DeviceItem
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
 from openbook_lists.views import Lists, ListItem, ListNameCheck
+from openbook_moderation.views.report.views import ReportUser, ReportPost, ReportCommunity
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
 from openbook_posts.views.post.views import PostComments, PostCommentItem, PostItem, PostReactions, PostReactionItem, \
     PostReactionsEmojiCount, PostReactionEmojiGroups, MutePost, UnmutePost, PostCommentsDisable, PostCommentsEnable, \
@@ -81,6 +82,7 @@ auth_users_user_patterns = [
     path('', GetUser.as_view(), name='get-user'),
     path('block/', BlockUser.as_view(), name='block-user'),
     path('unblock/', UnblockUser.as_view(), name='unblock-user'),
+    path('report/', ReportUser.as_view(), name='report-user'),
 ]
 
 auth_users_patterns = [
@@ -135,6 +137,7 @@ post_patterns = [
     path('reactions/<int:post_reaction_id>/', PostReactionItem.as_view(), name='post-reaction'),
     path('close/', PostClose.as_view(), name='close-post'),
     path('open/', PostOpen.as_view(), name='open-post'),
+    path('report/', ReportPost.as_view(), name='report-post'),
 ]
 
 posts_patterns = [
@@ -195,6 +198,7 @@ community_patterns = [
     path('banned-users/', include(community_banned_users_patterns)),
     path('administrators/', include(community_administrators_patterns)),
     path('moderators/', include(community_moderators_patterns)),
+    path('report/', ReportCommunity.as_view(), name='report-community'),
 ]
 
 communities_patterns = [
