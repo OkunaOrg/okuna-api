@@ -3,6 +3,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 from openbook_common.responses import ApiMessageResponse
+from openbook_moderation.views.report.serializers import ReportPostSerializer, ReportPostCommentSerializer, \
+    ReportUserSerializer, ReportCommunitySerializer, ReportModeratedObjectSerializer
 from openbook_posts.models import Post
 from django.utils.translation import ugettext_lazy as _
 
@@ -52,7 +54,7 @@ class ReportPostComment(APIView):
 
         with transaction.atomic():
             user.report_post_comment_with_id(post_comment_id=post_comment_id, category_id=category_id,
-                                            description=description)
+                                             description=description)
 
         return ApiMessageResponse(_('Post comment reported, thanks!'))
 
@@ -60,24 +62,24 @@ class ReportPostComment(APIView):
 class ReportUser(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def put(self, request, user_id):
+    def put(self, request, username):
         request_data = request.data.copy()
-        request_data['user_id'] = user_id
+        request_data['username'] = username
 
         serializer = ReportUserSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
 
-        user_id = data.get('user_id')
+        username = data.get('username')
         description = data.get('description')
         category_id = data.get('category_id')
 
         user = request.user
 
         with transaction.atomic():
-            user.report_user_with_id(user_id=user_id, category_id=category_id,
-                                     description=description)
+            user.report_user_with_username(username=username, category_id=category_id,
+                                           description=description)
 
         return ApiMessageResponse(_('User reported, thanks!'))
 
@@ -85,48 +87,48 @@ class ReportUser(APIView):
 class ReportCommunity(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def put(self, request, community_id):
+    def put(self, request, community_name):
         request_data = request.data.copy()
-        request_data['community_id'] = community_id
+        request_data['community_name'] = community_name
 
         serializer = ReportCommunitySerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
 
-        community_id = data.get('community_id')
+        community_name = data.get('community_name')
         description = data.get('description')
         category_id = data.get('category_id')
 
         community = request.community
 
         with transaction.atomic():
-            community.report_community_with_id(community_id=community_id, category_id=category_id,
-                                               description=description)
+            community.report_community_with_name(community_name=community_name, category_id=category_id,
+                                                 description=description)
 
         return ApiMessageResponse(_('Community reported, thanks!'))
 
 
-class ReportReportingAbuse(APIView):
+class ReportModeratedObject(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def put(self, request, reported_object_id):
+    def put(self, request, moderated_object_id):
         request_data = request.data.copy()
-        request_data['reported_object_id'] = reported_object_id
+        request_data['moderated_object_id'] = moderated_object_id
 
-        serializer = ReportReportingAbuseSerializer(data=request_data)
+        serializer = ReportModeratedObjectSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
 
-        reported_object_id = data.get('reported_object_id')
+        moderated_object_id = data.get('moderated_object_id')
         description = data.get('description')
         category_id = data.get('category_id')
 
-        reportingAbuse = request.reportingAbuse
+        user = request.user
 
         with transaction.atomic():
-            reportingAbuse.report_reporting_abuse(reported_object_id=reported_object_id, category_id=category_id,
-                                                  description=description)
+            user.report_moderated_object_with_id(moderated_object_id=moderated_object_id, category_id=category_id,
+                                                 description=description)
 
-        return ApiMessageResponse(_('Reporting abuse reported, thanks!'))
+        return ApiMessageResponse(_('Moderated object reported, thanks!'))

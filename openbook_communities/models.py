@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
 # Create your models here.
@@ -58,6 +59,8 @@ class Community(models.Model):
     lock_down_after_pending_moderation_amount = models.PositiveSmallIntegerField(
         _('lockdown after amount of pending moderation'), blank=False, null=True)
     is_locked_down = models.BooleanField(_('is locked down'), default=False, blank=False, null=False)
+
+    moderation_object = GenericRelation('openbook_moderation.ModeratedObject', related_query_name='communities')
 
     class Meta:
         verbose_name_plural = 'communities'

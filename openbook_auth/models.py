@@ -4,6 +4,7 @@ import re
 import jwt
 import uuid
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models.signals import post_save
@@ -28,7 +29,8 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_emoji_group_model, get_user_invite_model, get_community_model, get_community_invite_model, get_tag_model, \
     get_post_comment_notification_model, get_follow_notification_model, get_connection_confirmed_notification_model, \
     get_connection_request_notification_model, get_post_reaction_notification_model, get_device_model, \
-    get_post_mute_model, get_community_invite_notification_model, get_user_block_model, get_emoji_model
+    get_post_mute_model, get_community_invite_notification_model, get_user_block_model, get_emoji_model, \
+    get_moderation_report_model, get_moderated_object_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications.push_notifications import senders
 
@@ -47,6 +49,8 @@ class User(AbstractUser):
     username_validator = UnicodeUsernameValidator() if six.PY3 else ASCIIUsernameValidator()
     is_email_verified = models.BooleanField(default=False)
     are_guidelines_accepted = models.BooleanField(default=False)
+
+    moderation_object = GenericRelation('openbook_moderation.ModeratedObject', related_query_name='users')
 
     username = models.CharField(
         _('username'),
@@ -531,6 +535,46 @@ class User(AbstractUser):
     def has_connection_confirmed_notifications_enabled(self):
         return self.notifications_settings.connection_confirmed_notifications
 
+    def has_reported_comment_with_id(self, post_comment_id):
+        ModeratedObject = get_moderated_object_model()
+        ModerationReport = get_moderation_report_model()
+        return ModerationReport.objects.filter(reporter_id=self.pk,
+                                               moderated_object__object_id=post_comment_id,
+                                               moderated_object__object_type=ModeratedObject.OBJECT_TYPE_POST_COMMENT
+                                               ).exists()
+
+    def has_reported_post_with_id(self, post_id):
+        ModeratedObject = get_moderated_object_model()
+        ModerationReport = get_moderation_report_model()
+        return ModerationReport.objects.filter(reporter_id=self.pk,
+                                               moderated_object__object_id=post_id,
+                                               moderated_object__object_type=ModeratedObject.OBJECT_TYPE_POST
+                                               ).exists()
+
+    def has_reported_user_with_id(self, user_id):
+        ModeratedObject = get_moderated_object_model()
+        ModerationReport = get_moderation_report_model()
+        return ModerationReport.objects.filter(reporter_id=self.pk,
+                                               moderated_object__object_id=user_id,
+                                               moderated_object__object_type=ModeratedObject.OBJECT_TYPE_USER
+                                               ).exists()
+
+    def has_reported_community_with_id(self, community_id):
+        ModeratedObject = get_moderated_object_model()
+        ModerationReport = get_moderation_report_model()
+        return ModerationReport.objects.filter(reporter_id=self.pk,
+                                               moderated_object__object_id=community_id,
+                                               moderated_object__object_type=ModeratedObject.OBJECT_TYPE_COMMUNITY
+                                               ).exists()
+
+    def has_reported_moderated_object_with_id(self, moderated_object_id):
+        ModeratedObject = get_moderated_object_model()
+        ModerationReport = get_moderation_report_model()
+        return ModerationReport.objects.filter(reporter_id=self.pk,
+                                               moderated_object__object_id=moderated_object_id,
+                                               moderated_object__object_type=ModeratedObject.OBJECT_TYPE_MODERATED_OBJECT
+                                               ).exists()
+
     def can_see_post(self, post):
         # Check if post is public
         if post.community:
@@ -771,11 +815,6 @@ class User(AbstractUser):
         post_comment.is_edited = True
         post_comment.save()
         return post_comment
-
-    def report_comment_with_id(self, post_comment_id, moderation_category_id):
-        self._check_can_report_comment_with_id(post_comment_id=post_comment_id)
-
-
 
     def create_circle(self, name, color):
         self._check_circle_name_not_taken(name)
@@ -1890,6 +1929,53 @@ class User(AbstractUser):
         self._check_can_unblock_user_with_id(user_id=user_id)
         self.user_blocks.filter(blocked_user_id=user_id).delete()
         return User.objects.get(pk=user_id)
+
+    def report_post_comment_with_id(self, post_comment_id, moderation_category_id, description):
+        self._check_can_report_post_comment_with_id(post_comment_id=post_comment_id)
+        ModerationReport = get_moderation_report_model()
+        ModerationReport.create_post_comment_moderation_report(post_comment_id=post_comment_id,
+                                                               moderation_category_id=moderation_category_id,
+                                                               description=description)
+
+    def report_post_with_id(self, post_id, moderation_category_id, description):
+        self._check_can_report_post_with_id(post_id=post_id)
+        ModerationReport = get_moderation_report_model()
+        ModerationReport.create_post_moderation_report(post_id=post_id,
+                                                       moderation_category_id=moderation_category_id,
+                                                       description=description)
+
+    def report_user_with_username(self, username, moderation_category_id, description):
+        user = User.objects.get(username=username)
+        return self.report_user_with_id(user_id=user.pk, moderation_category_id=moderation_category_id,
+                                        description=description)
+
+    def report_user_with_id(self, user_id, moderation_category_id, description):
+        self._check_can_report_user_with_id(user_id=user_id)
+        ModerationReport = get_moderation_report_model()
+        ModerationReport.create_user_moderation_report(user_id=user_id,
+                                                       moderation_category_id=moderation_category_id,
+                                                       description=description)
+
+    def report_community_with_name(self, community_name, moderation_category_id, description):
+        Community = get_community_model()
+        community = Community.objects.get(community_name=community_name)
+        return self.report_community_with_id(community_id=community.pk,
+                                             moderation_category_id=moderation_category_id,
+                                             description=description)
+
+    def report_community_with_id(self, community_id, moderation_category_id, description):
+        self._check_can_report_community_with_id(community_id=community_id)
+        ModerationReport = get_moderation_report_model()
+        ModerationReport.create_community_moderation_report(community_id=community_id,
+                                                            moderation_category_id=moderation_category_id,
+                                                            description=description)
+
+    def report_moderated_object_with_id(self, moderated_object_id, moderation_category_id, description):
+        self._check_can_report_moderated_object_with_id(moderated_object_id=moderated_object_id)
+        ModerationReport = get_moderation_report_model()
+        ModerationReport.create_moderated_object_moderation_report(moderated_object_id=moderated_object_id,
+                                                                   moderation_category_id=moderation_category_id,
+                                                                   description=description)
 
     def create_invite(self, nickname):
         self._check_can_create_invite(nickname)
@@ -3091,6 +3177,51 @@ class User(AbstractUser):
         """
         if self.is_blocked_with_user_with_id(user_id=user_id):
             raise PermissionDenied(_('This account is blocked.'))
+
+    def _check_can_report_post_comment_with_id(self, post_comment_id):
+        self._check_has_not_reported_post_comment_with_id(post_comment_id=post_comment_id)
+
+    def _check_has_not_reported_post_comment_with_id(self, post_comment_id):
+        if self.has_reported_comment_with_id(post_comment_id=post_comment_id):
+            raise ValidationError(
+                _('You have already reported the comment.'),
+            )
+
+    def _check_can_report_post_with_id(self, post_id):
+        self._check_has_not_reported_post_with_id(post_id=post_id)
+
+    def _check_has_not_reported_post_with_id(self, post_id):
+        if self.has_reported_post_with_id(post_id=post_id):
+            raise ValidationError(
+                _('You have already reported the post.'),
+            )
+
+    def _check_can_report_user_with_id(self, user_id):
+        self._check_has_not_reported_user_with_id(user_id=user_id)
+
+    def _check_has_not_reported_user_with_id(self, user_id):
+        if self.has_reported_user_with_id(user_id=user_id):
+            raise ValidationError(
+                _('You have already reported the user.'),
+            )
+
+    def _check_can_report_community_with_id(self, community_id):
+        self._check_has_not_reported_community_with_id(community_id=community_id)
+
+    def _check_has_not_reported_community_with_id(self, community_id):
+        if self.has_reported_community_with_id(community_id=community_id):
+            raise ValidationError(
+                _('You have already reported the community.'),
+            )
+
+    def _check_can_report_moderated_object_with_id(self, moderated_object_id):
+        self._check_has_not_reported_moderated_object_with_id(moderated_object_id=moderated_object_id)
+
+    def _check_has_not_reported_moderated_object_with_id(self, moderated_object_id):
+        if self.has_reported_moderated_object_with_id(moderated_object_id=moderated_object_id):
+            raise ValidationError(
+                _('You have already reported the moderated_object.'),
+            )
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='bootstrap_auth_token')

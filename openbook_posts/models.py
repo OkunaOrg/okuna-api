@@ -2,6 +2,7 @@
 import uuid
 from datetime import timedelta
 
+from django.contrib.contenttypes.fields import GenericRelation
 from django.core.files.storage import default_storage
 from django.db import models
 from django.db.models import Q
@@ -37,6 +38,7 @@ class Post(models.Model):
                                   blank=False)
     is_edited = models.BooleanField(default=False)
     is_closed = models.BooleanField(default=False)
+    moderation_object = GenericRelation('openbook_moderation.ModeratedObject', related_query_name='posts')
 
     class Meta:
         index_together = [
@@ -249,6 +251,7 @@ class PostComment(models.Model):
     commenter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_comments')
     text = models.CharField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False)
     is_edited = models.BooleanField(default=False, null=False, blank=False)
+    moderation_object = GenericRelation('openbook_moderation.ModeratedObject', related_query_name='post_comments')
 
     @classmethod
     def create_comment(cls, text, commenter, post):

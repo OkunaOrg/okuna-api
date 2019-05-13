@@ -48,6 +48,8 @@ class ModeratedObject(models.Model):
     submitted = models.BooleanField(_('submitted'), default=False,
                                     blank=False, null=False)
 
+    moderation_object = GenericRelation('openbook_moderation.ModeratedObject', related_query_name='moderated_objects')
+
     OBJECT_TYPE_POST = 'P'
     OBJECT_TYPE_POST_COMMENT = 'PC'
     OBJECT_TYPE_COMMUNITY = 'C'
@@ -68,17 +70,85 @@ class ModeratedObject(models.Model):
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey()
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(name='reporter_moderated_object_constraint',
+                                    fields=['object_type', 'object_id'])
+        ]
+
     @classmethod
-    def create_moderated_object(cls, type, content_object):
-        return cls.objects.create(notification_type=type, content_object=content_object)
+    def create_moderated_object(cls, object_type, object_id):
+        return cls.objects.create(object_type=object_type, object_id=object_id)
+
+    @classmethod
+    def get_or_create_moderated_object(cls, object_type, object_id):
+        try:
+            moderated_object = cls.objects.get(object_type=object_type, object_id=object_id)
+        except cls.DoesNotExist:
+            moderated_object = cls.create_moderated_object(object_type=object_type,
+                                                           object_id=object_id)
+
+        return moderated_object
 
 
 class ModerationReport(models.Model):
     reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='moderation_reports')
-    overview = models.ForeignKey(ModeratedObject, on_delete=models.CASCADE, related_name='reports')
+    moderated_object = models.ForeignKey(ModeratedObject, on_delete=models.CASCADE, related_name='reports')
     category = models.ForeignKey(ModerationCategory, on_delete=models.CASCADE, related_name='reports')
     description = models.CharField(_('description'), max_length=settings.MODERATION_REPORT_DESCRIPTION_MAX_LENGTH,
                                    blank=False, null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(name='reporter_moderated_object_constraint',
+                                    fields=['reporter', 'moderated_object'])
+        ]
+
+    @classmethod
+    def create_post_moderation_report(cls, reporter_id, post_id, category_id, description):
+        moderated_object = ModeratedObject.get_or_create_moderated_object(object_type=ModeratedObject.OBJECT_TYPE_POST,
+                                                                          object_id=post_id)
+        post_moderation_report = cls.objects.create(reporter_id=reporter_id, category_id=category_id,
+                                                    description=description, moderated_object=moderated_object)
+        return post_moderation_report
+
+    @classmethod
+    def create_post_comment_moderation_report(cls, reporter_id, post_comment_id, category_id, description):
+        moderated_object = ModeratedObject.get_or_create_moderated_object(
+            object_type=ModeratedObject.OBJECT_TYPE_POST_COMMENT,
+            object_id=post_comment_id)
+        post_comment_moderation_report = cls.objects.create(reporter_id=reporter_id,
+                                                            category_id=category_id,
+                                                            description=description,
+                                                            moderated_object=moderated_object)
+        return post_comment_moderation_report
+
+    @classmethod
+    def create_user_moderation_report(cls, reporter_id, user_id, category_id, description):
+        moderated_object = ModeratedObject.get_or_create_moderated_object(object_type=ModeratedObject.OBJECT_TYPE_USER,
+                                                                          object_id=user_id)
+        user_moderation_report = cls.objects.create(reporter_id=reporter_id, category_id=category_id,
+                                                    description=description, moderated_object=moderated_object)
+        return user_moderation_report
+
+    @classmethod
+    def create_community_moderation_report(cls, reporter_id, community_id, category_id, description):
+        moderated_object = ModeratedObject.get_or_create_moderated_object(
+            object_type=ModeratedObject.OBJECT_TYPE_COMMUNITY,
+            object_id=community_id)
+        community_moderation_report = cls.objects.create(reporter_id=reporter_id, category_id=category_id,
+                                                         description=description, moderated_object=moderated_object)
+        return community_moderation_report
+
+    @classmethod
+    def create_moderated_object_moderation_report(cls, reporter_id, moderated_object_id, category_id, description):
+        moderated_object = ModeratedObject.get_or_create_moderated_object(
+            object_type=ModeratedObject.OBJECT_TYPE_MODERATED_OBJECT,
+            object_id=moderated_object_id)
+        moderated_object_moderation_report = cls.objects.create(reporter_id=reporter_id, category_id=category_id,
+                                                                description=description,
+                                                                moderated_object=moderated_object)
+        return moderated_object_moderation_report
 
 
 class ModerationPenalty(models.Model):
