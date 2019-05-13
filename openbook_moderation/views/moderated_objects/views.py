@@ -4,8 +4,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from openbook_moderation.views.moderated_objects.serializers import GetModeratedObjectsSerializer, \
-    ModeratedObjectSerializer
+from openbook_moderation.serializers import ModeratedObjectSerializer
+from openbook_moderation.views.moderated_objects.serializers import GetModeratedObjectsSerializer
 
 
 class StaffModeratedObjects(APIView):

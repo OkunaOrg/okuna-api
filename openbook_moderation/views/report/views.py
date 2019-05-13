@@ -12,7 +12,7 @@ from django.utils.translation import ugettext_lazy as _
 class ReportPost(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def put(self, request, post_uuid):
+    def post(self, request, post_uuid):
         request_data = request.data.copy()
         request_data['post_uuid'] = post_uuid
 
@@ -37,7 +37,7 @@ class ReportPost(APIView):
 class ReportPostComment(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def put(self, request, post_comment_id):
+    def post(self, request, post_comment_id):
         request_data = request.data.copy()
         request_data['post_comment_id'] = post_comment_id
 
@@ -62,7 +62,7 @@ class ReportPostComment(APIView):
 class ReportUser(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def put(self, request, username):
+    def post(self, request, username):
         request_data = request.data.copy()
         request_data['username'] = username
 
@@ -87,7 +87,7 @@ class ReportUser(APIView):
 class ReportCommunity(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def put(self, request, community_name):
+    def post(self, request, community_name):
         request_data = request.data.copy()
         request_data['community_name'] = community_name
 
@@ -112,7 +112,7 @@ class ReportCommunity(APIView):
 class ReportModeratedObject(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def put(self, request, moderated_object_id):
+    def post(self, request, moderated_object_id):
         request_data = request.data.copy()
         request_data['moderated_object_id'] = moderated_object_id
 
