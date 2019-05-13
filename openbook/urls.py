@@ -50,6 +50,7 @@ from openbook_invitations.views import UserInvite, UserInvites, SearchUserInvite
 from openbook_devices.views import Devices, DeviceItem
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
 from openbook_lists.views import Lists, ListItem, ListNameCheck
+from openbook_moderation.views.moderated_objects.views import CommunityModeratedObjects, StaffModeratedObjects
 from openbook_moderation.views.moderation_categories.views import ModerationCategories
 from openbook_moderation.views.report.views import ReportUser, ReportPost, ReportCommunity
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
@@ -189,6 +190,10 @@ community_banned_users_patterns = [
     path('unban/', UnbanUser.as_view(), name='community-unban-user'),
 ]
 
+community_moderated_objects_patterns = [
+    path('', CommunityModeratedObjects.as_view(), name='community-moderated-objects')
+]
+
 community_patterns = [
     path('', CommunityItem.as_view(), name='community'),
     path('avatar/', CommunityAvatar.as_view(), name='community-avatar'),
@@ -199,6 +204,7 @@ community_patterns = [
     path('banned-users/', include(community_banned_users_patterns)),
     path('administrators/', include(community_administrators_patterns)),
     path('moderators/', include(community_moderators_patterns)),
+    path('moderated-objects/', include(community_moderated_objects_patterns)),
     path('report/', ReportCommunity.as_view(), name='report-community'),
 ]
 
@@ -273,8 +279,18 @@ invites_patterns = [
     path('<str:invite_id>/email/', SendUserInviteEmail.as_view(), name='send-invite-email'),
 ]
 
+moderation_moderated_object_patterns = [
+
+]
+
+moderation_moderated_objects_patterns = [
+    path('<int:moderated_object_id>/', include(moderation_moderated_object_patterns)),
+    path('staff/', StaffModeratedObjects.as_view(), name='moderation-staff-moderated-objects')
+]
+
 moderation_patterns = [
-    path('categories/', ModerationCategories.as_view(), name='moderation-categories')
+    path('moderated-objects/', include(moderation_moderated_objects_patterns), name='moderation-moderated-objects'),
+    path('categories/', ModerationCategories.as_view(), name='moderation-categories'),
 ]
 
 api_patterns = [
