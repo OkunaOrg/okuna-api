@@ -21,7 +21,7 @@
       "title_en": "Pornography",
       "title_es": "Pornography",
       "description_en": "Posts showing sexual intercourse, photos and videos of sexual intercourse, nudity etc",
-      "description_es": "Posts showing sexual intercourse, photos and videos of sexual intercourse, nudity etc" ,
+      "description_es": "Posts showing sexual intercourse, photos and videos of sexual intercourse, nudity etc",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   },
@@ -152,6 +152,19 @@
       "title_es": "Community Guidelines Infringement",
       "description_en": "The item does not conform to the community guidelines.",
       "description_es": "The item does not conform to the community guidelines.",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_moderation.ModerationCategory",
+    "pk": 13,
+    "fields": {
+      "name": "other",
+      "severity": "L",
+      "title_en": "Other",
+      "title_es": "Other",
+      "description_en": "Other reasons not included in other categories.",
+      "description_es": "Other reasons not included in other categories.",
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
   }
