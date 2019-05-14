@@ -1986,7 +1986,7 @@ class User(AbstractUser):
         moderated_object = ModeratedObject.objects.get(pk=moderated_object_id,
                                                        moderation_category_id=moderation_category_id,
                                                        description=description)
-        return self.report_moderated_object(moderated_object=moderated_object_id,
+        return self.report_moderated_object(moderated_object=moderated_object,
                                             moderation_category_id=moderation_category_id, description=description)
 
     def report_moderated_object(self, moderated_object, moderation_category_id, description):
@@ -1995,6 +1995,60 @@ class User(AbstractUser):
         ModerationReport.create_moderated_object_moderation_report(moderated_object_id=moderated_object.pk,
                                                                    moderation_category_id=moderation_category_id,
                                                                    description=description)
+
+    def verify_moderated_object_with_id(self, moderated_object_id):
+        ModeratedObject = get_moderated_object_model()
+        moderated_object = ModeratedObject.objects.get(pk=moderated_object_id)
+        return self.verify_moderated_object(moderated_object=moderated_object)
+
+    def verify_moderated_object(self, moderated_object):
+        self._check_can_verify_moderated_object(moderated_object=moderated_object)
+        moderated_object.verify_with_actor_with_id(actor_id=self.pk)
+
+    def unverify_moderated_object_with_id(self, moderated_object_id):
+        ModeratedObject = get_moderated_object_model()
+        moderated_object = ModeratedObject.objects.get(pk=moderated_object_id)
+        return self.unverify_moderated_object(moderated_object=moderated_object)
+
+    def unverify_moderated_object(self, moderated_object):
+        self._check_can_unverify_moderated_object(moderated_object=moderated_object)
+        moderated_object.unverify_with_actor_with_id(actor_id=self.pk)
+
+    def submit_moderated_object_with_id(self, moderated_object_id):
+        ModeratedObject = get_moderated_object_model()
+        moderated_object = ModeratedObject.objects.get(pk=moderated_object_id)
+        return self.submit_moderated_object(moderated_object=moderated_object)
+
+    def submit_moderated_object(self, moderated_object):
+        self._check_can_submit_moderated_object(moderated_object=moderated_object)
+        moderated_object.submit_with_actor_with_id(actor_id=self.pk)
+
+    def unsubmit_moderated_object_with_id(self, moderated_object_id):
+        ModeratedObject = get_moderated_object_model()
+        moderated_object = ModeratedObject.objects.get(pk=moderated_object_id)
+        return self.unsubmit_moderated_object(moderated_object=moderated_object)
+
+    def unsubmit_moderated_object(self, moderated_object):
+        self._check_can_unsubmit_moderated_object(moderated_object=moderated_object)
+        moderated_object.unsubmit_with_actor_with_id(actor_id=self.pk)
+
+    def update_moderated_object_with_id(self, moderated_object_id, description=None,
+                                        approved=None,
+                                        category_id=None):
+        ModeratedObject = get_moderated_object_model()
+        moderated_object = ModeratedObject.objects.get(pk=moderated_object_id)
+
+        return self.update_moderated_object(moderated_object=moderated_object, description=description,
+                                            category_id=category_id,
+                                            approved=approved)
+
+    def update_moderated_object(self, moderated_object, description=None, approved=None,
+                                category_id=None):
+        self._check_can_update_moderated_object(moderated_object=moderated_object)
+        moderated_object.update_with_actor_with_id(actor_id=self.pk, description=description,
+                                                   category_id=category_id,
+                                                   approved=approved)
+        return moderated_object
 
     def create_invite(self, nickname):
         self._check_can_create_invite(nickname)
@@ -3279,6 +3333,77 @@ class User(AbstractUser):
             raise ValidationError(
                 _('You have already reported the moderated_object.'),
             )
+
+    def _check_can_update_moderated_object(self, moderated_object):
+        self._check_can_moderate_moderated_object(moderated_object=moderated_object)
+
+        if moderated_object.is_verified:
+            raise PermissionDenied(
+                _('The moderated object has been verified and can no longer be edited.')
+            )
+
+        if moderated_object.is_submitted and not self.is_staff:
+            raise PermissionDenied(
+                _('The moderated object has been submitted and cant no longer be edited.')
+            )
+
+    def _check_can_unsubmit_moderated_object(self, moderated_object):
+        self._check_can_moderate_moderated_object(moderated_object=moderated_object)
+        if not moderated_object.is_submitted:
+            raise ValidationError(
+                _('The moderated object has not been submitted.')
+            )
+
+    def _check_can_submit_moderated_object(self, moderated_object):
+        self._check_can_moderate_moderated_object(moderated_object=moderated_object)
+        if moderated_object.is_submitted:
+            raise ValidationError(
+                _('The moderated object is already submitted.')
+            )
+
+    def _check_can_unverify_moderated_object(self, moderated_object):
+        self._check_is_openbook_staff()
+        if not moderated_object.is_verified:
+            raise ValidationError(
+                _('The moderated object has not been verified.')
+            )
+
+    def _check_can_verify_moderated_object(self, moderated_object):
+        self._check_is_openbook_staff()
+        if moderated_object.is_verified:
+            raise ValidationError(
+                _('The moderated object is already verified.')
+            )
+
+    def _check_is_openbook_staff(self):
+        if not self.is_staff:
+            raise PermissionDenied(_('Not Openbook staff.'))
+
+    def _check_can_moderate_moderated_object(self, moderated_object):
+        content_object = moderated_object.content_object
+
+        is_openbook_staff = self.is_staff
+
+        if is_openbook_staff:
+            return
+
+        PostComment = get_post_comment_model()
+        Post = get_post_model()
+
+        if content_object is Post:
+            if content_object.community:
+                if not self.is_staff_of_community_with_name(community_name=content_object.community.name):
+                    raise ValidationError(_('Only community staff can moderated community posts'))
+            else:
+                raise ValidationError(_('Only Openbook staff can moderate non-community posts'))
+        elif content_object is PostComment:
+            if content_object.post.community:
+                if not self.is_staff_of_community_with_name(community_name=content_object.post.community.name):
+                    raise ValidationError(_('Only community staff can moderated community post comments'))
+            else:
+                raise ValidationError(_('Only Openbook staff can moderate non-community post comments'))
+        else:
+            raise ValidationError(_('Non-openbook staff members can only moderated posts and post comments.'))
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='bootstrap_auth_token')

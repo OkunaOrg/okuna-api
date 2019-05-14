@@ -127,6 +127,34 @@ class ModeratedObject(models.Model):
 
         self.save()
 
+    def verify_with_actor_with_id(self, actor_id):
+        current_verified = self.verified
+        self.verified = True
+        ModeratedObjectVerifiedChangedLog.create_moderated_object_verified_changed_log(
+            changed_from=current_verified, changed_to=self.verified, moderated_object_id=self.pk, actor_id=actor_id)
+        self.save()
+
+    def unverify_with_actor_with_id(self, actor_id):
+        current_verified = self.verified
+        self.verified = False
+        ModeratedObjectVerifiedChangedLog.create_moderated_object_verified_changed_log(
+            changed_from=current_verified, changed_to=self.verified, moderated_object_id=self.pk, actor_id=actor_id)
+        self.save()
+
+    def submit_with_actor_with_id(self, actor_id):
+        current_submitted = self.submitted
+        self.submitted = True
+        ModeratedObjectSubmittedChangedLog.create_moderated_object_submitted_changed_log(
+            changed_from=current_submitted, changed_to=self.submitted, moderated_object_id=self.pk, actor_id=actor_id)
+        self.save()
+
+    def unsubmit_with_actor_with_id(self, actor_id):
+        current_submitted = self.submitted
+        self.submitted = False
+        ModeratedObjectSubmittedChangedLog.create_moderated_object_submitted_changed_log(
+            changed_from=current_submitted, changed_to=self.submitted, moderated_object_id=self.pk, actor_id=actor_id)
+        self.save()
+
 
 class ModerationReport(models.Model):
     reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='moderation_reports')
