@@ -92,6 +92,41 @@ class ModeratedObject(models.Model):
 
         return moderated_object
 
+    def update_with_actor_with_id(self, actor_id, description, approved, verified, submitted, category_id):
+        if description is not None:
+            current_description = self.description
+            self.description = description
+            ModeratedObjectDescriptionChangedLog.create_moderated_object_description_changed_log(
+                changed_from=current_description, changed_to=description, moderated_object_id=self.pk,
+                actor_id=actor_id)
+
+        if approved is not None:
+            current_approved = self.approved
+            self.approved = approved
+            ModeratedObjectApprovedChangedLog.create_moderated_object_approved_changed_log(
+                changed_from=current_approved, changed_to=approved, moderated_object_id=self.pk, actor_id=actor_id)
+
+        if submitted is not None:
+            current_submitted = self.submitted
+            self.submitted = submitted
+            ModeratedObjectSubmittedChangedLog.create_moderated_object_submitted_changed_log(
+                changed_from=current_submitted, changed_to=submitted, moderated_object_id=self.pk, actor_id=actor_id)
+
+        if verified is not None:
+            current_verified = self.verified
+            self.verified = verified
+            ModeratedObjectVerifiedChangedLog.create_moderated_object_verified_changed_log(
+                changed_from=current_verified, changed_to=verified, moderated_object_id=self.pk, actor_id=actor_id)
+
+        if category_id is not None:
+            current_category_id = self.category_id
+            self.category_id = category_id
+            ModeratedObjectCategoryChangedLog.create_moderated_object_category_changed_log(
+                changed_from_id=current_category_id, changed_to_id=category_id, moderated_object_id=self.pk,
+                actor_id=actor_id)
+
+        self.save()
+
 
 class ModerationReport(models.Model):
     reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='moderation_reports')
@@ -205,8 +240,9 @@ class ModeratedObjectLog(models.Model):
     created = models.DateTimeField(editable=False, db_index=True)
 
     @classmethod
-    def create_moderated_object_log(cls, moderated_object_id, type, content_object):
-        return cls.objects.create(log_type=type, content_object=content_object, moderated_object_id=moderated_object_id)
+    def create_moderated_object_log(cls, moderated_object_id, type, content_object, actor_id):
+        return cls.objects.create(log_type=type, content_object=content_object, moderated_object_id=moderated_object_id,
+                                  actor_id=actor_id)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
@@ -222,12 +258,13 @@ class ModeratedObjectCategoryChangedLog(models.Model):
     changed_to = models.ForeignKey(ModerationCategory, on_delete=models.CASCADE, related_name='+')
 
     @classmethod
-    def create_moderated_object_category_changed_log(cls, moderated_object_id, changed_from_id, changed_to_id):
+    def create_moderated_object_category_changed_log(cls, moderated_object_id, changed_from_id, changed_to_id,
+                                                     actor_id):
         moderated_object_category_changed_log = cls.objects.create(changed_from_id=changed_from_id,
                                                                    changed_to_id=changed_to_id)
         ModeratedObjectLog.create_moderated_object_log(type=ModeratedObjectLog.LOG_TYPE_CATEGORY_CHANGED,
                                                        content_object=moderated_object_category_changed_log,
-                                                       moderated_object_id=moderated_object_id)
+                                                       moderated_object_id=moderated_object_id, actor_id=actor_id)
 
 
 class ModeratedObjectDescriptionChangedLog(models.Model):
@@ -238,12 +275,13 @@ class ModeratedObjectDescriptionChangedLog(models.Model):
                                   blank=False, null=False)
 
     @classmethod
-    def create_moderated_object_description_changed_log(cls, moderated_object_id, changed_from, changed_to_id):
+    def create_moderated_object_description_changed_log(cls, moderated_object_id, changed_from, changed_to, actor_id):
         moderated_object_description_changed_log = cls.objects.create(changed_from=changed_from,
-                                                                      changed_to_id=changed_to_id)
+                                                                      changed_to=changed_to)
         ModeratedObjectLog.create_moderated_object_log(type=ModeratedObjectLog.LOG_TYPE_DESCRIPTION_CHANGED,
                                                        content_object=moderated_object_description_changed_log,
-                                                       moderated_object_id=moderated_object_id)
+                                                       moderated_object_id=moderated_object_id,
+                                                       actor_id=actor_id)
 
 
 class ModeratedObjectApprovedChangedLog(models.Model):
@@ -254,12 +292,12 @@ class ModeratedObjectApprovedChangedLog(models.Model):
                                      blank=False, null=False)
 
     @classmethod
-    def create_moderated_object_approved_changed_log(cls, moderated_object_id, changed_from, changed_to):
+    def create_moderated_object_approved_changed_log(cls, moderated_object_id, changed_from, changed_to, actor_id):
         moderated_object_description_changed_log = cls.objects.create(changed_from=changed_from,
                                                                       changed_to=changed_to)
         ModeratedObjectLog.create_moderated_object_log(type=ModeratedObjectLog.LOG_TYPE_APPROVED_CHANGED,
                                                        content_object=moderated_object_description_changed_log,
-                                                       moderated_object_id=moderated_object_id)
+                                                       moderated_object_id=moderated_object_id, actor_id=actor_id)
 
 
 class ModeratedObjectVerifiedChangedLog(models.Model):
@@ -270,12 +308,12 @@ class ModeratedObjectVerifiedChangedLog(models.Model):
                                      blank=False, null=False)
 
     @classmethod
-    def create_moderated_object_verified_changed_log(cls, moderated_object_id, changed_from, changed_to):
+    def create_moderated_object_verified_changed_log(cls, moderated_object_id, changed_from, changed_to, actor_id):
         moderated_object_description_changed_log = cls.objects.create(changed_from=changed_from,
                                                                       changed_to=changed_to)
         ModeratedObjectLog.create_moderated_object_log(type=ModeratedObjectLog.LOG_TYPE_VERIFIED_CHANGED,
                                                        content_object=moderated_object_description_changed_log,
-                                                       moderated_object_id=moderated_object_id)
+                                                       moderated_object_id=moderated_object_id, actor_id=actor_id)
 
 
 class ModeratedObjectSubmittedChangedLog(models.Model):
@@ -286,9 +324,9 @@ class ModeratedObjectSubmittedChangedLog(models.Model):
                                      blank=False, null=False)
 
     @classmethod
-    def create_moderated_object_submitted_changed_log(cls, moderated_object_id, changed_from, changed_to):
+    def create_moderated_object_submitted_changed_log(cls, moderated_object_id, changed_from, changed_to, actor_id):
         moderated_object_description_changed_log = cls.objects.create(changed_from=changed_from,
                                                                       changed_to=changed_to)
         ModeratedObjectLog.create_moderated_object_log(type=ModeratedObjectLog.LOG_TYPE_SUBMITTED_CHANGED,
                                                        content_object=moderated_object_description_changed_log,
-                                                       moderated_object_id=moderated_object_id)
+                                                       moderated_object_id=moderated_object_id, actor_id=actor_id)
