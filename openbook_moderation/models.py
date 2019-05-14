@@ -164,6 +164,8 @@ class ModerationPenalty(models.Model):
 
 
 class ModeratedObjectLog(models.Model):
+    actor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
+
     LOG_TYPE_DESCRIPTION_CHANGED = 'DC'
     LOG_TYPE_APPROVED_CHANGED = 'AC'
     LOG_TYPE_TYPE_CHANGED = 'TC'
@@ -180,7 +182,7 @@ class ModeratedObjectLog(models.Model):
         (LOG_TYPE_CATEGORY_CHANGED, 'Category Changed'),
     )
 
-    log_type = models.CharField(max_length=5, choices=LOG_TYPES)
+    type = models.CharField(max_length=5, choices=LOG_TYPES)
 
     # Generic relation types
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
