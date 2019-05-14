@@ -12,12 +12,9 @@ from openbook_moderation.views.validators import moderated_object_id_exists
 class EditModeratedObjectSerializer(serializers.Serializer):
     description = serializers.CharField(max_length=settings.MODERATED_OBJECT_DESCRIPTION_MAX_LENGTH, required=False,
                                         allow_blank=False)
-    verified = serializers.BooleanField(required=False,
-                                        allow_blank=False)
-    approved = serializers.BooleanField(required=False,
-                                        allow_blank=False)
-    submitted = serializers.BooleanField(required=False,
-                                         allow_blank=False)
+    verified = serializers.BooleanField(required=False, )
+    approved = serializers.BooleanField(required=False, )
+    submitted = serializers.BooleanField(required=False, )
     moderated_object_id = serializers.UUIDField(
         validators=[moderated_object_id_exists],
         required=True,
