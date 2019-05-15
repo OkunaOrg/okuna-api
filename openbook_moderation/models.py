@@ -50,8 +50,6 @@ class ModeratedObject(models.Model):
     verified = models.BooleanField(_('verified'), default=False,
                                    blank=False, null=False)
 
-    moderation_object = GenericRelation('openbook_moderation.ModeratedObject', related_query_name='moderated_objects')
-
     category = models.ForeignKey(ModerationCategory, on_delete=models.CASCADE, related_name='moderated_objects')
 
     object_audit_snapshot = models.CharField(_('object_audit_snapshot'),
@@ -143,6 +141,8 @@ class ModeratedObject(models.Model):
             penalty_targets = [content_object.commenter]
         elif content_object is Community:
             penalty_targets = content_object.get_staff_members()
+        elif content_object is ModeratedObject:
+            penalty_targets = content_object.get_reporters()
 
         for penalty_target in penalty_targets:
             duration_of_penalty = None
@@ -199,8 +199,18 @@ class ModeratedObject(models.Model):
                 'description': content_object.description,
                 'rules': content_object.rules,
             }
+        elif content_object is ModeratedObject:
+            self.object_audit_snapshot = {
+                'id': content_object.id,
+                'description': content_object.description,
+                'category_id': content_object.category_id,
+                'object_type': content_object.object_type,
+                'content_type': content_object.content_type,
+                'object_id': content_object.object_id,
+            }
 
-        content_object.delete()
+        if content_object is not User or moderation_severity == ModerationCategory.SEVERITY_CRITICAL:
+            content_object.delete()
 
         self.save()
 
@@ -226,6 +236,9 @@ class ModeratedObject(models.Model):
         ModeratedObjectApprovedChangedLog.create_moderated_object_approved_changed_log(
             changed_from=current_approved, changed_to=self.approved, moderated_object_id=self.pk, actor_id=actor_id)
         self.save()
+
+    def get_reporters(self):
+        return User.objects.filter(moderation_reports__moderated_object_id=self.pk).all()
 
 
 class ModerationReport(models.Model):
