@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.translation import gettext as _
 
+from openbook_common.permissions import IsNotSuspended
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_communities.views.community.banned_users.serializers import GetCommunityBannedUsersUserSerializer, \
@@ -13,7 +14,7 @@ from openbook_communities.views.community.banned_users.serializers import GetCom
 
 
 class CommunityBannedUsers(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request, community_name):
         query_params = request.query_params.dict()
@@ -39,7 +40,7 @@ class CommunityBannedUsers(APIView):
 
 
 class BanUser(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request, community_name):
         request_data = normalise_request_data(request.data)
@@ -61,7 +62,7 @@ class BanUser(APIView):
 
 
 class UnbanUser(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request, community_name):
         request_data = normalise_request_data(request.data)
@@ -83,7 +84,7 @@ class UnbanUser(APIView):
 
 
 class SearchCommunityBannedUsers(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request, community_name):
         query_params = request.query_params.dict()

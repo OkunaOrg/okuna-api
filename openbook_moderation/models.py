@@ -151,7 +151,7 @@ class ModeratedObject(models.Model):
                 duration_of_penalty = timedelta(days=high_severity_penalties_count ** 4)
             elif moderation_severity == ModerationCategory.SEVERITY_MEDIUM:
                 medium_severity_penalties_count = penalty_target.count_medium_severity_moderation_penalties()
-                duration_of_penalty = timedelta(days=medium_severity_penalties_count ** 2)
+                duration_of_penalty = timedelta(hours=medium_severity_penalties_count ** 2)
             elif moderation_severity == ModerationCategory.SEVERITY_LOW:
                 low_severity_penalties_count = penalty_target.count_low_severity_moderation_penalties()
                 duration_of_penalty = timedelta(hours=low_severity_penalties_count ** 2)
@@ -159,12 +159,6 @@ class ModeratedObject(models.Model):
             ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
                                                                    user_id=penalty_target,
                                                                    duration=duration_of_penalty)
-
-        if content_object is User:
-            if moderation_severity == ModerationCategory.SEVERITY_HIGH:
-
-        else:
-            content_object.delete()
 
     def unverify_with_actor_with_id(self, actor_id):
         current_verified = self.verified

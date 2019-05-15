@@ -1,14 +1,18 @@
 from django.db import transaction
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from openbook_common.permissions import IsNotSuspended
 from openbook_moderation.serializers import ModeratedObjectSerializer
 from openbook_moderation.views.moderated_object.serializers import EditModeratedObjectSerializer, \
     GetModeratedObjectLogsSerializer, ModeratedObjectLogSerializer
 
 
 class ModeratedObjectItem(APIView):
+    permission_classes = (IsAuthenticated, IsNotSuspended)
+
     def patch(self, request, moderated_object_id):
         request_data = request.data.dict()
 
@@ -39,6 +43,8 @@ class ModeratedObjectItem(APIView):
 
 
 class ModeratedObjectLogs(APIView):
+    permission_classes = (IsAuthenticated,)
+
     def get(self, request, moderated_object_id):
         request_data = request.data.dict()
 

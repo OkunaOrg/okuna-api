@@ -2,6 +2,7 @@ from django.db import transaction
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
+from openbook_common.permissions import IsNotSuspended
 from openbook_common.responses import ApiMessageResponse
 from openbook_moderation.views.report.serializers import ReportPostSerializer, ReportPostCommentSerializer, \
     ReportUserSerializer, ReportCommunitySerializer, ReportModeratedObjectSerializer
@@ -10,7 +11,7 @@ from django.utils.translation import ugettext_lazy as _
 
 
 class ReportPost(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request, post_uuid):
         request_data = request.data.copy()
@@ -60,7 +61,7 @@ class ReportPostComment(APIView):
 
 
 class ReportUser(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request, username):
         request_data = request.data.copy()
@@ -85,7 +86,7 @@ class ReportUser(APIView):
 
 
 class ReportCommunity(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request, community_name):
         request_data = request.data.copy()
@@ -110,7 +111,7 @@ class ReportCommunity(APIView):
 
 
 class ReportModeratedObject(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request, moderated_object_id):
         request_data = request.data.copy()

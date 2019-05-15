@@ -13,11 +13,12 @@ from openbook_auth.views.auth.serializers import AuthenticatedUserNotificationsS
     UpdateAuthenticatedUserNotificationsSettingsSerializer
 from openbook_auth.views.authenticated_user.serializers import GetAuthenticatedUserSerializer, \
     UpdateAuthenticatedUserSerializer, DeleteAuthenticatedUserSerializer, UpdateAuthenticatedUserSettingsSerializer
+from openbook_common.permissions import IsNotSuspended
 from openbook_common.responses import ApiMessageResponse
 
 
 class AuthenticatedUser(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request):
         user_serializer = GetAuthenticatedUserSerializer(request.user, context={"request": request})

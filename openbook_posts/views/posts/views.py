@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from openbook_common.permissions import IsNotSuspended
 from openbook_common.utils.helpers import normalize_list_value_in_request_data
 from openbook_common.utils.model_loaders import get_post_model
 from openbook_posts.permissions import IsGetOrIsAuthenticated
@@ -14,7 +15,7 @@ from openbook_posts.views.posts.serializers import CreatePostSerializer, Authent
 
 
 class Posts(APIView):
-    permission_classes = (IsGetOrIsAuthenticated,)
+    permission_classes = (IsGetOrIsAuthenticated, IsNotSuspended)
 
     def put(self, request):
 
@@ -118,7 +119,7 @@ class Posts(APIView):
 
 
 class TrendingPosts(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request):
         user = request.user

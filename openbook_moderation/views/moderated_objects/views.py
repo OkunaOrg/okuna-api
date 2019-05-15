@@ -4,12 +4,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from openbook_common.permissions import IsNotSuspended
 from openbook_moderation.serializers import ModeratedObjectSerializer
 from openbook_moderation.views.moderated_objects.serializers import GetModeratedObjectsSerializer
 
 
 class StaffModeratedObjects(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request):
         query_params = request.query_params.dict()
@@ -36,7 +37,7 @@ class StaffModeratedObjects(APIView):
 
 
 class CommunityModeratedObjects(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request, community_name):
         query_params = request.query_params.dict()

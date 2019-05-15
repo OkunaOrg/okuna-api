@@ -7,6 +7,7 @@ from django.utils.translation import ugettext_lazy as _
 from itertools import chain
 import operator
 
+from openbook_common.permissions import IsNotSuspended
 from openbook_common.utils.model_loaders import get_emoji_group_model, get_post_model
 from openbook_posts.views.post.serializers import GetPostCommentsSerializer, PostCommentSerializer, \
     CommentPostSerializer, DeletePostCommentSerializer, DeletePostSerializer, DeletePostReactionSerializer, \
@@ -139,7 +140,7 @@ class UnmutePost(APIView):
 
 
 class PostComments(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
     SORT_CHOICE_TO_QUERY = {
         'DESC': '-created',
         'ASC': 'created'
@@ -220,7 +221,7 @@ class PostComments(APIView):
 
 
 class PostCommentsDisable(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request, post_uuid):
         request_data = request.data.copy()
@@ -241,7 +242,7 @@ class PostCommentsDisable(APIView):
 
 
 class PostCommentsEnable(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request, post_uuid):
         request_data = request.data.copy()
@@ -262,7 +263,7 @@ class PostCommentsEnable(APIView):
 
 
 class PostCommentItem(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def delete(self, request, post_uuid, post_comment_id):
         request_data = self._get_request_data(request, post_uuid, post_comment_id)
@@ -313,7 +314,7 @@ class PostCommentItem(APIView):
 
 
 class PostReactions(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request, post_uuid):
         request_data = self._get_request_data(request, post_uuid)
@@ -369,7 +370,7 @@ class PostReactions(APIView):
 
 
 class PostReactionsEmojiCount(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request, post_uuid):
         request_data = self._get_request_data(request, post_uuid)
@@ -398,7 +399,7 @@ class PostReactionsEmojiCount(APIView):
 
 
 class PostReactionItem(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def delete(self, request, post_uuid, post_reaction_id):
         request_data = self._get_request_data(request, post_uuid, post_reaction_id)
@@ -428,7 +429,7 @@ class PostReactionItem(APIView):
 
 
 class PostReactionEmojiGroups(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request):
         EmojiGroup = get_emoji_group_model()
@@ -439,7 +440,7 @@ class PostReactionEmojiGroups(APIView):
 
 
 class PostClose(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request, post_uuid):
         request_data = request.data.copy()
@@ -462,7 +463,7 @@ class PostClose(APIView):
 
 
 class PostOpen(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request, post_uuid):
         request_data = request.data.copy()

@@ -7,12 +7,13 @@ from rest_framework.views import APIView
 from openbook_auth.views.authenticated_user.serializers import GetAuthenticatedUserSerializer
 from openbook_auth.views.users.serializers import SearchUsersSerializer, SearchUsersUserSerializer, GetUserSerializer, \
     GetUserUserSerializer, GetBlockedUserSerializer
+from openbook_common.permissions import IsNotSuspended
 from openbook_common.responses import ApiMessageResponse
 from django.utils.translation import ugettext_lazy as _
 
 
 class SearchUsers(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request):
         query_params = request.query_params.dict()
@@ -34,7 +35,7 @@ class SearchUsers(APIView):
 
 
 class GetUser(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request, user_username):
         request_data = request.data.copy()
@@ -57,7 +58,7 @@ class GetUser(APIView):
 
 
 class BlockUser(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request, user_username):
         request_data = request.data.copy()
@@ -79,7 +80,7 @@ class BlockUser(APIView):
 
 
 class UnblockUser(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request, user_username):
         request_data = request.data.copy()

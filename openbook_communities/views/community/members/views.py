@@ -4,6 +4,8 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from openbook_common.permissions import IsNotSuspended
 from openbook_common.utils.helpers import normalise_request_data, normalize_list_value_in_request_data
 from openbook_communities.views.community.members.serializers import JoinCommunitySerializer, \
     GetCommunityMembersSerializer, GetCommunityMembersMemberSerializer, LeaveCommunitySerializer, \
@@ -11,7 +13,7 @@ from openbook_communities.views.community.members.serializers import JoinCommuni
 
 
 class CommunityMembers(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request, community_name):
         query_params = request.query_params.dict()
@@ -40,7 +42,7 @@ class CommunityMembers(APIView):
 
 
 class JoinCommunity(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request, community_name):
         request_data = normalise_request_data(request.data)
@@ -59,7 +61,7 @@ class JoinCommunity(APIView):
 
 
 class LeaveCommunity(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request, community_name):
         request_data = normalise_request_data(request.data)
@@ -79,7 +81,7 @@ class LeaveCommunity(APIView):
 
 
 class InviteCommunityMember(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request, community_name):
         request_data = normalise_request_data(request.data)
@@ -105,7 +107,7 @@ class InviteCommunityMember(APIView):
 
 
 class UninviteCommunityMember(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request, community_name):
         request_data = normalise_request_data(request.data)
@@ -131,7 +133,7 @@ class UninviteCommunityMember(APIView):
 
 
 class SearchCommunityMembers(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request, community_name):
         query_params = request.query_params.dict()

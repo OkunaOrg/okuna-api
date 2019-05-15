@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.translation import gettext as _
 
+from openbook_common.permissions import IsNotSuspended
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_communities.views.community.administrators.serializers import GetCommunityAdministratorsSerializer, \
@@ -14,7 +15,7 @@ from openbook_communities.views.community.administrators.serializers import GetC
 
 
 class CommunityAdministrators(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request, community_name):
         query_params = request.query_params.dict()
@@ -60,7 +61,7 @@ class CommunityAdministrators(APIView):
 
 
 class CommunityAdministratorItem(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def delete(self, request, community_name, community_administrator_username):
         request_data = normalise_request_data(request.data)
@@ -84,7 +85,7 @@ class CommunityAdministratorItem(APIView):
 
 
 class SearchCommunityAdministrators(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request, community_name):
         query_params = request.query_params.dict()
