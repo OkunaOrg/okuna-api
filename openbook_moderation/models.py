@@ -54,6 +54,8 @@ class ModeratedObject(models.Model):
 
     category = models.ForeignKey(ModerationCategory, on_delete=models.CASCADE, related_name='moderated_objects')
 
+    object_audit_snapshot = models.CharField(_('object_audit_snapshot'),
+                                             blank=False, null=False)
     OBJECT_TYPE_POST = 'P'
     OBJECT_TYPE_POST_COMMENT = 'PC'
     OBJECT_TYPE_COMMUNITY = 'C'
@@ -122,7 +124,6 @@ class ModeratedObject(models.Model):
         self.verified = True
         ModeratedObjectVerifiedChangedLog.create_moderated_object_verified_changed_log(
             changed_from=current_verified, changed_to=self.verified, moderated_object_id=self.pk, actor_id=actor_id)
-        self.save()
 
         Post = get_post_model()
         PostComment = get_post_comment_model()
@@ -160,13 +161,57 @@ class ModeratedObject(models.Model):
                                                                    user_id=penalty_target,
                                                                    duration=duration_of_penalty)
 
+        if content_object is User:
+            self.object_audit_snapshot = {
+                'id': content_object.id,
+                'username': content_object.username,
+                'email': content_object.email,
+                'name': content_object.profile.name,
+                'location': content_object.profile.location,
+                'bio': content_object.profile.bio,
+                'url': content_object.profile.url
+            }
+        elif content_object is Post:
+            self.object_audit_snapshot = {
+                'id': content_object.id,
+                'text': content_object.text,
+                'creator_id': content_object.creator_id,
+                'created': content_object.created,
+                'community_id': content_object.community_id,
+            }
+        elif content_object is PostComment:
+            self.object_audit_snapshot = {
+                'id': content_object.id,
+                'text': content_object.text,
+                'commenter_id': content_object.commenter_id,
+                'created': content_object.created,
+                'post_id': content_object.post_id,
+            }
+        elif content_object is Community:
+            self.object_audit_snapshot = {
+                'id': content_object.id,
+                'name': content_object.name,
+                'title': content_object.title,
+                'creator_id': content_object.creator_id,
+                'staff_members_ids': ','.join([staff_member.pk for staff_member in content_object.get_staff_members()]),
+                'created': content_object.created,
+                'type': content_object.type,
+                'description': content_object.description,
+                'rules': content_object.rules,
+            }
+
+        content_object.delete()
+
+        self.save()
+
     def unverify_with_actor_with_id(self, actor_id):
         current_verified = self.verified
         self.verified = False
         ModeratedObjectVerifiedChangedLog.create_moderated_object_verified_changed_log(
             changed_from=current_verified, changed_to=self.verified, moderated_object_id=self.pk, actor_id=actor_id)
-        self.save()
         self.penalties.delete()
+        self.object_audit_snapshot = None
+        self.save()
 
     def approve_with_actor_with_id(self, actor_id):
         current_approved = self.approved
