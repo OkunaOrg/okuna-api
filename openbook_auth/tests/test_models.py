@@ -1,10 +1,8 @@
 import logging
 
-from faker import Faker
 from rest_framework.test import APITestCase
-from openbook_auth.models import User
 
-fake = Faker()
+from openbook_auth.models import User
 
 logger = logging.getLogger(__name__)
 
