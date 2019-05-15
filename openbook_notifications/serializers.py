@@ -142,7 +142,8 @@ class PostCommentReplyParentCommentSerializer(serializers.ModelSerializer):
             'id',
             'text',
             'commenter',
-            'is_edited'
+            'is_edited',
+            'created'
         )
 
 
