@@ -1,5 +1,4 @@
 from django.conf import settings
-from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
 # Create your models here.
@@ -13,7 +12,7 @@ from openbook_auth.models import User
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.utils.model_loaders import get_community_invite_model, \
-    get_community_log_model, get_category_model
+    get_community_log_model, get_category_model, get_user_model
 from openbook_common.validators import hex_color_validator
 from openbook_communities.helpers import upload_to_community_avatar_directory, upload_to_community_cover_directory
 from openbook_communities.validators import community_name_characters_validator
@@ -54,13 +53,6 @@ class Community(models.Model):
     users_adjective = models.CharField(_('users adjective'), max_length=settings.COMMUNITY_USERS_ADJECTIVE_MAX_LENGTH,
                                        blank=False, null=True)
     invites_enabled = models.BooleanField(_('invites enabled'), default=True)
-    hide_content_after_reports_amount = models.PositiveSmallIntegerField(_('hide content after reports amount'),
-                                                                         blank=False, null=True)
-    lock_down_after_pending_moderation_amount = models.PositiveSmallIntegerField(
-        _('lockdown after amount of pending moderation'), blank=False, null=True)
-    is_locked_down = models.BooleanField(_('is locked down'), default=False, blank=False, null=False)
-
-    moderation_object = GenericRelation('openbook_moderation.ModeratedObject', related_query_name='communities')
 
     class Meta:
         verbose_name_plural = 'communities'
@@ -282,6 +274,10 @@ class Community(models.Model):
     @property
     def members_count(self):
         return self.memberships.all().count()
+
+    def get_members(self):
+        User = get_user_model()
+        return User.objects.filter(communities_memberships__community_id=self.pk)
 
     def is_private(self):
         return self.type is self.COMMUNITY_TYPE_PRIVATE

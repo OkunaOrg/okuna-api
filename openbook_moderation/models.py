@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -8,6 +10,8 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils import timezone
 
 from openbook_auth.models import User
+from openbook_common.utils.model_loaders import get_post_model, get_post_comment_model, get_community_model, \
+    get_user_model, get_moderation_penalty_model
 
 
 class ModerationCategory(models.Model):
@@ -41,12 +45,10 @@ class ModeratedObject(models.Model):
     description = models.CharField(_('description'), max_length=settings.MODERATED_OBJECT_DESCRIPTION_MAX_LENGTH,
                                    blank=False, null=True)
 
-    approved = models.BooleanField(_('approved'), default=False,
-                                   blank=False, null=False)
+    approved = models.BooleanField(_('approved'),
+                                   blank=False, null=True)
     verified = models.BooleanField(_('verified'), default=False,
                                    blank=False, null=False)
-    submitted = models.BooleanField(_('submitted'), default=False,
-                                    blank=False, null=False)
 
     moderation_object = GenericRelation('openbook_moderation.ModeratedObject', related_query_name='moderated_objects')
 
@@ -92,31 +94,19 @@ class ModeratedObject(models.Model):
 
         return moderated_object
 
-    def update_with_actor_with_id(self, actor_id, description, approved, verified, submitted, category_id):
+    def is_verified(self):
+        return self.verified
+
+    def is_approved(self):
+        return self.approved is not None and self.approved
+
+    def update_with_actor_with_id(self, actor_id, description, category_id):
         if description is not None:
             current_description = self.description
             self.description = description
             ModeratedObjectDescriptionChangedLog.create_moderated_object_description_changed_log(
                 changed_from=current_description, changed_to=description, moderated_object_id=self.pk,
                 actor_id=actor_id)
-
-        if approved is not None:
-            current_approved = self.approved
-            self.approved = approved
-            ModeratedObjectApprovedChangedLog.create_moderated_object_approved_changed_log(
-                changed_from=current_approved, changed_to=approved, moderated_object_id=self.pk, actor_id=actor_id)
-
-        if submitted is not None:
-            current_submitted = self.submitted
-            self.submitted = submitted
-            ModeratedObjectSubmittedChangedLog.create_moderated_object_submitted_changed_log(
-                changed_from=current_submitted, changed_to=submitted, moderated_object_id=self.pk, actor_id=actor_id)
-
-        if verified is not None:
-            current_verified = self.verified
-            self.verified = verified
-            ModeratedObjectVerifiedChangedLog.create_moderated_object_verified_changed_log(
-                changed_from=current_verified, changed_to=verified, moderated_object_id=self.pk, actor_id=actor_id)
 
         if category_id is not None:
             current_category_id = self.category_id
@@ -134,25 +124,121 @@ class ModeratedObject(models.Model):
             changed_from=current_verified, changed_to=self.verified, moderated_object_id=self.pk, actor_id=actor_id)
         self.save()
 
+        Post = get_post_model()
+        PostComment = get_post_comment_model()
+        Community = get_community_model()
+        User = get_user_model()
+        ModerationPenalty = get_moderation_penalty_model()
+
+        content_object = self.content_object
+        moderation_severity = self.category.severity
+        penalty_targets = None
+
+        if content_object is User:
+            penalty_targets = [content_object]
+        elif content_object is Post:
+            penalty_targets = [content_object.creator]
+        elif content_object is PostComment:
+            penalty_targets = [content_object.commenter]
+        elif content_object is Community:
+            penalty_targets = content_object.get_members()
+        elif content_object is ModeratedObject:
+            # This might be a problem where community members are in the dozens of Ks
+            penalty_targets = User.objects.filter(moderation_reports__moderated_object_id=self.pk).all()
+
+        if moderation_severity == ModerationCategory.SEVERITY_CRITICAL and (
+                content_object is Post or content_object is PostComment or content_object is Community):
+            # Critical means deletion!
+            content_object.delete()
+
+        for penalty_target in penalty_targets:
+            if moderation_severity == ModerationCategory.SEVERITY_CRITICAL:
+                # Permanent suspension
+                ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self, user_id=penalty_target)
+            elif moderation_severity == ModerationCategory.SEVERITY_HIGH:
+                high_severity_penalties_count = penalty_target.count_high_severity_moderation_penalties()
+                if high_severity_penalties_count == 0:
+                    # Suspend for 3 days
+                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
+                                                                           user_id=penalty_target,
+                                                                           duration=timedelta(days=3))
+                elif high_severity_penalties_count == 1:
+                    # Suspend for 1 week
+                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
+                                                                           user_id=penalty_target,
+                                                                           duration=timedelta(days=7))
+                elif high_severity_penalties_count == 2:
+                    # Suspend for 1 month
+                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
+                                                                           user_id=penalty_target,
+                                                                           duration=timedelta(weeks=4))
+                elif high_severity_penalties_count > 3:
+                    # Suspend permanently
+                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
+                                                                           user_id=penalty_target)
+            elif moderation_severity == ModerationCategory.SEVERITY_MEDIUM:
+                medium_severity_penalties_count = penalty_target.count_medium_severity_moderation_penalties()
+                if medium_severity_penalties_count == 3:
+                    # Suspend for 1 days
+                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
+                                                                           user_id=penalty_target,
+                                                                           duration=timedelta(days=1))
+                elif medium_severity_penalties_count == 6:
+                    # Suspend for a week
+                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
+                                                                           user_id=penalty_target,
+                                                                           duration=timedelta(days=7))
+                elif medium_severity_penalties_count == 9:
+                    # Suspend for 1 month
+                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
+                                                                           user_id=penalty_target,
+                                                                           duration=timedelta(weeks=4))
+                elif medium_severity_penalties_count > 11:
+                    # Suspend permanently
+                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
+                                                                           user_id=penalty_target)
+            elif moderation_severity == ModerationCategory.SEVERITY_LOW:
+                low_severity_penalties_count = penalty_target.count_low_severity_moderation_penalties()
+                if low_severity_penalties_count == 5:
+                    # Suspend for half a day
+                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
+                                                                           user_id=penalty_target,
+                                                                           duration=timedelta(hours=12))
+                elif low_severity_penalties_count == 10:
+                    # Suspend for a day
+                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
+                                                                           user_id=penalty_target,
+                                                                           duration=timedelta(days=1))
+                elif low_severity_penalties_count == 15:
+                    # Suspend for 1 week
+                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
+                                                                           user_id=penalty_target,
+                                                                           duration=timedelta(weeks=1))
+                elif low_severity_penalties_count > 20:
+                    # Suspend permanently
+                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
+                                                                           user_id=penalty_target)
+
     def unverify_with_actor_with_id(self, actor_id):
         current_verified = self.verified
         self.verified = False
         ModeratedObjectVerifiedChangedLog.create_moderated_object_verified_changed_log(
             changed_from=current_verified, changed_to=self.verified, moderated_object_id=self.pk, actor_id=actor_id)
         self.save()
+        self.penalties.delete()
 
-    def submit_with_actor_with_id(self, actor_id):
-        current_submitted = self.submitted
-        self.submitted = True
-        ModeratedObjectSubmittedChangedLog.create_moderated_object_submitted_changed_log(
-            changed_from=current_submitted, changed_to=self.submitted, moderated_object_id=self.pk, actor_id=actor_id)
+    def approve_with_actor_with_id(self, actor_id):
+        current_approved = self.approved
+        self.approved = True
+        ModeratedObjectApprovedChangedLog.create_moderated_object_approved_changed_log(
+            changed_from=current_approved, changed_to=self.approved, moderated_object_id=self.pk, actor_id=actor_id)
         self.save()
 
-    def unsubmit_with_actor_with_id(self, actor_id):
-        current_submitted = self.submitted
-        self.submitted = False
-        ModeratedObjectSubmittedChangedLog.create_moderated_object_submitted_changed_log(
-            changed_from=current_submitted, changed_to=self.submitted, moderated_object_id=self.pk, actor_id=actor_id)
+    def reject_with_actor_with_id(self, actor_id):
+        current_approved = self.approved
+        self.approved = False
+        ModeratedObjectApprovedChangedLog.create_moderated_object_approved_changed_log(
+            changed_from=current_approved, changed_to=self.approved, moderated_object_id=self.pk, actor_id=actor_id)
         self.save()
 
 
@@ -228,7 +314,8 @@ class ModerationReport(models.Model):
 
 class ModerationPenalty(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='moderation_penalties')
-    duration = models.DateTimeField(editable=False)
+    # If null, permanent
+    duration = models.DurationField(null=True)
     moderated_object = models.ForeignKey(ModeratedObject, on_delete=models.CASCADE, related_name='penalties')
 
     TYPE_SUSPENSION = 'S'
@@ -236,6 +323,13 @@ class ModerationPenalty(models.Model):
     TYPES = (
         (TYPE_SUSPENSION, 'Suspension'),
     )
+
+    type = models.CharField(max_length=5, choices=TYPES)
+
+    @classmethod
+    def create_suspension_moderation_penalty(cls, user_id, moderated_object, duration):
+        return cls.objects.create(moderated_object=moderated_object, user_id=user_id, type=cls.TYPE_SUSPENSION,
+                                  duration=duration)
 
 
 class ModeratedObjectLog(models.Model):

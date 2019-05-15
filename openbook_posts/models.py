@@ -2,7 +2,6 @@
 import uuid
 from datetime import timedelta
 
-from django.contrib.contenttypes.fields import GenericRelation
 from django.core.files.storage import default_storage
 from django.db import models
 from django.db.models import Q
@@ -19,6 +18,7 @@ from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
 from openbook_common.models import Emoji
+from openbook_common.utils.helpers import delete_file_field
 from openbook_common.utils.model_loaders import get_emoji_model, \
     get_circle_model, get_community_model
 from imagekit.models import ProcessedImageField
@@ -38,7 +38,6 @@ class Post(models.Model):
                                   blank=False)
     is_edited = models.BooleanField(default=False)
     is_closed = models.BooleanField(default=False)
-    moderation_object = GenericRelation('openbook_moderation.ModeratedObject', related_query_name='posts')
 
     class Meta:
         index_together = [
@@ -217,6 +216,14 @@ class Post(models.Model):
 
         return super(Post, self).save(*args, **kwargs)
 
+    def delete(self, *args, **kwargs):
+        if self.has_video():
+            delete_file_field(self.video.video)
+
+        if self.has_image():
+            delete_file_field(self.image.image)
+        super(Post, self).delete(*args, **kwargs)
+
     def _check_can_be_updated(self, text=None):
         if self.is_text_only_post() and not text:
             raise ValidationError(
@@ -251,7 +258,6 @@ class PostComment(models.Model):
     commenter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_comments')
     text = models.CharField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False)
     is_edited = models.BooleanField(default=False, null=False, blank=False)
-    moderation_object = GenericRelation('openbook_moderation.ModeratedObject', related_query_name='post_comments')
 
     @classmethod
     def create_comment(cls, text, commenter, post):

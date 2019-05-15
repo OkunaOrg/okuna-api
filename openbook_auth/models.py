@@ -4,7 +4,6 @@ import re
 import jwt
 import uuid
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
-from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models.signals import post_save
@@ -30,7 +29,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_comment_notification_model, get_follow_notification_model, get_connection_confirmed_notification_model, \
     get_connection_request_notification_model, get_post_reaction_notification_model, get_device_model, \
     get_post_mute_model, get_community_invite_notification_model, get_user_block_model, get_emoji_model, \
-    get_moderation_report_model, get_moderated_object_model
+    get_moderation_report_model, get_moderated_object_model, get_moderation_category_model, get_moderation_penalty_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications.push_notifications import senders
 
@@ -49,8 +48,6 @@ class User(AbstractUser):
     username_validator = UnicodeUsernameValidator() if six.PY3 else ASCIIUsernameValidator()
     is_email_verified = models.BooleanField(default=False)
     are_guidelines_accepted = models.BooleanField(default=False)
-
-    moderation_object = GenericRelation('openbook_moderation.ModeratedObject', related_query_name='users')
 
     username = models.CharField(
         _('username'),
@@ -192,6 +189,21 @@ class User(AbstractUser):
 
     def count_posts(self):
         return self.posts.count()
+
+    def count_high_severity_moderation_penalties(self):
+        ModerationCategory = get_moderation_category_model()
+        return self.moderation_penalties.filter(
+            moderated_object__category__severity=ModerationCategory.SEVERITY_HIGH).count()
+
+    def count_medium_severity_moderation_penalties(self):
+        ModerationCategory = get_moderation_category_model()
+        return self.moderation_penalties.filter(
+            moderated_object__category__severity=ModerationCategory.SEVERITY_MEDIUM).count()
+
+    def count_low_severity_moderation_penalties(self):
+        ModerationCategory = get_moderation_category_model()
+        return self.moderation_penalties.filter(
+            moderated_object__category__severity=ModerationCategory.SEVERITY_LOW).count()
 
     def count_unread_notifications(self):
         return self.notifications.filter(read=False).count()
@@ -483,6 +495,10 @@ class User(AbstractUser):
 
     def is_moderator_of_community_with_name(self, community_name):
         return self.communities_memberships.filter(community__name=community_name, is_moderator=True).exists()
+
+    def is_openbook_moderator(self):
+        moderators_community_name = settings.MODERATORS_COMMUNITY_NAME
+        return self.is_member_of_community_with_name(community_name=moderators_community_name)
 
     def is_invited_to_community_with_name(self, community_name):
         Community = get_community_model()
@@ -1443,17 +1459,9 @@ class User(AbstractUser):
         self._check_can_delete_post_with_id(post_id)
         Post = get_post_model()
 
-        # We have to manually delete the images / video
         post = Post.objects.get(id=post_id)
-
-        if post.has_video():
-            delete_file_field(post.video.video)
-
-        if post.has_image():
-            delete_file_field(post.image.image)
-
-        # We have to be mindful with using bulk delete as it does not call the delete() method per instance
-        Post.objects.filter(id=post_id).delete()
+        # This method is overriden
+        post.delete()
 
     def get_user_with_username(self, username):
         user = User.objects.get(username=username)
@@ -2014,23 +2022,23 @@ class User(AbstractUser):
         self._check_can_unverify_moderated_object(moderated_object=moderated_object)
         moderated_object.unverify_with_actor_with_id(actor_id=self.pk)
 
-    def submit_moderated_object_with_id(self, moderated_object_id):
+    def approve_moderated_object_with_id(self, moderated_object_id):
         ModeratedObject = get_moderated_object_model()
         moderated_object = ModeratedObject.objects.get(pk=moderated_object_id)
-        return self.submit_moderated_object(moderated_object=moderated_object)
+        return self.approve_moderated_object(moderated_object=moderated_object)
 
-    def submit_moderated_object(self, moderated_object):
-        self._check_can_submit_moderated_object(moderated_object=moderated_object)
-        moderated_object.submit_with_actor_with_id(actor_id=self.pk)
+    def approve_moderated_object(self, moderated_object):
+        self._check_can_approve_moderated_object(moderated_object=moderated_object)
+        moderated_object.approve_with_actor_with_id(actor_id=self.pk)
 
-    def unsubmit_moderated_object_with_id(self, moderated_object_id):
+    def reject_moderated_object_with_id(self, moderated_object_id):
         ModeratedObject = get_moderated_object_model()
         moderated_object = ModeratedObject.objects.get(pk=moderated_object_id)
-        return self.unsubmit_moderated_object(moderated_object=moderated_object)
+        return self.reject_moderated_object(moderated_object=moderated_object)
 
-    def unsubmit_moderated_object(self, moderated_object):
-        self._check_can_unsubmit_moderated_object(moderated_object=moderated_object)
-        moderated_object.unsubmit_with_actor_with_id(actor_id=self.pk)
+    def reject_moderated_object(self, moderated_object):
+        self._check_can_reject_moderated_object(moderated_object=moderated_object)
+        moderated_object.reject_with_actor_with_id(actor_id=self.pk)
 
     def update_moderated_object_with_id(self, moderated_object_id, description=None,
                                         approved=None,
@@ -3342,23 +3350,24 @@ class User(AbstractUser):
                 _('The moderated object has been verified and can no longer be edited.')
             )
 
-        if moderated_object.is_submitted and not self.is_staff:
+        if moderated_object.approved is not None:
             raise PermissionDenied(
-                _('The moderated object has been submitted and cant no longer be edited.')
+                _('The moderated object has already been approved/rejected.')
             )
 
-    def _check_can_unsubmit_moderated_object(self, moderated_object):
+    def _check_can_approve_moderated_object(self, moderated_object):
         self._check_can_moderate_moderated_object(moderated_object=moderated_object)
-        if not moderated_object.is_submitted:
+
+        if moderated_object.is_verified() and not self.is_openbook_moderator():
             raise ValidationError(
-                _('The moderated object has not been submitted.')
+                _('The moderated object has already been verified.')
             )
 
-    def _check_can_submit_moderated_object(self, moderated_object):
+    def _check_can_reject_moderated_object(self, moderated_object):
         self._check_can_moderate_moderated_object(moderated_object=moderated_object)
-        if moderated_object.is_submitted:
+        if moderated_object.is_verified() and not self.is_openbook_moderator():
             raise ValidationError(
-                _('The moderated object is already submitted.')
+                _('The moderated object has already been verified.')
             )
 
     def _check_can_unverify_moderated_object(self, moderated_object):
@@ -3382,9 +3391,9 @@ class User(AbstractUser):
     def _check_can_moderate_moderated_object(self, moderated_object):
         content_object = moderated_object.content_object
 
-        is_openbook_staff = self.is_staff
+        is_openbook_moderator = self.is_openbook_moderator()
 
-        if is_openbook_staff:
+        if is_openbook_moderator:
             return
 
         PostComment = get_post_comment_model()
