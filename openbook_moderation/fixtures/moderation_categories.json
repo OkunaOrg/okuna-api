@@ -120,19 +120,6 @@
     "model": "openbook_moderation.ModerationCategory",
     "pk": 10,
     "fields": {
-      "name": "dont_like_it",
-      "severity": "L",
-      "title_en": "I just don't like it",
-      "title_es": "I just don't like it",
-      "description_en": "Posts that are distasteful/inappropriate for any other reason not already categorised.",
-      "description_es": "Posts that are distasteful/inappropriate for any other reason not already categorised.",
-      "created": "2018-10-22 12:23:30.382913+00:00"
-    }
-  },
-  {
-    "model": "openbook_moderation.ModerationCategory",
-    "pk": 11,
-    "fields": {
       "name": "abuse",
       "severity": "H",
       "title_en": "Platform abuse",
@@ -144,7 +131,7 @@
   },
   {
     "model": "openbook_moderation.ModerationCategory",
-    "pk": 12,
+    "pk": 11,
     "fields": {
       "name": "community",
       "severity": "L",
@@ -157,7 +144,7 @@
   },
   {
     "model": "openbook_moderation.ModerationCategory",
-    "pk": 13,
+    "pk": 12,
     "fields": {
       "name": "other",
       "severity": "L",

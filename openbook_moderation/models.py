@@ -141,83 +141,30 @@ class ModeratedObject(models.Model):
         elif content_object is PostComment:
             penalty_targets = [content_object.commenter]
         elif content_object is Community:
-            penalty_targets = content_object.get_members()
-        elif content_object is ModeratedObject:
-            # This might be a problem where community members are in the dozens of Ks
-            penalty_targets = User.objects.filter(moderation_reports__moderated_object_id=self.pk).all()
-
-        if moderation_severity == ModerationCategory.SEVERITY_CRITICAL and (
-                content_object is Post or content_object is PostComment or content_object is Community):
-            # Critical means deletion!
-            content_object.delete()
+            penalty_targets = content_object.get_staff_members()
 
         for penalty_target in penalty_targets:
-            if moderation_severity == ModerationCategory.SEVERITY_CRITICAL:
-                # Permanent suspension
-                ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self, user_id=penalty_target)
-            elif moderation_severity == ModerationCategory.SEVERITY_HIGH:
+            duration_of_penalty = None
+
+            if moderation_severity == ModerationCategory.SEVERITY_HIGH:
                 high_severity_penalties_count = penalty_target.count_high_severity_moderation_penalties()
-                if high_severity_penalties_count == 0:
-                    # Suspend for 3 days
-                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
-                                                                           user_id=penalty_target,
-                                                                           duration=timedelta(days=3))
-                elif high_severity_penalties_count == 1:
-                    # Suspend for 1 week
-                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
-                                                                           user_id=penalty_target,
-                                                                           duration=timedelta(days=7))
-                elif high_severity_penalties_count == 2:
-                    # Suspend for 1 month
-                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
-                                                                           user_id=penalty_target,
-                                                                           duration=timedelta(weeks=4))
-                elif high_severity_penalties_count > 3:
-                    # Suspend permanently
-                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
-                                                                           user_id=penalty_target)
+                duration_of_penalty = timedelta(days=high_severity_penalties_count ** 4)
             elif moderation_severity == ModerationCategory.SEVERITY_MEDIUM:
                 medium_severity_penalties_count = penalty_target.count_medium_severity_moderation_penalties()
-                if medium_severity_penalties_count == 3:
-                    # Suspend for 1 days
-                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
-                                                                           user_id=penalty_target,
-                                                                           duration=timedelta(days=1))
-                elif medium_severity_penalties_count == 6:
-                    # Suspend for a week
-                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
-                                                                           user_id=penalty_target,
-                                                                           duration=timedelta(days=7))
-                elif medium_severity_penalties_count == 9:
-                    # Suspend for 1 month
-                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
-                                                                           user_id=penalty_target,
-                                                                           duration=timedelta(weeks=4))
-                elif medium_severity_penalties_count > 11:
-                    # Suspend permanently
-                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
-                                                                           user_id=penalty_target)
+                duration_of_penalty = timedelta(days=medium_severity_penalties_count ** 2)
             elif moderation_severity == ModerationCategory.SEVERITY_LOW:
                 low_severity_penalties_count = penalty_target.count_low_severity_moderation_penalties()
-                if low_severity_penalties_count == 5:
-                    # Suspend for half a day
-                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
-                                                                           user_id=penalty_target,
-                                                                           duration=timedelta(hours=12))
-                elif low_severity_penalties_count == 10:
-                    # Suspend for a day
-                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
-                                                                           user_id=penalty_target,
-                                                                           duration=timedelta(days=1))
-                elif low_severity_penalties_count == 15:
-                    # Suspend for 1 week
-                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
-                                                                           user_id=penalty_target,
-                                                                           duration=timedelta(weeks=1))
-                elif low_severity_penalties_count > 20:
-                    # Suspend permanently
-                    ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
-                                                                           user_id=penalty_target)
+                duration_of_penalty = timedelta(hours=low_severity_penalties_count ** 2)
+
+            ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
+                                                                   user_id=penalty_target,
+                                                                   duration=duration_of_penalty)
+
+        if content_object is User:
+            if moderation_severity == ModerationCategory.SEVERITY_HIGH:
+
+        else:
+            content_object.delete()
 
     def unverify_with_actor_with_id(self, actor_id):
         current_verified = self.verified

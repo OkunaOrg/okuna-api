@@ -275,9 +275,12 @@ class Community(models.Model):
     def members_count(self):
         return self.memberships.all().count()
 
-    def get_members(self):
+    def get_staff_members(self):
         User = get_user_model()
-        return User.objects.filter(communities_memberships__community_id=self.pk)
+        staff_members_query = Q(communities_memberships__community_id=self.pk)
+        staff_members_query.add(
+            Q(communities_memberships__is_administrator=True) | Q(communities_memberships__is_moderator=True), Q.AND)
+        return User.objects.filter(staff_members_query)
 
     def is_private(self):
         return self.type is self.COMMUNITY_TYPE_PRIVATE
