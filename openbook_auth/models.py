@@ -129,11 +129,10 @@ class User(AbstractUser):
             "google.com"
         ]
 
-        email_prefix = email.split("@")[0]
         email_suffix = email.split("@")[-1]
 
         if email_suffix in dots_do_not_matter_providers:
-            return email_prefix.replace('.', '') + "@" + email_suffix
+            return email.split("@")[0].replace('.', '') + "@" + email_suffix
 
         return email
 
