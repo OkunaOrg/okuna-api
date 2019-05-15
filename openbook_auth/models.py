@@ -722,7 +722,8 @@ class User(AbstractUser):
         PostCommentNotification = get_post_comment_notification_model()
 
         for post_notification_target_user in post_notification_target_users:
-            if not post_notification_target_user.can_see_post(post=post):
+            if not post_notification_target_user.can_see_post(
+                    post=post) or post_notification_target_user.has_blocked_user_with_id(post_commenter.pk):
                 continue
             post_notification_target_user_is_post_creator = post_notification_target_user.id == post_creator.id
             post_notification_target_has_comment_notifications_enabled = post_notification_target_user.has_comment_notifications_enabled_for_post_with_id(
