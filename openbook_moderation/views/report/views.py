@@ -1,4 +1,5 @@
 from django.db import transaction
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
@@ -27,12 +28,11 @@ class ReportPost(APIView):
         category_id = data.get('category_id')
 
         user = request.user
-        post_id = Post.get_post_id_for_post_with_uuid(post_uuid=post_uuid)
 
         with transaction.atomic():
-            user.report_post_with_id(post_id=post_id, category_id=category_id, description=description)
+            user.report_post_with_uuid(post_uuid=post_uuid, category_id=category_id, description=description)
 
-        return ApiMessageResponse(_('Post reported, thanks!'))
+        return ApiMessageResponse(_('Post reported, thanks!'), status=status.HTTP_201_CREATED)
 
 
 class ReportPostComment(APIView):
@@ -57,7 +57,7 @@ class ReportPostComment(APIView):
             user.report_post_comment_with_id(post_comment_id=post_comment_id, category_id=category_id,
                                              description=description)
 
-        return ApiMessageResponse(_('Post comment reported, thanks!'))
+        return ApiMessageResponse(_('Post comment reported, thanks!'), status=status.HTTP_201_CREATED)
 
 
 class ReportUser(APIView):
@@ -82,7 +82,7 @@ class ReportUser(APIView):
             user.report_user_with_username(username=username, category_id=category_id,
                                            description=description)
 
-        return ApiMessageResponse(_('User reported, thanks!'))
+        return ApiMessageResponse(_('User reported, thanks!'), status=status.HTTP_201_CREATED)
 
 
 class ReportCommunity(APIView):
@@ -107,7 +107,7 @@ class ReportCommunity(APIView):
             community.report_community_with_name(community_name=community_name, category_id=category_id,
                                                  description=description)
 
-        return ApiMessageResponse(_('Community reported, thanks!'))
+        return ApiMessageResponse(_('Community reported, thanks!'), status=status.HTTP_201_CREATED)
 
 
 class ReportModeratedObject(APIView):
@@ -132,4 +132,4 @@ class ReportModeratedObject(APIView):
             user.report_moderated_object_with_id(moderated_object_id=moderated_object_id, category_id=category_id,
                                                  description=description)
 
-        return ApiMessageResponse(_('Moderated object reported, thanks!'))
+        return ApiMessageResponse(_('Moderated object reported, thanks!'), status=status.HTTP_201_CREATED)

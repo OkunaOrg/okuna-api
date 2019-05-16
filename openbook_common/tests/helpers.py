@@ -10,6 +10,7 @@ from openbook_circles.models import Circle
 from openbook_common.models import Emoji, EmojiGroup, Badge
 from openbook_communities.models import Community
 from openbook_devices.models import Device
+from openbook_moderation.models import ModerationCategory
 from openbook_notifications.models import Notification
 
 fake = Faker()
@@ -40,6 +41,7 @@ def make_user(username=None, invite_count=None):
 
     profile = make_profile(user)
     return user
+
 
 def make_badge():
     return mixer.blend(Badge)
@@ -184,3 +186,11 @@ def make_notification(owner):
 
 def make_device(owner):
     return mixer.blend(Device, owner=owner)
+
+
+def make_moderation_category(severity=ModerationCategory.SEVERITY_MEDIUM):
+    return mixer.blend(ModerationCategory, severity=severity)
+
+
+def make_moderation_report_description():
+    return fake.text(max_nb_chars=settings.MODERATION_REPORT_DESCRIPTION_MAX_LENGTH)

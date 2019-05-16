@@ -1938,70 +1938,69 @@ class User(AbstractUser):
         self.user_blocks.filter(blocked_user_id=user_id).delete()
         return User.objects.get(pk=user_id)
 
-    def report_post_comment_with_id(self, post_comment_id, moderation_category_id, description):
-        PostComment = get_post_comment_model()
-        post_comment = PostComment.objects.get(pk=post_comment_id)
-        return self.report_post_comment(post_comment=post_comment, moderation_category_id=moderation_category_id,
-                                        description=description)
+    def report_post_comment_with_id(self, post_comment_id, category_id, description):
+        Post_comment = get_post_comment_model()
+        post_comment = Post_comment.objects.get(id=post_comment_id)
+        return self.report_post_comment(post_comment=post_comment, category_id=category_id, description=description)
 
-    def report_post_comment(self, post_comment, moderation_category_id, description):
+    def report_post_comment(self, post_comment, category_id, description):
         self._check_can_report_post_comment(post_comment=post_comment)
         ModerationReport = get_moderation_report_model()
-        ModerationReport.create_post_comment_moderation_report(post_comment_id=post_comment.pk,
-                                                               moderation_category_id=moderation_category_id,
+        ModerationReport.create_post_comment_moderation_report(post_comment=post_comment,
+                                                               category_id=category_id,
+                                                               reporter_id=self.pk,
                                                                description=description)
 
-    def report_post_with_uuid(self, post_uuid, moderation_category_id, description):
+    def report_post_with_uuid(self, post_uuid, category_id, description):
         Post = get_post_model()
         post = Post.objects.get(uuid=post_uuid)
-        return self.report_post(post=post, moderation_category_id=moderation_category_id, description=description)
+        return self.report_post(post=post, category_id=category_id, description=description)
 
-    def report_post(self, post, moderation_category_id, description):
+    def report_post(self, post, category_id, description):
         self._check_can_report_post(post=post)
         ModerationReport = get_moderation_report_model()
-        ModerationReport.create_post_moderation_report(post_id=post.pk,
-                                                       moderation_category_id=moderation_category_id,
+        ModerationReport.create_post_moderation_report(post=post,
+                                                       category_id=category_id,
+                                                       reporter_id=self.pk,
                                                        description=description)
 
-    def report_user_with_username(self, username, moderation_category_id, description):
-        user = User.objects.get(username=username)
-        return self.report_user(user=user, moderation_category_id=moderation_category_id,
-                                description=description)
+    def report_user_with_username(self, user_username, category_username, description):
+        user = User.objects.get(username=user_username)
+        return self.report_user(user=user, category_username=category_username, description=description)
 
-    def report_user(self, user, moderation_category_id, description):
+    def report_user(self, user, category_username, description):
         self._check_can_report_user(user=user)
         ModerationReport = get_moderation_report_model()
-        ModerationReport.create_user_moderation_report(user_id=user.pk,
-                                                       moderation_category_id=moderation_category_id,
+        ModerationReport.create_user_moderation_report(user=user,
+                                                       category_username=category_username,
+                                                       reporter_username=self.pk,
                                                        description=description)
 
-    def report_community_with_name(self, community_name, moderation_category_id, description):
+    def report_community_with_name(self, community_name, category_name, description):
         Community = get_community_model()
-        community = Community.objects.get(community_name=community_name)
-        return self.report_community(community=community,
-                                     moderation_category_id=moderation_category_id,
-                                     description=description)
+        community = Community.objects.get(name=community_name)
+        return self.report_community(community=community, category_name=category_name, description=description)
 
-    def report_community(self, community, moderation_category_id, description):
+    def report_community(self, community, category_name, description):
         self._check_can_report_community(community=community)
         ModerationReport = get_moderation_report_model()
-        ModerationReport.create_community_moderation_report(community_id=community.pk,
-                                                            moderation_category_id=moderation_category_id,
+        ModerationReport.create_community_moderation_report(community=community,
+                                                            category_name=category_name,
+                                                            reporter_name=self.pk,
                                                             description=description)
 
-    def report_moderated_object_with_id(self, moderated_object_id, moderation_category_id, description):
-        ModeratedObject = get_moderated_object_model()
-        moderated_object = ModeratedObject.objects.get(pk=moderated_object_id,
-                                                       moderation_category_id=moderation_category_id,
-                                                       description=description)
-        return self.report_moderated_object(moderated_object=moderated_object,
-                                            moderation_category_id=moderation_category_id, description=description)
+    def report_moderated_object_with_id(self, moderated_object_id, category_id, description):
+        Moderated_object = get_moderated_object_model()
+        moderated_object = Moderated_object.objects.get(id=moderated_object_id)
+        return self.report_moderated_object(moderated_object=moderated_object, category_id=category_id,
+                                            description=description)
 
-    def report_moderated_object(self, moderated_object, moderation_category_id, description):
+    def report_moderated_object(self, moderated_object, category_id, description):
         self._check_can_report_moderated_object(moderated_object=moderated_object)
         ModerationReport = get_moderation_report_model()
-        ModerationReport.create_moderated_object_moderation_report(moderated_object_id=moderated_object.pk,
-                                                                   moderation_category_id=moderation_category_id,
+        ModerationReport.create_moderated_object_moderation_report(moderated_object=moderated_object,
+                                                                   category_id=category_id,
+                                                                   reporter_id=self.pk,
                                                                    description=description)
 
     def verify_moderated_object_with_id(self, moderated_object_id):
@@ -3273,6 +3272,7 @@ class User(AbstractUser):
             )
 
     def _check_can_report_post(self, post):
+        self._check_can_see_post(post=post)
         self._check_has_not_reported_post_with_id(post_id=post.pk)
         if post.creator_id == self.pk:
             raise ValidationError(
