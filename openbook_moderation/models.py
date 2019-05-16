@@ -52,8 +52,8 @@ class ModeratedObject(models.Model):
 
     category = models.ForeignKey(ModerationCategory, on_delete=models.CASCADE, related_name='moderated_objects')
 
-    object_audit_snapshot = models.CharField(_('object_audit_snapshot'),
-                                             blank=False, null=False)
+    object_audit_snapshot = models.TextField(_('object_audit_snapshot'),
+                                             blank=False, null=False, )
     OBJECT_TYPE_POST = 'P'
     OBJECT_TYPE_POST_COMMENT = 'PC'
     OBJECT_TYPE_COMMUNITY = 'C'
