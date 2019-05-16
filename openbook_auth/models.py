@@ -538,11 +538,11 @@ class User(AbstractUser):
 
     def can_see_post(self, post):
         # Check if post is public
-        if post.creator_id == self.pk:
-            return True
-        elif post.community:
+        if post.community:
             if self._can_see_community_post_with_id(community=post.community, post_id=post.pk):
                 return True
+        elif post.creator_id == self.pk:
+            return True
         else:
             # Check if we can retrieve the post
             if self._can_see_post(post=post):
@@ -1408,7 +1408,7 @@ class User(AbstractUser):
 
     def search_communities_with_query(self, query):
         Community = get_community_model()
-        return Community.search_communities_with_query_for_user_with_id(query, user_id=self.pk)
+        return Community.search_communities_with_query(query)
 
     def get_community_with_name(self, community_name):
         self._check_can_get_community_with_name(community_name=community_name)
@@ -2568,7 +2568,7 @@ class User(AbstractUser):
 
         if not self.is_staff_of_community_with_name(community_name=community.name):
             # Dont retrieve closed posts
-            community_posts_query.add(Q(is_closed=False), Q.AND)
+            community_posts_query.add(Q(is_closed=False) | Q(creator_id=self.pk), Q.AND)
 
             # Don't retrieve posts of blocked users, except if they're staff members
             blocked_users_query = ~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
@@ -3311,6 +3311,9 @@ class UserBlock(models.Model):
 
     class Meta:
         unique_together = ('blocked_user', 'blocker',)
+        indexes = [
+            models.Index(fields=['blocked_user', 'blocker']),
+        ]
 
     @classmethod
     def create_user_block(cls, blocker_id, blocked_user_id):

@@ -12,9 +12,11 @@ from django.core.files.images import ImageFile
 from django.core.files import File
 
 import logging
+import random
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
-    make_fake_post_comment_text, make_user, make_circle, make_community
+    make_fake_post_comment_text, make_user, make_circle, make_emoji, make_emoji_group, make_reactions_emoji_group, \
+    make_community, make_private_community
 from openbook_communities.models import Community
 from openbook_posts.models import Post
 
