@@ -1981,17 +1981,17 @@ class User(AbstractUser):
                                                        reporter_id=self.pk,
                                                        description=description)
 
-    def report_community_with_name(self, community_name, category_name, description):
+    def report_community_with_name(self, community_name, category_id, description):
         Community = get_community_model()
         community = Community.objects.get(name=community_name)
-        return self.report_community(community=community, category_name=category_name, description=description)
+        return self.report_community(community=community, category_id=category_id, description=description)
 
-    def report_community(self, community, category_name, description):
+    def report_community(self, community, category_id, description):
         self._check_can_report_community(community=community)
         ModerationReport = get_moderation_report_model()
         ModerationReport.create_community_moderation_report(community=community,
-                                                            category_name=category_name,
-                                                            reporter_name=self.pk,
+                                                            category_id=category_id,
+                                                            reporter_id=self.pk,
                                                             description=description)
 
     def report_moderated_object_with_id(self, moderated_object_id, category_id, description):

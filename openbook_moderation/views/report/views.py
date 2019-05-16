@@ -103,11 +103,11 @@ class ReportCommunity(APIView):
         description = data.get('description')
         category_id = data.get('category_id')
 
-        community = request.community
+        user = request.user
 
         with transaction.atomic():
-            community.report_community_with_name(community_name=community_name, category_id=category_id,
-                                                 description=description)
+            user.report_community_with_name(community_name=community_name, category_id=category_id,
+                                            description=description)
 
         return ApiMessageResponse(_('Community reported, thanks!'), status=status.HTTP_201_CREATED)
 

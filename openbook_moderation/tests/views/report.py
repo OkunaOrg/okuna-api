@@ -762,3 +762,133 @@ class ReportUserAPITests(APITestCase):
         return reverse('report-user', kwargs={
             'user_username': user.username
         })
+
+
+class ReportCommunityAPITests(APITestCase):
+    """
+    ReportCommunityAPI
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json',
+    ]
+
+    def test_can_report_community(self):
+        """
+        should be able to report a community with a description and return 201
+        """
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+
+        community_reporter = make_user()
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(community)
+        headers = make_authentication_headers_for_user(community_reporter)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(community_reporter.has_reported_community_with_id(community_id=community.pk))
+        self.assertTrue(ModerationReport.objects.filter(reporter_id=community_reporter.pk,
+                                                        moderated_object__object_id=community.pk,
+                                                        moderated_object__object_type=ModeratedObject.OBJECT_TYPE_COMMUNITY,
+                                                        description=report_description,
+                                                        category_id=report_category.pk
+                                                        ).exists())
+
+    def test_cant_report_community_without_category(self):
+        """
+        should not be able to report a community without a category and return 400
+        """
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+
+        community_reporter = make_user()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(community)
+        headers = make_authentication_headers_for_user(community_reporter)
+
+        response = self.client.post(url, data={
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(community_reporter.has_reported_community_with_id(community_id=community.pk))
+        self.assertFalse(ModerationReport.objects.filter(reporter_id=community_reporter.pk,
+                                                         moderated_object__object_id=community.pk,
+                                                         moderated_object__object_type=ModeratedObject.OBJECT_TYPE_COMMUNITY,
+                                                         description=report_description,
+                                                         ).exists())
+
+    def test_cant_report_community_twice(self):
+        """
+        should not be able to report a community twice and return 400
+        """
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+
+        community_reporter = make_user()
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(community)
+        headers = make_authentication_headers_for_user(community_reporter)
+
+        self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(community_reporter.has_reported_community_with_id(community_id=community.pk))
+        self.assertEqual(1, ModerationReport.objects.filter(reporter_id=community_reporter.pk,
+                                                            moderated_object__object_id=community.pk,
+                                                            moderated_object__object_type=ModeratedObject.OBJECT_TYPE_COMMUNITY,
+                                                            description=report_description,
+                                                            category_id=report_category.pk
+                                                            ).count())
+
+    def test_can_report_community_without_description(self):
+        """
+        should be able to report a community without a description and return 201
+        """
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+
+        community_reporter = make_user()
+        report_category = make_moderation_category()
+
+        url = self._get_url(community)
+        headers = make_authentication_headers_for_user(community_reporter)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(community_reporter.has_reported_community_with_id(community_id=community.pk))
+        self.assertTrue(ModerationReport.objects.filter(reporter_id=community_reporter.pk,
+                                                        moderated_object__object_id=community.pk,
+                                                        moderated_object__object_type=ModeratedObject.OBJECT_TYPE_COMMUNITY,
+                                                        category_id=report_category.pk
+                                                        ).exists())
+
+    def _get_url(self, community):
+        return reverse('report-community', kwargs={
+            'community_name': community.name
+        })
