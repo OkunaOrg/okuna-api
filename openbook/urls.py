@@ -313,6 +313,7 @@ api_patterns = [
     path('notifications/', include(notifications_patterns)),
     path('devices/', include(devices_patterns)),
     path('invites/', include(invites_patterns)),
+    path('moderation/', include(moderation_patterns)),
     url('time/', Time.as_view(), name='time'),
     url('emojis/groups/', EmojiGroups.as_view(), name='emoji-groups'),
 ]
