@@ -636,3 +636,129 @@ class ReportPostCommentAPITests(APITestCase):
             'post_comment_id': post_comment.pk,
             'post_uuid': str(post.uuid)
         })
+
+
+class ReportUserAPITests(APITestCase):
+    """
+    ReportUserAPI
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json',
+    ]
+
+    def test_can_report_user(self):
+        """
+        should be able to report a user with a description and return 201
+        """
+        user = make_user()
+
+        user_reporter = make_user()
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(user)
+        headers = make_authentication_headers_for_user(user_reporter)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(user_reporter.has_reported_user_with_id(user_id=user.pk))
+        self.assertTrue(ModerationReport.objects.filter(reporter_id=user_reporter.pk,
+                                                        moderated_object__object_id=user.pk,
+                                                        moderated_object__object_type=ModeratedObject.OBJECT_TYPE_USER,
+                                                        description=report_description,
+                                                        category_id=report_category.pk
+                                                        ).exists())
+
+    def test_cant_report_user_without_category(self):
+        """
+        should not be able to report a user without a category and return 400
+        """
+        user = make_user()
+
+        user_reporter = make_user()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(user)
+        headers = make_authentication_headers_for_user(user_reporter)
+
+        response = self.client.post(url, data={
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(user_reporter.has_reported_user_with_id(user_id=user.pk))
+        self.assertFalse(ModerationReport.objects.filter(reporter_id=user_reporter.pk,
+                                                         moderated_object__object_id=user.pk,
+                                                         moderated_object__object_type=ModeratedObject.OBJECT_TYPE_USER,
+                                                         description=report_description,
+                                                         ).exists())
+
+    def test_cant_report_user_twice(self):
+        """
+        should not be able to report a user twice and return 400
+        """
+        user = make_user()
+
+        user_reporter = make_user()
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(user)
+        headers = make_authentication_headers_for_user(user_reporter)
+
+        self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(user_reporter.has_reported_user_with_id(user_id=user.pk))
+        self.assertEqual(1, ModerationReport.objects.filter(reporter_id=user_reporter.pk,
+                                                            moderated_object__object_id=user.pk,
+                                                            moderated_object__object_type=ModeratedObject.OBJECT_TYPE_USER,
+                                                            description=report_description,
+                                                            category_id=report_category.pk
+                                                            ).count())
+
+    def test_can_report_user_without_description(self):
+        """
+        should be able to report a user without a description and return 201
+        """
+        user = make_user()
+
+        user_reporter = make_user()
+        report_category = make_moderation_category()
+
+        url = self._get_url(user)
+        headers = make_authentication_headers_for_user(user_reporter)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(user_reporter.has_reported_user_with_id(user_id=user.pk))
+        self.assertTrue(ModerationReport.objects.filter(reporter_id=user_reporter.pk,
+                                                        moderated_object__object_id=user.pk,
+                                                        moderated_object__object_type=ModeratedObject.OBJECT_TYPE_USER,
+                                                        category_id=report_category.pk
+                                                        ).exists())
+
+    def _get_url(self, user):
+        return reverse('report-user', kwargs={
+            'user_username': user.username
+        })

@@ -42,7 +42,7 @@ class ReportCommunitySerializer(serializers.Serializer):
 
 
 class ReportUserSerializer(serializers.Serializer):
-    user_name = serializers.CharField(max_length=settings.USERNAME_MAX_LENGTH,
+    username = serializers.CharField(max_length=settings.USERNAME_MAX_LENGTH,
                                       allow_blank=False,
                                       required=True,
                                       validators=[username_characters_validator, user_username_exists])

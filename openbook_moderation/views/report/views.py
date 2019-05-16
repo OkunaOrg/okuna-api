@@ -65,9 +65,9 @@ class ReportPostComment(APIView):
 class ReportUser(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
 
-    def post(self, request, username):
+    def post(self, request, user_username):
         request_data = request.data.copy()
-        request_data['username'] = username
+        request_data['username'] = user_username
 
         serializer = ReportUserSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
