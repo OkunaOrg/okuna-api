@@ -6,10 +6,10 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_notification, \
-    make_fake_post_text, make_moderation_category, make_moderation_report_description, make_circle, make_community
+    make_fake_post_text, make_moderation_category, make_moderation_report_description, make_circle, make_community, \
+    make_fake_post_comment_text
 from openbook_communities.models import Community
 from openbook_moderation.models import ModerationReport, ModeratedObject
-from openbook_notifications.models import Notification
 
 fake = Faker()
 
@@ -316,4 +316,323 @@ class ReportPostAPITests(APITestCase):
     def _get_url(self, post):
         return reverse('report-post', kwargs={
             'post_uuid': post.uuid
+        })
+
+
+class ReportPostCommentAPITests(APITestCase):
+    """
+    ReportPostCommentAPI
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json',
+    ]
+
+    def test_can_report_public_post_comment(self):
+        """
+        should be able to report a post_comment with a description and return 201
+        """
+        post_comment_creator = make_user()
+        post = post_comment_creator.create_public_post(text=make_fake_post_text())
+
+        post_comment_text = make_fake_post_comment_text()
+        post_comment = post_comment_creator.comment_post_with_id(post_id=post.pk, text=post_comment_text)
+
+        post_comment_reporter = make_user()
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+        headers = make_authentication_headers_for_user(post_comment_reporter)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(post_comment_reporter.has_reported_post_comment_with_id(post_comment_id=post_comment.pk))
+        self.assertTrue(ModerationReport.objects.filter(reporter_id=post_comment_reporter.pk,
+                                                        moderated_object__object_id=post_comment.pk,
+                                                        moderated_object__object_type=ModeratedObject.OBJECT_TYPE_POST_COMMENT,
+                                                        description=report_description,
+                                                        category_id=report_category.pk
+                                                        ).exists())
+
+    def test_can_report_encircled_post_comment_part_of(self):
+        """
+        should be able to report an encircled post_comment part of with a description and return 201
+        """
+        post_comment_creator = make_user()
+        post_comment_reporter = make_user()
+
+        circle = make_circle(creator=post_comment_creator)
+        post_comment_creator.connect_with_user_with_id(user_id=post_comment_reporter.pk, circles_ids=[circle.pk])
+        post_comment_reporter.confirm_connection_with_user_with_id(user_id=post_comment_creator.pk)
+
+        post = post_comment_creator.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+
+        post_comment_text = make_fake_post_comment_text()
+        post_comment = post_comment_creator.comment_post_with_id(post_id=post.pk, text=post_comment_text)
+
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+        headers = make_authentication_headers_for_user(post_comment_reporter)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(post_comment_reporter.has_reported_post_comment_with_id(post_comment_id=post_comment.pk))
+        self.assertTrue(ModerationReport.objects.filter(reporter_id=post_comment_reporter.pk,
+                                                        moderated_object__object_id=post_comment.pk,
+                                                        moderated_object__object_type=ModeratedObject.OBJECT_TYPE_POST_COMMENT,
+                                                        description=report_description,
+                                                        category_id=report_category.pk
+                                                        ).exists())
+
+    def test_cant_report_encircled_post_comment(self):
+        """
+        should not be able to report an encircled post_comment with a description and return 400
+        """
+        post_comment_creator = make_user()
+        post_comment_reporter = make_user()
+
+        circle = make_circle(creator=post_comment_creator)
+
+        post = post_comment_creator.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+
+        post_comment_text = make_fake_post_comment_text()
+        post_comment = post_comment_creator.comment_post_with_id(post_id=post.pk, text=post_comment_text)
+
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+        headers = make_authentication_headers_for_user(post_comment_reporter)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(post_comment_reporter.has_reported_post_comment_with_id(post_comment_id=post_comment.pk))
+        self.assertFalse(ModerationReport.objects.filter(reporter_id=post_comment_reporter.pk,
+                                                         moderated_object__object_id=post_comment.pk,
+                                                         moderated_object__object_type=ModeratedObject.OBJECT_TYPE_POST_COMMENT,
+                                                         description=report_description,
+                                                         category_id=report_category.pk
+                                                         ).exists())
+
+    def test_can_report_public_community_post_comment(self):
+        """
+        should be able to report an public community post_comment with a description and return 201
+        """
+        post_comment_creator = make_user()
+        community = make_community(creator=post_comment_creator)
+        post = post_comment_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        post_comment_text = make_fake_post_comment_text()
+        post_comment = post_comment_creator.comment_post_with_id(post_id=post.pk, text=post_comment_text)
+
+        post_comment_reporter = make_user()
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+        headers = make_authentication_headers_for_user(post_comment_reporter)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(post_comment_reporter.has_reported_post_comment_with_id(post_comment_id=post_comment.pk))
+        self.assertTrue(ModerationReport.objects.filter(reporter_id=post_comment_reporter.pk,
+                                                        moderated_object__object_id=post_comment.pk,
+                                                        moderated_object__object_type=ModeratedObject.OBJECT_TYPE_POST_COMMENT,
+                                                        description=report_description,
+                                                        category_id=report_category.pk
+                                                        ).exists())
+
+    def test_can_report_private_community_part_of_post_comment(self):
+        """
+        should be able to report a private community part of, post_comment with a description and return 201
+        """
+        post_comment_creator = make_user()
+        post_comment_reporter = make_user()
+
+        community = make_community(creator=post_comment_creator, type=Community.COMMUNITY_TYPE_PRIVATE)
+        post = post_comment_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        post_comment_creator.invite_user_with_username_to_community_with_name(username=post_comment_reporter.username,
+                                                                              community_name=community.name)
+        post_comment_reporter.join_community_with_name(community_name=community.name)
+
+        post_comment_text = make_fake_post_comment_text()
+        post_comment = post_comment_creator.comment_post_with_id(post_id=post.pk, text=post_comment_text)
+
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+        headers = make_authentication_headers_for_user(post_comment_reporter)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(post_comment_reporter.has_reported_post_comment_with_id(post_comment_id=post_comment.pk))
+        self.assertTrue(ModerationReport.objects.filter(reporter_id=post_comment_reporter.pk,
+                                                        moderated_object__object_id=post_comment.pk,
+                                                        moderated_object__object_type=ModeratedObject.OBJECT_TYPE_POST_COMMENT,
+                                                        description=report_description,
+                                                        category_id=report_category.pk
+                                                        ).exists())
+
+    def test_cant_report_private_community_post_comment(self):
+        """
+        should not be able to report a private community post_comment with a description and return 400
+        """
+        post_comment_creator = make_user()
+        post_comment_reporter = make_user()
+
+        community = make_community(creator=post_comment_creator, type=Community.COMMUNITY_TYPE_PRIVATE)
+        post = post_comment_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        post_comment_text = make_fake_post_comment_text()
+        post_comment = post_comment_creator.comment_post_with_id(post_id=post.pk, text=post_comment_text)
+
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+        headers = make_authentication_headers_for_user(post_comment_reporter)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(post_comment_reporter.has_reported_post_comment_with_id(post_comment_id=post_comment.pk))
+        self.assertFalse(ModerationReport.objects.filter(reporter_id=post_comment_reporter.pk,
+                                                         moderated_object__object_id=post_comment.pk,
+                                                         moderated_object__object_type=ModeratedObject.OBJECT_TYPE_POST_COMMENT,
+                                                         description=report_description,
+                                                         category_id=report_category.pk
+                                                         ).exists())
+
+    def test_cant_report_post_comment_without_category(self):
+        """
+        should not be able to report a post_comment without a category and return 400
+        """
+        post_comment_creator = make_user()
+        post = post_comment_creator.create_public_post(text=make_fake_post_text())
+
+        post_comment_text = make_fake_post_comment_text()
+        post_comment = post_comment_creator.comment_post_with_id(post_id=post.pk, text=post_comment_text)
+
+        post_comment_reporter = make_user()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+        headers = make_authentication_headers_for_user(post_comment_reporter)
+
+        response = self.client.post(url, data={
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(post_comment_reporter.has_reported_post_comment_with_id(post_comment_id=post_comment.pk))
+        self.assertFalse(ModerationReport.objects.filter(reporter_id=post_comment_reporter.pk,
+                                                         moderated_object__object_id=post_comment.pk,
+                                                         moderated_object__object_type=ModeratedObject.OBJECT_TYPE_POST_COMMENT,
+                                                         description=report_description,
+                                                         ).exists())
+
+    def test_cant_report_post_comment_twice(self):
+        """
+        should not be able to report a post_comment twice and return 400
+        """
+        post_comment_creator = make_user()
+        post = post_comment_creator.create_public_post(text=make_fake_post_text())
+
+        post_comment_text = make_fake_post_comment_text()
+        post_comment = post_comment_creator.comment_post_with_id(post_id=post.pk, text=post_comment_text)
+
+        post_comment_reporter = make_user()
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+        headers = make_authentication_headers_for_user(post_comment_reporter)
+
+        self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(post_comment_reporter.has_reported_post_comment_with_id(post_comment_id=post_comment.pk))
+        self.assertEqual(1, ModerationReport.objects.filter(reporter_id=post_comment_reporter.pk,
+                                                            moderated_object__object_id=post_comment.pk,
+                                                            moderated_object__object_type=ModeratedObject.OBJECT_TYPE_POST_COMMENT,
+                                                            description=report_description
+                                                            ).count())
+
+    def test_can_report_post_comment_without_description(self):
+        """
+        should be able to report a post_comment without a description and return 201
+        """
+        post_comment_creator = make_user()
+        post = post_comment_creator.create_public_post(text=make_fake_post_text())
+
+        post_comment_text = make_fake_post_comment_text()
+        post_comment = post_comment_creator.comment_post_with_id(post_id=post.pk, text=post_comment_text)
+
+        post_comment_reporter = make_user()
+        report_category = make_moderation_category()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+        headers = make_authentication_headers_for_user(post_comment_reporter)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(post_comment_reporter.has_reported_post_comment_with_id(post_comment_id=post_comment.pk))
+        self.assertTrue(ModerationReport.objects.filter(reporter_id=post_comment_reporter.pk,
+                                                        moderated_object__object_id=post_comment.pk,
+                                                        moderated_object__object_type=ModeratedObject.OBJECT_TYPE_POST_COMMENT,
+                                                        category_id=report_category.pk
+                                                        ).exists())
+
+    def _get_url(self, post, post_comment):
+        return reverse('report-post-comment', kwargs={
+            'post_comment_id': post_comment.pk,
+            'post_uuid': str(post.uuid)
         })

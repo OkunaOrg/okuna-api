@@ -551,7 +551,7 @@ class User(AbstractUser):
     def has_connection_confirmed_notifications_enabled(self):
         return self.notifications_settings.connection_confirmed_notifications
 
-    def has_reported_comment_with_id(self, post_comment_id):
+    def has_reported_post_comment_with_id(self, post_comment_id):
         ModeratedObject = get_moderated_object_model()
         ModerationReport = get_moderation_report_model()
         return ModerationReport.objects.filter(reporter_id=self.pk,
@@ -1938,13 +1938,18 @@ class User(AbstractUser):
         self.user_blocks.filter(blocked_user_id=user_id).delete()
         return User.objects.get(pk=user_id)
 
-    def report_post_comment_with_id(self, post_comment_id, category_id, description):
-        Post_comment = get_post_comment_model()
-        post_comment = Post_comment.objects.get(id=post_comment_id)
-        return self.report_post_comment(post_comment=post_comment, category_id=category_id, description=description)
+    def report_comment_with_id_for_post_with_uuid(self, post_comment_id, post_uuid, category_id, description):
+        PostComment = get_post_comment_model()
+        post_comment = PostComment.objects.get(id=post_comment_id)
 
-    def report_post_comment(self, post_comment, category_id, description):
-        self._check_can_report_post_comment(post_comment=post_comment)
+        Post = get_post_model()
+        post = Post.objects.get(uuid=post_uuid)
+
+        return self.report_comment_for_post(post_comment=post_comment, category_id=category_id, description=description,
+                                            post=post)
+
+    def report_comment_for_post(self, post_comment, post, category_id, description):
+        self._check_can_report_post_comment(post_comment=post_comment, post=post)
         ModerationReport = get_moderation_report_model()
         ModerationReport.create_post_comment_moderation_report(post_comment=post_comment,
                                                                category_id=category_id,
@@ -3258,15 +3263,23 @@ class User(AbstractUser):
         if self.is_blocked_with_user_with_id(user_id=user_id):
             raise PermissionDenied(_('This account is blocked.'))
 
-    def _check_can_report_post_comment(self, post_comment):
+    def _check_can_report_post_comment(self, post_comment, post):
         self._check_has_not_reported_post_comment_with_id(post_comment_id=post_comment.pk)
+        self._check_can_see_post(post=post)
+
         if post_comment.commenter_id == self.pk:
             raise ValidationError(
                 _('You cannot report your own comment.'),
             )
 
+        PostComment = get_post_comment_model()
+        if not PostComment.objects.filter(id=post_comment.pk, post_id=post.pk).exists():
+            raise ValidationError(
+                _('The comment does not belong to the specified post.')
+            )
+
     def _check_has_not_reported_post_comment_with_id(self, post_comment_id):
-        if self.has_reported_comment_with_id(post_comment_id=post_comment_id):
+        if self.has_reported_post_comment_with_id(post_comment_id=post_comment_id):
             raise ValidationError(
                 _('You have already reported the comment.'),
             )

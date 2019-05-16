@@ -22,6 +22,10 @@ class ReportPostCommentSerializer(serializers.Serializer):
         validators=[post_comment_id_exists],
         required=True,
     )
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
     category_id = serializers.IntegerField(validators=[moderation_category_id_exists], required=True)
     description = serializers.CharField(max_length=settings.MODERATION_REPORT_DESCRIPTION_MAX_LENGTH, required=False,
                                         allow_blank=False)
