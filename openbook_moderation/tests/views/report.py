@@ -911,11 +911,11 @@ class ReportCommunityAPITests(APITestCase):
 
         self.assertFalse(community_owner.has_reported_community_with_id(community_id=community.pk))
         self.assertFalse(ModerationReport.objects.filter(reporter_id=community_owner.pk,
-                                                        moderated_object__object_id=community.pk,
-                                                        moderated_object__object_type=ModeratedObject.OBJECT_TYPE_COMMUNITY,
-                                                        description=report_description,
-                                                        category_id=report_category.pk
-                                                        ).exists())
+                                                         moderated_object__object_id=community.pk,
+                                                         moderated_object__object_type=ModeratedObject.OBJECT_TYPE_COMMUNITY,
+                                                         description=report_description,
+                                                         category_id=report_category.pk
+                                                         ).exists())
 
     def test_cant_report_community_without_category(self):
         """
@@ -1006,4 +1006,184 @@ class ReportCommunityAPITests(APITestCase):
     def _get_url(self, community):
         return reverse('report-community', kwargs={
             'community_name': community.name
+        })
+
+
+class ReportModeratedObjectAPITests(APITestCase):
+    """
+    ReportModeratedObjectAPI
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json',
+    ]
+
+    def test_can_report_moderated_object_of_community_staff_of(self):
+        """
+        should be able to report a moderated_object of a community staff off and return 201
+        """
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+
+        content_owner = make_user()
+
+        content_owner.join_community_with_name(community_name=community.name)
+
+        content = content_owner.create_community_post(text=make_fake_post_text(),
+                                                      community_name=community.name)
+
+        content_moderated_object_reporter = make_user()
+
+        moderated_object_content_reporter.report_post_with_uuid(post_uuid=moderated_object_content.uuid,
+                                                                category_id=report_category.pk,
+                                                                description=report_description)
+
+        moderated_object_reporter = make_user()
+
+        moderated_object = ModeratedObject.objects.get(object_id=moderated_object_content.pk,
+                                                       object_type=ModeratedObject.OBJECT_TYPE_POST)
+
+        url = self._get_url(moderated_object)
+        headers = make_authentication_headers_for_user(moderated_object_reporter)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(
+            moderated_object_reporter.has_reported_moderated_object_with_id(moderated_object_id=moderated_object.pk))
+        self.assertTrue(ModerationReport.objects.filter(reporter_id=moderated_object_reporter.pk,
+                                                        moderated_object__object_id=moderated_object.pk,
+                                                        moderated_object__object_type=ModeratedObject.OBJECT_TYPE_MODERATED_OBJECT,
+                                                        description=report_description,
+                                                        category_id=report_category.pk
+                                                        ).exists())
+
+    def test_cant_report_own_moderated_object(self):
+        """
+        should not be able to report own and return 400
+        """
+        moderated_object_owner = make_user()
+        moderated_object = make_moderated_object(creator=moderated_object_owner)
+
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(moderated_object)
+        headers = make_authentication_headers_for_user(moderated_object_owner)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(
+            moderated_object_owner.has_reported_moderated_object_with_id(moderated_object_id=moderated_object.pk))
+        self.assertFalse(ModerationReport.objects.filter(reporter_id=moderated_object_owner.pk,
+                                                         moderated_object__object_id=moderated_object.pk,
+                                                         moderated_object__object_type=ModeratedObject.OBJECT_TYPE_MODERATED_OBJECT,
+                                                         description=report_description,
+                                                         category_id=report_category.pk
+                                                         ).exists())
+
+    def test_cant_report_moderated_object_without_category(self):
+        """
+        should not be able to report a moderated_object without a category and return 400
+        """
+        moderated_object_owner = make_user()
+        moderated_object = make_moderated_object(creator=moderated_object_owner)
+
+        moderated_object_reporter = make_user()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(moderated_object)
+        headers = make_authentication_headers_for_user(moderated_object_reporter)
+
+        response = self.client.post(url, data={
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(
+            moderated_object_reporter.has_reported_moderated_object_with_id(moderated_object_id=moderated_object.pk))
+        self.assertFalse(ModerationReport.objects.filter(reporter_id=moderated_object_reporter.pk,
+                                                         moderated_object__object_id=moderated_object.pk,
+                                                         moderated_object__object_type=ModeratedObject.OBJECT_TYPE_MODERATED_OBJECT,
+                                                         description=report_description,
+                                                         ).exists())
+
+    def test_cant_report_moderated_object_twice(self):
+        """
+        should not be able to report a moderated_object twice and return 400
+        """
+        moderated_object_owner = make_user()
+        moderated_object = make_moderated_object(creator=moderated_object_owner)
+
+        moderated_object_reporter = make_user()
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(moderated_object)
+        headers = make_authentication_headers_for_user(moderated_object_reporter)
+
+        self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(
+            moderated_object_reporter.has_reported_moderated_object_with_id(moderated_object_id=moderated_object.pk))
+        self.assertEqual(1, ModerationReport.objects.filter(reporter_id=moderated_object_reporter.pk,
+                                                            moderated_object__object_id=moderated_object.pk,
+                                                            moderated_object__object_type=ModeratedObject.OBJECT_TYPE_MODERATED_OBJECT,
+                                                            description=report_description,
+                                                            category_id=report_category.pk
+                                                            ).count())
+
+    def test_can_report_moderated_object_without_description(self):
+        """
+        should be able to report a moderated_object without a description and return 201
+        """
+        moderated_object_owner = make_user()
+        moderated_object = make_moderated_object(creator=moderated_object_owner)
+
+        moderated_object_reporter = make_user()
+        report_category = make_moderation_category()
+
+        url = self._get_url(moderated_object)
+        headers = make_authentication_headers_for_user(moderated_object_reporter)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(
+            moderated_object_reporter.has_reported_moderated_object_with_id(moderated_object_id=moderated_object.pk))
+        self.assertTrue(ModerationReport.objects.filter(reporter_id=moderated_object_reporter.pk,
+                                                        moderated_object__object_id=moderated_object.pk,
+                                                        moderated_object__object_type=ModeratedObject.OBJECT_TYPE_MODERATED_OBJECT,
+                                                        category_id=report_category.pk
+                                                        ).exists())
+
+    def _get_url(self, moderated_object):
+        return reverse('report-moderated_object', kwargs={
+            'moderated_object_name': moderated_object.name
         })

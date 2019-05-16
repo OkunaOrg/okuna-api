@@ -94,6 +94,33 @@ class ModeratedObject(models.Model):
 
         return moderated_object
 
+    @classmethod
+    def get_or_create_moderated_object_for_post(cls, post, category_id):
+        return cls.get_or_create_moderated_object(object_type=cls.OBJECT_TYPE_POST, content_object=post,
+                                                  category_id=category_id)
+
+    @classmethod
+    def get_or_create_moderated_object_for_post_comment(cls, post_comment, category_id):
+        return cls.get_or_create_moderated_object(object_type=cls.OBJECT_TYPE_POST_COMMENT,
+                                                  content_object=post_comment,
+                                                  category_id=category_id)
+
+    @classmethod
+    def get_or_create_moderated_object_for_community(cls, community, category_id):
+        return cls.get_or_create_moderated_object(object_type=cls.OBJECT_TYPE_COMMUNITY, content_object=community,
+                                                  category_id=category_id)
+
+    @classmethod
+    def get_or_create_moderated_object_for_user(cls, user, category_id):
+        return cls.get_or_create_moderated_object(object_type=cls.OBJECT_TYPE_USER, content_object=user,
+                                                  category_id=category_id)
+
+    @classmethod
+    def get_or_create_moderated_object_for_moderated_object(cls, moderated_object, category_id):
+        return cls.get_or_create_moderated_object(object_type=cls.OBJECT_TYPE_MODERATED_OBJECT,
+                                                  content_object=moderated_object,
+                                                  category_id=category_id)
+
     def is_verified(self):
         return self.verified
 
@@ -256,19 +283,18 @@ class ModerationReport(models.Model):
 
     @classmethod
     def create_post_moderation_report(cls, reporter_id, post, category_id, description):
-        moderated_object = ModeratedObject.get_or_create_moderated_object(object_type=ModeratedObject.OBJECT_TYPE_POST,
-                                                                          content_object=post,
-                                                                          category_id=category_id
-                                                                          )
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(
+            post=post,
+            category_id=category_id
+        )
         post_moderation_report = cls.objects.create(reporter_id=reporter_id, category_id=category_id,
                                                     description=description, moderated_object=moderated_object)
         return post_moderation_report
 
     @classmethod
     def create_post_comment_moderation_report(cls, reporter_id, post_comment, category_id, description):
-        moderated_object = ModeratedObject.get_or_create_moderated_object(
-            object_type=ModeratedObject.OBJECT_TYPE_POST_COMMENT,
-            content_object=post_comment,
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post_comment(
+            post_comment=post_comment,
             category_id=category_id
         )
         post_comment_moderation_report = cls.objects.create(reporter_id=reporter_id, category_id=category_id,
@@ -277,19 +303,18 @@ class ModerationReport(models.Model):
 
     @classmethod
     def create_user_moderation_report(cls, reporter_id, user, category_id, description):
-        moderated_object = ModeratedObject.get_or_create_moderated_object(object_type=ModeratedObject.OBJECT_TYPE_USER,
-                                                                          content_object=user,
-                                                                          category_id=category_id
-                                                                          )
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(
+            user=user,
+            category_id=category_id
+        )
         user_moderation_report = cls.objects.create(reporter_id=reporter_id, category_id=category_id,
                                                     description=description, moderated_object=moderated_object)
         return user_moderation_report
 
     @classmethod
     def create_community_moderation_report(cls, reporter_id, community, category_id, description):
-        moderated_object = ModeratedObject.get_or_create_moderated_object(
-            object_type=ModeratedObject.OBJECT_TYPE_COMMUNITY,
-            content_object=community,
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_community(
+            community=community,
             category_id=category_id
         )
         community_moderation_report = cls.objects.create(reporter_id=reporter_id, category_id=category_id,
@@ -298,11 +323,10 @@ class ModerationReport(models.Model):
 
     @classmethod
     def create_moderated_object_moderation_report(cls, reporter_id, moderated_object, category_id, description):
-        moderated_object = ModeratedObject.get_or_create_moderated_object(
-            object_type=ModeratedObject.OBJECT_TYPE_MODERATED_OBJECT,
-            content_object=moderated_object,
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_moderated_object(
+            moderated_object=moderated_object,
             category_id=category_id
-            )
+        )
         moderated_object_moderation_report = cls.objects.create(reporter_id=reporter_id, category_id=category_id,
                                                                 description=description,
                                                                 moderated_object=moderated_object)
