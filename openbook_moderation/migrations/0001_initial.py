@@ -29,7 +29,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='ModeratedObjectApprovedChangedLog',
+            name='ModeratedObjectStatusChangedLog',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('changed_from', models.BooleanField(verbose_name='changed from')),

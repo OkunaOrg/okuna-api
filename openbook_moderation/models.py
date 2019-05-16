@@ -50,6 +50,18 @@ class ModeratedObject(models.Model):
     verified = models.BooleanField(_('verified'), default=False,
                                    blank=False, null=False)
 
+    STATUS_PENDING = 'P'
+    STATUS_APPROVED = 'A'
+    STATUS_REJECTED = 'R'
+
+    STATUSES = (
+        (STATUS_PENDING, 'Pending'),
+        (STATUS_APPROVED, 'Approved'),
+        (STATUS_REJECTED, 'Rejected'),
+    )
+
+    status = models.CharField(max_length=5, choices=STATUSES, default=STATUS_PENDING)
+
     category = models.ForeignKey(ModerationCategory, on_delete=models.CASCADE, related_name='moderated_objects')
 
     object_audit_snapshot = models.TextField(_('object_audit_snapshot'),
@@ -117,7 +129,7 @@ class ModeratedObject(models.Model):
         return self.verified
 
     def is_approved(self):
-        return self.approved is not None and self.approved
+        return self.status == ModeratedObject.STATUS_APPROVED
 
     def update_with_actor_with_id(self, actor_id, description, category_id):
         if description is not None:
@@ -243,17 +255,17 @@ class ModeratedObject(models.Model):
         self.save()
 
     def approve_with_actor_with_id(self, actor_id):
-        current_approved = self.approved
-        self.approved = True
-        ModeratedObjectApprovedChangedLog.create_moderated_object_approved_changed_log(
-            changed_from=current_approved, changed_to=self.approved, moderated_object_id=self.pk, actor_id=actor_id)
+        current_status = self.status
+        self.status = ModeratedObject.STATUS_APPROVED
+        ModeratedObjectStatusChangedLog.create_moderated_object_status_changed_log(
+            changed_from=current_status, changed_to=self.status, moderated_object_id=self.pk, actor_id=actor_id)
         self.save()
 
     def reject_with_actor_with_id(self, actor_id):
-        current_approved = self.approved
-        self.approved = False
-        ModeratedObjectApprovedChangedLog.create_moderated_object_approved_changed_log(
-            changed_from=current_approved, changed_to=self.approved, moderated_object_id=self.pk, actor_id=actor_id)
+        current_status = self.status
+        self.status = ModeratedObject.STATUS_REJECTED
+        ModeratedObjectStatusChangedLog.create_moderated_object_status_changed_log(
+            changed_from=current_status, changed_to=self.status, moderated_object_id=self.pk, actor_id=actor_id)
         self.save()
 
     def get_reporters(self):
@@ -338,7 +350,7 @@ class ModeratedObjectLog(models.Model):
     actor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+', null=True)
 
     LOG_TYPE_DESCRIPTION_CHANGED = 'DC'
-    LOG_TYPE_APPROVED_CHANGED = 'AC'
+    LOG_TYPE_STATUS_CHANGED = 'AC'
     LOG_TYPE_TYPE_CHANGED = 'TC'
     LOG_TYPE_SUBMITTED_CHANGED = 'SC'
     LOG_TYPE_VERIFIED_CHANGED = 'VC'
@@ -346,7 +358,7 @@ class ModeratedObjectLog(models.Model):
 
     LOG_TYPES = (
         (LOG_TYPE_DESCRIPTION_CHANGED, 'Description Changed'),
-        (LOG_TYPE_APPROVED_CHANGED, 'Approved Changed'),
+        (LOG_TYPE_STATUS_CHANGED, 'Approved Changed'),
         (LOG_TYPE_TYPE_CHANGED, 'Type Changed'),
         (LOG_TYPE_SUBMITTED_CHANGED, 'Submitted Changed'),
         (LOG_TYPE_VERIFIED_CHANGED, 'Verified Changed'),
@@ -408,18 +420,19 @@ class ModeratedObjectDescriptionChangedLog(models.Model):
                                                        actor_id=actor_id)
 
 
-class ModeratedObjectApprovedChangedLog(models.Model):
+class ModeratedObjectStatusChangedLog(models.Model):
     log = GenericRelation(ModeratedObjectLog)
-    changed_from = models.BooleanField(_('changed from'),
-                                       blank=False, null=False)
-    changed_to = models.BooleanField(_('changed to'),
-                                     blank=False, null=False)
+    changed_from = models.CharField(_('changed from'),
+                                    choices=ModeratedObject.STATUSES,
+                                    blank=False, null=False, max_length=5)
+    changed_to = models.CharField(_('changed to'),
+                                  blank=False, null=False, max_length=5)
 
     @classmethod
-    def create_moderated_object_approved_changed_log(cls, moderated_object_id, changed_from, changed_to, actor_id):
+    def create_moderated_object_status_changed_log(cls, moderated_object_id, changed_from, changed_to, actor_id):
         moderated_object_description_changed_log = cls.objects.create(changed_from=changed_from,
                                                                       changed_to=changed_to)
-        ModeratedObjectLog.create_moderated_object_log(type=ModeratedObjectLog.LOG_TYPE_APPROVED_CHANGED,
+        ModeratedObjectLog.create_moderated_object_log(type=ModeratedObjectLog.LOG_TYPE_STATUS_CHANGED,
                                                        content_object=moderated_object_description_changed_log,
                                                        moderated_object_id=moderated_object_id, actor_id=actor_id)
 

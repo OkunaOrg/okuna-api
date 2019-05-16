@@ -293,7 +293,7 @@ moderation_moderated_object_patterns = [
 
 moderation_moderated_objects_patterns = [
     path('<int:moderated_object_id>/', include(moderation_moderated_object_patterns)),
-    path('staff/', StaffModeratedObjects.as_view(), name='moderation-staff-moderated-objects')
+    path('staff/', StaffModeratedObjects.as_view(), name='staff-moderated-objects')
 ]
 
 moderation_patterns = [
