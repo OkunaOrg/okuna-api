@@ -58,13 +58,11 @@ class ModeratedObject(models.Model):
     OBJECT_TYPE_POST_COMMENT = 'PC'
     OBJECT_TYPE_COMMUNITY = 'C'
     OBJECT_TYPE_USER = 'U'
-    OBJECT_TYPE_MODERATED_OBJECT = 'MO'
     OBJECT_TYPES = (
         (OBJECT_TYPE_POST, 'Post'),
         (OBJECT_TYPE_POST_COMMENT, 'Post Comment'),
         (OBJECT_TYPE_COMMUNITY, 'Community'),
         (OBJECT_TYPE_USER, 'User'),
-        (OBJECT_TYPE_MODERATED_OBJECT, 'MO'),
     )
 
     object_type = models.CharField(max_length=5, choices=OBJECT_TYPES)
@@ -113,12 +111,6 @@ class ModeratedObject(models.Model):
     @classmethod
     def get_or_create_moderated_object_for_user(cls, user, category_id):
         return cls.get_or_create_moderated_object(object_type=cls.OBJECT_TYPE_USER, content_object=user,
-                                                  category_id=category_id)
-
-    @classmethod
-    def get_or_create_moderated_object_for_moderated_object(cls, moderated_object, category_id):
-        return cls.get_or_create_moderated_object(object_type=cls.OBJECT_TYPE_MODERATED_OBJECT,
-                                                  content_object=moderated_object,
                                                   category_id=category_id)
 
     def is_verified(self):
@@ -320,17 +312,6 @@ class ModerationReport(models.Model):
         community_moderation_report = cls.objects.create(reporter_id=reporter_id, category_id=category_id,
                                                          description=description, moderated_object=moderated_object)
         return community_moderation_report
-
-    @classmethod
-    def create_moderated_object_moderation_report(cls, reporter_id, moderated_object, category_id, description):
-        moderated_object = ModeratedObject.get_or_create_moderated_object_for_moderated_object(
-            moderated_object=moderated_object,
-            category_id=category_id
-        )
-        moderated_object_moderation_report = cls.objects.create(reporter_id=reporter_id, category_id=category_id,
-                                                                description=description,
-                                                                moderated_object=moderated_object)
-        return moderated_object_moderation_report
 
 
 class ModerationPenalty(models.Model):

@@ -53,7 +53,7 @@ from openbook_lists.views import Lists, ListItem, ListNameCheck
 from openbook_moderation.views.moderated_object.views import ModeratedObjectItem, ModeratedObjectLogs
 from openbook_moderation.views.moderated_objects.views import CommunityModeratedObjects, StaffModeratedObjects
 from openbook_moderation.views.moderation_categories.views import ModerationCategories
-from openbook_moderation.views.report.views import ReportUser, ReportPost, ReportCommunity, ReportModeratedObject, \
+from openbook_moderation.views.report.views import ReportUser, ReportPost, ReportCommunity, \
     ReportPostComment
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
 from openbook_posts.views.post.views import PostComments, PostCommentItem, PostItem, PostReactions, PostReactionItem, \
@@ -288,7 +288,6 @@ invites_patterns = [
 
 moderation_moderated_object_patterns = [
     path('', ModeratedObjectItem.as_view(), name='moderated-object'),
-    path('report/', ReportModeratedObject.as_view(), name='report-moderated-object'),
     path('logs/', ModeratedObjectLogs.as_view(), name='moderated-object-logs'),
 ]
 
