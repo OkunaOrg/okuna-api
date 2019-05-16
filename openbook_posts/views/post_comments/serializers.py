@@ -42,7 +42,16 @@ class PostCommenterCommunityMembershipSerializer(serializers.ModelSerializer):
         )
 
 
+class PostCommentRepliesParentCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostComment
+        fields = (
+            'id',
+        )
+
+
 class PostCommentReplySerializer(serializers.ModelSerializer):
+    parent_comment = PostCommentRepliesParentCommentSerializer()
     commenter = PostCommenterField(post_commenter_serializer=PostCommentCommenterSerializer,
                                    community_membership_serializer=PostCommenterCommunityMembershipSerializer)
 
@@ -50,6 +59,7 @@ class PostCommentReplySerializer(serializers.ModelSerializer):
         model = PostComment
         fields = (
             'commenter',
+            'parent_comment',
             'text',
             'created',
             'is_edited',
