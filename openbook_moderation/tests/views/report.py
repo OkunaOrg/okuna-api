@@ -53,6 +53,35 @@ class ReportPostAPITests(APITestCase):
                                                         category_id=report_category.pk
                                                         ).exists())
 
+    def test_cant_report_own_post(self):
+        """
+        should not be able to report an own post and return 400
+        """
+        post_creator = make_user()
+        post_text = make_fake_post_text()
+        post = post_creator.create_public_post(text=post_text)
+
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(post_creator)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(post_creator.has_reported_post_with_id(post_id=post.pk))
+        self.assertFalse(ModerationReport.objects.filter(reporter_id=post_creator.pk,
+                                                         moderated_object__object_id=post.pk,
+                                                         moderated_object__object_type=ModeratedObject.OBJECT_TYPE_POST,
+                                                         description=report_description,
+                                                         category_id=report_category.pk
+                                                         ).exists())
+
     def test_can_report_encircled_post_part_of(self):
         """
         should be able to report an encircled post part of with a description and return 201
@@ -359,6 +388,37 @@ class ReportPostCommentAPITests(APITestCase):
                                                         description=report_description,
                                                         category_id=report_category.pk
                                                         ).exists())
+
+    def test_cant_report_own_post_comment(self):
+        """
+        should not be able to report an own post_comment and return 400
+        """
+        post_comment_creator = make_user()
+        post = post_comment_creator.create_public_post(text=make_fake_post_text())
+
+        post_comment_text = make_fake_post_comment_text()
+        post_comment = post_comment_creator.comment_post_with_id(post_id=post.pk, text=post_comment_text)
+
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+        headers = make_authentication_headers_for_user(post_comment_creator)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(post_comment_creator.has_reported_post_comment_with_id(post_comment_id=post_comment.pk))
+        self.assertFalse(ModerationReport.objects.filter(reporter_id=post_comment_creator.pk,
+                                                         moderated_object__object_id=post_comment.pk,
+                                                         moderated_object__object_type=ModeratedObject.OBJECT_TYPE_POST_COMMENT,
+                                                         description=report_description,
+                                                         category_id=report_category.pk
+                                                         ).exists())
 
     def test_can_report_encircled_post_comment_part_of(self):
         """
@@ -675,6 +735,33 @@ class ReportUserAPITests(APITestCase):
                                                         category_id=report_category.pk
                                                         ).exists())
 
+    def test_cant_report_oneself(self):
+        """
+        should not be able to report oneself and return 400
+        """
+        user = make_user()
+
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(user)
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(user.has_reported_user_with_id(user_id=user.pk))
+        self.assertFalse(ModerationReport.objects.filter(reporter_id=user.pk,
+                                                         moderated_object__object_id=user.pk,
+                                                         moderated_object__object_type=ModeratedObject.OBJECT_TYPE_USER,
+                                                         description=report_description,
+                                                         category_id=report_category.pk
+                                                         ).exists())
+
     def test_cant_report_user_without_category(self):
         """
         should not be able to report a user without a category and return 400
@@ -796,6 +883,34 @@ class ReportCommunityAPITests(APITestCase):
 
         self.assertTrue(community_reporter.has_reported_community_with_id(community_id=community.pk))
         self.assertTrue(ModerationReport.objects.filter(reporter_id=community_reporter.pk,
+                                                        moderated_object__object_id=community.pk,
+                                                        moderated_object__object_type=ModeratedObject.OBJECT_TYPE_COMMUNITY,
+                                                        description=report_description,
+                                                        category_id=report_category.pk
+                                                        ).exists())
+
+    def test_cant_report_own_community(self):
+        """
+        should not be able to report own and return 400
+        """
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(community)
+        headers = make_authentication_headers_for_user(community_owner)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(community_owner.has_reported_community_with_id(community_id=community.pk))
+        self.assertFalse(ModerationReport.objects.filter(reporter_id=community_owner.pk,
                                                         moderated_object__object_id=community.pk,
                                                         moderated_object__object_type=ModeratedObject.OBJECT_TYPE_COMMUNITY,
                                                         description=report_description,
