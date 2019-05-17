@@ -10,10 +10,6 @@ class ParentCommentField(Field):
 
     def to_representation(self, post_comment_reply_notification):
         request = self.context.get('request')
-        request_user = request.user
-
-        if request_user.is_anonymous:
-            return None
-
+        
         return self.parent_comment_serializer(post_comment_reply_notification.post_comment.parent_comment,
                                               context={"request": request},).data

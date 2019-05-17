@@ -685,7 +685,7 @@ class User(AbstractUser):
         self._check_can_get_comment_replies_for_post_comment(post_comment=post_comment)
 
         comment_replies_query = \
-            self._make_get_replies_for_post_comment_query(post_comment=post_comment, max_id=max_id, min_id=min_id)
+            self._make_get_comments_for_post_query(post=post_comment.post, post_comment=post_comment, max_id=max_id, min_id=min_id)
 
         return PostComment.objects.filter(comment_replies_query)
 
@@ -698,11 +698,6 @@ class User(AbstractUser):
 
     def get_comments_count_for_post(self, post):
         return post.count_comments()
-
-    def get_replies_count_for_post_comment(self, post_comment):
-        PostComment = get_post_comment_model()
-        return PostComment.count_comment_replies_for_post_with_id_for_comment_with_id(post_comment.post.pk,
-                                                                                      post_comment.pk)
 
     def enable_comments_for_post_with_id(self, post_id):
         Post = get_post_model()
@@ -774,11 +769,12 @@ class User(AbstractUser):
 
         return post_comment
 
-    def reply_to_comment(self, post, post_comment, text):
-        self._check_can_reply_to_comment_in_post(post, post_comment)
-        post_comment_reply = post_comment.reply_to_comment(text=text, commenter=self, post=post)
+    def reply_to_comment(self, post_comment, text):
+        self._check_can_reply_to_post_comment(post_comment)
+        post_comment_reply = post_comment.reply_to_comment(text=text, commenter=self)
         comment_creator = post_comment.commenter.id
         replier = self
+        post = post_comment.post
 
         Post = get_post_model()
         post_notification_target_users = Post.get_post_comment_notification_target_users(post_id=post.id,
@@ -813,14 +809,10 @@ class User(AbstractUser):
 
         return post_comment_reply
 
-    def reply_to_comment_with_id_for_post_with_id(self, post_id, post_comment_id, text):
+    def reply_to_comment_with_id(self, post_comment_id, text):
         PostComment = get_post_comment_model()
-        if not PostComment.objects.filter(id=post_comment_id, post__id=post_id).exists():
-            raise ValidationError(
-                _('The comment does not belong to the specified post.')
-            )
         post_comment = PostComment.objects.select_related('post').filter(pk=post_comment_id).get()
-        return self.reply_to_comment(post_comment=post_comment, post=post_comment.post, text=text)
+        return self.reply_to_comment(post_comment=post_comment, text=text)
 
     def delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
         Post = get_post_model()
@@ -2408,7 +2400,8 @@ class User(AbstractUser):
         self._check_can_see_post(post)
         self._check_comments_enabled_for_post_with_id(post.id)
 
-    def _check_can_reply_to_comment_in_post(self, post, post_comment):
+    def _check_can_reply_to_post_comment(self, post_comment):
+        post = post_comment.post
         self._check_can_comment_in_post(post)
         if post_comment.parent_comment is not None:
             raise ValidationError(
@@ -2506,8 +2499,13 @@ class User(AbstractUser):
 
         return reactions_query
 
-    def _make_get_comments_slice_for_post_query(self, post, max_id=None, min_id=None):
+    def _make_get_comments_for_post_query(self, post, post_comment=None, max_id=None, min_id=None):
+
         comments_query = Q(post_id=post.pk)
+        if post_comment is None:
+            comments_query.add(Q(parent_comment__isnull=True), Q.AND)
+        else:
+            comments_query.add(Q(parent_comment__id=post_comment.pk), Q.AND)
 
         post_community = post.community
 
@@ -2533,24 +2531,6 @@ class User(AbstractUser):
             comments_query.add(Q(id__gte=min_id), Q.AND)
 
         return comments_query
-
-    def _make_get_comments_for_post_query(self, post, max_id=None, min_id=None):
-        comments_query = Q(post_id=post.pk, parent_comment__isnull=True)
-        comments_slice_query = self._make_get_comments_slice_for_post_query(post=post, max_id=max_id, min_id=min_id)
-
-        comments_query.add(comments_slice_query, Q.AND)
-
-        return comments_query
-
-    def _make_get_replies_for_post_comment_query(self, post_comment, max_id=None, min_id=None):
-        comment_replies_query = Q(parent_comment__id=post_comment.pk)
-
-        post = post_comment.post
-        comments_slice_query = self._make_get_comments_slice_for_post_query(post=post, max_id=max_id, min_id=min_id)
-
-        comment_replies_query.add(comments_slice_query, Q.AND)
-
-        return comment_replies_query
 
     def _make_get_community_with_id_posts_query(self, community, include_closed_posts_for_staff=True):
         # Retrieve posts from the given community name
