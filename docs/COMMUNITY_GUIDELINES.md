@@ -132,7 +132,7 @@ Sharing any of these will lead to the immediate closure of your account and repo
 
 ## 🚮 Ditch the pornography
 
-Printed or visual material containing the explicit description or display of sexual organs or activity are not allowed.
+Printed or visual material containing the explicit description or display of sexual organs, activity or nudity[*](#on-non-sexual-nudity) are not allowed.
 
 ## 🏡 Embrace the shared responsibility
 
@@ -170,6 +170,14 @@ We will also determine a belief to be harmful—and therefore not protected—if
 * it's both proselytised widely on the platform and also exclusionary of other protected statuses
  
 As with all other guidelines, we aim to make the process transparent and always open to debate.
+
+#### On non-sexual nudity
+
+We might allow this in the future, however not before we have solid content reporting and filtering mechanisms in place
+
+If it's not on a painting or sculpture, please abstain yourself from sharing any kind of nudity on the platform.
+
+Reports on this subject will most likely require personal judgement from the community moderators.
 
 ---
 
