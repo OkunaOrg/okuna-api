@@ -832,8 +832,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment_reply_text = make_fake_post_comment_text()
 
         post_comment = commenter.comment_post_with_id(post.pk, text=make_fake_post_comment_text())
-        post_comment_reply = commenter.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                 post_comment_id=post_comment.pk,
+        post_comment_reply = commenter.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                  text=post_comment_reply_text)
 
         url = self._get_url(post_comment=post_comment_reply, post=post)
@@ -867,8 +866,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment = community_post_commentator.comment_post_with_id(text=make_fake_post_comment_text(),
                                                                        post_id=post.pk)
         post_comment_reply = \
-            community_post_commentator.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                 post_comment_id=post_comment.pk,
+            community_post_commentator.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                  text=make_fake_post_comment_text())
 
         url = self._get_url(post_comment=post_comment_reply, post=post)
@@ -902,8 +900,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment = community_post_commentator.comment_post_with_id(text=make_fake_post_comment_text(),
                                                                        post_id=post.pk)
         post_comment_reply = \
-            community_post_commentator.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                 post_comment_id=post_comment.pk,
+            community_post_commentator.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                  text=make_fake_post_comment_text())
 
         url = self._get_url(post_comment=post_comment_reply, post=post)
@@ -935,8 +932,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment = commenter.comment_post_with_id(text=make_fake_post_comment_text(),
                                                       post_id=post.pk)
         post_comment_reply = \
-            commenter.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                post_comment_id=post_comment.pk,
+            commenter.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                 text=make_fake_post_comment_text())
 
         post.comments_enabled = False
@@ -973,8 +969,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment = community_post_commentator.comment_post_with_id(text=make_fake_post_comment_text(),
                                                                        post_id=post.pk)
         post_comment_reply = \
-            community_post_commentator.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                 post_comment_id=post_comment.pk,
+            community_post_commentator.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                  text=make_fake_post_comment_text())
 
         post.comments_enabled = False
@@ -1011,8 +1006,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment = community_post_commentator.comment_post_with_id(text=make_fake_post_comment_text(),
                                                                        post_id=post.pk)
         post_comment_reply = \
-            community_post_commentator.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                 post_comment_id=post_comment.pk,
+            community_post_commentator.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                  text=make_fake_post_comment_text())
 
         post.comments_enabled = False
@@ -1049,8 +1043,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment = community_post_commentator.comment_post_with_id(text=make_fake_post_comment_text(),
                                                                        post_id=post.pk)
         post_comment_reply = \
-            community_post_commentator.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                 post_comment_id=post_comment.pk,
+            community_post_commentator.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                  text=make_fake_post_comment_text())
 
         post.is_closed = True
@@ -1087,8 +1080,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment = community_post_commentator.comment_post_with_id(text=make_fake_post_comment_text(),
                                                                        post_id=post.pk)
         post_comment_reply = \
-            community_post_commentator.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                 post_comment_id=post_comment.pk,
+            community_post_commentator.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                  text=make_fake_post_comment_text())
 
         post.is_closed = True
@@ -1123,8 +1115,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment = commenter.comment_post_with_id(text=make_fake_post_comment_text(),
                                                       post_id=post.pk)
         post_comment_reply = \
-            commenter.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                post_comment_id=post_comment.pk,
+            commenter.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                 text=make_fake_post_comment_text())
 
         post.is_closed = True
@@ -1156,8 +1147,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment = community_post_creator.comment_post_with_id(text=make_fake_post_comment_text(),
                                                                    post_id=post.pk)
         post_comment_reply = \
-            community_post_creator.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                             post_comment_id=post_comment.pk,
+            community_post_creator.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                              text=make_fake_post_comment_text())
 
         post.is_closed = True
@@ -1194,8 +1184,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment = community_post_commentator.comment_post_with_id(text=make_fake_post_comment_text(),
                                                                        post_id=post.pk)
         post_comment_reply = \
-            community_post_commentator.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                 post_comment_id=post_comment.pk,
+            community_post_commentator.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                  text=make_fake_post_comment_text())
 
         url = self._get_url(post_comment=post_comment_reply, post=post)
@@ -1221,8 +1210,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment_text = make_fake_post_comment_text()
 
         post_comment = user.comment_post_with_id(post.pk, text=post_comment_text)
-        post_comment_reply = user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                            post_comment_id=post_comment.pk,
+        post_comment_reply = user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                             text=make_fake_post_comment_text())
 
         url = self._get_url(post_comment=post_comment_reply, post=post)
@@ -1246,8 +1234,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment_text = make_fake_post_comment_text()
 
         post_comment = foreign_user.comment_post_with_id(post.pk, text=post_comment_text)
-        post_comment_reply = foreign_user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                    post_comment_id=post_comment.pk,
+        post_comment_reply = foreign_user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                     text=make_fake_post_comment_text())
 
         url = self._get_url(post_comment=post_comment_reply, post=post)
@@ -1274,8 +1261,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment_text = make_fake_post_comment_text()
 
         post_comment = user.comment_post_with_id(post.pk, text=post_comment_text)
-        post_comment_reply = user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                            post_comment_id=post_comment.pk,
+        post_comment_reply = user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                             text=make_fake_post_comment_text())
 
         url = self._get_url(post_comment=post_comment_reply, post=post)
@@ -1304,8 +1290,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment_text = make_fake_post_comment_text()
 
         post_comment = foreign_user.comment_post_with_id(post.pk, text=post_comment_text)
-        post_comment_reply = foreign_user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                    post_comment_id=post_comment.pk,
+        post_comment_reply = foreign_user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                     text=make_fake_post_comment_text())
 
         url = self._get_url(post_comment=post_comment_reply, post=post)
@@ -1333,8 +1318,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment_text = make_fake_post_comment_text()
 
         post_comment = user.comment_post_with_id(post.pk, text=post_comment_text)
-        post_comment_reply = user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                            post_comment_id=post_comment.pk,
+        post_comment_reply = user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                             text=make_fake_post_comment_text())
 
         url = self._get_url(post_comment=post_comment_reply, post=post)
@@ -1366,8 +1350,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment_text = make_fake_post_comment_text()
 
         post_comment = foreign_user.comment_post_with_id(post.pk, text=post_comment_text)
-        post_comment_reply = foreign_user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                    post_comment_id=post_comment.pk,
+        post_comment_reply = foreign_user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                     text=make_fake_post_comment_text())
 
         url = self._get_url(post_comment=post_comment_reply, post=post)
@@ -1396,8 +1379,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment_text = make_fake_post_comment_text()
 
         post_comment = foreign_user.comment_post_with_id(post.pk, text=post_comment_text)
-        post_comment_reply = foreign_user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                    post_comment_id=post_comment.pk,
+        post_comment_reply = foreign_user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                     text=make_fake_post_comment_text())
 
         url = self._get_url(post_comment=post_comment_reply, post=post)
@@ -1423,8 +1405,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment_text = make_fake_post_comment_text()
 
         post_comment = user.comment_post_with_id(post.pk, text=post_comment_text)
-        post_comment_reply = user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                            post_comment_id=post_comment.pk,
+        post_comment_reply = user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                             text=make_fake_post_comment_text())
 
         url = self._get_url(post_comment=post_comment_reply, post=post)
@@ -1452,8 +1433,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment_text = make_fake_post_comment_text()
 
         post_comment = foreign_user.comment_post_with_id(post.pk, text=post_comment_text)
-        post_comment_reply = foreign_user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                    post_comment_id=post_comment.pk,
+        post_comment_reply = foreign_user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                     text=make_fake_post_comment_text())
 
         url = self._get_url(post_comment=post_comment_reply, post=post)
@@ -1484,8 +1464,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment_text = make_fake_post_comment_text()
 
         post_comment = foreign_user.comment_post_with_id(post.pk, text=post_comment_text)
-        post_comment_reply = foreign_user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                    post_comment_id=post_comment.pk,
+        post_comment_reply = foreign_user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                     text=make_fake_post_comment_text())
 
         url = self._get_url(post_comment=post_comment_reply, post=post)
@@ -1509,8 +1488,7 @@ class PostCommentItemAPITests(APITestCase):
         post_comment_text = make_fake_post_comment_text()
 
         post_comment = commenter.comment_post_with_id(post.pk, text=post_comment_text)
-        post_comment_reply = commenter.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                 post_comment_id=post_comment.pk,
+        post_comment_reply = commenter.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                  text=make_fake_post_comment_text())
 
         post_comment_reply_notification = PostCommentReplyNotification.objects.get(post_comment=post_comment_reply,
@@ -1535,8 +1513,7 @@ class PostCommentItemAPITests(APITestCase):
         user = make_user()
         post = user.create_public_post(text=make_fake_post_text())
         post_comment = user.comment_post_with_id(post.pk, text=make_fake_post_comment_text())
-        post_comment_reply = user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                            post_comment_id=post_comment.pk,
+        post_comment_reply = user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                             text=make_fake_post_comment_text())
 
         url = self._get_url(post_comment=post_comment_reply, post=post)
@@ -1562,8 +1539,7 @@ class PostCommentItemAPITests(APITestCase):
         post_creator = make_user()
         post = post_creator.create_public_post(text=make_fake_post_text())
         post_comment = post_creator.comment_post_with_id(post.pk, text=make_fake_post_comment_text())
-        post_comment_reply = user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                            post_comment_id=post_comment.pk,
+        post_comment_reply = user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                             text=make_fake_post_comment_text())
 
         url = self._get_url(post_comment=post_comment_reply, post=post)
@@ -1589,8 +1565,7 @@ class PostCommentItemAPITests(APITestCase):
         post = user.create_public_post(text=make_fake_post_text())
         original_post_comment_reply_text = make_fake_post_comment_text()
         post_comment = commenter.comment_post_with_id(post.pk, text=make_fake_post_comment_text())
-        post_comment_reply = commenter.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                 post_comment_id=post_comment.pk,
+        post_comment_reply = commenter.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                  text=original_post_comment_reply_text)
 
         url = self._get_url(post_comment=post_comment_reply, post=post)
@@ -1620,8 +1595,7 @@ class PostCommentItemAPITests(APITestCase):
 
         original_post_comment_reply_text = make_fake_post_comment_text()
         post_comment = user.comment_post_with_id(post.pk, text=make_fake_post_comment_text())
-        post_comment_reply = user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                            post_comment_id=post_comment.pk,
+        post_comment_reply = user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                             text=original_post_comment_reply_text)
 
         post.comments_enabled = False
@@ -1654,8 +1628,7 @@ class PostCommentItemAPITests(APITestCase):
 
         original_post_comment_reply_text = make_fake_post_comment_text()
         post_comment = user.comment_post_with_id(post.pk, text=make_fake_post_comment_text())
-        post_comment_reply = user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                            post_comment_id=post_comment.pk,
+        post_comment_reply = user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                             text=original_post_comment_reply_text)
 
         post.is_closed = True
@@ -1688,8 +1661,7 @@ class PostCommentItemAPITests(APITestCase):
         post = user.create_community_post(community.name, text=make_fake_post_text())
         original_post_comment_reply_text = make_fake_post_comment_text()
         post_comment = user.comment_post_with_id(post.pk, text=make_fake_post_comment_text())
-        post_comment_reply = user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                            post_comment_id=post_comment.pk,
+        post_comment_reply = user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                             text=original_post_comment_reply_text)
 
         url = self._get_url(post_comment=post_comment_reply, post=post)
@@ -1736,9 +1708,9 @@ class PostCommentRepliesAPITests(APITestCase):
         post_comment = commenter.comment_post(post=post, text=make_fake_post_text())
 
         for i in range(0, amount_of_replies):
-            post_comment_reply = commenter.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                post_comment_id=post_comment.pk,
-                                                                text=make_fake_post_comment_text())
+            post_comment_reply = commenter.reply_to_comment_with_id(
+                post_comment_id=post_comment.pk,
+                text=make_fake_post_comment_text())
             reply_ids.append(post_comment_reply.pk)
 
         url = self._get_url(post, post_comment)
@@ -1774,8 +1746,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post_comment = commenter.comment_post(post=post, text=make_fake_post_text())
 
         for i in range(0, amount_of_replies):
-            post_comment_reply = commenter.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                     post_comment_id=post_comment.pk,
+            post_comment_reply = commenter.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                      text=make_fake_post_comment_text())
             reply_ids.append(post_comment_reply.pk)
 
@@ -1814,8 +1785,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post_comment = commenter.comment_post(post=post, text=make_fake_post_text())
 
         for i in range(0, amount_of_replies):
-            post_comment_reply = commenter.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                     post_comment_id=post_comment.pk,
+            post_comment_reply = commenter.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                      text=make_fake_post_comment_text())
             reply_ids.append(post_comment_reply.pk)
 
@@ -1859,8 +1829,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post_comment = commenter.comment_post(post=post, text=make_fake_post_text())
 
         for i in range(0, amount_of_replies):
-            post_comment_reply = commenter.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                     post_comment_id=post_comment.pk,
+            post_comment_reply = commenter.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                      text=make_fake_post_comment_text())
             reply_ids.append(post_comment_reply.pk)
 
@@ -1897,8 +1866,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post_comment = commenter.comment_post(post=post, text=make_fake_post_text())
 
         for i in range(0, amount_of_replies):
-            post_comment_reply = commenter.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                     post_comment_id=post_comment.pk,
+            post_comment_reply = commenter.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                      text=make_fake_post_comment_text())
             reply_ids.append(post_comment_reply.pk)
 
@@ -1930,8 +1898,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post_comment = commenter.comment_post(post=post, text=make_fake_post_text())
 
         for i in range(0, amount_of_replies):
-            post_comment_reply = commenter.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                     post_comment_id=post_comment.pk,
+            post_comment_reply = commenter.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                      text=make_fake_post_comment_text())
             reply_ids.append(post_comment_reply.pk)
 
@@ -1965,8 +1932,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post_comment = commenter.comment_post(post=post, text=make_fake_post_text())
 
         for i in range(0, amount_of_replies):
-            post_comment_reply = commenter.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                     post_comment_id=post_comment.pk,
+            post_comment_reply = commenter.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                      text=make_fake_post_comment_text())
             reply_ids.append(post_comment_reply.pk)
 
@@ -1998,8 +1964,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post_comment = commenter.comment_post(post=post, text=make_fake_post_text())
 
         for i in range(0, amount_of_replies):
-            post_comment_reply = commenter.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                     post_comment_id=post_comment.pk,
+            post_comment_reply = commenter.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                      text=make_fake_post_comment_text())
             reply_ids.append(post_comment_reply.pk)
 
@@ -2034,8 +1999,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post_comment = commenter.comment_post(post=post, text=make_fake_post_text())
 
         for i in range(0, amount_of_replies):
-            post_comment_reply = commenter.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                     post_comment_id=post_comment.pk,
+            post_comment_reply = commenter.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                      text=make_fake_post_comment_text())
             reply_ids.append(post_comment_reply.pk)
 
@@ -2074,8 +2038,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post_comment = commenter.comment_post(post=post, text=make_fake_post_text())
 
         for i in range(0, amount_of_replies):
-            post_comment_reply = commenter.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                     post_comment_id=post_comment.pk,
+            post_comment_reply = commenter.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                      text=make_fake_post_comment_text())
             reply_ids.append(post_comment_reply.pk)
 
@@ -2110,8 +2073,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post_comment = commenter.comment_post(post=post, text=make_fake_post_text())
 
         for i in range(0, amount_of_replies):
-            commenter.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                post_comment_id=post_comment.pk,
+            commenter.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                 text=make_fake_post_comment_text())
 
         url = self._get_url(post, post_comment)
@@ -2133,8 +2095,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post = post_creator.create_public_post(text=make_fake_post_text())
 
         post_comment = blocked_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
-        blocked_user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                               post_comment_id=post_comment.pk,
+        blocked_user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                text=make_fake_post_comment_text())
 
         user.block_user_with_id(user_id=blocked_user.pk)
@@ -2162,8 +2123,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post = post_creator.create_public_post(text=make_fake_post_text())
 
         post_comment = blocking_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
-        blocking_user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                               post_comment_id=post_comment.pk,
+        blocking_user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                text=make_fake_post_comment_text())
         blocking_user.block_user_with_id(user_id=user.pk)
 
@@ -2192,8 +2152,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
 
         post_comment = blocked_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
-        blocked_user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                               post_comment_id=post_comment.pk,
+        blocked_user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                text=make_fake_post_comment_text())
 
         user.block_user_with_id(user_id=blocked_user.pk)
@@ -2223,8 +2182,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
 
         post_comment = blocking_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
-        blocking_user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                post_comment_id=post_comment.pk,
+        blocking_user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                 text=make_fake_post_comment_text())
 
         blocking_user.block_user_with_id(user_id=user.pk)
@@ -2254,8 +2212,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
 
         post_comment = blocked_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
-        post_comment_reply = blocked_user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                               post_comment_id=post_comment.pk,
+        post_comment_reply = blocked_user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                text=make_fake_post_comment_text())
 
         user.block_user_with_id(user_id=blocked_user.pk)
@@ -2287,8 +2244,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
 
         post_comment = blocking_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
-        post_comment_reply = blocking_user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                post_comment_id=post_comment.pk,
+        post_comment_reply = blocking_user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                 text=make_fake_post_comment_text())
 
         blocking_user.block_user_with_id(user_id=user.pk)
@@ -2334,8 +2290,7 @@ class PostCommentRepliesAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
         post = user.create_public_post(text=make_fake_post_text())
         post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
-        post_comment_reply = user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                            post_comment_id=post_comment.pk,
+        post_comment_reply = user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                             text=make_fake_post_comment_text())
 
         reply_comment_text = make_fake_post_comment_text()
@@ -2951,8 +2906,7 @@ class PostCommentRepliesAPITests(APITestCase):
 
         post = foreign_user.create_public_post(text=make_fake_post_text())
         post_comment = foreign_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
-        user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                       post_comment_id=post_comment.pk,
+        user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                        text=make_fake_post_comment_text())
 
         reply_comment_text = make_fake_post_comment_text()
@@ -2973,8 +2927,7 @@ class PostCommentRepliesAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
         post = user.create_public_post(text=make_fake_post_text())
         post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
-        user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                       post_comment_id=post_comment.pk,
+        user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                        text=make_fake_post_comment_text())
 
         reply_comment_text = make_fake_post_comment_text()
@@ -3000,8 +2953,7 @@ class PostCommentRepliesAPITests(APITestCase):
 
         post = post_creator.create_public_post(text=make_fake_post_text())
         post_comment = post_creator.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
-        foreign_user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                               post_comment_id=post_comment.pk,
+        foreign_user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                text=make_fake_post_comment_text())
 
         reply_comment_text = make_fake_post_comment_text()
@@ -3028,8 +2980,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post = post_creator.create_public_post(text=make_fake_post_text())
         post_comment = post_creator.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
 
-        foreign_user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                               post_comment_id=post_comment.pk,
+        foreign_user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                text=make_fake_post_comment_text())
         foreign_user.mute_post_with_id(post_id=post.pk)
 
@@ -3057,8 +3008,7 @@ class PostCommentRepliesAPITests(APITestCase):
         foreign_user.join_community_with_name(community_name=community.name)
         post_comment = post_creator.comment_post(post=post, text=make_fake_post_text())
         # subscribe to notifications
-        foreign_user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                               post_comment_id=post_comment.pk,
+        foreign_user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                text=make_fake_post_comment_text())
         # post will be closed now
         post.is_closed = True
@@ -3086,8 +3036,7 @@ class PostCommentRepliesAPITests(APITestCase):
 
         post_comment = post_creator.comment_post(post=post, text=make_fake_post_text())
         # subscribe to notifications
-        post_creator.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                               post_comment_id=post_comment.pk,
+        post_creator.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                text=make_fake_post_comment_text())
         # post will be closed now
         post.is_closed = True
@@ -3124,8 +3073,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post_comment = post_owner.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
 
         # Comment Reply so we "subscribe" for notifications
-        foreign_user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                               post_comment_id=post_comment.pk,
+        foreign_user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                text=make_fake_post_comment_text())
 
         # Remove them from the circles
@@ -3156,8 +3104,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
 
         for i in range(amount_of_replies):
-            post_comment_reply = user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                post_comment_id=post_comment.pk,
+            post_comment_reply = user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                 text=make_fake_post_comment_text())
             comment_replies.append(post_comment_reply)
 
@@ -3186,8 +3133,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
 
         for i in range(amount_of_replies):
-            post_comment_reply = user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                post_comment_id=post_comment.pk,
+            post_comment_reply = user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                 text=make_fake_post_comment_text())
             comment_replies.append(post_comment_reply)
 
@@ -3216,8 +3162,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
 
         for i in range(amount_of_replies):
-            post_comment_reply = user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                post_comment_id=post_comment.pk,
+            post_comment_reply = user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                 text=make_fake_post_comment_text())
             comment_replies.append(post_comment_reply)
 
@@ -3249,8 +3194,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
 
         for i in range(amount_of_replies):
-            post_comment_reply = user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                post_comment_id=post_comment.pk,
+            post_comment_reply = user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                 text=make_fake_post_comment_text())
             comment_replies.append(post_comment_reply)
 
@@ -3282,8 +3226,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
 
         for i in range(amount_of_replies):
-            post_comment_reply = user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                post_comment_id=post_comment.pk,
+            post_comment_reply = user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                 text=make_fake_post_comment_text())
             comment_replies.append(post_comment_reply)
 
@@ -3324,8 +3267,7 @@ class PostCommentRepliesAPITests(APITestCase):
         post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
 
         for i in range(amount_of_replies):
-            post_comment_reply = user.reply_to_comment_with_id_for_post_with_id(post_id=post.pk,
-                                                                                post_comment_id=post_comment.pk,
+            post_comment_reply = user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
                                                                                 text=make_fake_post_comment_text())
             comment_replies.append(post_comment_reply)
 

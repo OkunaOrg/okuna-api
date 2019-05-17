@@ -262,8 +262,12 @@ class PostComment(models.Model):
 
         return cls.objects.filter(count_query).count()
 
-    def reply_to_comment(self, commenter, post, text):
-        return PostComment.create_comment(text=text, commenter=commenter, post=post, parent_comment=self)
+    @property
+    def replies_count(self):
+        return PostComment.count_comment_replies_for_post_with_id_for_comment_with_id(self.post.pk, self.pk)
+
+    def reply_to_comment(self, commenter, text):
+        return PostComment.create_comment(text=text, commenter=commenter, post=self.post, parent_comment=self)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''

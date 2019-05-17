@@ -151,8 +151,7 @@ class PostCommentReplies(APIView):
         post_id = get_post_id_for_post_uuid(post_uuid)
 
         with transaction.atomic():
-            post_comment_reply = user.reply_to_comment_with_id_for_post_with_id(post_id=post_id,
-                                                                                post_comment_id=post_comment_id,
+            post_comment_reply = user.reply_to_comment_with_id(post_comment_id=post_comment_id,
                                                                                 text=comment_text)
 
         post_comment_serializer = PostCommentReplySerializer(post_comment_reply, context={"request": request})

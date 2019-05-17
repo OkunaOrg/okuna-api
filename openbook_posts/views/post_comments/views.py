@@ -70,7 +70,8 @@ class PostComments(APIView):
             elif sort_query == self.SORT_CHOICE_TO_QUERY['DESC']:
                 all_comments = list(chain(post_comments_min, post_comments_max))
 
-        post_comments_serializer = PostCommentSerializer(all_comments, many=True, context={"request": request})
+        post_comments_serializer = PostCommentSerializer(all_comments, many=True, context={"request": request,
+                                                                                           "sort_query": sort_query})
 
         return Response(post_comments_serializer.data, status=status.HTTP_200_OK)
 
