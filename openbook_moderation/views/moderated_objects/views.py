@@ -5,15 +5,19 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from openbook_common.permissions import IsNotSuspended
+from openbook_common.utils.helpers import normalize_list_value_in_request_data
 from openbook_moderation.serializers import ModeratedObjectSerializer
 from openbook_moderation.views.moderated_objects.serializers import GetModeratedObjectsSerializer
 
 
-class StaffModeratedObjects(APIView):
+class GlobalModeratedObjects(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request):
         query_params = request.query_params.dict()
+        normalize_list_value_in_request_data(request_data=query_params, list_name='types')
+        normalize_list_value_in_request_data(request_data=query_params, list_name='statuses')
+
         serializer = GetModeratedObjectsSerializer(data=query_params)
         serializer.is_valid(raise_exception=True)
 
@@ -21,14 +25,16 @@ class StaffModeratedObjects(APIView):
 
         count = data.get('count', 10)
         max_id = data.get('max_id')
-        type = data.get('type')
+        types = data.get('types')
         verified = data.get('verified')
-        approved = data.get('approved')
+        statuses = data.get('statuses')
 
         user = request.user
 
-        moderated_objects = user.get_moderated_objects_for_staff(max_id=max_id, type=type, verified=verified,
-                                                                 approved=approved).order_by('-created')[:count]
+        moderated_objects = user.get_global_moderated_objects(max_id=max_id, types=types,
+                                                              verified=verified,
+                                                              statuses=statuses).order_by('-id')[
+                            :count]
 
         response_serializer = ModeratedObjectSerializer(moderated_objects, many=True,
                                                         context={"request": request})
@@ -56,10 +62,10 @@ class CommunityModeratedObjects(APIView):
 
         user = request.user
 
-        moderated_objects = user.get_moderated_objects_for_community_with_name(community_name=community_name,
-                                                                               max_id=max_id, type=type,
-                                                                               verified=verified,
-                                                                               approved=approved).order_by('-created')[
+        moderated_objects = user.get_community_moderated_objects(community_name=community_name,
+                                                                 max_id=max_id, type=type,
+                                                                 verified=verified,
+                                                                 approved=approved).order_by('-created')[
                             :count]
 
         response_serializer = ModeratedObjectSerializer(moderated_objects, many=True,

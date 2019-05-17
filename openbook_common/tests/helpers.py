@@ -43,6 +43,12 @@ def make_user(username=None, invite_count=None):
     return user
 
 
+def make_global_moderator():
+    moderator = make_user()
+    make_moderators_community(creator=moderator)
+    return moderator
+
+
 def make_badge():
     return mixer.blend(Badge)
 
@@ -166,14 +172,22 @@ def make_community_invites_enabled():
     return fake.boolean()
 
 
-def make_community(creator, type=Community.COMMUNITY_TYPE_PUBLIC):
-    community = creator.create_community(name=make_community_name(), title=make_community_title(), type=type,
+def make_community(creator, type=Community.COMMUNITY_TYPE_PUBLIC, name=None):
+    if not name:
+        name = make_community_name()
+
+    community = creator.create_community(name=name, title=make_community_title(), type=type,
                                          color=fake.hex_color(), description=make_community_description(),
                                          rules=make_community_rules(), user_adjective=make_community_user_adjective(),
                                          users_adjective=make_community_users_adjective(),
                                          categories_names=[make_category().name],
                                          invites_enabled=make_community_invites_enabled())
     return community
+
+
+def make_moderators_community(creator, ):
+    return make_community(name=settings.MODERATORS_COMMUNITY_NAME, creator=creator,
+                          type=Community.COMMUNITY_TYPE_PRIVATE)
 
 
 def make_private_community(creator):

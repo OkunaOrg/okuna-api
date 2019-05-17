@@ -51,7 +51,7 @@ from openbook_devices.views import Devices, DeviceItem
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
 from openbook_lists.views import Lists, ListItem, ListNameCheck
 from openbook_moderation.views.moderated_object.views import ModeratedObjectItem, ModeratedObjectLogs
-from openbook_moderation.views.moderated_objects.views import CommunityModeratedObjects, StaffModeratedObjects
+from openbook_moderation.views.moderated_objects.views import CommunityModeratedObjects, GlobalModeratedObjects
 from openbook_moderation.views.moderation_categories.views import ModerationCategories
 from openbook_moderation.views.report.views import ReportUser, ReportPost, ReportCommunity, \
     ReportPostComment
@@ -293,7 +293,7 @@ moderation_moderated_object_patterns = [
 
 moderation_moderated_objects_patterns = [
     path('<int:moderated_object_id>/', include(moderation_moderated_object_patterns)),
-    path('staff/', StaffModeratedObjects.as_view(), name='staff-moderated-objects')
+    path('global/', GlobalModeratedObjects.as_view(), name='global-moderated-objects')
 ]
 
 moderation_patterns = [

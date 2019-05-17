@@ -11,10 +11,13 @@ class GetModeratedObjectsSerializer(serializers.Serializer):
         required=False,
         max_value=20
     )
-    type = serializers.MultipleChoiceField(
+    types = serializers.MultipleChoiceField(
         choices=[ModeratedObject.OBJECT_TYPE_POST, ModeratedObject.OBJECT_TYPE_POST_COMMENT,
                  ModeratedObject.OBJECT_TYPE_COMMUNITY,
-                 ModeratedObject.OBJECT_TYPE_USER])
+                 ModeratedObject.OBJECT_TYPE_USER], required=False)
+    statuses = serializers.MultipleChoiceField(
+        choices=[ModeratedObject.STATUS_REJECTED, ModeratedObject.STATUS_PENDING,
+                 ModeratedObject.STATUS_APPROVED, ], required=False)
     verified = serializers.BooleanField(
         required=False,
     )

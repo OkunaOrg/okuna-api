@@ -1,3 +1,4 @@
+import json
 from datetime import timedelta
 
 from django.conf import settings
@@ -43,9 +44,6 @@ class ModerationCategory(models.Model):
 
 class ModeratedObject(models.Model):
     description = models.CharField(_('description'), max_length=settings.MODERATED_OBJECT_DESCRIPTION_MAX_LENGTH,
-                                   blank=False, null=True)
-
-    approved = models.BooleanField(_('approved'),
                                    blank=False, null=True)
     verified = models.BooleanField(_('verified'), default=False,
                                    blank=False, null=False)
@@ -193,7 +191,7 @@ class ModeratedObject(models.Model):
                                                                    duration=duration_of_penalty)
 
         if content_object is User:
-            self.object_audit_snapshot = {
+            object_audit_snapshot = {
                 'id': content_object.id,
                 'username': content_object.username,
                 'email': content_object.email,
@@ -203,7 +201,7 @@ class ModeratedObject(models.Model):
                 'url': content_object.profile.url
             }
         elif content_object is Post:
-            self.object_audit_snapshot = {
+            object_audit_snapshot = {
                 'id': content_object.id,
                 'text': content_object.text,
                 'creator_id': content_object.creator_id,
@@ -211,7 +209,7 @@ class ModeratedObject(models.Model):
                 'community_id': content_object.community_id,
             }
         elif content_object is PostComment:
-            self.object_audit_snapshot = {
+            object_audit_snapshot = {
                 'id': content_object.id,
                 'text': content_object.text,
                 'commenter_id': content_object.commenter_id,
@@ -219,7 +217,7 @@ class ModeratedObject(models.Model):
                 'post_id': content_object.post_id,
             }
         elif content_object is Community:
-            self.object_audit_snapshot = {
+            object_audit_snapshot = {
                 'id': content_object.id,
                 'name': content_object.name,
                 'title': content_object.title,
@@ -231,7 +229,7 @@ class ModeratedObject(models.Model):
                 'rules': content_object.rules,
             }
         elif content_object is ModeratedObject:
-            self.object_audit_snapshot = {
+            object_audit_snapshot = {
                 'id': content_object.id,
                 'description': content_object.description,
                 'category_id': content_object.category_id,
@@ -239,6 +237,10 @@ class ModeratedObject(models.Model):
                 'content_type': content_object.content_type,
                 'object_id': content_object.object_id,
             }
+        else:
+            object_audit_snapshot = {}
+
+        self.object_audit_snapshot = json.dumps(object_audit_snapshot)
 
         if content_object is not User or moderation_severity == ModerationCategory.SEVERITY_CRITICAL:
             content_object.delete()
@@ -365,7 +367,7 @@ class ModeratedObjectLog(models.Model):
         (LOG_TYPE_CATEGORY_CHANGED, 'Category Changed'),
     )
 
-    type = models.CharField(max_length=5, choices=LOG_TYPES)
+    log_type = models.CharField(max_length=5, choices=LOG_TYPES)
 
     # Generic relation types
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
@@ -376,8 +378,9 @@ class ModeratedObjectLog(models.Model):
     created = models.DateTimeField(editable=False, db_index=True)
 
     @classmethod
-    def create_moderated_object_log(cls, moderated_object_id, type, content_object, actor_id):
-        return cls.objects.create(log_type=type, content_object=content_object, moderated_object_id=moderated_object_id,
+    def create_moderated_object_log(cls, moderated_object_id, log_type, content_object, actor_id):
+        return cls.objects.create(log_type=log_type, content_object=content_object,
+                                  moderated_object_id=moderated_object_id,
                                   actor_id=actor_id)
 
     def save(self, *args, **kwargs):
@@ -398,7 +401,7 @@ class ModeratedObjectCategoryChangedLog(models.Model):
                                                      actor_id):
         moderated_object_category_changed_log = cls.objects.create(changed_from_id=changed_from_id,
                                                                    changed_to_id=changed_to_id)
-        ModeratedObjectLog.create_moderated_object_log(type=ModeratedObjectLog.LOG_TYPE_CATEGORY_CHANGED,
+        ModeratedObjectLog.create_moderated_object_log(log_type=ModeratedObjectLog.LOG_TYPE_CATEGORY_CHANGED,
                                                        content_object=moderated_object_category_changed_log,
                                                        moderated_object_id=moderated_object_id, actor_id=actor_id)
 
@@ -414,7 +417,7 @@ class ModeratedObjectDescriptionChangedLog(models.Model):
     def create_moderated_object_description_changed_log(cls, moderated_object_id, changed_from, changed_to, actor_id):
         moderated_object_description_changed_log = cls.objects.create(changed_from=changed_from,
                                                                       changed_to=changed_to)
-        ModeratedObjectLog.create_moderated_object_log(type=ModeratedObjectLog.LOG_TYPE_DESCRIPTION_CHANGED,
+        ModeratedObjectLog.create_moderated_object_log(log_type=ModeratedObjectLog.LOG_TYPE_DESCRIPTION_CHANGED,
                                                        content_object=moderated_object_description_changed_log,
                                                        moderated_object_id=moderated_object_id,
                                                        actor_id=actor_id)
@@ -432,7 +435,7 @@ class ModeratedObjectStatusChangedLog(models.Model):
     def create_moderated_object_status_changed_log(cls, moderated_object_id, changed_from, changed_to, actor_id):
         moderated_object_description_changed_log = cls.objects.create(changed_from=changed_from,
                                                                       changed_to=changed_to)
-        ModeratedObjectLog.create_moderated_object_log(type=ModeratedObjectLog.LOG_TYPE_STATUS_CHANGED,
+        ModeratedObjectLog.create_moderated_object_log(log_type=ModeratedObjectLog.LOG_TYPE_STATUS_CHANGED,
                                                        content_object=moderated_object_description_changed_log,
                                                        moderated_object_id=moderated_object_id, actor_id=actor_id)
 
@@ -448,7 +451,7 @@ class ModeratedObjectVerifiedChangedLog(models.Model):
     def create_moderated_object_verified_changed_log(cls, moderated_object_id, changed_from, changed_to, actor_id):
         moderated_object_description_changed_log = cls.objects.create(changed_from=changed_from,
                                                                       changed_to=changed_to)
-        ModeratedObjectLog.create_moderated_object_log(type=ModeratedObjectLog.LOG_TYPE_VERIFIED_CHANGED,
+        ModeratedObjectLog.create_moderated_object_log(log_type=ModeratedObjectLog.LOG_TYPE_VERIFIED_CHANGED,
                                                        content_object=moderated_object_description_changed_log,
                                                        moderated_object_id=moderated_object_id, actor_id=actor_id)
 
@@ -464,6 +467,6 @@ class ModeratedObjectSubmittedChangedLog(models.Model):
     def create_moderated_object_submitted_changed_log(cls, moderated_object_id, changed_from, changed_to, actor_id):
         moderated_object_description_changed_log = cls.objects.create(changed_from=changed_from,
                                                                       changed_to=changed_to)
-        ModeratedObjectLog.create_moderated_object_log(type=ModeratedObjectLog.LOG_TYPE_SUBMITTED_CHANGED,
+        ModeratedObjectLog.create_moderated_object_log(log_type=ModeratedObjectLog.LOG_TYPE_SUBMITTED_CHANGED,
                                                        content_object=moderated_object_description_changed_log,
                                                        moderated_object_id=moderated_object_id, actor_id=actor_id)

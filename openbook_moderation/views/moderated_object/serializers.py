@@ -6,15 +6,43 @@ from openbook_auth.models import UserProfile, User
 from openbook_moderation.models import ModeratedObjectLog, ModeratedObjectCategoryChangedLog, \
     ModeratedObjectDescriptionChangedLog, ModeratedObjectStatusChangedLog, ModeratedObjectVerifiedChangedLog, \
     ModeratedObjectSubmittedChangedLog, ModerationCategory
-from openbook_moderation.views.validators import moderated_object_id_exists
+from openbook_moderation.views.validators import moderated_object_id_exists, moderation_category_id_exists
 
 
 class EditModeratedObjectSerializer(serializers.Serializer):
     description = serializers.CharField(max_length=settings.MODERATED_OBJECT_DESCRIPTION_MAX_LENGTH, required=False,
                                         allow_blank=False)
-    verified = serializers.BooleanField(required=False, )
-    approved = serializers.BooleanField(required=False, )
-    submitted = serializers.BooleanField(required=False, )
+    moderated_object_id = serializers.UUIDField(
+        validators=[moderated_object_id_exists],
+        required=True,
+    )
+    category_id = serializers.IntegerField(
+        validators=[moderation_category_id_exists]
+    )
+
+
+class ApproveModeratedObjectSerializer(serializers.Serializer):
+    moderated_object_id = serializers.UUIDField(
+        validators=[moderated_object_id_exists],
+        required=True,
+    )
+
+
+class RejectModeratedObjectSerializer(serializers.Serializer):
+    moderated_object_id = serializers.UUIDField(
+        validators=[moderated_object_id_exists],
+        required=True,
+    )
+
+
+class VerifyModeratedObjectSerializer(serializers.Serializer):
+    moderated_object_id = serializers.UUIDField(
+        validators=[moderated_object_id_exists],
+        required=True,
+    )
+
+
+class UnverifyModeratedObjectSerializer(serializers.Serializer):
     moderated_object_id = serializers.UUIDField(
         validators=[moderated_object_id_exists],
         required=True,

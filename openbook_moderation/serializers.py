@@ -81,42 +81,23 @@ class ModeratedObjectPostSerializer(serializers.ModelSerializer):
         )
 
 
-class ModeratedObjectModeratedObjectSerializer(serializers.ModelSerializer):
-    content_object = GenericRelatedField({
-        Post: ModeratedObjectPostSerializer(),
-        PostComment: ModeratedObjectPostCommentSerializer(),
-        Community: ModeratedObjectCommunitySerializer(),
-        User: ModeratedObjectUserSerializer(),
-    })
-
-    class Meta:
-        model = ModeratedObject
-        fields = (
-            'id',
-            'type',
-            'content_object',
-            'verified',
-            'submitted',
-            'approved',
-        )
-
-
 class ModeratedObjectSerializer(serializers.ModelSerializer):
     content_object = GenericRelatedField({
         Post: ModeratedObjectPostSerializer(),
         PostComment: ModeratedObjectPostCommentSerializer(),
         Community: ModeratedObjectCommunitySerializer(),
         User: ModeratedObjectUserSerializer(),
-        ModeratedObject: ModeratedObjectModeratedObjectSerializer(),
     })
 
     class Meta:
         model = ModeratedObject
         fields = (
             'id',
-            'type',
+            'object_type',
+            'object_id',
             'content_object',
             'verified',
-            'submitted',
-            'approved',
+            'status',
+            'description',
+            'category_id'
         )
