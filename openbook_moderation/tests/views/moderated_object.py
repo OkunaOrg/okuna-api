@@ -7,7 +7,7 @@ from rest_framework.test import APITestCase
 
 from openbook_common.tests.helpers import make_global_moderator, make_user, make_moderation_category, \
     make_authentication_headers_for_user, make_moderation_report_description, make_moderated_object_description, \
-    make_community
+    make_community, make_fake_post_text, make_fake_post_comment_text
 from openbook_moderation.models import ModeratedObject, ModeratedObjectDescriptionChangedLog, \
     ModeratedObjectCategoryChangedLog
 
@@ -241,7 +241,7 @@ class ModeratedObjectAPITests(APITestCase):
         report_category = make_moderation_category()
 
         reporter_community.report_community_with_name(community_name=community.name,
-                                                                category_id=report_category.pk)
+                                                      category_id=report_category.pk)
 
         new_moderated_object_description = make_moderated_object_description()
         new_report_category = make_moderation_category()
@@ -285,7 +285,7 @@ class ModeratedObjectAPITests(APITestCase):
         report_category = make_moderation_category()
 
         reporter_user.report_community_with_name(community_name=community.name,
-                                                           category_id=report_category.pk)
+                                                 category_id=report_category.pk)
 
         new_moderated_object_description = make_moderated_object_description()
         new_report_category = make_moderation_category()
@@ -310,57 +310,248 @@ class ModeratedObjectAPITests(APITestCase):
 
     def test_can_update_community_post_moderated_object_if_global_moderator(self):
         """
-        should be able to update a community post moderated object global moderator
+        should be able to update a community post moderated object if global moderator
         """
-        pass
+        global_moderator = make_global_moderator()
 
-    def test_cant_update_community_post_moderated_object_community(self):
-        """
-        should not be able to update a community post moderated object community
-        """
-        pass
+        community = make_community()
+        post_creator = make_user()
 
-    def test_can_update_community_post_comment_moderated_object_if_global_moderator(self):
-        """
-        should be able to update a community post comment moderated object global moderator
-        """
-        pass
+        post_creator.join_community_with_name(community_name=community.name)
+        post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
 
-    def test_cant_update_community_post_moderated_object_if_not_global_moderator(self):
-        """
-        should not be able to update a community post moderated object if not global moderator
-        """
-        pass
+        reporter_user = make_user()
+        report_category = make_moderation_category()
 
-    def test_cant_update_community_post_comment_moderated_object_if_not_global_moderator(self):
-        """
-        should not be able to update a community post comment moderated object if not global moderator
-        """
-        pass
+        reporter_user.report_post(post=post, category_id=report_category.pk)
+
+        new_moderated_object_description = make_moderated_object_description()
+        new_report_category = make_moderation_category()
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=report_category.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.patch(url, data={
+            'description': new_moderated_object_description,
+            'category_id': new_report_category.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            category_id=new_report_category.pk,
+            description=new_moderated_object_description,
+            object_id=post.pk,
+        ).exists())
 
     def test_can_update_community_post_moderated_object_if_community_moderator(self):
         """
-        should be able to update a community post moderated object if community staff
+        should be able to update a community post moderated object if community moderator
         """
-        pass
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+        community_moderator = make_user()
+        community_moderator.join_community_with_name(community_name=community.name)
+
+        community_creator.add_moderator_with_username_to_community_with_name(username=community_moderator.username,
+                                                                             community_name=community.name)
+
+        post_creator = make_user()
+
+        post_creator.join_community_with_name(community_name=community.name)
+        post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_post(post=post, category_id=report_category.pk)
+
+        new_moderated_object_description = make_moderated_object_description()
+        new_report_category = make_moderation_category()
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=report_category.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(community_moderator)
+        response = self.client.patch(url, data={
+            'description': new_moderated_object_description,
+            'category_id': new_report_category.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            category_id=new_report_category.pk,
+            description=new_moderated_object_description,
+            object_id=post.pk,
+        ).exists())
+
+    def test_cant_update_community_post_moderated_object_if_not_global_nor_community_moderator(self):
+        """
+        should not be able to update a community post moderated object if not global nor community moderator
+        """
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+        non_moderator = make_user()
+
+        post_creator = make_user()
+
+        post_creator.join_community_with_name(community_name=community.name)
+        post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_post(post=post, category_id=report_category.pk)
+
+        new_moderated_object_description = make_moderated_object_description()
+        new_report_category = make_moderation_category()
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=report_category.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(non_moderator)
+        response = self.client.patch(url, data={
+            'description': new_moderated_object_description,
+            'category_id': new_report_category.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(ModeratedObject.objects.filter(
+            category_id=new_report_category.pk,
+            description=new_moderated_object_description,
+            object_id=post.pk,
+        ).exists())
+
+    def test_can_update_community_post_comment_moderated_object_if_global_moderator(self):
+        """
+        should be able to update a community post_comment moderated object if global moderator
+        """
+        global_moderator = make_global_moderator()
+
+        community = make_community()
+        post_comment_creator = make_user()
+
+        post_comment_creator.join_community_with_name(community_name=community.name)
+        post = post_comment_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post_comment = post_comment_creator.comment_post(text=make_fake_post_comment_text(),
+                                                         post=post)
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_comment_for_post(post=post, post_comment=post_comment, category_id=report_category.pk)
+
+        new_moderated_object_description = make_moderated_object_description()
+        new_report_category = make_moderation_category()
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post_comment(post_comment=post_comment,
+                                                                                           category_id=report_category.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.patch(url, data={
+            'description': new_moderated_object_description,
+            'category_id': new_report_category.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            category_id=new_report_category.pk,
+            description=new_moderated_object_description,
+            object_id=post_comment.pk,
+        ).exists())
 
     def test_can_update_community_post_comment_moderated_object_if_community_moderator(self):
         """
-        should be able to update a community post comment moderated object if community staff
+        should be able to update a community post_comment moderated object if community moderator
         """
-        pass
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+        community_moderator = make_user()
+        community_moderator.join_community_with_name(community_name=community.name)
 
-    def test_cant_update_community_post_moderated_object_if_not_global_moderator_or_community_moderator(self):
-        """
-        should not be able to update a community post moderated object if not global moderator or community staff
-        """
-        pass
+        community_creator.add_moderator_with_username_to_community_with_name(username=community_moderator.username,
+                                                                             community_name=community.name)
 
-    def test_cant_update_community_post_comment_moderated_object_if_not_global_moderator_or_community_moderator(self):
+        post_comment_creator = make_user()
+
+        post_comment_creator.join_community_with_name(community_name=community.name)
+        post = post_comment_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post_comment = post_comment_creator.comment_post(text=make_fake_post_comment_text(),
+                                                         post=post)
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_comment_for_post(post=post, post_comment=post_comment, category_id=report_category.pk)
+
+        new_moderated_object_description = make_moderated_object_description()
+        new_report_category = make_moderation_category()
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post_comment(post_comment=post_comment,
+                                                                                           category_id=report_category.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(community_moderator)
+        response = self.client.patch(url, data={
+            'description': new_moderated_object_description,
+            'category_id': new_report_category.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            category_id=new_report_category.pk,
+            description=new_moderated_object_description,
+            object_id=post_comment.pk,
+        ).exists())
+
+    def test_cant_update_community_post_comment_moderated_object_if_not_global_nor_community_moderator(self):
         """
-        should not be able to update a community post comment moderated object if not global moderator or community staff
+        should not be able to update a community post_comment moderated object if not global nor community moderator
         """
-        pass
+        non_global_moderator = make_user()
+
+        community = make_community()
+        post_comment_creator = make_user()
+
+        post_comment_creator.join_community_with_name(community_name=community.name)
+        post = post_comment_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post_comment = post_comment_creator.comment_post(text=make_fake_post_comment_text(),
+                                                         post=post)
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_comment_for_post(post=post, post_comment=post_comment, category_id=report_category.pk)
+
+        new_moderated_object_description = make_moderated_object_description()
+        new_report_category = make_moderation_category()
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post_comment(post_comment=post_comment,
+                                                                                           category_id=report_category.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(non_global_moderator)
+        response = self.client.patch(url, data={
+            'description': new_moderated_object_description,
+            'category_id': new_report_category.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(ModeratedObject.objects.filter(
+            category_id=new_report_category.pk,
+            description=new_moderated_object_description,
+            object_id=post_comment.pk,
+        ).exists())
 
     def _get_url(self, moderated_object):
         return reverse('moderated-object', kwargs={
