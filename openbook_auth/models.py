@@ -2385,7 +2385,7 @@ class User(AbstractUser):
                     else:
                         post.community.create_remove_post_comment_log(source_user=self,
                                                                       target_user=post_comment.commenter)
-            else:
+            elif not post.creator == self:
                 raise ValidationError(
                     _('You cannot remove a comment that does not belong to you')
                 )
