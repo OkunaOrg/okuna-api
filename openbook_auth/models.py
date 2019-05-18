@@ -73,7 +73,7 @@ class User(AbstractUser):
 
     class EmailField(DjangoEmailField):
         def to_python(self, value):
-            value = super(DjangoEmailField, self).to_python(value)
+            value = super().to_python(value)
 
             return self.format_email_to_common_string(value)
 
