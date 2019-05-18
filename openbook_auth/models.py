@@ -1697,11 +1697,11 @@ class User(AbstractUser):
     def _check_can_get_global_moderated_objects(self):
         self._check_is_global_moderator()
 
-    def get_community_moderated_objects(self, community_name, types=None, max_id=None, verified=None, status=None):
+    def get_community_moderated_objects(self, community_name, types=None, max_id=None, verified=None, statuses=None):
         self._check_can_get_community_moderated_objects(community_name=community_name)
         ModeratedObject = get_moderated_object_model()
 
-        moderated_objects_query = Q(content_object__community__name=community_name)
+        moderated_objects_query = Q(community__name=community_name)
 
         if types:
             moderated_objects_query.add(Q(object_type__in=types), Q.AND)
@@ -1709,8 +1709,8 @@ class User(AbstractUser):
         if verified is not None:
             moderated_objects_query.add(Q(verified=verified), Q.AND)
 
-        if status is not None:
-            moderated_objects_query.add(Q(status=status), Q.AND)
+        if statuses is not None:
+            moderated_objects_query.add(Q(status__in=statuses), Q.AND)
 
         if max_id:
             moderated_objects_query.add(Q(id__lt=max_id), Q.AND)
@@ -2194,28 +2194,28 @@ class User(AbstractUser):
     def _check_can_moderate_moderated_object(self, moderated_object):
         content_object = moderated_object.content_object
 
-        is_openbook_moderator = self.is_global_moderator()
+        is_global_moderator = self.is_global_moderator()
 
-        if is_openbook_moderator:
+        if is_global_moderator:
             return
 
         PostComment = get_post_comment_model()
         Post = get_post_model()
 
-        if content_object is Post:
+        if isinstance(content_object, Post):
             if content_object.community:
                 if not self.is_staff_of_community_with_name(community_name=content_object.community.name):
                     raise ValidationError(_('Only community staff can moderated community posts'))
             else:
-                raise ValidationError(_('Only Openbook staff can moderate non-community posts'))
-        elif content_object is PostComment:
+                raise ValidationError(_('Only global moderators can moderate non-community posts'))
+        elif isinstance(content_object, PostComment):
             if content_object.post.community:
                 if not self.is_staff_of_community_with_name(community_name=content_object.post.community.name):
                     raise ValidationError(_('Only community staff can moderated community post comments'))
             else:
-                raise ValidationError(_('Only Openbook staff can moderate non-community post comments'))
+                raise ValidationError(_('Only global moderators can moderate non-community post comments'))
         else:
-            raise ValidationError(_('Non-openbook staff members can only moderated posts and post comments.'))
+            raise ValidationError(_('Non global moderators can only moderated posts and post comments.'))
 
     def _check_is_global_moderator(self):
         if not self.is_global_moderator():

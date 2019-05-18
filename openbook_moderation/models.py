@@ -43,6 +43,10 @@ class ModerationCategory(models.Model):
 
 
 class ModeratedObject(models.Model):
+    community = models.ForeignKey('openbook_communities.Community', on_delete=models.CASCADE,
+                                  related_name='moderated_objects',
+                                  null=True,
+                                  blank=False)
     description = models.CharField(_('description'), max_length=settings.MODERATED_OBJECT_DESCRIPTION_MAX_LENGTH,
                                    blank=False, null=True)
     verified = models.BooleanField(_('verified'), default=False,
@@ -89,39 +93,53 @@ class ModeratedObject(models.Model):
         ]
 
     @classmethod
-    def create_moderated_object(cls, object_type, content_object, category_id):
-        return cls.objects.create(object_type=object_type, content_object=content_object, category_id=category_id)
+    def create_moderated_object(cls, object_type, content_object, category_id, community_id=None):
+        return cls.objects.create(object_type=object_type, content_object=content_object, category_id=category_id,
+                                  community_id=community_id)
 
     @classmethod
-    def get_or_create_moderated_object(cls, object_type, content_object, category_id):
+    def _get_or_create_moderated_object(cls, object_type, content_object, category_id, community_id=None):
         try:
-            moderated_object = cls.objects.get(object_type=object_type, object_id=content_object.pk)
+            moderated_object = cls.objects.get(object_type=object_type, object_id=content_object.pk,
+                                               community_id=community_id)
         except cls.DoesNotExist:
             moderated_object = cls.create_moderated_object(object_type=object_type,
-                                                           content_object=content_object, category_id=category_id)
+                                                           content_object=content_object, category_id=category_id,
+                                                           community_id=community_id)
 
         return moderated_object
 
     @classmethod
     def get_or_create_moderated_object_for_post(cls, post, category_id):
-        return cls.get_or_create_moderated_object(object_type=cls.OBJECT_TYPE_POST, content_object=post,
-                                                  category_id=category_id)
+        community_id = None
+
+        if post.community:
+            community_id = post.community.pk
+
+        return cls._get_or_create_moderated_object(object_type=cls.OBJECT_TYPE_POST, content_object=post,
+                                                   category_id=category_id, community_id=community_id)
 
     @classmethod
     def get_or_create_moderated_object_for_post_comment(cls, post_comment, category_id):
-        return cls.get_or_create_moderated_object(object_type=cls.OBJECT_TYPE_POST_COMMENT,
-                                                  content_object=post_comment,
-                                                  category_id=category_id)
+        community_id = None
+
+        if post_comment.post.community:
+            community_id = post_comment.post.community.pk
+
+        return cls._get_or_create_moderated_object(object_type=cls.OBJECT_TYPE_POST_COMMENT,
+                                                   content_object=post_comment,
+                                                   category_id=category_id,
+                                                   community_id=community_id)
 
     @classmethod
     def get_or_create_moderated_object_for_community(cls, community, category_id):
-        return cls.get_or_create_moderated_object(object_type=cls.OBJECT_TYPE_COMMUNITY, content_object=community,
-                                                  category_id=category_id)
+        return cls._get_or_create_moderated_object(object_type=cls.OBJECT_TYPE_COMMUNITY, content_object=community,
+                                                   category_id=category_id)
 
     @classmethod
     def get_or_create_moderated_object_for_user(cls, user, category_id):
-        return cls.get_or_create_moderated_object(object_type=cls.OBJECT_TYPE_USER, content_object=user,
-                                                  category_id=category_id)
+        return cls._get_or_create_moderated_object(object_type=cls.OBJECT_TYPE_USER, content_object=user,
+                                                   category_id=category_id)
 
     def is_verified(self):
         return self.verified

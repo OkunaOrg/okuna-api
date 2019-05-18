@@ -53,6 +53,33 @@ class ReportPostAPITests(APITestCase):
                                                         category_id=report_category.pk
                                                         ).exists())
 
+    def test_reporting_post_should_not_add_community_to_moderated(self):
+        """
+        reporting a post should not add a community to it
+        """
+        post_creator = make_user()
+        post_text = make_fake_post_text()
+        post = post_creator.create_public_post(text=post_text)
+
+        post_reporter = make_user()
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(post_reporter)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(ModeratedObject.objects.filter(object_id=post.pk,
+                                                       object_type=ModeratedObject.OBJECT_TYPE_POST,
+                                                       community__isnull=True
+                                                       ).exists())
+
     def test_cant_report_own_post(self):
         """
         should not be able to report an own post and return 400
@@ -254,6 +281,36 @@ class ReportPostAPITests(APITestCase):
                                                          category_id=report_category.pk
                                                          ).exists())
 
+    def test_reporting_community_post_adds_it_to_moderated_object(self):
+        """
+        reporting a community post should add the post community to the moderated object community
+        """
+        post_creator = make_user()
+
+        post_reporter = make_user()
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        community = make_community(creator=post_creator)
+
+        post_text = make_fake_post_text()
+        post = post_creator.create_community_post(text=post_text, community_name=community.name)
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(post_reporter)
+
+        self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            object_id=post.pk,
+            object_type=ModeratedObject.OBJECT_TYPE_POST,
+            category_id=report_category.pk,
+            community_id=community.pk
+        ).exists())
+
     def test_cant_report_post_without_category(self):
         """
         should not be able to report a post without a category and return 400
@@ -388,6 +445,35 @@ class ReportPostCommentAPITests(APITestCase):
                                                         description=report_description,
                                                         category_id=report_category.pk
                                                         ).exists())
+
+    def test_reporting_post_comment_should_not_add_community_to_moderated(self):
+        """
+        reporting a post comment should not add a community to the moderated object
+        """
+        post_comment_creator = make_user()
+        post = post_comment_creator.create_public_post(text=make_fake_post_text())
+
+        post_comment_text = make_fake_post_comment_text()
+        post_comment = post_comment_creator.comment_post_with_id(post_id=post.pk, text=post_comment_text)
+
+        post_comment_reporter = make_user()
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+        headers = make_authentication_headers_for_user(post_comment_reporter)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            object_id=post_comment.pk,
+            object_type=ModeratedObject.OBJECT_TYPE_POST_COMMENT,
+        ).exists())
 
     def test_cant_report_own_post_comment(self):
         """
@@ -597,6 +683,37 @@ class ReportPostCommentAPITests(APITestCase):
                                                          category_id=report_category.pk
                                                          ).exists())
 
+    def test_reporting_community_post_comment_adds_it_to_the_moderated_object(self):
+        """
+        reporting a community post comment should add the comment community to the moderated object
+        """
+        post_comment_creator = make_user()
+        community = make_community(creator=post_comment_creator)
+        post = post_comment_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        post_comment_text = make_fake_post_comment_text()
+        post_comment = post_comment_creator.comment_post_with_id(post_id=post.pk, text=post_comment_text)
+
+        post_comment_reporter = make_user()
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+        headers = make_authentication_headers_for_user(post_comment_reporter)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(post_comment_reporter.has_reported_post_comment_with_id(post_comment_id=post_comment.pk))
+        self.assertTrue(ModeratedObject.objects.filter(
+            object_id=post_comment.pk,
+            object_type=ModeratedObject.OBJECT_TYPE_POST_COMMENT,
+        ).exists())
+
     def test_cant_report_post_comment_without_category(self):
         """
         should not be able to report a post_comment without a category and return 400
@@ -734,6 +851,31 @@ class ReportUserAPITests(APITestCase):
                                                         description=report_description,
                                                         category_id=report_category.pk
                                                         ).exists())
+
+    def test_reporting_user_should_not_add_community_to_moderated(self):
+        """
+        reporting a user should not add a community to it
+        """
+        user = make_user()
+
+        user_reporter = make_user()
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(user)
+        headers = make_authentication_headers_for_user(user_reporter)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(ModeratedObject.objects.filter(object_id=user.pk,
+                                                       object_type=ModeratedObject.OBJECT_TYPE_USER,
+                                                       community__isnull=True
+                                                       ).exists())
 
     def test_cant_report_oneself(self):
         """
@@ -888,6 +1030,32 @@ class ReportCommunityAPITests(APITestCase):
                                                         description=report_description,
                                                         category_id=report_category.pk
                                                         ).exists())
+
+    def test_reporting_community_should_not_add_community_to_moderated(self):
+        """
+        reporting a community should not add a community to it
+        """
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        community_reporter = make_user()
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(community)
+        headers = make_authentication_headers_for_user(community_reporter)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(ModeratedObject.objects.filter(object_id=community.pk,
+                                                       object_type=ModeratedObject.OBJECT_TYPE_COMMUNITY,
+                                                       community__isnull=True
+                                                       ).exists())
 
     def test_cant_report_own_community(self):
         """
