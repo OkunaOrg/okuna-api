@@ -16,7 +16,7 @@ from imagekit.models import ProcessedImageField
 from pilkit.processors import ResizeToFill, ResizeToFit
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError, NotFound, PermissionDenied, AuthenticationFailed
-from django.db.models import Q, F, Count
+from django.db.models import Q, F, Count, EmailField as DjangoEmailField
 from django.core.mail import EmailMultiAlternatives
 
 from openbook.settings import USERNAME_MAX_LENGTH
@@ -40,7 +40,6 @@ class User(AbstractUser):
     """
     first_name = None
     last_name = None
-    email = models.EmailField(_('email address'), unique=True, null=False, blank=False)
     connections_circle = models.ForeignKey('openbook_circles.Circle', on_delete=models.CASCADE, related_name='+',
                                            null=True, blank=True)
 
@@ -72,6 +71,34 @@ class User(AbstractUser):
         verbose_name = _('user')
         verbose_name_plural = _('users')
 
+    class EmailField(DjangoEmailField):
+        def to_python(self, value):
+            value = super(DjangoEmailField, self).to_python(value)
+
+            return self.format_email_to_common_string(value)
+
+        @classmethod
+        def format_email_to_common_string(cls, email):
+            """
+            Method to format an email address based on an email provider.
+            Some providers treat foo@email.com the same as f.o.o@email.com, so we must strip special characters
+            out to prevent multiple accounts for the same email
+            """
+            dots_do_not_matter_providers = [
+                "gmail.com",
+                "googlemail.com",
+                "google.com"
+            ]
+
+            email_suffix = email.split("@")[-1]
+
+            if email_suffix in dots_do_not_matter_providers:
+                return email.split("@")[0].replace('.', '') + "@" + email_suffix
+
+            return email
+
+    email = EmailField(_('email address'), unique=True, null=False, blank=False)
+
     @classmethod
     def create_user(cls, username, email=None, password=None, name=None, avatar=None, is_of_legal_age=None,
                     are_guidelines_accepted=None,
@@ -87,9 +114,7 @@ class User(AbstractUser):
                 _('You must accept the guidelines to make an account'),
             )
 
-        formatted_email = cls.format_email_to_common_string(email)
-
-        new_user = cls.objects.create_user(username, email=formatted_email, password=password,
+        new_user = cls.objects.create_user(username, email=email, password=password,
                                            are_guidelines_accepted=are_guidelines_accepted)
         user_profile = bootstrap_user_profile(name=name, user=new_user, avatar=avatar,
                                               is_of_legal_age=is_of_legal_age)
@@ -115,26 +140,6 @@ class User(AbstractUser):
             return True
         except User.DoesNotExist:
             return False
-
-    @classmethod
-    def format_email_to_common_string(cls, email):
-        """
-        Method to format an email address based on an email provider.
-        Some providers treat foo@email.com the same as f.o.o@email.com, so we must strip special characters
-        out to prevent multiple accounts for the same email
-        """
-        dots_do_not_matter_providers = [
-            "gmail.com",
-            "googlemail.com",
-            "google.com"
-        ]
-
-        email_suffix = email.split("@")[-1]
-
-        if email_suffix in dots_do_not_matter_providers:
-            return email.split("@")[0].replace('.', '') + "@" + email_suffix
-
-        return email
 
     @classmethod
     def get_public_posts_for_user_with_username(cls, username, max_id=None, min_id=None):
