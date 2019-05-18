@@ -2126,21 +2126,18 @@ class User(AbstractUser):
         moderated_object.reject_with_actor_with_id(actor_id=self.pk)
 
     def update_moderated_object_with_id(self, moderated_object_id, description=None,
-                                        approved=None,
                                         category_id=None):
         ModeratedObject = get_moderated_object_model()
         moderated_object = ModeratedObject.objects.get(pk=moderated_object_id)
 
         return self.update_moderated_object(moderated_object=moderated_object, description=description,
-                                            category_id=category_id,
-                                            approved=approved)
+                                            category_id=category_id)
 
-    def update_moderated_object(self, moderated_object, description=None, approved=None,
+    def update_moderated_object(self, moderated_object, description=None,
                                 category_id=None):
         self._check_can_update_moderated_object(moderated_object=moderated_object)
         moderated_object.update_with_actor_with_id(actor_id=self.pk, description=description,
-                                                   category_id=category_id,
-                                                   approved=approved)
+                                                   category_id=category_id)
         return moderated_object
 
     def _check_has_not_reported_moderated_object_with_id(self, moderated_object_id):
@@ -2157,7 +2154,7 @@ class User(AbstractUser):
                 _('The moderated object has been verified and can no longer be edited.')
             )
 
-        if moderated_object.approved is not None:
+        if not moderated_object.is_pending() and not self.is_global_moderator():
             raise PermissionDenied(
                 _('The moderated object has already been approved/rejected.')
             )

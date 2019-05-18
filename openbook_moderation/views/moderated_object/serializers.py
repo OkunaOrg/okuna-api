@@ -9,7 +9,7 @@ from openbook_moderation.models import ModeratedObjectLog, ModeratedObjectCatego
 from openbook_moderation.views.validators import moderated_object_id_exists, moderation_category_id_exists
 
 
-class EditModeratedObjectSerializer(serializers.Serializer):
+class UpdateModeratedObjectSerializer(serializers.Serializer):
     description = serializers.CharField(max_length=settings.MODERATED_OBJECT_DESCRIPTION_MAX_LENGTH, required=False,
                                         allow_blank=False)
     moderated_object_id = serializers.UUIDField(
@@ -17,7 +17,8 @@ class EditModeratedObjectSerializer(serializers.Serializer):
         required=True,
     )
     category_id = serializers.IntegerField(
-        validators=[moderation_category_id_exists]
+        validators=[moderation_category_id_exists],
+        required=False
     )
 
 

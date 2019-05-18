@@ -430,9 +430,9 @@ class ModeratedObjectCategoryChangedLog(models.Model):
 class ModeratedObjectDescriptionChangedLog(models.Model):
     log = GenericRelation(ModeratedObjectLog)
     changed_from = models.CharField(_('changed from'), max_length=settings.MODERATION_REPORT_DESCRIPTION_MAX_LENGTH,
-                                    blank=False, null=False)
+                                    blank=False, null=True)
     changed_to = models.CharField(_('changed to'), max_length=settings.MODERATION_REPORT_DESCRIPTION_MAX_LENGTH,
-                                  blank=False, null=False)
+                                  blank=False, null=True)
 
     @classmethod
     def create_moderated_object_description_changed_log(cls, moderated_object_id, changed_from, changed_to, actor_id):

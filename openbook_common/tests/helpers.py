@@ -172,7 +172,10 @@ def make_community_invites_enabled():
     return fake.boolean()
 
 
-def make_community(creator, type=Community.COMMUNITY_TYPE_PUBLIC, name=None):
+def make_community(creator=None, type=Community.COMMUNITY_TYPE_PUBLIC, name=None):
+    if not creator:
+        creator = make_user()
+
     if not name:
         name = make_community_name()
 
@@ -208,3 +211,7 @@ def make_moderation_category(severity=ModerationCategory.SEVERITY_MEDIUM):
 
 def make_moderation_report_description():
     return fake.text(max_nb_chars=settings.MODERATION_REPORT_DESCRIPTION_MAX_LENGTH)
+
+
+def make_moderated_object_description():
+    return fake.text(max_nb_chars=settings.MODERATED_OBJECT_DESCRIPTION_MAX_LENGTH)
