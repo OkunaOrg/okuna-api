@@ -147,6 +147,9 @@ class ModeratedObject(models.Model):
     def is_approved(self):
         return self.status == ModeratedObject.STATUS_APPROVED
 
+    def is_pending(self):
+        return self.status == ModeratedObject.STATUS_PENDING
+
     def update_with_actor_with_id(self, actor_id, description, category_id):
         if description is not None:
             current_description = self.description
@@ -180,15 +183,15 @@ class ModeratedObject(models.Model):
         moderation_severity = self.category.severity
         penalty_targets = None
 
-        if content_object is User:
+        if isinstance(content_object, User):
             penalty_targets = [content_object]
-        elif content_object is Post:
+        elif isinstance(content_object, Post):
             penalty_targets = [content_object.creator]
-        elif content_object is PostComment:
+        elif isinstance(content_object, PostComment):
             penalty_targets = [content_object.commenter]
-        elif content_object is Community:
+        elif isinstance(content_object, Community):
             penalty_targets = content_object.get_staff_members()
-        elif content_object is ModeratedObject:
+        elif isinstance(content_object, ModeratedObject):
             penalty_targets = content_object.get_reporters()
 
         for penalty_target in penalty_targets:
@@ -205,7 +208,7 @@ class ModeratedObject(models.Model):
                 duration_of_penalty = timedelta(hours=low_severity_penalties_count ** 2)
 
             ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
-                                                                   user_id=penalty_target,
+                                                                   user_id=penalty_target.pk,
                                                                    duration=duration_of_penalty)
 
         if content_object is User:

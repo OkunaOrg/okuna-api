@@ -2152,7 +2152,7 @@ class User(AbstractUser):
     def _check_can_update_moderated_object(self, moderated_object):
         self._check_can_moderate_moderated_object(moderated_object=moderated_object)
 
-        if moderated_object.is_verified:
+        if moderated_object.is_verified():
             raise PermissionDenied(
                 _('The moderated object has been verified and can no longer be edited.')
             )
@@ -2178,17 +2178,22 @@ class User(AbstractUser):
             )
 
     def _check_can_unverify_moderated_object(self, moderated_object):
-        self._check_is_openbook_staff()
-        if not moderated_object.is_verified:
+        self._check_is_global_moderator()
+        if not moderated_object.is_verified():
             raise ValidationError(
                 _('The moderated object has not been verified.')
             )
 
     def _check_can_verify_moderated_object(self, moderated_object):
-        self._check_is_openbook_staff()
-        if moderated_object.is_verified:
+        self._check_is_global_moderator()
+        if moderated_object.is_verified():
             raise ValidationError(
                 _('The moderated object is already verified.')
+            )
+
+        if moderated_object.is_pending():
+            raise ValidationError(
+                _('You cannot verify a moderated object with status pending. Please approve or reject it.')
             )
 
     def _check_can_moderate_moderated_object(self, moderated_object):
@@ -3431,10 +3436,6 @@ class User(AbstractUser):
             raise ValidationError(
                 _('You have already reported the community.'),
             )
-
-    def _check_is_openbook_staff(self):
-        if not self.is_staff:
-            raise PermissionDenied(_('Not Openbook staff.'))
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='bootstrap_auth_token')

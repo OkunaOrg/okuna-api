@@ -282,6 +282,91 @@ class GlobalModeratedObjectsAPITests(APITestCase):
 
             self.assertIn(response_moderated_object_post_id, rejected_moderated_objects_posts_ids)
 
+    def test_can_filter_verified_moderated_objects(self):
+        """
+        should be able to filter on verified moderated objects and return 200
+        """
+        global_moderator = make_global_moderator()
+
+        amount_of_posts = 5
+        amount_of_verified_post_moderated_objects = 2
+
+        verified_moderated_objects_posts_ids = []
+
+        for i in range(0, amount_of_posts):
+            reporter_user = make_user()
+            post_creator = make_user()
+            post = post_creator.create_public_post(text=make_fake_post_text())
+            report_category = make_moderation_category()
+            reporter_user.report_post(post=post, category_id=report_category.pk)
+
+            if i < amount_of_verified_post_moderated_objects:
+                moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                           category_id=report_category.pk)
+                global_moderator.approve_moderated_object(moderated_object=moderated_object)
+                global_moderator.verify_moderated_object(moderated_object=moderated_object)
+                verified_moderated_objects_posts_ids.append(post.pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.get(url, {'verified': True}, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_moderated_objects = json.loads(response.content)
+
+        self.assertEqual(len(response_moderated_objects), len(verified_moderated_objects_posts_ids))
+
+        for response_moderated_object in response_moderated_objects:
+            response_moderated_object_post_id = response_moderated_object.get('object_id')
+            response_post_moderated_object_type = response_moderated_object.get('object_type')
+            self.assertEqual(response_post_moderated_object_type, ModeratedObject.OBJECT_TYPE_POST)
+
+            self.assertIn(response_moderated_object_post_id, verified_moderated_objects_posts_ids)
+
+    def test_can_filter_unverified_moderated_objects(self):
+        """
+        should be able to filter on unverified moderated objects and return 200
+        """
+        global_moderator = make_global_moderator()
+
+        amount_of_posts = 5
+        amount_of_unverified_post_moderated_objects = 2
+
+        unverified_moderated_objects_posts_ids = []
+
+        for i in range(0, amount_of_posts):
+            reporter_user = make_user()
+            post_creator = make_user()
+            post = post_creator.create_public_post(text=make_fake_post_text())
+            report_category = make_moderation_category()
+            reporter_user.report_post(post=post, category_id=report_category.pk)
+
+            if i < amount_of_unverified_post_moderated_objects:
+                unverified_moderated_objects_posts_ids.append(post.pk)
+            else:
+                moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                           category_id=report_category.pk)
+                global_moderator.approve_moderated_object(moderated_object=moderated_object)
+                global_moderator.verify_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.get(url, {'verified': False}, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_moderated_objects = json.loads(response.content)
+
+        self.assertEqual(len(response_moderated_objects), len(unverified_moderated_objects_posts_ids))
+
+        for response_moderated_object in response_moderated_objects:
+            response_moderated_object_post_id = response_moderated_object.get('object_id')
+            response_post_moderated_object_type = response_moderated_object.get('object_type')
+            self.assertEqual(response_post_moderated_object_type, ModeratedObject.OBJECT_TYPE_POST)
+
+            self.assertIn(response_moderated_object_post_id, unverified_moderated_objects_posts_ids)
+
     def test_can_filter_post_moderated_objects(self):
         """
         should be able to filter post moderated objects and return 200
@@ -691,6 +776,110 @@ class CommunityModeratedObjectsAPITests(APITestCase):
             self.assertEqual(response_post_moderated_object_type, ModeratedObject.OBJECT_TYPE_POST)
 
             self.assertIn(response_moderated_object_post_id, rejected_moderated_objects_posts_ids)
+
+    def test_can_filter_verified_moderated_objects(self):
+        """
+        should be able to filter on verified moderated objects and return 200
+        """
+        global_moderator = make_global_moderator()
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        community_moderator = make_user()
+
+        community_moderator.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(username=community_moderator.username,
+                                                                             community_name=community.name)
+
+        amount_of_posts = 5
+        amount_of_verified_post_moderated_objects = 2
+
+        verified_moderated_objects_posts_ids = []
+
+        for i in range(0, amount_of_posts):
+            reporter_user = make_user()
+            post_creator = make_user()
+            post_creator.join_community_with_name(community_name=community.name)
+            post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+            report_category = make_moderation_category()
+            reporter_user.report_post(post=post, category_id=report_category.pk)
+
+            if i < amount_of_verified_post_moderated_objects:
+                moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                           category_id=report_category.pk)
+                community_moderator.approve_moderated_object(moderated_object=moderated_object)
+                global_moderator.verify_moderated_object(moderated_object=moderated_object)
+                verified_moderated_objects_posts_ids.append(post.pk)
+
+        url = self._get_url(community=community)
+        headers = make_authentication_headers_for_user(community_moderator)
+        response = self.client.get(url, {'verified': True}, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_moderated_objects = json.loads(response.content)
+
+        self.assertEqual(len(response_moderated_objects), len(verified_moderated_objects_posts_ids))
+
+        for response_moderated_object in response_moderated_objects:
+            response_moderated_object_post_id = response_moderated_object.get('object_id')
+            response_post_moderated_object_type = response_moderated_object.get('object_type')
+            self.assertEqual(response_post_moderated_object_type, ModeratedObject.OBJECT_TYPE_POST)
+
+            self.assertIn(response_moderated_object_post_id, verified_moderated_objects_posts_ids)
+
+    def test_can_filter_unverified_moderated_objects(self):
+        """
+        should be able to filter on unverified moderated objects and return 200
+        """
+        global_moderator = make_global_moderator()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        community_moderator = make_user()
+
+        community_moderator.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(username=community_moderator.username,
+                                                                             community_name=community.name)
+
+        amount_of_posts = 5
+        amount_of_unverified_post_moderated_objects = 2
+
+        unverified_moderated_objects_posts_ids = []
+
+        for i in range(0, amount_of_posts):
+            reporter_user = make_user()
+            post_creator = make_user()
+            post_creator.join_community_with_name(community_name=community.name)
+            post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+            report_category = make_moderation_category()
+            reporter_user.report_post(post=post, category_id=report_category.pk)
+
+            if i < amount_of_unverified_post_moderated_objects:
+                unverified_moderated_objects_posts_ids.append(post.pk)
+            else:
+                moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                           category_id=report_category.pk)
+                community_moderator.approve_moderated_object(moderated_object=moderated_object)
+                global_moderator.verify_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(community=community)
+        headers = make_authentication_headers_for_user(community_moderator)
+        response = self.client.get(url, {'verified': False}, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_moderated_objects = json.loads(response.content)
+
+        self.assertEqual(len(response_moderated_objects), len(unverified_moderated_objects_posts_ids))
+
+        for response_moderated_object in response_moderated_objects:
+            response_moderated_object_post_id = response_moderated_object.get('object_id')
+            response_post_moderated_object_type = response_moderated_object.get('object_type')
+            self.assertEqual(response_post_moderated_object_type, ModeratedObject.OBJECT_TYPE_POST)
+
+            self.assertIn(response_moderated_object_post_id, unverified_moderated_objects_posts_ids)
 
     def test_can_filter_post_moderated_objects(self):
         """
