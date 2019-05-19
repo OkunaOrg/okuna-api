@@ -64,10 +64,9 @@ class RejectModeratedObject(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request, moderated_object_id):
-        request_data = request.data.dict()
-
-        request_data['moderated_object_id'] = moderated_object_id
-        serializer = ApproveModeratedObjectSerializer(data=request_data, context={"request": request})
+        serializer = ApproveModeratedObjectSerializer(data={
+            'moderated_object_id': moderated_object_id
+        }, context={"request": request})
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
