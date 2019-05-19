@@ -50,7 +50,8 @@ from openbook_invitations.views import UserInvite, UserInvites, SearchUserInvite
 from openbook_devices.views import Devices, DeviceItem
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
 from openbook_lists.views import Lists, ListItem, ListNameCheck
-from openbook_moderation.views.moderated_object.views import ModeratedObjectItem, ModeratedObjectLogs
+from openbook_moderation.views.moderated_object.views import ModeratedObjectItem, ModeratedObjectLogs, \
+    ApproveModeratedObject, RejectModeratedObject, VerifyModeratedObject, UnverifyModeratedObject
 from openbook_moderation.views.moderated_objects.views import CommunityModeratedObjects, GlobalModeratedObjects
 from openbook_moderation.views.moderation_categories.views import ModerationCategories
 from openbook_moderation.views.report.views import ReportUser, ReportPost, ReportCommunity, \
@@ -288,6 +289,10 @@ invites_patterns = [
 
 moderation_moderated_object_patterns = [
     path('', ModeratedObjectItem.as_view(), name='moderated-object'),
+    path('approve/', ApproveModeratedObject.as_view(), name='approve-moderated-object'),
+    path('reject/', RejectModeratedObject.as_view(), name='reject-moderated-object'),
+    path('verify/', VerifyModeratedObject.as_view(), name='verify-moderated-object'),
+    path('unverify/', UnverifyModeratedObject.as_view(), name='unverify-moderated-object'),
     path('logs/', ModeratedObjectLogs.as_view(), name='moderated-object-logs'),
 ]
 
