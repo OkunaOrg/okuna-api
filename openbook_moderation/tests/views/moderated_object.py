@@ -6,7 +6,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from openbook_common.tests.helpers import make_global_moderator, make_user, make_moderation_category, \
-    make_authentication_headers_for_user, make_moderation_report_description, make_moderated_object_description, \
+    make_authentication_headers_for_user, make_moderated_object_description, \
     make_community, make_fake_post_text, make_fake_post_comment_text
 from openbook_moderation.models import ModeratedObject, ModeratedObjectDescriptionChangedLog, \
     ModeratedObjectCategoryChangedLog
@@ -50,6 +50,113 @@ class ModeratedObjectAPITests(APITestCase):
         self.assertTrue(ModeratedObject.objects.filter(
             category_id=new_report_category.pk,
             description=new_moderated_object_description,
+            object_id=user.pk,
+        ).exists())
+
+    def test_can_update_user_moderated_object_if_approved(self):
+        """
+        should be able to update a user moderated object if approved
+        """
+        global_moderator = make_global_moderator()
+
+        user = make_user()
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_user_with_username(username=user.username, category_id=report_category.pk)
+
+        new_moderated_object_description = make_moderated_object_description()
+        new_report_category = make_moderation_category()
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(user=user,
+                                                                                   category_id=report_category.pk)
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.patch(url, data={
+            'description': new_moderated_object_description,
+            'category_id': new_report_category.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            category_id=new_report_category.pk,
+            description=new_moderated_object_description,
+            object_id=user.pk,
+        ).exists())
+
+    def test_can_update_user_moderated_object_if_rejected(self):
+        """
+        should be able to update a user moderated object if rejected
+        """
+        global_moderator = make_global_moderator()
+
+        user = make_user()
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_user_with_username(username=user.username, category_id=report_category.pk)
+
+        new_moderated_object_description = make_moderated_object_description()
+        new_report_category = make_moderation_category()
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(user=user,
+                                                                                   category_id=report_category.pk)
+        global_moderator.reject_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.patch(url, data={
+            'description': new_moderated_object_description,
+            'category_id': new_report_category.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            category_id=new_report_category.pk,
+            description=new_moderated_object_description,
+            object_id=user.pk,
+        ).exists())
+
+    def test_cant_update_moderated_object_if_verified(self):
+        """
+        should not be able to update a user moderated object if already verified
+        """
+        global_moderator = make_global_moderator()
+
+        user = make_user()
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_user_with_username(username=user.username, category_id=report_category.pk)
+
+        new_moderated_object_description = make_moderated_object_description()
+        new_report_category = make_moderation_category()
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(user=user,
+                                                                                   category_id=report_category.pk)
+
+        global_moderator.approve_moderated_object_with_id(moderated_object_id=moderated_object.pk)
+        global_moderator.verify_moderated_object_with_id(moderated_object_id=moderated_object.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.patch(url, data={
+            'description': new_moderated_object_description,
+            'category_id': new_report_category.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            category_id=report_category.pk,
+            description__isnull=True,
             object_id=user.pk,
         ).exists())
 
@@ -428,6 +535,143 @@ class ModeratedObjectAPITests(APITestCase):
             object_id=post.pk,
         ).exists())
 
+    def test_community_moderator_cant_update_community_post_moderated_object_if_verified(self):
+        """
+        community moderator should not be able to update a community post moderated object if already verified
+        """
+        global_moderator = make_global_moderator()
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+        community_moderator = make_user()
+
+        community_moderator.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(community_name=community.name,
+                                                                             username=community_moderator.username)
+
+        post_creator = make_user()
+
+        post_creator.join_community_with_name(community_name=community.name)
+        post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_post(post=post, category_id=report_category.pk)
+
+        new_moderated_object_description = make_moderated_object_description()
+        new_report_category = make_moderation_category()
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=report_category.pk)
+
+        global_moderator.reject_moderated_object(moderated_object=moderated_object)
+        global_moderator.verify_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(community_moderator)
+        response = self.client.patch(url, data={
+            'description': new_moderated_object_description,
+            'category_id': new_report_category.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(ModeratedObject.objects.filter(
+            category_id=new_report_category.pk,
+            description=new_moderated_object_description,
+            object_id=post.pk,
+        ).exists())
+
+    def test_community_moderator_cant_update_community_post_moderated_object_if_approved(self):
+        """
+        community moderator should not be able to update a community post moderated object if status is approved
+        """
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+        community_moderator = make_user()
+
+        community_moderator.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(community_name=community.name,
+                                                                             username=community_moderator.username)
+
+        post_creator = make_user()
+
+        post_creator.join_community_with_name(community_name=community.name)
+        post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_post(post=post, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=report_category.pk)
+
+        community_moderator.approve_moderated_object_with_id(moderated_object_id=moderated_object.pk)
+
+        new_moderated_object_description = make_moderated_object_description()
+        new_report_category = make_moderation_category()
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(community_moderator)
+        response = self.client.patch(url, data={
+            'description': new_moderated_object_description,
+            'category_id': new_report_category.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertFalse(ModeratedObject.objects.filter(
+            category_id=new_report_category.pk,
+            description=new_moderated_object_description,
+            object_id=post.pk,
+        ).exists())
+
+    def test_community_moderator_cant_update_community_post_moderated_object_if_rejected(self):
+        """
+        community moderator should not be able to update a community post moderated object if status is rejected
+        """
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+        community_moderator = make_user()
+
+        community_moderator.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(community_name=community.name,
+                                                                             username=community_moderator.username)
+
+        post_creator = make_user()
+
+        post_creator.join_community_with_name(community_name=community.name)
+        post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_post(post=post, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=report_category.pk)
+
+        community_moderator.reject_moderated_object_with_id(moderated_object_id=moderated_object.pk)
+
+        new_moderated_object_description = make_moderated_object_description()
+        new_report_category = make_moderation_category()
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(community_moderator)
+        response = self.client.patch(url, data={
+            'description': new_moderated_object_description,
+            'category_id': new_report_category.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertFalse(ModeratedObject.objects.filter(
+            category_id=new_report_category.pk,
+            description=new_moderated_object_description,
+            object_id=post.pk,
+        ).exists())
+
     def test_can_update_community_post_comment_moderated_object_if_global_moderator(self):
         """
         should be able to update a community post_comment moderated object if global moderator
@@ -546,6 +790,149 @@ class ModeratedObjectAPITests(APITestCase):
         }, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(ModeratedObject.objects.filter(
+            category_id=new_report_category.pk,
+            description=new_moderated_object_description,
+            object_id=post_comment.pk,
+        ).exists())
+
+    def test_community_moderator_cant_update_community_post_comment_moderated_object_if_verified(self):
+        """
+        community moderator should not be able to update a community post_comment moderated object if already verified
+        """
+        global_moderator = make_global_moderator()
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+        community_moderator = make_user()
+
+        community_moderator.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(community_name=community.name,
+                                                                             username=community_moderator.username)
+
+        post_comment_creator = make_user()
+
+        post_comment_creator.join_community_with_name(community_name=community.name)
+        post = post_comment_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_comment = post_comment_creator.comment_post(post=post,
+                                                         text=make_fake_post_comment_text())
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_comment_for_post(post=post, post_comment=post_comment, category_id=report_category.pk)
+
+        new_moderated_object_description = make_moderated_object_description()
+        new_report_category = make_moderation_category()
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post_comment(post_comment=post_comment,
+                                                                                           category_id=report_category.pk)
+
+        global_moderator.reject_moderated_object(moderated_object=moderated_object)
+        global_moderator.verify_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(community_moderator)
+        response = self.client.patch(url, data={
+            'description': new_moderated_object_description,
+            'category_id': new_report_category.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(ModeratedObject.objects.filter(
+            category_id=new_report_category.pk,
+            description=new_moderated_object_description,
+            object_id=post_comment.pk,
+        ).exists())
+
+    def test_community_moderator_cant_update_community_post_comment_moderated_object_if_approved(self):
+        """
+        community moderator should not be able to update a community post_comment moderated object if status is approved
+        """
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+        community_moderator = make_user()
+
+        community_moderator.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(community_name=community.name,
+                                                                             username=community_moderator.username)
+
+        post_comment_creator = make_user()
+
+        post_comment_creator.join_community_with_name(community_name=community.name)
+        post = post_comment_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_comment = post_comment_creator.comment_post(post=post,
+                                                         text=make_fake_post_comment_text())
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_comment_for_post(post=post, post_comment=post_comment, category_id=report_category.pk)
+
+        new_moderated_object_description = make_moderated_object_description()
+        new_report_category = make_moderation_category()
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post_comment(post_comment=post_comment,
+                                                                                           category_id=report_category.pk)
+
+        community_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(community_moderator)
+        response = self.client.patch(url, data={
+            'description': new_moderated_object_description,
+            'category_id': new_report_category.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertFalse(ModeratedObject.objects.filter(
+            category_id=new_report_category.pk,
+            description=new_moderated_object_description,
+            object_id=post_comment.pk,
+        ).exists())
+
+    def test_community_moderator_cant_update_community_post_comment_moderated_object_if_rejected(self):
+        """
+        community moderator should not be able to update a community post_comment moderated object if status is rejected
+        """
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+        community_moderator = make_user()
+
+        community_moderator.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(community_name=community.name,
+                                                                             username=community_moderator.username)
+
+        post_comment_creator = make_user()
+
+        post_comment_creator.join_community_with_name(community_name=community.name)
+        post = post_comment_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_comment = post_comment_creator.comment_post(post=post,
+                                                         text=make_fake_post_comment_text())
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_comment_for_post(post=post, post_comment=post_comment, category_id=report_category.pk)
+
+        new_moderated_object_description = make_moderated_object_description()
+        new_report_category = make_moderation_category()
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post_comment(post_comment=post_comment,
+                                                                                           category_id=report_category.pk)
+
+        community_moderator.reject_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(community_moderator)
+        response = self.client.patch(url, data={
+            'description': new_moderated_object_description,
+            'category_id': new_report_category.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         self.assertFalse(ModeratedObject.objects.filter(
             category_id=new_report_category.pk,
