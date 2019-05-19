@@ -629,6 +629,70 @@ class CommunityModeratedObjectsAPITests(APITestCase):
 
             self.assertIn(response_moderated_object_post_comment_id, post_comments_ids)
 
+    def test_cannot_retrieve_user_moderated_objects_if_moderator(self):
+        """
+        should not be able to retrieve user moderated objects if moderator and return 200
+        """
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        community_moderator = make_user()
+
+        community_moderator.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(username=community_moderator.username,
+                                                                             community_name=community.name)
+
+        amount_of_user = 5
+
+        for i in range(0, amount_of_user):
+            reporter_user = make_user()
+            reporter_user.join_community_with_name(community_name=community.name)
+            user = make_user()
+            user.join_community_with_name(community_name=community.name)
+            report_category = make_moderation_category()
+            reporter_user.report_user(user=user, category_id=report_category.pk)
+
+        url = self._get_url(community=community)
+        headers = make_authentication_headers_for_user(community_moderator)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_moderated_objects = json.loads(response.content)
+
+        self.assertEqual(0, len(response_moderated_objects))
+
+    def test_cannot_retrieve_community_moderated_objects_if_moderator(self):
+        """
+        should not be able to retrieve community moderated objects if moderator and return 200
+        """
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        community_moderator = make_user()
+
+        community_moderator.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(username=community_moderator.username,
+                                                                             community_name=community.name)
+
+        amount_of_communities = 5
+
+        for i in range(0, amount_of_communities):
+            reporter_user = make_user()
+            reporter_user.join_community_with_name(community_name=community.name)
+            report_category = make_moderation_category()
+            reporter_user.report_community(community=community, category_id=report_category.pk)
+
+        url = self._get_url(community=community)
+        headers = make_authentication_headers_for_user(community_moderator)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_moderated_objects = json.loads(response.content)
+
+        self.assertEqual(0, len(response_moderated_objects))
+
     def test_can_filter_approved_moderated_objects(self):
         """
         should be able to filter on approved moderated objects and return 200
