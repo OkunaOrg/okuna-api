@@ -512,11 +512,11 @@ class GlobalModeratedObjectsAPITests(APITestCase):
 
         self.assertEqual(response_moderated_object_id, community.pk)
 
-    def test_cant_retrieve_moderated_objects_if_not_global_moderator(self):
+    def test_cant_retrieve_moderated_objects_if_regular_user(self):
         """
-        should not be able to retrieve all moderated objects if not global moderators and return 400
+        should not be able to retrieve all moderated objects if regular user and return 400
         """
-        global_moderator = make_user()
+        regular_user = make_user()
 
         amount_of_posts = 5
         posts_ids = []
@@ -530,7 +530,36 @@ class GlobalModeratedObjectsAPITests(APITestCase):
             reporter_user.report_post(post=post, category_id=report_category.pk)
 
         url = self._get_url()
-        headers = make_authentication_headers_for_user(global_moderator)
+        headers = make_authentication_headers_for_user(regular_user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_cant_retrieve_moderated_objects_if_community_moderator(self):
+        """
+        should not be able to retrieve all moderated objects if community moderator and return 400
+        """
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+        community_moderator = make_user()
+        community_moderator.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(community_name=community.name,
+                                                                             username=community_moderator.username)
+
+        amount_of_posts = 5
+        posts_ids = []
+
+        for i in range(0, amount_of_posts):
+            reporter_user = make_user()
+            post_creator = make_user()
+            post_creator.join_community_with_name(community_name=community.name)
+            post = post_creator.create_public_post(text=make_fake_post_text())
+            posts_ids.append(post.pk)
+            report_category = make_moderation_category()
+            reporter_user.report_post(post=post, category_id=report_category.pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(community_moderator)
         response = self.client.get(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
