@@ -67,7 +67,7 @@ class ModeratedObject(models.Model):
     category = models.ForeignKey(ModerationCategory, on_delete=models.CASCADE, related_name='moderated_objects')
 
     object_audit_snapshot = models.TextField(_('object_audit_snapshot'),
-                                             blank=False, null=False, )
+                                             blank=False, null=True, )
     OBJECT_TYPE_POST = 'P'
     OBJECT_TYPE_POST_COMMENT = 'PC'
     OBJECT_TYPE_COMMUNITY = 'C'
@@ -273,7 +273,7 @@ class ModeratedObject(models.Model):
         self.verified = False
         ModeratedObjectVerifiedChangedLog.create_moderated_object_verified_changed_log(
             changed_from=current_verified, changed_to=self.verified, moderated_object_id=self.pk, actor_id=actor_id)
-        self.penalties.delete()
+        self.penalties.all().delete()
         self.object_audit_snapshot = None
         self.save()
 

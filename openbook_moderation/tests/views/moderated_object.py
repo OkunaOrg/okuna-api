@@ -2008,11 +2008,11 @@ class VerifyModeratedObjectApiTests(APITestCase):
             verified=False
         ).exists())
 
-    def test_cant_verify_community_moderated_object_if_regular_community(self):
+    def test_cant_verify_community_moderated_object_if_regular_user(self):
         """
-        should not be able to verify a community moderated object if regular community
+        should not be able to verify a community moderated object if regular user
         """
-        regular_community = make_user()
+        regular_user = make_user()
 
         community = make_community()
 
@@ -2029,7 +2029,7 @@ class VerifyModeratedObjectApiTests(APITestCase):
         global_moderator.approve_moderated_object(moderated_object=moderated_object)
 
         url = self._get_url(moderated_object=moderated_object)
-        headers = make_authentication_headers_for_user(regular_community)
+        headers = make_authentication_headers_for_user(regular_user)
         response = self.client.post(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -2075,9 +2075,9 @@ class VerifyModeratedObjectApiTests(APITestCase):
             verified=True
         ).exists())
 
-    def test_cant_verify_community_post_moderated_object_if_community_post_moderator(self):
+    def test_cant_verify_community_post_moderated_object_if_community_moderator(self):
         """
-        should not be able to verify a community_post moderated object if community_post moderator
+        should not be able to verify a community_post moderated object if community moderator
         """
         community_creator = make_user()
         community = make_community(creator=community_creator)
@@ -2286,5 +2286,498 @@ class VerifyModeratedObjectApiTests(APITestCase):
 
     def _get_url(self, moderated_object):
         return reverse('verify-moderated-object', kwargs={
+            'moderated_object_id': moderated_object.pk
+        })
+
+
+class UnverifyModeratedObjectApiTests(APITestCase):
+    """
+    UnverifyModeratedObjectApi
+    """
+
+    def test_can_unverify_moderated_object_if_global_moderator_and_approved(self):
+        """
+        should be able to unverify a user moderated object if global moderator and approved
+        """
+        global_moderator = make_global_moderator()
+
+        user = make_user()
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_user_with_username(username=user.username, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(user=user,
+                                                                                   category_id=report_category.pk)
+
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+        global_moderator.verify_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            object_id=user.pk,
+            verified=False
+        ).exists())
+
+    def test_can_unverify_moderated_object_if_global_moderator_and_rejected(self):
+        """
+        should be able to unverify a user moderated object if global moderator and rejected
+        """
+        global_moderator = make_global_moderator()
+
+        user = make_user()
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_user_with_username(username=user.username, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(user=user,
+                                                                                   category_id=report_category.pk)
+
+        global_moderator.reject_moderated_object(moderated_object=moderated_object)
+        global_moderator.verify_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            object_id=user.pk,
+            verified=False
+        ).exists())
+
+    def test_cant_unverify_user_moderated_object_if_community_moderator(self):
+        """
+        should not be able to unverify a user moderated object if community moderator
+        """
+
+        global_moderator = make_global_moderator()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+        community_moderator = make_user()
+        community_moderator.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(community_name=community.name,
+                                                                             username=community_moderator.username
+                                                                             )
+
+        user = make_user()
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_user_with_username(username=user.username, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(user=user,
+                                                                                   category_id=report_category.pk)
+
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+        global_moderator.verify_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(community_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            object_id=user.pk,
+            verified=True
+        ).exists())
+
+    def test_cant_unverify_user_moderated_object_if_regular_user(self):
+        """
+        should not be able to unverify a user moderated object if regular user
+        """
+        regular_user = make_user()
+        global_moderator = make_global_moderator()
+
+        user = make_user()
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_user_with_username(username=user.username, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(user=user,
+                                                                                   category_id=report_category.pk)
+
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+        global_moderator.verify_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(regular_user)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            object_id=user.pk,
+            verified=True
+        ).exists())
+
+    def test_can_unverify_community_moderated_object_if_global_moderator(self):
+        """
+        should be able to unverify a community moderated object if global moderator
+        """
+        global_moderator = make_global_moderator()
+
+        community = make_community()
+
+        reporter_community = make_user()
+        report_category = make_moderation_category()
+
+        reporter_community.report_community(community=community,
+                                            category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_community(community=community,
+                                                                                        category_id=report_category.pk)
+
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+        global_moderator.verify_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            object_id=community.pk,
+            verified=False
+        ).exists())
+
+    def test_cant_unverify_community_moderated_object_if_community_moderator(self):
+        """
+        should not be able to unverify a community moderated object if community moderator
+        """
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+        community_moderator = make_user()
+        community_moderator.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(community_name=community.name,
+                                                                             username=community_moderator.username
+                                                                             )
+
+        community = make_community()
+
+        reporter_community = make_user()
+        report_category = make_moderation_category()
+
+        reporter_community.report_community(community=community,
+                                            category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_community(community=community,
+                                                                                        category_id=report_category.pk)
+        global_moderator = make_global_moderator()
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+        global_moderator.verify_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(community_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            object_id=community.pk,
+            verified=True
+        ).exists())
+
+    def test_cant_unverify_community_moderated_object_if_regular_user(self):
+        """
+        should not be able to unverify a community moderated object if regular user
+        """
+        regular_user = make_user()
+
+        community = make_community()
+
+        reporter_community = make_user()
+        report_category = make_moderation_category()
+
+        reporter_community.report_community(community=community,
+                                            category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_community(community=community,
+                                                                                        category_id=report_category.pk)
+
+        global_moderator = make_global_moderator()
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+        global_moderator.verify_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(regular_user)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            object_id=community.pk,
+            verified=True
+        ).exists())
+
+    def test_can_unverify_community_post_moderated_object_if_global_moderator(self):
+        """
+        should be able to unverify a community_post moderated object if global moderator
+        """
+        global_moderator = make_global_moderator()
+
+        community = make_community()
+
+        community_post_creator = make_user()
+        community_post_creator.join_community_with_name(community_name=community.name)
+        community_post = community_post_creator.create_community_post(community_name=community.name,
+                                                                      text=make_fake_post_text())
+
+        reporter_community_post = make_user()
+        report_category = make_moderation_category()
+
+        reporter_community_post.report_post(post=community_post,
+                                            category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(
+            post=community_post,
+            category_id=report_category.pk)
+
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+        global_moderator.verify_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            object_id=community_post.pk,
+            verified=False
+        ).exists())
+
+    def test_cant_unverify_community_post_moderated_object_if_community_moderator(self):
+        """
+        should not be able to unverify a community_post moderated object if community moderator
+        """
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        community_moderator = make_user()
+        community_moderator.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(
+            community_name=community.name,
+            username=community_moderator.username
+        )
+
+        community_post_creator = make_user()
+        community_post_creator.join_community_with_name(community_name=community.name)
+        community_post = community_post_creator.create_community_post(community_name=community.name,
+                                                                      text=make_fake_post_text())
+        reporter_community_post = make_user()
+        report_category = make_moderation_category()
+
+        reporter_community_post.report_post(post=community_post,
+                                            category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(
+            post=community_post,
+            category_id=report_category.pk)
+        global_moderator = make_global_moderator()
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+        global_moderator.verify_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(community_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            object_id=community_post.pk,
+            verified=True
+        ).exists())
+
+    def test_cant_unverify_community_post_moderated_object_if_regular_user(self):
+        """
+        should not be able to unverify a community_post moderated object if regular user
+        """
+        regular_user = make_user()
+
+        community = make_community()
+
+        community_post_creator = make_user()
+        community_post_creator.join_community_with_name(community_name=community.name)
+        community_post = community_post_creator.create_community_post(community_name=community.name,
+                                                                      text=make_fake_post_text())
+
+        reporter_community_post = make_user()
+        report_category = make_moderation_category()
+
+        reporter_community_post.report_post(post=community_post,
+                                            category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(
+            post=community_post,
+            category_id=report_category.pk)
+
+        global_moderator = make_global_moderator()
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+        global_moderator.verify_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(regular_user)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            object_id=community_post.pk,
+            verified=True
+        ).exists())
+
+    def test_can_unverify_community_post_comment_moderated_object_if_global_moderator(self):
+        """
+        should be able to unverify a community_post_comment moderated object if global moderator
+        """
+        global_moderator = make_global_moderator()
+
+        community = make_community()
+
+        community_post_comment_creator = make_user()
+        community_post_comment_creator.join_community_with_name(community_name=community.name)
+        community_post = community_post_comment_creator.create_community_post(
+            community_name=community.name,
+            text=make_fake_post_text())
+        community_post_comment = community_post_comment_creator.comment_post(
+            post=community_post,
+            text=make_fake_post_text())
+
+        reporter_community_post_comment = make_user()
+        report_category = make_moderation_category()
+
+        reporter_community_post_comment.report_comment_for_post(post=community_post,
+                                                                post_comment=community_post_comment,
+                                                                category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post_comment(
+            post_comment=community_post_comment,
+            category_id=report_category.pk)
+
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+        global_moderator.verify_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            object_id=community_post_comment.pk,
+            verified=False
+        ).exists())
+
+    def test_cant_unverify_community_post_comment_moderated_object_if_community_moderator(self):
+        """
+        should not be able to unverify a community_post_comment moderated object if community moderator
+        """
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        community_moderator = make_user()
+        community_moderator.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(
+            community_name=community.name,
+            username=community_moderator.username
+        )
+
+        community_post_comment_creator = make_user()
+        community_post_comment_creator.join_community_with_name(community_name=community.name)
+        community_post = community_post_comment_creator.create_community_post(
+            community_name=community.name,
+            text=make_fake_post_text())
+        community_post_comment = community_post_comment_creator.comment_post(
+            post=community_post,
+            text=make_fake_post_text())
+
+        reporter_community_post_comment = make_user()
+        report_category = make_moderation_category()
+
+        reporter_community_post_comment.report_comment_for_post(post=community_post,
+                                                                post_comment=community_post_comment,
+                                                                category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post_comment(
+            post_comment=community_post_comment,
+            category_id=report_category.pk)
+
+        global_moderator = make_global_moderator()
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+        global_moderator.verify_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(community_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            object_id=community_post_comment.pk,
+            verified=True
+        ).exists())
+
+    def test_cant_unverify_community_post_comment_moderated_object_if_regular_user(self):
+        """
+        should not be able to unverify a community_post_comment moderated object if regular user
+        """
+        regular_user = make_user()
+
+        community = make_community()
+
+        community_post_comment_creator = make_user()
+        community_post_comment_creator.join_community_with_name(community_name=community.name)
+        community_post = community_post_comment_creator.create_community_post(
+            community_name=community.name,
+            text=make_fake_post_text())
+        community_post_comment = community_post_comment_creator.comment_post(
+            post=community_post,
+            text=make_fake_post_text())
+
+        reporter_community_post_comment = make_user()
+        report_category = make_moderation_category()
+
+        reporter_community_post_comment.report_comment_for_post(post=community_post,
+                                                                post_comment=community_post_comment,
+                                                                category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post_comment(
+            post_comment=community_post_comment,
+            category_id=report_category.pk)
+
+        global_moderator = make_global_moderator()
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+        global_moderator.verify_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(regular_user)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertTrue(ModeratedObject.objects.filter(
+            object_id=community_post_comment.pk,
+            verified=True
+        ).exists())
+
+    def _get_url(self, moderated_object):
+        return reverse('unverify-moderated-object', kwargs={
             'moderated_object_id': moderated_object.pk
         })
