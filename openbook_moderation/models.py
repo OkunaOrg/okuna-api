@@ -183,88 +183,34 @@ class ModeratedObject(models.Model):
         moderation_severity = self.category.severity
         penalty_targets = None
 
-        if isinstance(content_object, User):
-            penalty_targets = [content_object]
-        elif isinstance(content_object, Post):
-            penalty_targets = [content_object.creator]
-        elif isinstance(content_object, PostComment):
-            penalty_targets = [content_object.commenter]
-        elif isinstance(content_object, Community):
-            penalty_targets = content_object.get_staff_members()
-        elif isinstance(content_object, ModeratedObject):
-            penalty_targets = content_object.get_reporters()
+        if self.is_approved():
+            if isinstance(content_object, User):
+                penalty_targets = [content_object]
+            elif isinstance(content_object, Post):
+                penalty_targets = [content_object.creator]
+            elif isinstance(content_object, PostComment):
+                penalty_targets = [content_object.commenter]
+            elif isinstance(content_object, Community):
+                penalty_targets = content_object.get_staff_members()
+            elif isinstance(content_object, ModeratedObject):
+                penalty_targets = content_object.get_reporters()
 
-        for penalty_target in penalty_targets:
-            duration_of_penalty = None
+            for penalty_target in penalty_targets:
+                duration_of_penalty = None
 
-            if moderation_severity == ModerationCategory.SEVERITY_HIGH:
-                high_severity_penalties_count = penalty_target.count_high_severity_moderation_penalties()
-                duration_of_penalty = timedelta(days=high_severity_penalties_count ** 4)
-            elif moderation_severity == ModerationCategory.SEVERITY_MEDIUM:
-                medium_severity_penalties_count = penalty_target.count_medium_severity_moderation_penalties()
-                duration_of_penalty = timedelta(hours=medium_severity_penalties_count ** 2)
-            elif moderation_severity == ModerationCategory.SEVERITY_LOW:
-                low_severity_penalties_count = penalty_target.count_low_severity_moderation_penalties()
-                duration_of_penalty = timedelta(hours=low_severity_penalties_count ** 2)
+                if moderation_severity == ModerationCategory.SEVERITY_HIGH:
+                    high_severity_penalties_count = penalty_target.count_high_severity_moderation_penalties()
+                    duration_of_penalty = timedelta(days=high_severity_penalties_count ** 4)
+                elif moderation_severity == ModerationCategory.SEVERITY_MEDIUM:
+                    medium_severity_penalties_count = penalty_target.count_medium_severity_moderation_penalties()
+                    duration_of_penalty = timedelta(hours=medium_severity_penalties_count ** 2)
+                elif moderation_severity == ModerationCategory.SEVERITY_LOW:
+                    low_severity_penalties_count = penalty_target.count_low_severity_moderation_penalties()
+                    duration_of_penalty = timedelta(hours=low_severity_penalties_count ** 2)
 
-            ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
-                                                                   user_id=penalty_target.pk,
-                                                                   duration=duration_of_penalty)
-
-        if content_object is User:
-            object_audit_snapshot = {
-                'id': content_object.id,
-                'username': content_object.username,
-                'email': content_object.email,
-                'name': content_object.profile.name,
-                'location': content_object.profile.location,
-                'bio': content_object.profile.bio,
-                'url': content_object.profile.url
-            }
-        elif content_object is Post:
-            object_audit_snapshot = {
-                'id': content_object.id,
-                'text': content_object.text,
-                'creator_id': content_object.creator_id,
-                'created': content_object.created,
-                'community_id': content_object.community_id,
-            }
-        elif content_object is PostComment:
-            object_audit_snapshot = {
-                'id': content_object.id,
-                'text': content_object.text,
-                'commenter_id': content_object.commenter_id,
-                'created': content_object.created,
-                'post_id': content_object.post_id,
-            }
-        elif content_object is Community:
-            object_audit_snapshot = {
-                'id': content_object.id,
-                'name': content_object.name,
-                'title': content_object.title,
-                'creator_id': content_object.creator_id,
-                'staff_members_ids': ','.join([staff_member.pk for staff_member in content_object.get_staff_members()]),
-                'created': content_object.created,
-                'type': content_object.type,
-                'description': content_object.description,
-                'rules': content_object.rules,
-            }
-        elif content_object is ModeratedObject:
-            object_audit_snapshot = {
-                'id': content_object.id,
-                'description': content_object.description,
-                'category_id': content_object.category_id,
-                'object_type': content_object.object_type,
-                'content_type': content_object.content_type,
-                'object_id': content_object.object_id,
-            }
-        else:
-            object_audit_snapshot = {}
-
-        self.object_audit_snapshot = json.dumps(object_audit_snapshot)
-
-        if content_object is not User or moderation_severity == ModerationCategory.SEVERITY_CRITICAL:
-            content_object.delete()
+                ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
+                                                                       user_id=penalty_target.pk,
+                                                                       duration=duration_of_penalty)
 
         self.save()
 
