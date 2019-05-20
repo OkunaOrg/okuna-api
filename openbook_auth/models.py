@@ -2348,6 +2348,14 @@ class User(AbstractUser):
                 _('The comment does not belong to the specified post.')
             )
 
+        if post.community and post.is_closed:
+            is_administrator = self.is_administrator_of_community_with_name(post.community.name)
+            is_moderator = self.is_moderator_of_community_with_name(post.community.name)
+            if not is_moderator and not is_administrator:
+                raise ValidationError(
+                    _('Only administrators/moderators can edit a closed post.')
+                )
+
     def _check_has_post_comment_with_id(self, post_comment_id):
         if not self.posts_comments.filter(id=post_comment_id).exists():
             # The comment is not ours
