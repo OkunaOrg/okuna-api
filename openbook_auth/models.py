@@ -2366,29 +2366,34 @@ class User(AbstractUser):
             raise ValidationError(
                 _('The comment does not belong to the specified post.')
             )
+        is_comment_creator = self.posts_comments.filter(id=post_comment_id).exists()
 
-        if not self.posts_comments.filter(id=post_comment_id).exists():
-            # The comment is not ours
-            if post.community:
-                # If the comment is in a community, check if we're moderators
-                if not self.is_moderator_of_community_with_name(
-                        post.community.name) and not self.is_administrator_of_community_with_name(
-                        post.community.name):
+        if post.community:
+            is_moderator = self.is_moderator_of_community_with_name(post.community.name)
+            is_administrator = self.is_administrator_of_community_with_name(post.community.name)
+            if not is_administrator and not is_moderator:
+                if post.is_closed:
                     raise ValidationError(
-                        _('Only moderators/administrators can remove community posts.'),
+                        _('Only moderators/administrators can remove closed community posts.'),
                     )
+                elif not is_comment_creator:
+                    raise ValidationError(
+                        _('You cannot remove a comment that does not belong to you')
+                    )
+            else:
+                # is admin or mod
+                post_comment = PostComment.objects.select_related('commenter').get(pk=post_comment_id)
+                if post_comment.parent_comment is not None:
+                    post.community.create_remove_post_comment_reply_log(source_user=self,
+                                                                        target_user=post_comment.commenter)
                 else:
-                    post_comment = PostComment.objects.select_related('commenter').get(pk=post_comment_id)
-                    if post_comment.parent_comment is not None:
-                        post.community.create_remove_post_comment_reply_log(source_user=self,
-                                                                            target_user=post_comment.commenter)
-                    else:
-                        post.community.create_remove_post_comment_log(source_user=self,
-                                                                      target_user=post_comment.commenter)
-            elif not post.creator == self:
-                raise ValidationError(
-                    _('You cannot remove a comment that does not belong to you')
-                )
+                    post.community.create_remove_post_comment_log(source_user=self,
+                                                                  target_user=post_comment.commenter)
+        elif not post.creator == self and not is_comment_creator:
+            # not a community post
+            raise ValidationError(
+                _('You cannot remove a comment that does not belong to you')
+            )
 
     def _check_can_get_comments_for_post(self, post):
         self._check_can_see_post(post=post)
@@ -2576,6 +2581,17 @@ class User(AbstractUser):
 
     def _check_can_update_post_with_id(self, post_id):
         self._check_has_post_with_id(post_id=post_id)
+        Post = get_post_model()
+        post = Post.objects.get(id=post_id)
+        is_community_post = Post.is_post_with_id_a_community_post(post_id)
+        if post.is_closed and is_community_post:
+            is_administrator = self.is_administrator_of_community_with_name(post.community.name)
+            is_moderator = self.is_moderator_of_community_with_name(post.community.name)
+
+            if not is_administrator and not is_moderator:
+                raise ValidationError(
+                    _('You cannot edit a closed post'),
+                    )
 
     def _check_can_post_to_circles_with_ids(self, circles_ids=None):
         for circle_id in circles_ids:
