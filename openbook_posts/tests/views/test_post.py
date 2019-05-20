@@ -577,9 +577,9 @@ class PostItemAPITests(APITestCase):
         self.assertEqual(community_post.text, edited_text)
         self.assertTrue(community_post.is_edited)
 
-    def test_can_edit_own_community_post_which_is_closed(self):
+    def test_cannot_edit_own_community_post_which_is_closed(self):
         """
-        should be able to edit own closed community post and return 200
+        should NOT be able to edit own closed community post and return 200
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
@@ -588,7 +588,8 @@ class PostItemAPITests(APITestCase):
         community = make_community(creator=community_creator)
 
         user.join_community_with_name(community_name=community.name)
-        community_post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        original_text = make_fake_post_text()
+        community_post = user.create_community_post(text=original_text, community_name=community.name)
         community_post.is_closed = True
         community_post.save()
 
@@ -600,10 +601,10 @@ class PostItemAPITests(APITestCase):
 
         response = self.client.patch(url, data, **headers)
 
-        self.assertTrue(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.status_code, status.HTTP_400_BAD_REQUEST)
         community_post.refresh_from_db()
-        self.assertEqual(community_post.text, edited_text)
-        self.assertTrue(community_post.is_edited)
+        self.assertEqual(community_post.text, original_text)
+        self.assertFalse(community_post.is_edited)
 
     def test_cannot_edit_foreign_post(self):
         """
