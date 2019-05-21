@@ -2,6 +2,7 @@
 import uuid
 from datetime import timedelta
 
+from django.contrib.contenttypes.fields import GenericRelation
 from django.core.files.storage import default_storage
 from django.db import models
 from django.db.models import Q
@@ -23,10 +24,12 @@ from openbook_common.utils.model_loaders import get_emoji_model, \
     get_circle_model, get_community_model
 from imagekit.models import ProcessedImageField
 
+from openbook_moderation.models import ModeratedObject
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory
 
 
 class Post(models.Model):
+    moderated_object = GenericRelation(ModeratedObject, related_query_name='posts')
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     text = models.CharField(_('text'), max_length=settings.POST_MAX_LENGTH, blank=False, null=True)
     created = models.DateTimeField(editable=False, db_index=True)
@@ -38,6 +41,7 @@ class Post(models.Model):
                                   blank=False)
     is_edited = models.BooleanField(default=False)
     is_closed = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
 
     class Meta:
         index_together = [
@@ -115,7 +119,7 @@ class Post(models.Model):
     def get_trending_posts_for_user_with_id(cls, user_id):
         trending_posts_query = cls._get_trending_posts_query()
         trending_posts_query.add(~Q(community__banned_users__id=user_id), Q.AND)
-        trending_posts_query.add(Q(is_closed=False), Q.AND)
+        trending_posts_query.add(Q(is_closed=False, is_deleted=False), Q.AND)
 
         trending_posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=user_id) | Q(
             creator__user_blocks__blocked_user_id=user_id)), Q.AND)
@@ -253,11 +257,13 @@ class PostVideo(models.Model):
 
 
 class PostComment(models.Model):
+    moderated_object = GenericRelation(ModeratedObject, related_query_name='post_comments')
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
     created = models.DateTimeField(editable=False, db_index=True)
     commenter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_comments')
     text = models.CharField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False)
     is_edited = models.BooleanField(default=False, null=False, blank=False)
+    is_deleted = models.BooleanField(default=False)
 
     @classmethod
     def create_comment(cls, text, commenter, post):
@@ -265,7 +271,7 @@ class PostComment(models.Model):
 
     @classmethod
     def count_comments_for_post_with_id(cls, post_id):
-        count_query = Q(post_id=post_id)
+        count_query = Q(post_id=post_id, is_deleted=False)
 
         return cls.objects.filter(count_query).count()
 
@@ -291,7 +297,7 @@ class PostReaction(models.Model):
 
     @classmethod
     def count_reactions_for_post_with_id(cls, post_id, reactor_id=None):
-        count_query = Q(post_id=post_id)
+        count_query = Q(post_id=post_id, reactor__is_deleted=False)
 
         if reactor_id:
             count_query.add(Q(reactor_id=reactor_id), Q.AND)

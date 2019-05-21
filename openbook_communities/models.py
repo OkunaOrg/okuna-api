@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
 # Create your models here.
@@ -16,11 +17,13 @@ from openbook_common.utils.model_loaders import get_community_invite_model, \
 from openbook_common.validators import hex_color_validator
 from openbook_communities.helpers import upload_to_community_avatar_directory, upload_to_community_cover_directory
 from openbook_communities.validators import community_name_characters_validator
+from openbook_moderation.models import ModeratedObject, ModerationCategory
 from openbook_posts.models import Post
 from imagekit.models import ProcessedImageField
 
 
 class Community(models.Model):
+    moderated_object = GenericRelation(ModeratedObject, related_query_name='communities')
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_communities', null=False,
                                 blank=False)
     name = models.CharField(_('name'), max_length=settings.COMMUNITY_NAME_MAX_LENGTH, blank=False, null=False,
@@ -53,6 +56,10 @@ class Community(models.Model):
     users_adjective = models.CharField(_('users adjective'), max_length=settings.COMMUNITY_USERS_ADJECTIVE_MAX_LENGTH,
                                        blank=False, null=True)
     invites_enabled = models.BooleanField(_('invites enabled'), default=True)
+    is_deleted = models.BooleanField(
+        _('is deleted'),
+        default=False,
+    )
 
     class Meta:
         verbose_name_plural = 'communities'
@@ -91,14 +98,9 @@ class Community(models.Model):
 
     @classmethod
     def get_community_with_name_for_user_with_id(cls, community_name, user_id):
-        query = Q(name=community_name)
+        query = Q(name=community_name, is_deleted=False)
         query.add(~Q(banned_users__id=user_id), Q.AND)
         return cls.objects.get(query)
-
-    @classmethod
-    def search_communities_with_query(cls, query):
-        query = cls._make_search_communities_query(query=query)
-        return cls.objects.filter(query)
 
     @classmethod
     def search_communities_with_query(cls, query):
@@ -109,6 +111,7 @@ class Community(models.Model):
     def _make_search_communities_query(cls, query):
         communities_query = Q(name__icontains=query)
         communities_query.add(Q(title__icontains=query), Q.OR)
+        communities_query.add(Q(is_deleted=False), Q.AND)
         return communities_query
 
     @classmethod
@@ -129,7 +132,7 @@ class Community(models.Model):
 
     @classmethod
     def _make_trending_communities_query(cls, category_name=None):
-        trending_communities_query = Q(type=cls.COMMUNITY_TYPE_PUBLIC)
+        trending_communities_query = Q(type=cls.COMMUNITY_TYPE_PUBLIC, is_deleted=False)
 
         if category_name:
             trending_communities_query.add(Q(categories__name=category_name), Q.AND)

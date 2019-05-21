@@ -1,5 +1,5 @@
 import json
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
@@ -66,8 +66,6 @@ class ModeratedObject(models.Model):
 
     category = models.ForeignKey(ModerationCategory, on_delete=models.CASCADE, related_name='moderated_objects')
 
-    object_audit_snapshot = models.TextField(_('object_audit_snapshot'),
-                                             blank=False, null=True, )
     OBJECT_TYPE_POST = 'P'
     OBJECT_TYPE_POST_COMMENT = 'PC'
     OBJECT_TYPE_COMMUNITY = 'C'
@@ -208,10 +206,19 @@ class ModeratedObject(models.Model):
                     low_severity_penalties_count = penalty_target.count_low_severity_moderation_penalties()
                     duration_of_penalty = timedelta(hours=low_severity_penalties_count ** 2)
 
+                moderation_expiration = datetime.utcnow() + duration_of_penalty
+
                 ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
                                                                        user_id=penalty_target.pk,
-                                                                       duration=duration_of_penalty)
+                                                                       expiration=moderation_expiration)
 
+            if (isinstance(content_object, Post) or isinstance(content_object, PostComment) or isinstance(
+                    content_object,
+                    Community)) or (
+                    isinstance(content_object, User) and moderation_severity == ModerationCategory.SEVERITY_CRITICAL):
+                content_object.is_deleted = True
+
+        content_object.save()
         self.save()
 
     def unverify_with_actor_with_id(self, actor_id):
@@ -219,9 +226,21 @@ class ModeratedObject(models.Model):
         self.verified = False
         ModeratedObjectVerifiedChangedLog.create_moderated_object_verified_changed_log(
             changed_from=current_verified, changed_to=self.verified, moderated_object_id=self.pk, actor_id=actor_id)
-        self.penalties.all().delete()
-        self.object_audit_snapshot = None
+        self.user_penalties.all().delete()
+        content_object = self.content_object
+
+        Post = get_post_model()
+        PostComment = get_post_comment_model()
+        Community = get_community_model()
+        moderation_severity = self.category.severity
+
+        if (isinstance(content_object, Post) or isinstance(content_object, PostComment) or isinstance(
+                content_object,
+                Community)) or (
+                isinstance(content_object, User) and moderation_severity == ModerationCategory.SEVERITY_CRITICAL):
+            content_object.is_deleted = False
         self.save()
+        content_object.save()
 
     def approve_with_actor_with_id(self, actor_id):
         current_status = self.status
@@ -297,9 +316,8 @@ class ModerationReport(models.Model):
 
 class ModerationPenalty(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='moderation_penalties')
-    # If null, permanent
-    duration = models.DurationField(null=True)
-    moderated_object = models.ForeignKey(ModeratedObject, on_delete=models.CASCADE, related_name='penalties')
+    expiration = models.DateTimeField(null=True)
+    moderated_object = models.ForeignKey(ModeratedObject, on_delete=models.CASCADE, related_name='user_penalties')
 
     TYPE_SUSPENSION = 'S'
 
@@ -310,9 +328,9 @@ class ModerationPenalty(models.Model):
     type = models.CharField(max_length=5, choices=TYPES)
 
     @classmethod
-    def create_suspension_moderation_penalty(cls, user_id, moderated_object, duration):
+    def create_suspension_moderation_penalty(cls, user_id, moderated_object, expiration):
         return cls.objects.create(moderated_object=moderated_object, user_id=user_id, type=cls.TYPE_SUSPENSION,
-                                  duration=duration)
+                                  expiration=expiration)
 
 
 class ModeratedObjectLog(models.Model):

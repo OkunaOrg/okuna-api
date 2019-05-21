@@ -9,7 +9,7 @@ from openbook_common.tests.helpers import make_global_moderator, make_user, make
     make_authentication_headers_for_user, make_moderated_object_description, \
     make_community, make_fake_post_text, make_fake_post_comment_text
 from openbook_moderation.models import ModeratedObject, ModeratedObjectDescriptionChangedLog, \
-    ModeratedObjectCategoryChangedLog
+    ModeratedObjectCategoryChangedLog, ModerationPenalty
 
 fake = Faker()
 
@@ -1786,6 +1786,145 @@ class VerifyModeratedObjectApiTests(APITestCase):
     """
     VerifyModeratedObjectApi
     """
+
+    def test_verifying_approved_user_moderated_object_places_suspension_penalty_on_user(self):
+        """
+        verifying an approved user moderated object should place a suspension penalty on the user
+        """
+        global_moderator = make_global_moderator()
+
+        reporter_user = make_user()
+
+        user = make_user()
+
+        report_category = make_moderation_category()
+
+        reporter_user.report_user(user=user, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(user=user,
+                                                                                   category_id=report_category.pk)
+
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(ModerationPenalty.objects.filter(
+            moderated_object_id=moderated_object.pk,
+            user_id=user.pk,
+            expiration__isnull=False
+        ).exists())
+
+    def test_verifying_approved_post_moderated_object_places_suspension_penalty_on_creator(self):
+        """
+        verifying an approved post moderated object should place a suspension penalty on the creator
+        """
+        global_moderator = make_global_moderator()
+
+        reporter_user = make_user()
+
+        post_creator = make_user()
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        report_category = make_moderation_category()
+
+        reporter_user.report_post(post=post, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=report_category.pk)
+
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(ModerationPenalty.objects.filter(
+            moderated_object_id=moderated_object.pk,
+            user_id=post_creator.pk,
+            expiration__isnull=False
+        ).exists())
+
+    def test_verifying_approved_community_moderated_object_places_suspension_penalty_on_staff(self):
+        """
+        verifying an approved community moderated object should place a suspension penalty on the staff
+        """
+        global_moderator = make_global_moderator()
+
+        reporter_user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        community_moderator = make_user()
+        community_moderator.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(username=community_moderator.username,
+                                                                             community_name=community.name)
+
+        community_administrator = make_user()
+        community_administrator.join_community_with_name(community_name=community.name)
+        community_creator.add_administrator_with_username_to_community_with_name(
+            username=community_administrator.username,
+            community_name=community.name)
+
+        report_category = make_moderation_category()
+
+        reporter_user.report_community(community=community, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_community(community=community,
+                                                                                        category_id=report_category.pk)
+
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(3, ModerationPenalty.objects.filter(
+            moderated_object_id=moderated_object.pk,
+            user_id__in=[community_creator.pk, community_moderator.pk, community_administrator.pk],
+            expiration__isnull=False
+        ).count())
+
+    def test_verifying_approved_post_comment_moderated_object_places_suspension_penalty_on_creator(self):
+        """
+        verifying an approved post comment moderated object should place a suspension penalty on the creator
+        """
+        global_moderator = make_global_moderator()
+
+        reporter_user = make_user()
+
+        post_comment_creator = make_user()
+        post = post_comment_creator.create_public_post(text=make_fake_post_text())
+        post_comment = post_comment_creator.comment_post(post=post, text=make_fake_post_comment_text())
+
+        report_category = make_moderation_category()
+
+        reporter_user.report_comment_for_post(post_comment=post_comment, post=post, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post_comment(post_comment=post_comment,
+                                                                                           category_id=report_category.pk)
+
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(ModerationPenalty.objects.filter(
+            moderated_object_id=moderated_object.pk,
+            user_id=post_comment_creator.pk,
+            expiration__isnull=False
+        ).exists())
 
     def test_can_verify_moderated_object_if_global_moderator_and_approved(self):
         """

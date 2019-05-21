@@ -4,6 +4,7 @@ import re
 import jwt
 import uuid
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models.signals import post_save
@@ -29,7 +30,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_comment_notification_model, get_follow_notification_model, get_connection_confirmed_notification_model, \
     get_connection_request_notification_model, get_post_reaction_notification_model, get_device_model, \
     get_post_mute_model, get_community_invite_notification_model, get_user_block_model, get_emoji_model, \
-    get_moderation_report_model, get_moderated_object_model, get_moderation_category_model
+    get_moderation_report_model, get_moderated_object_model, get_moderation_category_model, get_moderation_penalty_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications.push_notifications import senders
 
@@ -39,6 +40,7 @@ class User(AbstractUser):
     Custom user model to change behaviour of the default user model
     such as validation and required fields.
     """
+    moderated_object = GenericRelation('openbook_moderation.ModeratedObject', related_query_name='users')
     first_name = None
     last_name = None
     email = models.EmailField(_('email address'), unique=True, null=False, blank=False)
@@ -48,6 +50,10 @@ class User(AbstractUser):
     username_validator = UnicodeUsernameValidator() if six.PY3 else ASCIIUsernameValidator()
     is_email_verified = models.BooleanField(default=False)
     are_guidelines_accepted = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(
+        _('is deleted'),
+        default=False,
+    )
 
     username = models.CharField(
         _('username'),
@@ -495,6 +501,11 @@ class User(AbstractUser):
 
     def is_moderator_of_community_with_name(self, community_name):
         return self.communities_memberships.filter(community__name=community_name, is_moderator=True).exists()
+
+    def is_suspended(self):
+        ModerationPenalty = get_moderation_penalty_model()
+        return self.moderation_penalties.filter(type=ModerationPenalty.TYPE_SUSPENSION,
+                                                expiration__gt=datetime.utcnow()).exists()
 
     def is_global_moderator(self):
         moderators_community_name = settings.MODERATORS_COMMUNITY_NAME
@@ -1315,6 +1326,8 @@ class User(AbstractUser):
         users_query = Q(username__icontains=query)
         users_query.add(Q(profile__name__icontains=query), Q.OR)
         users_query.add(~Q(blocked_by_users__blocker_id=self.pk) & ~Q(user_blocks__blocked_user_id=self.pk), Q.AND)
+        users_query.add(Q(is_deleted=False), Q.AND)
+
         return User.objects.filter(users_query)
 
     def get_linked_users(self, max_id=None):
@@ -1464,8 +1477,9 @@ class User(AbstractUser):
         post.delete()
 
     def get_user_with_username(self, username):
-        user = User.objects.get(username=username)
-        self._check_is_not_blocked_with_user_with_id(user_id=user.pk)
+        user_query = Q(username=username, is_deleted=False)
+        user = User.objects.get(user_query)
+        self._check_can_get_user_with_id(user_id=user.pk)
         return user
 
     def open_post_with_id(self, post_id):
@@ -1613,6 +1627,8 @@ class User(AbstractUser):
         elif min_id:
             timeline_posts_query.add(Q(id__gt=min_id), Q.AND)
 
+        timeline_posts_query.add(Q(is_deleted=False), Q.AND)
+
         Post = get_post_model()
         return Post.objects.filter(timeline_posts_query).distinct()
 
@@ -1635,7 +1651,7 @@ class User(AbstractUser):
                       'community__color',
                       'community__title')
 
-        own_posts_query = Q(creator=self.pk, community__isnull=True)
+        own_posts_query = Q(creator=self.pk, community__isnull=True, is_deleted=False)
 
         if max_id:
             own_posts_query.add(Q(id__lt=max_id), Q.AND)
@@ -1643,7 +1659,7 @@ class User(AbstractUser):
         own_posts_queryset = self.posts.select_related(*posts_select_related).prefetch_related(
             *posts_prefetch_related).only(*posts_only).filter(own_posts_query)
 
-        community_posts_query = Q(community__memberships__user__id=self.pk, is_closed=False)
+        community_posts_query = Q(community__memberships__user__id=self.pk, is_closed=False, is_deleted=False)
 
         community_posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
             creator__user_blocks__blocked_user_id=self.pk)), Q.AND)
@@ -1658,10 +1674,12 @@ class User(AbstractUser):
 
         followed_users_ids = [followed_user['followed_user_id'] for followed_user in followed_users]
 
-        followed_users_query = Q(creator__in=followed_users_ids)
+        followed_users_query = Q(creator__in=followed_users_ids, is_deleted=False)
 
         if max_id:
             followed_users_query.add(Q(id__lt=max_id), Q.AND)
+
+        followed_users_query.add(Q(is_deleted=False), Q.AND)
 
         followed_users_query.add(
             Q(circles__id=world_circle_id) | Q(circles__connections__target_connection__circles__isnull=False,
@@ -2368,13 +2386,15 @@ class User(AbstractUser):
         if max_id:
             linked_users_query.add(Q(id__lt=max_id), Q.AND)
 
+        linked_users_query.add(Q(is_deleted=False), Q.AND)
+
         return linked_users_query
 
     def _make_followers_query(self):
-        return Q(follows__followed_user_id=self.pk)
+        return Q(follows__followed_user_id=self.pk, is_deleted=False)
 
     def _make_followings_query(self):
-        return Q(followers__user_id=self.pk)
+        return Q(followers__user_id=self.pk, is_deleted=False)
 
     def _make_blocked_users_query(self, max_id=None):
         blocked_users_query = Q(blocked_by_users__blocker_id=self.pk, )
@@ -2391,7 +2411,7 @@ class User(AbstractUser):
 
     def _make_get_posts_query_for_user(self, user, max_id=None):
 
-        posts_query = Q(creator_id=user.pk)
+        posts_query = Q(creator_id=user.pk, is_deleted=False)
 
         world_circle_id = self._get_world_circle_id()
 
@@ -2406,6 +2426,8 @@ class User(AbstractUser):
 
         if max_id:
             posts_query.add(Q(id__lt=max_id), Q.AND)
+
+        posts_query.add(Q(is_deleted=False), Q.AND)
 
         return posts_query
 
@@ -2698,7 +2720,7 @@ class User(AbstractUser):
         return reactions_query
 
     def _make_get_comments_for_post_query(self, post, max_id=None, min_id=None):
-        comments_query = Q(post_id=post.pk)
+        comments_query = Q(post_id=post.pk, is_deleted=False)
 
         post_community = post.community
 
@@ -2727,7 +2749,7 @@ class User(AbstractUser):
 
     def _make_get_community_with_id_posts_query(self, community, include_closed_posts_for_staff=True):
         # Retrieve posts from the given community name
-        community_posts_query = Q(community_id=community.pk)
+        community_posts_query = Q(community_id=community.pk, is_deleted=False)
 
         # Only retrieve posts if we're not banned
         community_posts_query.add(~Q(community__banned_users__id=self.pk), Q.AND)
@@ -3209,6 +3231,9 @@ class User(AbstractUser):
     def _check_is_not_banned_from_community_with_name(self, community_name):
         if self.is_banned_from_community_with_name(community_name):
             raise PermissionDenied('You have been banned from this community.')
+
+    def _check_can_get_user_with_id(self, user_id):
+        self._check_is_not_blocked_with_user_with_id(user_id=user_id)
 
     def _check_can_update_circle_with_id(self, circle_id):
         if not self.has_circle_with_id(circle_id):

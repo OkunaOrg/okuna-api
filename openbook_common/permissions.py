@@ -7,4 +7,6 @@ class IsNotSuspended(BasePermission):
     """
 
     def has_permission(self, request, view):
+        if not request.user.is_anonymous:
+            return not request.user.is_suspended()
         return True
