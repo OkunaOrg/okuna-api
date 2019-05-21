@@ -1144,6 +1144,27 @@ class PostCommentsAPITests(APITestCase):
         self.assertFalse(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
                                                                 notification__owner=user).exists())
 
+    def test_commenting_in_post_does_not_create_notification_if_user_is_blocked(self):
+        """
+         should not create a notification when a blocked user comments on a post
+         """
+        foreign_user = make_user()
+        user = make_user()
+        blocked_user = make_user()
+        headers = make_authentication_headers_for_user(blocked_user)
+        post = foreign_user.create_public_post(text=make_fake_post_text())
+
+        user.block_user_with_username(blocked_user.username)
+        post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        self.assertFalse(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
+                                                                notification__owner=user).exists())
+
     def test_commenting_in_commented_post_by_foreign_user_creates_foreign_notification(self):
         """
          should create a notification when a user comments in a post where a foreign user commented before
