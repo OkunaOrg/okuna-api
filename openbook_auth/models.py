@@ -2397,7 +2397,7 @@ class User(AbstractUser):
                 else:
                     post.community.create_remove_post_comment_log(source_user=self,
                                                                   target_user=post_comment.commenter)
-        elif not post.creator == self and not is_comment_creator:
+        elif not post.creator_id == self.pk and not is_comment_creator:
             # not a community post
             raise ValidationError(
                 _('You cannot remove a comment that does not belong to you')
@@ -2591,12 +2591,8 @@ class User(AbstractUser):
         self._check_has_post_with_id(post_id=post_id)
         Post = get_post_model()
         post = Post.objects.get(id=post_id)
-        is_community_post = Post.is_post_with_id_a_community_post(post_id)
-        if post.is_closed and is_community_post:
-            is_administrator = self.is_administrator_of_community_with_name(post.community.name)
-            is_moderator = self.is_moderator_of_community_with_name(post.community.name)
-
-            if not is_administrator and not is_moderator:
+        if post.is_closed and post.community_id:
+            if not self.is_staff_of_community_with_name(post.community.name):
                 raise ValidationError(
                     _('You cannot edit a closed post'),
                     )
@@ -2624,12 +2620,8 @@ class User(AbstractUser):
     def _check_comments_enabled_for_post_with_id(self, post_id):
         Post = get_post_model()
         post = Post.objects.select_related('community').get(id=post_id)
-        is_community_post = Post.is_post_with_id_a_community_post(post_id)
-        if is_community_post:
-            is_administrator = self.is_administrator_of_community_with_name(post.community.name)
-            is_moderator = self.is_moderator_of_community_with_name(post.community.name)
-
-            if not is_administrator and not is_moderator and not post.comments_enabled:
+        if post.community_id is not None:
+            if not self.is_staff_of_community_with_name(post.community.name) and not post.comments_enabled:
                 raise ValidationError(
                     _('Comments are disabled for this post')
                 )
@@ -2637,16 +2629,12 @@ class User(AbstractUser):
     def _check_can_open_post_with_id(self, post_id):
         Post = get_post_model()
         post = Post.objects.select_related('community').get(id=post_id)
-        is_community_post = Post.is_post_with_id_a_community_post(post_id)
-        if not is_community_post:
+        if post.community_id is None:
             raise ValidationError(
                 _('Only community posts can be opened/closed')
             )
 
-        is_administrator = self.is_administrator_of_community_with_name(post.community.name)
-        is_moderator = self.is_moderator_of_community_with_name(post.community.name)
-
-        if not is_administrator and not is_moderator:
+        if not self.is_staff_of_community_with_name(post.community.name):
             raise ValidationError(
                 _('Only administrators/moderators can open this post')
             )
@@ -2654,16 +2642,12 @@ class User(AbstractUser):
     def _check_can_close_post_with_id(self, post_id):
         Post = get_post_model()
         post = Post.objects.select_related('community').get(id=post_id)
-        is_community_post = Post.is_post_with_id_a_community_post(post_id)
-        if not is_community_post:
+        if post.community_id is None:
             raise ValidationError(
                 _('Only community posts can be opened/closed')
             )
 
-        is_administrator = self.is_administrator_of_community_with_name(post.community.name)
-        is_moderator = self.is_moderator_of_community_with_name(post.community.name)
-
-        if not is_administrator and not is_moderator:
+        if not self.is_staff_of_community_with_name(post.community.name):
             raise ValidationError(
                 _('Only administrators/moderators can close this post')
             )
