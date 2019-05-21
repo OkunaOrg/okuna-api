@@ -3011,7 +3011,7 @@ class User(AbstractUser):
                 _('Only administrators of the community can remove other moderators.'),
             )
 
-        Community = get_communi
+        Community = get_community_model()
         if not Community.is_user_with_username_moderator_of_community_with_name(username=username,
                                                                                 community_name=community_name):
             raise ValidationError(
