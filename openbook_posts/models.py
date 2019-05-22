@@ -240,20 +240,34 @@ class PostVideo(models.Model):
 
 class PostComment(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
+    parent_comment = models.ForeignKey('self', on_delete=models.CASCADE, related_name='replies', null=True, blank=True)
     created = models.DateTimeField(editable=False, db_index=True)
     commenter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_comments')
     text = models.CharField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False)
     is_edited = models.BooleanField(default=False, null=False, blank=False)
 
     @classmethod
-    def create_comment(cls, text, commenter, post):
-        return PostComment.objects.create(text=text, commenter=commenter, post=post)
+    def create_comment(cls, text, commenter, post, parent_comment=None):
+        return PostComment.objects.create(text=text, commenter=commenter, post=post, parent_comment=parent_comment)
 
     @classmethod
     def count_comments_for_post_with_id(cls, post_id):
-        count_query = Q(post_id=post_id)
+        count_query = Q(post_id=post_id, parent_comment__isnull=True)
 
         return cls.objects.filter(count_query).count()
+
+    @classmethod
+    def count_comment_replies_for_post_with_id_for_comment_with_id(cls, post_id, post_comment_id):
+        count_query = Q(post_id=post_id, parent_comment__id=post_comment_id)
+
+        return cls.objects.filter(count_query).count()
+
+    @property
+    def replies_count(self):
+        return PostComment.count_comment_replies_for_post_with_id_for_comment_with_id(self.post.pk, self.pk)
+
+    def reply_to_comment(self, commenter, text):
+        return PostComment.create_comment(text=text, commenter=commenter, post=self.post, parent_comment=self)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
