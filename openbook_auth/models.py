@@ -30,6 +30,8 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_comment_notification_model, get_follow_notification_model, get_connection_confirmed_notification_model, \
     get_connection_request_notification_model, get_post_reaction_notification_model, get_device_model, \
     get_post_mute_model, get_community_invite_notification_model, get_user_block_model, get_emoji_model, \
+    get_post_comment_reply_notification_model
+    get_post_mute_model, get_community_invite_notification_model, get_user_block_model, get_emoji_model, \
     get_moderation_report_model, get_moderated_object_model, get_moderation_category_model, get_moderation_penalty_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications.push_notifications import senders
@@ -553,6 +555,10 @@ class User(AbstractUser):
         return self.notifications_settings.post_comment_notifications and not self.has_muted_post_with_id(
             post_id=post_id)
 
+    def has_comment_reply_notifications_enabled_for_post_with_id(self, post_id):
+        return self.notifications_settings.post_comment_reply_notifications and not self.has_muted_post_with_id(
+            post_id=post_id)
+
     def has_connection_request_notifications_enabled(self):
         return self.notifications_settings.connection_request_notifications
 
@@ -706,7 +712,8 @@ class User(AbstractUser):
             post_reaction = post.react(reactor=self, emoji_id=emoji_id)
             if post_reaction.post.creator_id != self.pk:
                 # TODO Refactor. This check is being done twice. (Also in _send_post_reaction_push_notification)
-                if post.creator.has_reaction_notifications_enabled_for_post_with_id(post_id=post.pk):
+                if post.creator.has_reaction_notifications_enabled_for_post_with_id(post_id=post.pk) and \
+                        not post.creator.has_blocked_user_with_id(self.pk):
                     self._create_post_reaction_notification(post_reaction=post_reaction)
                 self._send_post_reaction_push_notification(post_reaction=post_reaction)
 
@@ -731,6 +738,21 @@ class User(AbstractUser):
 
         PostComment = get_post_comment_model()
         return PostComment.objects.filter(comments_query)
+
+    def get_comment_replies_for_post_with_id_for_comment_with_id(self, post_id, post_comment_id, min_id=None, max_id=None):
+        PostComment = get_post_comment_model()
+        if not PostComment.objects.filter(id=post_comment_id, post__id=post_id).exists():
+            raise ValidationError(
+                _('The comment does not belong to the specified post.')
+            )
+        post_comment = PostComment.objects.get(post__id=post_id, pk=post_comment_id)
+
+        self._check_can_get_comment_replies_for_post_comment(post_comment=post_comment)
+
+        comment_replies_query = \
+            self._make_get_comments_for_post_query(post=post_comment.post, post_comment=post_comment, max_id=max_id, min_id=min_id)
+
+        return PostComment.objects.filter(comment_replies_query)
 
     def get_comments_count_for_post_with_id(self, post_id):
         Post = get_post_model()
@@ -811,6 +833,51 @@ class User(AbstractUser):
                                                           notification_target_user=post_notification_target_user)
 
         return post_comment
+
+    def reply_to_comment(self, post_comment, text):
+        self._check_can_reply_to_post_comment(post_comment)
+        post_comment_reply = post_comment.reply_to_comment(text=text, commenter=self)
+        comment_creator = post_comment.commenter.id
+        replier = self
+        post = post_comment.post
+
+        Post = get_post_model()
+        post_notification_target_users = Post.get_post_comment_notification_target_users(post_id=post.id,
+                                                                                         post_commenter_id=self.pk)
+        PostCommentReplyNotification = get_post_comment_reply_notification_model()
+
+        for post_notification_target_user in post_notification_target_users:
+            if not post_notification_target_user.can_see_post(post=post):
+                continue
+            post_notification_target_user_is_post_comment_creator = post_notification_target_user.id == comment_creator
+            post_notification_target_has_comment_reply_notifications_enabled = \
+                post_notification_target_user.has_comment_reply_notifications_enabled_for_post_with_id(post_id=post_comment.post_id)
+
+            if post_notification_target_has_comment_reply_notifications_enabled:
+                PostCommentReplyNotification.create_post_comment_reply_notification(post_comment_id=post_comment_reply.pk,
+                                                                                    owner_id=post_notification_target_user.id)
+
+                if post_notification_target_user_is_post_comment_creator:
+                    notification_message = {
+                        "en": _('@%(post_commenter_username)s replied to your comment on a post.') % {
+                            'post_commenter_username': replier.username
+                        }}
+                else:
+                    notification_message = {
+                        "en": _('@%(post_commenter_username)s replied on a comment you also replied on.') % {
+                            'post_commenter_username': replier.username
+                        }}
+
+                self._send_post_comment_push_notification(post_comment=post_comment,
+                                                          notification_message=notification_message,
+                                                          notification_target_user=post_notification_target_user)
+
+        return post_comment_reply
+
+    def reply_to_comment_with_id(self, post_comment_id, text):
+        PostComment = get_post_comment_model()
+        post_comment = PostComment.objects.select_related('post').filter(pk=post_comment_id).get()
+        return self.reply_to_comment(post_comment=post_comment, text=text)
 
     def delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
         Post = get_post_model()
@@ -2301,8 +2368,22 @@ class User(AbstractUser):
                                                                  target_user=notification_target_user)
 
     def _delete_post_comment_notification(self, post_comment):
-        PostCommentNotification = get_post_comment_notification_model()
-        PostCommentNotification.delete_post_comment_notification(post_comment_id=post_comment.pk,
+        if post_comment.parent_comment is not None:
+            PostCommentNotification = get_post_comment_notification_model()
+            PostCommentNotification.delete_post_comment_notification(post_comment_id=post_comment.pk,
+                                                                     owner_id=post_comment.post.creator_id)
+        else:
+            # Comment is a reply
+            self._delete_post_comment_reply_notification(post_comment=post_comment)
+
+    def _send_post_comment_reply_push_notification(self, post_comment, notification_message, notification_target_user):
+        senders.send_post_comment_reply_push_notification_with_message(post_comment=post_comment,
+                                                                       message=notification_message,
+                                                                       target_user=notification_target_user)
+
+    def _delete_post_comment_reply_notification(self, post_comment):
+        PostCommentReplyNotification = get_post_comment_notification_model()
+        PostCommentReplyNotification.delete_post_comment_notification(post_comment_id=post_comment.pk,
                                                                  owner_id=post_comment.post.creator_id)
 
     def _create_post_reaction_notification(self, post_reaction):
@@ -2578,6 +2659,14 @@ class User(AbstractUser):
                 _('The comment does not belong to the specified post.')
             )
 
+        if post.community and post.is_closed:
+            is_administrator = self.is_administrator_of_community_with_name(post.community.name)
+            is_moderator = self.is_moderator_of_community_with_name(post.community.name)
+            if not is_moderator and not is_administrator:
+                raise ValidationError(
+                    _('Only administrators/moderators can edit a closed post.')
+                )
+
     def _check_has_post_comment_with_id(self, post_comment_id):
         if not self.posts_comments.filter(id=post_comment_id).exists():
             # The comment is not ours
@@ -2596,32 +2685,52 @@ class User(AbstractUser):
             raise ValidationError(
                 _('The comment does not belong to the specified post.')
             )
+        is_comment_creator = self.posts_comments.filter(id=post_comment_id).exists()
 
-        if not self.posts_comments.filter(id=post_comment_id).exists():
-            # The comment is not ours
-            if post.community:
-                # If the comment is in a community, check if we're moderators
-                if not self.is_moderator_of_community_with_name(
-                        post.community.name) and not self.is_administrator_of_community_with_name(
-                    post.community.name):
+        if post.community:
+            is_moderator = self.is_moderator_of_community_with_name(post.community.name)
+            is_administrator = self.is_administrator_of_community_with_name(post.community.name)
+            if not is_administrator and not is_moderator:
+                if post.is_closed:
                     raise ValidationError(
-                        _('Only moderators/administrators can remove community posts.'),
+                        _('Only moderators/administrators can remove closed community posts.'),
                     )
+                elif not is_comment_creator:
+                    raise ValidationError(
+                        _('You cannot remove a comment that does not belong to you')
+                    )
+            else:
+                # is admin or mod
+                post_comment = PostComment.objects.select_related('commenter').get(pk=post_comment_id)
+                if post_comment.parent_comment is not None:
+                    post.community.create_remove_post_comment_reply_log(source_user=self,
+                                                                        target_user=post_comment.commenter)
                 else:
-                    post_comment = PostComment.objects.select_related('commenter').get(pk=post_comment_id)
                     post.community.create_remove_post_comment_log(source_user=self,
                                                                   target_user=post_comment.commenter)
-            else:
-                raise ValidationError(
-                    _('You cannot remove a comment that does not belong to you')
-                )
+        elif not post.creator_id == self.pk and not is_comment_creator:
+            # not a community post
+            raise ValidationError(
+                _('You cannot remove a comment that does not belong to you')
+            )
 
     def _check_can_get_comments_for_post(self, post):
         self._check_can_see_post(post=post)
 
+    def _check_can_get_comment_replies_for_post_comment(self, post_comment):
+        self._check_can_see_post(post=post_comment.post)
+
     def _check_can_comment_in_post(self, post):
         self._check_can_see_post(post)
         self._check_comments_enabled_for_post_with_id(post.id)
+
+    def _check_can_reply_to_post_comment(self, post_comment):
+        post = post_comment.post
+        self._check_can_comment_in_post(post)
+        if post_comment.parent_comment is not None:
+            raise ValidationError(
+                _('You can post a reply to a comment, not to an existing reply')
+            )
 
     def _check_can_delete_reaction_with_id_for_post(self, post_reaction_id, post):
         self._check_can_see_post(post=post)
@@ -2714,8 +2823,13 @@ class User(AbstractUser):
 
         return reactions_query
 
-    def _make_get_comments_for_post_query(self, post, max_id=None, min_id=None):
+    def _make_get_comments_for_post_query(self, post, post_comment=None, max_id=None, min_id=None):
+
         comments_query = Q(post_id=post.pk, is_deleted=False)
+        if post_comment is None:
+            comments_query.add(Q(parent_comment__isnull=True), Q.AND)
+        else:
+            comments_query.add(Q(parent_comment__id=post_comment.pk), Q.AND)
 
         post_community = post.community
 
@@ -2790,6 +2904,13 @@ class User(AbstractUser):
 
     def _check_can_update_post_with_id(self, post_id):
         self._check_has_post_with_id(post_id=post_id)
+        Post = get_post_model()
+        post = Post.objects.get(id=post_id)
+        if post.is_closed and post.community_id:
+            if not self.is_staff_of_community_with_name(post.community.name):
+                raise ValidationError(
+                    _('You cannot edit a closed post'),
+                    )
 
     def _check_can_post_to_circles_with_ids(self, circles_ids=None):
         for circle_id in circles_ids:
@@ -2814,12 +2935,8 @@ class User(AbstractUser):
     def _check_comments_enabled_for_post_with_id(self, post_id):
         Post = get_post_model()
         post = Post.objects.select_related('community').get(id=post_id)
-        is_community_post = Post.is_post_with_id_a_community_post(post_id)
-        if is_community_post:
-            is_administrator = self.is_administrator_of_community_with_name(post.community.name)
-            is_moderator = self.is_moderator_of_community_with_name(post.community.name)
-
-            if not is_administrator and not is_moderator and not post.comments_enabled:
+        if post.community_id is not None:
+            if not self.is_staff_of_community_with_name(post.community.name) and not post.comments_enabled:
                 raise ValidationError(
                     _('Comments are disabled for this post')
                 )
@@ -2827,16 +2944,12 @@ class User(AbstractUser):
     def _check_can_open_post_with_id(self, post_id):
         Post = get_post_model()
         post = Post.objects.select_related('community').get(id=post_id)
-        is_community_post = Post.is_post_with_id_a_community_post(post_id)
-        if not is_community_post:
+        if post.community_id is None:
             raise ValidationError(
                 _('Only community posts can be opened/closed')
             )
 
-        is_administrator = self.is_administrator_of_community_with_name(post.community.name)
-        is_moderator = self.is_moderator_of_community_with_name(post.community.name)
-
-        if not is_administrator and not is_moderator:
+        if not self.is_staff_of_community_with_name(post.community.name):
             raise ValidationError(
                 _('Only administrators/moderators can open this post')
             )
@@ -2844,16 +2957,12 @@ class User(AbstractUser):
     def _check_can_close_post_with_id(self, post_id):
         Post = get_post_model()
         post = Post.objects.select_related('community').get(id=post_id)
-        is_community_post = Post.is_post_with_id_a_community_post(post_id)
-        if not is_community_post:
+        if post.community_id is None:
             raise ValidationError(
                 _('Only community posts can be opened/closed')
             )
 
-        is_administrator = self.is_administrator_of_community_with_name(post.community.name)
-        is_moderator = self.is_moderator_of_community_with_name(post.community.name)
-
-        if not is_administrator and not is_moderator:
+        if not self.is_staff_of_community_with_name(post.community.name):
             raise ValidationError(
                 _('Only administrators/moderators can close this post')
             )
@@ -3217,7 +3326,6 @@ class User(AbstractUser):
             )
 
         Community = get_community_model()
-
         if not Community.is_user_with_username_moderator_of_community_with_name(username=username,
                                                                                 community_name=community_name):
             raise ValidationError(
@@ -3514,6 +3622,7 @@ class UserNotificationsSettings(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                                 related_name='notifications_settings')
     post_comment_notifications = models.BooleanField(_('post comment notifications'), default=True)
+    post_comment_reply_notifications = models.BooleanField(_('post comment reply notifications'), default=True)
     post_reaction_notifications = models.BooleanField(_('post reaction notifications'), default=True)
     follow_notifications = models.BooleanField(_('follow notifications'), default=True)
     connection_request_notifications = models.BooleanField(_('connection request notifications'), default=True)
@@ -3524,12 +3633,19 @@ class UserNotificationsSettings(models.Model):
     def create_notifications_settings(cls, user):
         return UserNotificationsSettings.objects.create(user=user)
 
-    def update(self, post_comment_notifications=None, post_reaction_notifications=None,
-               follow_notifications=None, connection_request_notifications=None,
-               connection_confirmed_notifications=None, community_invite_notifications=None):
+    def update(self, post_comment_notifications=None,
+               post_comment_reply_notifications=None,
+               post_reaction_notifications=None,
+               follow_notifications=None,
+               connection_request_notifications=None,
+               connection_confirmed_notifications=None,
+               community_invite_notifications=None):
 
         if post_comment_notifications is not None:
             self.post_comment_notifications = post_comment_notifications
+
+        if post_comment_reply_notifications is not None:
+            self.post_comment_reply_notifications = post_comment_reply_notifications
 
         if post_reaction_notifications is not None:
             self.post_reaction_notifications = post_reaction_notifications

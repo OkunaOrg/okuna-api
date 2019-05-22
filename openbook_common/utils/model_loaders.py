@@ -81,6 +81,10 @@ def get_post_comment_notification_model():
     return apps.get_model('openbook_notifications.PostCommentNotification')
 
 
+def get_post_comment_reply_notification_model():
+    return apps.get_model('openbook_notifications.PostCommentReplyNotification')
+
+
 def get_post_reaction_notification_model():
     return apps.get_model('openbook_notifications.PostReactionNotification')
 

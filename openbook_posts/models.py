@@ -155,6 +155,7 @@ class Post(models.Model):
         post_notification_target_users_query = Q(posts_comments__post_id=post_id)
         post_notification_target_users_query.add(Q(posts__id=post_id), Q.OR)
         post_notification_target_users_query.add(~Q(id=post_commenter_id), Q.AND)
+        post_notification_target_users_query.add(~Q(user_blocks__blocked_user_id=post_commenter_id), Q.AND)
 
         return User.objects.filter(post_notification_target_users_query).distinct()
 
@@ -259,6 +260,7 @@ class PostVideo(models.Model):
 class PostComment(models.Model):
     moderated_object = GenericRelation(ModeratedObject, related_query_name='post_comments')
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
+    parent_comment = models.ForeignKey('self', on_delete=models.CASCADE, related_name='replies', null=True, blank=True)
     created = models.DateTimeField(editable=False, db_index=True)
     commenter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_comments')
     text = models.CharField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False)
@@ -266,14 +268,27 @@ class PostComment(models.Model):
     is_deleted = models.BooleanField(default=False)
 
     @classmethod
-    def create_comment(cls, text, commenter, post):
-        return PostComment.objects.create(text=text, commenter=commenter, post=post)
+    def create_comment(cls, text, commenter, post, parent_comment=None):
+        return PostComment.objects.create(text=text, commenter=commenter, post=post, parent_comment=parent_comment)
 
     @classmethod
     def count_comments_for_post_with_id(cls, post_id):
-        count_query = Q(post_id=post_id, is_deleted=False)
+        count_query = Q(post_id=post_id, parent_comment__isnull=True, is_deleted=False)
 
         return cls.objects.filter(count_query).count()
+
+    @classmethod
+    def count_comment_replies_for_post_with_id_for_comment_with_id(cls, post_id, post_comment_id):
+        count_query = Q(post_id=post_id, parent_comment__id=post_comment_id)
+
+        return cls.objects.filter(count_query).count()
+
+    @property
+    def replies_count(self):
+        return PostComment.count_comment_replies_for_post_with_id_for_comment_with_id(self.post.pk, self.pk)
+
+    def reply_to_comment(self, commenter, text):
+        return PostComment.create_comment(text=text, commenter=commenter, post=self.post, parent_comment=self)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
