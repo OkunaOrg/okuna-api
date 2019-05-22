@@ -10,6 +10,7 @@ from openbook_circles.models import Circle
 from openbook_common.models import Emoji, EmojiGroup, Badge
 from openbook_communities.models import Community
 from openbook_devices.models import Device
+from openbook_lists.models import List
 from openbook_moderation.models import ModerationCategory
 from openbook_notifications.models import Notification
 
