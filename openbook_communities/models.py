@@ -461,6 +461,18 @@ class Community(models.Model):
 
         return super(Community, self).save(*args, **kwargs)
 
+    def soft_delete(self):
+        self.is_deleted = True
+        for post in self.posts.all().iterator():
+            post.soft_delete()
+        self.save()
+
+    def unsoft_delete(self):
+        self.is_deleted = False
+        for post in self.posts:
+            post.unsoft_delete()
+        self.save()
+
     def __str__(self):
         return self.name
 

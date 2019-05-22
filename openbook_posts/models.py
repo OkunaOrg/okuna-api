@@ -21,7 +21,8 @@ from openbook_auth.models import User
 from openbook_common.models import Emoji
 from openbook_common.utils.helpers import delete_file_field
 from openbook_common.utils.model_loaders import get_emoji_model, \
-    get_circle_model, get_community_model
+    get_circle_model, get_community_model, get_notification_model, get_post_comment_notification_model, \
+    get_post_comment_reply_notification_model, get_post_reaction_notification_model
 from imagekit.models import ProcessedImageField
 
 from openbook_moderation.models import ModeratedObject
@@ -229,6 +230,25 @@ class Post(models.Model):
             delete_file_field(self.image.image)
         super(Post, self).delete(*args, **kwargs)
 
+    def soft_delete(self):
+        self.delete_notifications()
+        for comment in self.comments.all().iterator():
+            comment.soft_delete()
+        self.is_deleted = True
+        self.save()
+
+    def unsoft_delete(self):
+        self.is_deleted = False
+        for comment in self.comments:
+            comment.soft_delete()
+        self.save()
+
+    def delete_notifications(self):
+        PostCommentNotification = get_post_comment_notification_model()
+        PostCommentNotification.delete_post_comment_notifications(post_comment_id=self.pk)
+        PostReactionNotification = get_post_reaction_notification_model()
+        PostReactionNotification.delete_post_reaction_notifications(post_reaction_id=self.pk)
+
     def _check_can_be_updated(self, text=None):
         if self.is_text_only_post() and not text:
             raise ValidationError(
@@ -295,6 +315,19 @@ class PostComment(models.Model):
         if not self.id:
             self.created = timezone.now()
         return super(PostComment, self).save(*args, **kwargs)
+
+    def soft_delete(self):
+        self.is_deleted = True
+        self.delete_notifications()
+        self.save()
+
+    def unsoft_delete(self):
+        self.is_deleted = False
+        self.save()
+
+    def delete_notifications(self):
+        PostCommentReplyNotification = get_post_comment_reply_notification_model()
+        PostCommentReplyNotification.delete_post_comment_reply_notifications(post_comment_id=self.pk)
 
 
 class PostReaction(models.Model):

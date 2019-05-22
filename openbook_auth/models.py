@@ -244,6 +244,14 @@ class User(AbstractUser):
         self.full_clean(exclude=['invite_count'])
         return super(User, self).save(*args, **kwargs)
 
+    def soft_delete(self):
+        self.is_deleted = True
+        self.save()
+
+    def unsoft_delete(self):
+        self.is_deleted = False
+        self.save()
+
     def update_profile_cover(self, cover, save=True):
         if cover is None:
             self.delete_profile_cover(save=False)
@@ -604,7 +612,7 @@ class User(AbstractUser):
         if post.community:
             if self._can_see_community_post_with_id(community=post.community, post_id=post.pk):
                 return True
-        elif post.creator_id == self.pk:
+        elif post.creator_id == self.pk and not post.is_deleted:
             return True
         else:
             # Check if we can retrieve the post

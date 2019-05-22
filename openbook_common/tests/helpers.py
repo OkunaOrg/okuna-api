@@ -215,3 +215,7 @@ def make_moderation_report_description():
 
 def make_moderated_object_description():
     return fake.text(max_nb_chars=settings.MODERATED_OBJECT_DESCRIPTION_MAX_LENGTH)
+
+
+def make_list(creator):
+    return mixer.blend(List, creator=creator)

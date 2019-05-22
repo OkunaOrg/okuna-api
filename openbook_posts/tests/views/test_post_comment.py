@@ -2926,6 +2926,44 @@ class PostCommentRepliesAPITests(APITestCase):
                                                    parent_comment_id=post_comment.pk,
                                                    text=new_reply_comment_text).count() == 0)
 
+    def test_cannot_retrieve_comment_of_own_soft_deleted_post(self):
+        """
+        should not be able to retrieve the comments of a soft deleted post
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        post_comment_text = make_fake_post_comment_text()
+        post_comment = user.comment_post_with_id(post_id=post.pk, text=post_comment_text)
+
+        post.soft_delete()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+    def test_cannot_retrieve_comment_of_foreign_soft_deleted_post(self):
+        """
+        should not be able to retrieve the comments of a soft deleted post
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        post_comment_text = make_fake_post_comment_text()
+        post_comment = user.comment_post_with_id(post_id=post.pk, text=post_comment_text)
+
+        post.soft_delete()
+
+        url = self._get_url(post=post, post_comment=post_comment)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
     def test_commenting_reply_in_foreign_post_creates_notification(self):
         """
          should create a notification when replying to comment on a foreign post

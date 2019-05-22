@@ -1441,6 +1441,50 @@ class PostCommentsAPITests(APITestCase):
         self.assertTrue(len(comments_after_min_id) == count_min)
         self.assertTrue(len(comments_before_max_id) == count_max)
 
+    def test_cannot_retrieve_comments_of_own_soft_deleted_post(self):
+        """
+        should not be able to retrieve the comments of a soft deleted post
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        amount_of_post_comments = 10
+
+        for i in range(amount_of_post_comments):
+            post_comment_text = make_fake_post_comment_text()
+            user.comment_post_with_id(post_id=post.pk, text=post_comment_text)
+
+        post.soft_delete()
+
+        url = self._get_url(post)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+    def test_cannot_retrieve_comments_of_foreign_soft_deleted_post(self):
+        """
+        should not be able to retrieve the comments of a soft deleted post
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        amount_of_post_comments = 10
+
+        for i in range(amount_of_post_comments):
+            post_comment_text = make_fake_post_comment_text()
+            user.comment_post_with_id(post_id=post.pk, text=post_comment_text)
+
+        post.soft_delete()
+
+        url = self._get_url(post)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
     def _get_create_post_comment_request_data(self, post_comment_text):
         return {
             'text': post_comment_text

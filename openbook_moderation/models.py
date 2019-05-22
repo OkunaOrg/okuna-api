@@ -214,7 +214,7 @@ class ModeratedObject(models.Model):
                     content_object,
                     Community)) or (
                     isinstance(content_object, User) and moderation_severity == ModerationCategory.SEVERITY_CRITICAL):
-                content_object.is_deleted = True
+                content_object.soft_delete()
 
         content_object.save()
         self.save()
@@ -236,7 +236,7 @@ class ModeratedObject(models.Model):
                 content_object,
                 Community)) or (
                 isinstance(content_object, User) and moderation_severity == ModerationCategory.SEVERITY_CRITICAL):
-            content_object.is_deleted = False
+            content_object.unsoft_delete()
         self.save()
         content_object.save()
 
