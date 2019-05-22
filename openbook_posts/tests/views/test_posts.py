@@ -18,8 +18,9 @@ import json
 
 from openbook_circles.models import Circle
 from openbook_common.tests.helpers import make_user, make_users, make_fake_post_text, \
-    make_authentication_headers_for_user, make_circle, make_community, make_list
+    make_authentication_headers_for_user, make_circle, make_community, make_list, make_moderation_category
 from openbook_lists.models import List
+from openbook_moderation.models import ModeratedObject
 from openbook_posts.models import Post
 
 logger = logging.getLogger(__name__)
@@ -1127,6 +1128,120 @@ class PostsAPITests(APITestCase):
         response_post = response_posts[0]
 
         self.assertEqual(response_post['id'], post.pk)
+
+    def test_cant_retrieve_moderated_approved_community_posts(self):
+        """
+        should not be able to retrieve moderated approved community posts
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        post_creator = make_user()
+
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+
+        number_of_posts = 5
+        post_reporter = make_user()
+        report_category = make_moderation_category()
+
+        for i in range(0, number_of_posts):
+            post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+            post_reporter.report_post(post=post, category_id=report_category.pk)
+            moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                       category_id=report_category.pk)
+            community_creator.approve_moderated_object(moderated_object=moderated_object)
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_can_retrieve_moderated_rejected_community_posts(self):
+        """
+        should not be able to retrieve moderated rejected community posts
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        post_creator = make_user()
+
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+
+        number_of_posts = 5
+        post_reporter = make_user()
+        report_category = make_moderation_category()
+        posts_ids = []
+
+        for i in range(0, number_of_posts):
+            post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+            posts_ids.append(post.pk)
+            post_reporter.report_post(post=post, category_id=report_category.pk)
+            moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                       category_id=report_category.pk)
+            community_creator.reject_moderated_object(moderated_object=moderated_object)
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(posts_ids), len(response_posts))
+
+        response_posts_ids = [post['id'] for post in response_posts]
+
+        for post_id in posts_ids:
+            self.assertIn(post_id, response_posts_ids)
+
+    def test_can_retrieve_moderated_pending_community_posts(self):
+        """
+        should not be able to retrieve moderated pending community posts
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        post_creator = make_user()
+
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+
+        number_of_posts = 5
+        post_reporter = make_user()
+        report_category = make_moderation_category()
+        posts_ids = []
+
+        for i in range(0, number_of_posts):
+            post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+            posts_ids.append(post.pk)
+            post_reporter.report_post(post=post, category_id=report_category.pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(posts_ids), len(response_posts))
+
+        response_posts_ids = [post['id'] for post in response_posts]
+
+        for post_id in posts_ids:
+            self.assertIn(post_id, response_posts_ids)
 
     def test_cant_retrieve_soft_deleted_community_posts(self):
         """
