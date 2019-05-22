@@ -26,9 +26,9 @@ class PostCommentItemAPITests(APITestCase):
         'openbook_circles/fixtures/circles.json'
     ]
 
-    def test_cannot_delete_foreign_comment_in_own_post(self):
+    def test_can_delete_foreign_comment_in_own_post(self):
         """
-          should not be able to delete a foreign comment in own post and return 200
+          should be able to delete a foreign comment in own post and return 200
         """
         user = make_user()
 
@@ -45,8 +45,8 @@ class PostCommentItemAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
         response = self.client.delete(url, **headers)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertTrue(PostComment.objects.filter(id=post_comment.pk).count() == 1)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(PostComment.objects.filter(id=post_comment.pk).exists())
 
     def test_can_delete_community_post_comment_if_mod(self):
         """
@@ -819,9 +819,9 @@ class PostCommentItemAPITests(APITestCase):
 
     # Post Comments that are replies
 
-    def test_cannot_delete_foreign_comment_reply_in_own_post(self):
+    def test_can_delete_foreign_comment_reply_in_own_post(self):
         """
-          should not be able to delete a foreign comment reply in own post and return 200
+          should be able to delete a foreign comment reply in own post and return 200
         """
         user = make_user()
 
@@ -840,8 +840,8 @@ class PostCommentItemAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
         response = self.client.delete(url, **headers)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertTrue(PostComment.objects.filter(id=post_comment_reply.pk).count() == 1)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(PostComment.objects.filter(id=post_comment_reply.pk).exists())
 
     def test_can_delete_community_post_comment_reply_if_mod(self):
         """
