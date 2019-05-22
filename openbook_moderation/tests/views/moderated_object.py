@@ -1,6 +1,7 @@
 import json
 
 from django.urls import reverse
+from django.utils import timezone
 from faker import Faker
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -1789,6 +1790,169 @@ class VerifyModeratedObjectApiTests(APITestCase):
     """
     VerifyModeratedObjectApi
     """
+
+    def test_verifying_approved_low_severity_moderated_object_places_exponential_minutes_suspension_penalty(
+            self):
+        """
+        verifying an approved low severity moderated object should place an exponential minutes suspension penalty
+        """
+        global_moderator = make_global_moderator()
+
+        reporter_user = make_user()
+
+        number_of_reported_items = 4
+
+        user = make_user()
+
+        for i in range(0, number_of_reported_items):
+            post = user.create_public_post(text=make_fake_post_text())
+
+            report_category = make_moderation_category(severity=ModerationCategory.SEVERITY_LOW)
+
+            reporter_user.report_post(post=post, category_id=report_category.pk)
+
+            moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                       category_id=report_category.pk)
+
+            global_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+            url = self._get_url(moderated_object=moderated_object)
+            headers = make_authentication_headers_for_user(global_moderator)
+            response = self.client.post(url, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            penalties_count = user.count_moderation_penalties_for_moderation_severity(
+                moderation_severity=ModerationCategory.SEVERITY_LOW)
+
+            expected_expiration_date = (timezone.now() + timezone.timedelta(minutes=penalties_count ** 2))
+            moderation_penalty = ModerationPenalty.objects.get(
+                moderated_object_id=moderated_object.pk,
+                user_id=user.pk, )
+
+            moderation_penalty_expiration = moderation_penalty.expiration
+
+            self.assertEqual(expected_expiration_date.date(), moderation_penalty_expiration.date())
+            self.assertEqual(expected_expiration_date.hour, moderation_penalty_expiration.hour)
+            self.assertEqual(expected_expiration_date.minute, moderation_penalty_expiration.minute)
+
+    def test_verifying_approved_medium_severity_moderated_object_places_exponential_hours_suspension_penalty(
+            self):
+        """
+        verifying an approved medium severity moderated object should place an exponential hours suspension penalty
+        """
+        global_moderator = make_global_moderator()
+
+        reporter_user = make_user()
+
+        number_of_reported_items = 4
+
+        user = make_user()
+
+        for i in range(0, number_of_reported_items):
+            post = user.create_public_post(text=make_fake_post_text())
+
+            report_category = make_moderation_category(severity=ModerationCategory.SEVERITY_MEDIUM)
+
+            reporter_user.report_post(post=post, category_id=report_category.pk)
+
+            moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                       category_id=report_category.pk)
+
+            global_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+            url = self._get_url(moderated_object=moderated_object)
+            headers = make_authentication_headers_for_user(global_moderator)
+            response = self.client.post(url, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            penalties_count = user.count_moderation_penalties_for_moderation_severity(
+                moderation_severity=ModerationCategory.SEVERITY_MEDIUM)
+
+            expected_expiration_date = timezone.now() + timezone.timedelta(hours=penalties_count ** 3)
+            moderation_penalty = ModerationPenalty.objects.get(
+                moderated_object_id=moderated_object.pk,
+                user_id=user.pk, )
+            moderation_penalty_expiration = moderation_penalty.expiration
+
+            self.assertEqual(expected_expiration_date.date(), moderation_penalty_expiration.date())
+            self.assertEqual(expected_expiration_date.hour, moderation_penalty_expiration.hour)
+            self.assertEqual(expected_expiration_date.minute, moderation_penalty_expiration.minute)
+
+    def test_verifying_approved_high_severity_moderated_object_places_exponential_days_suspension_penalty(
+            self):
+        """
+        verifying an approved high severity moderated object should place an exponential days suspension penalty
+        """
+        global_moderator = make_global_moderator()
+
+        reporter_user = make_user()
+
+        number_of_reported_items = 4
+
+        user = make_user()
+
+        for i in range(0, number_of_reported_items):
+            post = user.create_public_post(text=make_fake_post_text())
+
+            report_category = make_moderation_category(severity=ModerationCategory.SEVERITY_HIGH)
+
+            reporter_user.report_post(post=post, category_id=report_category.pk)
+
+            moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                       category_id=report_category.pk)
+
+            global_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+            url = self._get_url(moderated_object=moderated_object)
+            headers = make_authentication_headers_for_user(global_moderator)
+            response = self.client.post(url, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            penalties_count = user.count_moderation_penalties_for_moderation_severity(
+                moderation_severity=ModerationCategory.SEVERITY_HIGH)
+
+            expected_expiration_date = (timezone.now() + timezone.timedelta(days=penalties_count ** 4)).date()
+            moderation_penalty = ModerationPenalty.objects.get(
+                moderated_object_id=moderated_object.pk,
+                user_id=user.pk, )
+            moderation_penalty_expiration_date = moderation_penalty.expiration.date()
+
+            self.assertEqual(expected_expiration_date, moderation_penalty_expiration_date)
+
+    def test_verifying_approved_critical_severity_moderated_object_places_5000_weeks_suspension_penalty(self):
+        """
+        verifying an approved critical severity moderated object should place a 5000 weeks suspension penalty
+        """
+        global_moderator = make_global_moderator()
+
+        reporter_user = make_user()
+
+        user = make_user()
+
+        report_category = make_moderation_category(severity=ModerationCategory.SEVERITY_CRITICAL)
+
+        reporter_user.report_user(user=user, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(user=user,
+                                                                                   category_id=report_category.pk)
+
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        expected_expiration_date = (timezone.now() + timezone.timedelta(weeks=5000)).date()
+        moderation_penalty = ModerationPenalty.objects.get(
+            user_id=user.pk, )
+        moderation_penalty_expiration_date = moderation_penalty.expiration.date()
+
+        self.assertEqual(expected_expiration_date, moderation_penalty_expiration_date)
 
     def test_verifying_approved_any_severity_post_comment_moderated_object_soft_deletes_it(self):
         """

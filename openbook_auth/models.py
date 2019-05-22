@@ -196,20 +196,9 @@ class User(AbstractUser):
     def count_posts(self):
         return self.posts.count()
 
-    def count_high_severity_moderation_penalties(self):
-        ModerationCategory = get_moderation_category_model()
+    def count_moderation_penalties_for_moderation_severity(self, moderation_severity):
         return self.moderation_penalties.filter(
-            moderated_object__category__severity=ModerationCategory.SEVERITY_HIGH).count()
-
-    def count_medium_severity_moderation_penalties(self):
-        ModerationCategory = get_moderation_category_model()
-        return self.moderation_penalties.filter(
-            moderated_object__category__severity=ModerationCategory.SEVERITY_MEDIUM).count()
-
-    def count_low_severity_moderation_penalties(self):
-        ModerationCategory = get_moderation_category_model()
-        return self.moderation_penalties.filter(
-            moderated_object__category__severity=ModerationCategory.SEVERITY_LOW).count()
+            moderated_object__category__severity=moderation_severity).count()
 
     def count_unread_notifications(self):
         return self.notifications.filter(read=False).count()

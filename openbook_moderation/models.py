@@ -192,18 +192,17 @@ class ModeratedObject(models.Model):
 
             for penalty_target in penalty_targets:
                 duration_of_penalty = None
+                penalties_count = penalty_target.count_moderation_penalties_for_moderation_severity(
+                    moderation_severity=moderation_severity) + 1
 
                 if moderation_severity == ModerationCategory.SEVERITY_CRITICAL:
                     duration_of_penalty = timezone.timedelta(weeks=5000)
                 elif moderation_severity == ModerationCategory.SEVERITY_HIGH:
-                    high_severity_penalties_count = penalty_target.count_high_severity_moderation_penalties()
-                    duration_of_penalty = timezone.timedelta(days=high_severity_penalties_count ** 4)
+                    duration_of_penalty = timezone.timedelta(days=penalties_count ** 4)
                 elif moderation_severity == ModerationCategory.SEVERITY_MEDIUM:
-                    medium_severity_penalties_count = penalty_target.count_medium_severity_moderation_penalties()
-                    duration_of_penalty = timezone.timedelta(hours=medium_severity_penalties_count ** 2)
+                    duration_of_penalty = timezone.timedelta(hours=penalties_count ** 3)
                 elif moderation_severity == ModerationCategory.SEVERITY_LOW:
-                    low_severity_penalties_count = penalty_target.count_low_severity_moderation_penalties()
-                    duration_of_penalty = timezone.timedelta(hours=low_severity_penalties_count ** 2)
+                    duration_of_penalty = timezone.timedelta(minutes=penalties_count ** 2)
 
                 moderation_expiration = timezone.now() + duration_of_penalty
 
