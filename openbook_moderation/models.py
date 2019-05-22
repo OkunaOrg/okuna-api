@@ -1,6 +1,3 @@
-import json
-from datetime import timedelta, datetime
-
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
@@ -196,17 +193,19 @@ class ModeratedObject(models.Model):
             for penalty_target in penalty_targets:
                 duration_of_penalty = None
 
-                if moderation_severity == ModerationCategory.SEVERITY_HIGH:
+                if moderation_severity == ModerationCategory.SEVERITY_CRITICAL:
+                    duration_of_penalty = timezone.timedelta(weeks=5000)
+                elif moderation_severity == ModerationCategory.SEVERITY_HIGH:
                     high_severity_penalties_count = penalty_target.count_high_severity_moderation_penalties()
-                    duration_of_penalty = timedelta(days=high_severity_penalties_count ** 4)
+                    duration_of_penalty = timezone.timedelta(days=high_severity_penalties_count ** 4)
                 elif moderation_severity == ModerationCategory.SEVERITY_MEDIUM:
                     medium_severity_penalties_count = penalty_target.count_medium_severity_moderation_penalties()
-                    duration_of_penalty = timedelta(hours=medium_severity_penalties_count ** 2)
+                    duration_of_penalty = timezone.timedelta(hours=medium_severity_penalties_count ** 2)
                 elif moderation_severity == ModerationCategory.SEVERITY_LOW:
                     low_severity_penalties_count = penalty_target.count_low_severity_moderation_penalties()
-                    duration_of_penalty = timedelta(hours=low_severity_penalties_count ** 2)
+                    duration_of_penalty = timezone.timedelta(hours=low_severity_penalties_count ** 2)
 
-                moderation_expiration = datetime.utcnow() + duration_of_penalty
+                moderation_expiration = timezone.now() + duration_of_penalty
 
                 ModerationPenalty.create_suspension_moderation_penalty(moderated_object=self,
                                                                        user_id=penalty_target.pk,

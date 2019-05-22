@@ -5,11 +5,14 @@ from faker import Faker
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from openbook_auth.models import User
 from openbook_common.tests.helpers import make_global_moderator, make_user, make_moderation_category, \
     make_authentication_headers_for_user, make_moderated_object_description, \
     make_community, make_fake_post_text, make_fake_post_comment_text
+from openbook_communities.models import Community
 from openbook_moderation.models import ModeratedObject, ModeratedObjectDescriptionChangedLog, \
-    ModeratedObjectCategoryChangedLog, ModerationPenalty
+    ModeratedObjectCategoryChangedLog, ModerationPenalty, ModerationCategory
+from openbook_posts.models import Post, PostComment
 
 fake = Faker()
 
@@ -1787,6 +1790,198 @@ class VerifyModeratedObjectApiTests(APITestCase):
     VerifyModeratedObjectApi
     """
 
+    def test_verifying_approved_any_severity_post_comment_moderated_object_soft_deletes_it(self):
+        """
+        verifying an approved any severity post_comment moderated object should soft delete it
+        """
+        global_moderator = make_global_moderator()
+
+        reporter_user = make_user()
+        moderation_category_severities = self._get_moderation_category_severities()
+
+        for moderation_category_severity in moderation_category_severities:
+            post_comment_creator = make_user()
+            post = post_comment_creator.create_public_post(text=make_fake_post_text())
+            post_comment = post_comment_creator.comment_post(post=post, text=make_fake_post_comment_text())
+
+            report_category = make_moderation_category(severity=moderation_category_severity)
+
+            reporter_user.report_comment_for_post(post_comment=post_comment, post=post, category_id=report_category.pk)
+
+            moderated_object = ModeratedObject.get_or_create_moderated_object_for_post_comment(
+                post_comment=post_comment,
+                category_id=report_category.pk)
+
+            global_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+            url = self._get_url(moderated_object=moderated_object)
+            headers = make_authentication_headers_for_user(global_moderator)
+            response = self.client.post(url, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            self.assertTrue(PostComment.objects.filter(
+                pk=post_comment.pk,
+                is_deleted=True,
+            ).exists())
+
+    def test_verifying_approved_any_severity_community_moderated_object_soft_deletes_it(self):
+        """
+        verifying an approved any severity community moderated object should soft delete it
+        """
+        global_moderator = make_global_moderator()
+
+        reporter_user = make_user()
+        moderation_category_severities = self._get_moderation_category_severities()
+
+        for moderation_category_severity in moderation_category_severities:
+            community_creator = make_user()
+            community = make_community(creator=community_creator)
+
+            report_category = make_moderation_category(severity=moderation_category_severity)
+
+            reporter_user.report_community(community=community, category_id=report_category.pk)
+
+            moderated_object = ModeratedObject.get_or_create_moderated_object_for_community(community=community,
+                                                                                            category_id=report_category.pk)
+
+            global_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+            url = self._get_url(moderated_object=moderated_object)
+            headers = make_authentication_headers_for_user(global_moderator)
+            response = self.client.post(url, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            self.assertTrue(Community.objects.filter(
+                pk=community.pk,
+                is_deleted=True,
+            ).exists())
+
+    def test_verifying_approved_any_severity_post_moderated_object_soft_deletes_it(self):
+        """
+        verifying an approved any severity post moderated object should soft delete it
+        """
+        global_moderator = make_global_moderator()
+
+        reporter_user = make_user()
+        moderation_category_severities = self._get_moderation_category_severities()
+
+        for moderation_category_severity in moderation_category_severities:
+            post_creator = make_user()
+            post = post_creator.create_public_post(text=make_fake_post_text())
+
+            report_category = make_moderation_category(severity=moderation_category_severity)
+
+            reporter_user.report_post(post=post, category_id=report_category.pk)
+
+            moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                       category_id=report_category.pk)
+
+            global_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+            url = self._get_url(moderated_object=moderated_object)
+            headers = make_authentication_headers_for_user(global_moderator)
+            response = self.client.post(url, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            self.assertTrue(Post.objects.filter(
+                pk=post.pk,
+                is_deleted=True,
+            ).exists())
+
+    def test_verifying_approved_critical_severity_user_moderated_object_soft_deletes_it(self):
+        """
+        verifying an approved critical severity user moderated object should soft delete it
+        """
+        global_moderator = make_global_moderator()
+
+        reporter_user = make_user()
+
+        user = make_user()
+
+        report_category = make_moderation_category(severity=ModerationCategory.SEVERITY_CRITICAL)
+
+        reporter_user.report_user(user=user, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(user=user,
+                                                                                   category_id=report_category.pk)
+
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(User.objects.filter(
+            pk=user.pk,
+            is_deleted=True,
+        ).exists())
+
+    def test_verifying_approved_not_critical_severity_user_moderated_object_does_not_soft_delete_it(self):
+        """
+        verifying an approved non critical severity user moderated object should not soft delete it
+        """
+        global_moderator = make_global_moderator()
+
+        reporter_user = make_user()
+
+        user = make_user()
+
+        report_category = make_moderation_category(severity=ModerationCategory.SEVERITY_HIGH)
+
+        reporter_user.report_user(user=user, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(user=user,
+                                                                                   category_id=report_category.pk)
+
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(User.objects.filter(
+            pk=user.pk,
+            is_deleted=False,
+        ).exists())
+
+    def test_verifying_rejected_user_moderated_object_does_not_place_suspension_penalty_on_user(self):
+        """
+        verifying a rejected user moderated object should not place a suspension penalty on the user
+        """
+        global_moderator = make_global_moderator()
+
+        reporter_user = make_user()
+
+        user = make_user()
+
+        report_category = make_moderation_category()
+
+        reporter_user.report_user(user=user, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(user=user,
+                                                                                   category_id=report_category.pk)
+
+        global_moderator.reject_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(ModerationPenalty.objects.filter(
+            moderated_object_id=moderated_object.pk,
+            user_id=user.pk,
+            expiration__isnull=False
+        ).exists())
+
     def test_verifying_approved_user_moderated_object_places_suspension_penalty_on_user(self):
         """
         verifying an approved user moderated object should place a suspension penalty on the user
@@ -2427,6 +2622,14 @@ class VerifyModeratedObjectApiTests(APITestCase):
         return reverse('verify-moderated-object', kwargs={
             'moderated_object_id': moderated_object.pk
         })
+
+    def _get_moderation_category_severities(self):
+        return (
+            ModerationCategory.SEVERITY_CRITICAL,
+            ModerationCategory.SEVERITY_HIGH,
+            ModerationCategory.SEVERITY_MEDIUM,
+            ModerationCategory.SEVERITY_LOW,
+        )
 
 
 class UnverifyModeratedObjectApiTests(APITestCase):
