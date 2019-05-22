@@ -1730,7 +1730,7 @@ class User(AbstractUser):
             community_posts_query.add(Q(id__lt=max_id), Q.AND)
 
         ModeratedObject = get_moderated_object_model()
-        community_posts_query.add(Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+        community_posts_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
 
         community_posts_queryset = Post.objects.select_related(*posts_select_related).prefetch_related(
             *posts_prefetch_related).only(*posts_only).filter(community_posts_query)
@@ -2865,7 +2865,7 @@ class User(AbstractUser):
 
         # Don't retrieve items that have been reported and approved
         ModeratedObject = get_moderated_object_model()
-        community_posts_query.add(Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+        community_posts_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
 
         # Only retrieve posts if we're not banned
         community_posts_query.add(~Q(community__banned_users__id=self.pk), Q.AND)
