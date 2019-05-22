@@ -4,19 +4,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.translation import ugettext_lazy as _
-from itertools import chain
-import operator
 
 from openbook_moderation.permissions import IsNotSuspended
-from openbook_common.utils.model_loaders import get_emoji_group_model, get_post_model
-from openbook_posts.views.post.serializers import GetPostCommentsSerializer, PostCommentSerializer, \
-    CommentPostSerializer, DeletePostCommentSerializer, DeletePostSerializer, DeletePostReactionSerializer, \
-    ReactToPostSerializer, PostReactionSerializer, GetPostReactionsSerializer, PostEmojiCountSerializer, \
-    GetPostReactionsEmojiCountSerializer, PostReactionEmojiGroupSerializer, GetPostSerializer, GetPostPostSerializer, \
-    UnmutePostSerializer, MutePostSerializer, UpdatePostCommentSerializer, EditPostCommentSerializer, \
-    EditPostSerializer, AuthenticatedUserEditPostSerializer, DisableCommentsPostSerializer, \
-    EnableCommentsPostSerializer, EnableDisableCommentsPostSerializer, OpenClosePostSerializer, OpenPostSerializer, \
-    ClosePostSerializer
 from openbook_common.utils.model_loaders import get_post_model
 from openbook_posts.views.post.serializers import DeletePostSerializer, GetPostSerializer, GetPostPostSerializer, \
     UnmutePostSerializer, MutePostSerializer, EditPostSerializer, AuthenticatedUserEditPostSerializer, OpenClosePostSerializer, \

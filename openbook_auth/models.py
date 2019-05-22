@@ -30,9 +30,8 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_comment_notification_model, get_follow_notification_model, get_connection_confirmed_notification_model, \
     get_connection_request_notification_model, get_post_reaction_notification_model, get_device_model, \
     get_post_mute_model, get_community_invite_notification_model, get_user_block_model, get_emoji_model, \
-    get_post_comment_reply_notification_model
-    get_post_mute_model, get_community_invite_notification_model, get_user_block_model, get_emoji_model, \
-    get_moderation_report_model, get_moderated_object_model, get_moderation_category_model, get_moderation_penalty_model
+    get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
+    get_moderation_penalty_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications.push_notifications import senders
 
@@ -739,7 +738,8 @@ class User(AbstractUser):
         PostComment = get_post_comment_model()
         return PostComment.objects.filter(comments_query)
 
-    def get_comment_replies_for_post_with_id_for_comment_with_id(self, post_id, post_comment_id, min_id=None, max_id=None):
+    def get_comment_replies_for_post_with_id_for_comment_with_id(self, post_id, post_comment_id, min_id=None,
+                                                                 max_id=None):
         PostComment = get_post_comment_model()
         if not PostComment.objects.filter(id=post_comment_id, post__id=post_id).exists():
             raise ValidationError(
@@ -750,7 +750,8 @@ class User(AbstractUser):
         self._check_can_get_comment_replies_for_post_comment(post_comment=post_comment)
 
         comment_replies_query = \
-            self._make_get_comments_for_post_query(post=post_comment.post, post_comment=post_comment, max_id=max_id, min_id=min_id)
+            self._make_get_comments_for_post_query(post=post_comment.post, post_comment=post_comment, max_id=max_id,
+                                                   min_id=min_id)
 
         return PostComment.objects.filter(comment_replies_query)
 
@@ -851,11 +852,13 @@ class User(AbstractUser):
                 continue
             post_notification_target_user_is_post_comment_creator = post_notification_target_user.id == comment_creator
             post_notification_target_has_comment_reply_notifications_enabled = \
-                post_notification_target_user.has_comment_reply_notifications_enabled_for_post_with_id(post_id=post_comment.post_id)
+                post_notification_target_user.has_comment_reply_notifications_enabled_for_post_with_id(
+                    post_id=post_comment.post_id)
 
             if post_notification_target_has_comment_reply_notifications_enabled:
-                PostCommentReplyNotification.create_post_comment_reply_notification(post_comment_id=post_comment_reply.pk,
-                                                                                    owner_id=post_notification_target_user.id)
+                PostCommentReplyNotification.create_post_comment_reply_notification(
+                    post_comment_id=post_comment_reply.pk,
+                    owner_id=post_notification_target_user.id)
 
                 if post_notification_target_user_is_post_comment_creator:
                     notification_message = {
@@ -2384,7 +2387,7 @@ class User(AbstractUser):
     def _delete_post_comment_reply_notification(self, post_comment):
         PostCommentReplyNotification = get_post_comment_notification_model()
         PostCommentReplyNotification.delete_post_comment_notification(post_comment_id=post_comment.pk,
-                                                                 owner_id=post_comment.post.creator_id)
+                                                                      owner_id=post_comment.post.creator_id)
 
     def _create_post_reaction_notification(self, post_reaction):
         PostReactionNotification = get_post_reaction_notification_model()
@@ -2910,7 +2913,7 @@ class User(AbstractUser):
             if not self.is_staff_of_community_with_name(post.community.name):
                 raise ValidationError(
                     _('You cannot edit a closed post'),
-                    )
+                )
 
     def _check_can_post_to_circles_with_ids(self, circles_ids=None):
         for circle_id in circles_ids:
