@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from openbook_common.permissions import IsNotSuspended
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_moderation.serializers import ModeratedObjectSerializer
 from openbook_moderation.views.moderated_object.serializers import UpdateModeratedObjectSerializer, \
     GetModeratedObjectLogsSerializer, ModeratedObjectLogSerializer, ApproveModeratedObjectSerializer

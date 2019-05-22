@@ -8,7 +8,7 @@ from django.utils.translation import gettext as _
 
 from openbook_circles.serializers import CreateCircleSerializer, GetCirclesCircleSerializer, DeleteCircleSerializer, \
     UpdateCircleSerializer, CircleNameCheckSerializer, GetCircleCircleSerializer
-from openbook_common.permissions import IsNotSuspended
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import normalise_request_data, nomalize_usernames_in_request_data
 

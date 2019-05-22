@@ -97,6 +97,7 @@ INSTALLED_APPS = [
     # See https://django-modeltranslation.readthedocs.io/en/latest/installation.html#required-settings
     'modeltranslation',
     'django.contrib.admin',
+    'django.contrib.humanize',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',

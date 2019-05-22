@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from openbook_auth.views.authenticated_user.serializers import GetAuthenticatedUserSerializer
 from openbook_auth.views.users.serializers import SearchUsersSerializer, SearchUsersUserSerializer, GetUserSerializer, \
     GetUserUserSerializer, GetBlockedUserSerializer
-from openbook_common.permissions import IsNotSuspended
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.responses import ApiMessageResponse
 from django.utils.translation import ugettext_lazy as _
 

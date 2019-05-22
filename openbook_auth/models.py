@@ -9,7 +9,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.utils import six
+from django.utils import six, timezone
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
@@ -494,7 +494,10 @@ class User(AbstractUser):
     def is_suspended(self):
         ModerationPenalty = get_moderation_penalty_model()
         return self.moderation_penalties.filter(type=ModerationPenalty.TYPE_SUSPENSION,
-                                                expiration__gt=datetime.utcnow()).exists()
+                                                expiration__gt=timezone.now()).exists()
+
+    def get_longest_moderation_suspension(self):
+        return self.moderation_penalties.order_by('expiration')[0:1][0]
 
     def is_global_moderator(self):
         moderators_community_name = settings.MODERATORS_COMMUNITY_NAME
@@ -1656,6 +1659,9 @@ class User(AbstractUser):
         if max_id:
             community_posts_query.add(Q(id__lt=max_id), Q.AND)
 
+        ModeratedObject = get_moderated_object_model()
+        community_posts_query.add(Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
         community_posts_queryset = Post.objects.select_related(*posts_select_related).prefetch_related(
             *posts_prefetch_related).only(*posts_only).filter(community_posts_query)
 
@@ -2739,6 +2745,10 @@ class User(AbstractUser):
     def _make_get_community_with_id_posts_query(self, community, include_closed_posts_for_staff=True):
         # Retrieve posts from the given community name
         community_posts_query = Q(community_id=community.pk, is_deleted=False)
+
+        # Don't retrieve items that have been reported and approved
+        ModeratedObject = get_moderated_object_model()
+        community_posts_query.add(Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
 
         # Only retrieve posts if we're not banned
         community_posts_query.add(~Q(community__banned_users__id=self.pk), Q.AND)

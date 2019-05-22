@@ -7,7 +7,7 @@ from django.utils.translation import ugettext_lazy as _
 from itertools import chain
 import operator
 
-from openbook_common.permissions import IsNotSuspended
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.utils.model_loaders import get_emoji_group_model, get_post_model
 from openbook_posts.views.post.serializers import GetPostCommentsSerializer, PostCommentSerializer, \
     CommentPostSerializer, DeletePostCommentSerializer, DeletePostSerializer, DeletePostReactionSerializer, \

@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from openbook_common.permissions import IsNotSuspended
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_invitations.serializers import GetUserInviteSerializer, CreateUserInviteSerializer, \
     GetUserInvitesSerializer, DeleteUserInviteSerializer, EmailUserInviteSerializer, EditUserInviteSerializer, \

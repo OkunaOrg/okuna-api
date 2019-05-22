@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.translation import gettext as _
 
-from openbook_common.permissions import IsNotSuspended
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import normalize_list_value_in_request_data, normalise_request_data
 from openbook_common.utils.model_loaders import get_community_model

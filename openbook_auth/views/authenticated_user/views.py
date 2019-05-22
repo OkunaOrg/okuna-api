@@ -13,7 +13,7 @@ from openbook_auth.views.auth.serializers import AuthenticatedUserNotificationsS
     UpdateAuthenticatedUserNotificationsSettingsSerializer
 from openbook_auth.views.authenticated_user.serializers import GetAuthenticatedUserSerializer, \
     UpdateAuthenticatedUserSerializer, DeleteAuthenticatedUserSerializer, UpdateAuthenticatedUserSettingsSerializer
-from openbook_common.permissions import IsNotSuspended
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.responses import ApiMessageResponse
 
 

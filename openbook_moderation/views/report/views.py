@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
-from openbook_common.permissions import IsNotSuspended
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.responses import ApiMessageResponse
 from openbook_moderation.views.report.serializers import ReportPostSerializer, ReportPostCommentSerializer, \
     ReportUserSerializer, ReportCommunitySerializer, ReportModeratedObjectSerializer

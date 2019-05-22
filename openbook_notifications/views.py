@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from openbook_common.permissions import IsNotSuspended
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_notifications.serializers import GetNotificationsSerializer, GetNotificationsNotificationSerializer, \
     DeleteNotificationSerializer, ReadNotificationSerializer, ReadNotificationsSerializer
 

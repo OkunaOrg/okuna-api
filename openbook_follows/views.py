@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from openbook_common.permissions import IsNotSuspended
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_follows.serializers import FollowUserRequestSerializer, FollowSerializer, \
     DeleteFollowSerializer, UpdateFollowSerializer, FollowUserSerializer

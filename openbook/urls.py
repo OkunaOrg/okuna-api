@@ -50,6 +50,7 @@ from openbook_invitations.views import UserInvite, UserInvites, SearchUserInvite
 from openbook_devices.views import Devices, DeviceItem
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
 from openbook_lists.views import Lists, ListItem, ListNameCheck
+from openbook_moderation.views.checks import IsNotSuspendedCheck
 from openbook_moderation.views.moderated_object.views import ModeratedObjectItem, ModeratedObjectLogs, \
     ApproveModeratedObject, RejectModeratedObject, VerifyModeratedObject, UnverifyModeratedObject
 from openbook_moderation.views.moderated_objects.views import CommunityModeratedObjects, GlobalModeratedObjects
@@ -304,6 +305,7 @@ moderation_moderated_objects_patterns = [
 moderation_patterns = [
     path('moderated-objects/', include(moderation_moderated_objects_patterns), name='moderation-moderated-objects'),
     path('categories/', ModerationCategories.as_view(), name='moderation-categories'),
+    path('is-not-suspended-check/', IsNotSuspendedCheck.as_view(), name='is-not-suspended-check'),
 ]
 
 api_patterns = [
