@@ -648,7 +648,8 @@ class User(AbstractUser):
             post_reaction = post.react(reactor=self, emoji_id=emoji_id)
             if post_reaction.post.creator_id != self.pk:
                 # TODO Refactor. This check is being done twice. (Also in _send_post_reaction_push_notification)
-                if post.creator.has_reaction_notifications_enabled_for_post_with_id(post_id=post.pk):
+                if post.creator.has_reaction_notifications_enabled_for_post_with_id(post_id=post.pk) and \
+                        not post.creator.has_blocked_user_with_id(self.pk):
                     self._create_post_reaction_notification(post_reaction=post_reaction)
                 self._send_post_reaction_push_notification(post_reaction=post_reaction)
 
@@ -3011,7 +3012,6 @@ class User(AbstractUser):
             )
 
         Community = get_community_model()
-
         if not Community.is_user_with_username_moderator_of_community_with_name(username=username,
                                                                                 community_name=community_name):
             raise ValidationError(
