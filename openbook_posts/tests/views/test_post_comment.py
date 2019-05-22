@@ -310,9 +310,9 @@ class PostCommentItemAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(PostComment.objects.filter(id=post_comment.pk).exists())
 
-    def test_can_delete_own_community_post_comment_for_closed_post_if_post_creator(self):
+    def test_cannot_delete_own_community_post_comment_for_closed_post_if_post_creator(self):
         """
-         should be able to delete own community post comment for closed post if post creator
+         should NOT be able to delete own community post comment for closed post if post creator
          """
         user = make_user()
 
@@ -336,8 +336,8 @@ class PostCommentItemAPITests(APITestCase):
         headers = make_authentication_headers_for_user(community_post_creator)
         response = self.client.delete(url, **headers)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(PostComment.objects.filter(id=post_comment.pk).exists())
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(PostComment.objects.filter(id=post_comment.pk).exists())
 
     def test_logs_community_post_comment_deleted_by_non_creator(self):
         """
@@ -790,6 +790,37 @@ class PostCommentItemAPITests(APITestCase):
         self.assertTrue(post_comment.text == original_post_comment_text)
         self.assertFalse(post_comment.is_edited)
 
+    def test_cannot_edit_post_comment_if_post_closed_and_post_creator(self):
+        """
+            should NOT be able to edit own comment if post is closed even if post creator
+        """
+
+        admin = make_user()
+        user = make_user()
+        community = make_community(admin)
+        user.join_community_with_name(community_name=community.name)
+        post = user.create_community_post(community.name, text=make_fake_post_text())
+
+        original_post_comment_text = make_fake_post_comment_text()
+        post_comment = user.comment_post_with_id(post.pk, text=original_post_comment_text)
+
+        post.is_closed = True
+        post.save()
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        edited_post_comment_text = make_fake_post_comment_text()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.patch(url, {
+            'text': edited_post_comment_text
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        post_comment.refresh_from_db()
+        self.assertTrue(post_comment.text == original_post_comment_text)
+        self.assertFalse(post_comment.is_edited)
+
     def test_cannot_edit_others_community_post_comment_even_if_admin(self):
         """
             should not be able to edit someone else's comment even if community admin
@@ -1129,9 +1160,9 @@ class PostCommentItemAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(PostComment.objects.filter(id=post_comment_reply.pk).exists())
 
-    def test_can_delete_own_community_post_comment_reply_for_closed_post_if_post_creator(self):
+    def test_cannot_delete_own_community_post_comment_reply_for_closed_post_if_post_creator(self):
         """
-         should be able to delete own community post comment reply for closed post if post creator
+         should NOT be able to delete own community post comment reply for closed post if post creator
          """
         user = make_user()
 
@@ -1158,8 +1189,8 @@ class PostCommentItemAPITests(APITestCase):
         headers = make_authentication_headers_for_user(community_post_creator)
         response = self.client.delete(url, **headers)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(PostComment.objects.filter(id=post_comment_reply.pk).exists())
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(PostComment.objects.filter(id=post_comment_reply.pk).exists())
 
     def test_logs_community_post_comment_reply_deleted_by_non_creator(self):
         """
