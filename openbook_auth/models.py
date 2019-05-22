@@ -245,10 +245,22 @@ class User(AbstractUser):
         return super(User, self).save(*args, **kwargs)
 
     def soft_delete(self):
+        for post in self.posts.all().iterator():
+            post.soft_delete()
+
+        for community in self.created_communities.all().iterator():
+            community.soft_delete()
+
         self.is_deleted = True
         self.save()
 
     def unsoft_delete(self):
+        for post in self.posts.all.iterator():
+            post.unsoft_delete()
+
+        for community in self.created_communities.all().iterator():
+            community.unsoft_delete()
+
         self.is_deleted = False
         self.save()
 

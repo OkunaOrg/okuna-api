@@ -2055,6 +2055,156 @@ class VerifyModeratedObjectApiTests(APITestCase):
                 is_deleted=True,
             ).exists())
 
+    def test_verifying_approved_critical_severity_user_moderated_object_soft_deletes_its_comments_and_communities(self):
+        """
+        verifying an approved critical severity user moderated object should soft delete its posts and communities
+        """
+        global_moderator = make_global_moderator()
+
+        reporter_user = make_user()
+
+        user = make_user()
+        post = user.create_public_post(text=make_fake_post_text())
+
+        post_commenter = make_user()
+        post_comment = post_commenter.comment_post(post=post, text=make_fake_post_comment_text())
+
+        community = make_community(creator=user)
+
+        report_category = make_moderation_category(severity=ModerationCategory.SEVERITY_CRITICAL)
+
+        reporter_user.report_user(user=user, category_id=report_category.pk)
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(user=user,
+                                                                                   category_id=report_category.pk)
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        post.refresh_from_db()
+        community.refresh_from_db()
+        post_comment.refresh_from_db()
+
+        self.assertTrue(post.is_deleted)
+        self.assertTrue(community.is_deleted)
+        self.assertTrue(post_comment.is_deleted)
+
+    def test_verifying_rejected_critical_severity_user_moderated_object_does_not_soft_deletes_its_comments_and_communities(
+            self):
+        """
+        verifying a rejected critical severity user moderated object does not soft delete its posts and communities
+        """
+        global_moderator = make_global_moderator()
+
+        reporter_user = make_user()
+
+        user = make_user()
+        post = user.create_public_post(text=make_fake_post_text())
+
+        post_commenter = make_user()
+        post_comment = post_commenter.comment_post(post=post, text=make_fake_post_comment_text())
+
+        community = make_community(creator=user)
+
+        report_category = make_moderation_category(severity=ModerationCategory.SEVERITY_CRITICAL)
+
+        reporter_user.report_user(user=user, category_id=report_category.pk)
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(user=user,
+                                                                                   category_id=report_category.pk)
+        global_moderator.reject_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        post.refresh_from_db()
+        community.refresh_from_db()
+        post_comment.refresh_from_db()
+
+        self.assertFalse(post.is_deleted)
+        self.assertFalse(community.is_deleted)
+        self.assertFalse(post_comment.is_deleted)
+
+    def test_verifying_approved_any_severity_post_moderated_object_soft_deletes_its_comments(self):
+        """
+        verifying an approved any severity post moderated object should soft delete its comments
+        """
+        global_moderator = make_global_moderator()
+
+        reporter_user = make_user()
+
+        post_creator = make_user()
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        amount_of_post_comments = 5
+        post_comment_ids = []
+
+        for i in range(0, amount_of_post_comments):
+            post_commenter = make_user()
+            post_comment = post_commenter.comment_post(post=post, text=make_fake_post_comment_text())
+            post_comment_ids.append(post_comment.pk)
+
+        report_category = make_moderation_category(severity=ModerationCategory.SEVERITY_MEDIUM)
+
+        reporter_user.report_post(post=post, category_id=report_category.pk)
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=report_category.pk)
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(len(post_comment_ids), PostComment.objects.filter(
+            post_id=post.pk,
+            is_deleted=True,
+        ).count())
+
+    def test_verifying_approved_any_severity_community_moderated_object_soft_deletes_its_posts(self):
+        """
+        verifying an approved any severity community moderated object should soft delete its posts
+        """
+        global_moderator = make_global_moderator()
+
+        reporter_user = make_user()
+
+        community = make_community()
+
+        amount_of_posts = 5
+        post_ids = []
+
+        for i in range(0, amount_of_posts):
+            post_creator = make_user()
+            post_creator.join_community_with_name(community_name=community.name)
+            post_comment = post_creator.create_community_post(community_name=community.name,
+                                                              text=make_fake_post_text())
+            post_ids.append(post_comment.pk)
+
+        report_category = make_moderation_category(severity=ModerationCategory.SEVERITY_MEDIUM)
+
+        reporter_user.report_community(community=community, category_id=report_category.pk)
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_community(community=community,
+                                                                                        category_id=report_category.pk)
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(len(post_ids), Post.objects.filter(
+            community_id=community.pk,
+            is_deleted=True,
+        ).count())
+
     def test_verifying_approved_critical_severity_user_moderated_object_soft_deletes_it(self):
         """
         verifying an approved critical severity user moderated object should soft delete it
