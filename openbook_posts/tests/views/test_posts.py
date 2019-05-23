@@ -1373,6 +1373,135 @@ class PostsAPITests(APITestCase):
 
         self.assertEqual(0, len(response_posts))
 
+    def test_cant_retrieve_reported_connected_user_posts(self):
+        """
+        should not be able to retrieve reported connected user posts
+        """
+        user = make_user()
+
+        connected_user = make_user()
+        user.connect_with_user_with_id(user_id=connected_user.pk)
+        connected_user_post_circle = make_circle(creator=connected_user)
+        connected_user.confirm_connection_with_user_with_id(user_id=user.pk,
+                                                            circles_ids=[connected_user_post_circle.pk])
+        connected_user_post = connected_user.create_encircled_post(text=make_fake_post_text(),
+                                                                   circles_ids=[connected_user_post_circle.pk])
+        user.report_post(post=connected_user_post, category_id=make_moderation_category().pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_reported_connected_user_posts_when_filtering(self):
+        """
+        should not be able to retrieve reported connected user posts when filtering
+        """
+        user = make_user()
+
+        connected_user = make_user()
+        user.connect_with_user_with_id(user_id=connected_user.pk)
+        connected_user_post_circle = make_circle(creator=connected_user)
+        connected_user.confirm_connection_with_user_with_id(user_id=user.pk,
+                                                            circles_ids=[connected_user_post_circle.pk])
+        connected_user_post = connected_user.create_encircled_post(text=make_fake_post_text(),
+                                                                   circles_ids=[connected_user_post_circle.pk])
+        user.report_post(post=connected_user_post, category_id=make_moderation_category().pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'circle_id': connected_user_post_circle.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_reported_following_user_posts(self):
+        """
+        should not be able to retrieve reported following user posts
+        """
+        user = make_user()
+
+        following_user = make_user()
+        user.follow_user_with_id(user_id=following_user.pk)
+
+        following_user_post = following_user.create_public_post(text=make_fake_post_text())
+        user.report_post(post=following_user_post, category_id=make_moderation_category().pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_reported_following_user_posts_when_filtering(self):
+        """
+        should not be able to retrieve reported following user posts when filtering
+        """
+        user = make_user()
+
+        following_user = make_user()
+        follow_list = make_list(creator=user)
+        user.follow_user_with_id(user_id=following_user.pk, lists_ids=[follow_list.pk])
+
+        following_user_post = following_user.create_public_post(text=make_fake_post_text())
+        user.report_post(post=following_user_post, category_id=make_moderation_category().pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'list_id': follow_list.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_reported_community_posts(self):
+        """
+        should not be able to retrieve reported community posts
+        """
+        user = make_user()
+
+        community = make_community()
+
+        post_creator = make_user()
+
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+
+        number_of_posts = 5
+        report_category = make_moderation_category()
+
+        for i in range(0, number_of_posts):
+            post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+            user.report_post(post=post, category_id=report_category.pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
     def _get_url(self):
         return reverse('posts')
 

@@ -14,7 +14,7 @@ from django.core.files import File
 import logging
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
-    make_fake_post_comment_text, make_user, make_circle, make_community, make_list
+    make_fake_post_comment_text, make_user, make_circle, make_community, make_list, make_moderation_category
 from openbook_communities.models import Community
 from openbook_posts.models import Post
 
@@ -686,6 +686,69 @@ class PostItemAPITests(APITestCase):
                                                                    circles_ids=[connected_user_post_circle.pk])
         connected_user_post.soft_delete()
         connected_user_post.save()
+
+        url = self._get_url(post=connected_user_post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cant_retrieve_reported_community_post(self):
+        """
+        should not be able to retrieve reported community post
+        """
+        user = make_user()
+
+        community_creator = make_user()
+
+        community = make_community(creator=community_creator)
+
+        post_creator = make_user()
+
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+
+        post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+        user.report_post(post=post, category_id=make_moderation_category().pk)
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cant_retrieve_reported_following_user_post(self):
+        """
+        should not be able to retrieve reported following user post
+        """
+        user = make_user()
+
+        following_user = make_user()
+        user.follow_user_with_id(user_id=following_user.pk)
+
+        following_user_post = following_user.create_public_post(text=make_fake_post_text())
+        user.report_post(post=following_user_post, category_id=make_moderation_category().pk)
+
+        url = self._get_url(post=following_user_post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cant_retrieve_reported_connected_user_post(self):
+        """
+        should not be able to retrieve reported connected user post
+        """
+        user = make_user()
+
+        connected_user = make_user()
+        user.connect_with_user_with_id(user_id=connected_user.pk)
+        connected_user_post_circle = make_circle(creator=connected_user)
+        connected_user.confirm_connection_with_user_with_id(user_id=user.pk,
+                                                            circles_ids=[connected_user_post_circle.pk])
+        connected_user_post = connected_user.create_encircled_post(text=make_fake_post_text(),
+                                                                   circles_ids=[connected_user_post_circle.pk])
+        user.report_post(post=connected_user_post, category_id=make_moderation_category().pk)
 
         url = self._get_url(post=connected_user_post)
         headers = make_authentication_headers_for_user(user)

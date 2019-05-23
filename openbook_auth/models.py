@@ -1711,6 +1711,8 @@ class User(AbstractUser):
 
         timeline_posts_query.add(Q(is_deleted=False), Q.AND)
 
+        timeline_posts_query.add(~Q(moderated_object__reports__reporter_id=self.pk), Q.AND)
+
         Post = get_post_model()
         return Post.objects.filter(timeline_posts_query).distinct()
 
@@ -1733,7 +1735,12 @@ class User(AbstractUser):
                       'community__color',
                       'community__title')
 
+        ModeratedObject = get_moderated_object_model()
+        reported_posts_exclusion_query = ~Q(moderated_object__reports__reporter_id=self.pk)
+
         own_posts_query = Q(creator=self.pk, community__isnull=True, is_deleted=False)
+
+        own_posts_query.add(reported_posts_exclusion_query, Q.AND)
 
         if max_id:
             own_posts_query.add(Q(id__lt=max_id), Q.AND)
@@ -1749,8 +1756,9 @@ class User(AbstractUser):
         if max_id:
             community_posts_query.add(Q(id__lt=max_id), Q.AND)
 
-        ModeratedObject = get_moderated_object_model()
         community_posts_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
+        community_posts_query.add(reported_posts_exclusion_query, Q.AND)
 
         community_posts_queryset = Post.objects.select_related(*posts_select_related).prefetch_related(
             *posts_prefetch_related).only(*posts_only).filter(community_posts_query)
@@ -1760,6 +1768,8 @@ class User(AbstractUser):
         followed_users_ids = [followed_user['followed_user_id'] for followed_user in followed_users]
 
         followed_users_query = Q(creator__in=followed_users_ids, is_deleted=False)
+
+        followed_users_query.add(reported_posts_exclusion_query, Q.AND)
 
         if max_id:
             followed_users_query.add(Q(id__lt=max_id), Q.AND)
@@ -2512,6 +2522,8 @@ class User(AbstractUser):
 
         posts_query = Q(creator_id=user.pk, is_deleted=False)
 
+        posts_query.add(~Q(moderated_object__reports__reporter_id=self.pk), Q.AND)
+
         world_circle_id = self._get_world_circle_id()
 
         posts_circles_query = Q(circles__id=world_circle_id)
@@ -2886,6 +2898,9 @@ class User(AbstractUser):
         # Don't retrieve items that have been reported and approved
         ModeratedObject = get_moderated_object_model()
         community_posts_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
+        # Dont retrieve items we have reported
+        community_posts_query.add(~Q(moderated_object__reports__reporter_id=self.pk), Q.AND)
 
         # Only retrieve posts if we're not banned
         community_posts_query.add(~Q(community__banned_users__id=self.pk), Q.AND)
