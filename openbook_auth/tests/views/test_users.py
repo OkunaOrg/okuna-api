@@ -199,13 +199,13 @@ class GetUserAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
 
         user_to_retrieve = make_user()
-        user_to_retrieve
+        user_to_retrieve.soft_delete()
 
         url = self._get_url(user_to_retrieve)
 
         response = self.client.get(url, **headers)
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def _get_url(self, user):
         return reverse('get-user', kwargs={

@@ -144,6 +144,10 @@ class User(AbstractUser):
         return cls.objects.get(email=user_email)
 
     @classmethod
+    def user_with_username_exists(cls, username):
+        return User.objects.filter(username=username, is_deleted=False).exists()
+
+    @classmethod
     def sanitise_username(cls, username):
         chars = '[@#!±$%^&*()=|/><?,:;\~`{}]'
         return re.sub(chars, '', username).lower().replace(' ', '_').replace('+', '_').replace('-', '_')

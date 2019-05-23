@@ -12,7 +12,8 @@ from openbook_common.tests.helpers import make_global_moderator, make_user, make
     make_community, make_fake_post_text, make_fake_post_comment_text
 from openbook_communities.models import Community
 from openbook_moderation.models import ModeratedObject, ModeratedObjectDescriptionChangedLog, \
-    ModeratedObjectCategoryChangedLog, ModerationPenalty, ModerationCategory
+    ModeratedObjectCategoryChangedLog, ModerationPenalty, ModerationCategory, ModeratedObjectStatusChangedLog, \
+    ModeratedObjectVerifiedChangedLog
 from openbook_posts.models import Post, PostComment
 
 fake = Faker()
@@ -1362,6 +1363,35 @@ class ApproveModeratedObjectApiTests(APITestCase):
             status=ModeratedObject.STATUS_PENDING
         ).exists())
 
+    def test_creates_approved_changed_log_on_update(self):
+        """
+        should create an approved changed log on update
+        """
+        global_moderator = make_global_moderator()
+
+        user = make_user()
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_user_with_username(username=user.username, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(user=user,
+                                                                                   category_id=report_category.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(1, ModeratedObjectStatusChangedLog.objects.filter(
+            changed_from=ModeratedObject.STATUS_PENDING,
+            changed_to=ModeratedObject.STATUS_APPROVED,
+            log__actor_id=global_moderator.pk,
+            log__moderated_object__object_id=user.pk
+        ).count())
+
     def _get_url(self, moderated_object):
         return reverse('approve-moderated-object', kwargs={
             'moderated_object_id': moderated_object.pk
@@ -1779,6 +1809,35 @@ class RejectModeratedObjectApiTests(APITestCase):
             object_id=community_post_comment.pk,
             status=ModeratedObject.STATUS_PENDING
         ).exists())
+
+    def test_creates_rejected_changed_log_on_update(self):
+        """
+        should create an rejected changed log on update
+        """
+        global_moderator = make_global_moderator()
+
+        user = make_user()
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_user_with_username(username=user.username, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(user=user,
+                                                                                   category_id=report_category.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(1, ModeratedObjectStatusChangedLog.objects.filter(
+            changed_from=ModeratedObject.STATUS_PENDING,
+            changed_to=ModeratedObject.STATUS_REJECTED,
+            log__actor_id=global_moderator.pk,
+            log__moderated_object__object_id=user.pk
+        ).count())
 
     def _get_url(self, moderated_object):
         return reverse('reject-moderated-object', kwargs={
@@ -2932,6 +2991,37 @@ class VerifyModeratedObjectApiTests(APITestCase):
             verified=False
         ).exists())
 
+    def test_creates_verified_changed_log_on_verify(self):
+        """
+        should create a verified changed log on verify
+        """
+        global_moderator = make_global_moderator()
+
+        user = make_user()
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_user_with_username(username=user.username, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(user=user,
+                                                                                   category_id=report_category.pk)
+
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(1, ModeratedObjectVerifiedChangedLog.objects.filter(
+            changed_from=False,
+            changed_to=True,
+            log__actor_id=global_moderator.pk,
+            log__moderated_object__object_id=user.pk
+        ).count())
+
     def _get_url(self, moderated_object):
         return reverse('verify-moderated-object', kwargs={
             'moderated_object_id': moderated_object.pk
@@ -3432,6 +3522,38 @@ class UnverifyModeratedObjectApiTests(APITestCase):
             object_id=community_post_comment.pk,
             verified=True
         ).exists())
+
+    def test_creates_verified_changed_log_on_unverify(self):
+        """
+        should create a verified changed log on unverify
+        """
+        global_moderator = make_global_moderator()
+
+        user = make_user()
+
+        reporter_user = make_user()
+        report_category = make_moderation_category()
+
+        reporter_user.report_user_with_username(username=user.username, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(user=user,
+                                                                                   category_id=report_category.pk)
+
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+        global_moderator.verify_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(1, ModeratedObjectVerifiedChangedLog.objects.filter(
+            changed_from=True,
+            changed_to=False,
+            log__actor_id=global_moderator.pk,
+            log__moderated_object__object_id=user.pk
+        ).count())
 
     def _get_url(self, moderated_object):
         return reverse('unverify-moderated-object', kwargs={
