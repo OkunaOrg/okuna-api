@@ -217,6 +217,38 @@ class CommunityPostsAPITest(APITestCase):
 
         self.assertEqual(0, len(response_posts))
 
+    def test_cannot_retrieve_reported_posts_from_community(self):
+        """
+        should not be able to retrieve reported posts of a community
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+        user.join_community_with_name(community_name=community.name)
+
+        community_name = community.name
+
+        amount_of_community_posts = 5
+
+        for i in range(0, amount_of_community_posts):
+            community_member = make_user()
+            community_member.join_community_with_name(community_name=community_name)
+            community_member_post = community_member.create_community_post(community_name=community.name,
+                                                                           text=make_fake_post_text())
+            moderation_category = make_moderation_category()
+            user.report_post(post=community_member_post, category_id=moderation_category.pk)
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
     def test_can_retrieve_moderated_rejected_posts_from_community(self):
         """
         should be able to retrieve moderated rejected posts of a community
