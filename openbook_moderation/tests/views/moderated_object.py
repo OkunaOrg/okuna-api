@@ -1,5 +1,8 @@
 import json
+import tempfile
 
+from PIL import Image
+from django.core.files import File
 from django.urls import reverse
 from django.utils import timezone
 from faker import Faker
@@ -3021,6 +3024,42 @@ class VerifyModeratedObjectApiTests(APITestCase):
             log__actor_id=global_moderator.pk,
             log__moderated_object__object_id=user.pk
         ).count())
+
+    def test_on_critical_severity_post_moderated_object_verify_should_delete_image(self):
+        """
+        on critical severity post moderated object, verify should delete image
+        """
+        global_moderator = make_global_moderator()
+
+        post_creator = make_user()
+
+        image = Image.new('RGB', (100, 100))
+        tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
+        image.save(tmp_file)
+        tmp_file.seek(0)
+
+        post = post_creator.create_public_post(text=make_fake_post_text(), image=File(tmp_file))
+
+        reporter_user = make_user()
+        report_category = make_moderation_category(severity=ModerationCategory.SEVERITY_CRITICAL)
+
+        reporter_user.report_post(post=post, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=report_category.pk)
+
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        post.refresh_from_db()
+
+        with self.assertRaises(FileNotFoundError):
+            file = post.image.image.file
 
     def _get_url(self, moderated_object):
         return reverse('verify-moderated-object', kwargs={

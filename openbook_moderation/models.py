@@ -216,6 +216,10 @@ class ModeratedObject(models.Model):
                     isinstance(content_object, User) and moderation_severity == ModerationCategory.SEVERITY_CRITICAL):
                 content_object.soft_delete()
 
+                if moderation_severity == ModerationCategory.SEVERITY_CRITICAL and isinstance(content_object, Post):
+                    # We have hashes
+                    content_object.delete_media()
+
         content_object.save()
         self.save()
 
