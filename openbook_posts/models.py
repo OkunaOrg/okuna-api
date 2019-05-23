@@ -1,4 +1,5 @@
 # Create your models here.
+import hashlib
 import uuid
 from datetime import timedelta
 
@@ -19,7 +20,7 @@ from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
 from openbook_common.models import Emoji
-from openbook_common.utils.helpers import delete_file_field
+from openbook_common.utils.helpers import delete_file_field, sha256sum
 from openbook_common.utils.model_loaders import get_emoji_model, \
     get_circle_model, get_community_model, get_notification_model, get_post_comment_notification_model, \
     get_post_comment_reply_notification_model, get_post_reaction_notification_model
@@ -84,10 +85,10 @@ class Post(models.Model):
             post.text = text
 
         if image:
-            PostImage.objects.create(image=image, post_id=post.pk)
+            PostImage.create_post_image(image=image, post_id=post.pk)
 
         if video:
-            PostVideo.objects.create(video=video, post_id=post.pk)
+            PostVideo.create_post_video(video=video, post_id=post.pk)
 
         if circles_ids:
             post.circles.add(*circles_ids)
@@ -223,12 +224,15 @@ class Post(models.Model):
         return super(Post, self).save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
+        self.delete_media()
+        super(Post, self).delete(*args, **kwargs)
+
+    def delete_media(self):
         if self.has_video():
             delete_file_field(self.video.video)
 
         if self.has_image():
             delete_file_field(self.image.image)
-        super(Post, self).delete(*args, **kwargs)
 
     def soft_delete(self):
         self.delete_notifications()
@@ -269,12 +273,24 @@ class PostImage(models.Model):
                                 processors=[ResizeToFit(width=1024, upscale=False)])
     width = models.PositiveIntegerField(editable=False, null=False, blank=False)
     height = models.PositiveIntegerField(editable=False, null=False, blank=False)
+    hash = models.CharField(_('hash'), max_length=64, blank=False, null=True)
+
+    @classmethod
+    def create_post_image(cls, image, post_id):
+        hash = sha256sum(file=image.file)
+        return cls.objects.create(image=image, post_id=post_id, hash=hash)
 
 
 class PostVideo(models.Model):
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='video')
     video = models.FileField(_('video'), blank=False, null=False, storage=post_image_storage,
                              upload_to=upload_to_post_video_directory)
+    hash = models.CharField(_('hash'), max_length=64, blank=False, null=True)
+
+    @classmethod
+    def create_post_video(cls, video, post_id):
+        hash = sha256sum(file=video.file)
+        return cls.objects.create(video=video, post_id=post_id, hash=hash)
 
 
 class PostComment(models.Model):

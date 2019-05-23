@@ -19,6 +19,7 @@ import json
 from openbook_circles.models import Circle
 from openbook_common.tests.helpers import make_user, make_users, make_fake_post_text, \
     make_authentication_headers_for_user, make_circle, make_community, make_list, make_moderation_category
+from openbook_common.utils.helpers import sha256sum
 from openbook_lists.models import List
 from openbook_moderation.models import ModeratedObject
 from openbook_posts.models import Post
@@ -250,6 +251,39 @@ class PostsAPITests(APITestCase):
 
         self.assertTrue(hasattr(created_post, 'image'))
 
+    def test_create_image_post_creates_hash(self):
+        """
+        creating an image post should create a hash and return 201
+        """
+        user = mixer.blend(User)
+
+        image = Image.new('RGB', (100, 100))
+        tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
+        image.save(tmp_file)
+        tmp_file.seek(0)
+
+        filehash = sha256sum(filename=tmp_file.name)
+
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'image': tmp_file
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        response_post = json.loads(response.content)
+
+        response_post_id = response_post.get('id')
+
+        self.assertTrue(user.posts.count() == 1)
+
+        self.assertTrue(user.posts.filter(pk=response_post_id, image__hash=filehash).exists())
+
     def test_create_video_post(self):
         """
         should be able to create a video post and return 201
@@ -278,6 +312,33 @@ class PostsAPITests(APITestCase):
         created_post = user.posts.filter(pk=response_post_id).get()
 
         self.assertTrue(hasattr(created_post, 'video'))
+
+    def test_create_video_post_creates_hash(self):
+        """
+        creating a video post creates a hash and return 201
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        video = SimpleUploadedFile("file.mp4", b"video_file_content", content_type="video/mp4")
+
+        filehash = sha256sum(file=video.file)
+
+        data = {
+            'video': video
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        response_post = json.loads(response.content)
+
+        response_post_id = response_post.get('id')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(user.posts.filter(pk=response_post_id, video__hash=filehash))
 
     def test_create_video_and_text_post(self):
         """
