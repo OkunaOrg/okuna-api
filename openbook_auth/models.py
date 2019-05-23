@@ -1461,7 +1461,7 @@ class User(AbstractUser):
         return User.objects.filter(followings_query).distinct()
 
     def search_followers_with_query(self, query):
-        followers_query = Q(follows__followed_user_id=self.pk)
+        followers_query = Q(follows__followed_user_id=self.pk, is_deleted=False)
 
         names_query = Q(username__icontains=query)
         names_query.add(Q(profile__name__icontains=query), Q.OR)
@@ -1471,7 +1471,7 @@ class User(AbstractUser):
         return User.objects.filter(followers_query).distinct()
 
     def search_followings_with_query(self, query):
-        followings_query = Q(followers__user_id=self.pk)
+        followings_query = Q(followers__user_id=self.pk, is_deleted=False)
 
         names_query = Q(username__icontains=query)
         names_query.add(Q(profile__name__icontains=query), Q.OR)

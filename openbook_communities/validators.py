@@ -23,7 +23,7 @@ def community_name_not_taken_validator(community_name):
 
 def community_name_exists(community_name):
     Community = get_community_model()
-    if not Community.objects.filter(name=community_name).exists():
+    if not Community.community_with_name_exists(community_name=community_name):
         raise NotFound(
             _('No community with the provided name exists.'),
         )
