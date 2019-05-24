@@ -68,10 +68,10 @@
     "model": "openbook_moderation.ModerationCategory",
     "pk": 6,
     "fields": {
-      "name": "child_porn",
+      "name": "child_exploitation",
       "severity": "C",
-      "title_en": "Child Porn",
-      "title_es": "Child Porn",
+      "title_en": "Child Sexual Exploitation Material",
+      "title_es": "Child Sexual Exploitation Material",
       "description_en": "Posts with photos or videos of sexual intercourse with children, posts of nude/partially nude children.",
       "description_es": "Posts with photos or videos of sexual intercourse with children, posts of nude/partially nude children.",
       "created": "2018-10-22 12:23:30.382913+00:00"

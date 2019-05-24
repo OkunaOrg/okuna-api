@@ -51,6 +51,7 @@ class User(AbstractUser):
     username_validator = UnicodeUsernameValidator() if six.PY3 else ASCIIUsernameValidator()
     is_email_verified = models.BooleanField(default=False)
     are_guidelines_accepted = models.BooleanField(default=False)
+    # This only happens if the user was reported and found with critical severity content and its account deleted
     is_deleted = models.BooleanField(
         _('is deleted'),
         default=False,

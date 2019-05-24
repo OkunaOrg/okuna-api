@@ -56,6 +56,7 @@ class Community(models.Model):
     users_adjective = models.CharField(_('users adjective'), max_length=settings.COMMUNITY_USERS_ADJECTIVE_MAX_LENGTH,
                                        blank=False, null=True)
     invites_enabled = models.BooleanField(_('invites enabled'), default=True)
+    # This only happens if the community was reported and found with critical severity content
     is_deleted = models.BooleanField(
         _('is deleted'),
         default=False,

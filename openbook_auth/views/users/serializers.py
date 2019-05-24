@@ -7,7 +7,7 @@ from openbook_circles.models import Circle
 from openbook_common.models import Badge, Emoji
 from openbook_common.serializers_fields.user import FollowersCountField, FollowingCountField, PostsCountField, \
     IsFollowingField, IsConnectedField, IsFullyConnectedField, ConnectedCirclesField, FollowListsField, \
-    IsPendingConnectionConfirmation, IsBlockedField
+    IsPendingConnectionConfirmation, IsBlockedField, IsUserReportedField
 from openbook_lists.models import List
 
 
@@ -109,6 +109,7 @@ class GetUserUserSerializer(serializers.ModelSerializer):
     connected_circles = ConnectedCirclesField(circle_serializer=GetUserUserCircleSerializer)
     follow_lists = FollowListsField(list_serializer=GetUserUserListSerializer)
     is_pending_connection_confirmation = IsPendingConnectionConfirmation()
+    is_reported = IsUserReportedField()
 
     class Meta:
         model = User
@@ -121,6 +122,7 @@ class GetUserUserSerializer(serializers.ModelSerializer):
             'posts_count',
             'is_following',
             'is_connected',
+            'is_reported',
             'is_fully_connected',
             'connected_circles',
             'follow_lists',
