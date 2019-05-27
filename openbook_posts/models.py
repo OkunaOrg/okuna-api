@@ -354,15 +354,24 @@ class PostComment(models.Model):
 
         return cls.objects.filter(count_query).count()
 
-    @classmethod
-    def count_comment_replies_for_post_with_id_for_comment_with_id(cls, post_id, post_comment_id):
-        count_query = Q(post_id=post_id, parent_comment__id=post_comment_id)
+    def count_replies(self):
+        return self.replies.count()
 
-        return cls.objects.filter(count_query).count()
+    def count_replies_with_user(self, user):
+        count_query = Q()
 
-    @property
-    def replies_count(self):
-        return PostComment.count_comment_replies_for_post_with_id_for_comment_with_id(self.post.pk, self.pk)
+        if self.post.community_id:
+            # Don't count items that have been reported and approved by community moderators
+            ModeratedObject = get_moderated_object_model()
+            count_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
+        # Dont count soft deleted items
+        count_query.add(Q(is_deleted=False), Q.AND)
+
+        # Dont count items we have reported
+        count_query.add(~Q(moderated_object__reports__reporter_id=user.pk), Q.AND)
+
+        return self.replies.filter(count_query).count()
 
     def reply_to_comment(self, commenter, text):
         return PostComment.create_comment(text=text, commenter=commenter, post=self.post, parent_comment=self)

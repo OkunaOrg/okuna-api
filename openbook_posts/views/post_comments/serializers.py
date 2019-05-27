@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.conf import settings
 
 from openbook_auth.models import UserProfile, User
-from openbook_common.serializers_fields.post_comment import PostCommenterField
+from openbook_common.serializers_fields.post_comment import PostCommenterField, RepliesCountField
 from openbook_communities.models import CommunityMembership
 from openbook_posts.models import PostComment, Post
 from openbook_posts.validators import post_uuid_exists
@@ -71,6 +71,7 @@ class PostCommentSerializer(serializers.ModelSerializer):
     commenter = PostCommenterField(post_commenter_serializer=PostCommentCommenterSerializer,
                                    community_membership_serializer=PostCommenterCommunityMembershipSerializer)
     replies = RepliesField(post_comment_reply_serializer=PostCommentReplySerializer)
+    replies_count = RepliesCountField()
 
     class Meta:
         model = PostComment
@@ -119,7 +120,6 @@ class GetPostCommentsSerializer(serializers.Serializer):
 
 
 class EnableDisableCommentsPostSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Post
         fields = (

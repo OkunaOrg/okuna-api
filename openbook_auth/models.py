@@ -791,6 +791,9 @@ class User(AbstractUser):
     def get_comments_count_for_post(self, post):
         return post.count_comments_with_user(user=self)
 
+    def get_replies_count_for_post_comment(self, post_comment):
+        return post_comment.count_replies_with_user(user=self)
+
     def enable_comments_for_post_with_id(self, post_id):
         Post = get_post_model()
         if not Post.is_post_with_id_a_community_post(post_id):
