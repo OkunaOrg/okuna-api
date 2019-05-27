@@ -265,10 +265,33 @@ class Post(models.Model):
         self.save()
 
     def delete_notifications(self):
+        # Remove all post comment notifications
         PostCommentNotification = get_post_comment_notification_model()
-        PostCommentNotification.delete_post_comment_notifications(post_comment_id=self.pk)
+        PostCommentNotification.objects.filter(post_id=self.pk).delete()
+
+        # Remove all post reaction notifications
         PostReactionNotification = get_post_reaction_notification_model()
-        PostReactionNotification.delete_post_reaction_notifications(post_reaction_id=self.pk)
+        PostReactionNotification.objects.filter(post_id=self.pk).delete()
+
+        # Remove all post comment reply notifications
+        PostCommentReplyNotification = get_post_comment_notification_model()
+        PostCommentReplyNotification.objects.filter(post_comment__post=self.pk).delete()
+
+    def delete_notifications_for_user(self, user):
+        # Remove all post comment notifications
+        PostCommentNotification = get_post_comment_notification_model()
+        PostCommentNotification.objects.filter(post_comment__post_id=self.pk,
+                                               notification__owner_id=user.pk).delete()
+
+        # Remove all post reaction notifications
+        PostReactionNotification = get_post_reaction_notification_model()
+        PostReactionNotification.objects.filter(post_reaction__post_id=self.pk,
+                                                notification__owner_id=user.pk).delete()
+
+        # Remove all post comment reply notifications
+        PostCommentReplyNotification = get_post_comment_notification_model()
+        PostCommentReplyNotification.objects.filter(post_comment__post=self.pk,
+                                                    notification__owner_id=user.pk).delete()
 
     def _check_can_be_updated(self, text=None):
         if self.is_text_only_post() and not text:
@@ -362,6 +385,12 @@ class PostComment(models.Model):
     def delete_notifications(self):
         PostCommentReplyNotification = get_post_comment_reply_notification_model()
         PostCommentReplyNotification.delete_post_comment_reply_notifications(post_comment_id=self.pk)
+
+    def delete_notifications_for_user(self, user):
+        PostCommentReplyNotification = get_post_comment_reply_notification_model()
+        PostCommentReplyNotification.delete_post_comment_reply_notification(post_comment_id=self.pk, owner_id=user.pk)
+        PostCommentNotification = get_post_comment_notification_model()
+        PostCommentNotification.delete_post_comment_notification(post_comment_id=self.pk, owner_id=user.pk)
 
 
 class PostReaction(models.Model):

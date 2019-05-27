@@ -2120,6 +2120,7 @@ class User(AbstractUser):
                                                                category_id=category_id,
                                                                reporter_id=self.pk,
                                                                description=description)
+        post_comment.delete_notifications_for_user(user=self)
 
     def report_post_with_uuid(self, post_uuid, category_id, description=None):
         Post = get_post_model()
@@ -2133,6 +2134,7 @@ class User(AbstractUser):
                                                        category_id=category_id,
                                                        reporter_id=self.pk,
                                                        description=description)
+        post.delete_notifications_for_user(user=self)
 
     def report_user_with_username(self, username, category_id, description=None):
         user = User.objects.get(username=username)
