@@ -12,7 +12,7 @@ class ModerationCategories(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request):
-        moderation_categories = ModerationCategory.objects.all().order_by('title')
+        moderation_categories = ModerationCategory.objects.all().order_by('order')
         serializer = ModerationCategorySerializer(moderation_categories, many=True, context={'request': request})
 
         return Response(serializer.data, status=status.HTTP_200_OK)

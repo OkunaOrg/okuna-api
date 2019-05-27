@@ -17,6 +17,7 @@ class ModerationCategory(models.Model):
     title = models.CharField(_('title'), max_length=64, blank=False, null=False)
     description = models.CharField(_('description'), max_length=255, blank=False, null=False)
     created = models.DateTimeField(editable=False, db_index=True)
+    order = models.PositiveSmallIntegerField(editable=False)
 
     SEVERITY_CRITICAL = 'C'
     SEVERITY_HIGH = 'H'
