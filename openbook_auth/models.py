@@ -789,7 +789,7 @@ class User(AbstractUser):
         return self.get_comments_count_for_post(post=post)
 
     def get_comments_count_for_post(self, post):
-        return post.count_comments()
+        return post.count_comments_with_user(user=self)
 
     def enable_comments_for_post_with_id(self, post_id):
         Post = get_post_model()

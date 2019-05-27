@@ -23,7 +23,7 @@ from openbook_common.models import Emoji
 from openbook_common.utils.helpers import delete_file_field, sha256sum
 from openbook_common.utils.model_loaders import get_emoji_model, \
     get_circle_model, get_community_model, get_notification_model, get_post_comment_notification_model, \
-    get_post_comment_reply_notification_model, get_post_reaction_notification_model
+    get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model
 from imagekit.models import ProcessedImageField
 
 from openbook_moderation.models import ModeratedObject
@@ -163,6 +163,23 @@ class Post(models.Model):
 
     def count_comments(self):
         return PostComment.count_comments_for_post_with_id(self.pk)
+
+    def count_comments_with_user(self, user):
+        # Only count top level comments
+        count_query = Q(parent_comment__isnull=True)
+
+        if self.community:
+            # Don't count items that have been reported and approved by community moderators
+            ModeratedObject = get_moderated_object_model()
+            count_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
+        # Dont count soft deleted items
+        count_query.add(Q(is_deleted=False), Q.AND)
+
+        # Dont count items we have reported
+        count_query.add(~Q(moderated_object__reports__reporter_id=user.pk), Q.AND)
+
+        return self.comments.filter(count_query).count()
 
     def count_reactions(self, reactor_id=None):
         return PostReaction.count_reactions_for_post_with_id(self.pk, reactor_id=reactor_id)
