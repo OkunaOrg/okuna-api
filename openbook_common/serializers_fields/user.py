@@ -32,7 +32,8 @@ class IsUserReportedField(Field):
         if not request.user.is_anonymous:
             if request.user.pk == value.pk:
                 return False
-            return request.user.has_reported_user_with_id(value.pk)
+            reported = request.user.has_reported_user_with_id(value.pk)
+            return reported
 
         return False
 

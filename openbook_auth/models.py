@@ -775,7 +775,8 @@ class User(AbstractUser):
         self._check_can_get_comment_replies_for_post_comment(post_comment=post_comment)
 
         comment_replies_query = \
-            self._make_get_comments_for_post_query(post=post_comment.post, post_comment=post_comment, max_id=max_id,
+            self._make_get_comments_for_post_query(post=post_comment.post, parent_post_comment=post_comment,
+                                                   max_id=max_id,
                                                    min_id=min_id)
 
         return PostComment.objects.filter(comment_replies_query)
@@ -2863,18 +2864,22 @@ class User(AbstractUser):
 
         return reactions_query
 
-    def _make_get_comments_for_post_query(self, post, post_comment=None, max_id=None, min_id=None):
+    def _make_get_comments_for_post_query(self, post, parent_post_comment=None, max_id=None, min_id=None):
 
-        comments_query = Q(post_id=post.pk, is_deleted=False)
-        if post_comment is None:
+        # Comments from the post
+        comments_query = Q(post_id=post.pk)
+
+        # If we are retrieving replies, add the parent_comment to the query
+        if parent_post_comment is None:
             comments_query.add(Q(parent_comment__isnull=True), Q.AND)
         else:
-            comments_query.add(Q(parent_comment__id=post_comment.pk), Q.AND)
+            comments_query.add(Q(parent_comment__id=parent_post_comment.pk), Q.AND)
 
         post_community = post.community
 
         if post_community:
             if not self.is_staff_of_community_with_name(community_name=post_community.name):
+                # Dont retrieve posts of blocked users, except from staff members
                 blocked_users_query = ~Q(Q(commenter__blocked_by_users__blocker_id=self.pk) | Q(
                     commenter__user_blocks__blocked_user_id=self.pk))
                 blocked_users_query_staff_members = Q(
@@ -2884,15 +2889,27 @@ class User(AbstractUser):
 
                 blocked_users_query.add(~blocked_users_query_staff_members, Q.AND)
                 comments_query.add(blocked_users_query, Q.AND)
+
+                # Don't retrieve items that have been reported and approved
+                ModeratedObject = get_moderated_object_model()
+                comments_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
         else:
+            #  Dont retrieve posts of blocked users
             blocked_users_query = ~Q(Q(commenter__blocked_by_users__blocker_id=self.pk) | Q(
                 commenter__user_blocks__blocked_user_id=self.pk))
             comments_query.add(blocked_users_query, Q.AND)
 
+        # Cursor based scrolling queries
         if max_id:
             comments_query.add(Q(id__lt=max_id), Q.AND)
         elif min_id:
             comments_query.add(Q(id__gte=min_id), Q.AND)
+
+        # Dont retrieve items we have reported
+        comments_query.add(~Q(moderated_object__reports__reporter_id=self.pk), Q.AND)
+
+        # Dont retrieve soft deleted post comments
+        comments_query.add(Q(is_deleted=False), Q.AND)
 
         return comments_query
 
