@@ -136,6 +136,16 @@ class FollowersCountField(Field):
         return user.count_followers()
 
 
+class IsGlobalModeratorField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(IsGlobalModeratorField, self).__init__(**kwargs)
+
+    def to_representation(self, user):
+        return user.is_global_moderator()
+
+
 class FollowingCountField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'

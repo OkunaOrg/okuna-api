@@ -12,7 +12,8 @@ from rest_framework.test import APITestCase
 from openbook_auth.models import User
 from openbook_common.tests.helpers import make_global_moderator, make_user, make_moderation_category, \
     make_authentication_headers_for_user, make_moderated_object_description, \
-    make_community, make_fake_post_text, make_fake_post_comment_text
+    make_community, make_fake_post_text, make_fake_post_comment_text, make_moderated_object, make_moderated_object_log, \
+    make_moderated_object_report
 from openbook_communities.models import Community
 from openbook_moderation.models import ModeratedObject, ModeratedObjectDescriptionChangedLog, \
     ModeratedObjectCategoryChangedLog, ModerationPenalty, ModerationCategory, ModeratedObjectStatusChangedLog, \
@@ -3596,5 +3597,241 @@ class UnverifyModeratedObjectApiTests(APITestCase):
 
     def _get_url(self, moderated_object):
         return reverse('unverify-moderated-object', kwargs={
+            'moderated_object_id': moderated_object.pk
+        })
+
+
+class ModeratedObjectLogs(APITestCase):
+    def test_can_retrieve_community_moderation_object_logs_if_staff(self):
+        """
+        should be able to retrieve community moderation object logs if staff and return 200
+        """
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        community_moderator = make_user()
+        community_moderator.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(
+            community_name=community.name,
+            username=community_moderator.username
+        )
+
+        moderated_object = make_moderated_object(community=community)
+
+        amount_of_moderated_object_logs = 5
+        moderated_object_logs_ids = []
+
+        for i in range(0, amount_of_moderated_object_logs):
+            moderated_object_log = make_moderated_object_log(moderated_object=moderated_object)
+            moderated_object_logs_ids.append(moderated_object_log.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(community_moderator)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_moderation_categories = json.loads(response.content)
+
+        self.assertEqual(len(response_moderation_categories), len(moderated_object_logs_ids))
+
+        for response_moderationCategory in response_moderation_categories:
+            response_moderation_category_id = response_moderationCategory.get('id')
+            self.assertIn(response_moderation_category_id, moderated_object_logs_ids)
+
+    def test_cant_retrieve_community_moderation_object_logs_if_not_staff(self):
+        """
+        should not be able to retrieve community moderation logs if not staff and return 400
+        """
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        user = make_user()
+
+        moderated_object = make_moderated_object(community=community)
+
+        amount_of_moderated_object_logs = 5
+        moderated_object_logs_ids = []
+
+        for i in range(0, amount_of_moderated_object_logs):
+            moderated_object_log = make_moderated_object_log(moderated_object=moderated_object)
+            moderated_object_logs_ids.append(moderated_object_log.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_can_retrieve_global_moderation_object_logs_if_global_moderator(self):
+        """
+        should be able to retrieve global moderation object logs if global moderator and return 200
+        """
+        global_moderator = make_global_moderator()
+
+        moderated_object = make_moderated_object()
+
+        amount_of_moderated_object_logs = 5
+        moderated_object_logs_ids = []
+
+        for i in range(0, amount_of_moderated_object_logs):
+            moderated_object_log = make_moderated_object_log(moderated_object=moderated_object)
+            moderated_object_logs_ids.append(moderated_object_log.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_moderation_categories = json.loads(response.content)
+
+        self.assertEqual(len(response_moderation_categories), len(moderated_object_logs_ids))
+
+        for response_moderationCategory in response_moderation_categories:
+            response_moderation_category_id = response_moderationCategory.get('id')
+            self.assertIn(response_moderation_category_id, moderated_object_logs_ids)
+
+    def test_cant_retrieve_global_moderation_object_logs_if_not_global_moderator(self):
+        """
+        should not be able to retrieve global moderation object logs if not global moderator and return 200
+        """
+        user = make_user()
+
+        moderated_object = make_moderated_object()
+
+        amount_of_moderated_object_logs = 5
+        moderated_object_logs_ids = []
+
+        for i in range(0, amount_of_moderated_object_logs):
+            moderated_object_log = make_moderated_object_log(moderated_object=moderated_object)
+            moderated_object_logs_ids.append(moderated_object_log.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def _get_url(self, moderated_object):
+        return reverse('moderated-object-logs', kwargs={
+            'moderated_object_id': moderated_object.pk
+        })
+
+
+class ModeratedObjectReports(APITestCase):
+    def test_can_retrieve_community_moderation_object_reports_if_staff(self):
+        """
+        should be able to retrieve community moderation object reports if staff and return 200
+        """
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        community_moderator = make_user()
+        community_moderator.join_community_with_name(community_name=community.name)
+        community_creator.add_moderator_with_username_to_community_with_name(
+            community_name=community.name,
+            username=community_moderator.username
+        )
+
+        moderated_object = make_moderated_object(community=community)
+
+        amount_of_moderated_object_reports = 5
+        moderated_object_reports_ids = []
+
+        for i in range(0, amount_of_moderated_object_reports):
+            moderated_object_report = make_moderated_object_report(moderated_object=moderated_object)
+            moderated_object_reports_ids.append(moderated_object_report.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(community_moderator)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_moderation_categories = json.loads(response.content)
+
+        self.assertEqual(len(response_moderation_categories), len(moderated_object_reports_ids))
+
+        for response_moderationCategory in response_moderation_categories:
+            response_moderation_category_id = response_moderationCategory.get('id')
+            self.assertIn(response_moderation_category_id, moderated_object_reports_ids)
+
+    def test_cant_retrieve_community_moderation_object_reports_if_not_staff(self):
+        """
+        should not be able to retrieve community moderation reports if not staff and return 400
+        """
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        user = make_user()
+
+        moderated_object = make_moderated_object(community=community)
+
+        amount_of_moderated_object_reports = 5
+        moderated_object_reports_ids = []
+
+        for i in range(0, amount_of_moderated_object_reports):
+            moderated_object_report = make_moderated_object_report(moderated_object=moderated_object)
+            moderated_object_reports_ids.append(moderated_object_report.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_can_retrieve_global_moderation_object_reports_if_global_moderator(self):
+        """
+        should be able to retrieve global moderation object reports if global moderator and return 200
+        """
+        global_moderator = make_global_moderator()
+
+        moderated_object = make_moderated_object()
+
+        amount_of_moderated_object_reports = 5
+        moderated_object_reports_ids = []
+
+        for i in range(0, amount_of_moderated_object_reports):
+            moderated_object_report = make_moderated_object_report(moderated_object=moderated_object)
+            moderated_object_reports_ids.append(moderated_object_report.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_moderation_categories = json.loads(response.content)
+
+        self.assertEqual(len(response_moderation_categories), len(moderated_object_reports_ids))
+
+        for response_moderationCategory in response_moderation_categories:
+            response_moderation_category_id = response_moderationCategory.get('id')
+            self.assertIn(response_moderation_category_id, moderated_object_reports_ids)
+
+    def test_cant_retrieve_global_moderation_object_reports_if_not_global_moderator(self):
+        """
+        should not be able to retrieve global moderation object reports if not global moderator and return 200
+        """
+        user = make_user()
+
+        moderated_object = make_moderated_object()
+
+        amount_of_moderated_object_reports = 5
+        moderated_object_reports_ids = []
+
+        for i in range(0, amount_of_moderated_object_reports):
+            moderated_object_report = make_moderated_object_report(moderated_object=moderated_object)
+            moderated_object_reports_ids.append(moderated_object_report.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def _get_url(self, moderated_object):
+        return reverse('moderated-object-reports', kwargs={
             'moderated_object_id': moderated_object.pk
         })

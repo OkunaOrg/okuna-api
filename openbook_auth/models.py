@@ -1819,6 +1819,42 @@ class User(AbstractUser):
     def _check_can_get_global_moderated_objects(self):
         self._check_is_global_moderator()
 
+    def get_logs_for_moderated_object_with_id(self, moderated_object_id, max_id=None):
+        ModeratedObject = get_moderated_object_model()
+        moderated_object = ModeratedObject.objects.get(pk=moderated_object_id)
+        return self.get_logs_for_moderated_object(moderated_object=moderated_object, max_id=max_id)
+
+    def get_logs_for_moderated_object(self, moderated_object, max_id=None):
+        self._check_can_get_moderated_object(moderated_object=moderated_object)
+
+        query = Q()
+
+        if max_id:
+            query.add(Q(id__lt=max_id), Q.AND)
+
+        return moderated_object.logs.filter(query)
+
+    def get_reports_for_moderated_object_with_id(self, moderated_object_id, max_id=None):
+        ModeratedObject = get_moderated_object_model()
+        moderated_object = ModeratedObject.objects.get(pk=moderated_object_id)
+        return self.get_reports_for_moderated_object(moderated_object=moderated_object, max_id=max_id)
+
+    def get_reports_for_moderated_object(self, moderated_object, max_id=None):
+        self._check_can_get_moderated_object(moderated_object=moderated_object)
+
+        query = Q()
+
+        if max_id:
+            query.add(Q(id__lt=max_id), Q.AND)
+
+        return moderated_object.reports.filter(query)
+
+    def _check_can_get_moderated_object(self, moderated_object):
+        if moderated_object.community:
+            self._check_can_get_community_moderated_objects(community_name=moderated_object.community)
+        else:
+            self._check_can_get_global_moderated_objects()
+
     def get_community_moderated_objects(self, community_name, types=None, max_id=None, verified=None, statuses=None):
         self._check_can_get_community_moderated_objects(community_name=community_name)
         ModeratedObject = get_moderated_object_model()

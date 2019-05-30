@@ -5,7 +5,7 @@ from rest_framework import serializers
 from openbook_auth.models import UserProfile, User
 from openbook_moderation.models import ModeratedObjectLog, ModeratedObjectCategoryChangedLog, \
     ModeratedObjectDescriptionChangedLog, ModeratedObjectStatusChangedLog, ModeratedObjectVerifiedChangedLog, \
-    ModeratedObjectSubmittedChangedLog, ModerationCategory
+    ModeratedObjectSubmittedChangedLog, ModerationCategory, ModerationReport
 from openbook_moderation.views.validators import moderated_object_id_exists, moderation_category_id_exists
 
 
@@ -57,6 +57,10 @@ class GetModeratedObjectLogsSerializer(serializers.Serializer):
     )
     max_id = serializers.IntegerField(
         required=False,
+    )
+    moderated_object_id = serializers.UUIDField(
+        validators=[moderated_object_id_exists],
+        required=True,
     )
 
 
@@ -161,10 +165,68 @@ class ModeratedObjectLogSerializer(serializers.ModelSerializer):
         model = ModeratedObjectLog
         fields = (
             'id',
-            'type',
+            'log_type',
             'actor',
             'content_object',
-            'verified',
-            'submitted',
-            'approved',
+        )
+
+
+class ModeratedObjectReportReporterProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = (
+            'id',
+            'avatar'
+        )
+
+
+class ModeratedObjectReportReporterSerializer(serializers.ModelSerializer):
+    profile = ModeratedObjectReportReporterProfileSerializer()
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'username',
+            'profile'
+        )
+
+
+class GetModeratedObjectReportsSerializer(serializers.Serializer):
+    count = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
+    max_id = serializers.IntegerField(
+        required=False,
+    )
+    moderated_object_id = serializers.UUIDField(
+        validators=[moderated_object_id_exists],
+        required=True,
+    )
+
+
+class ModeratedObjectReportModerationCategorySerializer(serializers.Serializer):
+    class Meta:
+        model = ModerationCategory
+        fields = (
+            'id',
+            'name',
+            'title',
+            'description',
+            'severity',
+        )
+
+
+class ModeratedObjectReportSerializer(serializers.ModelSerializer):
+    category = ModeratedObjectReportModerationCategorySerializer()
+    reporter = ModeratedObjectReportReporterSerializer()
+
+    class Meta:
+        model = ModerationReport
+        fields = (
+            'id',
+            'category',
+            'description',
+            'reporter',
         )

@@ -11,7 +11,7 @@ from openbook_common.models import Emoji, EmojiGroup, Badge
 from openbook_communities.models import Community
 from openbook_devices.models import Device
 from openbook_lists.models import List
-from openbook_moderation.models import ModerationCategory
+from openbook_moderation.models import ModerationCategory, ModeratedObjectLog, ModeratedObject, ModerationReport
 from openbook_notifications.models import Notification
 
 fake = Faker()
@@ -220,3 +220,15 @@ def make_moderated_object_description():
 
 def make_list(creator):
     return mixer.blend(List, creator=creator)
+
+
+def make_moderated_object(community=None, ):
+    return mixer.blend(ModeratedObject, community=community)
+
+
+def make_moderated_object_log(moderated_object=None):
+    return mixer.blend(ModeratedObjectLog, moderated_object=moderated_object)
+
+
+def make_moderated_object_report(moderated_object=None):
+    return mixer.blend(ModerationReport, moderated_object=moderated_object)
