@@ -341,16 +341,12 @@ class ModeratedObjectLog(models.Model):
 
     LOG_TYPE_DESCRIPTION_CHANGED = 'DC'
     LOG_TYPE_STATUS_CHANGED = 'AC'
-    LOG_TYPE_TYPE_CHANGED = 'TC'
-    LOG_TYPE_SUBMITTED_CHANGED = 'SC'
     LOG_TYPE_VERIFIED_CHANGED = 'VC'
     LOG_TYPE_CATEGORY_CHANGED = 'CC'
 
     LOG_TYPES = (
         (LOG_TYPE_DESCRIPTION_CHANGED, 'Description Changed'),
-        (LOG_TYPE_STATUS_CHANGED, 'Approved Changed'),
-        (LOG_TYPE_TYPE_CHANGED, 'Type Changed'),
-        (LOG_TYPE_SUBMITTED_CHANGED, 'Submitted Changed'),
+        (LOG_TYPE_STATUS_CHANGED, 'Status Changed'),
         (LOG_TYPE_VERIFIED_CHANGED, 'Verified Changed'),
         (LOG_TYPE_CATEGORY_CHANGED, 'Category Changed'),
     )
@@ -440,21 +436,5 @@ class ModeratedObjectVerifiedChangedLog(models.Model):
         moderated_object_description_changed_log = cls.objects.create(changed_from=changed_from,
                                                                       changed_to=changed_to)
         ModeratedObjectLog.create_moderated_object_log(log_type=ModeratedObjectLog.LOG_TYPE_VERIFIED_CHANGED,
-                                                       content_object=moderated_object_description_changed_log,
-                                                       moderated_object_id=moderated_object_id, actor_id=actor_id)
-
-
-class ModeratedObjectSubmittedChangedLog(models.Model):
-    log = GenericRelation(ModeratedObjectLog)
-    changed_from = models.BooleanField(_('changed from'),
-                                       blank=False, null=False)
-    changed_to = models.BooleanField(_('changed to'),
-                                     blank=False, null=False)
-
-    @classmethod
-    def create_moderated_object_submitted_changed_log(cls, moderated_object_id, changed_from, changed_to, actor_id):
-        moderated_object_description_changed_log = cls.objects.create(changed_from=changed_from,
-                                                                      changed_to=changed_to)
-        ModeratedObjectLog.create_moderated_object_log(log_type=ModeratedObjectLog.LOG_TYPE_SUBMITTED_CHANGED,
                                                        content_object=moderated_object_description_changed_log,
                                                        moderated_object_id=moderated_object_id, actor_id=actor_id)

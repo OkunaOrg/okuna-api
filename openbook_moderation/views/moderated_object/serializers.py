@@ -5,7 +5,7 @@ from rest_framework import serializers
 from openbook_auth.models import UserProfile, User
 from openbook_moderation.models import ModeratedObjectLog, ModeratedObjectCategoryChangedLog, \
     ModeratedObjectDescriptionChangedLog, ModeratedObjectStatusChangedLog, ModeratedObjectVerifiedChangedLog, \
-    ModeratedObjectSubmittedChangedLog, ModerationCategory, ModerationReport
+     ModerationCategory, ModerationReport
 from openbook_moderation.views.validators import moderated_object_id_exists, moderation_category_id_exists
 
 
@@ -130,16 +130,6 @@ class ModeratedObjectStatusChangedLogSerializer(serializers.ModelSerializer):
         )
 
 
-class ModeratedObjectSubmittedChangedLogSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ModeratedObjectSubmittedChangedLog
-        fields = (
-            'id',
-            'changed_from',
-            'changed_to'
-        )
-
-
 class ModeratedObjectVerifiedChangedLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = ModeratedObjectVerifiedChangedLog
@@ -158,7 +148,6 @@ class ModeratedObjectLogSerializer(serializers.ModelSerializer):
         ModeratedObjectDescriptionChangedLog: ModeratedObjectDescriptionChangedLogSerializer(),
         ModeratedObjectStatusChangedLog: ModeratedObjectStatusChangedLogSerializer(),
         ModeratedObjectVerifiedChangedLog: ModeratedObjectVerifiedChangedLogSerializer(),
-        ModeratedObjectSubmittedChangedLog: ModeratedObjectSubmittedChangedLogSerializer(),
     })
 
     class Meta:

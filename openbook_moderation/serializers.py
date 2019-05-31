@@ -28,21 +28,6 @@ class ModeratedObjectUserSerializer(serializers.ModelSerializer):
         )
 
 
-class ModeratedObjectPostCommentSerializer(serializers.ModelSerializer):
-    commenter = ModeratedObjectUserSerializer()
-
-    class Meta:
-        model = PostComment
-        fields = (
-            'id',
-            'text',
-            'commenter',
-            'commenter',
-            'created',
-            'post_id'
-        )
-
-
 class ModeratedObjectCommunitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Community
@@ -50,7 +35,8 @@ class ModeratedObjectCommunitySerializer(serializers.ModelSerializer):
             'id',
             'name',
             'avatar',
-            'description'
+            'description',
+            'color'
         )
 
 
@@ -78,6 +64,24 @@ class ModeratedObjectPostSerializer(serializers.ModelSerializer):
             'creator',
             'community',
             'image',
+        )
+
+
+class ModeratedObjectPostCommentSerializer(serializers.ModelSerializer):
+    commenter = ModeratedObjectUserSerializer()
+    post = ModeratedObjectPostSerializer()
+
+    class Meta:
+        model = PostComment
+        fields = (
+            'id',
+            'text',
+            'commenter',
+            'commenter',
+            'created',
+            'post_id',
+            'post',
+            'is_edited'
         )
 
 
