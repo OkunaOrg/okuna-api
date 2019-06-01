@@ -7,7 +7,7 @@ def make_eb_config_block_admin(lb_name, utils_dir):
 
     j2_env = Environment(loader=FileSystemLoader(utils_dir), autoescape=True)
     return j2_env.get_template(
-            'templates/eb_extensions/block_admin.conf.yml'
+            'templates/eb_extensions/block_admin.config.yml'
            ).render(
              LB_NAME=lb_name
         )
@@ -17,7 +17,7 @@ def make_eb_config_admin(sauth_server_name, utils_dir):
 
     j2_env = Environment(loader=FileSystemLoader(utils_dir), autoescape=True)
     return j2_env.get_template(
-            'templates/eb_extensions/admin.conf.yml'
+            'templates/eb_extensions/admin.config.yml'
            ).render(
              SAUTH_SERVER_NAME=sauth_server_name
     )
@@ -50,8 +50,8 @@ def main():
     admin = make_eb_config_admin(args.sauth_server_name, UTILS_DIR)
     block_admin = make_eb_config_block_admin(args.lb_name, UTILS_DIR)
 
-    admin_dest = './.ebextensions/admin.conf'
-    block_admin_dest = './.ebextensions/block_admin.conf'
+    admin_dest = './.ebextensions/admin.config'
+    block_admin_dest = './.ebextensions/block_admin.config'
 
     write_eb_config(admin_dest, admin)
     write_eb_config(block_admin_dest, block_admin)
