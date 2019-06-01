@@ -158,6 +158,32 @@ Assign user invites to all or specific users.
 usage: manage.py allocate_invites [-h] [--count INCREMENT_INVITES_BY_COUNT] [--total TOTAL_INVITE_COUNT_TO_SET] [--username USERNAME]
 ```
 
+## Docker Compose
+
+### Replace .env settings
+```bash
+# Relational Database Service configuration
+RDS_DB_NAME=openbook
+RDS_USERNAME=root
+RDS_PASSWORD=openbook
+RDS_HOSTNAME=db.openbook
+RDS_PORT=3306
+RDS_HOSTNAME_READER=db.openbook
+RDS_HOSTNAME_WRITER=db.openbook
+```
+
+### Build the container
+```bash
+usage: docker-compose build
+```
+
+### Run the container
+```bash
+usage: docker-compose up (-d in background)
+```
+
+### Visit the static webserver IP
+http://172.16.16.1:80
 
 ## Troubleshooting
 
