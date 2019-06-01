@@ -17,4 +17,8 @@ RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
 
-CMD ["tail", "-f", "/dev/null"]
+VOLUME ["/opt/openbook-api"]
+
+EXPOSE 80 443
+
+CMD ["pipenv", "run", "python", "manage.py", "runserver"]
