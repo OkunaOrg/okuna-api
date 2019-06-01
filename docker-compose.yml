@@ -7,39 +7,30 @@ services:
       context: ./.docker
     privileged: true
     extra_hosts:
-      - db.openbook.invalid:172.16.238.10
+      - db.openbook.invalid:172.16.16.2
     volumes:
      - ./:/opt/openbook-api
     ports:
-      - "80"
-      - "443"
+      - 80
+      - 443
     working_dir: /opt/openbook-api
     networks:
-      - openbook
-    ulimits:
-      nproc: 65535
-      nofile:
-        soft: 65535
-        hard: 65535
+      openbook:
+        ipv4_address: 172.16.16.1
   db:
     image: mariadb:10.4.5
     hostname: db.openbook.invalid
     volumes:
      - mariadb:/var/lib/mysql
     ports:
-      - "3306"
+      - 3306
     privileged: false
     environment:
       - MYSQL_ROOT_PASSWORD=openbook
       - MYSQL_DATABASE=openbook
     networks:
       openbook:
-        ipv4_address: 172.16.238.10
-    ulimits:
-      nproc: 65535
-      nofile:
-        soft: 65535
-        hard: 65535
+        ipv4_address: 172.16.16.2
 
 volumes:
   mariadb:
@@ -49,4 +40,4 @@ networks:
     ipam:
       driver: default
       config:
-        - subnet: "172.16.238.0/24"
+        - subnet: "172.16.16.0/24"
