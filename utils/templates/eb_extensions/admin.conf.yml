@@ -1,0 +1,14 @@
+files:
+  "/etc/httpd/conf.d/admin.conf" :
+    mode: "000644"
+    owner: root
+    group: root
+    content: |
+      Listen 8080
+
+      <VirtualHost *:8080>
+        ServerName {{ SAUTH_SERVER_NAME }}
+        ProxyPreserveHost On
+        ProxyPass / http://0.0.0.0:80/
+        ProxyPassReverse / http://0.0.0.0:8080/
+      </VirtualHost>
