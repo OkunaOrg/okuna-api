@@ -21,4 +21,4 @@ VOLUME ["/opt/openbook-api"]
 
 EXPOSE 80 443
 
-CMD ["pipenv", "run", "python", "manage.py", "runserver"]
+CMD ["pipenv", "run", "python", "manage.py", "runserver", "0.0.0.0:80"]
