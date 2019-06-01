@@ -7,7 +7,7 @@ services:
       context: ./.docker
     privileged: true
     extra_hosts:
-      - db.openbook.invalid:172.16.16.2
+      - db.openbook:172.16.16.2
     volumes:
      - ./:/opt/openbook-api
     ports:
@@ -19,7 +19,7 @@ services:
         ipv4_address: 172.16.16.1
   db:
     image: mariadb:10.4.5
-    hostname: db.openbook.invalid
+    hostname: db.openbook
     volumes:
      - mariadb:/var/lib/mysql
     ports:
