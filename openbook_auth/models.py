@@ -1878,6 +1878,12 @@ class User(AbstractUser):
     def _check_can_get_community_moderated_objects(self, community_name):
         self._check_is_staff_of_community_with_name(community_name=community_name)
 
+    def get_moderation_penalties(self, max_id=None):
+        query = Q()
+        if max_id:
+            query.add(Q(id__lt=max_id), Q.AND)
+        return self.moderation_penalties.filter(query)
+
     def follow_user(self, user, lists_ids=None):
         return self.follow_user_with_id(user.pk, lists_ids)
 
