@@ -5,7 +5,7 @@ from rest_framework import serializers
 from openbook_auth.models import UserProfile, User
 from openbook_moderation.models import ModeratedObjectLog, ModeratedObjectCategoryChangedLog, \
     ModeratedObjectDescriptionChangedLog, ModeratedObjectStatusChangedLog, ModeratedObjectVerifiedChangedLog, \
-     ModerationCategory, ModerationReport
+    ModerationCategory, ModerationReport
 from openbook_moderation.views.validators import moderated_object_id_exists, moderation_category_id_exists
 
 
@@ -64,7 +64,7 @@ class GetModeratedObjectLogsSerializer(serializers.Serializer):
     )
 
 
-class ModeratedObjectLogModerationCategorySerializer(serializers.Serializer):
+class ModeratedObjectLogModerationCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = ModerationCategory
         fields = (
@@ -157,6 +157,7 @@ class ModeratedObjectLogSerializer(serializers.ModelSerializer):
             'log_type',
             'actor',
             'content_object',
+            'created'
         )
 
 
@@ -165,7 +166,8 @@ class ModeratedObjectReportReporterProfileSerializer(serializers.ModelSerializer
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'name'
         )
 
 
@@ -195,7 +197,7 @@ class GetModeratedObjectReportsSerializer(serializers.Serializer):
     )
 
 
-class ModeratedObjectReportModerationCategorySerializer(serializers.Serializer):
+class ModeratedObjectReportModerationCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = ModerationCategory
         fields = (

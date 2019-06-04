@@ -137,6 +137,10 @@ class ModeratedObject(models.Model):
         return cls._get_or_create_moderated_object(object_type=cls.OBJECT_TYPE_USER, content_object=user,
                                                    category_id=category_id)
 
+    @property
+    def reports_count(self):
+        return self.reports.count()
+
     def is_verified(self):
         return self.verified
 
@@ -264,9 +268,9 @@ class ModeratedObject(models.Model):
 
 
 class ModerationReport(models.Model):
-    reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='moderation_reports')
-    moderated_object = models.ForeignKey(ModeratedObject, on_delete=models.CASCADE, related_name='reports')
-    category = models.ForeignKey(ModerationCategory, on_delete=models.CASCADE, related_name='reports')
+    reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='moderation_reports', null=False)
+    moderated_object = models.ForeignKey(ModeratedObject, on_delete=models.CASCADE, related_name='reports', null=False)
+    category = models.ForeignKey(ModerationCategory, on_delete=models.CASCADE, related_name='reports', null=False)
     description = models.CharField(_('description'), max_length=settings.MODERATION_REPORT_DESCRIPTION_MAX_LENGTH,
                                    blank=False, null=True)
 

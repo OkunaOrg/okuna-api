@@ -15,7 +15,7 @@ class ModeratedObjectItem(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def patch(self, request, moderated_object_id):
-        request_data = request.data.dict()
+        request_data = request.data.copy()
 
         request_data['moderated_object_id'] = moderated_object_id
         serializer = UpdateModeratedObjectSerializer(data=request_data, context={"request": request})

@@ -1876,7 +1876,7 @@ class User(AbstractUser):
         return ModeratedObject.objects.filter(moderated_objects_query)
 
     def _check_can_get_community_moderated_objects(self, community_name):
-        self._check_is_moderator_of_community_with_name(community_name=community_name)
+        self._check_is_staff_of_community_with_name(community_name=community_name)
 
     def follow_user(self, user, lists_ids=None):
         return self.follow_user_with_id(user.pk, lists_ids)
@@ -2322,14 +2322,14 @@ class User(AbstractUser):
     def _check_can_approve_moderated_object(self, moderated_object):
         self._check_can_moderate_moderated_object(moderated_object=moderated_object)
 
-        if moderated_object.is_verified() and not self.is_global_moderator():
+        if moderated_object.is_verified():
             raise ValidationError(
                 _('The moderated object has already been verified.')
             )
 
     def _check_can_reject_moderated_object(self, moderated_object):
         self._check_can_moderate_moderated_object(moderated_object=moderated_object)
-        if moderated_object.is_verified() and not self.is_global_moderator():
+        if moderated_object.is_verified():
             raise ValidationError(
                 _('The moderated object has already been verified.')
             )
@@ -2386,6 +2386,10 @@ class User(AbstractUser):
     def _check_is_moderator_of_community_with_name(self, community_name):
         if not self.is_moderator_of_community_with_name(community_name=community_name):
             raise PermissionDenied(_('Not a community moderator.'))
+
+    def _check_is_staff_of_community_with_name(self, community_name):
+        if not self.is_staff_of_community_with_name(community_name=community_name):
+            raise PermissionDenied(_('Not a community staff.'))
 
     def _check_can_create_invite(self, nickname):
         if self.invite_count == 0:

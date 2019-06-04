@@ -267,15 +267,15 @@ class Post(models.Model):
     def delete_notifications(self):
         # Remove all post comment notifications
         PostCommentNotification = get_post_comment_notification_model()
-        PostCommentNotification.objects.filter(post_id=self.pk).delete()
+        PostCommentNotification.objects.filter(post_comment__post_id=self.pk).delete()
 
         # Remove all post reaction notifications
         PostReactionNotification = get_post_reaction_notification_model()
-        PostReactionNotification.objects.filter(post_id=self.pk).delete()
+        PostReactionNotification.objects.filter(post_reaction__post_id=self.pk).delete()
 
         # Remove all post comment reply notifications
         PostCommentReplyNotification = get_post_comment_notification_model()
-        PostCommentReplyNotification.objects.filter(post_comment__post=self.pk).delete()
+        PostCommentReplyNotification.objects.filter(post_comment__post_id=self.pk).delete()
 
     def delete_notifications_for_user(self, user):
         # Remove all post comment notifications
