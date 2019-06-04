@@ -66,6 +66,7 @@ class ModeratedObjectPostSerializer(serializers.ModelSerializer):
             'creator',
             'community',
             'image',
+            'created'
         )
 
 

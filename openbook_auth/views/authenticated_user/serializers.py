@@ -15,6 +15,8 @@ from openbook_common.serializers_fields.user import FollowersCountField, \
     IsMemberOfCommunities, \
     UnreadNotificationsCountField, IsGlobalModeratorField
 from openbook_common.validators import name_characters_validator
+from openbook_moderation.serializers_fields.user import UserPendingCommunitiesModeratedObjectsCountField, \
+    UserActiveModerationPenaltiesCountField
 
 
 class GetAuthenticatedUserProfileBadgeSerializer(serializers.ModelSerializer):
@@ -54,6 +56,8 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
     is_global_moderator = IsGlobalModeratorField()
     following_count = FollowingCountField()
     is_member_of_communities = IsMemberOfCommunities()
+    pending_communities_moderated_objects_count = UserPendingCommunitiesModeratedObjectsCountField()
+    active_moderation_penalties_count = UserActiveModerationPenaltiesCountField()
 
     class Meta:
         model = User
@@ -71,7 +75,9 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
             'connections_circle_id',
             'is_member_of_communities',
             'is_global_moderator',
-            'unread_notifications_count'
+            'unread_notifications_count',
+            'pending_communities_moderated_objects_count',
+            'active_moderation_penalties_count',
         )
 
 
