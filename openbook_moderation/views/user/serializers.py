@@ -3,9 +3,39 @@ from rest_framework import serializers
 
 from openbook_auth.models import UserProfile, User
 from openbook_communities.models import Community
+from openbook_communities.serializers_fields import CommunityPendingModeratedObjectsCountField
 from openbook_moderation.models import ModerationPenalty, ModeratedObject, \
     ModerationCategory
 from openbook_posts.models import Post, PostComment, PostImage
+
+
+class PendingModeratedObjectsCommunitySerializer(serializers.ModelSerializer):
+    pending_moderated_objects_count = CommunityPendingModeratedObjectsCountField()
+
+    class Meta:
+        model = Community
+        fields = (
+            'id',
+            'title',
+            'name',
+            'avatar',
+            'cover',
+            'members_count',
+            'color',
+            'user_adjective',
+            'users_adjective',
+            'pending_moderated_objects_count'
+        )
+
+
+class GetUserPendingModeratedObjectsCommunities(serializers.Serializer):
+    max_id = serializers.IntegerField(
+        required=False,
+    )
+    count = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
 
 
 class GetUserModerationPenaltiesSerializer(serializers.Serializer):

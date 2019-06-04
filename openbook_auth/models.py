@@ -1884,6 +1884,21 @@ class User(AbstractUser):
             query.add(Q(id__lt=max_id), Q.AND)
         return self.moderation_penalties.filter(query)
 
+    def get_pending_moderated_objects_communities(self, max_id):
+        """Retrieves the communities staff of that have pending moderated objects"""
+        query = Q(memberships__user_id=self.pk) & (
+                Q(memberships__is_moderator=True) | Q(memberships__is_administrator=True))
+
+        ModeratedObject = get_moderated_object_model()
+        query.add(Q(moderated_objects__status=ModeratedObject.STATUS_PENDING), Q.AND)
+
+        if max_id:
+            query.add(Q(id__lt=max_id), Q.AND)
+
+        Community = get_community_model()
+
+        return Community.objects.filter(query).distinct()
+
     def follow_user(self, user, lists_ids=None):
         return self.follow_user_with_id(user.pk, lists_ids)
 

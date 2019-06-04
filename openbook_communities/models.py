@@ -13,7 +13,7 @@ from openbook_auth.models import User
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.utils.model_loaders import get_community_invite_model, \
-    get_community_log_model, get_category_model, get_user_model
+    get_community_log_model, get_category_model, get_user_model, get_moderated_object_model
 from openbook_common.validators import hex_color_validator
 from openbook_communities.helpers import upload_to_community_avatar_directory, upload_to_community_cover_directory
 from openbook_communities.validators import community_name_characters_validator
@@ -478,6 +478,10 @@ class Community(models.Model):
         for post in self.posts:
             post.unsoft_delete()
         self.save()
+
+    def count_pending_moderated_objects(self):
+        ModeratedObject = get_moderated_object_model()
+        return self.moderated_objects.filter(status=ModeratedObject.STATUS_PENDING).count()
 
     def __str__(self):
         return self.name

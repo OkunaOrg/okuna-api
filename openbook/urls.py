@@ -58,7 +58,7 @@ from openbook_moderation.views.moderated_objects.views import CommunityModerated
 from openbook_moderation.views.moderation_categories.views import ModerationCategories
 from openbook_moderation.views.report.views import ReportUser, ReportPost, ReportCommunity, \
     ReportPostComment
-from openbook_moderation.views.user.views import UserModerationPenalties
+from openbook_moderation.views.user.views import UserModerationPenalties, UserPendingModeratedObjectsCommunities
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
 from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost
 from openbook_posts.views.post_comment.views import PostCommentItem, PostCommentReplies
@@ -313,6 +313,8 @@ moderation_patterns = [
     path('categories/', ModerationCategories.as_view(), name='moderation-categories'),
     path('is-not-suspended-check/', IsNotSuspendedCheck.as_view(), name='is-not-suspended-check'),
     path('user/penalties/', UserModerationPenalties.as_view(), name='user-moderation-penalties'),
+    path('user/pending-moderated-objects-communities/', UserPendingModeratedObjectsCommunities.as_view(),
+         name='user-pending-moderated-objects-communities'),
 ]
 
 api_patterns = [
