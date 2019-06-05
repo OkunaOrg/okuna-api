@@ -131,7 +131,7 @@ class UnverifyModeratedObject(APIView):
 
 
 class ModeratedObjectLogs(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request, moderated_object_id):
         request_data = request.query_params.dict()
