@@ -339,7 +339,7 @@ class PostComment(models.Model):
     parent_comment = models.ForeignKey('self', on_delete=models.CASCADE, related_name='replies', null=True, blank=True)
     created = models.DateTimeField(editable=False, db_index=True)
     commenter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_comments')
-    text = models.CharField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False)
+    text = models.TextField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False)
     is_edited = models.BooleanField(default=False, null=False, blank=False)
     # This only happens if the comment was reported and found with critical severity content
     is_deleted = models.BooleanField(default=False)
