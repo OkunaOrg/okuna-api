@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.translation import ugettext_lazy as _
 
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.utils.model_loaders import get_post_model
 from openbook_posts.views.post.serializers import DeletePostSerializer, GetPostSerializer, GetPostPostSerializer, \
     UnmutePostSerializer, MutePostSerializer, EditPostSerializer, AuthenticatedUserEditPostSerializer, OpenClosePostSerializer, \
@@ -16,8 +17,7 @@ from openbook_posts.views.post.serializers import DeletePostSerializer, GetPostS
 
 def get_post_id_for_post_uuid(post_uuid):
     Post = get_post_model()
-    post = Post.objects.values('id').get(uuid=post_uuid)
-    return post['id']
+    return Post.get_post_id_for_post_with_uuid(post_uuid=post_uuid)
 
 
 class PostItem(APIView):
@@ -133,7 +133,7 @@ class UnmutePost(APIView):
 
 
 class PostClose(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request, post_uuid):
         request_data = request.data.copy()
@@ -156,7 +156,7 @@ class PostClose(APIView):
 
 
 class PostOpen(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request, post_uuid):
         request_data = request.data.copy()
@@ -176,4 +176,3 @@ class PostOpen(APIView):
         post_serializer = OpenClosePostSerializer(post, context={'request': request})
 
         return Response(post_serializer.data, status=status.HTTP_200_OK)
-

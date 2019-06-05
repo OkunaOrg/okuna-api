@@ -115,3 +115,19 @@ def get_device_model():
 
 def get_user_model():
     return apps.get_model('openbook_auth.User')
+
+
+def get_moderated_object_model():
+    return apps.get_model('openbook_moderation.ModeratedObject')
+
+
+def get_moderation_report_model():
+    return apps.get_model('openbook_moderation.ModerationReport')
+
+
+def get_moderation_category_model():
+    return apps.get_model('openbook_moderation.ModerationCategory')
+
+
+def get_moderation_penalty_model():
+    return apps.get_model('openbook_moderation.ModerationPenalty')

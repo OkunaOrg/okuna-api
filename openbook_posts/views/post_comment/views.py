@@ -8,6 +8,7 @@ from itertools import chain
 import operator
 
 from openbook_common.utils.model_loaders import get_post_model
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_posts.views.post_comment.serializers import DeletePostCommentSerializer, UpdatePostCommentSerializer, \
     EditPostCommentSerializer, GetPostCommentRepliesSerializer, PostCommentReplySerializer, CommentRepliesPostSerializer
 
@@ -22,7 +23,7 @@ def get_post_id_for_post_uuid(post_uuid):
 
 
 class PostCommentItem(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def delete(self, request, post_uuid, post_comment_id):
         request_data = self._get_request_data(request, post_uuid, post_comment_id)
@@ -73,7 +74,7 @@ class PostCommentItem(APIView):
 
 
 class PostCommentReplies(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     SORT_CHOICE_TO_QUERY = {
         'DESC': '-created',

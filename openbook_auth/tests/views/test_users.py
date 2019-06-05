@@ -115,6 +115,22 @@ class SearchUsersAPITests(APITestCase):
 
         self.assertEqual(len(parsed_reponse), limited_users)
 
+    def test_cannot_query_soft_deleted_user(self):
+        user = make_user()
+        user_to_search_for = make_user()
+        user_to_search_for.soft_delete()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+        response = self.client.get(url, {
+            'query': user_to_search_for,
+        }, **headers)
+
+        parsed_reponse = json.loads(response.content)
+
+        self.assertEqual(0, len(parsed_reponse))
+
     def _get_url(self):
         return reverse('search-users')
 
@@ -174,6 +190,22 @@ class GetUserAPITests(APITestCase):
         response = self.client.get(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_cant_retrieve_soft_deleted_user(self):
+        """
+        should not be able to retrieve a soft deleted user and return 403
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user_to_retrieve = make_user()
+        user_to_retrieve.soft_delete()
+
+        url = self._get_url(user_to_retrieve)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def _get_url(self, user):
         return reverse('get-user', kwargs={

@@ -20,6 +20,24 @@ class IsFollowingField(Field):
         return False
 
 
+class IsUserReportedField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(IsUserReportedField, self).__init__(**kwargs)
+
+    def to_representation(self, value):
+        request = self.context.get('request')
+
+        if not request.user.is_anonymous:
+            if request.user.pk == value.pk:
+                return False
+            reported = request.user.has_reported_user_with_id(value.pk)
+            return reported
+
+        return False
+
+
 class IsMemberOfCommunities(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'
@@ -116,6 +134,16 @@ class FollowersCountField(Field):
             return None
 
         return user.count_followers()
+
+
+class IsGlobalModeratorField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(IsGlobalModeratorField, self).__init__(**kwargs)
+
+    def to_representation(self, user):
+        return user.is_global_moderator()
 
 
 class FollowingCountField(Field):

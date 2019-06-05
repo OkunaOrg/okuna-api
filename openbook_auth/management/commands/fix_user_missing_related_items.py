@@ -1,11 +1,8 @@
 from django.core.management.base import BaseCommand
 import logging
-import re
-import unicodedata
 
 from openbook_auth.models import User, bootstrap_user_circles, bootstrap_user_notifications_settings, \
     bootstrap_user_profile, bootstrap_user_auth_token
-from openbook_common.utils.model_loaders import get_user_model
 
 logger = logging.getLogger(__name__)
 

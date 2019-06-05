@@ -9,6 +9,7 @@ from openbook_common.utils.model_loaders import get_emoji_group_model, get_post_
 
 # TODO Use post uuid also internally, not only as API resource identifier
 # In order to prevent enumerable posts API in alpha, this is done as a hotfix
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_posts.views.post_reactions.serializers import GetPostReactionsSerializer, \
     GetPostReactionsEmojiCountSerializer, PostEmojiCountSerializer, PostReactionEmojiGroupSerializer, \
     ReactToPostSerializer
@@ -22,7 +23,7 @@ def get_post_id_for_post_uuid(post_uuid):
 
 
 class PostReactions(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request, post_uuid):
         request_data = self._get_request_data(request, post_uuid)
@@ -78,7 +79,7 @@ class PostReactions(APIView):
 
 
 class PostReactionsEmojiCount(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request, post_uuid):
         request_data = self._get_request_data(request, post_uuid)
@@ -107,7 +108,7 @@ class PostReactionsEmojiCount(APIView):
 
 
 class PostReactionEmojiGroups(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request):
         EmojiGroup = get_emoji_group_model()

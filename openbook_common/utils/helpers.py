@@ -1,8 +1,10 @@
 import secrets
 
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.http import QueryDict
 from imagekit.utils import get_cache
 from imagekit.models import ProcessedImageField
+import hashlib
 
 r = lambda: secrets.randbelow(255)
 
@@ -42,7 +44,6 @@ def generate_random_hex_color():
 
 
 def delete_file_field(filefield):
-
     if not filefield:
         return
 
@@ -61,3 +62,23 @@ def delete_file_field(filefield):
             cache.delete(cache.get(file))
 
         filefield.storage.delete(file.name)
+
+
+def sha256sum(filename=None, file=None):
+    if filename:
+        with open(filename, 'rb', buffering=0) as f:
+            return _sha256sum(file=f)
+    elif file:
+        return _sha256sum(file=file)
+    else:
+        raise Exception('file or filename are required')
+
+
+def _sha256sum(file):
+    h = hashlib.sha256()
+    b = bytearray(128 * 1024)
+    mv = memoryview(b)
+    for n in iter(lambda: file.readinto(mv), 0):
+        h.update(mv[:n])
+    file.seek(0)
+    return h.hexdigest()

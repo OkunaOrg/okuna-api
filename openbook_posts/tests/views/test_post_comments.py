@@ -9,7 +9,9 @@ import logging
 import random
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
-    make_fake_post_comment_text, make_user, make_circle, make_community, make_private_community
+    make_fake_post_comment_text, make_user, make_circle, make_community, make_private_community, \
+    make_moderation_category
+from openbook_moderation.models import ModeratedObject
 from openbook_notifications.models import PostCommentNotification
 from openbook_posts.models import PostComment
 
@@ -140,7 +142,8 @@ class PostCommentsAPITests(APITestCase):
         community = make_community(creator=admin)
 
         moderator.join_community_with_name(community_name=community.name)
-        admin.add_moderator_with_username_to_community_with_name(username=moderator.username, community_name=community.name)
+        admin.add_moderator_with_username_to_community_with_name(username=moderator.username,
+                                                                 community_name=community.name)
 
         post_creator.join_community_with_name(community_name=community.name)
         post = post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
@@ -936,7 +939,8 @@ class PostCommentsAPITests(APITestCase):
         community = make_community(admin)
         user.join_community_with_name(community_name=community.name)
         moderator.join_community_with_name(community_name=community.name)
-        admin.add_moderator_with_username_to_community_with_name(username=moderator.username, community_name=community.name)
+        admin.add_moderator_with_username_to_community_with_name(username=moderator.username,
+                                                                 community_name=community.name)
         post = user.create_community_post(community.name, text=make_fake_post_text())
         post.comments_enabled = False
         post.save()
@@ -1440,6 +1444,260 @@ class PostCommentsAPITests(APITestCase):
         comments_before_max_id = [id for id in response_ids if id < max_id]
         self.assertTrue(len(comments_after_min_id) == count_min)
         self.assertTrue(len(comments_before_max_id) == count_max)
+
+    def test_cannot_retrieve_comments_of_own_soft_deleted_post(self):
+        """
+        should not be able to retrieve the comments of a soft deleted post
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        amount_of_post_comments = 10
+
+        for i in range(amount_of_post_comments):
+            post_comment_text = make_fake_post_comment_text()
+            user.comment_post_with_id(post_id=post.pk, text=post_comment_text)
+
+        post.soft_delete()
+
+        url = self._get_url(post)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+    def test_cannot_retrieve_comments_of_foreign_soft_deleted_post(self):
+        """
+        should not be able to retrieve the comments of a soft deleted post
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        amount_of_post_comments = 10
+
+        for i in range(amount_of_post_comments):
+            post_comment_text = make_fake_post_comment_text()
+            user.comment_post_with_id(post_id=post.pk, text=post_comment_text)
+
+        post.soft_delete()
+
+        url = self._get_url(post)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+    def test_cant_retrieve_reported_connected_user_post_comments(self):
+        """
+        should not be able to retrieve reported connected user post comments
+        """
+        user = make_user()
+
+        connected_user = make_user()
+        user.connect_with_user_with_id(user_id=connected_user.pk)
+        connected_user_post_comment_circle = make_circle(creator=connected_user)
+        connected_user.confirm_connection_with_user_with_id(user_id=user.pk,
+                                                            circles_ids=[connected_user_post_comment_circle.pk])
+        connected_user_post = connected_user.create_encircled_post(text=make_fake_post_comment_text(),
+                                                                   circles_ids=[connected_user_post_comment_circle.pk])
+
+        post_comment = connected_user.comment_post(post=connected_user_post, text=make_fake_post_text())
+
+        user.report_comment_for_post(post=connected_user_post, post_comment=post_comment,
+                                     category_id=make_moderation_category().pk)
+
+        url = self._get_url(post=connected_user_post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_post_comment_comments = json.loads(response.content)
+
+        self.assertEqual(0, len(response_post_comment_comments))
+
+    def test_cant_retrieve_reported_following_user_post_comments(self):
+        """
+        should not be able to retrieve reported following user post comments
+        """
+        user = make_user()
+
+        following_user = make_user()
+        user.follow_user_with_id(user_id=following_user.pk)
+
+        following_user_post = following_user.create_public_post(text=make_fake_post_comment_text())
+        post_comment = following_user.comment_post(post=following_user_post, text=make_fake_post_text())
+
+        user.report_comment_for_post(post=following_user_post, post_comment=post_comment,
+                                     category_id=make_moderation_category().pk)
+
+        url = self._get_url(post=following_user_post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_post_comment_comments = json.loads(response.content)
+
+        self.assertEqual(0, len(response_post_comment_comments))
+
+    def test_cant_retrieve_reported_community_post_comments(self):
+        """
+        should not be able to retrieve reported community post comments
+        """
+        user = make_user()
+
+        community = make_community()
+
+        post_creator = make_user()
+
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+
+        post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_comment_text())
+
+        post_comment = post_creator.comment_post(post=post, text=make_fake_post_text())
+
+        user.report_comment_for_post(post=post, post_comment=post_comment,
+                                     category_id=make_moderation_category().pk)
+
+        url = self._get_url(post=post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_post_comment_comments = json.loads(response.content)
+
+        self.assertEqual(0, len(response_post_comment_comments))
+
+    def test_cant_retrieve_moderated_approved_community_post_comments(self):
+        """
+        should not be able to retrieve moderated approved community post comments
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        post_comment_creator = make_user()
+
+        user.join_community_with_name(community_name=community.name)
+        post_comment_creator.join_community_with_name(community_name=community.name)
+
+        number_of_post_comments = 5
+        post_reporter = make_user()
+        report_category = make_moderation_category()
+
+        post = post_comment_creator.create_community_post(community_name=community.name,
+                                                          text=make_fake_post_comment_text())
+
+        for i in range(0, number_of_post_comments):
+            post_comment = post_comment_creator.comment_post(post=post, text=make_fake_post_text())
+            post_reporter.report_comment_for_post(post=post, post_comment=post_comment,
+                                                  category_id=make_moderation_category().pk)
+            moderated_object = ModeratedObject.get_or_create_moderated_object_for_post_comment(
+                post_comment=post_comment,
+                category_id=report_category.pk)
+            community_creator.approve_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_post_comments = json.loads(response.content)
+
+        self.assertEqual(0, len(response_post_comments))
+
+    def test_can_retrieve_moderated_rejected_community_post_comments(self):
+        """
+        should not be able to retrieve moderated rejected community post comments
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        post_comment_creator = make_user()
+
+        user.join_community_with_name(community_name=community.name)
+        post_comment_creator.join_community_with_name(community_name=community.name)
+
+        number_of_post_comments = 5
+        post_reporter = make_user()
+        report_category = make_moderation_category()
+        post_comments_ids = []
+        post = post_comment_creator.create_community_post(community_name=community.name,
+                                                          text=make_fake_post_comment_text())
+        for i in range(0, number_of_post_comments):
+            post_comment = post_comment_creator.comment_post(post=post, text=make_fake_post_text())
+            post_comments_ids.append(post_comment.pk)
+            post_reporter.report_comment_for_post(post=post, post_comment=post_comment,
+                                                  category_id=make_moderation_category().pk)
+            moderated_object = ModeratedObject.get_or_create_moderated_object_for_post_comment(
+                post_comment=post_comment,
+                category_id=report_category.pk)
+            community_creator.reject_moderated_object(moderated_object=moderated_object)
+
+        headers = make_authentication_headers_for_user(user)
+        url = self._get_url(post=post)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_post_comments = json.loads(response.content)
+
+        self.assertEqual(len(post_comments_ids), len(response_post_comments))
+
+        response_post_comments_ids = [post_comment['id'] for post_comment in response_post_comments]
+
+        for post_id in post_comments_ids:
+            self.assertIn(post_id, response_post_comments_ids)
+
+    def test_can_retrieve_moderated_pending_community_post_comments(self):
+        """
+        should not be able to retrieve moderated pending community post comments
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        post_comment_creator = make_user()
+
+        user.join_community_with_name(community_name=community.name)
+        post_comment_creator.join_community_with_name(community_name=community.name)
+
+        number_of_post_comments = 5
+        post_reporter = make_user()
+        post_comments_ids = []
+        post = post_comment_creator.create_community_post(community_name=community.name,
+                                                          text=make_fake_post_comment_text())
+        for i in range(0, number_of_post_comments):
+            post_comment = post_comment_creator.comment_post(post=post, text=make_fake_post_text())
+            post_comments_ids.append(post_comment.pk)
+            post_reporter.report_comment_for_post(post=post, post_comment=post_comment,
+                                                  category_id=make_moderation_category().pk)
+
+        headers = make_authentication_headers_for_user(user)
+        url = self._get_url(post=post)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_post_comments = json.loads(response.content)
+
+        self.assertEqual(len(post_comments_ids), len(response_post_comments))
+
+        response_post_comments_ids = [post_comment['id'] for post_comment in response_post_comments]
+
+        for post_id in post_comments_ids:
+            self.assertIn(post_id, response_post_comments_ids)
 
     def _get_create_post_comment_request_data(self, post_comment_text):
         return {

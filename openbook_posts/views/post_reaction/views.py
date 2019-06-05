@@ -9,6 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 # TODO Use post uuid also internally, not only as API resource identifier
 # In order to prevent enumerable posts API in alpha, this is done as a hotfix
 from openbook_common.utils.model_loaders import get_post_model
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_posts.views.post_reaction.serializers import DeletePostReactionSerializer
 
 
@@ -19,7 +20,7 @@ def get_post_id_for_post_uuid(post_uuid):
 
 
 class PostReactionItem(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def delete(self, request, post_uuid, post_reaction_id):
         request_data = self._get_request_data(request, post_uuid, post_reaction_id)

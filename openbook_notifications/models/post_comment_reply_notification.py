@@ -1,14 +1,12 @@
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
-from django.db.models.signals import pre_delete
-from django.dispatch import receiver
 
 from openbook_notifications.models.notification import Notification
 from openbook_posts.models import PostComment
 
 
 class PostCommentReplyNotification(models.Model):
-    notification = GenericRelation(Notification)
+    notification = GenericRelation(Notification, related_name='post_comment_reply_notifications')
     post_comment = models.ForeignKey(PostComment, on_delete=models.CASCADE)
 
     @classmethod
@@ -23,3 +21,7 @@ class PostCommentReplyNotification(models.Model):
     def delete_post_comment_reply_notification(cls, post_comment_id, owner_id):
         cls.objects.filter(post_comment_id=post_comment_id,
                            notification__owner_id=owner_id).delete()
+
+    @classmethod
+    def delete_post_comment_reply_notifications(cls, post_comment_id):
+        cls.objects.filter(post_comment_id=post_comment_id).delete()

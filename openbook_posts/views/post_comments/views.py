@@ -9,6 +9,7 @@ import operator
 # TODO Use post uuid also internally, not only as API resource identifier
 # In order to prevent enumerable posts API in alpha, this is done as a hotfix
 from openbook_common.utils.model_loaders import get_post_model
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_posts.views.post_comments.serializers import EnableDisableCommentsPostSerializer, \
     EnableCommentsPostSerializer, DisableCommentsPostSerializer, GetPostCommentsSerializer, PostCommentSerializer, \
     CommentPostSerializer
@@ -21,7 +22,7 @@ def get_post_id_for_post_uuid(post_uuid):
 
 
 class PostComments(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
     SORT_CHOICE_TO_QUERY = {
         'DESC': '-created',
         'ASC': 'created'
@@ -103,7 +104,7 @@ class PostComments(APIView):
 
 
 class PostCommentsDisable(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request, post_uuid):
         request_data = request.data.copy()
@@ -124,7 +125,7 @@ class PostCommentsDisable(APIView):
 
 
 class PostCommentsEnable(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request, post_uuid):
         request_data = request.data.copy()

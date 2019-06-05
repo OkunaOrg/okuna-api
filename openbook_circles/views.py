@@ -8,12 +8,13 @@ from django.utils.translation import gettext as _
 
 from openbook_circles.serializers import CreateCircleSerializer, GetCirclesCircleSerializer, DeleteCircleSerializer, \
     UpdateCircleSerializer, CircleNameCheckSerializer, GetCircleCircleSerializer
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import normalise_request_data, nomalize_usernames_in_request_data
 
 
 class Circles(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def put(self, request):
         serializer = CreateCircleSerializer(data=request.data, context={"request": request})
@@ -39,7 +40,7 @@ class Circles(APIView):
 
 
 class CircleItem(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request, circle_id):
         user = request.user
@@ -89,7 +90,7 @@ class CircleNameCheck(APIView):
     The API to check if a circleName is both valid and not taken.
     """
     serializer_class = CircleNameCheckSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
