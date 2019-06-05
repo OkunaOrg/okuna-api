@@ -97,6 +97,20 @@ class PushNotificationsSerializers:
 
         self.NotificationPostCommentSerializer = NotificationPostCommentSerializer
 
+        class NotificationPostCommentReplySerializer(serializers.ModelSerializer):
+            commenter = NotificationUserSerializer()
+            post = NotificationPostSerializer()
+
+            class Meta:
+                model = PostComment
+                fields = (
+                    'id',
+                    'commenter',
+                    'post'
+                )
+
+        self.NotificationPostCommentReplySerializer = NotificationPostCommentReplySerializer
+
         class FollowNotificationSerializer(serializers.Serializer):
             following_user = NotificationUserSerializer()
 

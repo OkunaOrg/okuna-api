@@ -2,6 +2,8 @@ from datetime import datetime
 from json import JSONDecodeError
 
 from rest_framework import status
+
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_posts.models import Post
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -16,7 +18,7 @@ from openbook_importer.socialmedia_archive_parser.fb_parser import zip_parser
 
 class ImportItem(APIView):
 
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request):
         serializer = ZipfileSerializer(data=request.FILES)

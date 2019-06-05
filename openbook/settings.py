@@ -97,6 +97,7 @@ INSTALLED_APPS = [
     # See https://django-modeltranslation.readthedocs.io/en/latest/installation.html#required-settings
     'modeltranslation',
     'django.contrib.admin',
+    'django.contrib.humanize',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -124,6 +125,7 @@ INSTALLED_APPS = [
     'openbook_categories',
     'openbook_notifications',
     'openbook_devices',
+    'openbook_moderation',
 ]
 
 MIDDLEWARE = [
@@ -420,6 +422,10 @@ DEVICE_UUID_MAX_LENGTH = 64
 SEARCH_QUERIES_MAX_LENGTH = 120
 FEATURE_VIDEO_POSTS_ENABLED = os.environ.get('FEATURE_VIDEO_POSTS_ENABLED', 'True') == 'True'
 FEATURE_IMPORTER_ENABLED = os.environ.get('FEATURE_IMPORTER_ENABLED', 'True') == 'True'
+MODERATION_REPORT_DESCRIPTION_MAX_LENGTH = 1000
+MODERATED_OBJECT_DESCRIPTION_MAX_LENGTH = 1000
+GLOBAL_HIDE_CONTENT_AFTER_REPORTS_AMOUNT = int(os.environ.get('GLOBAL_HIDE_CONTENT_AFTER_REPORTS_AMOUNT', '20'))
+MODERATORS_COMMUNITY_NAME = os.environ.get('MODERATORS_COMMUNITY_NAME', 'mods')
 
 # Email Config
 

@@ -26,3 +26,21 @@ class PostCommenterField(Field):
                     "request": request}).data
 
         return post_commenter_serializer
+
+
+class RepliesCountField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(RepliesCountField, self).__init__(**kwargs)
+
+    def to_representation(self, post_comment):
+        request = self.context.get('request')
+        request_user = request.user
+
+        if request_user.is_anonymous:
+            replies_count = post_comment.count_replies()
+        else:
+            replies_count = request_user.get_replies_count_for_post_comment(post_comment=post_comment)
+
+        return replies_count

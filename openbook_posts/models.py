@@ -1,7 +1,9 @@
 # Create your models here.
+import hashlib
 import uuid
 from datetime import timedelta
 
+from django.contrib.contenttypes.fields import GenericRelation
 from django.core.files.storage import default_storage
 from django.db import models
 from django.db.models import Q
@@ -18,14 +20,18 @@ from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
 from openbook_common.models import Emoji
+from openbook_common.utils.helpers import delete_file_field, sha256sum
 from openbook_common.utils.model_loaders import get_emoji_model, \
-    get_circle_model, get_community_model
+    get_circle_model, get_community_model, get_notification_model, get_post_comment_notification_model, \
+    get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model
 from imagekit.models import ProcessedImageField
 
+from openbook_moderation.models import ModeratedObject
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory
 
 
 class Post(models.Model):
+    moderated_object = GenericRelation(ModeratedObject, related_query_name='posts')
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     text = models.CharField(_('text'), max_length=settings.POST_MAX_LENGTH, blank=False, null=True)
     created = models.DateTimeField(editable=False, db_index=True)
@@ -37,11 +43,17 @@ class Post(models.Model):
                                   blank=False)
     is_edited = models.BooleanField(default=False)
     is_closed = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
 
     class Meta:
         index_together = [
             ('creator', 'community'),
         ]
+
+    @classmethod
+    def get_post_id_for_post_with_uuid(cls, post_uuid):
+        post = cls.objects.values('id').get(uuid=post_uuid)
+        return post['id']
 
     @classmethod
     def post_with_id_has_public_reactions(cls, post_id):
@@ -73,10 +85,10 @@ class Post(models.Model):
             post.text = text
 
         if image:
-            PostImage.objects.create(image=image, post_id=post.pk)
+            PostImage.create_post_image(image=image, post_id=post.pk)
 
         if video:
-            PostVideo.objects.create(video=video, post_id=post.pk)
+            PostVideo.create_post_video(video=video, post_id=post.pk)
 
         if circles_ids:
             post.circles.add(*circles_ids)
@@ -109,7 +121,7 @@ class Post(models.Model):
     def get_trending_posts_for_user_with_id(cls, user_id):
         trending_posts_query = cls._get_trending_posts_query()
         trending_posts_query.add(~Q(community__banned_users__id=user_id), Q.AND)
-        trending_posts_query.add(Q(is_closed=False), Q.AND)
+        trending_posts_query.add(Q(is_closed=False, is_deleted=False), Q.AND)
 
         trending_posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=user_id) | Q(
             creator__user_blocks__blocked_user_id=user_id)), Q.AND)
@@ -145,11 +157,29 @@ class Post(models.Model):
         post_notification_target_users_query = Q(posts_comments__post_id=post_id)
         post_notification_target_users_query.add(Q(posts__id=post_id), Q.OR)
         post_notification_target_users_query.add(~Q(id=post_commenter_id), Q.AND)
+        post_notification_target_users_query.add(~Q(user_blocks__blocked_user_id=post_commenter_id), Q.AND)
 
         return User.objects.filter(post_notification_target_users_query).distinct()
 
     def count_comments(self):
         return PostComment.count_comments_for_post_with_id(self.pk)
+
+    def count_comments_with_user(self, user):
+        # Only count top level comments
+        count_query = Q(parent_comment__isnull=True)
+
+        if self.community:
+            # Don't count items that have been reported and approved by community moderators
+            ModeratedObject = get_moderated_object_model()
+            count_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
+        # Dont count soft deleted items
+        count_query.add(Q(is_deleted=False), Q.AND)
+
+        # Dont count items we have reported
+        count_query.add(~Q(moderated_object__reports__reporter_id=user.pk), Q.AND)
+
+        return self.comments.filter(count_query).count()
 
     def count_reactions(self, reactor_id=None):
         return PostReaction.count_reactions_for_post_with_id(self.pk, reactor_id=reactor_id)
@@ -210,6 +240,59 @@ class Post(models.Model):
 
         return super(Post, self).save(*args, **kwargs)
 
+    def delete(self, *args, **kwargs):
+        self.delete_media()
+        super(Post, self).delete(*args, **kwargs)
+
+    def delete_media(self):
+        if self.has_video():
+            delete_file_field(self.video.video)
+
+        if self.has_image():
+            delete_file_field(self.image.image)
+
+    def soft_delete(self):
+        self.delete_notifications()
+        for comment in self.comments.all().iterator():
+            comment.soft_delete()
+        self.is_deleted = True
+        self.save()
+
+    def unsoft_delete(self):
+        self.is_deleted = False
+        for comment in self.comments:
+            comment.soft_delete()
+        self.save()
+
+    def delete_notifications(self):
+        # Remove all post comment notifications
+        PostCommentNotification = get_post_comment_notification_model()
+        PostCommentNotification.objects.filter(post_comment__post_id=self.pk).delete()
+
+        # Remove all post reaction notifications
+        PostReactionNotification = get_post_reaction_notification_model()
+        PostReactionNotification.objects.filter(post_reaction__post_id=self.pk).delete()
+
+        # Remove all post comment reply notifications
+        PostCommentReplyNotification = get_post_comment_notification_model()
+        PostCommentReplyNotification.objects.filter(post_comment__post_id=self.pk).delete()
+
+    def delete_notifications_for_user(self, user):
+        # Remove all post comment notifications
+        PostCommentNotification = get_post_comment_notification_model()
+        PostCommentNotification.objects.filter(post_comment__post_id=self.pk,
+                                               notification__owner_id=user.pk).delete()
+
+        # Remove all post reaction notifications
+        PostReactionNotification = get_post_reaction_notification_model()
+        PostReactionNotification.objects.filter(post_reaction__post_id=self.pk,
+                                                notification__owner_id=user.pk).delete()
+
+        # Remove all post comment reply notifications
+        PostCommentReplyNotification = get_post_comment_notification_model()
+        PostCommentReplyNotification.objects.filter(post_comment__post=self.pk,
+                                                    notification__owner_id=user.pk).delete()
+
     def _check_can_be_updated(self, text=None):
         if self.is_text_only_post() and not text:
             raise ValidationError(
@@ -230,36 +313,93 @@ class PostImage(models.Model):
                                 processors=[ResizeToFit(width=1024, upscale=False)])
     width = models.PositiveIntegerField(editable=False, null=False, blank=False)
     height = models.PositiveIntegerField(editable=False, null=False, blank=False)
+    hash = models.CharField(_('hash'), max_length=64, blank=False, null=True)
+
+    @classmethod
+    def create_post_image(cls, image, post_id):
+        hash = sha256sum(file=image.file)
+        return cls.objects.create(image=image, post_id=post_id, hash=hash)
 
 
 class PostVideo(models.Model):
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='video')
     video = models.FileField(_('video'), blank=False, null=False, storage=post_image_storage,
                              upload_to=upload_to_post_video_directory)
+    hash = models.CharField(_('hash'), max_length=64, blank=False, null=True)
+
+    @classmethod
+    def create_post_video(cls, video, post_id):
+        hash = sha256sum(file=video.file)
+        return cls.objects.create(video=video, post_id=post_id, hash=hash)
 
 
 class PostComment(models.Model):
+    moderated_object = GenericRelation(ModeratedObject, related_query_name='post_comments')
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
+    parent_comment = models.ForeignKey('self', on_delete=models.CASCADE, related_name='replies', null=True, blank=True)
     created = models.DateTimeField(editable=False, db_index=True)
     commenter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_comments')
     text = models.CharField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False)
     is_edited = models.BooleanField(default=False, null=False, blank=False)
+    # This only happens if the comment was reported and found with critical severity content
+    is_deleted = models.BooleanField(default=False)
 
     @classmethod
-    def create_comment(cls, text, commenter, post):
-        return PostComment.objects.create(text=text, commenter=commenter, post=post)
+    def create_comment(cls, text, commenter, post, parent_comment=None):
+        return PostComment.objects.create(text=text, commenter=commenter, post=post, parent_comment=parent_comment)
 
     @classmethod
     def count_comments_for_post_with_id(cls, post_id):
-        count_query = Q(post_id=post_id)
+        count_query = Q(post_id=post_id, parent_comment__isnull=True, is_deleted=False)
 
         return cls.objects.filter(count_query).count()
+
+    def count_replies(self):
+        return self.replies.count()
+
+    def count_replies_with_user(self, user):
+        count_query = Q()
+
+        if self.post.community_id:
+            # Don't count items that have been reported and approved by community moderators
+            ModeratedObject = get_moderated_object_model()
+            count_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
+        # Dont count soft deleted items
+        count_query.add(Q(is_deleted=False), Q.AND)
+
+        # Dont count items we have reported
+        count_query.add(~Q(moderated_object__reports__reporter_id=user.pk), Q.AND)
+
+        return self.replies.filter(count_query).count()
+
+    def reply_to_comment(self, commenter, text):
+        return PostComment.create_comment(text=text, commenter=commenter, post=self.post, parent_comment=self)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
         if not self.id:
             self.created = timezone.now()
         return super(PostComment, self).save(*args, **kwargs)
+
+    def soft_delete(self):
+        self.is_deleted = True
+        self.delete_notifications()
+        self.save()
+
+    def unsoft_delete(self):
+        self.is_deleted = False
+        self.save()
+
+    def delete_notifications(self):
+        PostCommentReplyNotification = get_post_comment_reply_notification_model()
+        PostCommentReplyNotification.delete_post_comment_reply_notifications(post_comment_id=self.pk)
+
+    def delete_notifications_for_user(self, user):
+        PostCommentReplyNotification = get_post_comment_reply_notification_model()
+        PostCommentReplyNotification.delete_post_comment_reply_notification(post_comment_id=self.pk, owner_id=user.pk)
+        PostCommentNotification = get_post_comment_notification_model()
+        PostCommentNotification.delete_post_comment_notification(post_comment_id=self.pk, owner_id=user.pk)
 
 
 class PostReaction(models.Model):
@@ -277,7 +417,7 @@ class PostReaction(models.Model):
 
     @classmethod
     def count_reactions_for_post_with_id(cls, post_id, reactor_id=None):
-        count_query = Q(post_id=post_id)
+        count_query = Q(post_id=post_id, reactor__is_deleted=False)
 
         if reactor_id:
             count_query.add(Q(reactor_id=reactor_id), Q.AND)
