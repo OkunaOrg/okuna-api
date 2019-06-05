@@ -108,11 +108,6 @@ jobs:
               echo "export SAUTH_SERVER_NAME=sauth-not-existing.localhost" >> $BASH_ENV
           fi
     - run:
-        name: Make EB Admin Config
-        command: |
-          . venv/bin/activate
-          python utils/make_admin_headers.py --lb-name=$LB_NAME --sauth-server-name=$SAUTH_SERVER_NAME
-    - run:
         name: Make EB Config
         command: |
           . venv/bin/activate
