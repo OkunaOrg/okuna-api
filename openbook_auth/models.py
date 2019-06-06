@@ -3737,7 +3737,7 @@ class UserProfile(models.Model):
     cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 50},
                                 upload_to=upload_to_user_cover_directory,
                                 processors=[ResizeToFit(width=1024, upscale=False)])
-    bio = models.CharField(_('bio'), max_length=settings.PROFILE_BIO_MAX_LENGTH, blank=False, null=True)
+    bio = models.TextField(_('bio'), max_length=settings.PROFILE_BIO_MAX_LENGTH, blank=False, null=True)
     url = models.URLField(_('url'), blank=False, null=True)
     followers_count_visible = models.BooleanField(_('followers count visible'), blank=False, null=False, default=False)
     badges = models.ManyToManyField(Badge, related_name='users_profiles')

@@ -31,7 +31,7 @@ class Community(models.Model):
     title = models.CharField(_('title'), max_length=settings.COMMUNITY_TITLE_MAX_LENGTH, blank=False, null=False, )
     description = models.CharField(_('description'), max_length=settings.COMMUNITY_DESCRIPTION_MAX_LENGTH, blank=False,
                                    null=True, )
-    rules = models.CharField(_('rules'), max_length=settings.COMMUNITY_RULES_MAX_LENGTH, blank=False,
+    rules = models.TextField(_('rules'), max_length=settings.COMMUNITY_RULES_MAX_LENGTH, blank=False,
                              null=True)
     avatar = ProcessedImageField(verbose_name=_('avatar'), blank=False, null=True, format='JPEG',
                                  options={'quality': 60}, processors=[ResizeToFill(500, 500)],
