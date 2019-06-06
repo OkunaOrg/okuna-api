@@ -309,7 +309,7 @@ class PostImage(models.Model):
                                 upload_to=upload_to_post_image_directory,
                                 width_field='width',
                                 height_field='height',
-                                blank=False, null=True, format='JPEG', options={'quality': 50},
+                                blank=False, null=True, format='JPEG', options={'quality': 100},
                                 processors=[ResizeToFit(width=1024, upscale=False)])
     width = models.PositiveIntegerField(editable=False, null=False, blank=False)
     height = models.PositiveIntegerField(editable=False, null=False, blank=False)
