@@ -1850,10 +1850,10 @@ class User(AbstractUser):
         return moderated_object.reports.filter(query)
 
     def _check_can_get_moderated_object(self, moderated_object):
-        if moderated_object.community:
-            self._check_can_get_community_moderated_objects(community_name=moderated_object.community)
-        else:
-            self._check_can_get_global_moderated_objects()
+        if self.is_global_moderator():
+            return
+
+        self._check_can_get_community_moderated_objects(community_name=moderated_object.community)
 
     def get_community_moderated_objects(self, community_name, types=None, max_id=None, verified=None, statuses=None):
         self._check_can_get_community_moderated_objects(community_name=community_name)
@@ -2416,10 +2416,6 @@ class User(AbstractUser):
     def _check_is_global_moderator(self):
         if not self.is_global_moderator():
             raise PermissionDenied(_('Not a global moderator.'))
-
-    def _check_is_moderator_of_community_with_name(self, community_name):
-        if not self.is_moderator_of_community_with_name(community_name=community_name):
-            raise PermissionDenied(_('Not a community moderator.'))
 
     def _check_is_staff_of_community_with_name(self, community_name):
         if not self.is_staff_of_community_with_name(community_name=community_name):
