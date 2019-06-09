@@ -2603,8 +2603,6 @@ class User(AbstractUser):
 
         posts_query = Q(creator_id=user.pk, is_deleted=False)
 
-        posts_query.add(~Q(moderated_object__reports__reporter_id=self.pk), Q.AND)
-
         world_circle_id = self._get_world_circle_id()
 
         posts_circles_query = Q(circles__id=world_circle_id)
@@ -2620,6 +2618,8 @@ class User(AbstractUser):
             posts_query.add(Q(id__lt=max_id), Q.AND)
 
         posts_query.add(Q(is_deleted=False), Q.AND)
+
+        posts_query.add(~Q(moderated_object__reports__reporter_id=self.pk), Q.AND)
 
         return posts_query
 
