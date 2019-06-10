@@ -6,7 +6,7 @@ name = "pypi"
 [dev-packages]
 
 [packages]
-django = ">=2.1.6"
+django = ">=2.2.2"
 python-dotenv = "*"
 djangorestframework = "*"
 sentry-sdk = "*"
