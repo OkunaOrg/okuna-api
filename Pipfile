@@ -35,9 +35,9 @@ onesignal-sdk = "*"
 django-replicated = "*"
 django-cacheops = "*"
 django-redis = "*"
-redis-py-cluster = "*"
 django-extensions = "*"
 django-rq = "*"
+redis = "*"
 
 [pipenv]
 allow_prereleases = true
