@@ -110,6 +110,7 @@ INSTALLED_APPS = [
     'imagekit',
     'django_media_fixtures',
     'cacheops',
+    'django_rq',
     'django_extensions',
     'openbook_common',
     'openbook_auth',
@@ -197,10 +198,7 @@ CACHEOPS = {
 }
 
 RQ_QUEUES = {
-    'high': {
-        'USE_REDIS_CACHE': 'rq-queues',
-    },
-    'low': {
+    'default': {
         'USE_REDIS_CACHE': 'rq-queues',
     },
 }
