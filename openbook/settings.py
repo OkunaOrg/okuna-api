@@ -22,6 +22,7 @@ from django_replicated.settings import *
 
 # Logging config
 from openbook_common.utils.environment import EnvironmentChecker
+from test_django_rq import my_test_function, ComplexObject
 
 LOGGING_CONFIG = None
 logging.config.dictConfig({
@@ -110,6 +111,7 @@ INSTALLED_APPS = [
     'imagekit',
     'django_media_fixtures',
     'cacheops',
+    'django_rq',
     'django_extensions',
     'openbook_common',
     'openbook_auth',
@@ -197,10 +199,7 @@ CACHEOPS = {
 }
 
 RQ_QUEUES = {
-    'high': {
-        'USE_REDIS_CACHE': 'rq-queues',
-    },
-    'low': {
+    'default': {
         'USE_REDIS_CACHE': 'rq-queues',
     },
 }
@@ -470,3 +469,8 @@ if IS_PRODUCTION:
 # ONE SIGNAL
 ONE_SIGNAL_APP_ID = os.environ.get('ONE_SIGNAL_APP_ID')
 ONE_SIGNAL_API_KEY = os.environ.get('ONE_SIGNAL_API_KEY')
+
+import django_rq
+
+django_rq.enqueue(my_test_function,
+                  complex_object=ComplexObject(name='Joel', last_name='Hernandez', items=['Hello', 1, 2, 3, 4]))

@@ -33,7 +33,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
     get_moderation_penalty_model
 from openbook_common.validators import name_characters_validator
-from openbook_notifications.push_notifications import senders
+from openbook_notifications import helpers
 
 
 class User(AbstractUser):
@@ -2477,7 +2477,7 @@ class User(AbstractUser):
         email.send()
 
     def _send_post_comment_push_notification(self, post_comment, notification_message, notification_target_user):
-        senders.send_post_comment_push_notification_with_message(post_comment=post_comment,
+        helpers.send_post_comment_push_notification_with_message(post_comment=post_comment,
                                                                  message=notification_message,
                                                                  target_user=notification_target_user)
 
@@ -2491,7 +2491,7 @@ class User(AbstractUser):
             self._delete_post_comment_reply_notification(post_comment=post_comment)
 
     def _send_post_comment_reply_push_notification(self, post_comment, notification_message, notification_target_user):
-        senders.send_post_comment_reply_push_notification_with_message(post_comment=post_comment,
+        helpers.send_post_comment_reply_push_notification_with_message(post_comment=post_comment,
                                                                        message=notification_message,
                                                                        target_user=notification_target_user)
 
@@ -2506,7 +2506,7 @@ class User(AbstractUser):
                                                                    owner_id=post_reaction.post.creator_id)
 
     def _send_post_reaction_push_notification(self, post_reaction):
-        senders.send_post_reaction_push_notification(post_reaction=post_reaction)
+        helpers.send_post_reaction_push_notification(post_reaction=post_reaction)
 
     def _delete_post_reaction_notification(self, post_reaction):
         PostReactionNotification = get_post_reaction_notification_model()
@@ -2519,7 +2519,7 @@ class User(AbstractUser):
                                                                          owner_id=community_invite.invited_user_id)
 
     def _send_community_invite_push_notification(self, community_invite):
-        senders.send_community_invite_push_notification(community_invite=community_invite)
+        helpers.send_community_invite_push_notification(community_invite=community_invite)
 
     def _create_follow_notification(self, followed_user_id):
         FollowNotification = get_follow_notification_model()
@@ -2527,7 +2527,7 @@ class User(AbstractUser):
 
     def _send_follow_push_notification(self, followed_user_id):
         followed_user = User.objects.get(pk=followed_user_id)
-        senders.send_follow_push_notification(followed_user=followed_user, following_user=self)
+        helpers.send_follow_push_notification(followed_user=followed_user, following_user=self)
 
     def _delete_follow_notification(self, followed_user_id):
         FollowNotification = get_follow_notification_model()
@@ -2553,7 +2553,7 @@ class User(AbstractUser):
 
     def _send_connection_request_push_notification(self, user_connection_requested_for_id):
         connection_requested_for = User.objects.get(pk=user_connection_requested_for_id)
-        senders.send_connection_request_push_notification(
+        helpers.send_connection_request_push_notification(
             connection_requester=self,
             connection_requested_for=connection_requested_for)
 
