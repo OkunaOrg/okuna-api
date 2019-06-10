@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_notifications.serializers import GetNotificationsSerializer, GetNotificationsNotificationSerializer, \
     DeleteNotificationSerializer, ReadNotificationSerializer, ReadNotificationsSerializer
 
@@ -60,7 +61,7 @@ class ReadNotifications(APIView):
 
 
 class NotificationItem(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def delete(self, request, notification_id):
         serializer = DeleteNotificationSerializer(data={'notification_id': notification_id})

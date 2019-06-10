@@ -14,6 +14,7 @@ import json
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, \
     make_community_avatar, make_community_cover, make_category, make_community_users_adjective, \
     make_community_user_adjective, make_community
+from openbook_common.utils.model_loaders import get_community_model
 from openbook_communities.models import Community
 
 logger = logging.getLogger(__name__)
@@ -1069,5 +1070,130 @@ class SearchCommunitiesAPITests(APITestCase):
             self.assertEqual(retrieved_community['title'], community_title)
             community.delete()
 
+    def test_can_search_communities_banned_from(self):
+        """
+        should be able to search for communities banned from and return 200
+        """
+        user = make_user()
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+        community_title = community.title
+
+        user.join_community_with_name(community_name=community.name)
+
+        community_owner.ban_user_with_username_from_community_with_name(username=user.username,
+                                                                        community_name=community.name)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'query': community_title
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(len(parsed_response), 1)
+
+        retrieved_community = parsed_response[0]
+        self.assertEqual(retrieved_community['name'], community.name)
+
     def _get_url(self):
         return reverse('search-communities')
+
+
+class TrendingCommunitiesAPITests(APITestCase):
+    """
+    TrendingCommunitiesAPITests
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
+    def test_displays_public_communities(self):
+        """
+        should display public communities and return 200
+        """
+        user = make_user()
+
+        amount_of_communities = 5
+        communities_ids = []
+
+        for i in range(0, amount_of_communities):
+            community_owner = make_user()
+            community = make_community(creator=community_owner)
+            communities_ids.append(community.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), len(communities_ids))
+
+        for response_community in response_communities:
+            response_community_id = response_community.get('id')
+            self.assertIn(response_community_id, communities_ids)
+
+    def test_not_displays_private_communities(self):
+        """
+        should not display private communities and return 200
+        """
+        user = make_user()
+
+        amount_of_communities = 5
+
+        Community = get_community_model()
+
+        for i in range(0, amount_of_communities):
+            community_owner = make_user()
+            community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), 0)
+
+    def test_does_not_display_community_banned_from(self):
+        """
+        should not display a community banned from and return 200
+        """
+        user = make_user()
+        community_owner = make_user()
+
+        community = make_community(creator=community_owner)
+
+        user.join_community_with_name(community_name=community.name)
+
+        community_owner.ban_user_with_username_from_community_with_name(username=user.username,
+                                                                        community_name=community.name)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(0, len(response_communities))
+
+    def _get_url(self):
+        return reverse('trending-communities')

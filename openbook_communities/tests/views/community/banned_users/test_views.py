@@ -307,6 +307,31 @@ class BanCommunityUserAPITest(APITestCase):
 
         self.assertFalse(user_to_ban.is_banned_from_community_with_name(community.name))
 
+    def test_ban_user_makes_it_no_longer_a_member_of_community(self):
+        """
+        should remove membership of a user when banned from a community
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user)
+        community_name = community.name
+
+        user.join_community_with_name(community_name)
+        other_user.add_moderator_with_username_to_community_with_name(username=user.username,
+                                                                      community_name=community.name)
+
+        user_to_ban = make_user()
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, {
+            'username': user_to_ban.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(user_to_ban.is_member_of_community_with_name(community_name))
+
     def _get_url(self, community_name):
         return reverse('community-ban-user', kwargs={
             'community_name': community_name
@@ -531,7 +556,7 @@ class SearchCommunityBannedUsersAPITests(APITestCase):
                     self.assertTrue(
                         response_banned_user_id == banned_user.id or response_banned_user_id == user.id)
             user.unban_user_with_username_from_community_with_name(username=banned_user.username,
-                                                                          community_name=community.name)
+                                                                   community_name=community.name)
 
     def test_can_search_community_banned_users_by_username(self):
         """
@@ -547,7 +572,7 @@ class SearchCommunityBannedUsersAPITests(APITestCase):
             banned_user = make_user()
             banned_user.join_community_with_name(community_name=community.name)
             user.ban_user_with_username_from_community_with_name(username=banned_user.username,
-                                                                     community_name=community.name)
+                                                                 community_name=community.name)
             banned_user_username = banned_user.username
             amount_of_characters_to_query = random.randint(1, len(banned_user_username))
             query = banned_user_username[0:amount_of_characters_to_query]
@@ -575,7 +600,7 @@ class SearchCommunityBannedUsersAPITests(APITestCase):
                         response_banned_user_id == banned_user.id or response_banned_user_id == user.id)
 
             user.unban_user_with_username_from_community_with_name(username=banned_user.username,
-                                                                          community_name=community.name)
+                                                                   community_name=community.name)
 
     def _get_url(self, community_name):
         return reverse('search-community-banned-users', kwargs={

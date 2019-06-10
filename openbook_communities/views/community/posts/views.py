@@ -5,13 +5,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_communities.views.community.posts.serializers import GetCommunityPostsSerializer, CommunityPostSerializer, \
     CreateCommunityPostSerializer
 
 
 class CommunityPosts(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request, community_name):
         query_params = request.query_params.dict()
@@ -56,3 +57,29 @@ class CommunityPosts(APIView):
         post_serializer = CommunityPostSerializer(post, context={"request": request})
 
         return Response(post_serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ClosedCommunityPosts(APIView):
+    permission_classes = (IsAuthenticated, IsNotSuspended)
+
+    def get(self, request, community_name):
+        query_params = request.query_params.dict()
+        query_params['community_name'] = community_name
+
+        serializer = GetCommunityPostsSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 10)
+        max_id = data.get('max_id')
+
+        user = request.user
+
+        posts = user.get_closed_posts_for_community_with_name(community_name=community_name, max_id=max_id).order_by(
+            '-created')[:count]
+
+        response_serializer = CommunityPostSerializer(posts, many=True,
+                                                      context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)

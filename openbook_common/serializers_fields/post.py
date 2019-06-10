@@ -1,6 +1,7 @@
 from rest_framework.fields import Field
 
 from openbook_common.utils.model_loaders import get_post_model
+from openbook_communities.models import CommunityMembership
 from openbook_posts.models import PostReaction
 
 
@@ -40,8 +41,7 @@ class CommentsCountField(Field):
         comments_count = None
 
         if request_user.is_anonymous:
-            if post.public_comments:
-                comments_count = post.count_comments()
+            comments_count = post.count_comments()
         else:
             comments_count = request_user.get_comments_count_for_post(post=post)
 
@@ -64,7 +64,7 @@ class ReactionsEmojiCountField(Field):
         if request_user.is_anonymous:
             if post.public_reactions:
                 Post = get_post_model()
-                reaction_emoji_count = Post.get_emoji_counts_for_post_with_id(post.pk)
+                reaction_emoji_count = Post.get_public_emoji_counts_for_post_with_id(post.pk)
         else:
             reaction_emoji_count = request_user.get_emoji_counts_for_post_with_id(post.pk)
 
@@ -109,14 +109,17 @@ class PostCreatorField(Field):
         post_creator_serializer = self.post_creator_serializer(post_creator, context={"request": request}).data
 
         if post_community:
-            post_creator_membership = post_community.memberships.get(user_id=post_creator.pk)
-            post_creator_serializer['communities_memberships'] = [
-                self.community_membership_serializer(
-                    post_creator_membership,
-                    many=False,
-                    context={
-                        "request": request}).data
-            ]
+            try:
+                post_creator_membership = post_community.memberships.get(user_id=post_creator.pk)
+                post_creator_serializer['communities_memberships'] = [
+                    self.community_membership_serializer(
+                        post_creator_membership,
+                        many=False,
+                        context={
+                            "request": request}).data
+                ]
+            except CommunityMembership.DoesNotExist:
+                pass
 
         return post_creator_serializer
 

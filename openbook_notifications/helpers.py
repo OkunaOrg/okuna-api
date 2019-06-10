@@ -1,22 +1,14 @@
-import onesignal as onesignal_sdk
-from django.conf import settings
-from django.db.models import Q
+import django_rq
 from django.utils.translation import ugettext_lazy as _
-from onesignal import OneSignalError
+import onesignal as onesignal_sdk
 
-from openbook_common.utils.model_loaders import get_notification_model, get_user_model, get_post_model
+from openbook_common.utils.model_loaders import get_notification_model
+from openbook_notifications.django_rq_jobs import send_notification_to_user
 from openbook_notifications.push_notifications.serializers import PushNotificationsSerializers
-from hashlib import sha256
 
 import logging
 
 logger = logging.getLogger(__name__)
-
-onesignal_client = onesignal_sdk.Client(
-    app_id=settings.ONE_SIGNAL_APP_ID,
-    app_auth_key=settings.ONE_SIGNAL_API_KEY
-)
-
 
 def send_post_reaction_push_notification(post_reaction):
     post_creator = post_reaction.post.creator
@@ -64,6 +56,31 @@ def send_post_comment_push_notification_with_message(post_comment, message, targ
 
     notification_data = {
         'type': Notification.POST_COMMENT,
+        'payload': notification_payload
+    }
+
+    one_signal_notification.set_parameter('data', notification_data)
+    one_signal_notification.set_parameter('!thread_id', notification_group)
+    one_signal_notification.set_parameter('android_group', notification_group)
+
+    _send_notification_to_user(notification=one_signal_notification, user=target_user)
+
+
+def send_post_comment_reply_push_notification_with_message(post_comment, message, target_user):
+    Notification = get_notification_model()
+    NotificationPostCommentReplySerializer = _get_push_notifications_serializers().NotificationPostCommentReplySerializer
+
+    post = post_comment.post
+
+    notification_payload = NotificationPostCommentReplySerializer(post_comment).data
+    notification_group = 'post_%s' % post.id
+
+    one_signal_notification = onesignal_sdk.Notification(post_body={
+        "contents": message
+    })
+
+    notification_data = {
+        'type': Notification.POST_COMMENT_REPLY,
         'payload': notification_payload
     }
 
@@ -149,23 +166,7 @@ def send_community_invite_push_notification(community_invite):
 
 
 def _send_notification_to_user(user, notification):
-    for device in user.devices.all():
-        notification.set_parameter('ios_badgeType', 'Increase')
-        notification.set_parameter('ios_badgeCount', '1')
-
-        user_id_contents = (str(user.uuid) + str(user.id)).encode('utf-8')
-
-        user_id = sha256(user_id_contents).hexdigest()
-
-        notification.set_filters([
-            {"field": "tag", "key": "user_id", "relation": "=", "value": user_id},
-            {"field": "tag", "key": "device_uuid", "relation": "=", "value": device.uuid},
-        ])
-
-        try:
-            onesignal_client.send_notification(notification)
-        except OneSignalError as e:
-            logger.error('Error sending notification to user_id %s with error %s' % (user.id, e))
+    django_rq.enqueue(send_notification_to_user, user=user, notification=notification)
 
 
 push_notifications_serializers = None

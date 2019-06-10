@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.utils.helpers import normalise_request_data, normalize_list_value_in_request_data
 from openbook_communities.views.community.serializers import GetCommunityCommunitySerializer, DeleteCommunitySerializer, \
     UpdateCommunitySerializer, UpdateCommunityAvatarSerializer, UpdateCommunityCoverSerializer, GetCommunitySerializer, \
@@ -12,7 +13,7 @@ from openbook_communities.views.community.serializers import GetCommunityCommuni
 
 
 class CommunityItem(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request, community_name):
         serializer = GetCommunitySerializer(data={'community_name': community_name})
@@ -72,7 +73,7 @@ class CommunityItem(APIView):
 
 
 class CommunityAvatar(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def put(self, request, community_name):
         request_data = normalise_request_data(request.data)
@@ -105,7 +106,7 @@ class CommunityAvatar(APIView):
 
 
 class CommunityCover(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def put(self, request, community_name):
         request_data = normalise_request_data(request.data)
@@ -138,7 +139,7 @@ class CommunityCover(APIView):
 
 
 class FavoriteCommunity(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def put(self, request, community_name):
         request_data = normalise_request_data(request.data)

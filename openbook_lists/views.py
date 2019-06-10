@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.translation import gettext as _
 
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import normalise_request_data, nomalize_usernames_in_request_data
 from openbook_lists.serializers import CreateListSerializer, GetListsListSerializer, DeleteListSerializer, \
@@ -15,7 +16,7 @@ from openbook_lists.serializers import CreateListSerializer, GetListsListSeriali
 
 
 class Lists(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def put(self, request):
         serializer = CreateListSerializer(data=request.data)
@@ -40,7 +41,7 @@ class Lists(APIView):
 
 
 class ListItem(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request, list_id):
         user = request.user
@@ -91,7 +92,7 @@ class ListNameCheck(APIView):
     The API to check if a listName is both valid and not taken.
     """
     serializer_class = ListNameCheckSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)

@@ -1,0 +1,42 @@
+[
+  {
+    "model": "openbook_auth.user",
+    "pk": 1,
+    "fields": {
+      "password": "pbkdf2_sha256$150000$5eE45XXPqD4d$UVPkS9dNXn2xhA2abMLAbhuzFotj866JuG1B9aY1zLU=",
+      "last_login": null,
+      "is_superuser": false,
+      "is_staff": false,
+      "is_active": true,
+      "date_joined": "2019-02-22T14:18:55.242Z",
+      "email": "admin@openbook.social",
+      "connections_circle": 4,
+      "is_email_verified": false,
+      "are_guidelines_accepted": true,
+      "username": "admin",
+      "uuid": "a4761f82-a42d-48cc-baa6-5a758e13481c",
+      "invite_count": 1,
+      "groups": [],
+      "user_permissions": []
+    }
+  },
+  {
+    "model": "openbook_communities.community",
+    "pk": 1,
+    "fields": {
+      "creator": 1,
+      "name": "moderators",
+      "title": "Moderators",
+      "description": "Moderators Community",
+      "rules": "Be a moderator.",
+      "created": "2019-02-24T14:15:10.250Z",
+      "type": "T",
+      "color": "#ff004c",
+      "user_adjective": "Moderator",
+      "users_adjective": "Moderators",
+      "invites_enabled": false,
+      "starrers": [],
+      "banned_users": []
+    }
+  }
+]

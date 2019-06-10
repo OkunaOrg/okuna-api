@@ -2,11 +2,10 @@ from rest_framework import serializers
 
 from django.conf import settings
 from openbook_auth.models import User, UserProfile
-from openbook_auth.serializers import BadgeSerializer
 from openbook_auth.validators import user_username_exists, username_characters_validator
 from openbook_circles.models import Circle
 from openbook_circles.validators import circle_id_exists
-from openbook_common.models import Emoji
+from openbook_common.models import Emoji, Badge
 from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, ReactionsEmojiCountField, \
     CirclesField, PostCreatorField, IsMutedField, IsEncircledField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
@@ -57,8 +56,17 @@ class CreatePostSerializer(serializers.Serializer):
     )
 
 
+class PostCreatorProfileBadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Badge
+        fields = (
+            'keyword',
+            'keyword_description'
+        )
+
+
 class PostCreatorProfileSerializer(serializers.ModelSerializer):
-    badges = BadgeSerializer(many=True)
+    badges = PostCreatorProfileBadgeSerializer(many=True)
 
     class Meta:
         model = UserProfile
@@ -201,13 +209,14 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'video',
             'creator',
             'reaction',
-            'public_comments',
+            'comments_enabled',
             'public_reactions',
             'circles',
             'community',
             'is_muted',
             'is_encircled',
-            'is_edited'
+            'is_edited',
+            'is_closed'
         )
 
 
@@ -231,7 +240,7 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
             'image',
             'video',
             'creator',
-            'public_comments',
+            'comments_enabled',
             'public_reactions',
             'is_edited'
         )

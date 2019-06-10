@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
 # Create your models here.
@@ -12,15 +13,17 @@ from openbook_auth.models import User
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.utils.model_loaders import get_community_invite_model, \
-    get_community_log_model, get_category_model
+    get_community_log_model, get_category_model, get_user_model, get_moderated_object_model
 from openbook_common.validators import hex_color_validator
 from openbook_communities.helpers import upload_to_community_avatar_directory, upload_to_community_cover_directory
 from openbook_communities.validators import community_name_characters_validator
+from openbook_moderation.models import ModeratedObject, ModerationCategory
 from openbook_posts.models import Post
 from imagekit.models import ProcessedImageField
 
 
 class Community(models.Model):
+    moderated_object = GenericRelation(ModeratedObject, related_query_name='communities')
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_communities', null=False,
                                 blank=False)
     name = models.CharField(_('name'), max_length=settings.COMMUNITY_NAME_MAX_LENGTH, blank=False, null=False,
@@ -28,12 +31,13 @@ class Community(models.Model):
     title = models.CharField(_('title'), max_length=settings.COMMUNITY_TITLE_MAX_LENGTH, blank=False, null=False, )
     description = models.CharField(_('description'), max_length=settings.COMMUNITY_DESCRIPTION_MAX_LENGTH, blank=False,
                                    null=True, )
-    rules = models.CharField(_('rules'), max_length=settings.COMMUNITY_RULES_MAX_LENGTH, blank=False,
+    rules = models.TextField(_('rules'), max_length=settings.COMMUNITY_RULES_MAX_LENGTH, blank=False,
                              null=True)
     avatar = ProcessedImageField(verbose_name=_('avatar'), blank=False, null=True, format='JPEG',
-                                 options={'quality': 60}, processors=[ResizeToFill(500, 500)],
+                                 options={'quality': 90}, processors=[ResizeToFill(500, 500)],
                                  upload_to=upload_to_community_avatar_directory)
-    cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 50},
+    cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG',
+                                options={'quality': 90},
                                 upload_to=upload_to_community_cover_directory,
                                 processors=[ResizeToFit(width=1024, upscale=False)])
     created = models.DateTimeField(editable=False)
@@ -53,6 +57,11 @@ class Community(models.Model):
     users_adjective = models.CharField(_('users adjective'), max_length=settings.COMMUNITY_USERS_ADJECTIVE_MAX_LENGTH,
                                        blank=False, null=True)
     invites_enabled = models.BooleanField(_('invites enabled'), default=True)
+    # This only happens if the community was reported and found with critical severity content
+    is_deleted = models.BooleanField(
+        _('is deleted'),
+        default=False,
+    )
 
     class Meta:
         verbose_name_plural = 'communities'
@@ -90,20 +99,52 @@ class Community(models.Model):
         return cls.objects.filter(name=community_name, type='T').exists()
 
     @classmethod
+    def community_with_name_exists(cls, community_name):
+        query = Q(name=community_name, is_deleted=False)
+        return cls.objects.filter(query).exists()
+
+    @classmethod
+    def get_community_with_name_for_user_with_id(cls, community_name, user_id):
+        query = Q(name=community_name, is_deleted=False)
+        query.add(~Q(banned_users__id=user_id), Q.AND)
+        return cls.objects.get(query)
+
+    @classmethod
     def search_communities_with_query(cls, query):
+        query = cls._make_search_communities_query(query=query)
+        return cls.objects.filter(query)
+
+    @classmethod
+    def _make_search_communities_query(cls, query):
         communities_query = Q(name__icontains=query)
         communities_query.add(Q(title__icontains=query), Q.OR)
-        return cls.objects.filter(communities_query)
+        communities_query.add(Q(is_deleted=False), Q.AND)
+        return communities_query
+
+    @classmethod
+    def get_trending_communities_for_user_with_id(cls, user_id, category_name=None):
+        trending_communities_query = cls._make_trending_communities_query(category_name=category_name)
+        trending_communities_query.add(~Q(banned_users__id=user_id), Q.AND)
+        return cls._get_trending_communities_with_query(query=trending_communities_query)
 
     @classmethod
     def get_trending_communities(cls, category_name=None):
-        trending_communities_query = Q()
+        trending_communities_query = cls._make_trending_communities_query(category_name=category_name)
+        return cls._get_trending_communities_with_query(query=trending_communities_query)
+
+    @classmethod
+    def _get_trending_communities_with_query(cls, query):
+        return cls.objects.annotate(Count('memberships')).filter(query).order_by(
+            '-memberships__count', '-created')
+
+    @classmethod
+    def _make_trending_communities_query(cls, category_name=None):
+        trending_communities_query = Q(type=cls.COMMUNITY_TYPE_PUBLIC, is_deleted=False)
 
         if category_name:
             trending_communities_query.add(Q(categories__name=category_name), Q.AND)
 
-        return cls.objects.annotate(Count('memberships')).filter(trending_communities_query).order_by(
-            '-memberships__count', '-created')
+        return trending_communities_query
 
     @classmethod
     def create_community(cls, name, title, creator, color, type=None, user_adjective=None, users_adjective=None,
@@ -244,6 +285,13 @@ class Community(models.Model):
     def members_count(self):
         return self.memberships.all().count()
 
+    def get_staff_members(self):
+        User = get_user_model()
+        staff_members_query = Q(communities_memberships__community_id=self.pk)
+        staff_members_query.add(
+            Q(communities_memberships__is_administrator=True) | Q(communities_memberships__is_moderator=True), Q.AND)
+        return User.objects.filter(staff_members_query)
+
     def is_private(self):
         return self.type is self.COMMUNITY_TYPE_PRIVATE
 
@@ -368,9 +416,39 @@ class Community(models.Model):
                                 source_user=source_user,
                                 target_user=target_user)
 
-    def _create_log(self, action_type, source_user, target_user):
+    def create_remove_post_comment_reply_log(self, source_user, target_user):
+        return self._create_log(action_type='RPCR',
+                                source_user=source_user,
+                                target_user=target_user)
+
+    def create_disable_post_comments_log(self, source_user, target_user, post):
+        return self._create_log(action_type='DPC',
+                                post=post,
+                                source_user=source_user,
+                                target_user=target_user)
+
+    def create_enable_post_comments_log(self, source_user, target_user, post):
+        return self._create_log(action_type='EPC',
+                                post=post,
+                                source_user=source_user,
+                                target_user=target_user)
+
+    def create_open_post_log(self, source_user, target_user, post):
+        return self._create_log(action_type='OP',
+                                post=post,
+                                source_user=source_user,
+                                target_user=target_user)
+
+    def create_close_post_log(self, source_user, target_user, post):
+        return self._create_log(action_type='CP',
+                                post=post,
+                                source_user=source_user,
+                                target_user=target_user)
+
+    def _create_log(self, action_type, source_user, target_user, post=None):
         CommunityModeratorUserActionLog = get_community_log_model()
         return CommunityModeratorUserActionLog.create_community_log(community=self,
+                                                                    post=post,
                                                                     target_user=target_user,
                                                                     action_type=action_type,
                                                                     source_user=source_user)
@@ -390,6 +468,22 @@ class Community(models.Model):
 
         return super(Community, self).save(*args, **kwargs)
 
+    def soft_delete(self):
+        self.is_deleted = True
+        for post in self.posts.all().iterator():
+            post.soft_delete()
+        self.save()
+
+    def unsoft_delete(self):
+        self.is_deleted = False
+        for post in self.posts:
+            post.unsoft_delete()
+        self.save()
+
+    def count_pending_moderated_objects(self):
+        ModeratedObject = get_moderated_object_model()
+        return self.moderated_objects.filter(status=ModeratedObject.STATUS_PENDING).count()
+
     def __str__(self):
         return self.name
 
@@ -408,6 +502,11 @@ class CommunityMembership(models.Model):
 
     class Meta:
         unique_together = (('user', 'community'),)
+        indexes = [
+            models.Index(fields=['community', 'user']),
+            models.Index(fields=['community', 'user', 'is_administrator']),
+            models.Index(fields=['community', 'user', 'is_moderator']),
+        ]
 
     @classmethod
     def create_membership(cls, user, community, is_administrator=False, is_moderator=False):
@@ -431,6 +530,7 @@ class CommunityLog(models.Model):
                                     blank=False)
     target_user = models.ForeignKey(User, on_delete=models.SET_NULL, related_name='+', null=True,
                                     blank=False)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='+', null=True, blank=True)
     community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='logs',
                                   null=False,
                                   blank=False)
@@ -443,15 +543,19 @@ class CommunityLog(models.Model):
         ('RM', 'Remove Moderator'),
         ('AA', 'Add Administrator'),
         ('RA', 'Remove Administrator'),
+        ('OP', 'Open Post'),
+        ('CP', 'Close Post'),
         ('RP', 'Remove Post'),
         ('RPC', 'Remove Post Comment'),
+        ('DPC', 'Disable Post Comments'),
+        ('EPC', 'Enable Post Comments'),
     )
     action_type = models.CharField(editable=False, blank=False, null=False, choices=ACTION_TYPES, max_length=5)
 
     @classmethod
-    def create_community_log(cls, community, action_type, source_user, target_user):
+    def create_community_log(cls, community, action_type, source_user, target_user, post=None):
         return cls.objects.create(community=community, action_type=action_type, source_user=source_user,
-                                  target_user=target_user)
+                                  target_user=target_user, post=post)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''

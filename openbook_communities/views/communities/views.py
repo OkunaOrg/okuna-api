@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.translation import gettext as _
 
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import normalize_list_value_in_request_data, normalise_request_data
 from openbook_common.utils.model_loaders import get_community_model
@@ -16,7 +17,7 @@ from openbook_communities.views.communities.serializers import CreateCommunitySe
 
 
 class Communities(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def put(self, request):
         request_data = normalise_request_data(request.data)
@@ -77,7 +78,7 @@ class CommunityNameCheck(APIView):
     The API to check if a communityName is both valid and not taken.
     """
     serializer_class = CommunityNameCheckSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request):
         # Serializer contains validators
@@ -88,7 +89,7 @@ class CommunityNameCheck(APIView):
 
 
 class JoinedCommunities(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request):
         query_params = request.query_params.dict()
@@ -111,7 +112,7 @@ class JoinedCommunities(APIView):
 
 
 class SearchJoinedCommunities(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request):
         query_params = request.query_params.dict()
@@ -134,7 +135,7 @@ class SearchJoinedCommunities(APIView):
 
 
 class ModeratedCommunities(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request):
         query_params = request.query_params.dict()
@@ -157,7 +158,7 @@ class ModeratedCommunities(APIView):
 
 
 class AdministratedCommunities(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request):
         query_params = request.query_params.dict()
@@ -180,7 +181,7 @@ class AdministratedCommunities(APIView):
 
 
 class TrendingCommunities(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
     serializer_class = TrendingCommunitiesSerializer
 
     def get(self, request):
@@ -191,15 +192,16 @@ class TrendingCommunities(APIView):
         data = serializer.data
         category_name = data.get('category')
 
-        Community = get_community_model()
-        communities = Community.get_trending_communities(category_name=category_name)[:30]
+        user = request.user
+
+        communities = user.get_trending_communities(category_name=category_name)[:30]
 
         posts_serializer = CommunitiesCommunitySerializer(communities, many=True, context={"request": request})
         return Response(posts_serializer.data, status=status.HTTP_200_OK)
 
 
 class FavoriteCommunities(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request):
         query_params = request.query_params.dict()
@@ -220,7 +222,7 @@ class FavoriteCommunities(APIView):
 
 
 class SearchCommunities(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request):
         query_params = request.query_params.dict()

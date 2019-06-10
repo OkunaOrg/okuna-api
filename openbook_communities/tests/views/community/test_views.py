@@ -10,8 +10,10 @@ from rest_framework.test import APITestCase
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, \
     make_community_name, make_community, \
     make_community_title, make_community_rules, make_community_description, make_community_user_adjective, \
-    make_community_users_adjective, make_community_avatar, make_community_cover, make_category
+    make_community_users_adjective, make_community_avatar, make_community_cover, make_category, make_global_moderator, \
+    make_moderation_category
 from openbook_communities.models import Community
+from openbook_moderation.models import ModeratedObject
 
 fake = Faker()
 
@@ -66,6 +68,27 @@ class CommunityAPITests(APITestCase):
         self.assertIn('name', parsed_response)
         response_name = parsed_response['name']
         self.assertEqual(response_name, community_name)
+
+    def test_cannot_retrieve_community_banned_from(self):
+        """
+        should not be able to retrieve a community banned from and return 403
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+        community_name = community.name
+
+        user.join_community_with_name(community_name=community.name)
+
+        community_owner.ban_user_with_username_from_community_with_name(username=user.username,
+                                                                        community_name=community.name)
+        url = self._get_url(community_name=community_name)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_non_member_cannot_update_community(self):
         """
@@ -653,6 +676,34 @@ class CommunityAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
         self.assertTrue(Community.objects.filter(pk=community.pk).exists())
+
+    def test_cannot_retrieve_soft_deleted_community(self):
+        """
+        should not be able to retrieve a soft deleted community and return 403
+        """
+        global_moderator = make_global_moderator()
+
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner)
+        community_name = community.name
+
+        community_reporter = make_user()
+        moderation_category = make_moderation_category()
+        community_reporter.report_community(community=community, category_id=moderation_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_community(community=community,
+                                                                                        category_id=moderation_category.pk)
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+        global_moderator.verify_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url(community_name=community_name)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def _get_url(self, community_name):
         return reverse('community', kwargs={
