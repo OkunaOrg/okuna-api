@@ -104,7 +104,8 @@ class NotificationPostSerializer(serializers.ModelSerializer):
             'text',
             'video',
             'creator',
-            'created'
+            'created',
+            'is_closed'
         )
 
 
