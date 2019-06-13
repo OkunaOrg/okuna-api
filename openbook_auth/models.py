@@ -182,6 +182,23 @@ class User(AbstractUser):
                 _('Invalid token')
             )
 
+    @classmethod
+    def get_unauthenticated_public_posts_for_user_with_username(cls, username, max_id=None, min_id=None):
+        Circle = get_circle_model()
+        world_circle_id = Circle.get_world_circle_id()
+
+        final_query = Q(creator__username=username, circles__id=world_circle_id)
+
+        if max_id:
+            final_query.add(Q(id__lt=max_id), Q.AND)
+        elif min_id:
+            final_query.add(Q(id__gt=min_id), Q.AND)
+
+        Post = get_post_model()
+        result = Post.objects.filter(final_query)
+
+        return result
+
     def count_posts(self):
         return self.posts.count()
 
@@ -763,13 +780,6 @@ class User(AbstractUser):
                                                    min_id=min_id)
 
         return PostComment.objects.filter(comment_replies_query)
-
-    def get_comments_count_for_post_with_id(self, post_id):
-        Post = get_post_model()
-
-        post = Post.objects.get(pk=post_id)
-
-        return self.get_comments_count_for_post(post=post)
 
     def get_comments_count_for_post(self, post):
         return post.count_comments_with_user(user=self)

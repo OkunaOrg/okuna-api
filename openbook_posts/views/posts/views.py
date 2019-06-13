@@ -106,7 +106,7 @@ class Posts(APIView):
 
         User = get_user_model()
 
-        posts = User.get_public_posts_for_user_with_username(
+        posts = User.get_unauthenticated_public_posts_for_user_with_username(
             max_id=max_id,
             username=username
         ).order_by('-created')[:count]
