@@ -71,8 +71,7 @@ class Posts(APIView):
             if username == user.username:
                 posts = user.get_posts(max_id=max_id)
             elif not user.is_connected_with_user_with_username(username):
-                User = get_user_model()
-                posts = User.get_public_posts_for_user_with_username(
+                posts = user.get_public_posts_for_user_with_username(
                     max_id=max_id,
                     min_id=min_id,
                     username=username

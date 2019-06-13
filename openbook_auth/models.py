@@ -124,23 +124,6 @@ class User(AbstractUser):
             return False
 
     @classmethod
-    def get_public_posts_for_user_with_username(cls, username, max_id=None, min_id=None):
-        Circle = get_circle_model()
-        world_circle_id = Circle.get_world_circle_id()
-
-        final_query = Q(creator__username=username, circles__id=world_circle_id)
-
-        if max_id:
-            final_query.add(Q(id__lt=max_id), Q.AND)
-        elif min_id:
-            final_query.add(Q(id__gt=min_id), Q.AND)
-
-        Post = get_post_model()
-        result = Post.objects.filter(final_query)
-
-        return result
-
-    @classmethod
     def get_user_with_email(cls, user_email):
         return cls.objects.get(email=user_email)
 
@@ -1652,6 +1635,29 @@ class User(AbstractUser):
         posts = Post.objects.filter(posts_query)
 
         return posts
+
+    def get_public_posts_for_user_with_username(self, username, max_id=None, min_id=None):
+        Circle = get_circle_model()
+        world_circle_id = Circle.get_world_circle_id()
+
+        posts_query = Q(creator__username=username, circles__id=world_circle_id)
+
+        posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
+            creator__user_blocks__blocked_user_id=self.pk)), Q.AND)
+
+        posts_query.add(Q(is_deleted=False), Q.AND)
+
+        posts_query.add(~Q(moderated_object__reports__reporter_id=self.pk), Q.AND)
+
+        if max_id:
+            posts_query.add(Q(id__lt=max_id), Q.AND)
+        elif min_id:
+            posts_query.add(Q(id__gt=min_id), Q.AND)
+
+        Post = get_post_model()
+        result = Post.objects.filter(posts_query)
+
+        return result
 
     def get_posts_for_user_with_username(self, username, max_id=None):
         """
