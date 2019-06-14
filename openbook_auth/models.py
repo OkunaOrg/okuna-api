@@ -33,7 +33,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
     get_moderation_penalty_model
 from openbook_common.validators import name_characters_validator
-from openbook_notifications.push_notifications import senders
+from openbook_notifications import helpers
 
 
 class User(AbstractUser):
@@ -124,23 +124,6 @@ class User(AbstractUser):
             return False
 
     @classmethod
-    def get_public_posts_for_user_with_username(cls, username, max_id=None, min_id=None):
-        Circle = get_circle_model()
-        world_circle_id = Circle.get_world_circle_id()
-
-        final_query = Q(creator__username=username, circles__id=world_circle_id)
-
-        if max_id:
-            final_query.add(Q(id__lt=max_id), Q.AND)
-        elif min_id:
-            final_query.add(Q(id__gt=min_id), Q.AND)
-
-        Post = get_post_model()
-        result = Post.objects.filter(final_query)
-
-        return result
-
-    @classmethod
     def get_user_with_email(cls, user_email):
         return cls.objects.get(email=user_email)
 
@@ -198,6 +181,23 @@ class User(AbstractUser):
             raise ValidationError(
                 _('Invalid token')
             )
+
+    @classmethod
+    def get_unauthenticated_public_posts_for_user_with_username(cls, username, max_id=None, min_id=None):
+        Circle = get_circle_model()
+        world_circle_id = Circle.get_world_circle_id()
+
+        final_query = Q(creator__username=username, circles__id=world_circle_id)
+
+        if max_id:
+            final_query.add(Q(id__lt=max_id), Q.AND)
+        elif min_id:
+            final_query.add(Q(id__gt=min_id), Q.AND)
+
+        Post = get_post_model()
+        result = Post.objects.filter(final_query)
+
+        return result
 
     def count_posts(self):
         return self.posts.count()
@@ -780,13 +780,6 @@ class User(AbstractUser):
                                                    min_id=min_id)
 
         return PostComment.objects.filter(comment_replies_query)
-
-    def get_comments_count_for_post_with_id(self, post_id):
-        Post = get_post_model()
-
-        post = Post.objects.get(pk=post_id)
-
-        return self.get_comments_count_for_post(post=post)
 
     def get_comments_count_for_post(self, post):
         return post.count_comments_with_user(user=self)
@@ -1653,6 +1646,29 @@ class User(AbstractUser):
 
         return posts
 
+    def get_public_posts_for_user_with_username(self, username, max_id=None, min_id=None):
+        Circle = get_circle_model()
+        world_circle_id = Circle.get_world_circle_id()
+
+        posts_query = Q(creator__username=username, circles__id=world_circle_id)
+
+        posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
+            creator__user_blocks__blocked_user_id=self.pk)), Q.AND)
+
+        posts_query.add(Q(is_deleted=False), Q.AND)
+
+        posts_query.add(~Q(moderated_object__reports__reporter_id=self.pk), Q.AND)
+
+        if max_id:
+            posts_query.add(Q(id__lt=max_id), Q.AND)
+        elif min_id:
+            posts_query.add(Q(id__gt=min_id), Q.AND)
+
+        Post = get_post_model()
+        result = Post.objects.filter(posts_query)
+
+        return result
+
     def get_posts_for_user_with_username(self, username, max_id=None):
         """
         Get all the posts for the given user with username
@@ -1850,10 +1866,10 @@ class User(AbstractUser):
         return moderated_object.reports.filter(query)
 
     def _check_can_get_moderated_object(self, moderated_object):
-        if moderated_object.community:
-            self._check_can_get_community_moderated_objects(community_name=moderated_object.community)
-        else:
-            self._check_can_get_global_moderated_objects()
+        if self.is_global_moderator():
+            return
+
+        self._check_can_get_community_moderated_objects(community_name=moderated_object.community)
 
     def get_community_moderated_objects(self, community_name, types=None, max_id=None, verified=None, statuses=None):
         self._check_can_get_community_moderated_objects(community_name=community_name)
@@ -2417,10 +2433,6 @@ class User(AbstractUser):
         if not self.is_global_moderator():
             raise PermissionDenied(_('Not a global moderator.'))
 
-    def _check_is_moderator_of_community_with_name(self, community_name):
-        if not self.is_moderator_of_community_with_name(community_name=community_name):
-            raise PermissionDenied(_('Not a community moderator.'))
-
     def _check_is_staff_of_community_with_name(self, community_name):
         if not self.is_staff_of_community_with_name(community_name=community_name):
             raise PermissionDenied(_('Not a community staff.'))
@@ -2481,7 +2493,7 @@ class User(AbstractUser):
         email.send()
 
     def _send_post_comment_push_notification(self, post_comment, notification_message, notification_target_user):
-        senders.send_post_comment_push_notification_with_message(post_comment=post_comment,
+        helpers.send_post_comment_push_notification_with_message(post_comment=post_comment,
                                                                  message=notification_message,
                                                                  target_user=notification_target_user)
 
@@ -2495,7 +2507,7 @@ class User(AbstractUser):
             self._delete_post_comment_reply_notification(post_comment=post_comment)
 
     def _send_post_comment_reply_push_notification(self, post_comment, notification_message, notification_target_user):
-        senders.send_post_comment_reply_push_notification_with_message(post_comment=post_comment,
+        helpers.send_post_comment_reply_push_notification_with_message(post_comment=post_comment,
                                                                        message=notification_message,
                                                                        target_user=notification_target_user)
 
@@ -2510,7 +2522,7 @@ class User(AbstractUser):
                                                                    owner_id=post_reaction.post.creator_id)
 
     def _send_post_reaction_push_notification(self, post_reaction):
-        senders.send_post_reaction_push_notification(post_reaction=post_reaction)
+        helpers.send_post_reaction_push_notification(post_reaction=post_reaction)
 
     def _delete_post_reaction_notification(self, post_reaction):
         PostReactionNotification = get_post_reaction_notification_model()
@@ -2523,7 +2535,7 @@ class User(AbstractUser):
                                                                          owner_id=community_invite.invited_user_id)
 
     def _send_community_invite_push_notification(self, community_invite):
-        senders.send_community_invite_push_notification(community_invite=community_invite)
+        helpers.send_community_invite_push_notification(community_invite=community_invite)
 
     def _create_follow_notification(self, followed_user_id):
         FollowNotification = get_follow_notification_model()
@@ -2531,7 +2543,7 @@ class User(AbstractUser):
 
     def _send_follow_push_notification(self, followed_user_id):
         followed_user = User.objects.get(pk=followed_user_id)
-        senders.send_follow_push_notification(followed_user=followed_user, following_user=self)
+        helpers.send_follow_push_notification(followed_user=followed_user, following_user=self)
 
     def _delete_follow_notification(self, followed_user_id):
         FollowNotification = get_follow_notification_model()
@@ -2557,7 +2569,7 @@ class User(AbstractUser):
 
     def _send_connection_request_push_notification(self, user_connection_requested_for_id):
         connection_requested_for = User.objects.get(pk=user_connection_requested_for_id)
-        senders.send_connection_request_push_notification(
+        helpers.send_connection_request_push_notification(
             connection_requester=self,
             connection_requested_for=connection_requested_for)
 
@@ -2607,8 +2619,6 @@ class User(AbstractUser):
 
         posts_query = Q(creator_id=user.pk, is_deleted=False)
 
-        posts_query.add(~Q(moderated_object__reports__reporter_id=self.pk), Q.AND)
-
         world_circle_id = self._get_world_circle_id()
 
         posts_circles_query = Q(circles__id=world_circle_id)
@@ -2624,6 +2634,8 @@ class User(AbstractUser):
             posts_query.add(Q(id__lt=max_id), Q.AND)
 
         posts_query.add(Q(is_deleted=False), Q.AND)
+
+        posts_query.add(~Q(moderated_object__reports__reporter_id=self.pk), Q.AND)
 
         return posts_query
 
@@ -3732,12 +3744,12 @@ class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     is_of_legal_age = models.BooleanField(default=False)
     avatar = ProcessedImageField(verbose_name=_('avatar'), blank=False, null=True, format='JPEG',
-                                 options={'quality': 50}, processors=[ResizeToFill(500, 500)],
+                                 options={'quality': 90}, processors=[ResizeToFill(500, 500)],
                                  upload_to=upload_to_user_avatar_directory)
-    cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 50},
+    cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 90},
                                 upload_to=upload_to_user_cover_directory,
                                 processors=[ResizeToFit(width=1024, upscale=False)])
-    bio = models.CharField(_('bio'), max_length=settings.PROFILE_BIO_MAX_LENGTH, blank=False, null=True)
+    bio = models.TextField(_('bio'), max_length=settings.PROFILE_BIO_MAX_LENGTH, blank=False, null=True)
     url = models.URLField(_('url'), blank=False, null=True)
     followers_count_visible = models.BooleanField(_('followers count visible'), blank=False, null=False, default=False)
     badges = models.ManyToManyField(Badge, related_name='users_profiles')
