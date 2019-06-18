@@ -20,9 +20,10 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from openbook_auth.views.auth.views import Register, Login, UsernameCheck, EmailCheck, EmailVerify, \
-    PasswordResetRequest, PasswordResetVerify
+    PasswordResetRequest, PasswordResetVerify, UserLanguage
 from openbook_auth.views.authenticated_user.views import AuthenticatedUser, AuthenticatedUserSettings, \
-    DeleteAuthenticatedUser, AuthenticatedUserNotificationsSettings, AuthenticatedUserAcceptGuidelines
+    DeleteAuthenticatedUser, AuthenticatedUserNotificationsSettings, AuthenticatedUserAcceptGuidelines, \
+    AuthenticatedUserLanguage
 from openbook_auth.views.blocked_users.views import BlockedUsers, SearchBlockedUsers
 from openbook_auth.views.followers.views import Followers, SearchFollowers
 from openbook_auth.views.following.views import Followings, SearchFollowings
@@ -86,6 +87,7 @@ auth_user_patterns = [
          name='authenticated-user-notifications-settings'),
     path('accept-guidelines/', AuthenticatedUserAcceptGuidelines.as_view(),
          name='authenticated-user-accept-guidelines'),
+    path('language/', AuthenticatedUserLanguage.as_view(), name='user-language'),
 ]
 
 auth_users_user_patterns = [
