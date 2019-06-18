@@ -44,6 +44,7 @@ class User(AbstractUser):
     moderated_object = GenericRelation('openbook_moderation.ModeratedObject', related_query_name='users')
     first_name = None
     last_name = None
+    language = models.ForeignKey('UserLanguage', null=True, blank=True, on_delete=models.SET_NULL)
     email = models.EmailField(_('email address'), unique=True, null=False, blank=False)
     connections_circle = models.ForeignKey('openbook_circles.Circle', on_delete=models.CASCADE, related_name='+',
                                            null=True, blank=True)
@@ -320,6 +321,11 @@ class User(AbstractUser):
     def accept_guidelines(self):
         self._check_can_accept_guidelines()
         self.are_guidelines_accepted = True
+        self.save()
+
+    def set_language_with_id(self, language_id):
+        self._check_can_set_language_with_id(language_id)
+        self.language = language_id
         self.save()
 
     def verify_password_reset_token(self, token, password):
@@ -3631,6 +3637,10 @@ class User(AbstractUser):
         if self.are_guidelines_accepted:
             raise ValidationError('Guidelines were already accepted')
 
+    def _check_can_set_language_with_id(self, language_id):
+        if not UserLanguage.objects.filter(pk=language_id).exists():
+            raise ValidationError('Please provide a valid language id')
+
     def _check_can_get_community_with_name(self, community_name):
         self._check_is_not_banned_from_community_with_name(community_name=community_name)
 
@@ -3722,6 +3732,17 @@ def bootstrap_circles(sender, instance=None, created=False, **kwargs):
     """
     if created:
         bootstrap_user_circles(instance)
+
+
+class UserLanguage(models.Model):
+    code = models.CharField(_('code'), max_length=8, blank=False, null=False)
+    name = models.CharField(_('name'), max_length=64, blank=False, null=False)
+    created = models.DateTimeField(editable=False)
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.created = timezone.now()
+        return super(UserLanguage, self).save(*args, **kwargs)
 
 
 class UserProfile(models.Model):

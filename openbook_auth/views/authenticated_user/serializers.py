@@ -5,7 +5,7 @@ from django.utils.translation import gettext as _
 from openbook.settings import USERNAME_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, PROFILE_NAME_MAX_LENGTH
 from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import username_characters_validator, \
-    email_not_taken_validator
+    email_not_taken_validator, language_id_exists
 from django.contrib.auth.password_validation import validate_password
 
 from openbook_common.models import Badge
@@ -124,3 +124,7 @@ class UpdateAuthenticatedUserSettingsSerializer(serializers.Serializer):
             raise serializers.ValidationError(_('Current password must be supplied together with the new password'))
 
         return data
+
+
+class AuthenticatedUserLanguageSerializer(serializers.Serializer):
+    language_id = serializers.IntegerField(validators=[language_id_exists], required=True)

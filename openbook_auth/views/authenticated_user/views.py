@@ -12,7 +12,8 @@ from django.utils.translation import gettext as _
 from openbook_auth.views.auth.serializers import AuthenticatedUserNotificationsSettingsSerializer, \
     UpdateAuthenticatedUserNotificationsSettingsSerializer
 from openbook_auth.views.authenticated_user.serializers import GetAuthenticatedUserSerializer, \
-    UpdateAuthenticatedUserSerializer, DeleteAuthenticatedUserSerializer, UpdateAuthenticatedUserSettingsSerializer
+    UpdateAuthenticatedUserSerializer, DeleteAuthenticatedUserSerializer, UpdateAuthenticatedUserSettingsSerializer, \
+    AuthenticatedUserLanguageSerializer
 from openbook_moderation.permissions import IsNotSuspended, check_user_is_not_suspended
 from openbook_common.responses import ApiMessageResponse
 
@@ -187,3 +188,20 @@ class AuthenticatedUserAcceptGuidelines(APIView):
             user.accept_guidelines()
 
         return ApiMessageResponse(_('Guidelines successfully accepted'), status=status.HTTP_200_OK)
+
+
+class AuthenticatedUserLanguage(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        request_data = request.data
+        serializer = AuthenticatedUserLanguageSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        user = request.user
+
+        with transaction.atomic():
+            user.set_language_with_id(language_id=data.language_id)
+
+        return ApiMessageResponse(_('Language successfully set'), status=status.HTTP_200_OK)
