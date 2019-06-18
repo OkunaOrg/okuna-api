@@ -1,0 +1,252 @@
+[
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 1,
+    "fields": {
+      "code": "ar",
+      "name_en": "Arabic",
+      "name_es": "Arabic",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 2,
+    "fields": {
+      "code": "zh",
+      "name_en": "Chinese (Simplified)",
+      "name_es": "Chinese (Simplified)",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 3,
+    "fields": {
+      "code": "zh-TW",
+      "name_en": "Chinese (Traditional)",
+      "name_es": "Chinese (Traditional)",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 4,
+    "fields": {
+      "code": "cs",
+      "name_en": "Czech",
+      "name_es": "Czech",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 5,
+    "fields": {
+      "code": "da",
+      "name_en": "Danish",
+      "name_es": "Danish",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 6,
+    "fields": {
+      "code": "nl",
+      "name_en": "Dutch",
+      "name_es": "Dutch",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 7,
+    "fields": {
+      "code": "en",
+      "name_en": "English",
+      "name_es": "English",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 8,
+    "fields": {
+      "code": "fi",
+      "name_en": "Finnish",
+      "name_es": "Finnish",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 9,
+    "fields": {
+      "code": "fr",
+      "name_en": "French",
+      "name_es": "French",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 10,
+    "fields": {
+      "code": "de",
+      "name_en": "German",
+      "name_es": "German",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 11,
+    "fields": {
+      "code": "he",
+      "name_en": "Hebrew",
+      "name_es": "Hebrew",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 12,
+    "fields": {
+      "code": "hi",
+      "name_en": "Hindi",
+      "name_es": "Hindi",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 13,
+    "fields": {
+      "code": "id",
+      "name_en": "Indonesian",
+      "name_es": "Indonesian",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 14,
+    "fields": {
+      "code": "it",
+      "name_en": "Italian",
+      "name_es": "Italian",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 15,
+    "fields": {
+      "code": "ja",
+      "name_en": "Japanese",
+      "name_es": "Japanese",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 16,
+    "fields": {
+      "code": "ko",
+      "name_en": "Korean",
+      "name_es": "Korean",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 17,
+    "fields": {
+      "code": "ms",
+      "name_en": "Malay",
+      "name_es": "Malay",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 18,
+    "fields": {
+      "code": "no",
+      "name_en": "Norwegian",
+      "name_es": "Norwegian",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 19,
+    "fields": {
+      "code": "fa",
+      "name_en": "Persian",
+      "name_es": "Persian",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 20,
+    "fields": {
+      "code": "pl",
+      "name_en": "Polish",
+      "name_es": "Polish",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 21,
+    "fields": {
+      "code": "pt",
+      "name_en": "Portuguese",
+      "name_es": "Portuguese",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 22,
+    "fields": {
+      "code": "ru",
+      "name_en": "Russian",
+      "name_es": "Russian",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 23,
+    "fields": {
+      "code": "es",
+      "name_en": "Spanish",
+      "name_es": "Spanish",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 24,
+    "fields": {
+      "code": "sv",
+      "name_en": "Swedish",
+      "name_es": "Swedish",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_auth.UserLanguage",
+    "pk": 25,
+    "fields": {
+      "code": "tr",
+      "name_en": "Turkish",
+      "name_es": "Turkish",
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  }
+]
