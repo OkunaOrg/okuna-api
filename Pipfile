@@ -37,6 +37,7 @@ django-cacheops = "*"
 django-redis = "*"
 redis-py-cluster = "*"
 django-extensions = "*"
+langdetect = "*"
 
 [pipenv]
 allow_prereleases = true
