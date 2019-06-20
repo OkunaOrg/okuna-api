@@ -20,7 +20,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from openbook_auth.views.auth.views import Register, Login, UsernameCheck, EmailCheck, EmailVerify, \
-    PasswordResetRequest, PasswordResetVerify, UserLanguage
+    PasswordResetRequest, PasswordResetVerify
 from openbook_auth.views.authenticated_user.views import AuthenticatedUser, AuthenticatedUserSettings, \
     DeleteAuthenticatedUser, AuthenticatedUserNotificationsSettings, AuthenticatedUserAcceptGuidelines, \
     AuthenticatedUserLanguage
@@ -87,7 +87,7 @@ auth_user_patterns = [
          name='authenticated-user-notifications-settings'),
     path('accept-guidelines/', AuthenticatedUserAcceptGuidelines.as_view(),
          name='authenticated-user-accept-guidelines'),
-    path('language/', AuthenticatedUserLanguage.as_view(), name='user-language'),
+    path('languages/', AuthenticatedUserLanguage.as_view(), name='user-language'),
 ]
 
 auth_users_user_patterns = [

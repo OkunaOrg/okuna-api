@@ -2,7 +2,7 @@ import re
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError, NotFound
 
-from openbook_auth.models import User, UserLanguage
+from openbook_auth.models import User
 
 
 def username_characters_validator(username):
@@ -37,11 +37,4 @@ def user_email_exists(email):
     if not User.objects.filter(email=email).exists():
         raise NotFound(
             _('No user with the provided email exists.'),
-        )
-
-
-def language_id_exists(language_id):
-    if not UserLanguage.objects.filter(pk=language_id).exists():
-        raise NotFound(
-            _('No supported language with the provided id exists.'),
         )

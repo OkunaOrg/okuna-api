@@ -13,7 +13,8 @@ from openbook_auth.views.auth.serializers import AuthenticatedUserNotificationsS
     UpdateAuthenticatedUserNotificationsSettingsSerializer
 from openbook_auth.views.authenticated_user.serializers import GetAuthenticatedUserSerializer, \
     UpdateAuthenticatedUserSerializer, DeleteAuthenticatedUserSerializer, UpdateAuthenticatedUserSettingsSerializer, \
-    AuthenticatedUserLanguageSerializer
+    AuthenticatedUserLanguageSerializer, AuthenticatedUserAllLanguagesSerializer
+from openbook_common.utils.model_loaders import get_language_model
 from openbook_moderation.permissions import IsNotSuspended, check_user_is_not_suspended
 from openbook_common.responses import ApiMessageResponse
 
@@ -192,6 +193,13 @@ class AuthenticatedUserAcceptGuidelines(APIView):
 
 class AuthenticatedUserLanguage(APIView):
     permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        Language = get_language_model()
+        languages = Language.objects.all()
+        all_languages_serializer = AuthenticatedUserAllLanguagesSerializer(
+            languages, context={'request': request}, many=True)
+        return Response(all_languages_serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
         request_data = request.data

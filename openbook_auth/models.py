@@ -22,7 +22,7 @@ from django.core.mail import EmailMultiAlternatives
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
-from openbook_common.models import Badge
+from openbook_common.models import Badge, Language
 from openbook_common.utils.helpers import delete_file_field
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, \
@@ -44,7 +44,7 @@ class User(AbstractUser):
     moderated_object = GenericRelation('openbook_moderation.ModeratedObject', related_query_name='users')
     first_name = None
     last_name = None
-    language = models.ForeignKey('UserLanguage', null=True, blank=True, on_delete=models.SET_NULL)
+    language = models.ForeignKey('openbook_common.Language', null=True, blank=True, on_delete=models.SET_NULL)
     email = models.EmailField(_('email address'), unique=True, null=False, blank=False)
     connections_circle = models.ForeignKey('openbook_circles.Circle', on_delete=models.CASCADE, related_name='+',
                                            null=True, blank=True)
@@ -935,9 +935,7 @@ class User(AbstractUser):
 
         PostComment = get_post_comment_model()
         post_comment = PostComment.objects.get(pk=post_comment_id)
-        post_comment.text = text
-        post_comment.is_edited = True
-        post_comment.save()
+        post_comment.update_comment(text)
         return post_comment
 
     def create_circle(self, name, color):
@@ -3638,7 +3636,7 @@ class User(AbstractUser):
             raise ValidationError('Guidelines were already accepted')
 
     def _check_can_set_language_with_id(self, language_id):
-        if not UserLanguage.objects.filter(pk=language_id).exists():
+        if not Language.objects.filter(pk=language_id).exists():
             raise ValidationError('Please provide a valid language id')
 
     def _check_can_get_community_with_name(self, community_name):
@@ -3732,17 +3730,6 @@ def bootstrap_circles(sender, instance=None, created=False, **kwargs):
     """
     if created:
         bootstrap_user_circles(instance)
-
-
-class UserLanguage(models.Model):
-    code = models.CharField(_('code'), max_length=8, blank=False, null=False)
-    name = models.CharField(_('name'), max_length=64, blank=False, null=False)
-    created = models.DateTimeField(editable=False)
-
-    def save(self, *args, **kwargs):
-        if not self.id:
-            self.created = timezone.now()
-        return super(UserLanguage, self).save(*args, **kwargs)
 
 
 class UserProfile(models.Model):

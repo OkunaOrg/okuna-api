@@ -5,16 +5,16 @@ from django.utils.translation import gettext as _
 from openbook.settings import USERNAME_MAX_LENGTH, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, PROFILE_NAME_MAX_LENGTH
 from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import username_characters_validator, \
-    email_not_taken_validator, language_id_exists
+    email_not_taken_validator
 from django.contrib.auth.password_validation import validate_password
 
-from openbook_common.models import Badge
+from openbook_common.models import Badge, Language
 from openbook_common.serializers_fields.request import FriendlyUrlField, RestrictedImageFileSizeField
 from openbook_common.serializers_fields.user import FollowersCountField, \
     FollowingCountField, PostsCountField, \
     IsMemberOfCommunities, \
     UnreadNotificationsCountField, IsGlobalModeratorField
-from openbook_common.validators import name_characters_validator
+from openbook_common.validators import name_characters_validator, language_id_exists
 from openbook_moderation.serializers_fields.user import UserPendingCommunitiesModeratedObjectsCountField, \
     UserActiveModerationPenaltiesCountField
 
@@ -128,3 +128,14 @@ class UpdateAuthenticatedUserSettingsSerializer(serializers.Serializer):
 
 class AuthenticatedUserLanguageSerializer(serializers.Serializer):
     language_id = serializers.IntegerField(validators=[language_id_exists], required=True)
+
+
+class AuthenticatedUserAllLanguagesSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Language
+        fields = (
+            'id',
+            'code',
+            'name',
+        )
