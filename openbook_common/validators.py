@@ -1,9 +1,9 @@
 import re
 
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, NotFound
 from django.utils.translation import ugettext_lazy as _
 
-from openbook_common.utils.model_loaders import get_emoji_model, get_emoji_group_model
+from openbook_common.utils.model_loaders import get_emoji_model, get_emoji_group_model, get_language_model
 
 
 def hex_color_validator(hex_color):
@@ -33,4 +33,12 @@ def name_characters_validator(name):
     if '>' in name or '<' in name:
         raise ValidationError(
             _('Names cant contain < or >.'),
+        )
+
+
+def language_id_exists(language_id):
+    Language = get_language_model()
+    if not Language.objects.filter(pk=language_id).exists():
+        raise NotFound(
+            _('No supported language with the provided id exists.'),
         )

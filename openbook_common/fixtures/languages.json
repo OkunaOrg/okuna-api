@@ -1,6 +1,6 @@
 [
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 1,
     "fields": {
       "code": "ar",
@@ -10,7 +10,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 2,
     "fields": {
       "code": "zh",
@@ -20,7 +20,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 3,
     "fields": {
       "code": "zh-TW",
@@ -30,7 +30,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 4,
     "fields": {
       "code": "cs",
@@ -40,7 +40,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 5,
     "fields": {
       "code": "da",
@@ -50,7 +50,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 6,
     "fields": {
       "code": "nl",
@@ -60,7 +60,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 7,
     "fields": {
       "code": "en",
@@ -70,7 +70,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 8,
     "fields": {
       "code": "fi",
@@ -80,7 +80,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 9,
     "fields": {
       "code": "fr",
@@ -90,7 +90,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 10,
     "fields": {
       "code": "de",
@@ -100,7 +100,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 11,
     "fields": {
       "code": "he",
@@ -110,7 +110,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 12,
     "fields": {
       "code": "hi",
@@ -120,7 +120,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 13,
     "fields": {
       "code": "id",
@@ -130,7 +130,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 14,
     "fields": {
       "code": "it",
@@ -140,7 +140,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 15,
     "fields": {
       "code": "ja",
@@ -150,7 +150,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 16,
     "fields": {
       "code": "ko",
@@ -160,7 +160,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 17,
     "fields": {
       "code": "ms",
@@ -170,7 +170,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 18,
     "fields": {
       "code": "no",
@@ -180,7 +180,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 19,
     "fields": {
       "code": "fa",
@@ -190,7 +190,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 20,
     "fields": {
       "code": "pl",
@@ -200,7 +200,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 21,
     "fields": {
       "code": "pt",
@@ -210,7 +210,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 22,
     "fields": {
       "code": "ru",
@@ -220,7 +220,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 23,
     "fields": {
       "code": "es",
@@ -230,7 +230,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 24,
     "fields": {
       "code": "sv",
@@ -240,7 +240,7 @@
     }
   },
   {
-    "model": "openbook_auth.UserLanguage",
+    "model": "openbook_common.Language",
     "pk": 25,
     "fields": {
       "code": "tr",

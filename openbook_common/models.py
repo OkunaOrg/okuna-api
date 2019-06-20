@@ -60,3 +60,14 @@ class Badge(models.Model):
         if not self.id:
             self.created = timezone.now()
         return super(Badge, self).save(*args, **kwargs)
+
+
+class Language(models.Model):
+    code = models.CharField(_('code'), max_length=8, blank=False, null=False)
+    name = models.CharField(_('name'), max_length=64, blank=False, null=False)
+    created = models.DateTimeField(editable=False)
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.created = timezone.now()
+        return super(Language, self).save(*args, **kwargs)
