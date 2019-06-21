@@ -102,9 +102,8 @@ class Post(models.Model):
 
     @classmethod
     def get_emoji_counts_for_post_with_id(cls, post_id, emoji_id=None, reactor_id=None):
-        emoji_query = Q(post_reactions__post_id=post_id, )
         Emoji = get_emoji_model()
-        return Emoji.get_emoji_counts_for_query(emoji_query=emoji_query, emoji_id=emoji_id, reactor_id=reactor_id)
+        return Emoji.get_emoji_counts_for_post_with_id(post_id=post_id, emoji_id=emoji_id, reactor_id=reactor_id)
 
     @classmethod
     def get_trending_posts_for_user_with_id(cls, user_id):
@@ -344,10 +343,9 @@ class PostComment(models.Model):
         return cls.objects.filter(count_query).count()
 
     @classmethod
-    def get_emoji_counts_for_post_comment_with_id(cls, post_id, emoji_id=None, reactor_id=None):
-        emoji_query = Q(post_comment_reactions__post_id=post_id, )
-        Emoji = get_emoji_model()
-        return Emoji.get_emoji_counts_for_query(emoji_query=emoji_query, emoji_id=emoji_id, reactor_id=reactor_id)
+    def get_emoji_counts_for_post_comment_with_id(cls, post_comment_id, emoji_id=None, reactor_id=None):
+        return Emoji.get_emoji_counts_for_post_comment_with_id(post_comment_id=post_comment_id, emoji_id=emoji_id,
+                                                               reactor_id=reactor_id)
 
     def count_replies(self):
         return self.replies.count()

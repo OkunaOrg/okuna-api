@@ -735,10 +735,10 @@ class User(AbstractUser):
                 post_reactions__reactor__user_blocks__blocked_user_id=self.pk))
             emoji_query.add(blocked_users_query, Q.AND)
 
-        emojis = Emoji.objects.filter(emoji_query).annotate(Count('reactions')).distinct().order_by(
-            '-reactions__count').cache().all()
+        emojis = Emoji.objects.filter(emoji_query).annotate(Count('post_reactions')).distinct().order_by(
+            '-post_reactions__count').cache().all()
 
-        return [{'emoji': emoji, 'count': emoji.reactions__count} for emoji in emojis]
+        return [{'emoji': emoji, 'count': emoji.post_reactions__count} for emoji in emojis]
 
     def get_emoji_counts_for_post_comment(self, post_comment, emoji_id=None):
         self._check_can_get_reactions_for_post_comment(post_comment)
@@ -771,10 +771,10 @@ class User(AbstractUser):
                 post_comment_reactions__reactor__user_blocks__blocked_user_id=self.pk))
             emoji_query.add(blocked_users_query, Q.AND)
 
-        emojis = Emoji.objects.filter(emoji_query).annotate(Count('reactions')).distinct().order_by(
-            '-reactions__count').cache().all()
+        emojis = Emoji.objects.filter(emoji_query).annotate(Count('post_comment_reactions')).distinct().order_by(
+            '-post_comment_reactions__count').cache().all()
 
-        return [{'emoji': emoji, 'count': emoji.reactions__count} for emoji in emojis]
+        return [{'emoji': emoji, 'count': emoji.post_comment_reactions__count} for emoji in emojis]
 
     def react_to_post_with_id(self, post_id, emoji_id):
         Post = get_post_model()
@@ -3022,7 +3022,7 @@ class User(AbstractUser):
     def _check_can_react_with_emoji_id(self, emoji_id):
         EmojiGroup = get_emoji_group_model()
 
-        if not EmojiGroup.objects.get(emojis__id=emoji_id, is_reaction_group=True).exists():
+        if not EmojiGroup.objects.filter(emojis__id=emoji_id, is_reaction_group=True).exists():
             raise ValidationError(
                 _('Not a valid emoji to react with'),
             )

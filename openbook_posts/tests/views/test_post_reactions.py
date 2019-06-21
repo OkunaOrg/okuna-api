@@ -275,7 +275,8 @@ class PostReactionsAPITests(APITestCase):
         post_creator.join_community_with_name(community_name=community.name)
         user.join_community_with_name(community_name=community.name)
 
-        community_post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_comment_text())
+        community_post = post_creator.create_community_post(community_name=community.name,
+                                                            text=make_fake_post_comment_text())
         community_post.is_closed = True
         community_post.save()
 
@@ -304,7 +305,8 @@ class PostReactionsAPITests(APITestCase):
         post_creator.join_community_with_name(community_name=community.name)
         user.join_community_with_name(community_name=community.name)
 
-        community_post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_comment_text())
+        community_post = post_creator.create_community_post(community_name=community.name,
+                                                            text=make_fake_post_comment_text())
         community_post.is_closed = True
         community_post.save()
 
@@ -631,7 +633,7 @@ class PostReactionsEmojiCountAPITests(APITestCase):
             for count in range(reaction['count']):
                 reactor = make_user()
                 emoji = reaction.get('emoji')
-                reactor.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, emoji_group_id=emoji_group.pk)
+                reactor.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, )
 
         url = self._get_url(post)
 
@@ -665,7 +667,7 @@ class PostReactionsEmojiCountAPITests(APITestCase):
 
         emoji_group = make_reactions_emoji_group()
         emoji = make_emoji(group=emoji_group)
-        blocked_user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, emoji_group_id=emoji_group.pk)
+        blocked_user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, )
 
         user.block_user_with_id(user_id=blocked_user.pk)
 
@@ -693,7 +695,7 @@ class PostReactionsEmojiCountAPITests(APITestCase):
 
         emoji_group = make_reactions_emoji_group()
         emoji = make_emoji(group=emoji_group)
-        blocking_user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, emoji_group_id=emoji_group.pk)
+        blocking_user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, )
 
         blocking_user.block_user_with_id(user_id=user.pk)
 
@@ -723,7 +725,7 @@ class PostReactionsEmojiCountAPITests(APITestCase):
 
         emoji_group = make_reactions_emoji_group()
         emoji = make_emoji(group=emoji_group)
-        blocked_user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, emoji_group_id=emoji_group.pk)
+        blocked_user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, )
 
         user.block_user_with_id(user_id=blocked_user.pk)
 
@@ -753,7 +755,7 @@ class PostReactionsEmojiCountAPITests(APITestCase):
 
         emoji_group = make_reactions_emoji_group()
         emoji = make_emoji(group=emoji_group)
-        blocking_user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, emoji_group_id=emoji_group.pk)
+        blocking_user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, )
 
         blocking_user.block_user_with_id(user_id=user.pk)
 
@@ -783,7 +785,7 @@ class PostReactionsEmojiCountAPITests(APITestCase):
 
         emoji_group = make_reactions_emoji_group()
         emoji = make_emoji(group=emoji_group)
-        blocked_user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, emoji_group_id=emoji_group.pk)
+        blocked_user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, )
 
         user.block_user_with_id(user_id=blocked_user.pk)
 
@@ -821,7 +823,7 @@ class PostReactionsEmojiCountAPITests(APITestCase):
 
         emoji_group = make_reactions_emoji_group()
         emoji = make_emoji(group=emoji_group)
-        blocking_user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, emoji_group_id=emoji_group.pk)
+        blocking_user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, )
 
         blocking_user.block_user_with_id(user_id=user.pk)
 
