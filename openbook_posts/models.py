@@ -161,8 +161,8 @@ class Post(models.Model):
             post_notification_target_users_query.add(Q(posts_comments__id=post_comment_id), Q.OR)
         else:
             post_notification_target_users_query = Q(posts_comments__post_id=post_id, posts_comments__parent_comment_id=None)
+            post_notification_target_users_query.add(Q(posts__id=post_id), Q.OR)
 
-        post_notification_target_users_query.add(Q(posts__id=post_id), Q.OR)
         post_notification_target_users_query.add(~Q(id=post_commenter_id), Q.AND)
         post_notification_target_users_query.add(~Q(user_blocks__blocked_user_id=post_commenter_id), Q.AND)
 

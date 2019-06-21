@@ -1518,9 +1518,9 @@ class PostCommentItemAPITests(APITestCase):
 
         post_comment_text = make_fake_post_comment_text()
 
-        post_comment = commenter.comment_post_with_id(post.pk, text=post_comment_text)
+        post_comment = user.comment_post_with_id(post.pk, text=post_comment_text)
         post_comment_reply = commenter.reply_to_comment_with_id(post_comment_id=post_comment.pk,
-                                                                                 text=make_fake_post_comment_text())
+                                                                text=make_fake_post_comment_text())
 
         post_comment_reply_notification = PostCommentReplyNotification.objects.get(post_comment=post_comment_reply,
                                                                                    notification__owner=user)
@@ -3034,30 +3034,6 @@ class PostCommentRepliesAPITests(APITestCase):
 
         self.assertTrue(PostCommentReplyNotification.objects.filter(post_comment__text=reply_comment_text,
                                                                     notification__owner=foreign_user).exists())
-
-    def test_commenting_reply_in_commented_post_by_foreign_user_creates_notification_for_post_creator(self):
-        """
-         should create a notification for post creator when a user comments reply in a post where a foreign
-         user commented before
-         """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
-
-        post_creator = make_user()
-        foreign_user = make_user()
-
-        post = post_creator.create_public_post(text=make_fake_post_text())
-        post_comment = foreign_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
-
-        reply_comment_text = make_fake_post_comment_text()
-
-        data = self._get_create_post_comment_request_data(reply_comment_text)
-
-        url = self._get_url(post, post_comment)
-        self.client.put(url, data, **headers)
-
-        self.assertTrue(PostCommentReplyNotification.objects.filter(post_comment__text=reply_comment_text,
-                                                                    notification__owner=post_creator).exists())
 
     def test_commenting_reply_in_commented_post_by_foreign_user_not_creates_foreign_notification_when_muted(self):
         """
