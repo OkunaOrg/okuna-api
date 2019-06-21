@@ -101,21 +101,10 @@ class Post(models.Model):
         return post
 
     @classmethod
-    def get_public_emoji_counts_for_post_with_id(cls, post_id, emoji_id=None, reactor_id=None):
+    def get_emoji_counts_for_post_with_id(cls, post_id, emoji_id=None, reactor_id=None):
+        emoji_query = Q(post_reactions__post_id=post_id, )
         Emoji = get_emoji_model()
-
-        emoji_query = Q(reactions__post_id=post_id, )
-
-        if emoji_id:
-            emoji_query.add(Q(reactions__emoji_id=emoji_id), Q.AND)
-
-        if reactor_id:
-            emoji_query.add(Q(reactions__reactor_id=reactor_id), Q.AND)
-
-        emojis = Emoji.objects.filter(emoji_query).annotate(Count('reactions')).distinct().order_by(
-            '-reactions__count').cache().all()
-
-        return [{'emoji': emoji, 'count': emoji.reactions__count} for emoji in emojis]
+        return Emoji.get_emoji_counts_for_query(emoji_query=emoji_query, emoji_id=emoji_id, reactor_id=reactor_id)
 
     @classmethod
     def get_trending_posts_for_user_with_id(cls, user_id):
@@ -354,6 +343,12 @@ class PostComment(models.Model):
 
         return cls.objects.filter(count_query).count()
 
+    @classmethod
+    def get_emoji_counts_for_post_comment_with_id(cls, post_id, emoji_id=None, reactor_id=None):
+        emoji_query = Q(post_comment_reactions__post_id=post_id, )
+        Emoji = get_emoji_model()
+        return Emoji.get_emoji_counts_for_query(emoji_query=emoji_query, emoji_id=emoji_id, reactor_id=reactor_id)
+
     def count_replies(self):
         return self.replies.count()
 
@@ -375,6 +370,9 @@ class PostComment(models.Model):
 
     def reply_to_comment(self, commenter, text):
         return PostComment.create_comment(text=text, commenter=commenter, post=self.post, parent_comment=self)
+
+    def react(self, reactor, emoji_id):
+        return PostCommentReaction.create_reaction(reactor=reactor, emoji_id=emoji_id, post_comment=self)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
@@ -406,7 +404,7 @@ class PostReaction(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='reactions')
     created = models.DateTimeField(editable=False)
     reactor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_reactions')
-    emoji = models.ForeignKey(Emoji, on_delete=models.CASCADE, related_name='reactions')
+    emoji = models.ForeignKey(Emoji, on_delete=models.CASCADE, related_name='post_reactions')
 
     class Meta:
         unique_together = ('reactor', 'post',)
@@ -431,6 +429,35 @@ class PostReaction(models.Model):
         return super(PostReaction, self).save(*args, **kwargs)
 
 
+class PostCommentReaction(models.Model):
+    post_comment = models.ForeignKey(PostComment, on_delete=models.CASCADE, related_name='reactions')
+    created = models.DateTimeField(editable=False)
+    reactor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_comment_reactions')
+    emoji = models.ForeignKey(Emoji, on_delete=models.CASCADE, related_name='post_comment_reactions')
+
+    class Meta:
+        unique_together = ('reactor', 'post_comment',)
+
+    @classmethod
+    def create_reaction(cls, reactor, emoji_id, post_comment):
+        return PostCommentReaction.objects.create(reactor=reactor, emoji_id=emoji_id, post_comment=post_comment)
+
+    @classmethod
+    def count_reactions_for_post_with_id(cls, post_comment_id, reactor_id=None):
+        count_query = Q(post_comment_id=post_comment_id, reactor__is_deleted=False)
+
+        if reactor_id:
+            count_query.add(Q(reactor_id=reactor_id), Q.AND)
+
+        return cls.objects.filter(count_query).count()
+
+    def save(self, *args, **kwargs):
+        ''' On save, update timestamps '''
+        if not self.id:
+            self.created = timezone.now()
+        return super(PostCommentReaction, self).save(*args, **kwargs)
+
+
 class PostMute(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='mutes')
     muter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_mutes')
@@ -441,3 +468,15 @@ class PostMute(models.Model):
     @classmethod
     def create_post_mute(cls, post_id, muter_id):
         return cls.objects.create(post_id=post_id, muter_id=muter_id)
+
+
+class PostCommentMute(models.Model):
+    post_comment = models.ForeignKey(PostComment, on_delete=models.CASCADE, related_name='mutes')
+    muter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_comment_mutes')
+
+    class Meta:
+        unique_together = ('post_comment', 'muter',)
+
+    @classmethod
+    def create_post_comment_mute(cls, post_comment_id, muter_id):
+        return cls.objects.create(post_comment_id=post_comment_id, muter_id=muter_id)

@@ -4,7 +4,7 @@ from django.conf import settings
 from openbook_auth.models import UserProfile, User
 from openbook_circles.models import Circle
 from openbook_common.models import Badge
-from openbook_common.serializers_fields.post import PostCreatorField, ReactionsEmojiCountField, ReactionField, \
+from openbook_common.serializers_fields.post import PostCreatorField, PostReactionsEmojiCountField, ReactionField, \
     CommentsCountField, CirclesField, IsMutedField
 from openbook_communities.models import CommunityMembership, Community
 from openbook_communities.serializers_fields import CommunityMembershipsField
@@ -141,7 +141,7 @@ class GetPostPostSerializer(serializers.ModelSerializer):
     video = PostVideoSerializer(many=False)
     creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
-    reactions_emoji_counts = ReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
+    reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
     reaction = ReactionField(reaction_serializer=PostReactionSerializer)
     comments_count = CommentsCountField()
     circles = CirclesField(circle_serializer=PostCircleSerializer)

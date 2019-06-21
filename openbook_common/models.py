@@ -1,7 +1,7 @@
 # Create your models here.
 # Create your models here.
 from django.db import models
-from django.db.models import QuerySet
+from django.db.models import QuerySet, Q, Count
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
@@ -40,6 +40,24 @@ class Emoji(models.Model):
     image = models.ImageField(_('image'), blank=False, null=False, unique=True)
     created = models.DateTimeField(editable=False)
     order = models.IntegerField(unique=False, default=100)
+
+    @classmethod
+    def get_emoji_counts_for_post_comment_with_id(cls, post_id, emoji_id=None, reactor_id=None):
+        emoji_query = Q(reactions__post_comment_id=post_id, )
+        return cls._get_emoji_counts_for_query(emoji_query=emoji_query, emoji_id=emoji_id, reactor_id=reactor_id)
+
+    @classmethod
+    def get_emoji_counts_for_query(cls, emoji_query, emoji_id=None, reactor_id=None):
+        if emoji_id:
+            emoji_query.add(Q(reactions__emoji_id=emoji_id), Q.AND)
+
+        if reactor_id:
+            emoji_query.add(Q(reactions__reactor_id=reactor_id), Q.AND)
+
+        emojis = Emoji.objects.filter(emoji_query).annotate(Count('reactions')).distinct().order_by(
+            '-reactions__count').cache().all()
+
+        return [{'emoji': emoji, 'count': emoji.reactions__count} for emoji in emojis]
 
     def __str__(self):
         return 'Emoji: ' + self.keyword
