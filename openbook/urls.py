@@ -320,7 +320,7 @@ moderation_patterns = [
 ]
 
 translation_patterns = [
-    path('', TranslateText.as_view(), name='translate-text'),
+    # path('', TranslateText.as_view(), name='translate-text'),
 ]
 
 api_patterns = [
