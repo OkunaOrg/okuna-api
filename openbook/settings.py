@@ -126,6 +126,7 @@ INSTALLED_APPS = [
     'openbook_notifications',
     'openbook_devices',
     'openbook_moderation',
+    'openbook_translation',
 ]
 
 MIDDLEWARE = [

@@ -319,6 +319,10 @@ moderation_patterns = [
          name='user-pending-moderated-objects-communities'),
 ]
 
+translation_patterns = [
+    path('', TranslateText.as_view(), name='translate-text'),
+]
+
 api_patterns = [
     path('auth/', include(auth_patterns)),
     path('posts/', include(posts_patterns)),
@@ -332,6 +336,7 @@ api_patterns = [
     path('devices/', include(devices_patterns)),
     path('invites/', include(invites_patterns)),
     path('moderation/', include(moderation_patterns)),
+    path('translate/', include(translation_patterns)),
     url('time/', Time.as_view(), name='time'),
     url('emojis/groups/', EmojiGroups.as_view(), name='emoji-groups'),
 ]

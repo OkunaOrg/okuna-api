@@ -1,8 +1,9 @@
 from langdetect import DetectorFactory, detect
 
-# seed the language detector
+
 from openbook_common.utils.model_loaders import get_language_model
 
+# seed the language detector
 DetectorFactory.seed = 0
 
 
