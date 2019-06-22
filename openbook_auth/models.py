@@ -654,8 +654,9 @@ class User(AbstractUser):
 
         return False
 
-    def can_see_comment_for_post(self, post_comment, post):
-        post_comment_query = self._make_get_comment_with_id_for_post_query(post_comment_id=post_comment.pk, post=post)
+    def can_see_post_comment(self, post_comment):
+        post_comment_query = self._make_get_post_comment_with_id_query(post_comment_id=post_comment.pk,
+                                                                       post=post_comment.post)
         PostComment = get_post_comment_model()
         return PostComment.objects.filter(post_comment_query).exists()
 
@@ -685,19 +686,6 @@ class User(AbstractUser):
 
         PostReaction = get_post_reaction_model()
         return PostReaction.objects.filter(reactions_query)
-
-    def get_reactions_count_for_post_with_id(self, post_id):
-        commenter_id = None
-
-        Post = get_post_model()
-
-        # If reactions are private, count only own reactions
-        if not Post.post_with_id_has_public_reactions(post_id):
-            commenter_id = self.pk
-
-        PostReaction = get_post_reaction_model()
-
-        return PostReaction.count_reactions_for_post_with_id(post_id, commenter_id=commenter_id)
 
     def get_emoji_counts_for_post_with_id(self, post_id, emoji_id=None):
         Post = get_post_model()
@@ -740,6 +728,11 @@ class User(AbstractUser):
 
         return [{'emoji': emoji, 'count': emoji.post_reactions__count} for emoji in emojis]
 
+    def get_emoji_counts_for_post_comment_with_id(self, post_comment_id, emoji_id=None):
+        PostComment = get_post_comment_model()
+        post_comment = PostComment.objects.get(pk=post_comment_id)
+        return self.get_emoji_counts_for_post_comment(post_comment=post_comment, emoji_id=emoji_id)
+
     def get_emoji_counts_for_post_comment(self, post_comment, emoji_id=None):
         self._check_can_get_reactions_for_post_comment(post_comment)
 
@@ -776,6 +769,24 @@ class User(AbstractUser):
 
         return [{'emoji': emoji, 'count': emoji.post_comment_reactions__count} for emoji in emojis]
 
+    def get_reaction_for_post_comment_with_id(self, post_comment_id):
+        return self.post_comment_reactions.filter(post_comment_id=post_comment_id).get()
+
+    def get_reactions_for_post_comment_with_id(self, post_comment_id, max_id=None, emoji_id=None):
+        Post_comment = get_post_comment_model()
+        post_comment = Post_comment.objects.get(pk=post_comment_id)
+
+        return self.get_reactions_for_post_comment(post_comment=post_comment, max_id=max_id, emoji_id=emoji_id)
+
+    def get_reactions_for_post_comment(self, post_comment, max_id=None, emoji_id=None):
+        self._check_can_get_reactions_for_post_comment(post_comment=post_comment)
+
+        reactions_query = self._make_get_reactions_for_post_comment_query(post_comment=post_comment,
+                                                                          emoji_id=emoji_id, max_id=max_id)
+
+        PostCommentReaction = get_post_comment_reaction_model()
+        return PostCommentReaction.objects.filter(reactions_query)
+
     def react_to_post_with_id(self, post_id, emoji_id):
         Post = get_post_model()
         post = Post.objects.get(pk=post_id)
@@ -811,15 +822,13 @@ class User(AbstractUser):
         self._delete_post_reaction_notification(post_reaction=post_reaction)
         post_reaction.delete()
 
-    def react_to_comment_with_id_for_post_with_uuid(self, post_comment_id, emoji_id):
+    def react_to_post_comment_with_id(self, post_comment_id, emoji_id):
         PostComment = get_post_comment_model()
-        Post = get_post_model()
         post_comment = PostComment.objects.get(pk=post_comment_id)
-        post = Post.objects.get(pk=post_comment_id)
-        return self.react_to_comment_for_post(post_comment=post_comment, emoji_id=emoji_id, post=post)
+        return self.react_to_post_comment(post_comment=post_comment, emoji_id=emoji_id)
 
-    def react_to_comment_for_post(self, post_comment, post, emoji_id):
-        self._check_can_react_to_comment_for_post(post_comment=post_comment, post=post)
+    def react_to_post_comment(self, post_comment, emoji_id):
+        self._check_can_react_to_comment_for_post(post_comment=post_comment)
 
         post_comment_id = post_comment.pk
 
@@ -838,14 +847,13 @@ class User(AbstractUser):
 
         return post_comment_reaction
 
-    def delete_comment_reaction_with_id_for_post_with_id(self, post_comment_reaction_id, post_id):
-        Post = get_post_model()
-        post = Post.objects.get(pk=post_id)
+    def delete_post_comment_reaction_with_id(self, post_comment_reaction_id):
         PostCommentReaction = get_post_comment_reaction_model()
         post_comment_reaction = PostCommentReaction.objects.filter(pk=post_comment_reaction_id).get()
+        return self.delete_post_comment_reaction(post_comment_reaction=post_comment_reaction)
 
-        self._check_can_delete_comment_reaction_for_post(post_comment_reaction=post_comment_reaction,
-                                                         post=post)
+    def delete_post_comment_reaction(self, post_comment_reaction):
+        self._check_can_delete_post_comment_reaction(post_comment_reaction=post_comment_reaction)
 
         self._delete_post_comment_reaction_notification(post_comment_reaction=post_comment_reaction)
         post_comment_reaction.delete()
@@ -861,19 +869,21 @@ class User(AbstractUser):
         PostComment = get_post_comment_model()
         return PostComment.objects.filter(comments_query)
 
-    def get_comment_replies_for_comment_with_id_with_post_with_uuid(self, post_comment_id, post_uuid, min_id=None, max_id=None):
+    def get_comment_replies_for_comment_with_id_with_post_with_uuid(self, post_comment_id, post_uuid, min_id=None,
+                                                                    max_id=None):
         PostComment = get_post_comment_model()
         Post = get_post_model()
         post_comment = PostComment.objects.get(pk=post_comment_id)
         post = Post.objects.get(uuid=post_uuid)
-        return self.get_comment_replies_for_comment_with_post(post=post, post_comment=post_comment, min_id=min_id, max_id=max_id)
+        return self.get_comment_replies_for_comment_with_post(post=post, post_comment=post_comment, min_id=min_id,
+                                                              max_id=max_id)
 
     def get_comment_replies_for_comment_with_post(self, post, post_comment, min_id=None, max_id=None):
         self._check_can_get_comment_replies_for_post_and_comment(post=post, post_comment=post_comment)
 
         comment_replies_query = self._make_get_comments_for_post_query(post=post, parent_post_comment=post_comment,
-                                                   max_id=max_id,
-                                                   min_id=min_id)
+                                                                       max_id=max_id,
+                                                                       min_id=min_id)
         PostComment = get_post_comment_model()
         return PostComment.objects.filter(comment_replies_query)
 
@@ -3044,20 +3054,20 @@ class User(AbstractUser):
                 _('This post is private.'),
             )
 
-    def _check_can_react_to_comment_for_post(self, post_comment, post, emoji_id):
+    def _check_can_react_to_comment_for_post(self, post_comment, emoji_id):
         self._check_can_react_with_emoji_id(emoji_id=emoji_id)
-        self._check_can_see_comment_for_post(post_comment=post_comment, post=post)
+        self._check_can_see_post_comment(post_comment=post_comment)
 
-    def _check_can_delete_comment_reaction_for_post(self, post_comment_reaction, post):
-        self._check_can_see_comment_for_post(post_comment=post_comment_reaction.post_comment, post=post)
+    def _check_can_delete_post_comment_reaction(self, post_comment_reaction):
+        self._check_can_see_post_comment(post_comment=post_comment_reaction.post_comment)
 
         if post_comment_reaction.reactor_id != self.pk:
             raise ValidationError(
                 _('Can\'t delete a comment reaction that does not belong to you.'),
             )
 
-    def _check_can_see_comment_for_post(self, post_comment, post):
-        if not self.can_see_comment_for_post(post=post, post_comment=post_comment):
+    def _check_can_see_post_comment(self, post_comment):
+        if not self.can_see_post_comment(post_comment=post_comment):
             raise ValidationError(
                 _('This comment is private.'),
             )
@@ -3111,7 +3121,36 @@ class User(AbstractUser):
 
         return reactions_query
 
-    def _make_get_comment_with_id_for_post_query(self, post_comment_id, post):
+    def _make_get_reactions_for_post_comment_query(self, post_comment, max_id=None, emoji_id=None):
+        reactions_query = Q(post_comment_id=post_comment.pk)
+
+        post_comment_community = post_comment.post.community
+
+        if post_comment_community:
+            if not self.is_staff_of_community_with_name(community_name=post_comment_community.name):
+                blocked_users_query = ~Q(Q(reactor__blocked_by_users__blocker_id=self.pk) | Q(
+                    reactor__user_blocks__blocked_user_id=self.pk))
+                blocked_users_query_staff_members = Q(
+                    reactor__communities_memberships__community_id=post_comment_community.pk)
+                blocked_users_query_staff_members.add(Q(reactor__communities_memberships__is_administrator=True) | Q(
+                    reactor__communities_memberships__is_moderator=True), Q.AND)
+
+                blocked_users_query.add(~blocked_users_query_staff_members, Q.AND)
+                reactions_query.add(blocked_users_query, Q.AND)
+        else:
+            blocked_users_query = ~Q(Q(reactor__blocked_by_users__blocker_id=self.pk) | Q(
+                reactor__user_blocks__blocked_user_id=self.pk))
+            reactions_query.add(blocked_users_query, Q.AND)
+
+        if max_id:
+            reactions_query.add(Q(id__lt=max_id), Q.AND)
+
+        if emoji_id:
+            reactions_query.add(Q(emoji_id=emoji_id), Q.AND)
+
+        return reactions_query
+
+    def _make_get_post_comment_with_id_query(self, post_comment_id, post):
 
         post_comments_query = self._make_get_comments_for_post_query(post=post)
 
