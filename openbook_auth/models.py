@@ -861,22 +861,20 @@ class User(AbstractUser):
         PostComment = get_post_comment_model()
         return PostComment.objects.filter(comments_query)
 
-    def get_comment_replies_for_post_with_id_for_comment_with_id(self, post_id, post_comment_id, min_id=None,
-                                                                 max_id=None):
+    def get_comment_replies_for_comment_with_id_with_post_with_uuid(self, post_comment_id, post_uuid, min_id=None, max_id=None):
         PostComment = get_post_comment_model()
-        if not PostComment.objects.filter(id=post_comment_id, post__id=post_id).exists():
-            raise ValidationError(
-                _('The comment does not belong to the specified post.')
-            )
-        post_comment = PostComment.objects.get(post__id=post_id, pk=post_comment_id)
+        Post = get_post_model()
+        post_comment = PostComment.objects.get(pk=post_comment_id)
+        post = Post.objects.get(uuid=post_uuid)
+        return self.get_comment_replies_for_comment_with_post(post=post, post_comment=post_comment, min_id=min_id, max_id=max_id)
 
-        self._check_can_get_comment_replies_for_post_comment(post_comment=post_comment)
+    def get_comment_replies_for_comment_with_post(self, post, post_comment, min_id=None, max_id=None):
+        self._check_can_get_comment_replies_for_post_and_comment(post=post, post_comment=post_comment)
 
-        comment_replies_query = \
-            self._make_get_comments_for_post_query(post=post_comment.post, parent_post_comment=post_comment,
+        comment_replies_query = self._make_get_comments_for_post_query(post=post, parent_post_comment=post_comment,
                                                    max_id=max_id,
                                                    min_id=min_id)
-
+        PostComment = get_post_comment_model()
         return PostComment.objects.filter(comment_replies_query)
 
     def get_comments_count_for_post(self, post):
@@ -955,8 +953,15 @@ class User(AbstractUser):
 
         return post_comment
 
-    def reply_to_comment(self, post_comment, text):
-        self._check_can_reply_to_post_comment(post_comment)
+    def reply_to_comment_with_id_for_post_with_uuid(self, post_comment_id, post_uuid, text):
+        PostComment = get_post_comment_model()
+        Post = get_post_model()
+        post = Post.objects.get(uuid=post_uuid)
+        post_comment = PostComment.objects.get(pk=post_comment_id)
+        return self.reply_to_comment_for_post(post_comment=post_comment, text=text, post=post)
+
+    def reply_to_comment_for_post(self, post_comment, post, text):
+        self._check_can_reply_to_post_comment_for_post(post_comment, post=post)
         post_comment_reply = post_comment.reply_to_comment(text=text, commenter=self)
         comment_creator = post_comment.commenter.id
         replier = self
@@ -996,11 +1001,6 @@ class User(AbstractUser):
                                                           notification_target_user=post_notification_target_user)
 
         return post_comment_reply
-
-    def reply_to_comment_with_id(self, post_comment_id, text):
-        PostComment = get_post_comment_model()
-        post_comment = PostComment.objects.select_related('post').filter(pk=post_comment_id).get()
-        return self.reply_to_comment(post_comment=post_comment, text=text)
 
     def delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
         Post = get_post_model()
@@ -2981,15 +2981,23 @@ class User(AbstractUser):
     def _check_can_get_comments_for_post(self, post):
         self._check_can_see_post(post=post)
 
-    def _check_can_get_comment_replies_for_post_comment(self, post_comment):
+    def _check_can_get_comment_replies_for_post_and_comment(self, post, post_comment):
+        if post_comment.post_id != post.id:
+            raise ValidationError(
+                _('No comment found with given id for post with given uuid')
+            )
         self._check_can_see_post(post=post_comment.post)
 
     def _check_can_comment_in_post(self, post):
         self._check_can_see_post(post)
         self._check_comments_enabled_for_post_with_id(post.id)
 
-    def _check_can_reply_to_post_comment(self, post_comment):
-        post = post_comment.post
+    def _check_can_reply_to_post_comment_for_post(self, post_comment, post):
+        if post_comment.post_id != post.id:
+            raise ValidationError(
+                _('No comment found with given id for post with given uuid')
+            )
+
         self._check_can_comment_in_post(post)
         if post_comment.parent_comment is not None:
             raise ValidationError(

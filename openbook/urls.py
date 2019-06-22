@@ -61,7 +61,8 @@ from openbook_moderation.views.report.views import ReportUser, ReportPost, Repor
 from openbook_moderation.views.user.views import UserModerationPenalties, UserPendingModeratedObjectsCommunities
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
 from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost
-from openbook_posts.views.post_comment.views import PostCommentItem, PostCommentReplies
+from openbook_posts.views.post_comment.post_comment_replies.views import PostCommentReplies
+from openbook_posts.views.post_comment.views import PostCommentItem
 from openbook_posts.views.post_comments.views import PostComments, PostCommentsDisable, PostCommentsEnable
 from openbook_posts.views.post_reaction.views import PostReactionItem
 from openbook_posts.views.post_reactions.views import PostReactions, PostReactionsEmojiCount, PostReactionEmojiGroups
