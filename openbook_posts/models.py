@@ -248,8 +248,8 @@ class Post(models.Model):
 
     def unsoft_delete(self):
         self.is_deleted = False
-        for comment in self.comments:
-            comment.soft_delete()
+        for comment in self.comments.all().iterator():
+            comment.unsoft_delete()
         self.save()
 
     def delete_notifications(self):
