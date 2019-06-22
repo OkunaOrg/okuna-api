@@ -1,9 +1,15 @@
 from abc import ABC, abstractmethod
 
+from django.core.exceptions import ImproperlyConfigured
+
+
+class InvalidTranslationStrategyError(ImproperlyConfigured):
+    pass
+
 
 class BaseTranslationStrategy(ABC):
 
-    def __init__(self):
+    def __init__(self, params):
         super().__init__()
 
     @abstractmethod

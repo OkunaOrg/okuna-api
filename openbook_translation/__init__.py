@@ -1,54 +1,45 @@
 """
-Caching framework.
+Translation framework.
 
-This package defines set of cache backends that all conform to a simple API.
-In a nutshell, a cache is a set of values -- which can be any object that
-may be pickled -- identified by string keys.  For the complete API, see
-the abstract BaseCache class in django.core.cache.backends.base.
+The app defines a base strategy abstract class for translation of text
+that has a simple API.
 
-Client code should use the `cache` variable defined here to access the default
-cache backend and look up non-default cache backends in the `caches` dict-like
-object.
+This can be extended depending on the translation framework one wants to use
+and configured accordingly in the settings.py
 
-See docs/topics/cache.txt for information on the public API.
 """
-from threading import local
 
 from django.conf import settings
-from django.core import signals
-from django.core.cache.backends.base import (
-    BaseCache, CacheKeyWarning, InvalidCacheBackendError,
-)
 from django.utils.module_loading import import_string
+from openbook_translation.strategies.base import InvalidTranslationStrategyError
 
-__all__ = [
-    'cache', 'caches', 'DEFAULT_CACHE_ALIAS', 'InvalidCacheBackendError',
-    'CacheKeyWarning', 'BaseCache',
-]
-
-DEFAULT_CACHE_ALIAS = 'default'
+DEFAULT_STRATEGY_ALIAS = 'default'
 
 
-def _create_translation_strategy(backend, **kwargs):
-    try:
-        # Try to get the TRANSLATION entry for the given backend name first
+class TranslationStrategyManager:
+
+    def __init__(self, config_name=DEFAULT_STRATEGY_ALIAS):
+        if config_name not in settings.OS_TRANSLATION_CONFIG:
+            raise InvalidTranslationStrategyError(
+                "Could not find config for '%s' in settings.OS_TRANSLATION_CONFIG" % config_name
+            )
+        self.strategy_instance = self._create_translation_strategy(config_name)
+
+    def _create_translation_strategy(self, name, **kwargs):
         try:
-            conf = settings.OS_TRANSLATION[backend]
-        except KeyError:
-            try:
-                # Trying to import the given backend, in case it's a dotted path
-                import_string(backend)
-            except ImportError as e:
-                raise InvalidCacheBackendError("Could not find backend '%s': %s" % (
-                    backend, e))
-            location = kwargs.pop('LOCATION', '')
-            params = kwargs
-        else:
+            # Try to get the OS_TRANSLATION_CONFIG entry for the given name first
+            conf = settings.OS_TRANSLATION_CONFIG[name]
             params = {**conf, **kwargs}
-            backend = params.pop('BACKEND')
-            location = params.pop('LOCATION', '')
-        backend_cls = import_string(backend)
-    except ImportError as e:
-        raise InvalidCacheBackendError(
-            "Could not find backend '%s': %s" % (backend, e))
-    return backend_cls(location, params)
+            strategy = params.pop('STRATEGY')
+            strategy_cls = import_string(strategy)
+        except ImportError as e:
+            raise InvalidTranslationStrategyError(
+                "Could not find strategy '%s': %s" % (strategy, e))
+
+        return strategy_cls(params)
+
+    def get_instance(self):
+        return self.strategy_instance
+
+
+strategy = TranslationStrategyManager(settings.OS_TRANSLATION_STRATEGY_NAME).get_instance()
