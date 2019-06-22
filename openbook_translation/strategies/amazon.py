@@ -3,12 +3,14 @@ from django.conf import settings
 from langdetect import DetectorFactory, detect
 import boto3
 
+
 # seed the language detector
 DetectorFactory.seed = 0
 
+
 class AmazonTranslate(BaseTranslationStrategy):
 
-    client = boto3.client(service_name='translate', region_name=settings., use_ssl=True)
+    client = boto3.client(service_name='translate', region_name=settings.AWS_TRANSLATE_REGION, use_ssl=True)
 
     def get_detected_language_code(self, text):
         # amazons translate API codes as stored in the languages.json are slightly different
@@ -24,5 +26,5 @@ class AmazonTranslate(BaseTranslationStrategy):
 
     def translate_text(self, text, source_language_code, target_language_code):
         result = self.client.translate_text(Text="Hello, World", SourceLanguageCode="en", TargetLanguageCode="de")
-
+        return result
 
