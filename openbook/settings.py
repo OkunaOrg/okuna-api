@@ -331,6 +331,14 @@ REST_FRAMEWORK = {
     )
 }
 
+OS_TRANSLATION_CONFIG = {
+    'default': {
+        'STRATEGY': 'openbook_translation.strategies.amazon.AmazonTranslate',
+    }
+}
+
+OS_TRANSLATION_STRATEGY_NAME = 'default'
+
 UNICODE_JSON = True
 
 # The sentry DSN for error reporting
@@ -443,6 +451,9 @@ AWS_PUBLIC_MEDIA_LOCATION = os.environ.get('AWS_PUBLIC_MEDIA_LOCATION')
 AWS_STATIC_LOCATION = 'static'
 AWS_PRIVATE_MEDIA_LOCATION = os.environ.get('AWS_PRIVATE_MEDIA_LOCATION')
 AWS_DEFAULT_ACL = None
+
+# AWS Translate Region
+AWS_TRANSLATE_REGION = os.environ.get('AWS_TRANSLATE_REGION', '')
 
 if IS_PRODUCTION:
     AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')

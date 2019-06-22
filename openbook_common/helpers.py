@@ -1,23 +1,13 @@
 from langdetect import DetectorFactory, detect
-
-
 from openbook_common.utils.model_loaders import get_language_model
+from openbook_translation import strategy
 
 # seed the language detector
 DetectorFactory.seed = 0
 
 
 def get_detected_language_code(text):
-    # amazons translate API codes as stored in the languages.json are slightly different
-    # for chinese (zh) and chinese traditional (zh-TW)
-
-    detected_language = detect(text)
-    if detected_language is 'zh-cn':
-        detected_language = 'zh'
-    if detected_language is 'zh-tw':
-        detected_language = 'zh-TW'
-
-    return detected_language
+    return strategy.get_detected_language_code(text)
 
 
 def get_language_for_text(text):
