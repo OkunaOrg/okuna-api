@@ -61,6 +61,9 @@ from openbook_moderation.views.report.views import ReportUser, ReportPost, Repor
 from openbook_moderation.views.user.views import UserModerationPenalties, UserPendingModeratedObjectsCommunities
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
 from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost
+from openbook_posts.views.post_comment.post_comment_reaction.views import PostCommentReactionItem
+from openbook_posts.views.post_comment.post_comment_reactions.views import PostCommentReactions, \
+    PostCommentReactionsEmojiCount
 from openbook_posts.views.post_comment.post_comment_replies.views import PostCommentReplies
 from openbook_posts.views.post_comment.views import PostCommentItem
 from openbook_posts.views.post_comments.views import PostComments, PostCommentsDisable, PostCommentsEnable
@@ -136,10 +139,16 @@ post_notifications_patters = [
     path('unmute/', UnmutePost.as_view(), name='unmute-post'),
 ]
 
+post_comment_reactions_patterns = [
+    path('', PostCommentReactions.as_view(), name='post-comment-reactions'),
+    path('emoji-count/', PostCommentReactionsEmojiCount.as_view(), name='post-comment-reactions-emoji-count'),
+    path('<int:post_comment_reaction_id>/', PostCommentReactionItem.as_view(), name='post-comment-reaction'), ]
+
 post_comment_patterns = [
     path('', PostCommentItem.as_view(), name='post-comment'),
     path('report/', ReportPostComment.as_view(), name='report-post-comment'),
     path('replies/', PostCommentReplies.as_view(), name='post-comment-replies'),
+    path('reactions/', include(post_comment_reactions_patterns), name='post-comment-replies'),
 ]
 
 post_patterns = [

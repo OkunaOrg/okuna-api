@@ -120,12 +120,12 @@ def send_connection_request_push_notification(connection_requester, connection_r
 
 
 def send_post_comment_reaction_push_notification(post_comment_reaction):
-    post_creator = post_comment_reaction.post.creator
+    post_comment_commenter = post_comment_reaction.post_comment.commenter
 
-    post_id = post_comment_reaction.post_id
-    notification_group = 'post_%s' % post_id
+    post_comment_id = post_comment_reaction.post_comment_id
+    notification_group = 'post_comment_%s' % post_comment_id
 
-    if post_creator.has_reaction_notifications_enabled_for_post_comment_with_id(
+    if post_comment_commenter.has_reaction_notifications_enabled_for_post_comment_with_id(
             post_comment_id=post_comment_reaction.post_comment.post_id):
         post_comment_reactor = post_comment_reaction.reactor
 
@@ -145,7 +145,7 @@ def send_post_comment_reaction_push_notification(post_comment_reaction):
         one_signal_notification.set_parameter('!thread_id', notification_group)
         one_signal_notification.set_parameter('android_group', notification_group)
 
-        _send_notification_to_user(notification=one_signal_notification, user=post_creator)
+        _send_notification_to_user(notification=one_signal_notification, user=post_comment_commenter)
 
 
 def send_community_invite_push_notification(community_invite):

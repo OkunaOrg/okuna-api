@@ -743,7 +743,7 @@ class User(AbstractUser):
         if emoji_id:
             emoji_query.add(Q(post_comment_reactions__emoji_id=emoji_id), Q.AND)
 
-        post_comment_community = post_comment.post.community_id
+        post_comment_community = post_comment.post.community
 
         if post_comment_community:
             if not self.is_staff_of_community_with_name(community_name=post_comment_community.name):
@@ -828,7 +828,7 @@ class User(AbstractUser):
         return self.react_to_post_comment(post_comment=post_comment, emoji_id=emoji_id)
 
     def react_to_post_comment(self, post_comment, emoji_id):
-        self._check_can_react_to_comment_for_post(post_comment=post_comment)
+        self._check_can_react_to_post_comment(post_comment=post_comment, emoji_id=emoji_id)
 
         post_comment_id = post_comment.pk
 
@@ -838,10 +838,10 @@ class User(AbstractUser):
             post_comment_reaction.save()
         else:
             post_comment_reaction = post_comment.react(reactor=self, emoji_id=emoji_id)
-            if post_comment_reaction.post_comment.creator_id != self.pk:
-                if post_comment.creator.has_reaction_notifications_enabled_for_post_comment_with_id(
+            if post_comment_reaction.post_comment.commenter_id != self.pk:
+                if post_comment.commenter.has_reaction_notifications_enabled_for_post_comment_with_id(
                         post_comment_id=post_comment.pk) and \
-                        not post_comment.creator.has_blocked_user_with_id(self.pk):
+                        not post_comment.commenter.has_blocked_user_with_id(self.pk):
                     self._create_post_comment_reaction_notification(post_comment_reaction=post_comment_reaction)
                 self._send_post_comment_reaction_push_notification(post_comment_reaction=post_comment_reaction)
 
@@ -2660,7 +2660,7 @@ class User(AbstractUser):
         PostCommentReactionNotification = get_post_comment_reaction_notification_model()
         PostCommentReactionNotification.create_post_comment_reaction_notification(
             post_comment_reaction_id=post_comment_reaction.pk,
-            owner_id=post_comment_reaction.post_comment.creator_id)
+            owner_id=post_comment_reaction.post_comment.commenter_id)
 
     def _send_post_comment_reaction_push_notification(self, post_comment_reaction):
         helpers.send_post_comment_reaction_push_notification(post_comment_reaction=post_comment_reaction)
@@ -2669,7 +2669,7 @@ class User(AbstractUser):
         PostCommentReactionNotification = get_post_comment_reaction_notification_model()
         PostCommentReactionNotification.delete_post_comment_reaction_notification(
             post_comment_reaction_id=post_comment_reaction.pk,
-            owner_id=post_comment_reaction.post_comment.creator_id)
+            owner_id=post_comment_reaction.post_comment.commenter_id)
 
     def _create_community_invite_notification(self, community_invite):
         CommunityInviteNotification = get_community_invite_notification_model()
@@ -3054,9 +3054,14 @@ class User(AbstractUser):
                 _('This post is private.'),
             )
 
-    def _check_can_react_to_comment_for_post(self, post_comment, emoji_id):
+    def _check_can_react_to_post_comment(self, post_comment, emoji_id):
         self._check_can_react_with_emoji_id(emoji_id=emoji_id)
         self._check_can_see_post_comment(post_comment=post_comment)
+
+        if post_comment.post.is_closed:
+            raise ValidationError(
+                _('Cant react to comments on a closed post.'),
+            )
 
     def _check_can_delete_post_comment_reaction(self, post_comment_reaction):
         self._check_can_see_post_comment(post_comment=post_comment_reaction.post_comment)
@@ -3067,10 +3072,13 @@ class User(AbstractUser):
             )
 
     def _check_can_see_post_comment(self, post_comment):
+        self._check_can_see_post(post=post_comment.post)
+
         if not self.can_see_post_comment(post_comment=post_comment):
             raise ValidationError(
                 _('This comment is private.'),
             )
+
 
     def _can_see_post(self, post):
         post_query = self._make_get_post_with_id_query_for_user(post.creator, post_id=post.pk)

@@ -31,7 +31,7 @@ class PostReactionItemAPITests(APITestCase):
         """
         user = make_user()
 
-        reactioner = make_user()
+        reactor = make_user()
 
         post = user.create_public_post(text=make_fake_post_text())
 
@@ -39,7 +39,7 @@ class PostReactionItemAPITests(APITestCase):
 
         post_reaction_emoji_id = make_emoji(group=emoji_group).pk
 
-        post_reaction = reactioner.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id, )
+        post_reaction = reactor.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id, )
         url = self._get_url(post_reaction=post_reaction, post=post)
 
         headers = make_authentication_headers_for_user(user)
@@ -408,7 +408,7 @@ class PostReactionItemAPITests(APITestCase):
         """
         user = make_user()
 
-        reactioner = make_user()
+        reactor = make_user()
 
         post = user.create_public_post(text=make_fake_post_text())
 
@@ -416,7 +416,7 @@ class PostReactionItemAPITests(APITestCase):
 
         post_reaction_emoji_id = make_emoji(group=emoji_group).pk
 
-        post_reaction = reactioner.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id,
+        post_reaction = reactor.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id,
                                                          )
 
         post_reaction_notification = PostReactionNotification.objects.get(post_reaction=post_reaction,

@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from openbook_common.utils.helpers import normalise_request_data
 from openbook_moderation.permissions import IsNotSuspended
 from openbook_posts.views.post_comment.post_comment_reaction.serializers import PostCommentReactionSerializer
 from openbook_posts.views.post_comment.post_comment_reactions.serializers import GetPostCommentReactionsSerializer, \
@@ -39,7 +40,8 @@ class PostCommentReactions(APIView):
         return Response(post_reactions_serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request, post_uuid, post_comment_id):
-        request_data = request.query_params.dict()
+        request_data = normalise_request_data(request.data)
+        request_data.update(request.query_params.dict())
         request_data['post_uuid'] = post_uuid
         request_data['post_comment_id'] = post_comment_id
 

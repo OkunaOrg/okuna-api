@@ -498,7 +498,7 @@ class PostReactionsAPITests(APITestCase):
 
         user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
 
-        user.block_user_with_id(user_id=community_owner.pk)
+        community_owner.block_user_with_id(user_id=user.pk)
 
         emoji_group = make_reactions_emoji_group()
 
