@@ -562,7 +562,7 @@ class PostCommentReactionsAPITests(APITestCase):
 
         new_post_comment_reaction_emoji_id = make_emoji(group=emoji_group).pk
 
-        data = self._get_create_post_comment_reaction_request_data(new_post_comment_reaction_emoji_id, emoji_group.pk)
+        data = self._get_create_post_comment_reaction_request_data(new_post_comment_reaction_emoji_id)
         response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
