@@ -854,7 +854,6 @@ class User(AbstractUser):
 
     def delete_post_comment_reaction(self, post_comment_reaction):
         self._check_can_delete_post_comment_reaction(post_comment_reaction=post_comment_reaction)
-
         self._delete_post_comment_reaction_notification(post_comment_reaction=post_comment_reaction)
         post_comment_reaction.delete()
 
@@ -3078,7 +3077,6 @@ class User(AbstractUser):
             raise ValidationError(
                 _('This comment is private.'),
             )
-
 
     def _can_see_post(self, post):
         post_query = self._make_get_post_with_id_query_for_user(post.creator, post_id=post.pk)
