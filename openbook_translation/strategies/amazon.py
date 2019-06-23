@@ -3,7 +3,6 @@ from django.conf import settings
 from langdetect import DetectorFactory, detect
 import boto3
 
-
 # seed the language detector
 DetectorFactory.seed = 0
 
@@ -25,6 +24,9 @@ class AmazonTranslate(BaseTranslationStrategy):
         return detected_language
 
     def translate_text(self, text, source_language_code, target_language_code):
-        result = self.client.translate_text(Text="Hello, World", SourceLanguageCode="en", TargetLanguageCode="de")
+        result = self.client.translate_text(Text=text,
+                                            SourceLanguageCode=source_language_code,
+                                            TargetLanguageCode=target_language_code)
+
         return result
 

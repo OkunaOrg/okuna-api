@@ -42,3 +42,11 @@ def language_id_exists(language_id):
         raise NotFound(
             _('No supported language with the provided id exists.'),
         )
+
+
+def language_code_exists(language_code):
+    Language = get_language_model()
+    if not Language.objects.filter(code=language_code).exists():
+        raise NotFound(
+            _('No supported language with the provided code exists.'),
+        )
