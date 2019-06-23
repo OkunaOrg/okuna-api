@@ -68,6 +68,7 @@ from openbook_posts.views.post_reaction.views import PostReactionItem
 from openbook_posts.views.post_reactions.views import PostReactions, PostReactionsEmojiCount, PostReactionEmojiGroups
 from openbook_posts.views.posts.views import Posts, TrendingPosts
 from openbook_importer.views import ImportItem
+from openbook_translation.views import TranslateText
 
 auth_auth_patterns = [
     path('register/', Register.as_view(), name='register-user'),
@@ -320,7 +321,7 @@ moderation_patterns = [
 ]
 
 translation_patterns = [
-    # path('', TranslateText.as_view(), name='translate-text'),
+    path('', TranslateText.as_view(), name='translate-text'),
 ]
 
 api_patterns = [
