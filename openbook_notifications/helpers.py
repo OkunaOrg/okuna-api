@@ -125,27 +125,20 @@ def send_post_comment_reaction_push_notification(post_comment_reaction):
     post_comment_id = post_comment_reaction.post_comment_id
     notification_group = 'post_comment_%s' % post_comment_id
 
-    if post_comment_commenter.has_reaction_notifications_enabled_for_post_comment_with_id(
-            post_comment_id=post_comment_reaction.post_comment.post_id):
-        post_comment_reactor = post_comment_reaction.reactor
-
-        one_signal_notification = onesignal_sdk.Notification(post_body={
-            "contents": {"en": _('@%(post_comment_reactor_username)s reacted to your comment.') % {
-                'post_comment_reactor_username': post_comment_reactor.username
-            }}
-        })
-
-        Notification = get_notification_model()
-
-        notification_data = {
-            'type': Notification.POST_COMMENT_REACTION,
-        }
-
-        one_signal_notification.set_parameter('data', notification_data)
-        one_signal_notification.set_parameter('!thread_id', notification_group)
-        one_signal_notification.set_parameter('android_group', notification_group)
-
-        _send_notification_to_user(notification=one_signal_notification, user=post_comment_commenter)
+    post_comment_reactor = post_comment_reaction.reactor
+    one_signal_notification = onesignal_sdk.Notification(post_body={
+        "contents": {"en": _('@%(post_comment_reactor_username)s reacted to your comment.') % {
+            'post_comment_reactor_username': post_comment_reactor.username
+        }}
+    })
+    Notification = get_notification_model()
+    notification_data = {
+        'type': Notification.POST_COMMENT_REACTION,
+    }
+    one_signal_notification.set_parameter('data', notification_data)
+    one_signal_notification.set_parameter('!thread_id', notification_group)
+    one_signal_notification.set_parameter('android_group', notification_group)
+    _send_notification_to_user(notification=one_signal_notification, user=post_comment_commenter)
 
 
 def send_community_invite_push_notification(community_invite):

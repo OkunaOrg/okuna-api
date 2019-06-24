@@ -592,17 +592,19 @@ class User(AbstractUser):
         return self.notifications_settings.post_reaction_notifications and not self.has_muted_post_with_id(
             post_id=post_id)
 
-    def has_reaction_notifications_enabled_for_post_comment_with_id(self, post_comment_id):
-        return self.notifications_settings.post_comment_reaction_notifications and not self.has_muted_post_comment_with_id(
-            post_comment_id=post_comment_id)
+    def has_reaction_notifications_enabled_for_post_comment(self, post_comment):
+        return self.notifications_settings.post_comment_reaction_notifications and not self.has_muted_post_with_id(
+            post_id=post_comment.post_id) and not self.has_muted_post_comment_with_id(
+            post_comment_id=post_comment.id)
 
     def has_comment_notifications_enabled_for_post_with_id(self, post_id):
         return self.notifications_settings.post_comment_notifications and not self.has_muted_post_with_id(
             post_id=post_id)
 
-    def has_comment_reply_notifications_enabled_for_post_with_id(self, post_id):
+    def has_reply_notifications_enabled_for_post_comment(self, post_comment):
         return self.notifications_settings.post_comment_reply_notifications and not self.has_muted_post_with_id(
-            post_id=post_id)
+            post_id=post_comment.post_id) and not self.has_muted_post_comment_with_id(
+            post_comment_id=post_comment.id)
 
     def has_connection_request_notifications_enabled(self):
         return self.notifications_settings.connection_request_notifications
@@ -810,7 +812,6 @@ class User(AbstractUser):
         else:
             post_reaction = post.react(reactor=self, emoji_id=emoji_id)
             if post_reaction.post.creator_id != self.pk:
-                # TODO Refactor. This check is being done twice. (Also in _send_post_reaction_push_notification)
                 if post.creator.has_reaction_notifications_enabled_for_post_with_id(post_id=post.pk) and \
                         not post.creator.has_blocked_user_with_id(self.pk):
                     self._create_post_reaction_notification(post_reaction=post_reaction)
@@ -844,11 +845,12 @@ class User(AbstractUser):
         else:
             post_comment_reaction = post_comment.react(reactor=self, emoji_id=emoji_id)
             if post_comment_reaction.post_comment.commenter_id != self.pk:
-                if post_comment.commenter.has_reaction_notifications_enabled_for_post_comment_with_id(
-                        post_comment_id=post_comment.pk) and \
-                        not post_comment.commenter.has_blocked_user_with_id(self.pk):
-                    self._create_post_comment_reaction_notification(post_comment_reaction=post_comment_reaction)
-                self._send_post_comment_reaction_push_notification(post_comment_reaction=post_comment_reaction)
+                commenter_has_reaction_notifications_enabled = post_comment.commenter.has_reaction_notifications_enabled_for_post_comment(
+                    post_comment=post_comment)
+
+                if commenter_has_reaction_notifications_enabled:
+                    self._send_post_comment_reaction_push_notification(post_comment_reaction=post_comment_reaction)
+                self._create_post_comment_reaction_notification(post_comment_reaction=post_comment_reaction)
 
         return post_comment_reaction
 
@@ -947,9 +949,6 @@ class User(AbstractUser):
                 post_id=post_comment.post_id)
 
             if post_notification_target_has_comment_notifications_enabled:
-                PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
-                                                                         owner_id=post_notification_target_user.id)
-
                 if post_notification_target_user_is_post_creator:
                     notification_message = {
                         "en": _('@%(post_commenter_username)s commented on your post.') % {
@@ -964,6 +963,9 @@ class User(AbstractUser):
                 self._send_post_comment_push_notification(post_comment=post_comment,
                                                           notification_message=notification_message,
                                                           notification_target_user=post_notification_target_user)
+
+            PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
+                                                                     owner_id=post_notification_target_user.id)
 
         return post_comment
 
@@ -991,13 +993,10 @@ class User(AbstractUser):
                 continue
             post_notification_target_user_is_post_comment_creator = post_notification_target_user.id == comment_creator
             post_notification_target_has_comment_reply_notifications_enabled = \
-                post_notification_target_user.has_comment_reply_notifications_enabled_for_post_with_id(
-                    post_id=post_comment.post_id)
+                post_notification_target_user.has_reply_notifications_enabled_for_post_comment(
+                    post_comment=post_comment)
 
             if post_notification_target_has_comment_reply_notifications_enabled:
-                PostCommentReplyNotification.create_post_comment_reply_notification(
-                    post_comment_id=post_comment_reply.pk,
-                    owner_id=post_notification_target_user.id)
 
                 if post_notification_target_user_is_post_comment_creator:
                     notification_message = {
@@ -1013,6 +1012,10 @@ class User(AbstractUser):
                 self._send_post_comment_push_notification(post_comment=post_comment,
                                                           notification_message=notification_message,
                                                           notification_target_user=post_notification_target_user)
+
+            PostCommentReplyNotification.create_post_comment_reply_notification(
+                post_comment_id=post_comment_reply.pk,
+                owner_id=post_notification_target_user.id)
 
         return post_comment_reply
 
