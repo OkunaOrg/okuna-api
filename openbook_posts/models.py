@@ -134,16 +134,23 @@ class Post(models.Model):
         return trending_posts_query
 
     @classmethod
-    def get_post_comment_notification_target_users(cls, post_id, post_commenter_id):
+    def get_post_comment_notification_target_users(cls, post_id, post_commenter_id, post_comment_id=None):
         """
         Returns the users that should be notified of a post comment.
         This includes the post creator and other post commenters
         :param post_id:
         :param post_commenter_id:
+        :param post_comment_id:
         :return:
         """
-        post_notification_target_users_query = Q(posts_comments__post_id=post_id)
-        post_notification_target_users_query.add(Q(posts__id=post_id), Q.OR)
+
+        if post_comment_id is not None:
+            post_notification_target_users_query = Q(posts_comments__parent_comment_id=post_comment_id)
+            post_notification_target_users_query.add(Q(posts_comments__id=post_comment_id), Q.OR)
+        else:
+            post_notification_target_users_query = Q(posts_comments__post_id=post_id, posts_comments__parent_comment_id=None)
+            post_notification_target_users_query.add(Q(posts__id=post_id), Q.OR)
+
         post_notification_target_users_query.add(~Q(id=post_commenter_id), Q.AND)
         post_notification_target_users_query.add(~Q(user_blocks__blocked_user_id=post_commenter_id), Q.AND)
 

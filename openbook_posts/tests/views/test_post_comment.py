@@ -2069,7 +2069,7 @@ class UnmutePost_commentAPITests(APITestCase):
 
         headers = make_authentication_headers_for_user(user)
         post = user.create_community_post(text=make_fake_post_text(),
-                                                  community_name=community.name)
+                                          community_name=community.name)
         post_comment = user.comment_post(post=post, text=make_fake_post_comment_text())
         user.mute_post_comment_with_id(post_comment.pk)
         post_comment.is_closed = True

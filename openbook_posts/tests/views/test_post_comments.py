@@ -12,7 +12,7 @@ from openbook_common.tests.helpers import make_authentication_headers_for_user, 
     make_fake_post_comment_text, make_user, make_circle, make_community, make_private_community, \
     make_moderation_category
 from openbook_moderation.models import ModeratedObject
-from openbook_notifications.models import PostCommentNotification
+from openbook_notifications.models import PostCommentNotification, PostCommentReplyNotification
 from openbook_posts.models import PostComment
 
 logger = logging.getLogger(__name__)
@@ -1256,6 +1256,32 @@ class PostCommentsAPITests(APITestCase):
 
         self.assertFalse(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
                                                                 notification__owner=foreign_user).exists())
+
+    def test_foreign_comment_should_not_create_notification_if_user_has_only_replied_to_a_comment(self):
+        """
+         should NOT get notification when a foreign user comments directly on a post where the current user
+         has replied to one of the comments
+         """
+        user = make_user()
+        foreign_user = make_user()
+        headers = make_authentication_headers_for_user(foreign_user)
+
+        post_creator = make_user()
+
+        post = post_creator.create_public_post(text=make_fake_post_text())
+        post_comment = post_creator.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+        user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
+                                      text=make_fake_post_comment_text())
+
+        comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(comment_text)
+        # foreign user comments
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        self.assertFalse(PostCommentReplyNotification.objects.filter(post_comment__text=comment_text,
+                                                                     notification__owner=user).exists())
 
     def test_should_retrieve_all_comments_on_public_post(self):
         """
