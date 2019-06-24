@@ -31,7 +31,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_connection_request_notification_model, get_post_reaction_notification_model, get_device_model, \
     get_post_mute_model, get_community_invite_notification_model, get_user_block_model, get_emoji_model, \
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
-    get_moderation_penalty_model
+    get_moderation_penalty_model, get_language_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications.push_notifications import senders
 
@@ -325,7 +325,9 @@ class User(AbstractUser):
 
     def set_language_with_id(self, language_id):
         self._check_can_set_language_with_id(language_id)
-        self.language = language_id
+        Language = get_language_model()
+        language_instance = Language.objects.get(pk=language_id)
+        self.language = language_instance
         self.save()
 
     def verify_password_reset_token(self, token, password):
@@ -3636,6 +3638,7 @@ class User(AbstractUser):
             raise ValidationError('Guidelines were already accepted')
 
     def _check_can_set_language_with_id(self, language_id):
+        Language = get_language_model()
         if not Language.objects.filter(pk=language_id).exists():
             raise ValidationError('Please provide a valid language id')
 

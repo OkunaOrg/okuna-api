@@ -39,7 +39,7 @@ def name_characters_validator(name):
 def language_id_exists(language_id):
     Language = get_language_model()
     if not Language.objects.filter(pk=language_id).exists():
-        raise NotFound(
+        raise ValidationError(
             _('No supported language with the provided id exists.'),
         )
 
@@ -47,6 +47,6 @@ def language_id_exists(language_id):
 def language_code_exists(language_code):
     Language = get_language_model()
     if not Language.objects.filter(code=language_code).exists():
-        raise NotFound(
+        raise ValidationError(
             _('No supported language with the provided code exists.'),
         )

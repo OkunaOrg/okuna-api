@@ -210,6 +210,6 @@ class AuthenticatedUserLanguage(APIView):
         user = request.user
 
         with transaction.atomic():
-            user.set_language_with_id(language_id=data.language_id)
+            user.set_language_with_id(language_id=data.get('language_id'))
 
         return ApiMessageResponse(_('Language successfully set'), status=status.HTTP_200_OK)
