@@ -7,7 +7,7 @@ from mixer.backend.django import mixer
 from openbook_auth.models import User, UserProfile
 from openbook_categories.models import Category
 from openbook_circles.models import Circle
-from openbook_common.models import Emoji, EmojiGroup, Badge
+from openbook_common.models import Emoji, EmojiGroup, Badge, Language
 from openbook_communities.models import Community
 from openbook_devices.models import Device
 from openbook_lists.models import List
@@ -237,3 +237,7 @@ def make_moderated_object_report(moderated_object=None):
 
 def make_moderation_penalty(user):
     return mixer.blend(ModerationPenalty, user=user)
+
+
+def make_random_language():
+    return mixer.blend(Language)
