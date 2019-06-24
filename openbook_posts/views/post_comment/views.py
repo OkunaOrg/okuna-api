@@ -5,10 +5,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.translation import ugettext_lazy as _
 
+from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import get_post_id_for_post_uuid
 from openbook_moderation.permissions import IsNotSuspended
 from openbook_posts.views.post_comment.serializers import DeletePostCommentSerializer, UpdatePostCommentSerializer, \
-    EditPostCommentSerializer
+    EditPostCommentSerializer, MutePostCommentSerializer, UnmutePostCommentSerializer
 
 
 class PostCommentItem(APIView):
@@ -60,3 +61,39 @@ class PostCommentItem(APIView):
         request_data['post_uuid'] = post_uuid
         request_data['post_comment_id'] = post_comment_id
         return request_data
+
+
+class MutePostComment(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, post_uuid, post_comment_id):
+        serializer = MutePostCommentSerializer(data={
+            'post_uuid': post_uuid,
+            'post_comment_id': post_comment_id,
+        })
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+
+        with transaction.atomic():
+            user.mute_post_comment_with_id(post_comment_id=post_comment_id)
+
+        return ApiMessageResponse(message=_('Post comment muted.'), status=status.HTTP_200_OK)
+
+
+class UnmutePostComment(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, post_uuid, post_comment_id):
+        serializer = UnmutePostCommentSerializer(data={
+            'post_uuid': post_uuid,
+            'post_comment_id': post_comment_id,
+        })
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+
+        with transaction.atomic():
+            user.unmute_post_comment_with_id(post_comment_id=post_comment_id)
+
+        return ApiMessageResponse(message=_('Post comment unmuted.'), status=status.HTTP_200_OK)

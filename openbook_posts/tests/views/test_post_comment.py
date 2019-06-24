@@ -1703,36 +1703,6 @@ class PostCommentItemAPITests(APITestCase):
         self.assertTrue(post_comment_reply.text == original_post_comment_reply_text)
         self.assertFalse(post_comment_reply.is_edited)
 
-    def test_cannot_edit_others_community_post_comment_even_if_admin(self):
-        """
-            should not be able to edit someone else's comment even if community admin
-        """
-
-        user = make_user()
-        admin = make_user()
-        community = make_community(admin)
-
-        user.join_community_with_name(community_name=community.name)
-        post = user.create_community_post(community.name, text=make_fake_post_text())
-        original_post_comment_reply_text = make_fake_post_comment_text()
-        post_comment = user.comment_post_with_id(post.pk, text=make_fake_post_comment_text())
-        post_comment_reply = user.reply_to_comment_with_id_for_post_with_uuid(post_comment_id=post_comment.pk,
-                                                                              post_uuid=post.uuid,
-                                                                              text=original_post_comment_reply_text)
-
-        url = self._get_url(post_comment=post_comment_reply, post=post)
-
-        edited_post_comment_reply_text = make_fake_post_comment_text()
-        headers = make_authentication_headers_for_user(admin)
-
-        response = self.client.patch(url, {
-            'text': edited_post_comment_reply_text
-        }, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        post_comment_reply.refresh_from_db()
-        self.assertTrue(post_comment_reply.text == original_post_comment_reply_text)
-
     def _get_url(self, post, post_comment):
         return reverse('post-comment', kwargs={
             'post_uuid': post.uuid,
@@ -1740,4 +1710,434 @@ class PostCommentItemAPITests(APITestCase):
         })
 
 
+class MutePostCommentAPITests(APITestCase):
+    """
+    MutePostCommentAPI
+    """
 
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
+    def test_can_mute_own_post_comment(self):
+        """
+        should be able to mute own post comment and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post(post=post, text=make_fake_post_comment_text())
+
+        url = self._get_url(post=post, post_comment=post_comment)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(user.has_muted_post_comment_with_id(post_comment.pk))
+
+    def test_cant_mute_own_post_comment_if_already_muted(self):
+        """
+        should not be able to mute own post comment if already muted and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post(post=post, text=make_fake_post_comment_text())
+
+        url = self._get_url(post=post, post_comment=post_comment)
+
+        user.mute_post_comment_with_id(post_comment.pk)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(user.has_muted_post_comment_with_id(post_comment.pk))
+
+    def test_can_mute_foreign_post_comment_if_public_post_comment(self):
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+        post = foreign_user.create_public_post(text=make_fake_post_text())
+        post_comment = foreign_user.comment_post(post=post, text=make_fake_post_comment_text())
+
+        url = self._get_url(post=post, post_comment=post_comment)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(user.has_muted_post_comment_with_id(post_comment.pk))
+
+    def test_cannot_mute_foreign_post_comment_if_encircled_post(self):
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        circle = make_circle(creator=foreign_user)
+
+        post = foreign_user.create_encircled_post(text=make_fake_post_text(),
+                                                  circles_ids=[circle.pk])
+        post_comment = foreign_user.comment_post(post=post, text=make_fake_post_comment_text())
+
+        url = self._get_url(post=post, post_comment=post_comment)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(user.has_muted_post_comment_with_id(post_comment.pk))
+
+    def test_can_mute_foreign_post_comment_if_part_of_encircled_post_comment(self):
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        circle = make_circle(creator=foreign_user)
+
+        post = foreign_user.create_encircled_post(text=make_fake_post_text(),
+                                                  circles_ids=[circle.pk])
+        post_comment = foreign_user.comment_post(post=post, text=make_fake_post_comment_text())
+
+        foreign_user.connect_with_user_with_id(user_id=user.pk, circles_ids=[circle.pk])
+        user.confirm_connection_with_user_with_id(user_id=foreign_user.pk)
+
+        url = self._get_url(post=post, post_comment=post_comment)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(user.has_muted_post_comment_with_id(post_comment.pk))
+
+    def test_can_mute_community_post_comment_if_public(self):
+        user = make_user()
+
+        foreign_user = make_user()
+        community = make_community(creator=foreign_user)
+
+        headers = make_authentication_headers_for_user(user)
+        post = foreign_user.create_community_post(text=make_fake_post_text(),
+                                                  community_name=community.name)
+        post_comment = foreign_user.comment_post(post=post, text=make_fake_post_comment_text())
+
+        url = self._get_url(post=post, post_comment=post_comment)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(user.has_muted_post_comment_with_id(post_comment.pk))
+
+    def test_can_mute_closed_community_post_comment(self):
+        """
+        should be able to mute closed post comment if not admin/mod or post comment creator in community
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        community = make_community(creator=foreign_user)
+        user.join_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(user)
+        post = foreign_user.create_community_post(text=make_fake_post_text(),
+                                                  community_name=community.name)
+        post_comment = foreign_user.comment_post(post=post, text=make_fake_post_comment_text())
+
+        post_comment.is_closed = True
+        post_comment.save()
+
+        url = self._get_url(post=post, post_comment=post_comment)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertTrue(user.has_muted_post_comment_with_id(post_comment.pk))
+
+    def test_can_mute_closed_community_post_comment_if_creator(self):
+        """
+        should be able to mute closed post comment if post_comment creator in community
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        community = make_community(creator=foreign_user)
+        user.join_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_community_post(text=make_fake_post_text(),
+                                          community_name=community.name)
+        post_comment = user.comment_post(post=post, text=make_fake_post_comment_text())
+
+        post_comment.is_closed = True
+        post_comment.save()
+
+        url = self._get_url(post=post, post_comment=post_comment)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(user.has_muted_post_comment_with_id(post_comment.pk))
+
+    def test_can_mute_closed_community_post_comment_administrator(self):
+        """
+        should be able to mute closed post comment if administrator in community
+        """
+        user = make_user()
+
+        admin = make_user()
+        community = make_community(creator=admin)
+        user.join_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(admin)
+        post = user.create_community_post(text=make_fake_post_text(),
+                                          community_name=community.name)
+        post_comment = user.comment_post(post=post, text=make_fake_post_comment_text())
+
+        post_comment.is_closed = True
+        post_comment.save()
+
+        url = self._get_url(post=post, post_comment=post_comment)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(admin.has_muted_post_comment_with_id(post_comment.pk))
+
+    def test_can_mute_closed_community_post_comment_if_moderator(self):
+        """
+        should be able to mute closed post comment if moderator in community
+        """
+        user = make_user()
+
+        admin = make_user()
+        moderator = make_user()
+        community = make_community(creator=admin)
+        user.join_community_with_name(community_name=community.name)
+        moderator.join_community_with_name(community_name=community.name)
+        admin.add_moderator_with_username_to_community_with_name(username=moderator.username,
+                                                                 community_name=community.name)
+
+        headers = make_authentication_headers_for_user(moderator)
+        post = user.create_community_post(text=make_fake_post_text(),
+                                          community_name=community.name)
+        post_comment = user.comment_post(post=post, text=make_fake_post_comment_text())
+
+        post_comment.is_closed = True
+        post_comment.save()
+
+        url = self._get_url(post=post, post_comment=post_comment)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(moderator.has_muted_post_comment_with_id(post_comment.pk))
+
+    def test_cant_mute_community_post_comment_if_private_and_not_member(self):
+        user = make_user()
+
+        foreign_user = make_user()
+        community = make_community(creator=foreign_user, type='T')
+
+        headers = make_authentication_headers_for_user(user)
+        post = foreign_user.create_community_post(text=make_fake_post_text(),
+                                                  community_name=community.name)
+        post_comment = foreign_user.comment_post(post=post, text=make_fake_post_comment_text())
+
+        url = self._get_url(post=post, post_comment=post_comment)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(user.has_muted_post_comment_with_id(post_comment.pk))
+
+    def test_can_mute_community_post_comment_if_private_and_member(self):
+        user = make_user()
+
+        foreign_user = make_user()
+        community = make_community(creator=foreign_user, type='T')
+
+        headers = make_authentication_headers_for_user(user)
+        post = foreign_user.create_community_post(text=make_fake_post_text(),
+                                                  community_name=community.name)
+        post_comment = foreign_user.comment_post(post=post, text=make_fake_post_comment_text())
+
+        foreign_user.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                      community_name=community.name)
+
+        user.join_community_with_name(community_name=community.name)
+
+        url = self._get_url(post=post, post_comment=post_comment)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(user.has_muted_post_comment_with_id(post_comment.pk))
+
+    def _get_url(self, post, post_comment):
+        return reverse('mute-post-comment', kwargs={
+            'post_uuid': post.uuid,
+            'post_comment_id': post_comment.id,
+        })
+
+
+class UnmutePost_commentAPITests(APITestCase):
+    """
+    UnmutePost_commentAPI
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
+    def test_can_unmute_own_post_comment(self):
+        """
+        should be able to unmute own post comment and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post(post=post, text=make_fake_post_comment_text())
+
+        user.mute_post_comment_with_id(post_comment.pk)
+
+        url = self._get_url(post=post, post_comment=post_comment)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(user.has_muted_post_comment_with_id(post_comment.pk))
+
+    def test_cant_unmute_own_post_comment_if_already_unmuted(self):
+        """
+        should not be able to unmute own post comment if already unmuted and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post(post=post, text=make_fake_post_comment_text())
+
+        url = self._get_url(post=post, post_comment=post_comment)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(user.has_muted_post_comment_with_id(post_comment.pk))
+
+    def test_can_unmute_closed_community_post_comment(self):
+        """
+        should be able to unmute closed post comment if not admin/mod or post comment creator in community
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        community = make_community(creator=foreign_user)
+        user.join_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(user)
+        post = foreign_user.create_community_post(text=make_fake_post_text(),
+                                                  community_name=community.name)
+        post_comment = foreign_user.comment_post(post=post, text=make_fake_post_comment_text())
+        user.mute_post_comment_with_id(post_comment.pk)
+        post_comment.is_closed = True
+        post_comment.save()
+
+        url = self._get_url(post=post, post_comment=post_comment)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+        self.assertFalse(user.has_muted_post_comment_with_id(post_comment.pk))
+
+    def test_can_unmute_closed_community_post_comment_if_creator(self):
+        """
+        should be able to unmute closed post comment if post_comment creator in community
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        community = make_community(creator=foreign_user)
+        user.join_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_community_post(text=make_fake_post_text(),
+                                                  community_name=community.name)
+        post_comment = user.comment_post(post=post, text=make_fake_post_comment_text())
+        user.mute_post_comment_with_id(post_comment.pk)
+        post_comment.is_closed = True
+        post_comment.save()
+
+        url = self._get_url(post=post, post_comment=post_comment)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(user.has_muted_post_comment_with_id(post_comment.pk))
+
+    def test_can_unmute_closed_community_post_comment_administrator(self):
+        """
+        should be able to unmute closed post comment if administrator in community
+        """
+        user = make_user()
+
+        admin = make_user()
+        community = make_community(creator=admin)
+        user.join_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(admin)
+        post = user.create_community_post(text=make_fake_post_text(),
+                                          community_name=community.name)
+        post_comment = user.comment_post(post=post, text=make_fake_post_comment_text())
+        admin.mute_post_comment_with_id(post_comment.pk)
+        post_comment.is_closed = True
+        post_comment.save()
+
+        url = self._get_url(post=post, post_comment=post_comment)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(admin.has_muted_post_comment_with_id(post_comment.pk))
+
+    def test_can_unmute_closed_community_post_comment_if_moderator(self):
+        """
+        should be able to unmute closed post comment if moderator in community
+        """
+        user = make_user()
+
+        admin = make_user()
+        moderator = make_user()
+        community = make_community(creator=admin)
+        user.join_community_with_name(community_name=community.name)
+        moderator.join_community_with_name(community_name=community.name)
+        admin.add_moderator_with_username_to_community_with_name(username=moderator.username,
+                                                                 community_name=community.name)
+
+        headers = make_authentication_headers_for_user(moderator)
+        post = user.create_community_post(text=make_fake_post_text(),
+                                          community_name=community.name)
+        post_comment = user.comment_post(post=post, text=make_fake_post_comment_text())
+        moderator.mute_post_comment_with_id(post_comment.pk)
+        post_comment.is_closed = True
+        post_comment.save()
+
+        url = self._get_url(post=post, post_comment=post_comment)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(moderator.has_muted_post_comment_with_id(post_comment.pk))
+
+    def _get_url(self, post, post_comment):
+        return reverse('unmute-post-comment', kwargs={
+            'post_uuid': post.uuid,
+            'post_comment_id': post_comment.id,
+        })

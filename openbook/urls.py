@@ -65,7 +65,7 @@ from openbook_posts.views.post_comment.post_comment_reaction.views import PostCo
 from openbook_posts.views.post_comment.post_comment_reactions.views import PostCommentReactions, \
     PostCommentReactionsEmojiCount
 from openbook_posts.views.post_comment.post_comment_replies.views import PostCommentReplies
-from openbook_posts.views.post_comment.views import PostCommentItem
+from openbook_posts.views.post_comment.views import PostCommentItem, MutePostComment, UnmutePostComment
 from openbook_posts.views.post_comments.views import PostComments, PostCommentsDisable, PostCommentsEnable
 from openbook_posts.views.post_reaction.views import PostReactionItem
 from openbook_posts.views.post_reactions.views import PostReactions, PostReactionsEmojiCount, PostReactionEmojiGroups
@@ -134,7 +134,7 @@ auth_patterns = [
     path('user/', include(auth_user_patterns)),
 ]
 
-post_notifications_patters = [
+post_notifications_patterns = [
     path('mute/', MutePost.as_view(), name='mute-post'),
     path('unmute/', UnmutePost.as_view(), name='unmute-post'),
 ]
@@ -144,16 +144,22 @@ post_comment_reactions_patterns = [
     path('emoji-count/', PostCommentReactionsEmojiCount.as_view(), name='post-comment-reactions-emoji-count'),
     path('<int:post_comment_reaction_id>/', PostCommentReactionItem.as_view(), name='post-comment-reaction'), ]
 
+post_comment_notifications_patterns = [
+    path('mute/', MutePostComment.as_view(), name='mute-post-comment'),
+    path('unmute/', UnmutePostComment.as_view(), name='unmute-post-comment'),
+]
+
 post_comment_patterns = [
     path('', PostCommentItem.as_view(), name='post-comment'),
     path('report/', ReportPostComment.as_view(), name='report-post-comment'),
     path('replies/', PostCommentReplies.as_view(), name='post-comment-replies'),
     path('reactions/', include(post_comment_reactions_patterns), name='post-comment-replies'),
+    path('notifications/', include(post_comment_notifications_patterns)),
 ]
 
 post_patterns = [
     path('', PostItem.as_view(), name='post'),
-    path('notifications/', include(post_notifications_patters)),
+    path('notifications/', include(post_notifications_patterns)),
     path('comments/', PostComments.as_view(), name='post-comments'),
     path('comments/disable/', PostCommentsDisable.as_view(), name='disable-post-comments'),
     path('comments/enable/', PostCommentsEnable.as_view(), name='enable-post-comments'),
