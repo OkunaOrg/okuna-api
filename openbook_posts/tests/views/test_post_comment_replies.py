@@ -1497,10 +1497,10 @@ class PostCommentRepliesAPITests(APITestCase):
                                                                      notification__owner=foreign_user).exists())
 
     @mock.patch('openbook_notifications.helpers.send_post_comment_push_notification_with_message')
-    def test_replying_on_foreign_post_comment_sends_push_notification(self,
-                                                                      send_post_comment_reply_push_notification_call):
+    def test_replying_on_foreign_post_comment_sends_push_notification_to_commenter(self,
+                                                                                   send_post_comment_reply_push_notification_call):
         """
-         should send a push notification when replying on a foreign post comment
+         should send a push notification to the commenter when replying on a foreign post comment
          """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
@@ -1515,9 +1515,53 @@ class PostCommentRepliesAPITests(APITestCase):
                                                                  post_uuid=post.uuid,
                                                                  text=make_fake_post_comment_text())
 
+        foreign_user.mute_post(post=post)
+
         reply_comment_text = make_fake_post_comment_text()
 
         data = self._get_create_post_comment_request_data(reply_comment_text)
+
+        send_post_comment_reply_push_notification_call.reset_mock()
+
+        url = self._get_url(post, post_comment)
+        self.client.put(url, data, **headers)
+
+        post_comment_reply = PostComment.objects.get(
+            commenter_id=user.pk,
+            parent_comment_id=post_comment.id)
+
+        send_post_comment_reply_push_notification_call.assert_called_with(
+            post_comment=post_comment_reply,
+            message=ANY,
+            target_user=post_creator
+        )
+
+    @mock.patch('openbook_notifications.helpers.send_post_comment_push_notification_with_message')
+    def test_replying_on_foreign_post_comment_sends_push_notification_to_other_replier(self,
+                                                                      send_post_comment_reply_push_notification_call):
+        """
+         should send a push notification to other replier when replying on a foreign post comment
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+
+        foreign_user = make_user()
+
+        post = post_creator.create_public_post(text=make_fake_post_text())
+        post_comment = post_creator.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+        foreign_user.reply_to_comment_with_id_for_post_with_uuid(post_comment_id=post_comment.pk,
+                                                                 post_uuid=post.uuid,
+                                                                 text=make_fake_post_comment_text())
+
+        post_creator.mute_post(post=post)
+
+        reply_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(reply_comment_text)
+
+        send_post_comment_reply_push_notification_call.reset_mock()
 
         url = self._get_url(post, post_comment)
         self.client.put(url, data, **headers)
