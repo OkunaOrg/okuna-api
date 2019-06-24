@@ -331,9 +331,14 @@ REST_FRAMEWORK = {
     )
 }
 
+# AWS Translate Region
+AWS_TRANSLATE_REGION = os.environ.get('AWS_TRANSLATE_REGION', '')
+AWS_TRANSLATE_MAX_LENGTH = os.environ.get('AWS_TRANSLATE_MAX_LENGTH', 10000)
+
 OS_TRANSLATION_CONFIG = {
     'default': {
         'STRATEGY': 'openbook_translation.strategies.amazon.AmazonTranslate',
+        'TEXT_MAX_LENGTH': AWS_TRANSLATE_MAX_LENGTH
     }
 }
 
@@ -451,9 +456,6 @@ AWS_PUBLIC_MEDIA_LOCATION = os.environ.get('AWS_PUBLIC_MEDIA_LOCATION')
 AWS_STATIC_LOCATION = 'static'
 AWS_PRIVATE_MEDIA_LOCATION = os.environ.get('AWS_PRIVATE_MEDIA_LOCATION')
 AWS_DEFAULT_ACL = None
-
-# AWS Translate Region
-AWS_TRANSLATE_REGION = os.environ.get('AWS_TRANSLATE_REGION', '')
 
 if IS_PRODUCTION:
     AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
