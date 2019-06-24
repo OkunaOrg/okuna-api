@@ -1,11 +1,15 @@
 # Create your tests here.
 import json
+from unittest import mock
+from unittest.mock import patch
+
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
 from rest_framework.test import APITestCase
 
 import logging
+
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_emoji, make_emoji_group, make_reactions_emoji_group, \
     make_community
@@ -14,6 +18,10 @@ from openbook_posts.models import PostCommentReaction
 
 logger = logging.getLogger(__name__)
 fake = Faker()
+
+
+def send_post_comment_reaction_push_notification_mock(post_comment_reaction):
+    return post_comment_reaction
 
 
 class PostCommentReactionsAPITests(APITestCase):
@@ -592,6 +600,85 @@ class PostCommentReactionsAPITests(APITestCase):
         self.assertTrue(PostCommentReactionNotification.objects.filter(
             post_comment_reaction__emoji__id=post_comment_reaction_emoji_id,
             notification__owner=user).exists())
+
+    @mock.patch('openbook_notifications.helpers.send_post_comment_reaction_push_notification')
+    def test_reacting_on_foreign_post_comment_sends_push_notification(self,
+                                                                      send_post_comment_reaction_push_notification_call):
+        """
+         should send a push notification when  when reacting on a foreign post comment
+         """
+        user = make_user()
+        reactor = make_user()
+
+        headers = make_authentication_headers_for_user(reactor)
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+        emoji_group = make_reactions_emoji_group()
+
+        post_comment_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_comment_reaction_request_data(post_comment_reaction_emoji_id)
+
+        url = self._get_url(post=post, post_comment=post_comment)
+        self.client.put(url, data, **headers)
+
+        post_comment_reaction = PostCommentReaction.objects.get(
+            reactor_id=reactor.pk,
+            post_comment_id=post_comment.id)
+
+        send_post_comment_reaction_push_notification_call.assert_called_with(
+            post_comment_reaction=post_comment_reaction)
+
+    @mock.patch('openbook_notifications.helpers.send_post_comment_reaction_push_notification')
+    def test_reacting_on_foreign_post_comment_doesnt_send_push_notification_when_muted(self,
+                                                                                       send_post_comment_reaction_push_notification_call):
+        """
+         should NOT send a push notification when reacting on a foreign post comment when muted
+         """
+        user = make_user()
+        reactor = make_user()
+
+        headers = make_authentication_headers_for_user(reactor)
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+        user.mute_post_comment_with_id(post_comment_id=post_comment.pk)
+
+        emoji_group = make_reactions_emoji_group()
+
+        post_comment_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_comment_reaction_request_data(post_comment_reaction_emoji_id)
+
+        url = self._get_url(post=post, post_comment=post_comment)
+        self.client.put(url, data, **headers)
+
+        send_post_comment_reaction_push_notification_call.assert_not_called()
+
+    @mock.patch('openbook_notifications.helpers.send_post_comment_reaction_push_notification')
+    def test_reacting_on_foreign_post_comment_doesnt_send_push_notification_when_post_muted(self,
+                                                                                       send_post_comment_reaction_push_notification_call):
+        """
+         should NOT send a push notification when reacting on a foreign post comment when post muted
+         """
+        user = make_user()
+        reactor = make_user()
+
+        headers = make_authentication_headers_for_user(reactor)
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+        user.mute_post_with_id(post_id=post.pk)
+
+        emoji_group = make_reactions_emoji_group()
+
+        post_comment_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_comment_reaction_request_data(post_comment_reaction_emoji_id)
+
+        url = self._get_url(post=post, post_comment=post_comment)
+        self.client.put(url, data, **headers)
+
+        send_post_comment_reaction_push_notification_call.assert_not_called()
 
     def test_reacting_in_own_post_comment_does_not_create_notification(self):
         """
