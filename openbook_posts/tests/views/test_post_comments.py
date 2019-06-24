@@ -1219,7 +1219,7 @@ class PostCommentsAPITests(APITestCase):
         self.client.put(url, data, **headers)
 
         self.assertTrue(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
-                                                                notification__owner=foreign_user).exists())
+                                                               notification__owner=foreign_user).exists())
 
     def test_comment_in_an_encircled_post_with_a_user_removed_from_the_circle_not_notifies_it(self):
         """
@@ -1270,8 +1270,8 @@ class PostCommentsAPITests(APITestCase):
 
         post = post_creator.create_public_post(text=make_fake_post_text())
         post_comment = post_creator.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
-        user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
-                                      text=make_fake_post_comment_text())
+        user.reply_to_comment_with_id_for_post_with_uuid(post_comment_id=post_comment.pk, post_uuid=post.uuid,
+                                                         text=make_fake_post_comment_text())
 
         comment_text = make_fake_post_comment_text()
 

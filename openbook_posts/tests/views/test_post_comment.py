@@ -1536,7 +1536,7 @@ class PostCommentItemAPITests(APITestCase):
 
         post_comment_text = make_fake_post_comment_text()
 
-        post_comment = commenter.comment_post_with_id(post.pk, text=post_comment_text)
+        post_comment = user.comment_post_with_id(post.pk, text=post_comment_text)
         post_comment_reply = commenter.reply_to_comment_with_id_for_post_with_uuid(post_comment_id=post_comment.pk,
                                                                                    post_uuid=post.uuid,
                                                                                    text=make_fake_post_comment_text())
