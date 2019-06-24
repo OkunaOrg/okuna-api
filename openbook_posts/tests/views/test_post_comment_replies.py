@@ -1365,9 +1365,9 @@ class PostCommentRepliesAPITests(APITestCase):
         self.assertTrue(PostCommentReplyNotification.objects.filter(post_comment__text=reply_comment_text,
                                                                     notification__owner=foreign_user).exists())
 
-    def test_commenting_reply_in_commented_post_by_foreign_user_not_creates_foreign_notification_when_muted(self):
+    def test_commenting_reply_in_commented_post_by_foreign_user_creates_foreign_notification_when_muted(self):
         """
-         should NOT create a notification when a user comments reply in a post where a foreign user commented and muted before
+         should create a notification when a user comments reply in a post where a foreign user commented and muted before
          """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
@@ -1391,7 +1391,7 @@ class PostCommentRepliesAPITests(APITestCase):
         url = self._get_url(post, post_comment)
         self.client.put(url, data, **headers)
 
-        self.assertFalse(PostCommentReplyNotification.objects.filter(post_comment__text=reply_comment_text,
+        self.assertTrue(PostCommentReplyNotification.objects.filter(post_comment__text=reply_comment_text,
                                                                      notification__owner=foreign_user).exists())
 
     def test_reply_in_community_post_by_foreign_user_does_not_create_foreign_notification_when_closed(self):
