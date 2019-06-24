@@ -1010,7 +1010,7 @@ class User(AbstractUser):
                             'post_commenter_username': replier.username
                         }}
 
-                self._send_post_comment_push_notification(post_comment=post_comment,
+                self._send_post_comment_push_notification(post_comment=post_comment_reply,
                                                           notification_message=notification_message,
                                                           notification_target_user=post_notification_target_user)
 
@@ -2640,11 +2640,6 @@ class User(AbstractUser):
         else:
             # Comment is a reply
             self._delete_post_comment_reply_notification(post_comment=post_comment)
-
-    def _send_post_comment_reply_push_notification(self, post_comment, notification_message, notification_target_user):
-        helpers.send_post_comment_reply_push_notification_with_message(post_comment=post_comment,
-                                                                       message=notification_message,
-                                                                       target_user=notification_target_user)
 
     def _delete_post_comment_reply_notification(self, post_comment):
         PostCommentReplyNotification = get_post_comment_notification_model()
