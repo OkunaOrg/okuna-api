@@ -377,7 +377,10 @@ class User(AbstractUser):
     def update_notifications_settings(self, post_comment_notifications=None, post_reaction_notifications=None,
                                       follow_notifications=None, connection_request_notifications=None,
                                       connection_confirmed_notifications=None,
-                                      community_invite_notifications=None):
+                                      community_invite_notifications=None,
+                                      post_comment_reaction_notifications=None,
+                                      post_comment_reply_notifications=None,
+                                      ):
 
         notifications_settings = self.notifications_settings
         notifications_settings.update(
@@ -386,7 +389,9 @@ class User(AbstractUser):
             follow_notifications=follow_notifications,
             connection_request_notifications=connection_request_notifications,
             connection_confirmed_notifications=connection_confirmed_notifications,
-            community_invite_notifications=community_invite_notifications
+            community_invite_notifications=community_invite_notifications,
+            post_comment_reaction_notifications=post_comment_reaction_notifications,
+            post_comment_reply_notifications=post_comment_reply_notifications
         )
         return notifications_settings
 
@@ -3839,6 +3844,7 @@ class User(AbstractUser):
             raise ValidationError(
                 _('Post comment already muted'),
             )
+
         self._check_can_see_post_comment(post_comment=post_comment)
 
     def _check_can_unmute_post_comment(self, post_comment):
@@ -4019,10 +4025,14 @@ class UserNotificationsSettings(models.Model):
                follow_notifications=None,
                connection_request_notifications=None,
                connection_confirmed_notifications=None,
-               community_invite_notifications=None):
+               community_invite_notifications=None,
+               post_comment_reaction_notifications=None):
 
         if post_comment_notifications is not None:
             self.post_comment_notifications = post_comment_notifications
+
+        if post_comment_reaction_notifications is not None:
+            self.post_comment_reaction_notifications = post_comment_reaction_notifications
 
         if post_comment_reply_notifications is not None:
             self.post_comment_reply_notifications = post_comment_reply_notifications
