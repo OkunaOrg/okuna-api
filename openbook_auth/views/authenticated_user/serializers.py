@@ -48,6 +48,17 @@ class GetAuthenticatedUserProfileSerializer(serializers.ModelSerializer):
         )
 
 
+class UserLanguageSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Language
+        fields = (
+            'id',
+            'code',
+            'name',
+        )
+
+
 class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
     profile = GetAuthenticatedUserProfileSerializer(many=False)
     posts_count = PostsCountField()
@@ -58,6 +69,7 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
     is_member_of_communities = IsMemberOfCommunities()
     pending_communities_moderated_objects_count = UserPendingCommunitiesModeratedObjectsCountField()
     active_moderation_penalties_count = UserActiveModerationPenaltiesCountField()
+    language = UserLanguageSerializer()
 
     class Meta:
         model = User
@@ -67,6 +79,7 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
             'email',
             'username',
             'profile',
+            'language',
             'posts_count',
             'invite_count',
             'are_guidelines_accepted',
