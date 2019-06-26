@@ -132,7 +132,7 @@ Sharing any of these will lead to the immediate closure of your account and repo
 
 ## 🚮 Ditch the pornography
 
-Printed, visual and links to material containing the display of sexual organs, activity or nudity[*](#on-non-sexual-nudity) are not allowed.
+Printed, visual or links to material containing the display of sexual organs, activity or nudity[*](#on-non-sexual-nudity) are not allowed.
 
 ## 🏡 Embrace the shared responsibility
 
