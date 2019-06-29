@@ -1194,9 +1194,9 @@ class PostCommentsAPITests(APITestCase):
         self.assertTrue(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
                                                                notification__owner=foreign_user).exists())
 
-    def test_commenting_in_commented_post_by_foreign_user_not_creates_foreign_notification_when_muted(self):
+    def test_commenting_in_commented_post_by_foreign_user_creates_foreign_notification_when_muted(self):
         """
-         should NOT create a notification when a user comments in a post where a foreign user commented and muted before
+         should create a notification when a user comments in a post where a foreign user commented and muted before
          """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
@@ -1218,8 +1218,8 @@ class PostCommentsAPITests(APITestCase):
         url = self._get_url(post)
         self.client.put(url, data, **headers)
 
-        self.assertFalse(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
-                                                                notification__owner=foreign_user).exists())
+        self.assertTrue(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
+                                                               notification__owner=foreign_user).exists())
 
     def test_comment_in_an_encircled_post_with_a_user_removed_from_the_circle_not_notifies_it(self):
         """
@@ -1270,8 +1270,8 @@ class PostCommentsAPITests(APITestCase):
 
         post = post_creator.create_public_post(text=make_fake_post_text())
         post_comment = post_creator.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
-        user.reply_to_comment_with_id(post_comment_id=post_comment.pk,
-                                      text=make_fake_post_comment_text())
+        user.reply_to_comment_with_id_for_post_with_uuid(post_comment_id=post_comment.pk, post_uuid=post.uuid,
+                                                         text=make_fake_post_comment_text())
 
         comment_text = make_fake_post_comment_text()
 

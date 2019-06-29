@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from openbook_common.models import Emoji, EmojiGroup
+from openbook_common.models import Emoji, EmojiGroup, Badge
 
 
 class EmojiSerializer(serializers.ModelSerializer):
@@ -35,4 +35,13 @@ class EmojiGroupSerializer(serializers.ModelSerializer):
             'created',
             'order',
             'emojis',
+        )
+
+
+class UserProfileBadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Badge
+        fields = (
+            'keyword',
+            'keyword_description'
         )
