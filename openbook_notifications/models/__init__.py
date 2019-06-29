@@ -6,3 +6,4 @@ from .post_comment_notification import PostCommentNotification
 from .post_comment_reply_notification import PostCommentReplyNotification
 from .post_reaction_notification import PostReactionNotification
 from .community_invite_notification import CommunityInviteNotification
+from .post_comment_reaction_notification import PostCommentReactionNotification
