@@ -120,7 +120,8 @@ class NotificationPostCommentSerializer(serializers.ModelSerializer):
             'id',
             'commenter',
             'text',
-            'post'
+            'post',
+            'created'
         )
 
 
@@ -204,7 +205,8 @@ class PostCommentReactionSerializer(serializers.ModelSerializer):
             'id',
             'reactor',
             'emoji',
-            'post_comment'
+            'post_comment',
+            'created'
         )
 
 

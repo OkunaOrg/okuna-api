@@ -1,7 +1,6 @@
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.db.models import Q
 from django.utils import timezone
 
 from openbook_auth.models import User
@@ -15,7 +14,7 @@ class Notification(models.Model):
     POST_REACTION = 'PR'
     POST_COMMENT = 'PC'
     POST_COMMENT_REPLY = 'PCR'
-    POST_COMMENT_REACTION = 'PCR'
+    POST_COMMENT_REACTION = 'PCRA'
     CONNECTION_REQUEST = 'CR'
     CONNECTION_CONFIRMED = 'CC'
     FOLLOW = 'F'
