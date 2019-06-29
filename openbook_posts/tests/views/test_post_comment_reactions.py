@@ -56,6 +56,33 @@ class PostCommentReactionsAPITests(APITestCase):
             PostCommentReaction.objects.filter(post_comment_id=post_comment.pk, emoji_id=post_comment_reaction_emoji_id,
                                                reactor_id=user.pk).count() == 1)
 
+    def test_can_react_to_post_comment_reply(self):
+        """
+         should be able to react to post comment reply and return 201
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post(post=post, text=make_fake_post_comment_text())
+        post_comment_reply = user.reply_to_comment_for_post(post=post, post_comment=post_comment,
+                                                            text=make_fake_post_comment_text())
+
+        emoji_group = make_reactions_emoji_group()
+
+        post_comment_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_comment_reaction_request_data(post_comment_reaction_emoji_id)
+
+        url = self._get_url(post=post, post_comment=post_comment_reply)
+        response = self.client.put(url, data, **headers)
+
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+        self.assertTrue(
+            PostCommentReaction.objects.filter(post_comment_id=post_comment_reply.pk,
+                                               emoji_id=post_comment_reaction_emoji_id,
+                                               reactor_id=user.pk).count() == 1)
+
     def test_cannot_react_to_foreign_encircled_post_comment(self):
         """
          should not be able to react in a foreign encircled post comment and return 400
@@ -657,7 +684,7 @@ class PostCommentReactionsAPITests(APITestCase):
 
     @mock.patch('openbook_notifications.helpers.send_post_comment_reaction_push_notification')
     def test_reacting_on_foreign_post_comment_doesnt_send_push_notification_when_post_muted(self,
-                                                                                       send_post_comment_reaction_push_notification_call):
+                                                                                            send_post_comment_reaction_push_notification_call):
         """
          should NOT send a push notification when reacting on a foreign post comment when post muted
          """

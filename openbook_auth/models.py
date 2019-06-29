@@ -663,6 +663,7 @@ class User(AbstractUser):
 
     def can_see_post_comment(self, post_comment):
         post_comment_query = self._make_get_post_comment_with_id_query(post_comment_id=post_comment.pk,
+                                                                       post_comment_parent_id=post_comment.parent_comment_id,
                                                                        post=post_comment.post)
         PostComment = get_post_comment_model()
         return PostComment.objects.filter(post_comment_query).exists()
@@ -887,7 +888,8 @@ class User(AbstractUser):
     def get_comment_replies_for_comment_with_post(self, post, post_comment, min_id=None, max_id=None):
         self._check_can_get_comment_replies_for_post_and_comment(post=post, post_comment=post_comment)
 
-        comment_replies_query = self._make_get_comments_for_post_query(post=post, parent_post_comment=post_comment,
+        comment_replies_query = self._make_get_comments_for_post_query(post=post,
+                                                                       post_comment_parent_id=post_comment.pk,
                                                                        max_id=max_id,
                                                                        min_id=min_id)
         PostComment = get_post_comment_model()
@@ -3160,9 +3162,10 @@ class User(AbstractUser):
 
         return reactions_query
 
-    def _make_get_post_comment_with_id_query(self, post_comment_id, post):
+    def _make_get_post_comment_with_id_query(self, post_comment_id, post, post_comment_parent_id=None):
 
-        post_comments_query = self._make_get_comments_for_post_query(post=post)
+        post_comments_query = self._make_get_comments_for_post_query(post=post,
+                                                                     post_comment_parent_id=post_comment_parent_id)
 
         post_comment_query = Q(pk=post_comment_id)
 
@@ -3170,16 +3173,16 @@ class User(AbstractUser):
 
         return post_comments_query
 
-    def _make_get_comments_for_post_query(self, post, parent_post_comment=None, max_id=None, min_id=None):
+    def _make_get_comments_for_post_query(self, post, post_comment_parent_id=None, max_id=None, min_id=None):
 
         # Comments from the post
         comments_query = Q(post_id=post.pk)
 
         # If we are retrieving replies, add the parent_comment to the query
-        if parent_post_comment is None:
+        if post_comment_parent_id is None:
             comments_query.add(Q(parent_comment__isnull=True), Q.AND)
         else:
-            comments_query.add(Q(parent_comment__id=parent_post_comment.pk), Q.AND)
+            comments_query.add(Q(parent_comment__id=post_comment_parent_id), Q.AND)
 
         post_community = post.community
 
