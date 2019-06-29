@@ -123,11 +123,11 @@ class PostCreatorField(Field):
         return post_creator_serializer
 
 
-class IsMutedField(Field):
+class PostIsMutedField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'
         kwargs['read_only'] = True
-        super(IsMutedField, self).__init__(**kwargs)
+        super(PostIsMutedField, self).__init__(**kwargs)
 
     def to_representation(self, post):
         request = self.context.get('request')

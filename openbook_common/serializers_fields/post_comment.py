@@ -95,3 +95,21 @@ class PostCommentReactionField(Field):
                 pass
 
         return serialized_commentReaction
+
+
+class PostCommentIsMutedField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(PostCommentIsMutedField, self).__init__(**kwargs)
+
+    def to_representation(self, post_comment):
+        request = self.context.get('request')
+        request_user = request.user
+
+        is_muted = False
+
+        if not request_user.is_anonymous:
+            is_muted = request_user.has_muted_post_comment_with_id(post_comment_id=post_comment.pk)
+
+        return is_muted

@@ -4,7 +4,7 @@ from django.conf import settings
 from openbook_auth.models import UserProfile, User
 from openbook_common.models import Emoji
 from openbook_common.serializers_fields.post_comment import PostCommenterField, RepliesCountField, \
-    PostCommentReactionsEmojiCountField, PostCommentReactionField
+    PostCommentReactionsEmojiCountField, PostCommentReactionField, PostCommentIsMutedField
 from openbook_communities.models import CommunityMembership
 from openbook_posts.models import PostComment, Post, PostCommentReaction
 from openbook_posts.validators import post_uuid_exists
@@ -86,6 +86,7 @@ class PostCommentReplySerializer(serializers.ModelSerializer):
     reactions_emoji_counts = PostCommentReactionsEmojiCountField(
         emoji_count_serializer=PostCommentReactionEmojiCountSerializer)
     reaction = PostCommentReactionField(post_comment_reaction_serializer=PostCommentReactionSerializer)
+    is_muted = PostCommentIsMutedField()
 
     class Meta:
         model = PostComment
@@ -95,6 +96,7 @@ class PostCommentReplySerializer(serializers.ModelSerializer):
             'text',
             'created',
             'is_edited',
+            'is_muted',
             'reactions_emoji_counts',
             'id',
             'reaction'
@@ -109,6 +111,7 @@ class PostCommentSerializer(serializers.ModelSerializer):
     reactions_emoji_counts = PostCommentReactionsEmojiCountField(
         emoji_count_serializer=PostCommentReactionEmojiCountSerializer)
     reaction = PostCommentReactionField(post_comment_reaction_serializer=PostCommentReactionSerializer)
+    is_muted = PostCommentIsMutedField()
 
     class Meta:
         model = PostComment
@@ -121,6 +124,7 @@ class PostCommentSerializer(serializers.ModelSerializer):
             'replies',
             'reaction',
             'is_edited',
+            'is_muted',
             'id'
         )
 

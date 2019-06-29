@@ -4,7 +4,7 @@ from rest_framework import serializers
 from openbook_auth.models import User, UserProfile
 from openbook_common.models import Emoji, Badge
 from openbook_common.serializers_fields.post import PostReactionsEmojiCountField, CommentsCountField, PostCreatorField, \
-    IsMutedField, ReactionField
+    PostIsMutedField, ReactionField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
 from openbook_communities.models import CommunityMembership, Community
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
@@ -154,7 +154,7 @@ class CommunityPostSerializer(serializers.ModelSerializer):
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=CommunityPostEmojiCountSerializer)
     comments_count = CommentsCountField()
     community = CommunityPostCommunitySerializer(many=False)
-    is_muted = IsMutedField()
+    is_muted = PostIsMutedField()
     reaction = ReactionField(reaction_serializer=PostReactionSerializer)
 
     class Meta:
