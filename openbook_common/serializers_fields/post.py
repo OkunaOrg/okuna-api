@@ -2,7 +2,7 @@ from rest_framework.fields import Field
 
 from openbook_common.utils.model_loaders import get_post_model
 from openbook_communities.models import CommunityMembership
-from openbook_posts.models import PostReaction
+from openbook_posts.models import PostReaction, PostCommentReaction
 
 
 class ReactionField(Field):
@@ -46,7 +46,6 @@ class CommentsCountField(Field):
             comments_count = request_user.get_comments_count_for_post(post=post)
 
         return comments_count
-
 
 class PostReactionsEmojiCountField(Field):
     def __init__(self, emoji_count_serializer=None, **kwargs):

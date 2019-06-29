@@ -2,8 +2,9 @@ from rest_framework import serializers
 from django.conf import settings
 
 from openbook_common.models import Emoji
-from openbook_common.serializers_fields.post_comment import PostCommenterField, PostCommentReactionsEmojiCountField
-from openbook_posts.models import PostComment
+from openbook_common.serializers_fields.post_comment import PostCommenterField, PostCommentReactionsEmojiCountField, \
+    PostCommentReactionField
+from openbook_posts.models import PostComment, PostCommentReaction
 from openbook_posts.validators import post_comment_id_exists, post_uuid_exists
 
 from openbook_posts.views.post_comments.serializers import PostCommentCommenterSerializer, \
@@ -30,7 +31,7 @@ class PostCommentReplyParentSerializer(serializers.ModelSerializer):
         )
 
 
-class PostReactionEmojiSerializer(serializers.ModelSerializer):
+class PostCommentReactionEmojiSerializer(serializers.ModelSerializer):
     class Meta:
         model = Emoji
         fields = (
@@ -42,8 +43,19 @@ class PostReactionEmojiSerializer(serializers.ModelSerializer):
 
 
 class PostEmojiCountSerializer(serializers.Serializer):
-    emoji = PostReactionEmojiSerializer(many=False)
+    emoji = PostCommentReactionEmojiSerializer(many=False)
     count = serializers.IntegerField(required=True, )
+
+
+class PostCommentReactionSerializer(serializers.ModelSerializer):
+    emoji = PostCommentReactionEmojiSerializer(many=False)
+
+    class Meta:
+        model = PostCommentReaction
+        fields = (
+            'emoji',
+            'id'
+        )
 
 
 class PostCommentReplySerializer(serializers.ModelSerializer):
@@ -51,12 +63,14 @@ class PostCommentReplySerializer(serializers.ModelSerializer):
                                    community_membership_serializer=PostCommenterCommunityMembershipSerializer)
     parent_comment = PostCommentReplyParentSerializer()
     reactions_emoji_counts = PostCommentReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
+    reaction = PostCommentReactionField(post_comment_reaction_serializer=PostCommentReactionSerializer)
 
     class Meta:
         model = PostComment
         fields = (
             'commenter',
             'reactions_emoji_counts',
+            'reaction',
             'text',
             'created',
             'parent_comment',

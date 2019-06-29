@@ -4,9 +4,9 @@ from django.conf import settings
 from openbook_auth.models import UserProfile, User
 from openbook_common.models import Emoji
 from openbook_common.serializers_fields.post_comment import PostCommenterField, RepliesCountField, \
-    PostCommentReactionsEmojiCountField
+    PostCommentReactionsEmojiCountField, PostCommentReactionField
 from openbook_communities.models import CommunityMembership
-from openbook_posts.models import PostComment, Post
+from openbook_posts.models import PostComment, Post, PostCommentReaction
 from openbook_posts.validators import post_uuid_exists
 from openbook_posts.views.post_comments.serializer_fields import RepliesField
 
@@ -52,24 +52,7 @@ class PostCommentRepliesParentCommentSerializer(serializers.ModelSerializer):
         )
 
 
-class PostCommentReplySerializer(serializers.ModelSerializer):
-    parent_comment = PostCommentRepliesParentCommentSerializer()
-    commenter = PostCommenterField(post_commenter_serializer=PostCommentCommenterSerializer,
-                                   community_membership_serializer=PostCommenterCommunityMembershipSerializer)
-
-    class Meta:
-        model = PostComment
-        fields = (
-            'commenter',
-            'parent_comment',
-            'text',
-            'created',
-            'is_edited',
-            'id'
-        )
-
-
-class PostReactionEmojiSerializer(serializers.ModelSerializer):
+class PostCommentReactionEmojiSerializer(serializers.ModelSerializer):
     class Meta:
         model = Emoji
         fields = (
@@ -80,9 +63,42 @@ class PostReactionEmojiSerializer(serializers.ModelSerializer):
         )
 
 
-class PostEmojiCountSerializer(serializers.Serializer):
-    emoji = PostReactionEmojiSerializer(many=False)
+class PostCommentReactionEmojiCountSerializer(serializers.Serializer):
+    emoji = PostCommentReactionEmojiSerializer(many=False)
     count = serializers.IntegerField(required=True, )
+
+
+class PostCommentReactionSerializer(serializers.ModelSerializer):
+    emoji = PostCommentReactionEmojiSerializer(many=False)
+
+    class Meta:
+        model = PostCommentReaction
+        fields = (
+            'emoji',
+            'id'
+        )
+
+
+class PostCommentReplySerializer(serializers.ModelSerializer):
+    parent_comment = PostCommentRepliesParentCommentSerializer()
+    commenter = PostCommenterField(post_commenter_serializer=PostCommentCommenterSerializer,
+                                   community_membership_serializer=PostCommenterCommunityMembershipSerializer)
+    reactions_emoji_counts = PostCommentReactionsEmojiCountField(
+        emoji_count_serializer=PostCommentReactionEmojiCountSerializer)
+    reaction = PostCommentReactionField(post_comment_reaction_serializer=PostCommentReactionSerializer)
+
+    class Meta:
+        model = PostComment
+        fields = (
+            'commenter',
+            'parent_comment',
+            'text',
+            'created',
+            'is_edited',
+            'reactions_emoji_counts',
+            'id',
+            'reaction'
+        )
 
 
 class PostCommentSerializer(serializers.ModelSerializer):
@@ -90,7 +106,9 @@ class PostCommentSerializer(serializers.ModelSerializer):
                                    community_membership_serializer=PostCommenterCommunityMembershipSerializer)
     replies = RepliesField(post_comment_reply_serializer=PostCommentReplySerializer)
     replies_count = RepliesCountField()
-    reactions_emoji_counts = PostCommentReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
+    reactions_emoji_counts = PostCommentReactionsEmojiCountField(
+        emoji_count_serializer=PostCommentReactionEmojiCountSerializer)
+    reaction = PostCommentReactionField(post_comment_reaction_serializer=PostCommentReactionSerializer)
 
     class Meta:
         model = PostComment
@@ -101,6 +119,7 @@ class PostCommentSerializer(serializers.ModelSerializer):
             'reactions_emoji_counts',
             'replies_count',
             'replies',
+            'reaction',
             'is_edited',
             'id'
         )
