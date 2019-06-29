@@ -35,6 +35,7 @@ class PostReactorProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'avatar',
+            'id'
         )
 
 
