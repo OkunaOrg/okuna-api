@@ -34,7 +34,8 @@ class PostCommentCommenterProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'name'
         )
 
 
@@ -76,6 +77,7 @@ class PostCommentCreatorProfileSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'avatar',
+            'name'
         )
 
 
@@ -168,7 +170,8 @@ class PostCommentReactionReactorProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'name'
         )
 
 
@@ -226,7 +229,8 @@ class PostReactionReactorProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'name'
         )
 
 
@@ -283,7 +287,8 @@ class ConnectionRequesterProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'name'
         )
 
 
@@ -315,7 +320,8 @@ class ConnectionConfirmatorProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'name'
         )
 
 
@@ -347,7 +353,8 @@ class FollowerProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'name'
         )
 
 
@@ -379,7 +386,8 @@ class CommunityInviteCreatorProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'name'
         )
 
 
