@@ -39,7 +39,7 @@ def make_user(username=None, invite_count=None):
     elif invite_count:
         user = mixer.blend(User, invite_count=invite_count)
     else:
-        user = make_user()
+        user = mixer.blend(User)
 
     profile = make_profile(user)
     return user
