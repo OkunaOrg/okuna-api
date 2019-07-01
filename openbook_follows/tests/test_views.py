@@ -28,7 +28,7 @@ class FollowsAPITests(APITestCase):
         """
         should be able to retrieve own follows and return 200
         """
-        user = mixer.blend(User)
+        user = make_user()
         auth_token = user.auth_token.key
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
@@ -63,12 +63,12 @@ class FollowAPITests(APITestCase):
         """
         should be able to follow another user on an specific list and return 200
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
         list_to_follow = mixer.blend(List, creator=user)
-        user_to_follow = mixer.blend(User)
+        user_to_follow = make_user()
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
@@ -89,7 +89,7 @@ class FollowAPITests(APITestCase):
         """
         should be able to follow another user on multiple lists and return 200
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
@@ -100,7 +100,7 @@ class FollowAPITests(APITestCase):
             list_to_follow = mixer.blend(List, creator=user)
             lists_to_follow_ids.append(list_to_follow.pk)
 
-        user_to_follow = mixer.blend(User)
+        user_to_follow = make_user()
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
@@ -124,12 +124,12 @@ class FollowAPITests(APITestCase):
         """
         should not be able to follow a user already followed with and return 400
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
         list_to_follow = mixer.blend(List, creator=user)
-        user_to_follow = mixer.blend(User)
+        user_to_follow = make_user()
 
         user.follow_user(user_to_follow, lists_ids=[list_to_follow.pk])
 
@@ -150,7 +150,7 @@ class FollowAPITests(APITestCase):
         """
         should not be able to follow oneself and return 400
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
@@ -174,11 +174,11 @@ class FollowAPITests(APITestCase):
         """
         should create a notification when a user is followed
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
-        user_to_follow = mixer.blend(User)
+        user_to_follow = make_user()
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
@@ -201,12 +201,12 @@ class UnfollowAPITest(APITestCase):
         """
         should be able to unfollow a user and return 200
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
         list_to_follow = mixer.blend(List, creator=user)
-        user_to_unfollow = mixer.blend(User)
+        user_to_unfollow = make_user()
 
         user.follow_user(user_to_unfollow, lists_ids=[list_to_follow.pk])
 
@@ -228,9 +228,9 @@ class UnfollowAPITest(APITestCase):
         """
         should not be able to unfollow from an unexisting follow and return 400
         """
-        user = mixer.blend(User)
+        user = make_user()
 
-        not_followed_user = mixer.blend(User)
+        not_followed_user = make_user()
 
         auth_token = user.auth_token.key
 
@@ -252,12 +252,12 @@ class UnfollowAPITest(APITestCase):
         """
         should delete the follow notification when a user is unfollowed
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
         list_to_follow = mixer.blend(List, creator=user)
-        user_to_unfollow = mixer.blend(User)
+        user_to_unfollow = make_user()
 
         user.follow_user(user_to_unfollow, lists_ids=[list_to_follow.pk])
 
@@ -286,12 +286,12 @@ class UpdateFollowAPITest(APITestCase):
         """
         should be able to update an own follow and return 200
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
         list_to_follow = mixer.blend(List, creator=user)
-        user_to_follow = mixer.blend(User)
+        user_to_follow = make_user()
 
         user.follow_user(user_to_follow, lists_ids=[list_to_follow.pk])
 
@@ -316,8 +316,8 @@ class UpdateFollowAPITest(APITestCase):
         """
         should be able to update an own follow of multiple lists and return 200
         """
-        user = mixer.blend(User)
-        user_to_follow = mixer.blend(User)
+        user = make_user()
+        user_to_follow = make_user()
 
         initial_list_to_follow_in = mixer.blend(List, creator=user)
 
@@ -359,11 +359,11 @@ class UpdateFollowAPITest(APITestCase):
         """
         should not be able to update an unexisting follow and return 400
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
-        not_followed_user = mixer.blend(User)
+        not_followed_user = make_user()
 
         new_list = mixer.blend(List, creator=user)
 
