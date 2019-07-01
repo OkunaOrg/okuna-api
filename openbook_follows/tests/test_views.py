@@ -10,6 +10,7 @@ from faker import Faker
 import logging
 import json
 
+from openbook_common.tests.helpers import make_user
 from openbook_lists.models import List
 from openbook_follows.models import Follow
 from openbook_notifications.models import FollowNotification, Notification
