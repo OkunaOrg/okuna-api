@@ -44,7 +44,7 @@ class PostsAPITests(APITestCase):
         """
         should be able to create a text post and return 201
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
@@ -72,7 +72,7 @@ class PostsAPITests(APITestCase):
         """
         the created text post should automatically added to world circle
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
@@ -96,7 +96,7 @@ class PostsAPITests(APITestCase):
         """
         should be able to create a text post in an specified circle and  return 201
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         circle = mixer.blend(Circle, creator=user)
 
@@ -180,7 +180,7 @@ class PostsAPITests(APITestCase):
         """
         should be able to create an image post and return 201
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
@@ -215,7 +215,7 @@ class PostsAPITests(APITestCase):
         """
         should be able to create an image and text post and return 201
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
@@ -255,7 +255,7 @@ class PostsAPITests(APITestCase):
         """
         creating an image post should create a hash and return 201
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         image = Image.new('RGB', (100, 100))
         tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
@@ -408,7 +408,7 @@ class PostsAPITests(APITestCase):
         # BEWARE The max count for the API is 20. If we are checking for more than 20
         # posts, it will fail
 
-        user = mixer.blend(User)
+        user = make_user()
         auth_token = user.auth_token.key
 
         amount_of_own_posts = 5
@@ -476,7 +476,7 @@ class PostsAPITests(APITestCase):
         """
         should be able to retrieve all posts for a given circle
         """
-        user = mixer.blend(User)
+        user = make_user()
         auth_token = user.auth_token.key
 
         amount_of_users_to_follow = 5
@@ -507,7 +507,7 @@ class PostsAPITests(APITestCase):
         in_circle_posts_ids = []
 
         for index, circle_to_retrieve_posts_from in enumerate(circles_to_retrieve_posts_from):
-            user_in_circle = mixer.blend(User)
+            user_in_circle = make_user()
             user.connect_with_user_with_id(user_in_circle.pk, circles_ids=[circle_to_retrieve_posts_from.pk])
             post_in_circle = user_in_circle.create_public_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
             in_circle_posts_ids.append(post_in_circle.pk)
@@ -536,7 +536,7 @@ class PostsAPITests(APITestCase):
         should be able to retrieve all posts for a given list
         """
 
-        user = mixer.blend(User)
+        user = make_user()
         auth_token = user.auth_token.key
 
         amount_of_users_to_follow = 5
@@ -566,7 +566,7 @@ class PostsAPITests(APITestCase):
         in_list_posts_ids = []
 
         for index, list_to_retrieve_posts_from in enumerate(lists_to_retrieve_posts_from):
-            user_in_list = mixer.blend(User)
+            user_in_list = make_user()
             user.follow_user(user_in_list, lists_ids=[list_to_retrieve_posts_from.pk])
             post_in_list = user_in_list.create_public_post(text=fake.text(max_nb_chars=POST_MAX_LENGTH))
             in_list_posts_ids.append(post_in_list.pk)
@@ -594,7 +594,7 @@ class PostsAPITests(APITestCase):
         """
         should be able to retrieve all posts with a max id and count
         """
-        user = mixer.blend(User)
+        user = make_user()
         auth_token = user.auth_token.key
 
         amount_of_own_posts = 10
@@ -658,7 +658,7 @@ class PostsAPITests(APITestCase):
         """
         should be able to retrieve all posts with a min id and count
         """
-        user = mixer.blend(User)
+        user = make_user()
         auth_token = user.auth_token.key
 
         amount_of_own_posts = 10
