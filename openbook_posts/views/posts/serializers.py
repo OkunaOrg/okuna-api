@@ -6,8 +6,8 @@ from openbook_auth.validators import user_username_exists, username_characters_v
 from openbook_circles.models import Circle
 from openbook_circles.validators import circle_id_exists
 from openbook_common.models import Emoji, Badge
-from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, ReactionsEmojiCountField, \
-    CirclesField, PostCreatorField, IsMutedField, IsEncircledField
+from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, PostReactionsEmojiCountField, \
+    CirclesField, PostCreatorField, PostIsMutedField, IsEncircledField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
 from openbook_common.models import Language
 from openbook_communities.models import Community, CommunityMembership
@@ -74,7 +74,8 @@ class PostCreatorProfileSerializer(serializers.ModelSerializer):
         fields = (
             'avatar',
             'cover',
-            'badges'
+            'badges',
+            'name'
         )
 
 
@@ -200,13 +201,13 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     video = PostVideoSerializer(many=False)
     creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
-    reactions_emoji_counts = ReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
+    reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
     reaction = ReactionField(reaction_serializer=PostReactionSerializer)
     comments_count = CommentsCountField()
     circles = CirclesField(circle_serializer=PostCircleSerializer)
     community = PostCommunitySerializer()
+    is_muted = PostIsMutedField()
     language = PostLanguageSerializer()
-    is_muted = IsMutedField()
     is_encircled = IsEncircledField()
 
     class Meta:
@@ -239,7 +240,7 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
     video = PostVideoSerializer(many=False)
     creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
-    reactions_emoji_counts = ReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
+    reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
     comments_count = CommentsCountField()
 
     class Meta:

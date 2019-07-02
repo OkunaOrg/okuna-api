@@ -6,7 +6,7 @@ name = "pypi"
 [dev-packages]
 
 [packages]
-django = ">=2.1.6"
+django = ">=2.2.2"
 python-dotenv = "*"
 djangorestframework = "*"
 sentry-sdk = "*"
@@ -24,7 +24,7 @@ django-storages = "*"
 django-amazon-ses = "*"
 django-media-fixtures = "==0.0.3"
 django-modeltranslation = {editable = true,git = "https://github.com/lifenautjoe/django-modeltranslation.git"}
-bandit = "*"
+bandit = "==1.5.1"
 pyyaml = ">=4.2b1"
 python-magic = "*"
 safety = "*"
@@ -35,9 +35,10 @@ onesignal-sdk = "*"
 django-replicated = "*"
 django-cacheops = "*"
 django-redis = "*"
-redis-py-cluster = "*"
 django-extensions = "*"
 langdetect = "*"
+django-rq = "*"
+redis = "*"
 
 [pipenv]
 allow_prereleases = true

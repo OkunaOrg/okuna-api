@@ -16,8 +16,8 @@ class RepliesField(Field):
         sort_query = self.context.get('sort_query', '-created')
         request_user = request.user
 
-        replies = request_user.get_comment_replies_for_post_with_id_for_comment_with_id(
-            post_id=post_comment.post.pk,
+        replies = request_user.get_comment_replies_for_comment_with_id_with_post_with_uuid(
+            post_uuid=post_comment.post.uuid,
             post_comment_id=post_comment.pk
         ).order_by(sort_query)[:self.DEFAULT_REPLY_COUNT]
 

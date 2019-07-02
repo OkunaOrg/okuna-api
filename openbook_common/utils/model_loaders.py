@@ -21,6 +21,10 @@ def get_post_mute_model():
     return apps.get_model('openbook_posts.PostMute')
 
 
+def get_post_comment_mute_model():
+    return apps.get_model('openbook_posts.PostCommentMute')
+
+
 def get_user_block_model():
     return apps.get_model('openbook_auth.UserBlock')
 
@@ -47,6 +51,10 @@ def get_post_comment_model():
 
 def get_post_reaction_model():
     return apps.get_model('openbook_posts.PostReaction')
+
+
+def get_post_comment_reaction_model():
+    return apps.get_model('openbook_posts.PostCommentReaction')
 
 
 def get_emoji_model():
@@ -92,6 +100,8 @@ def get_post_comment_reply_notification_model():
 def get_post_reaction_notification_model():
     return apps.get_model('openbook_notifications.PostReactionNotification')
 
+def get_post_comment_reaction_notification_model():
+    return apps.get_model('openbook_notifications.PostCommentReactionNotification')
 
 def get_follow_notification_model():
     return apps.get_model('openbook_notifications.FollowNotification')

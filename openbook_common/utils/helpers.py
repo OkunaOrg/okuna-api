@@ -6,6 +6,8 @@ from imagekit.utils import get_cache
 from imagekit.models import ProcessedImageField
 import hashlib
 
+from openbook_common.utils.model_loaders import get_post_model
+
 r = lambda: secrets.randbelow(255)
 
 
@@ -82,3 +84,8 @@ def _sha256sum(file):
         h.update(mv[:n])
     file.seek(0)
     return h.hexdigest()
+
+
+def get_post_id_for_post_uuid(post_uuid):
+    Post = get_post_model()
+    return Post.get_post_id_for_post_with_uuid(post_uuid=post_uuid)

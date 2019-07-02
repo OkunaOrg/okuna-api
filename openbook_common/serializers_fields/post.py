@@ -2,7 +2,7 @@ from rest_framework.fields import Field
 
 from openbook_common.utils.model_loaders import get_post_model
 from openbook_communities.models import CommunityMembership
-from openbook_posts.models import PostReaction
+from openbook_posts.models import PostReaction, PostCommentReaction
 
 
 class ReactionField(Field):
@@ -47,13 +47,12 @@ class CommentsCountField(Field):
 
         return comments_count
 
-
-class ReactionsEmojiCountField(Field):
+class PostReactionsEmojiCountField(Field):
     def __init__(self, emoji_count_serializer=None, **kwargs):
         kwargs['source'] = '*'
         kwargs['read_only'] = True
         self.emoji_count_serializer = emoji_count_serializer
-        super(ReactionsEmojiCountField, self).__init__(**kwargs)
+        super(PostReactionsEmojiCountField, self).__init__(**kwargs)
 
     def to_representation(self, post):
         request = self.context.get('request')
@@ -64,7 +63,7 @@ class ReactionsEmojiCountField(Field):
         if request_user.is_anonymous:
             if post.public_reactions:
                 Post = get_post_model()
-                reaction_emoji_count = Post.get_public_emoji_counts_for_post_with_id(post.pk)
+                reaction_emoji_count = Post.get_emoji_counts_for_post_with_id(post.pk)
         else:
             reaction_emoji_count = request_user.get_emoji_counts_for_post_with_id(post.pk)
 
@@ -124,11 +123,11 @@ class PostCreatorField(Field):
         return post_creator_serializer
 
 
-class IsMutedField(Field):
+class PostIsMutedField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'
         kwargs['read_only'] = True
-        super(IsMutedField, self).__init__(**kwargs)
+        super(PostIsMutedField, self).__init__(**kwargs)
 
     def to_representation(self, post):
         request = self.context.get('request')

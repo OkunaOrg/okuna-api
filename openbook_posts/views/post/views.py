@@ -5,19 +5,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.translation import ugettext_lazy as _
 
+from openbook_common.utils.helpers import get_post_id_for_post_uuid
 from openbook_moderation.permissions import IsNotSuspended
-from openbook_common.utils.model_loaders import get_post_model
 from openbook_posts.views.post.serializers import DeletePostSerializer, GetPostSerializer, GetPostPostSerializer, \
     UnmutePostSerializer, MutePostSerializer, EditPostSerializer, AuthenticatedUserEditPostSerializer, OpenClosePostSerializer, \
     OpenPostSerializer, ClosePostSerializer
-
-
-# TODO Use post uuid also internally, not only as API resource identifier
-# In order to prevent enumerable posts API in alpha, this is done as a hotfix
-
-def get_post_id_for_post_uuid(post_uuid):
-    Post = get_post_model()
-    return Post.get_post_id_for_post_with_uuid(post_uuid=post_uuid)
 
 
 class PostItem(APIView):

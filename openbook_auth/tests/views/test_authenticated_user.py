@@ -572,17 +572,21 @@ class AuthenticatedUserNotificationsSettingsTests(APITestCase):
         notifications_settings.connection_request_notifications = fake.boolean()
         notifications_settings.connection_confirmed_notifications = fake.boolean()
         notifications_settings.community_invite_notifications = fake.boolean()
+        notifications_settings.post_comment_reply_notifications = fake.boolean()
+        notifications_settings.post_comment_reaction_notifications = fake.boolean()
 
         notifications_settings.save()
 
         headers = make_authentication_headers_for_user(user)
 
-        new_post_comment_notifications = notifications_settings.post_comment_notifications
-        new_post_reaction_notifications = notifications_settings.post_reaction_notifications
-        new_follow_notifications = notifications_settings.follow_notifications
-        new_connection_request_notifications = notifications_settings.connection_request_notifications
-        new_connection_confirmed_notifications = notifications_settings.connection_confirmed_notifications
-        new_community_invite_notifications = notifications_settings.community_invite_notifications
+        new_post_comment_notifications = not notifications_settings.post_comment_notifications
+        new_post_reaction_notifications = not notifications_settings.post_reaction_notifications
+        new_follow_notifications = not notifications_settings.follow_notifications
+        new_connection_request_notifications = not notifications_settings.connection_request_notifications
+        new_connection_confirmed_notifications = not notifications_settings.connection_confirmed_notifications
+        new_community_invite_notifications = not notifications_settings.community_invite_notifications
+        new_post_comment_reaction_notifications = not notifications_settings.post_comment_reaction_notifications
+        new_post_comment_reply_notifications = not notifications_settings.post_comment_reply_notifications
 
         data = {
             'post_comment_notifications': new_post_comment_notifications,
@@ -590,7 +594,9 @@ class AuthenticatedUserNotificationsSettingsTests(APITestCase):
             'follow_notifications': new_follow_notifications,
             'connection_request_notifications': new_connection_request_notifications,
             'connection_confirmed_notifications': new_connection_confirmed_notifications,
-            'community_invite_notifications': new_community_invite_notifications
+            'community_invite_notifications': new_community_invite_notifications,
+            'post_comment_reply_notifications': new_post_comment_reply_notifications,
+            'post_comment_reaction_notifications': new_post_comment_reaction_notifications,
         }
 
         url = self._get_url()
@@ -608,6 +614,10 @@ class AuthenticatedUserNotificationsSettingsTests(APITestCase):
         self.assertEqual(notifications_settings.community_invite_notifications, new_community_invite_notifications)
         self.assertEqual(notifications_settings.connection_confirmed_notifications,
                          new_connection_confirmed_notifications)
+        self.assertEqual(notifications_settings.post_comment_reply_notifications,
+                         new_post_comment_reply_notifications)
+        self.assertEqual(notifications_settings.post_comment_reaction_notifications,
+                         new_post_comment_reaction_notifications)
 
     def _get_url(self):
         return reverse('authenticated-user-notifications-settings')
