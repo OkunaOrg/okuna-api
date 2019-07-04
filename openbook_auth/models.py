@@ -305,6 +305,7 @@ class User(AbstractUser):
 
     def update_password(self, password):
         self.set_password(password)
+        self._reset_auth_token()
         self.save()
 
     def request_email_update(self, email):
@@ -953,14 +954,17 @@ class User(AbstractUser):
             if post_notification_target_has_comment_notifications_enabled:
                 if post_notification_target_user_is_post_creator:
                     notification_message = {
-                        "en": _('@%(post_commenter_username)s commented on your post.') % {
-                            'post_commenter_username': post_commenter.username
+                        "en": _('%(post_commenter_name)s · %(post_commenter_username)s commented on your post.') % {
+                            'post_commenter_username': post_commenter.username,
+                            'post_commenter_name': post_commenter.profile.name,
                         }}
                 else:
                     notification_message = {
-                        "en": _('@%(post_commenter_username)s commented on a post you also commented on.') % {
-                            'post_commenter_username': post_commenter.username
-                        }}
+                        "en": _(
+                            '%(post_commenter_name)s · @%(post_commenter_username)s commented on a post you also commented on.') % {
+                                  'post_commenter_username': post_commenter.username,
+                                  'post_commenter_name': post_commenter.profile.name,
+                              }}
 
                 self._send_post_comment_push_notification(post_comment=post_comment,
                                                           notification_message=notification_message,
@@ -1003,14 +1007,18 @@ class User(AbstractUser):
 
                 if post_notification_target_user_is_post_comment_creator:
                     notification_message = {
-                        "en": _('@%(post_commenter_username)s replied to your comment on a post.') % {
-                            'post_commenter_username': replier.username
-                        }}
+                        "en": _(
+                            '%(post_commenter_name)s · @%(post_commenter_username)s replied to your comment on a post.') % {
+                                  'post_commenter_username': replier.username,
+                                  'post_commenter_name': replier.profile.name,
+                              }}
                 else:
                     notification_message = {
-                        "en": _('@%(post_commenter_username)s replied on a comment you also replied on.') % {
-                            'post_commenter_username': replier.username
-                        }}
+                        "en": _(
+                            '%(post_commenter_name)s · @%(post_commenter_username)s replied on a comment you also replied on.') % {
+                                  'post_commenter_username': replier.username,
+                                  'post_commenter_name': replier.profile.name,
+                              }}
 
                 self._send_post_comment_push_notification(post_comment=post_comment_reply,
                                                           notification_message=notification_message,
@@ -2724,6 +2732,10 @@ class User(AbstractUser):
         ConnectionRequestNotification = get_connection_request_notification_model()
         ConnectionRequestNotification.delete_connection_request_notification_for_users_with_ids(user_a_id=self.pk,
                                                                                                 user_b_id=user_id)
+
+    def _reset_auth_token(self):
+        self.auth_token.delete()
+        bootstrap_user_auth_token(user=self)
 
     def _make_linked_users_query(self, max_id=None):
         # All users which are connected with us and we have accepted by adding
