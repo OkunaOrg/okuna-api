@@ -305,6 +305,7 @@ class User(AbstractUser):
 
     def update_password(self, password):
         self.set_password(password)
+        self._reset_auth_token()
         self.save()
 
     def request_email_update(self, email):
@@ -2731,6 +2732,10 @@ class User(AbstractUser):
         ConnectionRequestNotification = get_connection_request_notification_model()
         ConnectionRequestNotification.delete_connection_request_notification_for_users_with_ids(user_a_id=self.pk,
                                                                                                 user_b_id=user_id)
+
+    def _reset_auth_token(self):
+        self.auth_token.delete()
+        bootstrap_user_auth_token(user=self)
 
     def _make_linked_users_query(self, max_id=None):
         # All users which are connected with us and we have accepted by adding
