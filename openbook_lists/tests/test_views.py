@@ -28,7 +28,7 @@ class ListsAPITests(APITestCase):
         """
         should be able to create a list and return 201
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
@@ -56,7 +56,7 @@ class ListsAPITests(APITestCase):
         """
         should be able to retrieve all own lists return 200
         """
-        user = mixer.blend(User)
+        user = make_user()
         auth_token = user.auth_token.key
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
@@ -89,7 +89,7 @@ class ListItemAPITests(APITestCase):
         """
         should be able to retrieve an own list and return 200
         """
-        user = mixer.blend(User)
+        user = make_user()
         headers = make_authentication_headers_for_user(user)
 
         list = mixer.blend(List, creator=user)
@@ -107,7 +107,7 @@ class ListItemAPITests(APITestCase):
         """
         should be able to delete an own list and return 200
         """
-        user = mixer.blend(User)
+        user = make_user()
         auth_token = user.auth_token.key
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
@@ -125,10 +125,10 @@ class ListItemAPITests(APITestCase):
         """
         should not be able to delete another user list with and return 400
         """
-        user = mixer.blend(User)
+        user = make_user()
         auth_token = user.auth_token.key
 
-        other_user = mixer.blend(User)
+        other_user = make_user()
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
@@ -145,7 +145,7 @@ class ListItemAPITests(APITestCase):
         """
         should be able to update an own list and return 200
         """
-        user = mixer.blend(User)
+        user = make_user()
         auth_token = user.auth_token.key
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
@@ -235,10 +235,10 @@ class ListItemAPITests(APITestCase):
         """
         should not be able update another user list and return 400
         """
-        user = mixer.blend(User)
+        user = make_user()
         auth_token = user.auth_token.key
 
-        other_user = mixer.blend(User)
+        other_user = make_user()
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
