@@ -3,14 +3,18 @@ from django.conf import settings
 from openbook_posts.models import PostComment
 from openbook_posts.validators import post_comment_id_exists, post_uuid_exists, \
     post_comment_id_exists_for_post_with_uuid
+from openbook_posts.views.posts.serializers import PostLanguageSerializer
 
 
 class EditPostCommentSerializer(serializers.ModelSerializer):
+    language = PostLanguageSerializer()
+
     class Meta:
         model = PostComment
         fields = (
             'id',
             'text',
+            'language',
             'is_edited'
         )
 

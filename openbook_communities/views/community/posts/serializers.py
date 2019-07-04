@@ -2,7 +2,7 @@ from django.conf import settings
 from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
-from openbook_common.models import Emoji, Badge
+from openbook_common.models import Emoji, Badge, Language
 from openbook_common.serializers_fields.post import PostReactionsEmojiCountField, CommentsCountField, PostCreatorField, \
     PostIsMutedField, ReactionField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
@@ -146,6 +146,17 @@ class PostReactionSerializer(serializers.ModelSerializer):
         )
 
 
+class PostLanguageSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Language
+        fields = (
+            'id',
+            'code',
+            'name',
+        )
+
+
 class CommunityPostSerializer(serializers.ModelSerializer):
     image = CommunityPostImageSerializer(many=False)
     video = CommunityPostVideoSerializer(many=False)
@@ -156,6 +167,7 @@ class CommunityPostSerializer(serializers.ModelSerializer):
     community = CommunityPostCommunitySerializer(many=False)
     is_muted = PostIsMutedField()
     reaction = ReactionField(reaction_serializer=PostReactionSerializer)
+    language = PostLanguageSerializer()
 
     class Meta:
         model = Post
@@ -169,6 +181,7 @@ class CommunityPostSerializer(serializers.ModelSerializer):
             'text',
             'image',
             'video',
+            'language',
             'creator',
             'community',
             'is_muted',

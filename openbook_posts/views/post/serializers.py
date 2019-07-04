@@ -3,7 +3,7 @@ from django.conf import settings
 
 from openbook_auth.models import UserProfile, User
 from openbook_circles.models import Circle
-from openbook_common.models import Badge
+from openbook_common.models import Badge, Language
 from openbook_common.serializers_fields.post import PostCreatorField, PostReactionsEmojiCountField, ReactionField, \
     CommentsCountField, CirclesField, PostIsMutedField
 from openbook_communities.models import CommunityMembership, Community
@@ -61,6 +61,17 @@ class PostCreatorProfileSerializer(serializers.ModelSerializer):
             'avatar',
             'cover',
             'badges'
+        )
+
+
+class PostLanguageSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Language
+        fields = (
+            'id',
+            'code',
+            'name',
         )
 
 
@@ -147,6 +158,7 @@ class GetPostPostSerializer(serializers.ModelSerializer):
     circles = CirclesField(circle_serializer=PostCircleSerializer)
     community = PostCommunitySerializer()
     is_muted = PostIsMutedField()
+    language = PostLanguageSerializer()
 
     class Meta:
         model = Post
@@ -161,6 +173,7 @@ class GetPostPostSerializer(serializers.ModelSerializer):
             'video',
             'creator',
             'reaction',
+            'language',
             'comments_enabled',
             'public_reactions',
             'circles',
@@ -180,12 +193,15 @@ class EditPostSerializer(serializers.Serializer):
 
 
 class AuthenticatedUserEditPostSerializer(serializers.ModelSerializer):
+    language = PostLanguageSerializer()
+
     class Meta:
         model = Post
         fields = (
             'id',
             'uuid',
             'text',
+            'language',
             'is_edited',
         )
 

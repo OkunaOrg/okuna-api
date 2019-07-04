@@ -242,6 +242,7 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
                                community_membership_serializer=CommunityMembershipSerializer)
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
     comments_count = CommentsCountField()
+    language = PostLanguageSerializer()
 
     class Meta:
         model = Post
@@ -255,6 +256,7 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
             'image',
             'video',
             'creator',
+            'language',
             'comments_enabled',
             'public_reactions',
             'is_edited'
