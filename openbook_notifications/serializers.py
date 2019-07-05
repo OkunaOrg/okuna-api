@@ -122,7 +122,8 @@ class NotificationPostCommentParentSerializer(serializers.ModelSerializer):
             'commenter',
             'text',
             'created',
-            'is_edited'
+            'is_edited',
+            'is_muted'
         )
 
 
@@ -140,6 +141,7 @@ class NotificationPostCommentSerializer(serializers.ModelSerializer):
             'post',
             'created',
             'parent_comment',
+            'is_muted'
         )
 
 
