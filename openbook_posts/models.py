@@ -116,6 +116,9 @@ class Post(models.Model):
 
         trending_posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=user_id) | Q(
             creator__user_blocks__blocked_user_id=user_id)), Q.AND)
+
+        trending_posts_query.add(~Q(moderated_object__reports__reporter_id=user_id), Q.AND)
+
         return cls._get_trending_posts_with_query(query=trending_posts_query)
 
     @classmethod
@@ -151,7 +154,8 @@ class Post(models.Model):
             post_notification_target_users_query = Q(posts_comments__parent_comment_id=post_comment_id)
             post_notification_target_users_query.add(Q(posts_comments__id=post_comment_id), Q.OR)
         else:
-            post_notification_target_users_query = Q(posts_comments__post_id=post_id, posts_comments__parent_comment_id=None)
+            post_notification_target_users_query = Q(posts_comments__post_id=post_id,
+                                                     posts_comments__parent_comment_id=None)
             post_notification_target_users_query.add(Q(posts__id=post_id), Q.OR)
 
         post_notification_target_users_query.add(~Q(id=post_commenter_id), Q.AND)

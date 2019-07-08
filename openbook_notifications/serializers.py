@@ -34,7 +34,8 @@ class PostCommentCommenterProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'name'
         )
 
 
@@ -76,6 +77,7 @@ class PostCommentCreatorProfileSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'avatar',
+            'name'
         )
 
 
@@ -110,9 +112,24 @@ class NotificationPostSerializer(serializers.ModelSerializer):
         )
 
 
+class NotificationPostCommentParentSerializer(serializers.ModelSerializer):
+    commenter = PostCommentCommenterSerializer()
+
+    class Meta:
+        model = PostComment
+        fields = (
+            'id',
+            'commenter',
+            'text',
+            'created',
+            'is_edited'
+        )
+
+
 class NotificationPostCommentSerializer(serializers.ModelSerializer):
     commenter = PostCommentCommenterSerializer()
     post = NotificationPostSerializer()
+    parent_comment = NotificationPostCommentParentSerializer()
 
     class Meta:
         model = PostComment
@@ -121,7 +138,8 @@ class NotificationPostCommentSerializer(serializers.ModelSerializer):
             'commenter',
             'text',
             'post',
-            'created'
+            'created',
+            'parent_comment',
         )
 
 
@@ -136,23 +154,10 @@ class PostCommentNotificationSerializer(serializers.ModelSerializer):
         )
 
 
-class PostCommentReplyParentCommentSerializer(serializers.ModelSerializer):
-    commenter = PostCommentCommenterSerializer()
-
-    class Meta:
-        model = PostComment
-        fields = (
-            'id',
-            'text',
-            'commenter',
-            'is_edited',
-            'created'
-        )
-
-
 class PostCommentReplyNotificationSerializer(serializers.ModelSerializer):
     post_comment = NotificationPostCommentSerializer()
-    parent_comment = ParentCommentField(parent_comment_serializer=PostCommentReplyParentCommentSerializer)
+    # TODO Remove after a couple of releases. Not needed anymore as the post_comment includes parent_comment
+    parent_comment = ParentCommentField(parent_comment_serializer=NotificationPostCommentParentSerializer)
 
     class Meta:
         model = PostCommentReplyNotification
@@ -168,7 +173,8 @@ class PostCommentReactionReactorProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'name'
         )
 
 
@@ -226,7 +232,8 @@ class PostReactionReactorProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'name'
         )
 
 
@@ -283,7 +290,8 @@ class ConnectionRequesterProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'name'
         )
 
 
@@ -315,7 +323,8 @@ class ConnectionConfirmatorProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'name'
         )
 
 
@@ -347,7 +356,8 @@ class FollowerProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'name'
         )
 
 
@@ -379,7 +389,8 @@ class CommunityInviteCreatorProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'name'
         )
 
 

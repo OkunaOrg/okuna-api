@@ -63,6 +63,7 @@ class CommunityPostCreatorProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'avatar',
+            'name',
             'cover',
             'badges'
         )

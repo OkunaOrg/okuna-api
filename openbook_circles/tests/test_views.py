@@ -27,7 +27,7 @@ class CirclesAPITests(APITestCase):
         """
         should be able to create a circle and return 201
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
@@ -53,7 +53,7 @@ class CirclesAPITests(APITestCase):
         """
         should retrieve the all own circles and return 200
         """
-        user = mixer.blend(User)
+        user = make_user()
         auth_token = user.auth_token.key
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
@@ -92,7 +92,7 @@ class CircleItemAPITests(APITestCase):
         """
         should be able to delete an own circle and return 200
         """
-        user = mixer.blend(User)
+        user = make_user()
         auth_token = user.auth_token.key
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
@@ -110,7 +110,7 @@ class CircleItemAPITests(APITestCase):
         """
         should not be able to own world circle and return 400
         """
-        user = mixer.blend(User)
+        user = make_user()
         auth_token = user.auth_token.key
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
@@ -127,7 +127,7 @@ class CircleItemAPITests(APITestCase):
         """
         should not be able to delete own connections circle and return 400
         """
-        user = mixer.blend(User)
+        user = make_user()
         auth_token = user.auth_token.key
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
@@ -144,10 +144,10 @@ class CircleItemAPITests(APITestCase):
         """
         should not be able to delete another user's circle and return 400
         """
-        user = mixer.blend(User)
+        user = make_user()
         auth_token = user.auth_token.key
 
-        other_user = mixer.blend(User)
+        other_user = make_user()
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
@@ -164,7 +164,7 @@ class CircleItemAPITests(APITestCase):
         """
         should be able to update own circle and return 200
         """
-        user = mixer.blend(User)
+        user = make_user()
         auth_token = user.auth_token.key
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
@@ -258,12 +258,12 @@ class CircleItemAPITests(APITestCase):
         """
         should not be able to update the circle of another user and return 400
         """
-        user = mixer.blend(User)
+        user = make_user()
         auth_token = user.auth_token.key
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
-        another_user = mixer.blend(User)
+        another_user = make_user()
 
         circle_color = fake.hex_color()
         circle = mixer.blend(Circle, creator=another_user, color=circle_color)
@@ -287,7 +287,7 @@ class CircleItemAPITests(APITestCase):
         """
         should not be able to update own world circle and return 400
         """
-        user = mixer.blend(User)
+        user = make_user()
         auth_token = user.auth_token.key
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
@@ -312,7 +312,7 @@ class CircleItemAPITests(APITestCase):
         """
         should not be able to update own connections circle and return 400
         """
-        user = mixer.blend(User)
+        user = make_user()
         auth_token = user.auth_token.key
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}

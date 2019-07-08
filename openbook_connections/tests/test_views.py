@@ -32,7 +32,7 @@ class ConnectionsAPITests(APITestCase):
         """
         should be able to retrieve own connections and return 200
         """
-        user = mixer.blend(User)
+        user = make_user()
         auth_token = user.auth_token.key
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
@@ -71,12 +71,12 @@ class ConnectAPITests(APITestCase):
         """
         should be able to connect with another user on an specific circle, add the connections circle and return 200
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
         circle_to_connect = mixer.blend(Circle, creator=user)
-        user_to_connect = mixer.blend(User)
+        user_to_connect = make_user()
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
@@ -121,7 +121,7 @@ class ConnectAPITests(APITestCase):
         """
         should be able to connect another user on multiple circles and return 200
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
@@ -132,7 +132,7 @@ class ConnectAPITests(APITestCase):
             circle_to_connect = mixer.blend(Circle, creator=user)
             circles_to_connect_ids.append(circle_to_connect.pk)
 
-        user_to_connect = mixer.blend(User)
+        user_to_connect = make_user()
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
@@ -159,12 +159,12 @@ class ConnectAPITests(APITestCase):
         """
         should not be able to connect with a user already connected with and return 400
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
         circle_to_connect = mixer.blend(Circle, creator=user)
-        user_to_connect = mixer.blend(User)
+        user_to_connect = make_user()
 
         user.connect_with_user_with_id(user_to_connect.pk, circles_ids=[circle_to_connect.pk])
 
@@ -185,11 +185,11 @@ class ConnectAPITests(APITestCase):
         """
         should not be able to connect with a user in the world circle and return 400
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
-        user_to_connect = mixer.blend(User)
+        user_to_connect = make_user()
 
         headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
 
@@ -208,9 +208,9 @@ class ConnectAPITests(APITestCase):
         """
         should create a connection request notification when trying to connect with an user
         """
-        user = mixer.blend(User)
+        user = make_user()
 
-        user_to_connect = mixer.blend(User)
+        user_to_connect = make_user()
         circle_to_connect = mixer.blend(Circle, creator=user)
 
         headers = make_authentication_headers_for_user(user)
@@ -242,12 +242,12 @@ class DisconnectAPITest(APITestCase):
         """
         should be able to disconnect from a user and return 200
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
         circle_to_connect = mixer.blend(Circle, creator=user)
-        user_to_connect = mixer.blend(User)
+        user_to_connect = make_user()
 
         user.connect_with_user_with_id(user_to_connect.pk, circles_ids=[circle_to_connect.pk])
 
@@ -293,9 +293,9 @@ class DisconnectAPITest(APITestCase):
         """
         should not be able to disconnect from an unexisting connection and return 400
         """
-        user = mixer.blend(User)
+        user = make_user()
 
-        not_connected_user = mixer.blend(User)
+        not_connected_user = make_user()
 
         auth_token = user.auth_token.key
 
@@ -317,9 +317,9 @@ class DisconnectAPITest(APITestCase):
         """
         should delete own connection confirmed notification when the user disconnects from a user
         """
-        user = mixer.blend(User)
+        user = make_user()
 
-        user_to_connect = mixer.blend(User)
+        user_to_connect = make_user()
 
         user.connect_with_user_with_id(user_to_connect.pk)
         user_to_connect.confirm_connection_with_user_with_id(user.pk)
@@ -349,8 +349,8 @@ class DisconnectAPITest(APITestCase):
         """
         should delete foreign connection confirmed notification when the user disconnects from a user
         """
-        user = mixer.blend(User)
-        user_to_connect = mixer.blend(User)
+        user = make_user()
+        user_to_connect = make_user()
 
         user_to_connect.connect_with_user_with_id(user.pk)
         user.confirm_connection_with_user_with_id(user_to_connect.pk)
@@ -379,8 +379,8 @@ class DisconnectAPITest(APITestCase):
         """
         should delete own connection request notification when the user disconnects from a unconfirmed connection
         """
-        user = mixer.blend(User)
-        user_to_connect = mixer.blend(User)
+        user = make_user()
+        user_to_connect = make_user()
 
         user_to_connect.connect_with_user_with_id(user.pk)
 
@@ -418,12 +418,12 @@ class UpdateConnectionAPITest(APITestCase):
         """
         should be able to update an own connection and return 200
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
         circle_to_connect = mixer.blend(Circle, creator=user)
-        user_to_connect = mixer.blend(User)
+        user_to_connect = make_user()
 
         user.connect_with_user_with_id(user_to_connect.pk, circles_ids=[circle_to_connect.pk])
 
@@ -451,8 +451,8 @@ class UpdateConnectionAPITest(APITestCase):
         """
         should be able to update an own connect of multiple circles and return 200
         """
-        user = mixer.blend(User)
-        user_to_connect = mixer.blend(User)
+        user = make_user()
+        user_to_connect = make_user()
 
         initial_circle_to_connect_in = mixer.blend(Circle, creator=user)
 
@@ -498,11 +498,11 @@ class UpdateConnectionAPITest(APITestCase):
         """
         should not be able to update an unexisting connection and return 400
         """
-        user = mixer.blend(User)
+        user = make_user()
 
         auth_token = user.auth_token.key
 
-        not_connected_user = mixer.blend(User)
+        not_connected_user = make_user()
 
         new_circle = mixer.blend(Circle, creator=user)
 
