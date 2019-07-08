@@ -8,7 +8,8 @@ from openbook_common.tests.helpers import make_user, make_authentication_headers
 class TranslateTextAPITests(APITestCase):
     """
     TranslateTextAPI
-    These tests are for translation using AWS Translate
+    These tests are for translation using AWS Translate which use the
+    MockAmazonTranslate strategy defined in openbook_translation/strategies/tests.py
     """
 
     fixtures = [
@@ -24,7 +25,6 @@ class TranslateTextAPITests(APITestCase):
         text = 'Ik ben en man 😀. Jij bent en vrouw.'
 
         url = self._get_url()
-
         response = self.client.post(url, {
             'text': text,
             'source_language_code': 'nl',
@@ -32,7 +32,6 @@ class TranslateTextAPITests(APITestCase):
         }, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
         response_post = json.loads(response.content)
 
         self.assertEqual(response_post['translated_text'], 'I am a man 😀. You\'re a woman.')
@@ -46,7 +45,6 @@ class TranslateTextAPITests(APITestCase):
         text = make_fake_post_text()
 
         url = self._get_url()
-
         response = self.client.post(url, {
             'text': text,
             'source_language_code': 'no',  # norwegian
