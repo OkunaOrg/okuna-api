@@ -59,3 +59,28 @@ class MutePostCommentSerializer(serializers.Serializer):
 
 class UnmutePostCommentSerializer(MutePostCommentSerializer):
     pass
+
+
+class TranslatePostCommentSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+    post_comment_id = serializers.IntegerField(
+        validators=[post_comment_id_exists],
+        required=True,
+    )
+
+
+class TranslatePostCommentResponseSerializer(serializers.HyperlinkedModelSerializer):
+    translated_text = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PostComment
+        fields = (
+            'id',
+            'translated_text',
+        )
+
+    def get_translated_text(self, obj):
+        return self.context['translated_text']

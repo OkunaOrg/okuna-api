@@ -220,6 +220,13 @@ class OpenPostSerializer(serializers.Serializer):
     )
 
 
+class TranslatePostSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+
+
 class OpenClosePostSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -229,3 +236,17 @@ class OpenClosePostSerializer(serializers.ModelSerializer):
             'uuid',
             'is_closed',
         )
+
+
+class TranslatePostResponseSerializer(serializers.HyperlinkedModelSerializer):
+    translated_text = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Post
+        fields = (
+            'id',
+            'translated_text',
+        )
+
+    def get_translated_text(self, obj):
+        return self.context['translated_text']
