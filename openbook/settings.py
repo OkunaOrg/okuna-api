@@ -130,6 +130,8 @@ INSTALLED_APPS = [
     'openbook_translation',
 ]
 
+MODELTRANSLATION_FALLBACK_LANGUAGES = ('en',)
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -340,15 +342,15 @@ else:
 OS_TRANSLATION_CONFIG = {
     'default': {
         'STRATEGY': 'openbook_translation.strategies.amazon.AmazonTranslate',
-        'TEXT_MAX_LENGTH': AWS_TRANSLATE_MAX_LENGTH
+        'TEXT_MAX_LENGTH': AWS_TRANSLATE_MAX_LENGTH,
+        'DEFAULT_TRANSLATION_LANGUAGE_CODE': 'en'
     },
     'testing': {
         'STRATEGY': 'openbook_translation.strategies.tests.MockAmazonTranslate',
-        'TEXT_MAX_LENGTH': 40
+        'TEXT_MAX_LENGTH': 40,
+        'DEFAULT_TRANSLATION_LANGUAGE_CODE': 'en'
     }
 }
-
-
 
 UNICODE_JSON = True
 
