@@ -61,18 +61,18 @@ from openbook_moderation.views.report.views import ReportUser, ReportPost, Repor
     ReportPostComment
 from openbook_moderation.views.user.views import UserModerationPenalties, UserPendingModeratedObjectsCommunities
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
-from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost
+from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost, TranslatePost
 from openbook_posts.views.post_comment.post_comment_reaction.views import PostCommentReactionItem
 from openbook_posts.views.post_comment.post_comment_reactions.views import PostCommentReactions, \
     PostCommentReactionsEmojiCount
 from openbook_posts.views.post_comment.post_comment_replies.views import PostCommentReplies
-from openbook_posts.views.post_comment.views import PostCommentItem, MutePostComment, UnmutePostComment
+from openbook_posts.views.post_comment.views import PostCommentItem, MutePostComment, UnmutePostComment, \
+    TranslatePostComment
 from openbook_posts.views.post_comments.views import PostComments, PostCommentsDisable, PostCommentsEnable
 from openbook_posts.views.post_reaction.views import PostReactionItem
 from openbook_posts.views.post_reactions.views import PostReactions, PostReactionsEmojiCount, PostReactionEmojiGroups
 from openbook_posts.views.posts.views import Posts, TrendingPosts
 from openbook_importer.views import ImportItem
-from openbook_translation.views import TranslateText
 
 auth_auth_patterns = [
     path('register/', Register.as_view(), name='register-user'),
@@ -154,6 +154,7 @@ post_comment_notifications_patterns = [
 
 post_comment_patterns = [
     path('', PostCommentItem.as_view(), name='post-comment'),
+    path('translate/', TranslatePostComment.as_view(), name='translate-post-comment'),
     path('report/', ReportPostComment.as_view(), name='report-post-comment'),
     path('replies/', PostCommentReplies.as_view(), name='post-comment-replies'),
     path('reactions/', include(post_comment_reactions_patterns), name='post-comment-replies'),
@@ -173,6 +174,7 @@ post_patterns = [
     path('close/', PostClose.as_view(), name='close-post'),
     path('open/', PostOpen.as_view(), name='open-post'),
     path('report/', ReportPost.as_view(), name='report-post'),
+    path('translate/', TranslatePost.as_view(), name='translate-post'),
 ]
 
 posts_patterns = [
@@ -336,10 +338,6 @@ moderation_patterns = [
          name='user-pending-moderated-objects-communities'),
 ]
 
-translation_patterns = [
-    path('', TranslateText.as_view(), name='translate-text'),
-]
-
 api_patterns = [
     path('auth/', include(auth_patterns)),
     path('posts/', include(posts_patterns)),
@@ -353,7 +351,6 @@ api_patterns = [
     path('devices/', include(devices_patterns)),
     path('invites/', include(invites_patterns)),
     path('moderation/', include(moderation_patterns)),
-    path('translate/', include(translation_patterns)),
     url('time/', Time.as_view(), name='time'),
     url('emojis/groups/', EmojiGroups.as_view(), name='emoji-groups'),
 ]
