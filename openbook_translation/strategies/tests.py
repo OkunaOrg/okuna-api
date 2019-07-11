@@ -6,10 +6,13 @@ class MockAmazonTranslate(BaseTranslationStrategy):
     # Both methods are hardcoded to respond to the tests
 
     def get_detected_language_code(self, text):
-        if text is 'Ik ben en man 😀. Jij bent en vrouw.':
+        if text == 'Ik ben en man 😀. Jij bent en vrouw.':
             return 'nl'
         else:
             return 'no'
+
+    def get_supported_translation_language_code(self, language_code):
+        return 'en'
 
     def translate_text(self, text, source_language_code, target_language_code):
 

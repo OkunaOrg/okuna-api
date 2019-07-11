@@ -22,7 +22,9 @@ from django.core.mail import EmailMultiAlternatives
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
+from openbook_common.helpers import get_supported_translation_language
 from openbook_common.models import Badge, Language
+from openbook_translation import strategy
 from openbook_common.utils.helpers import delete_file_field
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, \
@@ -45,7 +47,10 @@ class User(AbstractUser):
     moderated_object = GenericRelation('openbook_moderation.ModeratedObject', related_query_name='users')
     first_name = None
     last_name = None
-    language = models.ForeignKey('openbook_common.Language', null=True, blank=True, on_delete=models.SET_NULL)
+    language = models.ForeignKey('openbook_common.Language', null=True, blank=True,
+                                 on_delete=models.SET_NULL, related_name='users')
+    translation_language = models.ForeignKey('openbook_common.Language', null=True, blank=True,
+                                             on_delete=models.SET_NULL, related_name='translation_users')
     email = models.EmailField(_('email address'), unique=True, null=False, blank=False)
     connections_circle = models.ForeignKey('openbook_circles.Circle', on_delete=models.CASCADE, related_name='+',
                                            null=True, blank=True)
@@ -330,6 +335,7 @@ class User(AbstractUser):
         Language = get_language_model()
         language_instance = Language.objects.get(pk=language_id)
         self.language = language_instance
+        self.translation_language = get_supported_translation_language(language_instance.code)
         self.save()
 
     def verify_password_reset_token(self, token, password):
@@ -1698,6 +1704,17 @@ class User(AbstractUser):
         self._check_can_get_user_with_id(user_id=user.pk)
         return user
 
+    def translate_post_with_id(self, post_id):
+        self._check_can_translate_post_with_id(post_id)
+        Post = get_post_model()
+        post = Post.objects.get(id=post_id)
+        result = strategy.translate_text(
+            source_language_code=post.language.code,
+            target_language_code=self.translation_language.code,
+            text=post.text
+        )
+        return post, result.get('translated_text')
+
     def open_post_with_id(self, post_id):
         self._check_can_open_post_with_id(post_id)
         Post = get_post_model()
@@ -2311,6 +2328,17 @@ class User(AbstractUser):
         self._check_can_unmute_post_comment(post_comment=post_comment)
         self.post_comment_mutes.filter(post_comment_id=post_comment_id).delete()
         return post_comment
+
+    def translate_post_comment_with_id(self, post_comment_id):
+        self._check_can_translate_comment_with_id(post_comment_id=post_comment_id)
+        PostComment = get_post_comment_model()
+        post_comment = PostComment.objects.get(pk=post_comment_id)
+        result = strategy.translate_text(
+            source_language_code=post_comment.language.code,
+            target_language_code=self.translation_language.code,
+            text=post_comment.text
+        )
+        return post_comment, result.get('translated_text')
 
     def block_user_with_username(self, username):
         user = User.objects.get(username=username)
@@ -3328,6 +3356,22 @@ class User(AbstractUser):
                     _('Comments are disabled for this post')
                 )
 
+    def _check_can_translate_post_with_id(self, post_id):
+        Post = get_post_model()
+        post = Post.objects.get(id=post_id)
+        if post.text is None:
+            raise ValidationError(
+                _('Post has no text to be translated')
+            )
+        if post.language is None:
+            raise ValidationError(
+                _('Post has no assigned language to be able to translate')
+            )
+        if self.translation_language is None:
+            raise ValidationError(
+                _('User\'s preferred translation language not set')
+            )
+
     def _check_can_open_post_with_id(self, post_id):
         Post = get_post_model()
         post = Post.objects.select_related('community').get(id=post_id)
@@ -3875,6 +3919,22 @@ class User(AbstractUser):
         if not self.has_muted_post_comment_with_id(post_comment_id=post_comment_id):
             raise ValidationError(
                 _('Post_comment is not muted'),
+            )
+
+    def _check_can_translate_comment_with_id(self, post_comment_id):
+        PostComment = get_post_comment_model()
+        post_comment = PostComment.objects.get(pk=post_comment_id)
+        if post_comment.text is None:
+            raise ValidationError(
+                _('Post comment has no text to be translated')
+            )
+        if post_comment.language is None:
+            raise ValidationError(
+                _('Post comment has no assigned language to be able to translate')
+            )
+        if self.translation_language is None:
+            raise ValidationError(
+                _('User\'s preferred translation language not set')
             )
 
     def _check_has_post_with_id(self, post_id):

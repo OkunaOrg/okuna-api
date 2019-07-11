@@ -17,3 +17,10 @@ def get_language_for_text(text):
         return Language.objects.get(code=language_code)
 
     return None
+
+
+def get_supported_translation_language(language_code):
+    Language = get_language_model()
+    supported_translation_code = strategy.get_supported_translation_language_code(language_code)
+
+    return Language.objects.get(code=supported_translation_code)

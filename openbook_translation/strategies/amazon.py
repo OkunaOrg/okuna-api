@@ -13,6 +13,10 @@ class AmazonTranslate(BaseTranslationStrategy):
 
     client = boto3.client(service_name='translate', region_name=settings.AWS_TRANSLATE_REGION, use_ssl=True)
 
+    supported_languages = ('ar', 'zh', 'zh-TW', 'cs', 'da', 'nl', 'fi', 'fr',
+                           'de', 'hi', 'he', 'id', 'it', 'ja', 'ko', 'ms', 'no',
+                           'fa', 'pl', 'pt', 'ru', 'es', 'sv', 'tr')
+
     def get_detected_language_code(self, text):
         # amazons translate API codes as stored in the languages.json are slightly different
         # from what langdetect provides for chinese (zh) and chinese traditional (zh-TW)
@@ -24,6 +28,19 @@ class AmazonTranslate(BaseTranslationStrategy):
             detected_language = 'zh-TW'
 
         return detected_language
+
+    def get_supported_translation_language_code(self, language_code):
+        # Returns English as default if no match
+        parsed_code = None
+        if language_code is not 'zh-TW':
+            code_parts = language_code.split('-')
+            if len(code_parts) == 2:
+                parsed_code = code_parts[0]
+
+        if parsed_code in self.supported_languages:
+            return parsed_code
+        else:
+            return self.default_translation_language_code
 
     def translate_text(self, text, source_language_code, target_language_code):
 

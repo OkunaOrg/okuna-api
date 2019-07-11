@@ -93,7 +93,7 @@ class Badge(models.Model):
 
 
 class Language(models.Model):
-    code = models.CharField(_('code'), max_length=8, blank=False, null=False)
+    code = models.CharField(_('code'), max_length=12, blank=False, null=False)
     name = models.CharField(_('name'), max_length=64, blank=False, null=False)
     created = models.DateTimeField(editable=False)
 
