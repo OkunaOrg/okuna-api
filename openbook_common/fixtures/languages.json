@@ -2815,5 +2815,14 @@
       "name_en": "Zulu",
       "code": "zu"
     }
+  },
+  {
+    "model": "openbook_common.Language",
+    "pk": 314,
+    "fields": {
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "name_en": "Spanish",
+      "code": "es"
+    }
   }
 ]
