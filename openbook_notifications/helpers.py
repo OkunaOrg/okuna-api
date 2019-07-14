@@ -4,11 +4,11 @@ import onesignal as onesignal_sdk
 
 from openbook_common.utils.model_loaders import get_notification_model
 from openbook_notifications.django_rq_jobs import send_notification_to_user
-from openbook_notifications.push_notifications.serializers import PushNotificationsSerializers
 
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 def send_post_reaction_push_notification(post_reaction):
     post_creator = post_reaction.post.creator
@@ -20,18 +20,17 @@ def send_post_reaction_push_notification(post_reaction):
         post_reactor = post_reaction.reactor
 
         one_signal_notification = onesignal_sdk.Notification(post_body={
-            "contents": {"en": _('@%(post_reactor_username)s reacted to your post.') % {
-                'post_reactor_username': post_reactor.username
+            "contents": {"en": _('%(post_reactor_name)s · @%(post_reactor_username)s reacted to your post.') % {
+                'post_reactor_username': post_reactor.username,
+                'post_reactor_name': post_reactor.profile.name,
+
             }}
         })
-
-        NotificationPostReactionSerializer = _get_push_notifications_serializers().NotificationPostReactionSerializer
 
         Notification = get_notification_model()
 
         notification_data = {
             'type': Notification.POST_REACTION,
-            'payload': NotificationPostReactionSerializer(post_reaction).data
         }
 
         one_signal_notification.set_parameter('data', notification_data)
@@ -43,11 +42,9 @@ def send_post_reaction_push_notification(post_reaction):
 
 def send_post_comment_push_notification_with_message(post_comment, message, target_user):
     Notification = get_notification_model()
-    NotificationPostCommentSerializer = _get_push_notifications_serializers().NotificationPostCommentSerializer
 
     post = post_comment.post
 
-    notification_payload = NotificationPostCommentSerializer(post_comment).data
     notification_group = 'post_%s' % post.id
 
     one_signal_notification = onesignal_sdk.Notification(post_body={
@@ -56,32 +53,6 @@ def send_post_comment_push_notification_with_message(post_comment, message, targ
 
     notification_data = {
         'type': Notification.POST_COMMENT,
-        'payload': notification_payload
-    }
-
-    one_signal_notification.set_parameter('data', notification_data)
-    one_signal_notification.set_parameter('!thread_id', notification_group)
-    one_signal_notification.set_parameter('android_group', notification_group)
-
-    _send_notification_to_user(notification=one_signal_notification, user=target_user)
-
-
-def send_post_comment_reply_push_notification_with_message(post_comment, message, target_user):
-    Notification = get_notification_model()
-    NotificationPostCommentReplySerializer = _get_push_notifications_serializers().NotificationPostCommentReplySerializer
-
-    post = post_comment.post
-
-    notification_payload = NotificationPostCommentReplySerializer(post_comment).data
-    notification_group = 'post_%s' % post.id
-
-    one_signal_notification = onesignal_sdk.Notification(post_body={
-        "contents": message
-    })
-
-    notification_data = {
-        'type': Notification.POST_COMMENT_REPLY,
-        'payload': notification_payload
     }
 
     one_signal_notification.set_parameter('data', notification_data)
@@ -94,20 +65,16 @@ def send_post_comment_reply_push_notification_with_message(post_comment, message
 def send_follow_push_notification(followed_user, following_user):
     if followed_user.has_follow_notifications_enabled():
         one_signal_notification = onesignal_sdk.Notification(post_body={
-            "contents": {"en": _('@%(following_user_username)s started following you') % {
-                'following_user_username': following_user.username
+            "contents": {"en": _('%(following_user_name)s · @%(following_user_username)s started following you') % {
+                'following_user_name': following_user.profile.name,
+                'following_user_username': following_user.username,
             }}
         })
-
-        FollowNotificationSerializer = _get_push_notifications_serializers().FollowNotificationSerializer
 
         Notification = get_notification_model()
 
         notification_data = {
             'type': Notification.FOLLOW,
-            'payload': FollowNotificationSerializer({
-                'following_user': following_user
-            }).data
         }
 
         one_signal_notification.set_parameter('data', notification_data)
@@ -118,24 +85,45 @@ def send_follow_push_notification(followed_user, following_user):
 def send_connection_request_push_notification(connection_requester, connection_requested_for):
     if connection_requested_for.has_connection_request_notifications_enabled():
         one_signal_notification = onesignal_sdk.Notification(
-            post_body={"en": _('@%(connection_requester_username)s wants to connect with you.') % {
-                'connection_requester_username': connection_requester.username
-            }})
-
-        ConnectionRequestNotificationSerializer = _get_push_notifications_serializers().ConnectionRequestNotificationSerializer
+            post_body={"en": _(
+                '%(connection_requester_name)s · @%(connection_requester_username)s wants to connect with you.') % {
+                                 'connection_requester_username': connection_requester.username,
+                                 'connection_requester_name': connection_requester.profile.name,
+                             }})
 
         Notification = get_notification_model()
 
         notification_data = {
             'type': Notification.CONNECTION_REQUEST,
-            'payload': ConnectionRequestNotificationSerializer({
-                'connection_requester': connection_requester
-            }).data
         }
 
         one_signal_notification.set_parameter('data', notification_data)
 
         _send_notification_to_user(user=connection_requested_for, notification=one_signal_notification, )
+
+
+def send_post_comment_reaction_push_notification(post_comment_reaction):
+    post_comment_commenter = post_comment_reaction.post_comment.commenter
+
+    post_comment_id = post_comment_reaction.post_comment_id
+    notification_group = 'post_comment_%s' % post_comment_id
+
+    post_comment_reactor = post_comment_reaction.reactor
+    one_signal_notification = onesignal_sdk.Notification(post_body={
+        "contents": {
+            "en": _('%(post_comment_reactor_name)s · @%(post_comment_reactor_username)s reacted to your comment.') % {
+                'post_comment_reactor_name': post_comment_reactor.profile.name,
+                'post_comment_reactor_username': post_comment_reactor.username,
+            }}
+    })
+    Notification = get_notification_model()
+    notification_data = {
+        'type': Notification.POST_COMMENT_REACTION,
+    }
+    one_signal_notification.set_parameter('data', notification_data)
+    one_signal_notification.set_parameter('!thread_id', notification_group)
+    one_signal_notification.set_parameter('android_group', notification_group)
+    _send_notification_to_user(notification=one_signal_notification, user=post_comment_commenter)
 
 
 def send_community_invite_push_notification(community_invite):
@@ -146,18 +134,17 @@ def send_community_invite_push_notification(community_invite):
         community = community_invite.community
 
         one_signal_notification = onesignal_sdk.Notification(
-            post_body={"en": _('@%(invite_creator)s has invited you to join /c/%(community_name)s.') % {
-                'invite_creator': invite_creator.username,
-                'community_name': community.name,
-            }})
-
-        NotificationCommunityInviteSerializer = _get_push_notifications_serializers().NotificationCommunityInviteSerializer
+            post_body={"en": _(
+                '%(invite_creator_name)s · @%(invite_creator_username)s has invited you to join /c/%(community_name)s.') % {
+                                 'invite_creator_username': invite_creator.username,
+                                 'invite_creator_name': invite_creator.profile.name,
+                                 'community_name': community.name,
+                             }})
 
         Notification = get_notification_model()
 
         notification_data = {
             'type': Notification.COMMUNITY_INVITE,
-            'payload': NotificationCommunityInviteSerializer(community_invite).data
         }
 
         one_signal_notification.set_parameter('data', notification_data)
@@ -167,14 +154,3 @@ def send_community_invite_push_notification(community_invite):
 
 def _send_notification_to_user(user, notification):
     django_rq.enqueue(send_notification_to_user, user=user, notification=notification)
-
-
-push_notifications_serializers = None
-
-
-def _get_push_notifications_serializers():
-    global push_notifications_serializers
-
-    if not push_notifications_serializers:
-        push_notifications_serializers = PushNotificationsSerializers()
-    return push_notifications_serializers

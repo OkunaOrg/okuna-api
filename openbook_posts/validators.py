@@ -1,7 +1,7 @@
 from rest_framework.exceptions import ValidationError, NotFound
 from django.utils.translation import ugettext_lazy as _
 
-from openbook_posts.models import Post, PostComment, PostReaction
+from openbook_posts.models import Post, PostComment, PostReaction, PostCommentReaction
 
 SORT_CHOICES = ['ASC', 'DESC']
 
@@ -21,15 +21,37 @@ def post_uuid_exists(post_uuid):
 
 
 def post_comment_id_exists(post_comment_id):
-    if PostComment.objects.filter(id=post_comment_id).count() == 0:
+    if not PostComment.objects.filter(id=post_comment_id).exists():
         raise ValidationError(
             _('The post comment does not exist.'),
         )
 
 
+def post_comment_id_exists_for_post_with_uuid(post_comment_id, post_uuid):
+    if not PostComment.objects.filter(id=post_comment_id, post__uuid=post_uuid).exists():
+        raise ValidationError(
+            _('The post comment does not exist.'),
+        )
+
+
+def post_comment_reaction_id_exists_for_post_with_uuid_and_comment_with_id(post_comment_reaction_id, post_comment_id,
+                                                                           post_uuid):
+    if not PostCommentReaction.objects.filter(id=post_comment_reaction_id, post_comment_id=post_comment_id,
+                                              post_comment__post__uuid=post_uuid).exists():
+        raise ValidationError(
+            _('The post comment reaction does not exist.'),
+        )
+
+
 def post_reaction_id_exists(post_reaction_id):
-    if PostReaction.objects.filter(id=post_reaction_id).count() == 0:
+    if not PostReaction.objects.filter(id=post_reaction_id).exists():
         raise ValidationError(
             _('The post reaction does not exist.'),
         )
 
+
+def post_comment_reaction_id_exists(post_comment_reaction_id):
+    if not PostCommentReaction.objects.filter(id=post_comment_reaction_id).exists():
+        raise ValidationError(
+            _('The post comment reaction does not exist.'),
+        )

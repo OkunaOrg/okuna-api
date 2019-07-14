@@ -9,6 +9,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib.auth import authenticate
 from openbook_auth.models import User, UserProfile
+from rest_framework.authtoken.models import Token
 
 import logging
 import json
@@ -441,7 +442,6 @@ class VerifyResetPasswordAPITests(APITestCase):
 
         url = self._get_url()
 
-        password_reset_token = user.request_password_reset()
         new_password = 'testing12345'
         request_data = {
             'new_password': new_password,
@@ -464,7 +464,6 @@ class VerifyResetPasswordAPITests(APITestCase):
         url = self._get_url()
 
         password_reset_token = user.request_password_reset()
-        new_password = 'testing12345'
         request_data = {
             'token': password_reset_token
         }
@@ -493,6 +492,32 @@ class VerifyResetPasswordAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         user_db = User.objects.get(email=user_email)
         self.assertEqual(user_db.password, old_password)
+
+    def test_updating_password_with_valid_token_resets_auth_token(self):
+        """
+        updating the password with a valid token should reset the auth token
+        """
+        user = make_user()
+        original_auth_token_key = user.auth_token.key
+        user_email = user.email
+        username = user.username
+        url = self._get_url()
+
+        password_reset_token = user.request_password_reset()
+        new_password = 'testing12345'
+        request_data = {
+            'new_password': new_password,
+            'token': password_reset_token,
+        }
+
+        response = self.client.post(url, request_data, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        # can authenticate with new password
+        user = authenticate(username=username, password=new_password)
+        self.assertEqual(user.email, user_email)
+
+        self.assertNotEqual(original_auth_token_key, user.auth_token.key)
+        self.assertFalse(Token.objects.filter(key=original_auth_token_key).exists())
 
     def _get_url(self):
         return reverse('verify-reset-password')
