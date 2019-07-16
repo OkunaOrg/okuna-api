@@ -23,8 +23,8 @@ from django.core.mail import EmailMultiAlternatives
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
 from openbook_common.helpers import get_supported_translation_language
-from openbook_common.models import Badge, Language
-from openbook_translation import strategy
+from openbook_common.models import Badge
+from openbook_translation import translation_strategy
 from openbook_common.utils.helpers import delete_file_field
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, \
@@ -333,9 +333,9 @@ class User(AbstractUser):
     def set_language_with_id(self, language_id):
         self._check_can_set_language_with_id(language_id)
         Language = get_language_model()
-        language_instance = Language.objects.get(pk=language_id)
-        self.language = language_instance
-        self.translation_language = get_supported_translation_language(language_instance.code)
+        language = Language.objects.get(pk=language_id)
+        self.language = language
+        self.translation_language = get_supported_translation_language(language.code)
         self.save()
 
     def verify_password_reset_token(self, token, password):
@@ -1708,7 +1708,7 @@ class User(AbstractUser):
         self._check_can_translate_post_with_id(post_id)
         Post = get_post_model()
         post = Post.objects.get(id=post_id)
-        result = strategy.translate_text(
+        result = translation_strategy.translate_text(
             source_language_code=post.language.code,
             target_language_code=self.translation_language.code,
             text=post.text
@@ -2333,7 +2333,7 @@ class User(AbstractUser):
         self._check_can_translate_comment_with_id(post_comment_id=post_comment_id)
         PostComment = get_post_comment_model()
         post_comment = PostComment.objects.get(pk=post_comment_id)
-        result = strategy.translate_text(
+        result = translation_strategy.translate_text(
             source_language_code=post_comment.language.code,
             target_language_code=self.translation_language.code,
             text=post_comment.text
