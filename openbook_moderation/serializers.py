@@ -2,6 +2,7 @@ from generic_relations.relations import GenericRelatedField
 from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
+from openbook_common.models import Language
 from openbook_communities.models import Community
 from openbook_moderation.models import ModeratedObject, ModerationCategory
 from openbook_posts.models import Post, PostComment, PostImage
@@ -53,16 +54,29 @@ class ModeratedObjectPostImageSerializer(serializers.ModelSerializer):
         )
 
 
+class LanguageSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Language
+        fields = (
+            'id',
+            'code',
+            'name',
+        )
+
+
 class ModeratedObjectPostSerializer(serializers.ModelSerializer):
     creator = ModeratedObjectUserSerializer()
     community = ModeratedObjectCommunitySerializer()
     image = ModeratedObjectPostImageSerializer()
+    language = LanguageSerializer()
 
     class Meta:
         model = Post
         fields = (
             'id',
             'text',
+            'language',
             'creator',
             'community',
             'image',
@@ -75,12 +89,14 @@ class ModeratedObjectPostSerializer(serializers.ModelSerializer):
 class ModeratedObjectPostCommentSerializer(serializers.ModelSerializer):
     commenter = ModeratedObjectUserSerializer()
     post = ModeratedObjectPostSerializer()
+    language = LanguageSerializer()
 
     class Meta:
         model = PostComment
         fields = (
             'id',
             'text',
+            'language',
             'commenter',
             'commenter',
             'created',

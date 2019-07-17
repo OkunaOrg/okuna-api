@@ -40,6 +40,8 @@ load_emoji_fixtures:
 load_badges_fixtures:
 	python manage.py loaddata badges.json
 
-
 load_categories_fixtures:
 	python manage.py loaddata categories.json
+
+load_languages_fixtures:
+	python manage.py loaddata languages.json

@@ -127,7 +127,10 @@ INSTALLED_APPS = [
     'openbook_notifications',
     'openbook_devices',
     'openbook_moderation',
+    'openbook_translation',
 ]
+
+MODELTRANSLATION_FALLBACK_LANGUAGES = ('en',)
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -326,6 +329,27 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
     )
+}
+
+# AWS Translate
+AWS_TRANSLATE_REGION = os.environ.get('AWS_TRANSLATE_REGION', '')
+AWS_TRANSLATE_MAX_LENGTH = os.environ.get('AWS_TRANSLATE_MAX_LENGTH', 10000)
+if TESTING:
+    OS_TRANSLATION_STRATEGY_NAME = 'testing'
+else:
+    OS_TRANSLATION_STRATEGY_NAME = 'default'
+
+OS_TRANSLATION_CONFIG = {
+    'default': {
+        'STRATEGY': 'openbook_translation.strategies.amazon.AmazonTranslate',
+        'TEXT_MAX_LENGTH': AWS_TRANSLATE_MAX_LENGTH,
+        'DEFAULT_TRANSLATION_LANGUAGE_CODE': 'en'
+    },
+    'testing': {
+        'STRATEGY': 'openbook_translation.strategies.tests.MockAmazonTranslate',
+        'TEXT_MAX_LENGTH': 40,
+        'DEFAULT_TRANSLATION_LANGUAGE_CODE': 'en'
+    }
 }
 
 UNICODE_JSON = True

@@ -36,6 +36,7 @@ django-replicated = "*"
 django-cacheops = "*"
 django-redis = "*"
 django-extensions = "*"
+langdetect = "*"
 django-rq = "*"
 redis = "*"
 

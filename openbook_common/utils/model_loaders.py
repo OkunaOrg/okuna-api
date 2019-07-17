@@ -73,6 +73,10 @@ def get_badge_model():
     return apps.get_model('openbook_common.Badge')
 
 
+def get_language_model():
+    return apps.get_model('openbook_common.Language')
+
+
 def get_tag_model():
     return apps.get_model('openbook_tags.Tag')
 

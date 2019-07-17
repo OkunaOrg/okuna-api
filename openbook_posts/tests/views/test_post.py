@@ -10,16 +10,22 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from django.core.files.images import ImageFile
 from django.core.files import File
+from unittest import mock
 
 import logging
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_community, make_list, make_moderation_category
+from openbook_common.utils.model_loaders import get_language_model
 from openbook_communities.models import Community
 from openbook_posts.models import Post
 
 logger = logging.getLogger(__name__)
 fake = Faker()
+
+
+def get_language_for_text_mock(text):
+    return text
 
 
 class PostItemAPITests(APITestCase):
@@ -28,7 +34,8 @@ class PostItemAPITests(APITestCase):
     """
 
     fixtures = [
-        'openbook_circles/fixtures/circles.json'
+        'openbook_circles/fixtures/circles.json',
+        'openbook_common/fixtures/languages.json'
     ]
 
     def test_can_retrieve_own_post(self):
@@ -529,6 +536,27 @@ class PostItemAPITests(APITestCase):
         post.refresh_from_db()
         self.assertEqual(post.text, edited_text)
         self.assertTrue(post.is_edited)
+
+    @mock.patch('openbook_posts.models.get_language_for_text')
+    def test_editing_own_post_updates_language(self, get_language_for_text_call):
+        """
+        should update language when editing own  post and return 200
+        """
+        Language = get_language_model()
+        get_language_for_text_call.return_value = Language.objects.get(pk=1)
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+        post.refresh_from_db()
+        self.assertTrue(post.language is not None)
+
+        url = self._get_url(post)
+        edited_text = make_fake_post_text()
+        data = {
+            'text': edited_text
+        }
+        self.client.patch(url, data, **headers)
+        get_language_for_text_call.assert_called_with(edited_text)
 
     def test_canot_edit_to_remove_text_from_own_text_only_post(self):
         """
@@ -1358,3 +1386,104 @@ class PostOpenAPITests(APITestCase):
         return reverse('open-post', kwargs={
             'post_uuid': post.uuid
         })
+
+
+class TranslatePostAPITests(APITestCase):
+    """
+    TranslatePostAPI
+    """
+
+    fixtures = [
+        'openbook_common/fixtures/languages.json'
+    ]
+
+    def test_translate_post_text(self):
+        """
+        should translate post text and return 200
+        """
+        user = make_user()
+        Language = get_language_model()
+        user.translation_language = Language.objects.get(code='en')
+        user.save()
+        text = 'Ik ben en man 😀. Jij bent en vrouw.'
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=text)
+
+        url = self._get_url(post=post)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_post = json.loads(response.content)
+        self.assertEqual(response_post['translated_text'], 'I am a man 😀. You\'re a woman.')
+
+    def test_cannot_translate_post_text_without_user_language(self):
+        """
+        should not translate post text and return 400 if user language is not set
+        """
+        user = make_user()
+        text = 'Ik ben en man 😀. Jij bent en vrouw.'
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=text)
+
+        url = self._get_url(post=post)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cannot_translate_post_text_without_post_comment_language(self):
+        """
+        should not translate post text and return 400 if post language is not set
+        """
+        user = make_user()
+        text = 'Ik ben en man 😀. Jij bent en vrouw.'
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=text)
+        post.language = None
+        post.save()
+
+        url = self._get_url(post=post)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_return_error_between_unsupported_translate_pairs(self):
+        """
+        should return error when translating post between unsupported pairs (Norwegian to arabic) and return 400
+        """
+        user = make_user()
+        Language = get_language_model()
+        user.translation_language = Language.objects.get(code='ar')
+        user.save()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=fake.text(max_nb_chars=30))
+        post.language = Language.objects.get(code='no')
+        post.save()
+
+        url = self._get_url(post=post)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_return_error_when_text_length_exceeds_max_setting(self):
+        """
+        should return appropriate error when length of text is more than maximum in settings.py return 400
+        """
+        user = make_user()
+        Language = get_language_model()
+        user.translation_language = Language.objects.get(code='ar')
+        user.save()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+        post.language = Language.objects.get(code='no')
+        post.save()
+
+        url = self._get_url(post=post)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def _get_url(self, post):
+        return reverse('translate-post', kwargs={
+            'post_uuid': post.uuid
+        })
+
