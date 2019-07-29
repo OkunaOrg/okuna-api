@@ -1,9 +1,9 @@
-<img alt="Open book logo" src="https://snag.gy/oaVCPq.jpg" width="200">
+<img alt="Okuna logo" src="https://i.snag.gy/FAgp8K.jpg" width="200">
 
-[![CircleCI](https://circleci.com/gh/OpenbookOrg/openbook-api.svg?style=svg&circle-token=b41cbfe3c292a3e900120dac5713328b1e754d20)](https://circleci.com/gh/OpenbookOrg/openbook-api) [![Maintainability](https://api.codeclimate.com/v1/badges/5e6ae40e9d945cad0591/maintainability)](https://codeclimate.com/repos/5bbf4878e46c0d3b620000a2/maintainability) [![Test Coverage](https://api.codeclimate.com/v1/badges/5e6ae40e9d945cad0591/test_coverage)](https://codeclimate.com/repos/5bbf4878e46c0d3b620000a2/test_coverage) [![gitmoji badge](https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67.svg?style=flat-square)](https://github.com/carloscuesta/gitmoji)
+[![CircleCI](https://circleci.com/gh/OkunaOrg/okuna-api.svg?style=svg&circle-token=b41cbfe3c292a3e900120dac5713328b1e754d20)](https://circleci.com/gh/OkunaOrg/okuna-api) [![Maintainability](https://api.codeclimate.com/v1/badges/5e6ae40e9d945cad0591/maintainability)](https://codeclimate.com/repos/5bbf4878e46c0d3b620000a2/maintainability) [![Test Coverage](https://api.codeclimate.com/v1/badges/5e6ae40e9d945cad0591/test_coverage)](https://codeclimate.com/repos/5bbf4878e46c0d3b620000a2/test_coverage) [![gitmoji badge](https://img.shields.io/badge/gitmoji-%20😜%20😍-FFDD67.svg?style=flat-square)](https://github.com/carloscuesta/gitmoji)
 
 
-The API server for Openbook.
+The API server for Okuna.
 
 ## Table of contents
 
@@ -43,14 +43,14 @@ Examples of contributions we love include:
 
 #### Code of Conduct
 
-Please read and follow our [Code of Conduct](https://github.com/OpenBookOrg/openbook-api/blob/master/CODE_OF_CONDUCT.md).
+Please read and follow our [Code of Conduct](https://github.com/OkunaOrg/okuna-api/blob/master/CODE_OF_CONDUCT.md).
 
 #### License
 
 Every contribution accepted is licensed under [AGPL v3.0](http://www.gnu.org/licenses/agpl-3.0.html) or any later version. 
 You must be careful to not include any code that can not be licensed under this license.
 
-Please read carefully [our license](https://github.com/OpenBookOrg/openbook-org-backend/blob/master/LICENSE.txt) and ask us if you have any questions.
+Please read carefully [our license](https://github.com/OkunaOrg/okuna-api/blob/master/LICENSE.txt) and ask us if you have any questions.
 
 #### Responsible disclosure
 
@@ -58,7 +58,7 @@ Cyber-hero? Check out our [Vulnerability Disclosure page](https://www.open-book.
 
 #### Other issues
 
-We're available almost 24/7 in the Openbook slack channel. [Join us!](https://join.slack.com/t/openbookorg/shared_invite/enQtNDI2NjI3MDM0MzA2LTYwM2E1Y2NhYWRmNTMzZjFhYWZlYmM2YTQ0MWEwYjYyMzcxMGI0MTFhNTIwYjU2ZDI1YjllYzlhOWZjZDc4ZWY)
+We're available almost 24/7 in the Okuna slack channel. [Join us!](https://join.slack.com/t/okunaorg/shared_invite/enQtNDI2NjI3MDM0MzA2LTYwM2E1Y2NhYWRmNTMzZjFhYWZlYmM2YTQ0MWEwYjYyMzcxMGI0MTFhNTIwYjU2ZDI1YjllYzlhOWZjZDc4ZWY)
 
 #### Git commit message conventions
 
@@ -73,7 +73,7 @@ If you're using git in your command line, you can download the handy tool [gitmo
 #### Clone the repository
 
 ```bash
-git clone git@github.com:OpenbookOrg/openbook-api.git
+git clone git@github.com:OkunaOrg/okuna-api.git
 ```
 
 #### Create and configure your .env file
