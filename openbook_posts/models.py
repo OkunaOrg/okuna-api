@@ -28,7 +28,7 @@ from imagekit.models import ProcessedImageField
 
 from openbook_moderation.models import ModeratedObject
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory
-from openbook_common.helpers import get_language_for_text
+from openbook_common.helpers import get_language_for_text, get_first_matched_url_from_text
 
 
 class Post(models.Model):
@@ -86,6 +86,7 @@ class Post(models.Model):
         if text:
             post.text = text
             post.language = get_language_for_text(text)
+            link_preview_url = get_first_matched_url_from_text(text)
 
         if image:
             PostImage.create_post_image(image=image, post_id=post.pk)
@@ -509,3 +510,11 @@ class PostCommentMute(models.Model):
     @classmethod
     def create_post_comment_mute(cls, post_comment_id, muter_id):
         return cls.objects.create(post_comment_id=post_comment_id, muter_id=muter_id)
+
+
+# class PostLinkPreview(models.Model):
+#     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='link_preview')
+#     link = models.CharField(max_length=settings.POST_MAX_LENGTH)
+#
+#     class Meta:
+#         unique_together = ('post', 'link',)

@@ -22,7 +22,7 @@ from django.core.mail import EmailMultiAlternatives
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
-from openbook_common.helpers import get_supported_translation_language
+from openbook_common.helpers import get_supported_translation_language, get_first_matched_url_from_text
 from openbook_common.models import Badge, Language
 from openbook_translation import strategy
 from openbook_common.utils.helpers import delete_file_field
@@ -1676,6 +1676,7 @@ class User(AbstractUser):
         self._check_can_update_post_with_id(post_id)
         Post = get_post_model()
         post = Post.objects.get(pk=post_id)
+        link_preview_url = get_first_matched_url_from_text(text)
         post.update(text=text)
         return post
 
