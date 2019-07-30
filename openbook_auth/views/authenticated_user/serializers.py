@@ -108,7 +108,7 @@ class UpdateAuthenticatedUserSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=PROFILE_NAME_MAX_LENGTH,
                                  required=False,
                                  allow_blank=False, validators=[name_characters_validator])
-    followers_count_visible = serializers.BooleanField(required=False, default=None, allow_null=True)
+    followers_count_visible = serializers.NullBooleanField(required=False, default=None)
     bio = serializers.CharField(max_length=settings.PROFILE_BIO_MAX_LENGTH, required=False,
                                 allow_blank=True)
     url = FriendlyUrlField(required=False,
