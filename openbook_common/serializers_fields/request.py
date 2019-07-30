@@ -37,8 +37,10 @@ class RestrictedFileSizeField(FileField):
 
         size = data.size
         if size > self.max_upload_size:
-            raise ValidationError(_('Please keep filesize under %s. Current filesize %s') % (
-                filesizeformat(self.max_upload_size), filesizeformat(size)))
+            raise ValidationError(_('Please keep filesize under %maxfilesize. Current filesize %currentfilesize').
+                                  format(maxfilesize=filesizeformat(self.max_upload_size),
+                                         currentfilesize=filesizeformat(size))
+                                  )
 
         return data
 
