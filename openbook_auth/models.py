@@ -2596,17 +2596,17 @@ class User(AbstractUser):
         if isinstance(content_object, Post):
             if content_object.community:
                 if not self.is_staff_of_community_with_name(community_name=content_object.community.name):
-                    raise ValidationError(_('Only community staff can moderated community posts'))
+                    raise ValidationError(_('Only community staff can moderate community posts'))
             else:
                 raise ValidationError(_('Only global moderators can moderate non-community posts'))
         elif isinstance(content_object, PostComment):
             if content_object.post.community:
                 if not self.is_staff_of_community_with_name(community_name=content_object.post.community.name):
-                    raise ValidationError(_('Only community staff can moderated community post comments'))
+                    raise ValidationError(_('Only community staff can moderate community post comments'))
             else:
                 raise ValidationError(_('Only global moderators can moderate non-community post comments'))
         else:
-            raise ValidationError(_('Non global moderators can only moderated posts and post comments.'))
+            raise ValidationError(_('Non global moderators can only moderate posts and post comments.'))
 
     def _check_is_global_moderator(self):
         if not self.is_global_moderator():
@@ -2653,7 +2653,7 @@ class User(AbstractUser):
         return '{0}/api/auth/password/verify?token={1}'.format(settings.EMAIL_HOST, token)
 
     def _send_password_reset_email_with_token(self, password_reset_token):
-        mail_subject = _('Reset your password for Openbook')
+        mail_subject = _('Reset your password for Okuna')
         text_content = render_to_string('openbook_auth/email/reset_password.txt', {
             'name': self.profile.name,
             'username': self.username,
@@ -3972,7 +3972,7 @@ class User(AbstractUser):
 
     def _check_can_unblock_user_with_id(self, user_id):
         if not self.has_blocked_user_with_id(user_id=user_id):
-            raise ValidationError(_('You cannot unblock and account you have not blocked.'))
+            raise ValidationError(_('You cannot unblock an account you have not blocked.'))
 
     def _check_is_not_blocked_with_user_with_id(self, user_id):
         """
