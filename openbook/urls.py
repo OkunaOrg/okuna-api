@@ -61,7 +61,8 @@ from openbook_moderation.views.report.views import ReportUser, ReportPost, Repor
     ReportPostComment
 from openbook_moderation.views.user.views import UserModerationPenalties, UserPendingModeratedObjectsCommunities
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
-from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost, TranslatePost
+from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost, TranslatePost, \
+    PostLinkPreview
 from openbook_posts.views.post_comment.post_comment_reaction.views import PostCommentReactionItem
 from openbook_posts.views.post_comment.post_comment_reactions.views import PostCommentReactions, \
     PostCommentReactionsEmojiCount
@@ -175,6 +176,7 @@ post_patterns = [
     path('open/', PostOpen.as_view(), name='open-post'),
     path('report/', ReportPost.as_view(), name='report-post'),
     path('translate/', TranslatePost.as_view(), name='translate-post'),
+    path('link-preview/', PostLinkPreview.as_view(), name='preview-post-link'),
 ]
 
 posts_patterns = [

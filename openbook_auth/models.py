@@ -1705,6 +1705,9 @@ class User(AbstractUser):
         self._check_can_get_user_with_id(user_id=user.pk)
         return user
 
+    def get_link_preview_data_for_post_with_id(self, post_id):
+        pass
+
     def translate_post_with_id(self, post_id):
         self._check_can_translate_post_with_id(post_id)
         Post = get_post_model()
