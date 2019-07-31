@@ -32,7 +32,7 @@ def emoji_group_id_exists(emoji_group_id):
 def name_characters_validator(name):
     if '>' in name or '<' in name:
         raise ValidationError(
-            _('Names cant contain < or >.'),
+            _('Names can\'t contain < or >.'),
         )
 
 
