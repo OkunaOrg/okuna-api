@@ -70,17 +70,3 @@ class TranslatePostCommentSerializer(serializers.Serializer):
         validators=[post_comment_id_exists],
         required=True,
     )
-
-
-class TranslatePostCommentResponseSerializer(serializers.HyperlinkedModelSerializer):
-    translated_text = serializers.SerializerMethodField()
-
-    class Meta:
-        model = PostComment
-        fields = (
-            'id',
-            'translated_text',
-        )
-
-    def get_translated_text(self, obj):
-        return self.context['translated_text']

@@ -8,10 +8,8 @@ from django.utils.translation import ugettext_lazy as _
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import get_post_id_for_post_uuid
 from openbook_moderation.permissions import IsNotSuspended
-from openbook_posts.views.post.serializers import TranslatePostResponseSerializer
 from openbook_posts.views.post_comment.serializers import DeletePostCommentSerializer, UpdatePostCommentSerializer, \
-    EditPostCommentSerializer, MutePostCommentSerializer, UnmutePostCommentSerializer, TranslatePostCommentSerializer, \
-    TranslatePostCommentResponseSerializer
+    EditPostCommentSerializer, MutePostCommentSerializer, UnmutePostCommentSerializer, TranslatePostCommentSerializer
 from openbook_translation.strategies.base import UnsupportedLanguagePairException, TranslationClientError, \
     MaxTextLengthExceededError
 
@@ -121,16 +119,14 @@ class TranslatePostComment(APIView):
         try:
             post_comment, translated_text = user.translate_post_comment_with_id(post_comment_id=post_comment_id)
         except UnsupportedLanguagePairException:
-            return ApiMessageResponse(_('Translation pair is not supported by client.'), status=status.HTTP_400_BAD_REQUEST)
+            return ApiMessageResponse(_('Translation pair is not supported by client.'),
+                                      status=status.HTTP_400_BAD_REQUEST)
         except TranslationClientError:
             return ApiMessageResponse(_('Translation service returned an error'),
                                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except MaxTextLengthExceededError:
             return ApiMessageResponse(_('Max length of translation text exceeded.'),
                                       status=status.HTTP_400_BAD_REQUEST)
-
-        comment_serializer = TranslatePostCommentResponseSerializer(
-            post_comment, context={'request': request, 'translated_text': translated_text}
-        )
-
-        return Response(comment_serializer.data, status=status.HTTP_200_OK)
+        return ApiMessageResponse({
+            'translated_text': translated_text
+        }, status=status.HTTP_200_OK)
