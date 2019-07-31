@@ -128,6 +128,7 @@ INSTALLED_APPS = [
     'openbook_devices',
     'openbook_moderation',
     'openbook_translation',
+    'openbook_mentions',
 ]
 
 MODELTRANSLATION_FALLBACK_LANGUAGES = ('en',)

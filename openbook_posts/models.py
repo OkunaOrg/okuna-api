@@ -23,7 +23,8 @@ from openbook_common.models import Emoji, Language
 from openbook_common.utils.helpers import delete_file_field, sha256sum
 from openbook_common.utils.model_loaders import get_emoji_model, \
     get_circle_model, get_community_model, get_notification_model, get_post_comment_notification_model, \
-    get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model
+    get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model, \
+    get_post_user_mention_notification_model, get_post_comment_user_mention_notification_model
 from imagekit.models import ProcessedImageField
 
 from openbook_moderation.models import ModeratedObject
@@ -280,6 +281,10 @@ class Post(models.Model):
         PostCommentReplyNotification = get_post_comment_notification_model()
         PostCommentReplyNotification.objects.filter(post_comment__post_id=self.pk).delete()
 
+        # Remove all post user mention notifications
+        PostUserMentionNotification = get_post_user_mention_notification_model()
+        PostUserMentionNotification.objects.filter(post_user_mention__post_id=self.pk).delete()
+
     def delete_notifications_for_user(self, user):
         # Remove all post comment notifications
         PostCommentNotification = get_post_comment_notification_model()
@@ -419,8 +424,13 @@ class PostComment(models.Model):
         self.save()
 
     def delete_notifications(self):
+        # Delete all post comment reply notifications
         PostCommentReplyNotification = get_post_comment_reply_notification_model()
         PostCommentReplyNotification.delete_post_comment_reply_notifications(post_comment_id=self.pk)
+
+        # Delete all post comment user mention notifications
+        PostCommentUserMentionNotification = get_post_comment_user_mention_notification_model()
+        PostCommentUserMentionNotification.objects.filter(post_comment_user_mention__post_id=self.pk).delete()
 
     def delete_notifications_for_user(self, user):
         PostCommentReplyNotification = get_post_comment_reply_notification_model()
