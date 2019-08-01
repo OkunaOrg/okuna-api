@@ -21,7 +21,7 @@ django-replicated==2.6.1
 django-rq==2.1.0
 django-storages==1.7.1
 django==2.2.4
-djangorestframework==3.10.2
+djangorestframework==3.8.2
 docutils==0.14
 dparse==0.4.1
 faker==0.9.1
