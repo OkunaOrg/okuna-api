@@ -318,11 +318,11 @@ class Post(models.Model):
 
     def _process_mentions(self):
         if not self.text:
-            self.user_mentions.delete()
+            self.user_mentions.all().delete()
         else:
             usernames = extract_usernames_from_string(string=self.text)
             if not usernames:
-                self.user_mentions.delete()
+                self.user_mentions.all().delete()
             else:
                 existing_mention_usernames = []
                 for existing_mention in self.user_mentions.only('id', 'user__username').all().iterator():
@@ -455,7 +455,7 @@ class PostComment(models.Model):
         usernames = extract_usernames_from_string(string=self.text)
 
         if not usernames:
-            self.user_mentions.delete()
+            self.user_mentions.all().delete()
         else:
             existing_mention_usernames = []
             for existing_mention in self.user_mentions.only('id', 'user__username').all().iterator():
