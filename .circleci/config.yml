@@ -20,11 +20,11 @@ jobs:
     steps:
     - checkout
     # Download and cache dependencies
-    - restore_cache:
-        keys:
-        - $CACHE_VERSION-dependencies-{{ checksum "requirements.txt" }}
-        # fallback to using the latest cache if no exact match is found
-        - $CACHE_VERSION-dependencies-
+#    - restore_cache:
+#        keys:
+#        - $CACHE_VERSION-dependencies-{{ checksum "requirements.txt" }}
+#        # fallback to using the latest cache if no exact match is found
+#        - $CACHE_VERSION-dependencies-
 
     - run:
         name: install dependencies
