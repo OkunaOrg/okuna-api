@@ -3359,6 +3359,10 @@ class User(AbstractUser):
     def _check_can_translate_post_with_id(self, post_id):
         Post = get_post_model()
         post = Post.objects.get(id=post_id)
+        if post.is_encircled_post():
+            raise ValidationError(
+                _('Only public posts can be translated')
+            )
         if post.text is None:
             raise ValidationError(
                 _('Post has no text to be translated')
@@ -3924,6 +3928,10 @@ class User(AbstractUser):
     def _check_can_translate_comment_with_id(self, post_comment_id):
         PostComment = get_post_comment_model()
         post_comment = PostComment.objects.get(pk=post_comment_id)
+        if post_comment.post.is_encircled_post():
+            raise ValidationError(
+                _('Only public post comments can be translated')
+            )
         if post_comment.text is None:
             raise ValidationError(
                 _('Post comment has no text to be translated')
