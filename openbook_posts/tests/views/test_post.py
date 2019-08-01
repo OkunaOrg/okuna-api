@@ -1487,3 +1487,65 @@ class TranslatePostAPITests(APITestCase):
             'post_uuid': post.uuid
         })
 
+
+class SearchPostParticipantsAPITests(APITestCase):
+    """
+    SearchPostParticipantsAPI
+    """
+
+    fixtures = [
+        'openbook_common/fixtures/languages.json'
+    ]
+
+    def test_retrieves_post_creator_by_username(self):
+        """
+        should retrieve the post creator by username and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        url = self._get_url(post)
+
+        search_query = post_creator.username[:int(len(post_creator.username) / 2)]
+
+        response = self.client.post(url, {
+            'query': search_query
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_participants = json.loads(response.content)
+
+        self.assertEqual(response_participants[0]['id'], post_creator.pk)
+
+    def test_retrieves_post_creator_by_name(self):
+        """
+        should retrieve the post creator by name and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        url = self._get_url(post)
+
+        search_query = post_creator.profile.name[:int(len(post_creator.profile.name) / 2)]
+
+        response = self.client.post(url, {
+            'query': search_query
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_participants = json.loads(response.content)
+
+        self.assertEqual(response_participants[0]['id'], post_creator.pk)
+
+    def _get_url(self, post):
+        return reverse('search-post-participants', kwargs={
+            'post_uuid': post.uuid
+        })

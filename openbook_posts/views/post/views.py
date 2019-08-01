@@ -218,7 +218,7 @@ class GetPostParticipants(APIView):
         user = request.user
         data = serializer.validated_data
 
-        post_uuid = data.post_uuid
+        post_uuid = data['post_uuid']
 
         post_participants = user.get_post_with_uuid_participants(post_uuid=post_uuid)[:10]
 
@@ -240,8 +240,8 @@ class SearchPostParticipants(APIView):
         user = request.user
         data = serializer.validated_data
 
-        query = data.query
-        post_uuid = data.post_uuid
+        query = data['query']
+        post_uuid = data['post_uuid']
 
         post_participants = user.search_post_with_uuid_participants(post_uuid=post_uuid, query=query)
 
