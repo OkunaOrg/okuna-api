@@ -25,7 +25,8 @@ class PostCommentsAPITests(APITestCase):
     """
 
     fixtures = [
-        'openbook_circles/fixtures/circles.json'
+        'openbook_circles/fixtures/circles.json',
+        'openbook_common/fixtures/languages.json'
     ]
 
     def test_can_retrieve_comments_from_public_community_post(self):
@@ -571,6 +572,25 @@ class PostCommentsAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(PostComment.objects.filter(post_id=post.pk, text=post_comment_text).count() == 1)
+
+    def test_commenting_in_a_post_sets_language_for_comment(self):
+        """
+         should set comment language when user comments in a post and return 201
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        response = self.client.put(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post_comment = PostComment.objects.get(post_id=post.pk, text=post_comment_text)
+        self.assertTrue(post_comment.language is not None)
 
     def test_cannot_comment_in_foreign_post(self):
         """

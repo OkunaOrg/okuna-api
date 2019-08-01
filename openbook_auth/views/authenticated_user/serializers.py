@@ -8,13 +8,13 @@ from openbook_auth.validators import username_characters_validator, \
     email_not_taken_validator
 from django.contrib.auth.password_validation import validate_password
 
-from openbook_common.models import Badge
+from openbook_common.models import Badge, Language
 from openbook_common.serializers_fields.request import FriendlyUrlField, RestrictedImageFileSizeField
 from openbook_common.serializers_fields.user import FollowersCountField, \
     FollowingCountField, PostsCountField, \
     IsMemberOfCommunities, \
     UnreadNotificationsCountField, IsGlobalModeratorField
-from openbook_common.validators import name_characters_validator
+from openbook_common.validators import name_characters_validator, language_id_exists
 from openbook_moderation.serializers_fields.user import UserPendingCommunitiesModeratedObjectsCountField, \
     UserActiveModerationPenaltiesCountField
 
@@ -48,6 +48,17 @@ class GetAuthenticatedUserProfileSerializer(serializers.ModelSerializer):
         )
 
 
+class UserLanguageSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Language
+        fields = (
+            'id',
+            'code',
+            'name',
+        )
+
+
 class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
     profile = GetAuthenticatedUserProfileSerializer(many=False)
     posts_count = PostsCountField()
@@ -58,6 +69,7 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
     is_member_of_communities = IsMemberOfCommunities()
     pending_communities_moderated_objects_count = UserPendingCommunitiesModeratedObjectsCountField()
     active_moderation_penalties_count = UserActiveModerationPenaltiesCountField()
+    language = UserLanguageSerializer()
 
     class Meta:
         model = User
@@ -67,6 +79,7 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
             'email',
             'username',
             'profile',
+            'language',
             'posts_count',
             'invite_count',
             'are_guidelines_accepted',
@@ -95,7 +108,7 @@ class UpdateAuthenticatedUserSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=PROFILE_NAME_MAX_LENGTH,
                                  required=False,
                                  allow_blank=False, validators=[name_characters_validator])
-    followers_count_visible = serializers.BooleanField(required=False, default=None, allow_null=True)
+    followers_count_visible = serializers.NullBooleanField(required=False, default=None)
     bio = serializers.CharField(max_length=settings.PROFILE_BIO_MAX_LENGTH, required=False,
                                 allow_blank=True)
     url = FriendlyUrlField(required=False,
@@ -124,3 +137,18 @@ class UpdateAuthenticatedUserSettingsSerializer(serializers.Serializer):
             raise serializers.ValidationError(_('Current password must be supplied together with the new password'))
 
         return data
+
+
+class AuthenticatedUserLanguageSerializer(serializers.Serializer):
+    language_id = serializers.IntegerField(validators=[language_id_exists], required=True)
+
+
+class AuthenticatedUserAllLanguagesSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Language
+        fields = (
+            'id',
+            'code',
+            'name',
+        )

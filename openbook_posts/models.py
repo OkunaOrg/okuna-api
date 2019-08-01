@@ -19,7 +19,7 @@ from django.conf import settings
 from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
-from openbook_common.models import Emoji
+from openbook_common.models import Emoji, Language
 from openbook_common.utils.helpers import delete_file_field, sha256sum
 from openbook_common.utils.model_loaders import get_emoji_model, \
     get_circle_model, get_community_model, get_notification_model, get_post_comment_notification_model, \
@@ -28,6 +28,7 @@ from imagekit.models import ProcessedImageField
 
 from openbook_moderation.models import ModeratedObject
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory
+from openbook_common.helpers import get_language_for_text
 
 
 class Post(models.Model):
@@ -41,6 +42,7 @@ class Post(models.Model):
     community = models.ForeignKey('openbook_communities.Community', on_delete=models.CASCADE, related_name='posts',
                                   null=True,
                                   blank=False)
+    language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, related_name='posts')
     is_edited = models.BooleanField(default=False)
     is_closed = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
@@ -83,6 +85,7 @@ class Post(models.Model):
 
         if text:
             post.text = text
+            post.language = get_language_for_text(text)
 
         if image:
             PostImage.create_post_image(image=image, post_id=post.pk)
@@ -230,6 +233,7 @@ class Post(models.Model):
         self._check_can_be_updated(text=text)
         self.text = text
         self.is_edited = True
+        self.language = get_language_for_text(text)
         self.save()
 
     def save(self, *args, **kwargs):
@@ -339,13 +343,19 @@ class PostComment(models.Model):
     created = models.DateTimeField(editable=False, db_index=True)
     commenter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_comments')
     text = models.TextField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False)
+    language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, related_name='post_comments')
     is_edited = models.BooleanField(default=False, null=False, blank=False)
     # This only happens if the comment was reported and found with critical severity content
     is_deleted = models.BooleanField(default=False)
 
     @classmethod
     def create_comment(cls, text, commenter, post, parent_comment=None):
-        return PostComment.objects.create(text=text, commenter=commenter, post=post, parent_comment=parent_comment)
+        post_comment = PostComment.objects.create(text=text, commenter=commenter, post=post,
+                                                  parent_comment=parent_comment)
+        post_comment.language = get_language_for_text(text)
+        post_comment.save()
+
+        return post_comment
 
     @classmethod
     def count_comments_for_post_with_id(cls, post_id):
@@ -378,7 +388,11 @@ class PostComment(models.Model):
         return self.replies.filter(count_query).count()
 
     def reply_to_comment(self, commenter, text):
-        return PostComment.create_comment(text=text, commenter=commenter, post=self.post, parent_comment=self)
+        post_comment = PostComment.create_comment(text=text, commenter=commenter, post=self.post, parent_comment=self)
+        post_comment.language = get_language_for_text(text)
+        post_comment.save()
+
+        return post_comment
 
     def react(self, reactor, emoji_id):
         return PostCommentReaction.create_reaction(reactor=reactor, emoji_id=emoji_id, post_comment=self)
@@ -388,6 +402,12 @@ class PostComment(models.Model):
         if not self.id:
             self.created = timezone.now()
         return super(PostComment, self).save(*args, **kwargs)
+
+    def update_comment(self, text):
+        self.text = text
+        self.is_edited = True
+        self.language = get_language_for_text(text)
+        self.save()
 
     def soft_delete(self):
         self.is_deleted = True

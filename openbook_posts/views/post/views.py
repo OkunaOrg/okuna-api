@@ -5,11 +5,15 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.translation import ugettext_lazy as _
 
+from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import get_post_id_for_post_uuid
 from openbook_moderation.permissions import IsNotSuspended
 from openbook_posts.views.post.serializers import DeletePostSerializer, GetPostSerializer, GetPostPostSerializer, \
-    UnmutePostSerializer, MutePostSerializer, EditPostSerializer, AuthenticatedUserEditPostSerializer, OpenClosePostSerializer, \
-    OpenPostSerializer, ClosePostSerializer
+    UnmutePostSerializer, MutePostSerializer, EditPostSerializer, AuthenticatedUserEditPostSerializer, \
+    OpenClosePostSerializer, \
+    OpenPostSerializer, ClosePostSerializer, TranslatePostResponseSerializer, TranslatePostSerializer
+from openbook_translation.strategies.base import TranslationClientError, UnsupportedLanguagePairException, \
+    MaxTextLengthExceededError
 
 
 class PostItem(APIView):
@@ -168,3 +172,37 @@ class PostOpen(APIView):
         post_serializer = OpenClosePostSerializer(post, context={'request': request})
 
         return Response(post_serializer.data, status=status.HTTP_200_OK)
+
+
+class TranslatePost(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, post_uuid):
+        request_data = request.data.copy()
+        request_data['post_uuid'] = post_uuid
+
+        serializer = TranslatePostSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        data = serializer.validated_data
+        post_uuid = data.get('post_uuid')
+        post_id = get_post_id_for_post_uuid(post_uuid)
+
+        try:
+            post, translated_text = user.translate_post_with_id(post_id=post_id)
+        except UnsupportedLanguagePairException:
+            return ApiMessageResponse(_('Translation between these languages is not supported.'),
+                                      status=status.HTTP_400_BAD_REQUEST)
+        except TranslationClientError:
+            return ApiMessageResponse(_('Translation service returned an error'),
+                                      status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except MaxTextLengthExceededError:
+            return ApiMessageResponse(_('Max length of translation text exceeded.'),
+                                      status=status.HTTP_400_BAD_REQUEST)
+
+        post_serializer = TranslatePostResponseSerializer(post, context={'request': request,
+                                                                         'translated_text': translated_text})
+
+        return Response(post_serializer.data, status=status.HTTP_200_OK)
+

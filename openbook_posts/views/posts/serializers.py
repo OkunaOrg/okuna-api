@@ -9,6 +9,7 @@ from openbook_common.models import Emoji, Badge
 from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, PostReactionsEmojiCountField, \
     CirclesField, PostCreatorField, PostIsMutedField, IsEncircledField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
+from openbook_common.models import Language
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_lists.validators import list_id_exists
@@ -184,6 +185,17 @@ class PostCommunitySerializer(serializers.ModelSerializer):
         )
 
 
+class PostLanguageSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Language
+        fields = (
+            'id',
+            'code',
+            'name',
+        )
+
+
 class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     image = PostImageSerializer(many=False)
     video = PostVideoSerializer(many=False)
@@ -195,6 +207,7 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     circles = CirclesField(circle_serializer=PostCircleSerializer)
     community = PostCommunitySerializer()
     is_muted = PostIsMutedField()
+    language = PostLanguageSerializer()
     is_encircled = IsEncircledField()
 
     class Meta:
@@ -214,6 +227,7 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'public_reactions',
             'circles',
             'community',
+            'language',
             'is_muted',
             'is_encircled',
             'is_edited',
@@ -228,6 +242,7 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
                                community_membership_serializer=CommunityMembershipSerializer)
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
     comments_count = CommentsCountField()
+    language = PostLanguageSerializer()
 
     class Meta:
         model = Post
@@ -241,6 +256,7 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
             'image',
             'video',
             'creator',
+            'language',
             'comments_enabled',
             'public_reactions',
             'is_edited'

@@ -1,24 +1,24 @@
 Hey,
 
 
-You've been invited by {{ invited_by_name }} to try the Openbook Beta.
+You've been invited by {{ invited_by_name }} to try the Okuna Beta.
 
-Please follow the steps below to download and join Openbook
+Please follow the steps below to download and join Okuna
 
 Step 1.
-If you're on an Apple iPhone download the TestFlight App and install Openbook using this link :https://testflight.apple.com/join/XniAjdyF
-If you're on an Android device you can download and install the Openbook App directly using this link: https://play.google.com/apps/testing/social.openbook.app
+If you're on an Apple iPhone download the TestFlight App and install Okuna using this link :https://testflight.apple.com/join/XniAjdyF
+If you're on an Android device you can download and install the Okuna App directly using this link: https://play.google.com/apps/testing/social.openbook.app
 
 Step 2.
 Once the app is installed, copy this link and paste it in the sign up form to setup up your account:
 {{ invite_link }}
 
 
-We hope to see you soon at Openbook. If you need some help, drop us a message on Slack at
-https://join.slack.com/t/openbookorg/shared_invite/enQtNDI2NjI3MDM0MzA2LTYwM2E1Y2NhYWRmNTMzZjFhYWZlYmM2YTQ0MWEwYjYyMzcxMGI0MTFhNTIwYjU2ZDI1YjllYzlhOWZjZDc4ZWY
+We hope to see you soon at Okuna. If you need some help, drop us a message on Slack at
+https://join.slack.com/t/okunaorg/shared_invite/enQtNDI2NjI3MDM0MzA2LTYwM2E1Y2NhYWRmNTMzZjFhYWZlYmM2YTQ0MWEwYjYyMzcxMGI0MTFhNTIwYjU2ZDI1YjllYzlhOWZjZDc4ZWY
 
-Learn more about Openbook at https://openbook.social
+Learn more about Okuna at https://okuna.io
 
 Cheers,
 
-The Openbook Team
+The Okuna Team

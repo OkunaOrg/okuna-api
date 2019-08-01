@@ -22,7 +22,8 @@ from django.conf.urls.static import static
 from openbook_auth.views.auth.views import Register, Login, UsernameCheck, EmailCheck, EmailVerify, \
     PasswordResetRequest, PasswordResetVerify
 from openbook_auth.views.authenticated_user.views import AuthenticatedUser, AuthenticatedUserSettings, \
-    DeleteAuthenticatedUser, AuthenticatedUserNotificationsSettings, AuthenticatedUserAcceptGuidelines
+    DeleteAuthenticatedUser, AuthenticatedUserNotificationsSettings, AuthenticatedUserAcceptGuidelines, \
+    AuthenticatedUserLanguage
 from openbook_auth.views.blocked_users.views import BlockedUsers, SearchBlockedUsers
 from openbook_auth.views.followers.views import Followers, SearchFollowers
 from openbook_auth.views.following.views import Followings, SearchFollowings
@@ -60,12 +61,13 @@ from openbook_moderation.views.report.views import ReportUser, ReportPost, Repor
     ReportPostComment
 from openbook_moderation.views.user.views import UserModerationPenalties, UserPendingModeratedObjectsCommunities
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
-from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost
+from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost, TranslatePost
 from openbook_posts.views.post_comment.post_comment_reaction.views import PostCommentReactionItem
 from openbook_posts.views.post_comment.post_comment_reactions.views import PostCommentReactions, \
     PostCommentReactionsEmojiCount
 from openbook_posts.views.post_comment.post_comment_replies.views import PostCommentReplies
-from openbook_posts.views.post_comment.views import PostCommentItem, MutePostComment, UnmutePostComment
+from openbook_posts.views.post_comment.views import PostCommentItem, MutePostComment, UnmutePostComment, \
+    TranslatePostComment
 from openbook_posts.views.post_comments.views import PostComments, PostCommentsDisable, PostCommentsEnable
 from openbook_posts.views.post_reaction.views import PostReactionItem
 from openbook_posts.views.post_reactions.views import PostReactions, PostReactionsEmojiCount, PostReactionEmojiGroups
@@ -90,6 +92,7 @@ auth_user_patterns = [
          name='authenticated-user-notifications-settings'),
     path('accept-guidelines/', AuthenticatedUserAcceptGuidelines.as_view(),
          name='authenticated-user-accept-guidelines'),
+    path('languages/', AuthenticatedUserLanguage.as_view(), name='user-language'),
 ]
 
 auth_users_user_patterns = [
@@ -151,6 +154,7 @@ post_comment_notifications_patterns = [
 
 post_comment_patterns = [
     path('', PostCommentItem.as_view(), name='post-comment'),
+    path('translate/', TranslatePostComment.as_view(), name='translate-post-comment'),
     path('report/', ReportPostComment.as_view(), name='report-post-comment'),
     path('replies/', PostCommentReplies.as_view(), name='post-comment-replies'),
     path('reactions/', include(post_comment_reactions_patterns), name='post-comment-replies'),
@@ -170,6 +174,7 @@ post_patterns = [
     path('close/', PostClose.as_view(), name='close-post'),
     path('open/', PostOpen.as_view(), name='open-post'),
     path('report/', ReportPost.as_view(), name='report-post'),
+    path('translate/', TranslatePost.as_view(), name='translate-post'),
 ]
 
 posts_patterns = [

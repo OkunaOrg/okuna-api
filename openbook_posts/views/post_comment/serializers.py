@@ -3,14 +3,18 @@ from django.conf import settings
 from openbook_posts.models import PostComment
 from openbook_posts.validators import post_comment_id_exists, post_uuid_exists, \
     post_comment_id_exists_for_post_with_uuid
+from openbook_posts.views.posts.serializers import PostLanguageSerializer
 
 
 class EditPostCommentSerializer(serializers.ModelSerializer):
+    language = PostLanguageSerializer()
+
     class Meta:
         model = PostComment
         fields = (
             'id',
             'text',
+            'language',
             'is_edited'
         )
 
@@ -55,3 +59,28 @@ class MutePostCommentSerializer(serializers.Serializer):
 
 class UnmutePostCommentSerializer(MutePostCommentSerializer):
     pass
+
+
+class TranslatePostCommentSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+    post_comment_id = serializers.IntegerField(
+        validators=[post_comment_id_exists],
+        required=True,
+    )
+
+
+class TranslatePostCommentResponseSerializer(serializers.HyperlinkedModelSerializer):
+    translated_text = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PostComment
+        fields = (
+            'id',
+            'translated_text',
+        )
+
+    def get_translated_text(self, obj):
+        return self.context['translated_text']

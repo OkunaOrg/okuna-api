@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.conf import settings
 
 from openbook_auth.models import UserProfile, User
-from openbook_common.models import Emoji
+from openbook_common.models import Emoji, Language
 from openbook_common.serializers import UserProfileBadgeSerializer
 from openbook_common.serializers_fields.post_comment import PostCommenterField, RepliesCountField, \
     PostCommentReactionsEmojiCountField, PostCommentReactionField, PostCommentIsMutedField
@@ -83,6 +83,17 @@ class PostCommentReactionSerializer(serializers.ModelSerializer):
         )
 
 
+class PostCommentLanguageSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Language
+        fields = (
+            'id',
+            'code',
+            'name',
+        )
+
+
 class PostCommentReplySerializer(serializers.ModelSerializer):
     parent_comment = PostCommentRepliesParentCommentSerializer()
     commenter = PostCommenterField(post_commenter_serializer=PostCommentCommenterSerializer,
@@ -91,6 +102,7 @@ class PostCommentReplySerializer(serializers.ModelSerializer):
         emoji_count_serializer=PostCommentReactionEmojiCountSerializer)
     reaction = PostCommentReactionField(post_comment_reaction_serializer=PostCommentReactionSerializer)
     is_muted = PostCommentIsMutedField()
+    language = PostCommentLanguageSerializer()
 
     class Meta:
         model = PostComment
@@ -98,6 +110,7 @@ class PostCommentReplySerializer(serializers.ModelSerializer):
             'commenter',
             'parent_comment',
             'text',
+            'language',
             'created',
             'is_edited',
             'is_muted',
@@ -116,12 +129,14 @@ class PostCommentSerializer(serializers.ModelSerializer):
         emoji_count_serializer=PostCommentReactionEmojiCountSerializer)
     reaction = PostCommentReactionField(post_comment_reaction_serializer=PostCommentReactionSerializer)
     is_muted = PostCommentIsMutedField()
+    language = PostCommentLanguageSerializer()
 
     class Meta:
         model = PostComment
         fields = (
             'commenter',
             'text',
+            'language',
             'created',
             'reactions_emoji_counts',
             'replies_count',
