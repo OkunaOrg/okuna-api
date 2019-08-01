@@ -1555,7 +1555,10 @@ class User(AbstractUser):
     def get_linked_users(self, max_id=None):
         # All users which are connected with us and we have accepted by adding
         # them to a circle
-        linked_users_query = self._make_linked_users_query(max_id=max_id)
+        linked_users_query = self._make_linked_users_query()
+
+        if max_id:
+            linked_users_query.add(Q(id__lt=max_id), Q.AND)
 
         return User.objects.filter(linked_users_query).distinct()
 
@@ -2529,6 +2532,30 @@ class User(AbstractUser):
                                                    category_id=category_id)
         return moderated_object
 
+    def search_post_with_uuid_participants(self, post_uuid, query):
+        Post = get_post_model()
+        post = Post.objects.get(uuid=post_uuid)
+        return self.search_post_participants(post=post, query=query)
+
+    def search_post_participants(self, post, query):
+        self.can_see_post(post=post)
+
+        # Creator, commentators and community members if applicable
+        participants_query = post.make_participants_query()
+
+        # Connected or following us
+        linked_users_query = self._make_linked_users_query()
+
+        participants_query.add(linked_users_query, Q.OR)
+
+        indentifiers_query = Q(username__icontains=query)
+        indentifiers_query.add(Q(profile__name__icontains=query), Q.OR)
+        indentifiers_query.add(Q(is_deleted=False), Q.AND)
+
+        participants_query.add(indentifiers_query, Q.AND)
+
+        return participants_query
+
     def _check_has_not_reported_moderated_object_with_id(self, moderated_object_id):
         if self.has_reported_moderated_object_with_id(moderated_object_id=moderated_object_id):
             raise ValidationError(
@@ -2771,7 +2798,7 @@ class User(AbstractUser):
         self.auth_token.delete()
         bootstrap_user_auth_token(user=self)
 
-    def _make_linked_users_query(self, max_id=None):
+    def _make_linked_users_query(self):
         # All users which are connected with us and we have accepted by adding
         # them to a circle
         linked_users_query = Q(circles__connections__target_connection__user_id=self.pk,
@@ -2781,9 +2808,6 @@ class User(AbstractUser):
 
         # All users following us
         linked_users_query.add(followers_query, Q.OR)
-
-        if max_id:
-            linked_users_query.add(Q(id__lt=max_id), Q.AND)
 
         linked_users_query.add(Q(is_deleted=False), Q.AND)
 

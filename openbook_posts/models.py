@@ -301,6 +301,19 @@ class Post(models.Model):
         PostCommentReplyNotification.objects.filter(post_comment__post=self.pk,
                                                     notification__owner_id=user.pk).delete()
 
+    def make_participants_query(self):
+        # Add post creator
+        participants_query = Q(posts__id=self.pk)
+
+        # Add post commentators
+        participants_query.add(Q(posts_comments__post_id=self.pk), Q.OR)
+
+        # If community post, add community members
+        if self.community:
+            participants_query.add(Q(communities_memberships__community_id=self.community_id), Q.OR)
+
+        return participants_query
+
     def _check_can_be_updated(self, text=None):
         if self.is_text_only_post() and not text:
             raise ValidationError(
