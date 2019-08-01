@@ -242,6 +242,8 @@ class Post(models.Model):
         if not self.id and not self.created:
             self.created = timezone.now()
 
+        self._process_mentions()
+
         return super(Post, self).save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
@@ -313,6 +315,32 @@ class Post(models.Model):
             participants_query.add(Q(communities_memberships__community_id=self.community_id), Q.OR)
 
         return participants_query
+
+    def _process_mentions(self):
+        if not self.text:
+            self.user_mentions.delete()
+        else:
+            usernames = extract_usernames_from_string(string=self.text)
+            if not usernames:
+                self.user_mentions.delete()
+            else:
+                existing_mention_usernames = []
+                for existing_mention in self.user_mentions.only('id', 'user__username').all().iterator():
+                    if existing_mention.user.username not in usernames:
+                        existing_mention.delete()
+                    else:
+                        existing_mention_usernames = existing_mention.user.username
+
+                PostUserMention = get_post_user_mention_notification_model()
+                User = get_user_model()
+
+                for username in usernames:
+                    if username not in existing_mention_usernames:
+                        try:
+                            user = User.objects.only('id', 'username').get(username=username)
+                            PostUserMention.create_post_user_mention(user=user, post=self)
+                        except User.DoesNotExist:
+                            pass
 
     def _check_can_be_updated(self, text=None):
         if self.is_text_only_post() and not text:
@@ -424,30 +452,28 @@ class PostComment(models.Model):
         return super(PostComment, self).save(*args, **kwargs)
 
     def _process_mentions(self):
-        if not self.text:
+        usernames = extract_usernames_from_string(string=self.text)
+
+        if not usernames:
             self.user_mentions.delete()
         else:
-            usernames = extract_usernames_from_string(string=self.text)
-            if not usernames:
-                self.user_mentions.delete()
-            else:
-                existing_usernames = []
-                for existing_mention in self.user_mentions.only('id', 'user__username').all().iterator():
-                    if existing_mention.user.username not in usernames:
-                        existing_mention.delete()
-                    else:
-                        existing_usernames = existing_mention.user.username
+            existing_mention_usernames = []
+            for existing_mention in self.user_mentions.only('id', 'user__username').all().iterator():
+                if existing_mention.user.username not in usernames:
+                    existing_mention.delete()
+                else:
+                    existing_mention_usernames = existing_mention.user.username
 
-                PostUserMention = get_post_user_mention_notification_model()
-                User = get_user_model()
+            PostCommentUserMention = get_post_comment_user_mention_notification_model()
+            User = get_user_model()
 
-                for username in usernames:
-                    if username not in existing_usernames:
-                        try:
-                            user = User.objects.only('id', 'username').get(username=username)
-                            PostUserMention.create_post_user_mention(user=user, post=self)
-                        except User.DoesNotExist:
-                            pass
+            for username in usernames:
+                if username not in existing_mention_usernames:
+                    try:
+                        user = User.objects.only('id', 'username').get(username=username)
+                        PostCommentUserMention.create_post_comment_user_mention(user=user, post=self)
+                    except User.DoesNotExist:
+                        pass
 
     def update_comment(self, text):
         self.text = text
