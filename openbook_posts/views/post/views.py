@@ -208,7 +208,7 @@ class TranslatePost(APIView):
 class GetPostParticipants(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def post(self, request, post_uuid):
+    def get(self, request, post_uuid):
         request_data = request.data.copy()
         request_data['post_uuid'] = post_uuid
 

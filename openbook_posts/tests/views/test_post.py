@@ -1831,3 +1831,163 @@ class SearchPostParticipantsAPITests(APITestCase):
         return reverse('search-post-participants', kwargs={
             'post_uuid': post.uuid
         })
+
+
+class GetPostParticipantsAPITests(APITestCase):
+    """
+    SearchPostParticipantsAPI
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json',
+    ]
+
+    def test_retrieves_post_creator(self):
+        """
+        should retrieve the post creator and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_participants = json.loads(response.content)
+
+        self.assertEqual(response_participants[0]['id'], post_creator.pk)
+
+    def test_retrieves_post_commentator(self):
+        """
+        should retrieve a post commentator and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        post_commentator = make_user()
+        post_commentator.comment_post(post=post, text=make_fake_post_comment_text())
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_participants = json.loads(response.content)
+
+        found = False
+
+        for response_participant in response_participants:
+            if response_participant['id'] == post_commentator.pk:
+                found = True
+                break
+
+        self.assertTrue(found)
+
+    def test_retrieves_post_community_member(self):
+        """
+        should retrieve a post community member and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community = make_community()
+
+        post_creator = make_user()
+        post_creator.join_community_with_name(community_name=community.name)
+        post = post_creator.create_community_post(community_name=community, text=make_fake_post_text())
+
+        post_community_member = make_user()
+        post_community_member.join_community_with_name(community_name=community.name)
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_participants = json.loads(response.content)
+
+        found = False
+
+        for response_participant in response_participants:
+            if response_participant['id'] == post_community_member.pk:
+                found = True
+                break
+
+        self.assertTrue(found)
+
+    def test_retrieves_follower(self):
+        """
+        should retrieve a follower and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        follower = make_user()
+        follower.follow_user(user=user)
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_participants = json.loads(response.content)
+
+        found = False
+
+        for response_participant in response_participants:
+            if response_participant['id'] == follower.pk:
+                found = True
+                break
+
+        self.assertTrue(found)
+
+    def test_retrieves_connection(self):
+        """
+        should retrieve a connection and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        connection = make_user()
+        connection.connect_with_user_with_id(user_id=user.pk)
+
+        user.confirm_connection_with_user_with_id(user_id=connection.pk)
+
+        url = self._get_url(post)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_participants = json.loads(response.content)
+
+        found = False
+
+        for response_participant in response_participants:
+            if response_participant['id'] == connection.pk:
+                found = True
+                break
+
+        self.assertTrue(found)
+
+    def _get_url(self, post):
+        return reverse('get-post-participants', kwargs={
+            'post_uuid': post.uuid
+        })
