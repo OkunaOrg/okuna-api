@@ -1545,6 +1545,74 @@ class SearchPostParticipantsAPITests(APITestCase):
 
         self.assertEqual(response_participants[0]['id'], post_creator.pk)
 
+    def test_retrieves_post_commentator_by_username(self):
+        """
+        should retrieve a post commentator by username and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        post_commentator = make_user()
+        post_commentator.comment_post(post=post, text=make_fake_post_comment_text())
+
+        url = self._get_url(post)
+
+        search_query = post_commentator.username[:int(len(post_commentator.username) / 2)]
+
+        response = self.client.post(url, {
+            'query': search_query
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_participants = json.loads(response.content)
+
+        found = False
+
+        for response_participant in response_participants:
+            if response_participant['id'] == post_commentator.pk:
+                found = True
+                break
+
+        self.assertTrue(found)
+
+    def test_retrieves_post_commentator_by_name(self):
+        """
+        should retrieve a post commentator by name and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        post_commentator = make_user()
+        post_commentator.comment_post(post=post, text=make_fake_post_comment_text())
+
+        url = self._get_url(post)
+
+        search_query = post_commentator.profile.name[:int(len(post_commentator.profile.name) / 2)]
+
+        response = self.client.post(url, {
+            'query': search_query
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_participants = json.loads(response.content)
+
+        found = False
+
+        for response_participant in response_participants:
+            if response_participant['id'] == post_commentator.pk:
+                found = True
+                break
+
+        self.assertTrue(found)
+
     def _get_url(self, post):
         return reverse('search-post-participants', kwargs={
             'post_uuid': post.uuid
