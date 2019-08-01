@@ -7,8 +7,10 @@
       "severity": "M",
       "title_en": "Spam",
       "title_es": "Spam",
+      "title_de": "Spam",
       "description_en": "Posts as spam could include clickbait, advertising, scams, script bots",
       "description_es": "Posts as spam could include clickbait, advertising, scams.",
+      "description_de": "Beiträge als Spam können Clickbait, Werbung, Betrug sein.",
       "order": 1,
       "created": "2018-10-22 12:23:30.382913+00:00"
     }
@@ -21,8 +23,10 @@
       "severity": "H",
       "title_en": "Pornography",
       "title_es": "Pornography",
+      "title_de": "Pornographie",
       "description_en": "Posts showing sexual intercourse, photos and videos of sexual intercourse, nudity etc",
       "description_es": "Posts showing sexual intercourse, photos and videos of sexual intercourse, nudity etc",
+      "description_de": "Posts, die Geschlechtsverkehr, Fotos und Videos von Geschlechtsverkehr, Nacktheit usw.",
       "created": "2018-10-22 12:23:30.382913+00:00",
       "order": 4
     }
@@ -35,8 +39,10 @@
       "severity": "H",
       "title_en": "Hatred & Bullying",
       "title_es": "Hatred & Bullying",
+      "title_de": "Hass und Mobbing",
       "description_en": "Credible threats, targets people, degrades or shames them, harassment etc.",
       "description_es": "Credible threats, targets people, degrades or shames them, harassment etc.",
+      "description_de": "Glaubwürdige Drohungen, zielen auf Menschen ab, erniedrigen oder beschämen sie, belästigen usw.",
       "created": "2018-10-22 12:23:30.382913+00:00",
       "order": 5
     }
@@ -49,8 +55,10 @@
       "severity": "H",
       "title_en": "Self Harm",
       "title_es": "Self Harm",
+      "title_de": "Selbstbeschädigung",
       "description_en": "Posts promoting or encouraging self harm",
       "description_es": "Posts promoting or encouraging self harm",
+      "description_de": "Posts, die Selbstbeschädigung fördern oder fördern",
       "created": "2018-10-22 12:23:30.382913+00:00",
       "order": 6
     }
@@ -63,8 +71,10 @@
       "severity": "H",
       "title_en": "Violent, gory and harmful",
       "title_es": "Violent, gory and harmful",
+      "title_de": "Gewalttätig, blutig und schädlich",
       "description_en": "Photos or videos of extreme graphic violence, posts encouraging violence, specific threats of physical harm",
       "description_es": "Photos or videos of extreme graphic violence, posts encouraging violence, specific threats of physical harm",
+      "description_de": "Fotos oder Videos von extremer grafischer Gewalt, Posts, die zu Gewalt anregen, spezifische Bedrohungen für körperliche Schäden",
       "created": "2018-10-22 12:23:30.382913+00:00",
       "order": 7
     }
@@ -77,8 +87,10 @@
       "severity": "C",
       "title_en": "Child Sexual Exploitation Material",
       "title_es": "Child Sexual Exploitation Material",
+      "title_de": "Material zur sexuellen Ausbeutung von Kindern",
       "description_en": "Posts with photos or videos of sexual intercourse with children, posts of nude/partially nude children.",
       "description_es": "Posts with photos or videos of sexual intercourse with children, posts of nude/partially nude children.",
+      "description_de": "Posts mit Fotos oder Videos des Geschlechtsverkehrs mit Kindern, Posts von nackten / teilweise nackten Kindern.",
       "created": "2018-10-22 12:23:30.382913+00:00",
       "order": 8
     }
@@ -91,8 +103,10 @@
       "severity": "C",
       "title_en": "Illegal Activities e.g Drug Use",
       "title_es": "Illegal Activities e.g Drug Use",
+      "title_de": "Illegale Aktivitäten, z. B. Drogenkonsum",
       "description_en": "Posts promoting illegal activities such as use, sale or distribution of hard drugs etc",
       "description_es": "Posts promoting illegal activities such as use, sale or distribution of hard drugs etc",
+      "description_de": "Posts, die illegale Aktivitäten wie Konsum, Verkauf oder Vertrieb von harten Drogen etc. Fördern",
       "created": "2018-10-22 12:23:30.382913+00:00",
       "order": 9
     }
@@ -105,8 +119,10 @@
       "severity": "H",
       "title_en": "Deceptive content",
       "title_es": "Deceptive content",
+      "title_de": "Täuschender Inhalt",
       "description_en": "Posts with purposefully fake or deceitful news, hoax disproved by credible sources",
       "description_es": "Posts with purposefully fake or deceitful news, hoax disproved by credible sources",
+      "description_de": "Posts mit absichtlich gefälschten oder betrügerischen Nachrichten, die von glaubwürdigen Quellen widerlegt wurden",
       "created": "2018-10-22 12:23:30.382913+00:00",
       "order": 10
     }
@@ -119,8 +135,10 @@
       "severity": "H",
       "title_en": "Copyright and trademark infringement",
       "title_es": "Copyright and trademark infringement",
+      "title_de": "Urheberrechts- und Markenrechtsverletzung",
       "description_en": "Posts with content that violates or infringes your copyright.",
       "description_es": "Posts with content that violates or infringes your copyright.",
+      "description_de": "Beiträge mit Inhalten, die Ihr Urheberrecht verletzen oder verletzen.",
       "created": "2018-10-22 12:23:30.382913+00:00",
       "order": 2
     }
@@ -133,8 +151,10 @@
       "severity": "H",
       "title_en": "Platform abuse",
       "title_es": "Abuso de plataforma",
+      "title_de": "Plattformmissbrauch",
       "description_en": "Abuse might contain using bots, abusing the report button, spamming continuously.",
       "description_es": "Abuse might contain using bots, abusing the report button, spamming continuously.",
+      "description_de": "Missbrauch kann die Verwendung von Bots, die missbräuchliche Verwendung des Berichtsschalters und kontinuierliches Spammen umfassen.",
       "created": "2018-10-22 12:23:30.382913+00:00",
       "order": 3
     }
@@ -147,8 +167,10 @@
       "severity": "L",
       "title_en": "Community Guidelines Infringement",
       "title_es": "Community Guidelines Infringement",
+      "title_de": "Verstoß gegen Community-Richtlinien",
       "description_en": "The item does not conform to the community guidelines.",
       "description_es": "The item does not conform to the community guidelines.",
+      "description_de": "Der Artikel entspricht nicht den Community-Richtlinien.",
       "created": "2018-10-22 12:23:30.382913+00:00",
       "order": 4
     }
@@ -161,8 +183,10 @@
       "severity": "L",
       "title_en": "Other",
       "title_es": "Other",
+      "title_de": "Andere",
       "description_en": "Other reasons not included in other categories.",
       "description_es": "Other reasons not included in other categories.",
+      "description_de": "Andere Gründe, die nicht in anderen Kategorien enthalten sind.",
       "created": "2018-10-22 12:23:30.382913+00:00",
       "order": 99
     }
