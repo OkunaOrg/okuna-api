@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
 from openbook_common.models import Emoji
+from openbook_common.serializers_fields.post_comment import PostCommentIsMutedField
 from openbook_communities.models import Community, CommunityInvite
 from openbook_notifications.models import Notification, PostCommentNotification, ConnectionRequestNotification, \
     ConnectionConfirmedNotification, FollowNotification, CommunityInviteNotification, PostCommentReplyNotification, \
@@ -114,6 +115,7 @@ class NotificationPostSerializer(serializers.ModelSerializer):
 
 class NotificationPostCommentParentSerializer(serializers.ModelSerializer):
     commenter = PostCommentCommenterSerializer()
+    is_muted = PostCommentIsMutedField()
 
     class Meta:
         model = PostComment
@@ -122,7 +124,8 @@ class NotificationPostCommentParentSerializer(serializers.ModelSerializer):
             'commenter',
             'text',
             'created',
-            'is_edited'
+            'is_edited',
+            'is_muted'
         )
 
 
@@ -130,6 +133,7 @@ class NotificationPostCommentSerializer(serializers.ModelSerializer):
     commenter = PostCommentCommenterSerializer()
     post = NotificationPostSerializer()
     parent_comment = NotificationPostCommentParentSerializer()
+    is_muted = PostCommentIsMutedField()
 
     class Meta:
         model = PostComment
@@ -140,6 +144,7 @@ class NotificationPostCommentSerializer(serializers.ModelSerializer):
             'post',
             'created',
             'parent_comment',
+            'is_muted'
         )
 
 
