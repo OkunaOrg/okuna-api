@@ -202,7 +202,7 @@ class TranslatePost(APIView):
             return ApiMessageResponse(_('Max length of translation text exceeded.'),
                                       status=status.HTTP_400_BAD_REQUEST)
 
-        return ApiMessageResponse({'translated_text': translated_text}, status=status.HTTP_200_OK)
+        return Response({'translated_text': translated_text}, status=status.HTTP_200_OK)
 
 
 class SearchPostParticipants(APIView):

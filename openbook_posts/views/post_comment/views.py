@@ -127,6 +127,6 @@ class TranslatePostComment(APIView):
         except MaxTextLengthExceededError:
             return ApiMessageResponse(_('Max length of translation text exceeded.'),
                                       status=status.HTTP_400_BAD_REQUEST)
-        return ApiMessageResponse({
+        return Response({
             'translated_text': translated_text
         }, status=status.HTTP_200_OK)

@@ -2198,6 +2198,7 @@ class TranslatePostCommentAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_post = json.loads(response.content)
+
         self.assertEqual(response_post['translated_text'], 'I am a man 😀. You\'re a woman.')
 
     def test_cannot_translate_post_comment_text_without_user_language(self):
