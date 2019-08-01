@@ -1494,7 +1494,7 @@ class SearchPostParticipantsAPITests(APITestCase):
     """
 
     fixtures = [
-        'openbook_common/fixtures/languages.json'
+        'openbook_circles/fixtures/circles.json',
     ]
 
     def test_retrieves_post_creator_by_username(self):
@@ -1750,6 +1750,78 @@ class SearchPostParticipantsAPITests(APITestCase):
 
         for response_participant in response_participants:
             if response_participant['id'] == follower.pk:
+                found = True
+                break
+
+        self.assertTrue(found)
+
+    def test_retrieves_connection_by_username(self):
+        """
+        should retrieve a connection by username and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        connection = make_user()
+        connection.connect_with_user_with_id(user_id=user.pk)
+
+        user.confirm_connection_with_user_with_id(user_id=connection.pk)
+
+        url = self._get_url(post)
+
+        search_query = connection.username[:int(len(connection.username) / 2)]
+
+        response = self.client.post(url, {
+            'query': search_query
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_participants = json.loads(response.content)
+
+        found = False
+
+        for response_participant in response_participants:
+            if response_participant['id'] == connection.pk:
+                found = True
+                break
+
+        self.assertTrue(found)
+
+    def test_retrieves_connection_by_name(self):
+        """
+        should retrieve a connection by name and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        connection = make_user()
+        connection.connect_with_user_with_id(user_id=user.pk)
+
+        user.confirm_connection_with_user_with_id(user_id=connection.pk)
+
+        url = self._get_url(post)
+
+        search_query = connection.profile.name[:int(len(connection.profile.name) / 2)]
+
+        response = self.client.post(url, {
+            'query': search_query
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_participants = json.loads(response.content)
+
+        found = False
+
+        for response_participant in response_participants:
+            if response_participant['id'] == connection.pk:
                 found = True
                 break
 
