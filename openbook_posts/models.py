@@ -443,7 +443,7 @@ class PostComment(models.Model):
 
         # Delete all post comment user mention notifications
         PostCommentUserMentionNotification = get_post_comment_user_mention_notification_model()
-        PostCommentUserMentionNotification.objects.filter(post_comment_user_mention__post_id=self.pk).delete()
+        PostCommentUserMentionNotification.objects.filter(post_comment_user_mention__post_comment__post_id=self.pk).delete()
 
     def delete_notifications_for_user(self, user):
         PostCommentReplyNotification = get_post_comment_reply_notification_model()
