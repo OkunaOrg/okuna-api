@@ -1613,6 +1613,80 @@ class SearchPostParticipantsAPITests(APITestCase):
 
         self.assertTrue(found)
 
+    def test_retrieves_post_community_member_by_username(self):
+        """
+        should retrieve a post community member by username and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community = make_community()
+
+        post_creator = make_user()
+        post_creator.join_community_with_name(community_name=community.name)
+        post = post_creator.create_community_post(community_name=community, text=make_fake_post_text())
+
+        post_community_member = make_user()
+        post_community_member.join_community_with_name(community_name=community.name)
+
+        url = self._get_url(post)
+
+        search_query = post_community_member.username[:int(len(post_community_member.username) / 2)]
+
+        response = self.client.post(url, {
+            'query': search_query
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_participants = json.loads(response.content)
+
+        found = False
+
+        for response_participant in response_participants:
+            if response_participant['id'] == post_community_member.pk:
+                found = True
+                break
+
+        self.assertTrue(found)
+
+    def test_retrieves_post_community_member_by_name(self):
+        """
+        should retrieve a post community member by name and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community = make_community()
+
+        post_creator = make_user()
+        post_creator.join_community_with_name(community_name=community.name)
+        post = post_creator.create_community_post(community_name=community, text=make_fake_post_text())
+
+        post_community_member = make_user()
+        post_community_member.join_community_with_name(community_name=community.name)
+
+        url = self._get_url(post)
+
+        search_query = post_community_member.profile.name[:int(len(post_community_member.profile.name) / 2)]
+
+        response = self.client.post(url, {
+            'query': search_query
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_participants = json.loads(response.content)
+
+        found = False
+
+        for response_participant in response_participants:
+            if response_participant['id'] == post_community_member.pk:
+                found = True
+                break
+
+        self.assertTrue(found)
+
     def _get_url(self, post):
         return reverse('search-post-participants', kwargs={
             'post_uuid': post.uuid
