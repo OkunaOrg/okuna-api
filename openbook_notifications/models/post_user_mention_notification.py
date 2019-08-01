@@ -1,8 +1,8 @@
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 
-from openbook_mentions.models import PostUserMention
 from openbook_notifications.models.notification import Notification
+from openbook_posts.models import PostUserMention
 
 
 class PostUserMentionNotification(models.Model):

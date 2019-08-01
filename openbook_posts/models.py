@@ -443,7 +443,8 @@ class PostComment(models.Model):
 
         # Delete all post comment user mention notifications
         PostCommentUserMentionNotification = get_post_comment_user_mention_notification_model()
-        PostCommentUserMentionNotification.objects.filter(post_comment_user_mention__post_comment__post_id=self.pk).delete()
+        PostCommentUserMentionNotification.objects.filter(
+            post_comment_user_mention__post_comment__post_id=self.pk).delete()
 
     def delete_notifications_for_user(self, user):
         PostCommentReplyNotification = get_post_comment_reply_notification_model()
@@ -532,3 +533,13 @@ class PostCommentMute(models.Model):
     @classmethod
     def create_post_comment_mute(cls, post_comment_id, muter_id):
         return cls.objects.create(post_comment_id=post_comment_id, muter_id=muter_id)
+
+
+class PostUserMention(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_mentions')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='user_mentions')
+
+
+class PostCommentUserMention(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_comment_mentions')
+    post_comment = models.ForeignKey(PostComment, on_delete=models.CASCADE, related_name='user_mentions')

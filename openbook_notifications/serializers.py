@@ -5,14 +5,14 @@ from openbook_auth.models import User, UserProfile
 from openbook_common.models import Emoji
 from openbook_common.serializers_fields.post_comment import PostCommentIsMutedField
 from openbook_communities.models import Community, CommunityInvite
-from openbook_mentions.models import PostUserMention, PostCommentUserMention
 from openbook_notifications.models import Notification, PostCommentNotification, ConnectionRequestNotification, \
     ConnectionConfirmedNotification, FollowNotification, CommunityInviteNotification, PostCommentReplyNotification, \
     PostCommentReactionNotification, PostCommentUserMentionNotification, PostUserMentionNotification
 from openbook_notifications.models.post_reaction_notification import PostReactionNotification
 from openbook_notifications.serializer_fields import ParentCommentField
 from openbook_notifications.validators import notification_id_exists
-from openbook_posts.models import PostComment, PostReaction, Post, PostImage, PostVideo, PostCommentReaction
+from openbook_posts.models import PostComment, PostReaction, Post, PostImage, PostVideo, PostCommentReaction, \
+    PostUserMention, PostCommentUserMention
 
 
 class ReadNotificationsSerializer(serializers.Serializer):
