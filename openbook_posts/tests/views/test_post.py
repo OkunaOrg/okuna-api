@@ -1687,6 +1687,74 @@ class SearchPostParticipantsAPITests(APITestCase):
 
         self.assertTrue(found)
 
+    def test_retrieves_follower_by_username(self):
+        """
+        should retrieve a follower by username and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        follower = make_user()
+        follower.follow_user(user=user)
+
+        url = self._get_url(post)
+
+        search_query = follower.username[:int(len(follower.username) / 2)]
+
+        response = self.client.post(url, {
+            'query': search_query
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_participants = json.loads(response.content)
+
+        found = False
+
+        for response_participant in response_participants:
+            if response_participant['id'] == follower.pk:
+                found = True
+                break
+
+        self.assertTrue(found)
+
+    def test_retrieves_follower_by_name(self):
+        """
+        should retrieve a follower by name and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        follower = make_user()
+        follower.follow_user(user=user)
+
+        url = self._get_url(post)
+
+        search_query = follower.profile.name[:int(len(follower.profile.name) / 2)]
+
+        response = self.client.post(url, {
+            'query': search_query
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_participants = json.loads(response.content)
+
+        found = False
+
+        for response_participant in response_participants:
+            if response_participant['id'] == follower.pk:
+                found = True
+                break
+
+        self.assertTrue(found)
+
     def _get_url(self, post):
         return reverse('search-post-participants', kwargs={
             'post_uuid': post.uuid
