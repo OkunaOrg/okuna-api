@@ -2540,6 +2540,27 @@ class User(AbstractUser):
     def search_post_participants(self, post, query):
         self.can_see_post(post=post)
 
+        participants_query = self._make_get_post_participants_query(post=post)
+
+        search_query = Q(username__icontains=query)
+        search_query.add(Q(profile__name__icontains=query), Q.OR)
+        search_query.add(Q(is_deleted=False), Q.AND)
+
+        participants_query.add(search_query, Q.AND)
+
+        return User.objects.filter(participants_query)
+
+    def get_post_with_uuid_participants(self, post_uuid):
+        Post = get_post_model()
+        post = Post.objects.get(uuid=post_uuid)
+        return self.get_post_participants(post=post)
+
+    def get_post_participants(self, post):
+        self.can_see_post(post=post)
+        participants_query = self._make_get_post_participants_query(post=post)
+        return User.objects.filter(participants_query)
+
+    def _make_get_post_participants_query(self, post):
         # Creator, commentators and community members if applicable
         participants_query = post.make_participants_query()
 
@@ -2547,12 +2568,6 @@ class User(AbstractUser):
         linked_users_query = self._make_linked_users_query()
 
         participants_query.add(linked_users_query, Q.OR)
-
-        indentifiers_query = Q(username__icontains=query)
-        indentifiers_query.add(Q(profile__name__icontains=query), Q.OR)
-        indentifiers_query.add(Q(is_deleted=False), Q.AND)
-
-        participants_query.add(indentifiers_query, Q.AND)
 
         return participants_query
 

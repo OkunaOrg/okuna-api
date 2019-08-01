@@ -237,6 +237,13 @@ class SearchPostParticipantsSerializer(serializers.Serializer):
     )
 
 
+class GetPostParticipantsSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+
+
 class PostParticipantProfileSerializer(serializers.ModelSerializer):
     badges = PostCreatorProfileBadgeSerializer(many=True)
 

@@ -62,7 +62,7 @@ from openbook_moderation.views.report.views import ReportUser, ReportPost, Repor
 from openbook_moderation.views.user.views import UserModerationPenalties, UserPendingModeratedObjectsCommunities
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
 from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost, TranslatePost, \
-    SearchPostParticipants
+    SearchPostParticipants, GetPostParticipants
 from openbook_posts.views.post_comment.post_comment_reaction.views import PostCommentReactionItem
 from openbook_posts.views.post_comment.post_comment_reactions.views import PostCommentReactions, \
     PostCommentReactionsEmojiCount
@@ -163,6 +163,7 @@ post_comment_patterns = [
 ]
 
 post_participants_patterns = [
+    path('', GetPostParticipants.as_view(), name='get-post-participants'),
     path('search/', SearchPostParticipants.as_view(), name='search-post-participants'),
 ]
 

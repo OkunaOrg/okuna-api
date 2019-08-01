@@ -12,7 +12,7 @@ from openbook_posts.views.post.serializers import DeletePostSerializer, GetPostS
     UnmutePostSerializer, MutePostSerializer, EditPostSerializer, AuthenticatedUserEditPostSerializer, \
     OpenClosePostSerializer, \
     OpenPostSerializer, ClosePostSerializer, TranslatePostSerializer, \
-    SearchPostParticipantsSerializer, PostParticipantSerializer
+    SearchPostParticipantsSerializer, PostParticipantSerializer, GetPostParticipantsSerializer
 from openbook_translation.strategies.base import TranslationClientError, UnsupportedLanguagePairException, \
     MaxTextLengthExceededError
 
@@ -205,6 +205,28 @@ class TranslatePost(APIView):
         return Response({'translated_text': translated_text}, status=status.HTTP_200_OK)
 
 
+class GetPostParticipants(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, post_uuid):
+        request_data = request.data.copy()
+        request_data['post_uuid'] = post_uuid
+
+        serializer = GetPostParticipantsSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        data = serializer.validated_data
+
+        post_uuid = data.post_uuid
+
+        post_participants = user.get_post_with_uuid_participants(post_uuid=post_uuid)[:10]
+
+        serialized_participants = PostParticipantSerializer(post_participants, many=True, context={'request': request})
+
+        return Response(serialized_participants.data, status=status.HTTP_200_OK)
+
+
 class SearchPostParticipants(APIView):
     permission_classes = (IsAuthenticated,)
 
@@ -221,7 +243,7 @@ class SearchPostParticipants(APIView):
         query = data.query
         post_uuid = data.post_uuid
 
-        post_participants = user.search_post_participants(post_uuid=post_uuid, query=query)
+        post_participants = user.search_post_with_uuid_participants(post_uuid=post_uuid, query=query)
 
         serialized_participants = PostParticipantSerializer(post_participants, many=True, context={'request': request})
 
