@@ -386,6 +386,7 @@ LOCALE_PATHS = (
 LANGUAGES = [
     ('es', _('Spanish')),
     ('en', _('English')),
+    ('de', _('German')),
 ]
 
 LANGUAGE_CODE = 'en'

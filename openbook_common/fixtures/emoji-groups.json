@@ -7,6 +7,7 @@
       "keyword": "primary",
       "keyword_es": "Primarias",
       "keyword_en": "Primary",
+      "keyword_de": "Primär",
       "color": "#FFFFFF",
       "created": "2018-10-22 12:23:30.382913+00:00",
       "is_reaction_group": true
@@ -20,6 +21,7 @@
       "keyword": "obgold",
       "keyword_es": "Premium",
       "keyword_en": "Premium",
+      "keyword_de": "Prämie",
       "color": "#FFFFFF",
       "created": "2018-10-22 12:23:30.382913+00:00",
       "is_reaction_group": true
@@ -33,6 +35,7 @@
       "keyword": "objects",
       "keyword_es": "Objectos",
       "keyword_en": "Objects",
+      "keyword_de": "Objekte",
       "color": "#FFFFFF",
       "created": "2018-10-22 12:23:30.382913+00:00",
       "is_reaction_group": false
