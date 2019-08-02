@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
 from openbook_common.models import Emoji
+from openbook_common.serializers_fields.post import IsEncircledField
 from openbook_common.serializers_fields.post_comment import PostCommentIsMutedField
 from openbook_communities.models import Community, CommunityInvite
 from openbook_notifications.models import Notification, PostCommentNotification, ConnectionRequestNotification, \
@@ -98,6 +99,7 @@ class NotificationPostSerializer(serializers.ModelSerializer):
     image = PostCommentPostImageSerializer()
     video = PostCommentPostVideoSerializer()
     creator = PostCommentCreatorSerializer()
+    is_encircled = IsEncircledField()
 
     class Meta:
         model = Post
@@ -109,7 +111,8 @@ class NotificationPostSerializer(serializers.ModelSerializer):
             'video',
             'creator',
             'created',
-            'is_closed'
+            'is_closed',
+            'is_encircled',
         )
 
 
