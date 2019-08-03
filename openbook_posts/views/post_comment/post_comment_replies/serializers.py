@@ -24,10 +24,13 @@ class CommentRepliesPostSerializer(serializers.Serializer):
 
 
 class PostCommentReplyParentSerializer(serializers.ModelSerializer):
+    language = PostCommentLanguageSerializer()
+
     class Meta:
         model = PostComment
         fields = (
             'id',
+            'language'
         )
 
 
