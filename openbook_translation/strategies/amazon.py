@@ -29,6 +29,9 @@ class AmazonTranslate(BaseTranslationStrategy):
 
         return detected_language
 
+    def get_default_translation_language_code(self):
+        return self.default_translation_language_code
+
     def get_supported_translation_language_code(self, language_code):
         # Returns English as default if no match
         parsed_code = language_code
