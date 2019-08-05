@@ -8,7 +8,7 @@ name = "pypi"
 [packages]
 django = ">=2.2.2"
 python-dotenv = "*"
-djangorestframework = "*"
+djangorestframework = "<3.9.0"
 sentry-sdk = "*"
 mysqlclient = "*"
 pillow = "*"

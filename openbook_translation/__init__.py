@@ -42,4 +42,4 @@ class TranslationStrategyManager:
         return self.strategy_instance
 
 
-strategy = TranslationStrategyManager(settings.OS_TRANSLATION_STRATEGY_NAME).get_instance()
+translation_strategy = TranslationStrategyManager(settings.OS_TRANSLATION_STRATEGY_NAME).get_instance()

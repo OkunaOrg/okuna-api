@@ -381,7 +381,7 @@ class RequestPasswordResetAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(email_message.to[0], user.email)
-        self.assertEqual(email_message.subject, 'Reset your password for Openbook')
+        self.assertEqual(email_message.subject, 'Reset your password for Okuna')
 
     def test_request_password_reset_successfully_with_valid_email(self):
         """
@@ -398,7 +398,7 @@ class RequestPasswordResetAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(email_message.to[0], user.email)
-        self.assertEqual(email_message.subject, 'Reset your password for Openbook')
+        self.assertEqual(email_message.subject, 'Reset your password for Okuna')
 
     def _get_url(self):
         return reverse('request-password-reset')

@@ -29,9 +29,12 @@ class AmazonTranslate(BaseTranslationStrategy):
 
         return detected_language
 
+    def get_default_translation_language_code(self):
+        return self.default_translation_language_code
+
     def get_supported_translation_language_code(self, language_code):
         # Returns English as default if no match
-        parsed_code = None
+        parsed_code = language_code
         if language_code is not 'zh-TW':
             code_parts = language_code.split('-')
             if len(code_parts) == 2:
