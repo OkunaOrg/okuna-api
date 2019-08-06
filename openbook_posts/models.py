@@ -24,7 +24,8 @@ from openbook_common.utils.helpers import delete_file_field, sha256sum, extract_
 from openbook_common.utils.model_loaders import get_emoji_model, \
     get_circle_model, get_community_model, get_post_comment_notification_model, \
     get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model, \
-    get_post_user_mention_notification_model, get_post_comment_user_mention_notification_model, get_user_model
+    get_post_user_mention_notification_model, get_post_comment_user_mention_notification_model, get_user_model, \
+    get_post_user_mention_model, get_post_comment_user_mention_model
 from imagekit.models import ProcessedImageField
 
 from openbook_moderation.models import ModeratedObject
@@ -242,9 +243,11 @@ class Post(models.Model):
         if not self.id and not self.created:
             self.created = timezone.now()
 
-        self._process_mentions()
+        post_comment = super(Post, self).save(*args, **kwargs)
 
-        return super(Post, self).save(*args, **kwargs)
+        self._process_post_mentions()
+
+        return post_comment
 
     def delete(self, *args, **kwargs):
         self.delete_media()
@@ -316,7 +319,7 @@ class Post(models.Model):
 
         return participants_query
 
-    def _process_mentions(self):
+    def _process_post_mentions(self):
         if not self.text:
             self.user_mentions.all().delete()
         else:
@@ -331,14 +334,16 @@ class Post(models.Model):
                     else:
                         existing_mention_usernames = existing_mention.user.username
 
-                PostUserMention = get_post_user_mention_notification_model()
+                PostUserMention = get_post_user_mention_model()
                 User = get_user_model()
 
                 for username in usernames:
                     if username not in existing_mention_usernames:
                         try:
                             user = User.objects.only('id', 'username').get(username=username)
-                            PostUserMention.create_post_user_mention(user=user, post=self)
+                            if user.can_see_post(post=self):
+                                PostUserMention.create_post_user_mention(user=user, post=self)
+                                existing_mention_usernames.append(username)
                         except User.DoesNotExist:
                             pass
 
@@ -448,10 +453,10 @@ class PostComment(models.Model):
         if not self.id:
             self.created = timezone.now()
 
-        self._process_mentions()
+        self._process_post_comment_mentions()
         return super(PostComment, self).save(*args, **kwargs)
 
-    def _process_mentions(self):
+    def _process_post_comment_mentions(self):
         usernames = extract_usernames_from_string(string=self.text)
 
         if not usernames:
@@ -464,14 +469,16 @@ class PostComment(models.Model):
                 else:
                     existing_mention_usernames = existing_mention.user.username
 
-            PostCommentUserMention = get_post_comment_user_mention_notification_model()
+            PostCommentUserMention = get_post_comment_user_mention_model()
             User = get_user_model()
 
             for username in usernames:
                 if username not in existing_mention_usernames:
                     try:
                         user = User.objects.only('id', 'username').get(username=username)
-                        PostCommentUserMention.create_post_comment_user_mention(user=user, post=self)
+                        if user.can_see_post_comment(post_comment=self):
+                            PostCommentUserMention.create_post_comment_user_mention(user=user, post_comment=self)
+                            existing_mention_usernames.append(username)
                     except User.DoesNotExist:
                         pass
 
@@ -593,6 +600,9 @@ class PostUserMention(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_mentions')
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='user_mentions')
 
+    class Meta:
+        unique_together = ('user', 'post',)
+
     @classmethod
     def create_post_user_mention(cls, user, post):
         post_user_mention = cls.objects.create(user=user, post=post)
@@ -605,6 +615,9 @@ class PostUserMention(models.Model):
 class PostCommentUserMention(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_comment_mentions')
     post_comment = models.ForeignKey(PostComment, on_delete=models.CASCADE, related_name='user_mentions')
+
+    class Meta:
+        unique_together = ('user', 'post_comment',)
 
     @classmethod
     def create_post_comment_user_mention(cls, user, post_comment):

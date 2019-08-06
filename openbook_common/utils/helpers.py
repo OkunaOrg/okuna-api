@@ -93,9 +93,9 @@ def get_post_id_for_post_uuid(post_uuid):
 
 
 # Same as flutter app
-usernames_matcher = re.compile(
-    r'(?:[^A-Za-u0-9]|^)(@[A-Za-z0-9](([A-Za-z0-9]|[._-](?![._-])){0,28}[A-Za-z0-9])?)(?=\b|$)')
+usernames_matcher = re.compile('@[^\s]+')
 
 
 def extract_usernames_from_string(string):
-    return usernames_matcher.findall(string=string)
+    usernames = usernames_matcher.findall(string=string)
+    return [username[1:] for username in usernames]

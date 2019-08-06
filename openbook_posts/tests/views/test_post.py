@@ -15,10 +15,11 @@ from unittest import mock
 import logging
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
-    make_fake_post_comment_text, make_user, make_circle, make_community, make_list, make_moderation_category
+    make_fake_post_comment_text, make_user, make_circle, make_community, make_list, make_moderation_category, \
+    get_test_usernames
 from openbook_common.utils.model_loaders import get_language_model
 from openbook_communities.models import Community
-from openbook_posts.models import Post
+from openbook_posts.models import Post, PostUserMention
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -557,6 +558,70 @@ class PostItemAPITests(APITestCase):
         }
         self.client.patch(url, data, **headers)
         get_language_for_text_call.assert_called_with(edited_text)
+
+    def test_editing_own_post_updates_mentions(self):
+        """
+        should update mentions when updating text
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        mentioned_user = make_user()
+        post_text = 'Hello @' + mentioned_user.username
+
+        post = user.create_public_post(text=post_text)
+
+        newly_mentioned_user = make_user()
+
+        post_text = 'Hello @' + newly_mentioned_user.username
+
+        data = {
+            'text': post_text
+        }
+
+        url = self._get_url(post)
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+
+        self.assertFalse(PostUserMention.objects.filter(user_id=mentioned_user.pk, post_id=post.pk).exists())
+        self.assertEqual(PostUserMention.objects.filter(user_id=newly_mentioned_user.pk, post_id=post.pk).count(), 1)
+
+    def test_editing_own_post_does_not_create_double_mentions(self):
+        """
+        should not create double mentions when editing our own post
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        mentioned_user = make_user()
+        post_text = 'Hello @' + mentioned_user.username
+
+        post = user.create_public_post(text=post_text)
+
+        post_user_mention = PostUserMention.objects.get(user_id=mentioned_user.pk, post_id=post.pk)
+
+        data = {
+            'text': post_text
+        }
+
+        url = self._get_url(post)
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+
+        self.assertEqual(PostUserMention.objects.filter(user_id=mentioned_user.pk, post_id=post.pk).count(), 1)
+        new_post_user_mention = PostUserMention.objects.get(user_id=mentioned_user.pk, post_id=post.pk,
+                                                            id=post_user_mention.pk)
+        self.assertEqual(new_post_user_mention.pk, post_user_mention.pk)
 
     def test_canot_edit_to_remove_text_from_own_text_only_post(self):
         """

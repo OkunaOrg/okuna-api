@@ -244,3 +244,12 @@ def make_moderation_penalty(user):
 
 def make_random_language():
     return mixer.blend(Language)
+
+
+def get_test_usernames():
+    return [
+        'j_oel',
+        'j.o.e.l',
+        'j03l',
+        'j'
+    ]

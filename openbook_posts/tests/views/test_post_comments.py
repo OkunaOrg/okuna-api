@@ -10,10 +10,10 @@ import random
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_community, make_private_community, \
-    make_moderation_category
+    make_moderation_category, get_test_usernames
 from openbook_moderation.models import ModeratedObject
 from openbook_notifications.models import PostCommentNotification, PostCommentReplyNotification
-from openbook_posts.models import PostComment
+from openbook_posts.models import PostComment, PostCommentUserMention
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -572,6 +572,37 @@ class PostCommentsAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(PostComment.objects.filter(post_id=post.pk, text=post_comment_text).count() == 1)
+
+    def test_commenting_detects_mentions(self):
+        """
+        should be able to comment with a mention and detect it once
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        test_usernames = get_test_usernames()
+
+        post = user.create_public_post(text=make_fake_post_text())
+
+        for test_username in test_usernames:
+            test_user = make_user(username=test_username)
+            post_text = 'Hello @' + test_user.username + ' @' + test_user.username
+
+            data = {
+                'text': post_text
+            }
+
+            url = self._get_url(post=post)
+
+            response = self.client.put(url, data, **headers, format='multipart')
+
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+            post_comment = PostComment.objects.get(text=post_text, commenter_id=user.pk)
+
+            self.assertEqual(
+                PostCommentUserMention.objects.filter(user_id=test_user.pk, post_comment_id=post_comment.pk).count(), 1)
 
     def test_commenting_in_a_post_sets_language_for_comment(self):
         """
