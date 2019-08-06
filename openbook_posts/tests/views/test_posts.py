@@ -123,6 +123,27 @@ class PostsAPITests(APITestCase):
 
             self.assertEqual(PostUserMention.objects.filter(user_id=test_user.pk, post_id=post.pk).count(), 1)
 
+    def test_create_text_post_ignores_non_existing_mentioned_usernames(self):
+        """
+        should ignore non existing mentioned usernames when creating a post
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        fake_username = 'nonexistinguser'
+        post_text = 'Hello @' + fake_username
+
+        data = {
+            'text': post_text
+        }
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+
+        self.assertEqual(PostUserMention.objects.filter(post_id=post.pk).count(), 0)
+
     def test_create_text_post_creates_mention_notifications(self):
         """
         should be able to create a text post with a mention notification

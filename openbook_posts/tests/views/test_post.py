@@ -603,6 +603,30 @@ class PostItemAPITests(APITestCase):
                                                                    notification__owner_id=newly_mentioned_user.pk,
                                                                    notification__notification_type=Notification.POST_USER_MENTION).exists())
 
+    def test_editing_text_post_ignores_non_existing_mentioned_usernames(self):
+        """
+        should ignore non existing mentioned usernames when editing a post
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        post = user.create_public_post(text=make_fake_post_text())
+
+        fake_username = 'nonexistinguser'
+        post_text = 'Hello @' + fake_username
+
+        data = {
+            'text': post_text
+        }
+        url = self._get_url(post=post)
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+
+        self.assertEqual(PostUserMention.objects.filter(post_id=post.pk).count(), 0)
+
     def test_editing_own_post_does_not_create_double_mentions(self):
         """
         should not create double mentions when editing our own post
