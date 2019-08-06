@@ -12,7 +12,8 @@ from openbook_common.tests.helpers import make_authentication_headers_for_user, 
     make_fake_post_comment_text, make_user, make_circle, make_community, make_private_community, \
     make_moderation_category, get_test_usernames
 from openbook_moderation.models import ModeratedObject
-from openbook_notifications.models import PostCommentNotification, PostCommentReplyNotification
+from openbook_notifications.models import PostCommentNotification, PostCommentReplyNotification, \
+    PostCommentUserMentionNotification, Notification
 from openbook_posts.models import PostComment, PostCommentUserMention
 
 logger = logging.getLogger(__name__)
@@ -603,6 +604,40 @@ class PostCommentsAPITests(APITestCase):
 
             self.assertEqual(
                 PostCommentUserMention.objects.filter(user_id=test_user.pk, post_comment_id=post_comment.pk).count(), 1)
+
+    def test_create_text_post_comment_creates_mention_notifications(self):
+        """
+        should be able to create a text post comment with a mention notification
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        test_user = make_user()
+        post_comment_text = 'Hello @' + test_user.username
+
+        post = user.create_public_post(text=make_fake_post_text())
+
+        data = {
+            'text': post_comment_text
+        }
+
+        url = self._get_url(post=post)
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        post_comment = PostComment.objects.get(text=post_comment_text, commenter_id=user.pk)
+
+        post_comment_user_mention = PostCommentUserMention.objects.get(user_id=test_user.pk,
+                                                                       post_comment_id=post_comment.pk)
+
+        self.assertEqual(
+            PostCommentUserMentionNotification.objects.filter(post_comment_user_mention_id=post_comment_user_mention.pk,
+                                                              notification__owner_id=test_user.pk,
+                                                              notification__notification_type=Notification.POST_COMMENT_USER_MENTION).count(),
+            1)
 
     def test_commenting_in_a_post_sets_language_for_comment(self):
         """

@@ -19,6 +19,7 @@ from openbook_common.tests.helpers import make_authentication_headers_for_user, 
     get_test_usernames
 from openbook_common.utils.model_loaders import get_language_model
 from openbook_communities.models import Community
+from openbook_notifications.models import PostUserMentionNotification, Notification
 from openbook_posts.models import Post, PostUserMention
 
 logger = logging.getLogger(__name__)
@@ -572,6 +573,8 @@ class PostItemAPITests(APITestCase):
 
         post = user.create_public_post(text=post_text)
 
+        post_user_mention = PostUserMention.objects.get(user_id=mentioned_user.pk, post_id=post.pk)
+
         newly_mentioned_user = make_user()
 
         post_text = 'Hello @' + newly_mentioned_user.username
@@ -587,9 +590,18 @@ class PostItemAPITests(APITestCase):
         self.assertEqual(status.HTTP_200_OK, response.status_code)
 
         post = Post.objects.get(text=post_text, creator_id=user.pk)
+        new_post_user_mention = PostUserMention.objects.get(user_id=newly_mentioned_user.pk, post_id=post.pk)
 
         self.assertFalse(PostUserMention.objects.filter(user_id=mentioned_user.pk, post_id=post.pk).exists())
         self.assertEqual(PostUserMention.objects.filter(user_id=newly_mentioned_user.pk, post_id=post.pk).count(), 1)
+
+        self.assertFalse(PostUserMentionNotification.objects.filter(post_user_mention_id=post_user_mention.pk,
+                                                                    notification__owner_id=mentioned_user.pk,
+                                                                    notification__notification_type=Notification.POST_USER_MENTION).exists())
+
+        self.assertTrue(PostUserMentionNotification.objects.filter(post_user_mention_id=new_post_user_mention.pk,
+                                                                   notification__owner_id=newly_mentioned_user.pk,
+                                                                   notification__notification_type=Notification.POST_USER_MENTION).exists())
 
     def test_editing_own_post_does_not_create_double_mentions(self):
         """

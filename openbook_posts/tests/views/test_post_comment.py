@@ -10,7 +10,8 @@ import logging
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_community
 from openbook_common.utils.model_loaders import get_language_model
-from openbook_notifications.models import PostCommentNotification, Notification, PostCommentReplyNotification
+from openbook_notifications.models import PostCommentNotification, Notification, PostCommentReplyNotification, \
+    PostCommentUserMentionNotification
 from openbook_posts.models import PostComment, PostCommentUserMention
 
 logger = logging.getLogger(__name__)
@@ -694,6 +695,9 @@ class PostCommentItemAPITests(APITestCase):
         post = user.create_public_post(text=make_fake_post_text())
         post_comment = user.comment_post(post=post, text=post_comment_text)
 
+        post_comment_user_mention = PostCommentUserMention.objects.get(user_id=mentioned_user.pk,
+                                                                       post_comment_id=post_comment.pk)
+
         newly_mentioned_user = make_user()
 
         post_comment_text = 'Hello @' + newly_mentioned_user.username
@@ -714,6 +718,19 @@ class PostCommentItemAPITests(APITestCase):
             PostCommentUserMention.objects.filter(user_id=mentioned_user.pk, post_comment_id=post_comment.pk).exists())
         self.assertEqual(PostCommentUserMention.objects.filter(user_id=newly_mentioned_user.pk,
                                                                post_comment_id=post_comment.pk).count(), 1)
+
+        new_post_comment_user_mention = PostCommentUserMention.objects.get(user_id=newly_mentioned_user.pk,
+                                                                           post_comment_id=post_comment.pk)
+
+        self.assertFalse(
+            PostCommentUserMentionNotification.objects.filter(post_comment_user_mention_id=post_comment_user_mention.pk,
+                                                              notification__owner_id=mentioned_user.pk,
+                                                              notification__notification_type=Notification.POST_COMMENT_USER_MENTION).exists())
+
+        self.assertTrue(PostCommentUserMentionNotification.objects.filter(
+            post_comment_user_mention_id=new_post_comment_user_mention.pk,
+            notification__owner_id=newly_mentioned_user.pk,
+            notification__notification_type=Notification.POST_COMMENT_USER_MENTION).exists())
 
     def test_editing_own_post_comment_does_not_create_double_mentions(self):
         """
