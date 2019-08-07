@@ -317,6 +317,9 @@ class Post(models.Model):
         if self.community:
             participants_query.add(Q(communities_memberships__community_id=self.community_id), Q.OR)
 
+        # No deleted users
+        participants_query.add(Q(is_deleted=False), Q.AND)
+
         return participants_query
 
     def _process_post_mentions(self):

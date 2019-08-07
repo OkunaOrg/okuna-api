@@ -1544,13 +1544,17 @@ class User(AbstractUser):
         return self.lists.get(id=list_id)
 
     def search_users_with_query(self, query):
-        # In the future, the user might have blocked users which should not be displayed
-        users_query = Q(username__icontains=query)
-        users_query.add(Q(profile__name__icontains=query), Q.OR)
-        users_query.add(~Q(blocked_by_users__blocker_id=self.pk) & ~Q(user_blocks__blocked_user_id=self.pk), Q.AND)
-        users_query.add(Q(is_deleted=False), Q.AND)
+        users_query = self._make_search_users_query(query=query)
 
         return User.objects.filter(users_query)
+
+    def _make_search_users_query(self, query):
+        search_users_query = Q(username__icontains=query)
+        search_users_query.add(Q(profile__name__icontains=query), Q.OR)
+        search_users_query.add(~Q(blocked_by_users__blocker_id=self.pk) & ~Q(user_blocks__blocked_user_id=self.pk),
+                               Q.AND)
+        search_users_query.add(Q(is_deleted=False), Q.AND)
+        return search_users_query
 
     def get_linked_users(self, max_id=None):
         # All users which are connected with us and we have accepted by adding
@@ -2540,15 +2544,25 @@ class User(AbstractUser):
     def search_post_participants(self, post, query):
         self.can_see_post(post=post)
 
-        participants_query = self._make_get_post_participants_query(post=post)
+        search_post_participants_query = self._make_search_post_participants_query(post=post, query=query)
 
-        search_query = Q(username__icontains=query)
-        search_query.add(Q(profile__name__icontains=query), Q.OR)
-        search_query.add(Q(is_deleted=False), Q.AND)
+        search_users_query = self._make_search_users_query(query=query)
 
-        participants_query.add(search_query, Q.AND)
+        return User.objects.filter(Q(search_post_participants_query | search_users_query))
 
-        return User.objects.filter(participants_query)
+    def _make_search_post_participants_query(self, post, query):
+        post_participants_query = self._make_get_post_participants_query(post=post)
+
+        search_participants_query = Q(username__icontains=query)
+        search_participants_query.add(Q(profile__name__icontains=query), Q.OR)
+        search_participants_query.add(
+            ~Q(blocked_by_users__blocker_id=self.pk) & ~Q(user_blocks__blocked_user_id=self.pk),
+            Q.AND)
+        search_participants_query.add(Q(is_deleted=False), Q.AND)
+
+        post_participants_query.add(post_participants_query, Q.AND)
+
+        return post_participants_query
 
     def get_post_with_uuid_participants(self, post_uuid):
         Post = get_post_model()
@@ -2557,19 +2571,12 @@ class User(AbstractUser):
 
     def get_post_participants(self, post):
         self.can_see_post(post=post)
-        participants_query = self._make_get_post_participants_query(post=post)
-        return User.objects.filter(participants_query)
+        post_participants_query = self._make_get_post_participants_query(post=post)
+        return User.objects.filter(post_participants_query)
 
     def _make_get_post_participants_query(self, post):
         # Creator, commentators and community members if applicable
-        participants_query = post.make_participants_query()
-
-        # Connected or following us
-        linked_users_query = self._make_linked_users_query()
-
-        participants_query.add(linked_users_query, Q.OR)
-
-        return participants_query
+        return post.make_participants_query()
 
     def _check_has_not_reported_moderated_object_with_id(self, moderated_object_id):
         if self.has_reported_moderated_object_with_id(moderated_object_id=moderated_object_id):
