@@ -8,8 +8,9 @@ import json
 
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, \
     make_community, make_fake_post_text, make_post_image, make_moderation_category
+from openbook_communities.models import Community
 from openbook_moderation.models import ModeratedObject
-from openbook_posts.models import Post
+from openbook_posts.models import Post, PostUserMention
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -593,6 +594,92 @@ class CommunityPostsAPITest(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(Post.objects.filter(text=post_text).exists())
+
+    def test_create_public_community_post_detects_mention(self):
+        """
+        should detect mentions when creating a public community post
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        community = make_community()
+
+        mentioned_user = make_user()
+        user.join_community_with_name(community_name=community.name)
+
+        post_text = 'Hello @' + mentioned_user.username
+
+        data = {
+            'text': post_text,
+        }
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.put(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+
+        self.assertTrue(PostUserMention.objects.filter(post_id=post.pk, user_id=mentioned_user.pk).exists())
+
+    def test_create_private_community_post_does_not_detects_mention_if_not_part_of(self):
+        """
+        should not detect mentions when creating a private community post not part of
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        community = make_community(type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        mentioned_user = make_user()
+        user.join_community_with_name(community_name=community.name)
+
+        post_text = 'Hello @' + mentioned_user.username
+
+        data = {
+            'text': post_text,
+        }
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.put(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+
+        self.assertFalse(PostUserMention.objects.filter(post_id=post.pk, user_id=mentioned_user.pk).exists())
+
+    def test_create_private_community_post_detects_mention_if_part_of(self):
+        """
+        should detect mentions when creating a private community post part of
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        community_owner = make_user()
+        community = make_community(type=Community.COMMUNITY_TYPE_PRIVATE, creator=community_owner)
+
+        mentioned_user = make_user()
+
+        community_owner.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                         community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=mentioned_user.username,
+                                                                         community_name=community.name)
+        mentioned_user.join_community_with_name(community_name=community.name)
+
+        post_text = 'Hello @' + mentioned_user.username
+
+        data = {
+            'text': post_text,
+        }
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.put(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+
+        self.assertTrue(PostUserMention.objects.filter(post_id=post.pk, user_id=mentioned_user.pk).exists())
 
     def _get_url(self, community_name):
         return reverse('community-posts', kwargs={
