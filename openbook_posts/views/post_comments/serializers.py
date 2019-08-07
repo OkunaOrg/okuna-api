@@ -48,11 +48,25 @@ class PostCommenterCommunityMembershipSerializer(serializers.ModelSerializer):
         )
 
 
+class PostCommentLanguageSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Language
+        fields = (
+            'id',
+            'code',
+            'name',
+        )
+
+
 class PostCommentRepliesParentCommentSerializer(serializers.ModelSerializer):
+    language = PostCommentLanguageSerializer()
+
     class Meta:
         model = PostComment
         fields = (
             'id',
+            'language',
         )
 
 
@@ -80,17 +94,6 @@ class PostCommentReactionSerializer(serializers.ModelSerializer):
         fields = (
             'emoji',
             'id'
-        )
-
-
-class PostCommentLanguageSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Language
-        fields = (
-            'id',
-            'code',
-            'name',
         )
 
 

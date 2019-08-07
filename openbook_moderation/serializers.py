@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
 from openbook_common.models import Language
+from openbook_common.serializers_fields.post import IsEncircledField
 from openbook_communities.models import Community
 from openbook_moderation.models import ModeratedObject, ModerationCategory
 from openbook_posts.models import Post, PostComment, PostImage
@@ -70,6 +71,7 @@ class ModeratedObjectPostSerializer(serializers.ModelSerializer):
     community = ModeratedObjectCommunitySerializer()
     image = ModeratedObjectPostImageSerializer()
     language = LanguageSerializer()
+    is_encircled = IsEncircledField()
 
     class Meta:
         model = Post
@@ -83,6 +85,7 @@ class ModeratedObjectPostSerializer(serializers.ModelSerializer):
             'created',
             'comments_enabled',
             'is_closed',
+            'is_encircled',
         )
 
 
