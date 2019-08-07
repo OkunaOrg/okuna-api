@@ -3,6 +3,7 @@ import random
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
+from django.conf import settings
 
 import logging
 import json
@@ -730,7 +731,7 @@ class SearchCommunityMembersAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        similar_username = fake.user_name()
+        similar_username = fake.user_name(max_nb_chars=settings.USERNAME_MAX_LENGTH)
 
         community_creator = make_user(username=similar_username + fake.word())
         community = make_community(creator=community_creator, type='P')
