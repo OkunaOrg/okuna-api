@@ -1646,6 +1646,54 @@ class SearchPostParticipantsAPITests(APITestCase):
 
         self.assertEqual(response_participants[0]['id'], post_creator.pk)
 
+    def test_retrieves_oneself_by_username(self):
+        """
+        should retrieve the oneself by username and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        url = self._get_url(post)
+
+        search_query = user.username[:int(len(user.username) / 2)]
+
+        response = self.client.post(url, {
+            'query': search_query
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_participants = json.loads(response.content)
+
+        self.assertEqual(response_participants[0]['id'], user.pk)
+
+    def test_retrieves_oneself_by_name(self):
+        """
+        should retrieve the oneself by name and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+        post = post_creator.create_public_post(text=make_fake_post_text())
+
+        url = self._get_url(post)
+
+        search_query = user.profile.name[:int(len(user.profile.name) / 2)]
+
+        response = self.client.post(url, {
+            'query': search_query
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_participants = json.loads(response.content)
+
+        self.assertEqual(response_participants[0]['id'], user.pk)
+
     def test_retrieves_post_commentator_by_username(self):
         """
         should retrieve a post commentator by username and return 200

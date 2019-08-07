@@ -629,9 +629,12 @@ class CommunityPostsAPITest(APITestCase):
 
         headers = make_authentication_headers_for_user(user=user)
 
-        community = make_community(type=Community.COMMUNITY_TYPE_PRIVATE)
+        community_owner = make_user()
+        community = make_community(type=Community.COMMUNITY_TYPE_PRIVATE, creator=community_owner)
 
         mentioned_user = make_user()
+        community_owner.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                         community_name=community.name)
         user.join_community_with_name(community_name=community.name)
 
         post_text = 'Hello @' + mentioned_user.username
