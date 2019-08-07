@@ -209,7 +209,8 @@ class GetPostParticipants(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request, post_uuid):
-        request_data = request.data.copy()
+        request_data = request.query_params.dict()
+
         request_data['post_uuid'] = post_uuid
 
         serializer = GetPostParticipantsSerializer(data=request_data)
@@ -219,8 +220,9 @@ class GetPostParticipants(APIView):
         data = serializer.validated_data
 
         post_uuid = data['post_uuid']
+        count = data['count']
 
-        post_participants = user.get_post_with_uuid_participants(post_uuid=post_uuid)[:10]
+        post_participants = user.get_post_with_uuid_participants(post_uuid=post_uuid)[:count]
 
         serialized_participants = PostParticipantSerializer(post_participants, many=True, context={'request': request})
 
@@ -242,8 +244,9 @@ class SearchPostParticipants(APIView):
 
         query = data['query']
         post_uuid = data['post_uuid']
+        count = data['count']
 
-        post_participants = user.search_post_with_uuid_participants(post_uuid=post_uuid, query=query)
+        post_participants = user.search_post_with_uuid_participants(post_uuid=post_uuid, query=query)[:count]
 
         serialized_participants = PostParticipantSerializer(post_participants, many=True, context={'request': request})
 

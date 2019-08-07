@@ -237,12 +237,22 @@ class SearchPostParticipantsSerializer(serializers.Serializer):
         max_length=settings.SEARCH_QUERIES_MAX_LENGTH,
         required=True
     )
+    count = serializers.IntegerField(
+        required=False,
+        default=10,
+        max_value=10
+    )
 
 
 class GetPostParticipantsSerializer(serializers.Serializer):
     post_uuid = serializers.UUIDField(
         validators=[post_uuid_exists],
         required=True,
+    )
+    count = serializers.IntegerField(
+        required=False,
+        default=10,
+        max_value=20
     )
 
 
