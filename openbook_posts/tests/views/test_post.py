@@ -2026,68 +2026,6 @@ class GetPostParticipantsAPITests(APITestCase):
 
         self.assertTrue(found)
 
-    def test_retrieves_follower(self):
-        """
-        should retrieve a follower and return 200
-        """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
-
-        post_creator = make_user()
-        post = post_creator.create_public_post(text=make_fake_post_text())
-
-        follower = make_user()
-        follower.follow_user(user=user)
-
-        url = self._get_url(post)
-
-        response = self.client.get(url, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        response_participants = json.loads(response.content)
-
-        found = False
-
-        for response_participant in response_participants:
-            if response_participant['id'] == follower.pk:
-                found = True
-                break
-
-        self.assertTrue(found)
-
-    def test_retrieves_connection(self):
-        """
-        should retrieve a connection and return 200
-        """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
-
-        post_creator = make_user()
-        post = post_creator.create_public_post(text=make_fake_post_text())
-
-        connection = make_user()
-        connection.connect_with_user_with_id(user_id=user.pk)
-
-        user.confirm_connection_with_user_with_id(user_id=connection.pk)
-
-        url = self._get_url(post)
-
-        response = self.client.get(url, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        response_participants = json.loads(response.content)
-
-        found = False
-
-        for response_participant in response_participants:
-            if response_participant['id'] == connection.pk:
-                found = True
-                break
-
-        self.assertTrue(found)
-
     def _get_url(self, post):
         return reverse('get-post-participants', kwargs={
             'post_uuid': post.uuid
