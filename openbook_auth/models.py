@@ -9,7 +9,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.utils import six, timezone
+from django.utils import six, timezone, translation
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
@@ -24,6 +24,7 @@ from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
 from openbook_common.helpers import get_supported_translation_language
 from openbook_common.models import Badge
+from openbook_notifications.helpers import get_notification_language_code_for_target_user
 from openbook_translation import translation_strategy
 from openbook_common.utils.helpers import delete_file_field
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
@@ -966,23 +967,25 @@ class User(AbstractUser):
                 post_id=post_comment.post_id)
 
             if post_notification_target_has_comment_notifications_enabled:
-                if post_notification_target_user_is_post_creator:
-                    notification_message = {
-                        "en": _('%(post_commenter_name)s · %(post_commenter_username)s commented on your post.') % {
-                            'post_commenter_username': post_commenter.username,
-                            'post_commenter_name': post_commenter.profile.name,
-                        }}
-                else:
-                    notification_message = {
-                        "en": _(
-                            '%(post_commenter_name)s · @%(post_commenter_username)s commented on a post you also commented on.') % {
-                                  'post_commenter_username': post_commenter.username,
-                                  'post_commenter_name': post_commenter.profile.name,
-                              }}
+                target_user_language_code = get_notification_language_code_for_target_user(post_notification_target_user)
+                with translation.override(target_user_language_code):
+                    if post_notification_target_user_is_post_creator:
+                        notification_message = {
+                            "en": _('%(post_commenter_name)s · %(post_commenter_username)s commented on your post.') % {
+                                'post_commenter_username': post_commenter.username,
+                                'post_commenter_name': post_commenter.profile.name,
+                            }}
+                    else:
+                        notification_message = {
+                            "en": _(
+                                '%(post_commenter_name)s · @%(post_commenter_username)s commented on a post you also commented on.') % {
+                                      'post_commenter_username': post_commenter.username,
+                                      'post_commenter_name': post_commenter.profile.name,
+                                  }}
 
-                self._send_post_comment_push_notification(post_comment=post_comment,
-                                                          notification_message=notification_message,
-                                                          notification_target_user=post_notification_target_user)
+                    self._send_post_comment_push_notification(post_comment=post_comment,
+                                                              notification_message=notification_message,
+                                                              notification_target_user=post_notification_target_user)
 
             PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
                                                                      owner_id=post_notification_target_user.id)
@@ -1018,25 +1021,26 @@ class User(AbstractUser):
                     post_comment=post_comment)
 
             if post_notification_target_has_comment_reply_notifications_enabled:
+                target_user_language_code = get_notification_language_code_for_target_user(post_notification_target_user)
+                with translation.override(target_user_language_code):
+                    if post_notification_target_user_is_post_comment_creator:
+                        notification_message = {
+                            "en": _(
+                                '%(post_commenter_name)s · @%(post_commenter_username)s replied to your comment on a post.') % {
+                                      'post_commenter_username': replier.username,
+                                      'post_commenter_name': replier.profile.name,
+                                  }}
+                    else:
+                        notification_message = {
+                            "en": _(
+                                '%(post_commenter_name)s · @%(post_commenter_username)s replied on a comment you also replied on.') % {
+                                      'post_commenter_username': replier.username,
+                                      'post_commenter_name': replier.profile.name,
+                                  }}
 
-                if post_notification_target_user_is_post_comment_creator:
-                    notification_message = {
-                        "en": _(
-                            '%(post_commenter_name)s · @%(post_commenter_username)s replied to your comment on a post.') % {
-                                  'post_commenter_username': replier.username,
-                                  'post_commenter_name': replier.profile.name,
-                              }}
-                else:
-                    notification_message = {
-                        "en": _(
-                            '%(post_commenter_name)s · @%(post_commenter_username)s replied on a comment you also replied on.') % {
-                                  'post_commenter_username': replier.username,
-                                  'post_commenter_name': replier.profile.name,
-                              }}
-
-                self._send_post_comment_push_notification(post_comment=post_comment_reply,
-                                                          notification_message=notification_message,
-                                                          notification_target_user=post_notification_target_user)
+                    self._send_post_comment_push_notification(post_comment=post_comment_reply,
+                                                              notification_message=notification_message,
+                                                              notification_target_user=post_notification_target_user)
 
             PostCommentReplyNotification.create_post_comment_reply_notification(
                 post_comment_id=post_comment_reply.pk,
@@ -2650,17 +2654,17 @@ class User(AbstractUser):
         if isinstance(content_object, Post):
             if content_object.community:
                 if not self.is_staff_of_community_with_name(community_name=content_object.community.name):
-                    raise ValidationError(_('Only community staff can moderated community posts'))
+                    raise ValidationError(_('Only community staff can moderate community posts'))
             else:
                 raise ValidationError(_('Only global moderators can moderate non-community posts'))
         elif isinstance(content_object, PostComment):
             if content_object.post.community:
                 if not self.is_staff_of_community_with_name(community_name=content_object.post.community.name):
-                    raise ValidationError(_('Only community staff can moderated community post comments'))
+                    raise ValidationError(_('Only community staff can moderate community post comments'))
             else:
                 raise ValidationError(_('Only global moderators can moderate non-community post comments'))
         else:
-            raise ValidationError(_('Non global moderators can only moderated posts and post comments.'))
+            raise ValidationError(_('Non global moderators can only moderate posts and post comments.'))
 
     def _check_is_global_moderator(self):
         if not self.is_global_moderator():
@@ -2707,7 +2711,7 @@ class User(AbstractUser):
         return '{0}/api/auth/password/verify?token={1}'.format(settings.EMAIL_HOST, token)
 
     def _send_password_reset_email_with_token(self, password_reset_token):
-        mail_subject = _('Reset your password for Openbook')
+        mail_subject = _('Reset your password for Okuna')
         text_content = render_to_string('openbook_auth/email/reset_password.txt', {
             'name': self.profile.name,
             'username': self.username,
@@ -3410,6 +3414,10 @@ class User(AbstractUser):
     def _check_can_translate_post_with_id(self, post_id):
         Post = get_post_model()
         post = Post.objects.get(id=post_id)
+        if post.is_encircled_post():
+            raise ValidationError(
+                _('Only public posts can be translated')
+            )
         if post.text is None:
             raise ValidationError(
                 _('Post has no text to be translated')
@@ -3975,6 +3983,10 @@ class User(AbstractUser):
     def _check_can_translate_comment_with_id(self, post_comment_id):
         PostComment = get_post_comment_model()
         post_comment = PostComment.objects.get(pk=post_comment_id)
+        if post_comment.post.is_encircled_post():
+            raise ValidationError(
+                _('Only public post comments can be translated')
+            )
         if post_comment.text is None:
             raise ValidationError(
                 _('Post comment has no text to be translated')
@@ -4023,7 +4035,7 @@ class User(AbstractUser):
 
     def _check_can_unblock_user_with_id(self, user_id):
         if not self.has_blocked_user_with_id(user_id=user_id):
-            raise ValidationError(_('You cannot unblock and account you have not blocked.'))
+            raise ValidationError(_('You cannot unblock an account you have not blocked.'))
 
     def _check_is_not_blocked_with_user_with_id(self, user_id):
         """

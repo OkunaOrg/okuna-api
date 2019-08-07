@@ -119,8 +119,7 @@ class TranslatePostComment(APIView):
         try:
             post_comment, translated_text = user.translate_post_comment_with_id(post_comment_id=post_comment_id)
         except UnsupportedLanguagePairException:
-            return ApiMessageResponse(_('Translation pair is not supported by client.'),
-                                      status=status.HTTP_400_BAD_REQUEST)
+            return ApiMessageResponse(_('Translation between these languages is not supported.'), status=status.HTTP_400_BAD_REQUEST)
         except TranslationClientError:
             return ApiMessageResponse(_('Translation service returned an error'),
                                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)

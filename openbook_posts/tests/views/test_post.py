@@ -1531,6 +1531,21 @@ class TranslatePostAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_cannot_translate_encircled_post(self):
+        """
+        should not be able to translate encircled post and return 400
+        """
+        user = make_user()
+        text = 'Ik ben en man 😀. Jij bent en vrouw.'
+        headers = make_authentication_headers_for_user(user)
+        circle = make_circle(creator=user)
+        post = user.create_encircled_post(text=text, circles_ids=[circle.pk])
+
+        url = self._get_url(post=post)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_cannot_translate_post_text_without_post_comment_language(self):
         """
         should not translate post text and return 400 if post language is not set

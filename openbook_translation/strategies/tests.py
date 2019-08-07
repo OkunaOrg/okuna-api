@@ -11,6 +11,9 @@ class MockAmazonTranslate(BaseTranslationStrategy):
         else:
             return 'no'
 
+    def get_default_translation_language_code(self):
+        return 'en'
+
     def get_supported_translation_language_code(self, language_code):
         return 'en'
 

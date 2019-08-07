@@ -71,6 +71,31 @@ class PostsAPITests(APITestCase):
 
         self.assertTrue(world_circle.posts.filter(text=post_text).count() == 1)
 
+    def test_create_text_post_with_only_link_should_not_throw_error(self):
+        """
+        should be able to create a text post with only a link and return 201
+        """
+        user = make_user()
+
+        auth_token = user.auth_token.key
+
+        post_text = 'https://www.okuna.io'
+
+        headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
+
+        data = {
+            'text': post_text
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(user.posts.filter(text=post_text).count() == 1)
+        world_circle = Circle.get_world_circle()
+        self.assertTrue(world_circle.posts.filter(text=post_text).count() == 1)
+
     def test_create_text_post_detect_language(self):
         """
         should be able to create a text post and detect its language and return 201

@@ -5,7 +5,7 @@ from openbook_auth.models import UserProfile, User
 from openbook_circles.models import Circle
 from openbook_common.models import Badge, Language
 from openbook_common.serializers_fields.post import PostCreatorField, PostReactionsEmojiCountField, ReactionField, \
-    CommentsCountField, CirclesField, PostIsMutedField
+    CommentsCountField, CirclesField, PostIsMutedField, IsEncircledField
 from openbook_communities.models import CommunityMembership, Community
 from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_posts.models import PostVideo, PostImage, Post
@@ -158,6 +158,7 @@ class GetPostPostSerializer(serializers.ModelSerializer):
     community = PostCommunitySerializer()
     is_muted = PostIsMutedField()
     language = PostLanguageSerializer()
+    is_encircled = IsEncircledField()
 
     class Meta:
         model = Post
@@ -180,6 +181,7 @@ class GetPostPostSerializer(serializers.ModelSerializer):
             'is_muted',
             'is_edited',
             'is_closed',
+            'is_encircled'
         )
 
 

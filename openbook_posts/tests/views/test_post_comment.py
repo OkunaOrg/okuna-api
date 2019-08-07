@@ -2330,6 +2330,22 @@ class TranslatePostCommentAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_cannot_translate_comment_in_encircled_post(self):
+        """
+        should not translate post comment text in an encircled post and return 400
+        """
+        user = make_user()
+        text = 'Ik ben en man 😀. Jij bent en vrouw.'
+        headers = make_authentication_headers_for_user(user)
+        circle = make_circle(creator=user)
+        post = user.create_encircled_post(text=text, circles_ids=[circle.pk])
+        post_comment = user.comment_post(post=post, text=text)
+
+        url = self._get_url(post=post, post_comment=post_comment)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_cannot_translate_post_comment_text_without_post_comment_language(self):
         """
         should not translate post comment text and return 400 if post comment language is not set
