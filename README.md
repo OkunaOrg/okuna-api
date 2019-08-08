@@ -157,7 +157,16 @@ Assign user invites to all or specific users.
 ```bash
 usage: manage.py allocate_invites [-h] [--count INCREMENT_INVITES_BY_COUNT] [--total TOTAL_INVITE_COUNT_TO_SET] [--username USERNAME]
 ```
-
+### Automatic model translations from Crowdin
+Download the latest django.po files in the respective locale/ folders from crowdin. 
+Then locally run all or some of these commands depending on which models need updating.
+It will update the `.json` files, then check them in.
+```$xslt
+./manage.py shell < openbook_common/i18n/update_translations_emoji_groups.py
+./manage.py shell < openbook_common/i18n/update_translations_emojis.py
+./manage.py shell < openbook_moderation/i18n/update_translations.py
+./manage.py shell < openbook_categories/i18n/update_translations.py
+```
 
 ## Troubleshooting
 
