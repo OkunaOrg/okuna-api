@@ -387,6 +387,11 @@ LANGUAGES = [
     ('es', _('Spanish')),
     ('en', _('English')),
     ('de', _('German')),
+    ('sv', _('Swedish')),
+    ('fr', _('French')),
+    ('it', _('Italian')),
+    ('tr', _('Turkish')),
+    ('pt-br', _('Portuguese, Brazilian')),
 ]
 
 LANGUAGE_CODE = 'en'
