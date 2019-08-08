@@ -4,6 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [dev-packages]
+polib = "*"
 
 [packages]
 django = ">=2.2.2"
@@ -30,7 +31,7 @@ python-magic = "*"
 safety = "*"
 pyjwt = "*"
 django-imagekit = "*"
-rest-framework-generic-relations = {git = "https://github.com/Ian-Foote/rest-framework-generic-relations.git", ref = "28592a7e5c4c2f05a5576cd143721f58f061eaf2"}
+rest-framework-generic-relations = {git = "https://github.com/Ian-Foote/rest-framework-generic-relations.git",ref = "28592a7e5c4c2f05a5576cd143721f58f061eaf2"}
 onesignal-sdk = "*"
 django-replicated = "*"
 django-cacheops = "*"
