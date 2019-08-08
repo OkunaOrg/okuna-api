@@ -1,0 +1,145 @@
+[
+  {
+    "model": "openbook_categories.Category",
+    "pk": 1,
+    "fields": {
+      "order": "8",
+      "name": "education",
+      "title_en": "Education",
+      "color": "#6200cc",
+      "description_en": "For everything related to Education.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_education-min.png"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 2,
+    "fields": {
+      "order": "1",
+      "name": "fun",
+      "title_en": "Fun",
+      "color": "#ff005d",
+      "description_en": "Fun stuff!",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_fun-min.png"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 3,
+    "fields": {
+      "order": "3",
+      "name": "technology",
+      "title_en": "Technology",
+      "color": "#0050ff",
+      "description_en": "For all tech related wizardry.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_technology-min.png"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 4,
+    "fields": {
+      "order": "5",
+      "name": "sports",
+      "title_en": "Sports",
+      "color": "#3c9b48",
+      "description_en": "For everything related to sports.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_sports-min.png"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 5,
+    "fields": {
+      "order": "4",
+      "name": "nature",
+      "title_en": "Nature",
+      "color": "#9e5400",
+      "description_en": "For everything related to nature.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/nature-min.png"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 5,
+    "fields": {
+      "order": "2",
+      "name": "travel",
+      "title_en": "Travel",
+      "color": "#7c00e2",
+      "description_en": "For everything related to travel.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_travel-min.png"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 5,
+    "fields": {
+      "order": "6",
+      "name": "art",
+      "title_en": "Art",
+      "color": "#595959",
+      "description_en": "For everything related to art.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_art-min.png"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 6,
+    "fields": {
+      "order": "7",
+      "name": "lifestyle",
+      "title_en": "Lifestyle",
+      "color": "#0085d8",
+      "description_en": "For everything related to lifestyle.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_lifestyle-min.png"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 7,
+    "fields": {
+      "order": "8",
+      "name": "entertainment",
+      "title_en": "Entertainment",
+      "color": "#ffe032",
+      "description_en": "For everything related to entertainment.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_entertainment-min.png"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 8,
+    "fields": {
+      "order": "9",
+      "name": "places",
+      "title_en": "Places",
+      "color": "#dce3ed",
+      "description_en": "For everything related to places.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_entertainment-min.png"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 9,
+    "fields": {
+      "order": "9",
+      "name": "food",
+      "title_en": "Food",
+      "color": "#ffa41f",
+      "description_en": "For everything related to food.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_food-min.png"
+    }
+  }
+]

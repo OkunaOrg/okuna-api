@@ -1,0 +1,146 @@
+[
+  {
+    "model": "openbook_moderation.ModerationCategory",
+    "pk": 1,
+    "fields": {
+      "name": "spam",
+      "severity": "M",
+      "title_en": "Spam",
+      "description_en": "Posts as spam could include clickbait, advertising, scams, script bots",
+      "order": 1,
+      "created": "2018-10-22 12:23:30.382913+00:00"
+    }
+  },
+  {
+    "model": "openbook_moderation.ModerationCategory",
+    "pk": 2,
+    "fields": {
+      "name": "pornography",
+      "severity": "H",
+      "title_en": "Pornography",
+      "description_en": "Posts showing sexual intercourse, photos and videos of sexual intercourse, nudity etc",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "order": 4
+    }
+  },
+  {
+    "model": "openbook_moderation.ModerationCategory",
+    "pk": 3,
+    "fields": {
+      "name": "hatred_bullying",
+      "severity": "H",
+      "title_en": "Hatred & Bullying",
+      "description_en": "Credible threats, targets people, degrades or shames them, harassment etc.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "order": 5
+    }
+  },
+  {
+    "model": "openbook_moderation.ModerationCategory",
+    "pk": 4,
+    "fields": {
+      "name": "self_harm",
+      "severity": "H",
+      "title_en": "Self Harm",
+      "description_en": "Posts promoting or encouraging self harm",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "order": 6
+    }
+  },
+  {
+    "model": "openbook_moderation.ModerationCategory",
+    "pk": 5,
+    "fields": {
+      "name": "violence",
+      "severity": "H",
+      "title_en": "Violent, gory and harmful",
+      "description_en": "Photos or videos of extreme graphic violence, posts encouraging violence, specific threats of physical harm",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "order": 7
+    }
+  },
+  {
+    "model": "openbook_moderation.ModerationCategory",
+    "pk": 6,
+    "fields": {
+      "name": "child_exploitation",
+      "severity": "C",
+      "title_en": "Child Sexual Exploitation Material",
+      "description_en": "Posts with photos or videos of sexual intercourse with children, posts of nude/partially nude children.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "order": 8
+    }
+  },
+  {
+    "model": "openbook_moderation.ModerationCategory",
+    "pk": 7,
+    "fields": {
+      "name": "illegal",
+      "severity": "C",
+      "title_en": "Illegal Activities e.g Drug Use",
+      "description_en": "Posts promoting illegal activities such as use, sale or distribution of hard drugs etc",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "order": 9
+    }
+  },
+  {
+    "model": "openbook_moderation.ModerationCategory",
+    "pk": 8,
+    "fields": {
+      "name": "deceptive",
+      "severity": "H",
+      "title_en": "Deceptive content",
+      "description_en": "Posts with purposefully fake or deceitful news, hoax disproved by credible sources",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "order": 10
+    }
+  },
+  {
+    "model": "openbook_moderation.ModerationCategory",
+    "pk": 9,
+    "fields": {
+      "name": "copyright",
+      "severity": "H",
+      "title_en": "Copyright and trademark infringement",
+      "description_en": "Posts with content that violates or infringes your copyright.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "order": 2
+    }
+  },
+  {
+    "model": "openbook_moderation.ModerationCategory",
+    "pk": 10,
+    "fields": {
+      "name": "abuse",
+      "severity": "H",
+      "title_en": "Platform abuse",
+      "description_en": "Abuse might contain using bots, abusing the report button, spamming continuously.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "order": 3
+    }
+  },
+  {
+    "model": "openbook_moderation.ModerationCategory",
+    "pk": 11,
+    "fields": {
+      "name": "community",
+      "severity": "L",
+      "title_en": "Community Guidelines Infringement",
+      "description_en": "The item does not conform to the community guidelines.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "order": 4
+    }
+  },
+  {
+    "model": "openbook_moderation.ModerationCategory",
+    "pk": 12,
+    "fields": {
+      "name": "other",
+      "severity": "L",
+      "title_en": "Other",
+      "description_en": "Other reasons not included in other categories.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "order": 99
+    }
+  }
+]

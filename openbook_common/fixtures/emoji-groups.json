@@ -5,12 +5,17 @@
     "fields": {
       "order": 1,
       "keyword": "primary",
-      "keyword_es": "Primarias",
       "keyword_en": "Primary",
-      "keyword_de": "Primär",
       "color": "#FFFFFF",
       "created": "2018-10-22 12:23:30.382913+00:00",
-      "is_reaction_group": true
+      "is_reaction_group": true,
+      "keyword_es": "",
+      "keyword_de": "Standard",
+      "keyword_sv": "Primära",
+      "keyword_fr": "Principales",
+      "keyword_it": "Principale",
+      "keyword_tr": "Başlıca",
+      "keyword_pt-br": "Básico"
     }
   },
   {
@@ -19,12 +24,17 @@
     "fields": {
       "order": 2,
       "keyword": "obgold",
-      "keyword_es": "Premium",
       "keyword_en": "Premium",
-      "keyword_de": "Prämie",
       "color": "#FFFFFF",
       "created": "2018-10-22 12:23:30.382913+00:00",
-      "is_reaction_group": true
+      "is_reaction_group": true,
+      "keyword_es": "",
+      "keyword_de": "Premium",
+      "keyword_sv": "Premium",
+      "keyword_fr": "Prémium",
+      "keyword_it": "Premium",
+      "keyword_tr": "Premium",
+      "keyword_pt-br": "Premium"
     }
   },
   {
@@ -33,12 +43,17 @@
     "fields": {
       "order": 2,
       "keyword": "objects",
-      "keyword_es": "Objectos",
       "keyword_en": "Objects",
-      "keyword_de": "Objekte",
       "color": "#FFFFFF",
       "created": "2018-10-22 12:23:30.382913+00:00",
-      "is_reaction_group": false
+      "is_reaction_group": false,
+      "keyword_es": "",
+      "keyword_de": "Objekte",
+      "keyword_sv": "Objekt",
+      "keyword_fr": "Objets",
+      "keyword_it": "Tipi",
+      "keyword_tr": "Nesneler",
+      "keyword_pt-br": "Objetos"
     }
   }
 ]
