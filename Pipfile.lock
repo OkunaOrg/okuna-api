@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "26f0e6da3c5b1b8c0a4b405c608a0008be6c3c7217c56db1dcb3a815256aceb2"
+            "sha256": "449c8745ac3bd92f00dce82248cc220e437bdb8d0ef4b6a72245eee429de86fa"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -29,20 +29,28 @@
             "index": "pypi",
             "version": "==1.5.1"
         },
+        "beautifulsoup4": {
+            "hashes": [
+                "sha256:05668158c7b85b791c5abde53e50265e16f98ad601c402ba44d70f96c4159612",
+                "sha256:25288c9e176f354bf277c0a10aa96c782a6a18a17122dba2e8cec4a97e03343b",
+                "sha256:f040590be10520f2ea4c2ae8c3dae441c7cfff5308ec9d58a0ec0c1b8f81d469"
+            ],
+            "version": "==4.8.0"
+        },
         "boto3": {
             "hashes": [
-                "sha256:0fec671879bbddffb0e088d970051f159effa0b7ad2a04541121372c719efd75",
-                "sha256:53c2b5f00990435f5c2a3f3ce1f9543246d8300c6444b4d7da8ffd69063c4182"
+                "sha256:3ec5b520dbd0a430cdd581a8250991fb0f21ee7e668a8928f15006b312fa86dc",
+                "sha256:8aec0247131a0db1e33d28ad13910e01e6dfa208e8ab8ee5a4095e92dbaabf45"
             ],
             "index": "pypi",
-            "version": "==1.9.200"
+            "version": "==1.9.204"
         },
         "botocore": {
             "hashes": [
-                "sha256:9448deffdb58e852935eeaae90682b7a0b4ef3c45eb6f17fa4444873f45f9ae6",
-                "sha256:d2ead76e77e7d0cd4c6bf9445e0ff54e279aee3c727eb30255b4ec327f956d22"
+                "sha256:56cd1114e0ce35733e890b321160c8c438243f4fa54d3d074dfa6bdce4ee55aa",
+                "sha256:f86504bcc9c44d5b2e7b019f2f279b70f17b1400d2fc4775bc009ec473530cad"
             ],
-            "version": "==1.12.200"
+            "version": "==1.12.204"
         },
         "certifi": {
             "hashes": [
@@ -160,7 +168,6 @@
             "version": "==0.0.3"
         },
         "django-modeltranslation": {
-            "editable": true,
             "git": "https://github.com/lifenautjoe/django-modeltranslation.git",
             "ref": "551af9905961038badad9d9a16b2f47996f7685b"
         },
@@ -286,12 +293,10 @@
         },
         "mysqlclient": {
             "hashes": [
-                "sha256:425e733b05e359a714d6007c0fc44582be66b63e5a3df0a50949274ae16f4bc6",
-                "sha256:62e4770b6a797b9416bcf70488365b7d6b9c9066878108499c559293bb464380",
-                "sha256:f257d250f2675d0ef99bd318906f3cfc05cef4a2f385ea695ff32a3f04b9f9a7"
+                "sha256:0d3eeb97534c9f42e9b65bd35c1a35fadc2f6d7ea5d9fdbda5339a569156344b"
             ],
             "index": "pypi",
-            "version": "==1.4.2.post1"
+            "version": "==1.4.3"
         },
         "nose": {
             "hashes": [
@@ -443,11 +448,11 @@
         },
         "redis": {
             "hashes": [
-                "sha256:8106502b96280e8614d30766f28b4e07ca2b368a8d7896bffce9de88756dd481",
-                "sha256:95ccbec607e21fff2823e7da8b7041e0c471eb36d0672f20abcb32adb5b089ca"
+                "sha256:45682ecf226c7611efe731974c4fa3390170ba045b9cdb26f0051114a5c2a68b",
+                "sha256:f2609a85e5f37f489ba3b5652e1175dc3711c4d7a7818c4f657615810afd23df"
             ],
             "index": "pypi",
-            "version": "==3.3.5"
+            "version": "==3.3.6"
         },
         "requests": {
             "hashes": [
@@ -504,6 +509,13 @@
             ],
             "version": "==2.0.5"
         },
+        "soupsieve": {
+            "hashes": [
+                "sha256:72b5f1aea9101cf720a36bb2327ede866fd6f1a07b1e87c92a1cc18113cbc946",
+                "sha256:e4e9c053d59795e440163733a7fec6c5972210e1790c507e4c7b051d6c5259de"
+            ],
+            "version": "==1.9.2"
+        },
         "sqlparse": {
             "hashes": [
                 "sha256:40afe6b8d4b1117e7dff5504d7a8ce07d9a1b15aeeade8a2d10f130a834f8177",
@@ -532,6 +544,13 @@
             ],
             "markers": "python_version >= '3.4'",
             "version": "==1.25.3"
+        },
+        "webpreview": {
+            "hashes": [
+                "sha256:b2916980f03f40ef40f6bc2421077f409efec2200336acc8cff788c29aecf434"
+            ],
+            "index": "pypi",
+            "version": "==1.6.0"
         }
     },
     "develop": {}
