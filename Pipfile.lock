@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "3d1f27e8e7e82f227ef57d1b7f7489224ffcb918c629d838d4e073089c47b284"
+            "sha256": "26f0e6da3c5b1b8c0a4b405c608a0008be6c3c7217c56db1dcb3a815256aceb2"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -28,14 +28,6 @@
             ],
             "index": "pypi",
             "version": "==1.5.1"
-        },
-        "beautifulsoup4": {
-            "hashes": [
-                "sha256:05668158c7b85b791c5abde53e50265e16f98ad601c402ba44d70f96c4159612",
-                "sha256:25288c9e176f354bf277c0a10aa96c782a6a18a17122dba2e8cec4a97e03343b",
-                "sha256:f040590be10520f2ea4c2ae8c3dae441c7cfff5308ec9d58a0ec0c1b8f81d469"
-            ],
-            "version": "==4.8.0"
         },
         "boto3": {
             "hashes": [
@@ -168,6 +160,7 @@
             "version": "==0.0.3"
         },
         "django-modeltranslation": {
+            "editable": true,
             "git": "https://github.com/lifenautjoe/django-modeltranslation.git",
             "ref": "551af9905961038badad9d9a16b2f47996f7685b"
         },
@@ -212,11 +205,11 @@
         },
         "djangorestframework": {
             "hashes": [
-                "sha256:b6714c3e4b0f8d524f193c91ecf5f5450092c2145439ac2769711f7eba89a9d9",
-                "sha256:c375e4f95a3a64fccac412e36fb42ba36881e52313ec021ef410b40f67cddca4"
+                "sha256:42979bd5441bb4d8fd69d0f385024a114c3cae7df0f110600b718751250f6929",
+                "sha256:aedb48010ebfab9651aaab1df5fd3b4848eb4182afc909852a2110c24f89a359"
             ],
             "index": "pypi",
-            "version": "==3.8.2"
+            "version": "==3.10.2"
         },
         "docutils": {
             "hashes": [
@@ -465,7 +458,7 @@
         },
         "rest-framework-generic-relations": {
             "git": "https://github.com/Ian-Foote/rest-framework-generic-relations.git",
-            "ref": "28592a7e5c4c2f05a5576cd143721f58f061eaf2"
+            "ref": "11c31d378ac4a2b2805e0ad154832532f8430f50"
         },
         "rq": {
             "hashes": [
@@ -511,13 +504,6 @@
             ],
             "version": "==2.0.5"
         },
-        "soupsieve": {
-            "hashes": [
-                "sha256:72b5f1aea9101cf720a36bb2327ede866fd6f1a07b1e87c92a1cc18113cbc946",
-                "sha256:e4e9c053d59795e440163733a7fec6c5972210e1790c507e4c7b051d6c5259de"
-            ],
-            "version": "==1.9.2"
-        },
         "sqlparse": {
             "hashes": [
                 "sha256:40afe6b8d4b1117e7dff5504d7a8ce07d9a1b15aeeade8a2d10f130a834f8177",
@@ -546,13 +532,6 @@
             ],
             "markers": "python_version >= '3.4'",
             "version": "==1.25.3"
-        },
-        "webpreview": {
-            "hashes": [
-                "sha256:b2916980f03f40ef40f6bc2421077f409efec2200336acc8cff788c29aecf434"
-            ],
-            "index": "pypi",
-            "version": "==1.6.0"
         }
     },
     "develop": {}

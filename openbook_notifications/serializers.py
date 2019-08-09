@@ -2,7 +2,7 @@ from generic_relations.relations import GenericRelatedField
 from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
-from openbook_common.models import Emoji
+from openbook_common.models import Emoji, Language
 from openbook_common.serializers_fields.post import IsEncircledField
 from openbook_common.serializers_fields.post_comment import PostCommentIsMutedField
 from openbook_communities.models import Community, CommunityInvite
@@ -116,15 +116,28 @@ class NotificationPostSerializer(serializers.ModelSerializer):
         )
 
 
+class PostCommentLanguageSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Language
+        fields = (
+            'id',
+            'code',
+            'name',
+        )
+
+
 class NotificationPostCommentParentSerializer(serializers.ModelSerializer):
     commenter = PostCommentCommenterSerializer()
     is_muted = PostCommentIsMutedField()
+    language = PostCommentLanguageSerializer()
 
     class Meta:
         model = PostComment
         fields = (
             'id',
             'commenter',
+            'language',
             'text',
             'created',
             'is_edited',
@@ -137,12 +150,14 @@ class NotificationPostCommentSerializer(serializers.ModelSerializer):
     post = NotificationPostSerializer()
     parent_comment = NotificationPostCommentParentSerializer()
     is_muted = PostCommentIsMutedField()
+    language = PostCommentLanguageSerializer()
 
     class Meta:
         model = PostComment
         fields = (
             'id',
             'commenter',
+            'language',
             'text',
             'post',
             'created',
