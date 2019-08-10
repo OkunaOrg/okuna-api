@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_invitations.serializers import GetUserInviteSerializer, CreateUserInviteSerializer, \
     GetUserInvitesSerializer, DeleteUserInviteSerializer, EmailUserInviteSerializer, EditUserInviteSerializer, \
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class UserInvites(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def put(self, request):
         serializer = CreateUserInviteSerializer(data=request.data, context={"request": request})

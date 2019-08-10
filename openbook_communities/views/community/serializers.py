@@ -4,6 +4,7 @@ from rest_framework import serializers
 from openbook_auth.models import User, UserProfile
 from openbook_categories.models import Category
 from openbook_categories.validators import category_name_exists
+from openbook_common.serializers_fields.community import IsCommunityReportedField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
 from openbook_common.serializers_fields.user import IsFollowingField
 from openbook_common.validators import hex_color_validator
@@ -43,7 +44,7 @@ class UpdateCommunitySerializer(serializers.Serializer):
                                            allow_blank=True)
     users_adjective = serializers.CharField(max_length=settings.COMMUNITY_USERS_ADJECTIVE_MAX_LENGTH, required=False,
                                             allow_blank=True)
-    invites_enabled = serializers.BooleanField(required=False, allow_null=False)
+    invites_enabled = serializers.BooleanField(required=False)
     categories = serializers.ListField(
         required=False,
         min_length=settings.COMMUNITY_CATEGORIES_MIN_AMOUNT,
@@ -130,6 +131,7 @@ class GetCommunityCommunitySerializer(serializers.ModelSerializer):
     is_invited = IsInvitedField()
     is_creator = IsCreatorField()
     is_favorite = IsFavoriteField()
+    is_reported = IsCommunityReportedField()
     moderators = ModeratorsField(moderator_serializer=GetCommunityStaffUserSerializer)
     administrators = AdministratorsField(administrator_serializer=GetCommunityStaffUserSerializer)
     memberships = CommunityMembershipsField(community_membership_serializer=GetCommunityCommunityMembershipSerializer)
@@ -157,6 +159,7 @@ class GetCommunityCommunitySerializer(serializers.ModelSerializer):
             'is_invited',
             'is_creator',
             'is_favorite',
+            'is_reported',
             'memberships',
         )
 

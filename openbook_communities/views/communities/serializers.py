@@ -30,7 +30,7 @@ class CreateCommunitySerializer(serializers.Serializer):
                                           max_upload_size=settings.COMMUNITY_AVATAR_MAX_SIZE)
     cover = RestrictedImageFileSizeField(required=False,
                                          max_upload_size=settings.COMMUNITY_COVER_MAX_SIZE)
-    invites_enabled = serializers.BooleanField(required=False, allow_null=False)
+    invites_enabled = serializers.BooleanField(required=False)
     color = serializers.CharField(max_length=COLOR_ATTR_MAX_LENGTH, required=True,
                                   validators=[hex_color_validator])
     categories = serializers.ListField(

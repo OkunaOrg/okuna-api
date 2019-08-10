@@ -22,7 +22,8 @@ from django.conf.urls.static import static
 from openbook_auth.views.auth.views import Register, Login, UsernameCheck, EmailCheck, EmailVerify, \
     PasswordResetRequest, PasswordResetVerify
 from openbook_auth.views.authenticated_user.views import AuthenticatedUser, AuthenticatedUserSettings, \
-    DeleteAuthenticatedUser, AuthenticatedUserNotificationsSettings, AuthenticatedUserAcceptGuidelines
+    DeleteAuthenticatedUser, AuthenticatedUserNotificationsSettings, AuthenticatedUserAcceptGuidelines, \
+    AuthenticatedUserLanguage
 from openbook_auth.views.blocked_users.views import BlockedUsers, SearchBlockedUsers
 from openbook_auth.views.followers.views import Followers, SearchFollowers
 from openbook_auth.views.following.views import Followings, SearchFollowings
@@ -50,10 +51,26 @@ from openbook_invitations.views import UserInvite, UserInvites, SearchUserInvite
 from openbook_devices.views import Devices, DeviceItem
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
 from openbook_lists.views import Lists, ListItem, ListNameCheck
+from openbook_moderation.views.checks import IsNotSuspendedCheck
+from openbook_moderation.views.moderated_object.views import ModeratedObjectItem, ModeratedObjectLogs, \
+    ApproveModeratedObject, RejectModeratedObject, VerifyModeratedObject, UnverifyModeratedObject, \
+    ModeratedObjectReports
+from openbook_moderation.views.moderated_objects.views import CommunityModeratedObjects, GlobalModeratedObjects
+from openbook_moderation.views.moderation_categories.views import ModerationCategories
+from openbook_moderation.views.report.views import ReportUser, ReportPost, ReportCommunity, \
+    ReportPostComment
+from openbook_moderation.views.user.views import UserModerationPenalties, UserPendingModeratedObjectsCommunities
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
-from openbook_posts.views.post.views import PostComments, PostCommentItem, PostItem, PostReactions, PostReactionItem, \
-    PostReactionsEmojiCount, PostReactionEmojiGroups, MutePost, UnmutePost, PostCommentsDisable, PostCommentsEnable, \
-    PostOpen, PostClose
+from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost, TranslatePost
+from openbook_posts.views.post_comment.post_comment_reaction.views import PostCommentReactionItem
+from openbook_posts.views.post_comment.post_comment_reactions.views import PostCommentReactions, \
+    PostCommentReactionsEmojiCount
+from openbook_posts.views.post_comment.post_comment_replies.views import PostCommentReplies
+from openbook_posts.views.post_comment.views import PostCommentItem, MutePostComment, UnmutePostComment, \
+    TranslatePostComment
+from openbook_posts.views.post_comments.views import PostComments, PostCommentsDisable, PostCommentsEnable
+from openbook_posts.views.post_reaction.views import PostReactionItem
+from openbook_posts.views.post_reactions.views import PostReactions, PostReactionsEmojiCount, PostReactionEmojiGroups
 from openbook_posts.views.posts.views import Posts, TrendingPosts
 from openbook_importer.views import ImportItem
 
@@ -75,12 +92,14 @@ auth_user_patterns = [
          name='authenticated-user-notifications-settings'),
     path('accept-guidelines/', AuthenticatedUserAcceptGuidelines.as_view(),
          name='authenticated-user-accept-guidelines'),
+    path('languages/', AuthenticatedUserLanguage.as_view(), name='user-language'),
 ]
 
 auth_users_user_patterns = [
     path('', GetUser.as_view(), name='get-user'),
     path('block/', BlockUser.as_view(), name='block-user'),
     path('unblock/', UnblockUser.as_view(), name='unblock-user'),
+    path('report/', ReportUser.as_view(), name='report-user'),
 ]
 
 auth_users_patterns = [
@@ -118,23 +137,44 @@ auth_patterns = [
     path('user/', include(auth_user_patterns)),
 ]
 
-post_notifications_patters = [
+post_notifications_patterns = [
     path('mute/', MutePost.as_view(), name='mute-post'),
     path('unmute/', UnmutePost.as_view(), name='unmute-post'),
 ]
 
+post_comment_reactions_patterns = [
+    path('', PostCommentReactions.as_view(), name='post-comment-reactions'),
+    path('emoji-count/', PostCommentReactionsEmojiCount.as_view(), name='post-comment-reactions-emoji-count'),
+    path('<int:post_comment_reaction_id>/', PostCommentReactionItem.as_view(), name='post-comment-reaction'), ]
+
+post_comment_notifications_patterns = [
+    path('mute/', MutePostComment.as_view(), name='mute-post-comment'),
+    path('unmute/', UnmutePostComment.as_view(), name='unmute-post-comment'),
+]
+
+post_comment_patterns = [
+    path('', PostCommentItem.as_view(), name='post-comment'),
+    path('translate/', TranslatePostComment.as_view(), name='translate-post-comment'),
+    path('report/', ReportPostComment.as_view(), name='report-post-comment'),
+    path('replies/', PostCommentReplies.as_view(), name='post-comment-replies'),
+    path('reactions/', include(post_comment_reactions_patterns), name='post-comment-replies'),
+    path('notifications/', include(post_comment_notifications_patterns)),
+]
+
 post_patterns = [
     path('', PostItem.as_view(), name='post'),
-    path('notifications/', include(post_notifications_patters)),
+    path('notifications/', include(post_notifications_patterns)),
     path('comments/', PostComments.as_view(), name='post-comments'),
     path('comments/disable/', PostCommentsDisable.as_view(), name='disable-post-comments'),
     path('comments/enable/', PostCommentsEnable.as_view(), name='enable-post-comments'),
-    path('comments/<int:post_comment_id>/', PostCommentItem.as_view(), name='post-comment'),
+    path('comments/<int:post_comment_id>/', include(post_comment_patterns)),
     path('reactions/', PostReactions.as_view(), name='post-reactions'),
     path('reactions/emoji-count/', PostReactionsEmojiCount.as_view(), name='post-reactions-emoji-count'),
     path('reactions/<int:post_reaction_id>/', PostReactionItem.as_view(), name='post-reaction'),
     path('close/', PostClose.as_view(), name='close-post'),
     path('open/', PostOpen.as_view(), name='open-post'),
+    path('report/', ReportPost.as_view(), name='report-post'),
+    path('translate/', TranslatePost.as_view(), name='translate-post'),
 ]
 
 posts_patterns = [
@@ -185,6 +225,10 @@ community_banned_users_patterns = [
     path('unban/', UnbanUser.as_view(), name='community-unban-user'),
 ]
 
+community_moderated_objects_patterns = [
+    path('', CommunityModeratedObjects.as_view(), name='community-moderated-objects')
+]
+
 community_patterns = [
     path('', CommunityItem.as_view(), name='community'),
     path('avatar/', CommunityAvatar.as_view(), name='community-avatar'),
@@ -195,6 +239,8 @@ community_patterns = [
     path('banned-users/', include(community_banned_users_patterns)),
     path('administrators/', include(community_administrators_patterns)),
     path('moderators/', include(community_moderators_patterns)),
+    path('moderated-objects/', include(community_moderated_objects_patterns)),
+    path('report/', ReportCommunity.as_view(), name='report-community'),
 ]
 
 communities_patterns = [
@@ -268,6 +314,30 @@ invites_patterns = [
     path('<str:invite_id>/email/', SendUserInviteEmail.as_view(), name='send-invite-email'),
 ]
 
+moderation_moderated_object_patterns = [
+    path('', ModeratedObjectItem.as_view(), name='moderated-object'),
+    path('approve/', ApproveModeratedObject.as_view(), name='approve-moderated-object'),
+    path('reject/', RejectModeratedObject.as_view(), name='reject-moderated-object'),
+    path('verify/', VerifyModeratedObject.as_view(), name='verify-moderated-object'),
+    path('unverify/', UnverifyModeratedObject.as_view(), name='unverify-moderated-object'),
+    path('logs/', ModeratedObjectLogs.as_view(), name='moderated-object-logs'),
+    path('reports/', ModeratedObjectReports.as_view(), name='moderated-object-reports'),
+]
+
+moderation_moderated_objects_patterns = [
+    path('<int:moderated_object_id>/', include(moderation_moderated_object_patterns)),
+    path('global/', GlobalModeratedObjects.as_view(), name='global-moderated-objects')
+]
+
+moderation_patterns = [
+    path('moderated-objects/', include(moderation_moderated_objects_patterns), name='moderation-moderated-objects'),
+    path('categories/', ModerationCategories.as_view(), name='moderation-categories'),
+    path('is-not-suspended-check/', IsNotSuspendedCheck.as_view(), name='is-not-suspended-check'),
+    path('user/penalties/', UserModerationPenalties.as_view(), name='user-moderation-penalties'),
+    path('user/pending-moderated-objects-communities/', UserPendingModeratedObjectsCommunities.as_view(),
+         name='user-pending-moderated-objects-communities'),
+]
+
 api_patterns = [
     path('auth/', include(auth_patterns)),
     path('posts/', include(posts_patterns)),
@@ -280,6 +350,7 @@ api_patterns = [
     path('notifications/', include(notifications_patterns)),
     path('devices/', include(devices_patterns)),
     path('invites/', include(invites_patterns)),
+    path('moderation/', include(moderation_patterns)),
     url('time/', Time.as_view(), name='time'),
     url('emojis/groups/', EmojiGroups.as_view(), name='emoji-groups'),
 ]

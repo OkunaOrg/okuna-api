@@ -4,11 +4,12 @@ import re
 import jwt
 import uuid
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.utils import six
+from django.utils import six, timezone, translation
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
@@ -21,16 +22,22 @@ from django.core.mail import EmailMultiAlternatives
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
+from openbook_common.helpers import get_supported_translation_language
 from openbook_common.models import Badge
+from openbook_notifications.helpers import get_notification_language_code_for_target_user
+from openbook_translation import translation_strategy
 from openbook_common.utils.helpers import delete_file_field
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
     get_post_model, get_list_model, get_post_comment_model, get_post_reaction_model, \
-    get_emoji_group_model, get_user_invite_model, get_community_model, get_community_invite_model, get_tag_model, \
+    get_emoji_group_model, get_user_invite_model, get_community_model, get_community_invite_model, \
     get_post_comment_notification_model, get_follow_notification_model, get_connection_confirmed_notification_model, \
     get_connection_request_notification_model, get_post_reaction_notification_model, get_device_model, \
-    get_post_mute_model, get_community_invite_notification_model, get_user_block_model, get_emoji_model
+    get_post_mute_model, get_community_invite_notification_model, get_user_block_model, get_emoji_model, \
+    get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
+    get_moderation_penalty_model, get_language_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
+    get_post_comment_reaction_notification_model
 from openbook_common.validators import name_characters_validator
-from openbook_notifications.push_notifications import senders
+from openbook_notifications import helpers
 
 
 class User(AbstractUser):
@@ -38,8 +45,13 @@ class User(AbstractUser):
     Custom user model to change behaviour of the default user model
     such as validation and required fields.
     """
+    moderated_object = GenericRelation('openbook_moderation.ModeratedObject', related_query_name='users')
     first_name = None
     last_name = None
+    language = models.ForeignKey('openbook_common.Language', null=True, blank=True,
+                                 on_delete=models.SET_NULL, related_name='users')
+    translation_language = models.ForeignKey('openbook_common.Language', null=True, blank=True,
+                                             on_delete=models.SET_NULL, related_name='translation_users')
     email = models.EmailField(_('email address'), unique=True, null=False, blank=False)
     connections_circle = models.ForeignKey('openbook_circles.Circle', on_delete=models.CASCADE, related_name='+',
                                            null=True, blank=True)
@@ -47,6 +59,11 @@ class User(AbstractUser):
     username_validator = UnicodeUsernameValidator() if six.PY3 else ASCIIUsernameValidator()
     is_email_verified = models.BooleanField(default=False)
     are_guidelines_accepted = models.BooleanField(default=False)
+    # This only happens if the user was reported and found with critical severity content and its account deleted
+    is_deleted = models.BooleanField(
+        _('is deleted'),
+        default=False,
+    )
 
     username = models.CharField(
         _('username'),
@@ -115,25 +132,12 @@ class User(AbstractUser):
             return False
 
     @classmethod
-    def get_public_posts_for_user_with_username(cls, username, max_id=None, min_id=None):
-        Circle = get_circle_model()
-        world_circle_id = Circle.get_world_circle_id()
-
-        final_query = Q(creator__username=username, circles__id=world_circle_id)
-
-        if max_id:
-            final_query.add(Q(id__lt=max_id), Q.AND)
-        elif min_id:
-            final_query.add(Q(id__gt=min_id), Q.AND)
-
-        Post = get_post_model()
-        result = Post.objects.filter(final_query)
-
-        return result
-
-    @classmethod
     def get_user_with_email(cls, user_email):
         return cls.objects.get(email=user_email)
+
+    @classmethod
+    def user_with_username_exists(cls, username):
+        return User.objects.filter(username=username, is_deleted=False).exists()
 
     @classmethod
     def sanitise_username(cls, username):
@@ -186,8 +190,29 @@ class User(AbstractUser):
                 _('Invalid token')
             )
 
+    @classmethod
+    def get_unauthenticated_public_posts_for_user_with_username(cls, username, max_id=None, min_id=None):
+        Circle = get_circle_model()
+        world_circle_id = Circle.get_world_circle_id()
+
+        final_query = Q(creator__username=username, circles__id=world_circle_id)
+
+        if max_id:
+            final_query.add(Q(id__lt=max_id), Q.AND)
+        elif min_id:
+            final_query.add(Q(id__gt=min_id), Q.AND)
+
+        Post = get_post_model()
+        result = Post.objects.filter(final_query)
+
+        return result
+
     def count_posts(self):
         return self.posts.count()
+
+    def count_moderation_penalties_for_moderation_severity(self, moderation_severity):
+        return self.moderation_penalties.filter(
+            moderated_object__category__severity=moderation_severity).count()
 
     def count_unread_notifications(self):
         return self.notifications.filter(read=False).count()
@@ -232,6 +257,26 @@ class User(AbstractUser):
         self.full_clean(exclude=['invite_count'])
         return super(User, self).save(*args, **kwargs)
 
+    def soft_delete(self):
+        for post in self.posts.all().iterator():
+            post.soft_delete()
+
+        for community in self.created_communities.all().iterator():
+            community.soft_delete()
+
+        self.is_deleted = True
+        self.save()
+
+    def unsoft_delete(self):
+        for post in self.posts.all.iterator():
+            post.unsoft_delete()
+
+        for community in self.created_communities.all().iterator():
+            community.unsoft_delete()
+
+        self.is_deleted = False
+        self.save()
+
     def update_profile_cover(self, cover, save=True):
         if cover is None:
             self.delete_profile_cover(save=False)
@@ -267,6 +312,7 @@ class User(AbstractUser):
 
     def update_password(self, password):
         self.set_password(password)
+        self._reset_auth_token()
         self.save()
 
     def request_email_update(self, email):
@@ -283,6 +329,14 @@ class User(AbstractUser):
     def accept_guidelines(self):
         self._check_can_accept_guidelines()
         self.are_guidelines_accepted = True
+        self.save()
+
+    def set_language_with_id(self, language_id):
+        self._check_can_set_language_with_id(language_id)
+        Language = get_language_model()
+        language = Language.objects.get(pk=language_id)
+        self.language = language
+        self.translation_language = get_supported_translation_language(language.code)
         self.save()
 
     def verify_password_reset_token(self, token, password):
@@ -339,7 +393,10 @@ class User(AbstractUser):
     def update_notifications_settings(self, post_comment_notifications=None, post_reaction_notifications=None,
                                       follow_notifications=None, connection_request_notifications=None,
                                       connection_confirmed_notifications=None,
-                                      community_invite_notifications=None):
+                                      community_invite_notifications=None,
+                                      post_comment_reaction_notifications=None,
+                                      post_comment_reply_notifications=None,
+                                      ):
 
         notifications_settings = self.notifications_settings
         notifications_settings.update(
@@ -348,7 +405,9 @@ class User(AbstractUser):
             follow_notifications=follow_notifications,
             connection_request_notifications=connection_request_notifications,
             connection_confirmed_notifications=connection_confirmed_notifications,
-            community_invite_notifications=community_invite_notifications
+            community_invite_notifications=community_invite_notifications,
+            post_comment_reaction_notifications=post_comment_reaction_notifications,
+            post_comment_reply_notifications=post_comment_reply_notifications
         )
         return notifications_settings
 
@@ -441,6 +500,9 @@ class User(AbstractUser):
     def has_muted_post_with_id(self, post_id):
         return self.post_mutes.filter(post_id=post_id).exists()
 
+    def has_muted_post_comment_with_id(self, post_comment_id):
+        return self.post_comment_mutes.filter(post_comment_id=post_comment_id).exists()
+
     def has_blocked_user_with_id(self, user_id):
         return self.user_blocks.filter(blocked_user_id=user_id).exists()
 
@@ -480,10 +542,30 @@ class User(AbstractUser):
     def is_moderator_of_community_with_name(self, community_name):
         return self.communities_memberships.filter(community__name=community_name, is_moderator=True).exists()
 
+    def is_suspended(self):
+        ModerationPenalty = get_moderation_penalty_model()
+        return self.moderation_penalties.filter(type=ModerationPenalty.TYPE_SUSPENSION,
+                                                expiration__gt=timezone.now()).exists()
+
+    def get_longest_moderation_suspension(self):
+        return self.moderation_penalties.order_by('expiration')[0:1][0]
+
+    def is_global_moderator(self):
+        moderators_community_name = settings.MODERATORS_COMMUNITY_NAME
+        return self.is_member_of_community_with_name(community_name=moderators_community_name)
+
     def is_invited_to_community_with_name(self, community_name):
         Community = get_community_model()
         return Community.is_user_with_username_invited_to_community_with_name(username=self.username,
                                                                               community_name=community_name)
+
+    def has_reported_moderated_object_with_id(self, moderated_object_id):
+        ModeratedObject = get_moderated_object_model()
+        ModerationReport = get_moderation_report_model()
+        return ModerationReport.objects.filter(reporter_id=self.pk,
+                                               moderated_object__object_id=moderated_object_id,
+                                               moderated_object__object_type=ModeratedObject.OBJECT_TYPE_MODERATED_OBJECT
+                                               ).exists()
 
     def has_favorite_community_with_name(self, community_name):
         return self.favorite_communities.filter(name=community_name).exists()
@@ -502,6 +584,14 @@ class User(AbstractUser):
 
         return self.post_reactions.filter(has_reacted_query).exists()
 
+    def has_reacted_to_post_comment_with_id(self, post_comment_id, emoji_id=None):
+        has_reacted_query = Q(post_comment_id=post_comment_id)
+
+        if emoji_id:
+            has_reacted_query.add(Q(emoji_id=emoji_id), Q.AND)
+
+        return self.post_comment_reactions.filter(has_reacted_query).exists()
+
     def has_commented_post_with_id(self, post_id):
         return self.posts_comments.filter(post_id=post_id).exists()
 
@@ -518,9 +608,19 @@ class User(AbstractUser):
         return self.notifications_settings.post_reaction_notifications and not self.has_muted_post_with_id(
             post_id=post_id)
 
+    def has_reaction_notifications_enabled_for_post_comment(self, post_comment):
+        return self.notifications_settings.post_comment_reaction_notifications and not self.has_muted_post_with_id(
+            post_id=post_comment.post_id) and not self.has_muted_post_comment_with_id(
+            post_comment_id=post_comment.id)
+
     def has_comment_notifications_enabled_for_post_with_id(self, post_id):
         return self.notifications_settings.post_comment_notifications and not self.has_muted_post_with_id(
             post_id=post_id)
+
+    def has_reply_notifications_enabled_for_post_comment(self, post_comment):
+        return self.notifications_settings.post_comment_reply_notifications and not self.has_muted_post_with_id(
+            post_id=post_comment.post_id) and not self.has_muted_post_comment_with_id(
+            post_comment_id=post_comment.id)
 
     def has_connection_request_notifications_enabled(self):
         return self.notifications_settings.connection_request_notifications
@@ -531,12 +631,44 @@ class User(AbstractUser):
     def has_connection_confirmed_notifications_enabled(self):
         return self.notifications_settings.connection_confirmed_notifications
 
+    def has_reported_post_comment_with_id(self, post_comment_id):
+        ModeratedObject = get_moderated_object_model()
+        ModerationReport = get_moderation_report_model()
+        return ModerationReport.objects.filter(reporter_id=self.pk,
+                                               moderated_object__object_id=post_comment_id,
+                                               moderated_object__object_type=ModeratedObject.OBJECT_TYPE_POST_COMMENT
+                                               ).exists()
+
+    def has_reported_post_with_id(self, post_id):
+        ModeratedObject = get_moderated_object_model()
+        ModerationReport = get_moderation_report_model()
+        return ModerationReport.objects.filter(reporter_id=self.pk,
+                                               moderated_object__object_id=post_id,
+                                               moderated_object__object_type=ModeratedObject.OBJECT_TYPE_POST
+                                               ).exists()
+
+    def has_reported_user_with_id(self, user_id):
+        ModeratedObject = get_moderated_object_model()
+        ModerationReport = get_moderation_report_model()
+        return ModerationReport.objects.filter(reporter_id=self.pk,
+                                               moderated_object__object_id=user_id,
+                                               moderated_object__object_type=ModeratedObject.OBJECT_TYPE_USER
+                                               ).exists()
+
+    def has_reported_community_with_id(self, community_id):
+        ModeratedObject = get_moderated_object_model()
+        ModerationReport = get_moderation_report_model()
+        return ModerationReport.objects.filter(reporter_id=self.pk,
+                                               moderated_object__object_id=community_id,
+                                               moderated_object__object_type=ModeratedObject.OBJECT_TYPE_COMMUNITY
+                                               ).exists()
+
     def can_see_post(self, post):
         # Check if post is public
         if post.community:
             if self._can_see_community_post_with_id(community=post.community, post_id=post.pk):
                 return True
-        elif post.creator_id == self.pk:
+        elif post.creator_id == self.pk and not post.is_deleted:
             return True
         else:
             # Check if we can retrieve the post
@@ -544,6 +676,13 @@ class User(AbstractUser):
                 return True
 
         return False
+
+    def can_see_post_comment(self, post_comment):
+        post_comment_query = self._make_get_post_comment_with_id_query(post_comment_id=post_comment.pk,
+                                                                       post_comment_parent_id=post_comment.parent_comment_id,
+                                                                       post=post_comment.post)
+        PostComment = get_post_comment_model()
+        return PostComment.objects.filter(post_comment_query).exists()
 
     def get_lists_for_follow_for_user_with_id(self, user_id):
         self._check_is_following_user_with_id(user_id)
@@ -572,19 +711,6 @@ class User(AbstractUser):
         PostReaction = get_post_reaction_model()
         return PostReaction.objects.filter(reactions_query)
 
-    def get_reactions_count_for_post_with_id(self, post_id):
-        commenter_id = None
-
-        Post = get_post_model()
-
-        # If reactions are private, count only own reactions
-        if not Post.post_with_id_has_public_reactions(post_id):
-            commenter_id = self.pk
-
-        PostReaction = get_post_reaction_model()
-
-        return PostReaction.count_reactions_for_post_with_id(post_id, commenter_id=commenter_id)
-
     def get_emoji_counts_for_post_with_id(self, post_id, emoji_id=None):
         Post = get_post_model()
         post = Post.objects.select_related('community').get(pk=post_id)
@@ -595,43 +721,104 @@ class User(AbstractUser):
 
         Emoji = get_emoji_model()
 
-        emoji_query = Q(reactions__post_id=post.pk, )
+        emoji_query = Q(post_reactions__post_id=post.pk, )
 
         if emoji_id:
-            emoji_query.add(Q(reactions__emoji_id=emoji_id), Q.AND)
+            emoji_query.add(Q(post_reactions__emoji_id=emoji_id), Q.AND)
 
         post_community = post.community
 
         if post_community:
             if not self.is_staff_of_community_with_name(community_name=post_community.name):
-                blocked_users_query = ~Q(Q(reactions__reactor__blocked_by_users__blocker_id=self.pk) | Q(
-                    reactions__reactor__user_blocks__blocked_user_id=self.pk))
+                # Exclude blocked users reactions
+                blocked_users_query = ~Q(Q(post_reactions__reactor__blocked_by_users__blocker_id=self.pk) | Q(
+                    post_reactions__reactor__user_blocks__blocked_user_id=self.pk))
                 blocked_users_query_staff_members = Q(
-                    reactions__reactor__communities_memberships__community_id=post_community.pk)
+                    post_reactions__reactor__communities_memberships__community_id=post_community.pk)
                 blocked_users_query_staff_members.add(
-                    Q(reactions__reactor__communities_memberships__is_administrator=True) | Q(
-                        reactions__reactor__communities_memberships__is_moderator=True), Q.AND)
+                    Q(post_reactions__reactor__communities_memberships__is_administrator=True) | Q(
+                        post_reactions__reactor__communities_memberships__is_moderator=True), Q.AND)
 
                 blocked_users_query.add(~blocked_users_query_staff_members, Q.AND)
                 emoji_query.add(blocked_users_query, Q.AND)
         else:
-            blocked_users_query = ~Q(Q(reactions__reactor__blocked_by_users__blocker_id=self.pk) | Q(
-                reactions__reactor__user_blocks__blocked_user_id=self.pk))
+            # Show all, even blocked users reactions
+            blocked_users_query = ~Q(Q(post_reactions__reactor__blocked_by_users__blocker_id=self.pk) | Q(
+                post_reactions__reactor__user_blocks__blocked_user_id=self.pk))
             emoji_query.add(blocked_users_query, Q.AND)
 
-        emojis = Emoji.objects.filter(emoji_query).annotate(Count('reactions')).distinct().order_by(
-            '-reactions__count').cache().all()
+        emojis = Emoji.objects.filter(emoji_query).annotate(Count('post_reactions')).distinct().order_by(
+            '-post_reactions__count').cache().all()
 
-        return [{'emoji': emoji, 'count': emoji.reactions__count} for emoji in emojis]
+        return [{'emoji': emoji, 'count': emoji.post_reactions__count} for emoji in emojis]
 
-    def react_to_post_with_id(self, post_id, emoji_id, emoji_group_id):
+    def get_emoji_counts_for_post_comment_with_id(self, post_comment_id, emoji_id=None):
+        PostComment = get_post_comment_model()
+        post_comment = PostComment.objects.get(pk=post_comment_id)
+        return self.get_emoji_counts_for_post_comment(post_comment=post_comment, emoji_id=emoji_id)
+
+    def get_emoji_counts_for_post_comment(self, post_comment, emoji_id=None):
+        self._check_can_get_reactions_for_post_comment(post_comment)
+
+        Emoji = get_emoji_model()
+
+        emoji_query = Q(post_comment_reactions__post_comment_id=post_comment.pk, )
+
+        if emoji_id:
+            emoji_query.add(Q(post_comment_reactions__emoji_id=emoji_id), Q.AND)
+
+        post_comment_community = post_comment.post.community
+
+        if post_comment_community:
+            if not self.is_staff_of_community_with_name(community_name=post_comment_community.name):
+                # Exclude blocked users reactions
+                blocked_users_query = ~Q(Q(post_comment_reactions__reactor__blocked_by_users__blocker_id=self.pk) | Q(
+                    post_comment_reactions__reactor__user_blocks__blocked_user_id=self.pk))
+                blocked_users_query_staff_members = Q(
+                    post_comment_reactions__reactor__communities_memberships__community_id=post_comment_community.pk)
+                blocked_users_query_staff_members.add(
+                    Q(post_comment_reactions__reactor__communities_memberships__is_administrator=True) | Q(
+                        post_comment_reactions__reactor__communities_memberships__is_moderator=True), Q.AND)
+
+                blocked_users_query.add(~blocked_users_query_staff_members, Q.AND)
+                emoji_query.add(blocked_users_query, Q.AND)
+        else:
+            # Show all, even blocked users reactions
+            blocked_users_query = ~Q(Q(post_comment_reactions__reactor__blocked_by_users__blocker_id=self.pk) | Q(
+                post_comment_reactions__reactor__user_blocks__blocked_user_id=self.pk))
+            emoji_query.add(blocked_users_query, Q.AND)
+
+        emojis = Emoji.objects.filter(emoji_query).annotate(Count('post_comment_reactions')).distinct().order_by(
+            '-post_comment_reactions__count').cache().all()
+
+        return [{'emoji': emoji, 'count': emoji.post_comment_reactions__count} for emoji in emojis]
+
+    def get_reaction_for_post_comment_with_id(self, post_comment_id):
+        return self.post_comment_reactions.filter(post_comment_id=post_comment_id).get()
+
+    def get_reactions_for_post_comment_with_id(self, post_comment_id, max_id=None, emoji_id=None):
+        Post_comment = get_post_comment_model()
+        post_comment = Post_comment.objects.get(pk=post_comment_id)
+
+        return self.get_reactions_for_post_comment(post_comment=post_comment, max_id=max_id, emoji_id=emoji_id)
+
+    def get_reactions_for_post_comment(self, post_comment, max_id=None, emoji_id=None):
+        self._check_can_get_reactions_for_post_comment(post_comment=post_comment)
+
+        reactions_query = self._make_get_reactions_for_post_comment_query(post_comment=post_comment,
+                                                                          emoji_id=emoji_id, max_id=max_id)
+
+        PostCommentReaction = get_post_comment_reaction_model()
+        return PostCommentReaction.objects.filter(reactions_query)
+
+    def react_to_post_with_id(self, post_id, emoji_id):
         Post = get_post_model()
         post = Post.objects.get(pk=post_id)
-        return self.react_to_post(post=post, emoji_id=emoji_id, emoji_group_id=emoji_group_id)
+        return self.react_to_post(post=post, emoji_id=emoji_id)
 
-    def react_to_post(self, post, emoji_id, emoji_group_id):
+    def react_to_post(self, post, emoji_id):
         self._check_can_react_to_post(post=post)
-        self._check_can_react_with_emoji_id_and_emoji_group_id(emoji_id, emoji_group_id)
+        self._check_can_react_with_emoji_id(emoji_id)
 
         post_id = post.pk
 
@@ -642,8 +829,8 @@ class User(AbstractUser):
         else:
             post_reaction = post.react(reactor=self, emoji_id=emoji_id)
             if post_reaction.post.creator_id != self.pk:
-                # TODO Refactor. This check is being done twice. (Also in _send_post_reaction_push_notification)
-                if post.creator.has_reaction_notifications_enabled_for_post_with_id(post_id=post.pk):
+                if post.creator.has_reaction_notifications_enabled_for_post_with_id(post_id=post.pk) and \
+                        not post.creator.has_blocked_user_with_id(self.pk):
                     self._create_post_reaction_notification(post_reaction=post_reaction)
                 self._send_post_reaction_push_notification(post_reaction=post_reaction)
 
@@ -658,6 +845,42 @@ class User(AbstractUser):
         self._delete_post_reaction_notification(post_reaction=post_reaction)
         post_reaction.delete()
 
+    def react_to_post_comment_with_id(self, post_comment_id, emoji_id):
+        PostComment = get_post_comment_model()
+        post_comment = PostComment.objects.get(pk=post_comment_id)
+        return self.react_to_post_comment(post_comment=post_comment, emoji_id=emoji_id)
+
+    def react_to_post_comment(self, post_comment, emoji_id):
+        self._check_can_react_to_post_comment(post_comment=post_comment, emoji_id=emoji_id)
+
+        post_comment_id = post_comment.pk
+
+        if self.has_reacted_to_post_comment_with_id(post_comment_id):
+            post_comment_reaction = self.post_comment_reactions.get(post_comment_id=post_comment_id)
+            post_comment_reaction.emoji_id = emoji_id
+            post_comment_reaction.save()
+        else:
+            post_comment_reaction = post_comment.react(reactor=self, emoji_id=emoji_id)
+            if post_comment_reaction.post_comment.commenter_id != self.pk:
+                commenter_has_reaction_notifications_enabled = post_comment.commenter.has_reaction_notifications_enabled_for_post_comment(
+                    post_comment=post_comment)
+
+                if commenter_has_reaction_notifications_enabled:
+                    self._send_post_comment_reaction_push_notification(post_comment_reaction=post_comment_reaction)
+                self._create_post_comment_reaction_notification(post_comment_reaction=post_comment_reaction)
+
+        return post_comment_reaction
+
+    def delete_post_comment_reaction_with_id(self, post_comment_reaction_id):
+        PostCommentReaction = get_post_comment_reaction_model()
+        post_comment_reaction = PostCommentReaction.objects.filter(pk=post_comment_reaction_id).get()
+        return self.delete_post_comment_reaction(post_comment_reaction=post_comment_reaction)
+
+    def delete_post_comment_reaction(self, post_comment_reaction):
+        self._check_can_delete_post_comment_reaction(post_comment_reaction=post_comment_reaction)
+        self._delete_post_comment_reaction_notification(post_comment_reaction=post_comment_reaction)
+        post_comment_reaction.delete()
+
     def get_comments_for_post_with_id(self, post_id, min_id=None, max_id=None):
         Post = get_post_model()
         post = Post.objects.get(pk=post_id)
@@ -669,15 +892,30 @@ class User(AbstractUser):
         PostComment = get_post_comment_model()
         return PostComment.objects.filter(comments_query)
 
-    def get_comments_count_for_post_with_id(self, post_id):
+    def get_comment_replies_for_comment_with_id_with_post_with_uuid(self, post_comment_id, post_uuid, min_id=None,
+                                                                    max_id=None):
+        PostComment = get_post_comment_model()
         Post = get_post_model()
+        post_comment = PostComment.objects.get(pk=post_comment_id)
+        post = Post.objects.get(uuid=post_uuid)
+        return self.get_comment_replies_for_comment_with_post(post=post, post_comment=post_comment, min_id=min_id,
+                                                              max_id=max_id)
 
-        post = Post.objects.get(pk=post_id)
+    def get_comment_replies_for_comment_with_post(self, post, post_comment, min_id=None, max_id=None):
+        self._check_can_get_comment_replies_for_post_and_comment(post=post, post_comment=post_comment)
 
-        return self.get_comments_count_for_post(post=post)
+        comment_replies_query = self._make_get_comments_for_post_query(post=post,
+                                                                       post_comment_parent_id=post_comment.pk,
+                                                                       max_id=max_id,
+                                                                       min_id=min_id)
+        PostComment = get_post_comment_model()
+        return PostComment.objects.filter(comment_replies_query)
 
     def get_comments_count_for_post(self, post):
-        return post.count_comments()
+        return post.count_comments_with_user(user=self)
+
+    def get_replies_count_for_post_comment(self, post_comment):
+        return post_comment.count_replies_with_user(user=self)
 
     def enable_comments_for_post_with_id(self, post_id):
         Post = get_post_model()
@@ -729,25 +967,86 @@ class User(AbstractUser):
                 post_id=post_comment.post_id)
 
             if post_notification_target_has_comment_notifications_enabled:
-                PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
-                                                                         owner_id=post_notification_target_user.id)
+                target_user_language_code = get_notification_language_code_for_target_user(post_notification_target_user)
+                with translation.override(target_user_language_code):
+                    if post_notification_target_user_is_post_creator:
+                        notification_message = {
+                            "en": _('%(post_commenter_name)s · %(post_commenter_username)s commented on your post.') % {
+                                'post_commenter_username': post_commenter.username,
+                                'post_commenter_name': post_commenter.profile.name,
+                            }}
+                    else:
+                        notification_message = {
+                            "en": _(
+                                '%(post_commenter_name)s · @%(post_commenter_username)s commented on a post you also commented on.') % {
+                                      'post_commenter_username': post_commenter.username,
+                                      'post_commenter_name': post_commenter.profile.name,
+                                  }}
 
-                if post_notification_target_user_is_post_creator:
-                    notification_message = {
-                        "en": _('@%(post_commenter_username)s commented on your post.') % {
-                            'post_commenter_username': post_commenter.username
-                        }}
-                else:
-                    notification_message = {
-                        "en": _('@%(post_commenter_username)s commented on a post you also commented on.') % {
-                            'post_commenter_username': post_commenter.username
-                        }}
+                    self._send_post_comment_push_notification(post_comment=post_comment,
+                                                              notification_message=notification_message,
+                                                              notification_target_user=post_notification_target_user)
 
-                self._send_post_comment_push_notification(post_comment=post_comment,
-                                                          notification_message=notification_message,
-                                                          notification_target_user=post_notification_target_user)
+            PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
+                                                                     owner_id=post_notification_target_user.id)
 
         return post_comment
+
+    def reply_to_comment_with_id_for_post_with_uuid(self, post_comment_id, post_uuid, text):
+        PostComment = get_post_comment_model()
+        Post = get_post_model()
+        post = Post.objects.get(uuid=post_uuid)
+        post_comment = PostComment.objects.get(pk=post_comment_id)
+        return self.reply_to_comment_for_post(post_comment=post_comment, text=text, post=post)
+
+    def reply_to_comment_for_post(self, post_comment, post, text):
+        self._check_can_reply_to_post_comment_for_post(post_comment, post=post)
+        post_comment_reply = post_comment.reply_to_comment(text=text, commenter=self)
+        comment_creator = post_comment.commenter.id
+        replier = self
+        post = post_comment.post
+
+        Post = get_post_model()
+        post_notification_target_users = Post.get_post_comment_notification_target_users(post_id=post.id,
+                                                                                         post_commenter_id=self.pk,
+                                                                                         post_comment_id=post_comment.pk)
+        PostCommentReplyNotification = get_post_comment_reply_notification_model()
+
+        for post_notification_target_user in post_notification_target_users:
+            if not post_notification_target_user.can_see_post(post=post):
+                continue
+            post_notification_target_user_is_post_comment_creator = post_notification_target_user.id == comment_creator
+            post_notification_target_has_comment_reply_notifications_enabled = \
+                post_notification_target_user.has_reply_notifications_enabled_for_post_comment(
+                    post_comment=post_comment)
+
+            if post_notification_target_has_comment_reply_notifications_enabled:
+                target_user_language_code = get_notification_language_code_for_target_user(post_notification_target_user)
+                with translation.override(target_user_language_code):
+                    if post_notification_target_user_is_post_comment_creator:
+                        notification_message = {
+                            "en": _(
+                                '%(post_commenter_name)s · @%(post_commenter_username)s replied to your comment on a post.') % {
+                                      'post_commenter_username': replier.username,
+                                      'post_commenter_name': replier.profile.name,
+                                  }}
+                    else:
+                        notification_message = {
+                            "en": _(
+                                '%(post_commenter_name)s · @%(post_commenter_username)s replied on a comment you also replied on.') % {
+                                      'post_commenter_username': replier.username,
+                                      'post_commenter_name': replier.profile.name,
+                                  }}
+
+                    self._send_post_comment_push_notification(post_comment=post_comment_reply,
+                                                              notification_message=notification_message,
+                                                              notification_target_user=post_notification_target_user)
+
+            PostCommentReplyNotification.create_post_comment_reply_notification(
+                post_comment_id=post_comment_reply.pk,
+                owner_id=post_notification_target_user.id)
+
+        return post_comment_reply
 
     def delete_comment_with_id_for_post_with_id(self, post_comment_id, post_id):
         Post = get_post_model()
@@ -767,9 +1066,7 @@ class User(AbstractUser):
 
         PostComment = get_post_comment_model()
         post_comment = PostComment.objects.get(pk=post_comment_id)
-        post_comment.text = text
-        post_comment.is_edited = True
-        post_comment.save()
+        post_comment.update_comment(text)
         return post_comment
 
     def create_circle(self, name, color):
@@ -1255,6 +1552,8 @@ class User(AbstractUser):
         users_query = Q(username__icontains=query)
         users_query.add(Q(profile__name__icontains=query), Q.OR)
         users_query.add(~Q(blocked_by_users__blocker_id=self.pk) & ~Q(user_blocks__blocked_user_id=self.pk), Q.AND)
+        users_query.add(Q(is_deleted=False), Q.AND)
+
         return User.objects.filter(users_query)
 
     def get_linked_users(self, max_id=None):
@@ -1306,7 +1605,7 @@ class User(AbstractUser):
         return User.objects.filter(followings_query).distinct()
 
     def search_followers_with_query(self, query):
-        followers_query = Q(follows__followed_user_id=self.pk)
+        followers_query = Q(follows__followed_user_id=self.pk, is_deleted=False)
 
         names_query = Q(username__icontains=query)
         names_query.add(Q(profile__name__icontains=query), Q.OR)
@@ -1316,7 +1615,7 @@ class User(AbstractUser):
         return User.objects.filter(followers_query).distinct()
 
     def search_followings_with_query(self, query):
-        followings_query = Q(followers__user_id=self.pk)
+        followings_query = Q(followers__user_id=self.pk, is_deleted=False)
 
         names_query = Q(username__icontains=query)
         names_query.add(Q(profile__name__icontains=query), Q.OR)
@@ -1399,22 +1698,26 @@ class User(AbstractUser):
         self._check_can_delete_post_with_id(post_id)
         Post = get_post_model()
 
-        # We have to manually delete the images / video
         post = Post.objects.get(id=post_id)
-
-        if post.has_video():
-            delete_file_field(post.video.video)
-
-        if post.has_image():
-            delete_file_field(post.image.image)
-
-        # We have to be mindful with using bulk delete as it does not call the delete() method per instance
-        Post.objects.filter(id=post_id).delete()
+        # This method is overriden
+        post.delete()
 
     def get_user_with_username(self, username):
-        user = User.objects.get(username=username)
-        self._check_is_not_blocked_with_user_with_id(user_id=user.pk)
+        user_query = Q(username=username, is_deleted=False)
+        user = User.objects.get(user_query)
+        self._check_can_get_user_with_id(user_id=user.pk)
         return user
+
+    def translate_post_with_id(self, post_id):
+        self._check_can_translate_post_with_id(post_id)
+        Post = get_post_model()
+        post = Post.objects.get(id=post_id)
+        result = translation_strategy.translate_text(
+            source_language_code=post.language.code,
+            target_language_code=self.translation_language.code,
+            text=post.text
+        )
+        return post, result.get('translated_text')
 
     def open_post_with_id(self, post_id):
         self._check_can_open_post_with_id(post_id)
@@ -1496,6 +1799,29 @@ class User(AbstractUser):
 
         return posts
 
+    def get_public_posts_for_user_with_username(self, username, max_id=None, min_id=None):
+        Circle = get_circle_model()
+        world_circle_id = Circle.get_world_circle_id()
+
+        posts_query = Q(creator__username=username, circles__id=world_circle_id)
+
+        posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
+            creator__user_blocks__blocked_user_id=self.pk)), Q.AND)
+
+        posts_query.add(Q(is_deleted=False), Q.AND)
+
+        posts_query.add(~Q(moderated_object__reports__reporter_id=self.pk), Q.AND)
+
+        if max_id:
+            posts_query.add(Q(id__lt=max_id), Q.AND)
+        elif min_id:
+            posts_query.add(Q(id__gt=min_id), Q.AND)
+
+        Post = get_post_model()
+        result = Post.objects.filter(posts_query)
+
+        return result
+
     def get_posts_for_user_with_username(self, username, max_id=None):
         """
         Get all the posts for the given user with username
@@ -1561,6 +1887,10 @@ class User(AbstractUser):
         elif min_id:
             timeline_posts_query.add(Q(id__gt=min_id), Q.AND)
 
+        timeline_posts_query.add(Q(is_deleted=False), Q.AND)
+
+        timeline_posts_query.add(~Q(moderated_object__reports__reporter_id=self.pk), Q.AND)
+
         Post = get_post_model()
         return Post.objects.filter(timeline_posts_query).distinct()
 
@@ -1583,7 +1913,12 @@ class User(AbstractUser):
                       'community__color',
                       'community__title')
 
-        own_posts_query = Q(creator=self.pk, community__isnull=True)
+        ModeratedObject = get_moderated_object_model()
+        reported_posts_exclusion_query = ~Q(moderated_object__reports__reporter_id=self.pk)
+
+        own_posts_query = Q(creator=self.pk, community__isnull=True, is_deleted=False)
+
+        own_posts_query.add(reported_posts_exclusion_query, Q.AND)
 
         if max_id:
             own_posts_query.add(Q(id__lt=max_id), Q.AND)
@@ -1591,13 +1926,17 @@ class User(AbstractUser):
         own_posts_queryset = self.posts.select_related(*posts_select_related).prefetch_related(
             *posts_prefetch_related).only(*posts_only).filter(own_posts_query)
 
-        community_posts_query = Q(community__memberships__user__id=self.pk, is_closed=False)
+        community_posts_query = Q(community__memberships__user__id=self.pk, is_closed=False, is_deleted=False)
 
         community_posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
             creator__user_blocks__blocked_user_id=self.pk)), Q.AND)
 
         if max_id:
             community_posts_query.add(Q(id__lt=max_id), Q.AND)
+
+        community_posts_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
+        community_posts_query.add(reported_posts_exclusion_query, Q.AND)
 
         community_posts_queryset = Post.objects.select_related(*posts_select_related).prefetch_related(
             *posts_prefetch_related).only(*posts_only).filter(community_posts_query)
@@ -1606,10 +1945,14 @@ class User(AbstractUser):
 
         followed_users_ids = [followed_user['followed_user_id'] for followed_user in followed_users]
 
-        followed_users_query = Q(creator__in=followed_users_ids)
+        followed_users_query = Q(creator__in=followed_users_ids, is_deleted=False)
+
+        followed_users_query.add(reported_posts_exclusion_query, Q.AND)
 
         if max_id:
             followed_users_query.add(Q(id__lt=max_id), Q.AND)
+
+        followed_users_query.add(Q(is_deleted=False), Q.AND)
 
         followed_users_query.add(
             Q(circles__id=world_circle_id) | Q(circles__connections__target_connection__circles__isnull=False,
@@ -1621,6 +1964,122 @@ class User(AbstractUser):
         final_queryset = own_posts_queryset.union(community_posts_queryset, followed_users_queryset)
 
         return final_queryset
+
+    def get_global_moderated_objects(self, types=None, max_id=None, verified=None, statuses=None):
+        self._check_can_get_global_moderated_objects()
+        ModeratedObject = get_moderated_object_model()
+
+        moderated_objects_query = Q()
+
+        if types:
+            moderated_objects_query.add(Q(object_type__in=types), Q.AND)
+
+        if max_id:
+            moderated_objects_query.add(Q(id__lt=max_id), Q.AND)
+
+        if verified is not None:
+            moderated_objects_query.add(Q(verified=verified), Q.AND)
+
+        if statuses is not None:
+            moderated_objects_query.add(Q(status__in=statuses), Q.AND)
+
+        return ModeratedObject.objects.filter(moderated_objects_query)
+
+    def _check_can_get_global_moderated_objects(self):
+        self._check_is_global_moderator()
+
+    def get_logs_for_moderated_object_with_id(self, moderated_object_id, max_id=None):
+        ModeratedObject = get_moderated_object_model()
+        moderated_object = ModeratedObject.objects.get(pk=moderated_object_id)
+        return self.get_logs_for_moderated_object(moderated_object=moderated_object, max_id=max_id)
+
+    def get_logs_for_moderated_object(self, moderated_object, max_id=None):
+        self._check_can_get_moderated_object(moderated_object=moderated_object)
+
+        query = Q()
+
+        if max_id:
+            query.add(Q(id__lt=max_id), Q.AND)
+
+        return moderated_object.logs.filter(query)
+
+    def get_reports_for_moderated_object_with_id(self, moderated_object_id, max_id=None):
+        ModeratedObject = get_moderated_object_model()
+        moderated_object = ModeratedObject.objects.get(pk=moderated_object_id)
+        return self.get_reports_for_moderated_object(moderated_object=moderated_object, max_id=max_id)
+
+    def get_reports_for_moderated_object(self, moderated_object, max_id=None):
+        self._check_can_get_moderated_object(moderated_object=moderated_object)
+
+        query = Q()
+
+        if max_id:
+            query.add(Q(id__lt=max_id), Q.AND)
+
+        return moderated_object.reports.filter(query)
+
+    def _check_can_get_moderated_object(self, moderated_object):
+        if self.is_global_moderator():
+            return
+
+        self._check_can_get_community_moderated_objects(community_name=moderated_object.community)
+
+    def get_community_moderated_objects(self, community_name, types=None, max_id=None, verified=None, statuses=None):
+        self._check_can_get_community_moderated_objects(community_name=community_name)
+        ModeratedObject = get_moderated_object_model()
+
+        moderated_objects_query = Q(community__name=community_name)
+
+        if types:
+            moderated_objects_query.add(Q(object_type__in=types), Q.AND)
+
+        if verified is not None:
+            moderated_objects_query.add(Q(verified=verified), Q.AND)
+
+        if statuses is not None:
+            moderated_objects_query.add(Q(status__in=statuses), Q.AND)
+
+        if max_id:
+            moderated_objects_query.add(Q(id__lt=max_id), Q.AND)
+
+        return ModeratedObject.objects.filter(moderated_objects_query)
+
+    def _check_can_get_community_moderated_objects(self, community_name):
+        self._check_is_staff_of_community_with_name(community_name=community_name)
+
+    def get_moderation_penalties(self, max_id=None):
+        query = Q()
+        if max_id:
+            query.add(Q(id__lt=max_id), Q.AND)
+        return self.moderation_penalties.filter(query)
+
+    def count_active_moderation_penalties(self):
+        return self.get_moderation_penalties().filter(expiration__gt=timezone.now()).count()
+
+    def get_pending_moderated_objects_communities(self, max_id):
+        """Retrieves the communities staff of that have pending moderated objects"""
+        query = Q(memberships__user_id=self.pk) & (
+                Q(memberships__is_moderator=True) | Q(memberships__is_administrator=True))
+
+        ModeratedObject = get_moderated_object_model()
+        query.add(Q(moderated_objects__status=ModeratedObject.STATUS_PENDING), Q.AND)
+
+        if max_id:
+            query.add(Q(id__lt=max_id), Q.AND)
+
+        Community = get_community_model()
+
+        return Community.objects.filter(query).distinct()
+
+    def count_pending_communities_moderated_objects(self):
+        ModeratedObject = get_moderated_object_model()
+
+        query = Q(community__memberships__user_id=self.pk) & (
+                Q(community__memberships__is_moderator=True) | Q(community__memberships__is_administrator=True))
+
+        query.add(Q(status=ModeratedObject.STATUS_PENDING), Q.AND)
+
+        return ModeratedObject.objects.filter(query).count()
 
     def follow_user(self, user, lists_ids=None):
         return self.follow_user_with_id(user.pk, lists_ids)
@@ -1855,6 +2314,36 @@ class User(AbstractUser):
         self.post_mutes.filter(post_id=post_id).delete()
         return post
 
+    def mute_post_comment_with_id(self, post_comment_id):
+        PostComment = get_post_comment_model()
+        post_comment = PostComment.objects.get(pk=post_comment_id)
+        return self.mute_post_comment(post_comment=post_comment)
+
+    def mute_post_comment(self, post_comment):
+        self._check_can_mute_post_comment(post_comment=post_comment)
+        PostCommentMute = get_post_comment_mute_model()
+        PostCommentMute.create_post_comment_mute(post_comment_id=post_comment.pk, muter_id=self.pk)
+        return post_comment
+
+    def unmute_post_comment_with_id(self, post_comment_id):
+        Post_comment = get_post_comment_model()
+        post_comment = Post_comment.objects.get(pk=post_comment_id)
+
+        self._check_can_unmute_post_comment(post_comment=post_comment)
+        self.post_comment_mutes.filter(post_comment_id=post_comment_id).delete()
+        return post_comment
+
+    def translate_post_comment_with_id(self, post_comment_id):
+        self._check_can_translate_comment_with_id(post_comment_id=post_comment_id)
+        PostComment = get_post_comment_model()
+        post_comment = PostComment.objects.get(pk=post_comment_id)
+        result = translation_strategy.translate_text(
+            source_language_code=post_comment.language.code,
+            target_language_code=self.translation_language.code,
+            text=post_comment.text
+        )
+        return post_comment, result.get('translated_text')
+
     def block_user_with_username(self, username):
         user = User.objects.get(username=username)
         return self.block_user_with_id(user_id=user.pk)
@@ -1885,6 +2374,64 @@ class User(AbstractUser):
         self._check_can_unblock_user_with_id(user_id=user_id)
         self.user_blocks.filter(blocked_user_id=user_id).delete()
         return User.objects.get(pk=user_id)
+
+    def report_comment_with_id_for_post_with_uuid(self, post_comment_id, post_uuid, category_id, description=None):
+        PostComment = get_post_comment_model()
+        post_comment = PostComment.objects.get(id=post_comment_id)
+
+        Post = get_post_model()
+        post = Post.objects.get(uuid=post_uuid)
+
+        return self.report_comment_for_post(post_comment=post_comment, category_id=category_id, description=description,
+                                            post=post)
+
+    def report_comment_for_post(self, post_comment, post, category_id, description=None):
+        self._check_can_report_comment_for_post(post_comment=post_comment, post=post)
+        ModerationReport = get_moderation_report_model()
+        ModerationReport.create_post_comment_moderation_report(post_comment=post_comment,
+                                                               category_id=category_id,
+                                                               reporter_id=self.pk,
+                                                               description=description)
+        post_comment.delete_notifications_for_user(user=self)
+
+    def report_post_with_uuid(self, post_uuid, category_id, description=None):
+        Post = get_post_model()
+        post = Post.objects.get(uuid=post_uuid)
+        return self.report_post(post=post, category_id=category_id, description=description)
+
+    def report_post(self, post, category_id, description=None):
+        self._check_can_report_post(post=post)
+        ModerationReport = get_moderation_report_model()
+        ModerationReport.create_post_moderation_report(post=post,
+                                                       category_id=category_id,
+                                                       reporter_id=self.pk,
+                                                       description=description)
+        post.delete_notifications_for_user(user=self)
+
+    def report_user_with_username(self, username, category_id, description=None):
+        user = User.objects.get(username=username)
+        return self.report_user(user=user, category_id=category_id, description=description)
+
+    def report_user(self, user, category_id, description=None):
+        self._check_can_report_user(user=user)
+        ModerationReport = get_moderation_report_model()
+        ModerationReport.create_user_moderation_report(user=user,
+                                                       category_id=category_id,
+                                                       reporter_id=self.pk,
+                                                       description=description)
+
+    def report_community_with_name(self, community_name, category_id, description=None):
+        Community = get_community_model()
+        community = Community.objects.get(name=community_name)
+        return self.report_community(community=community, category_id=category_id, description=description)
+
+    def report_community(self, community, category_id, description=None):
+        self._check_can_report_community(community=community)
+        ModerationReport = get_moderation_report_model()
+        ModerationReport.create_community_moderation_report(community=community,
+                                                            category_id=category_id,
+                                                            reporter_id=self.pk,
+                                                            description=description)
 
     def create_invite(self, nickname):
         self._check_can_create_invite(nickname)
@@ -1935,6 +2482,144 @@ class User(AbstractUser):
         invite.email = email
         invite.send_invite_email()
 
+    def verify_moderated_object_with_id(self, moderated_object_id):
+        ModeratedObject = get_moderated_object_model()
+        moderated_object = ModeratedObject.objects.get(pk=moderated_object_id)
+        return self.verify_moderated_object(moderated_object=moderated_object)
+
+    def verify_moderated_object(self, moderated_object):
+        self._check_can_verify_moderated_object(moderated_object=moderated_object)
+        moderated_object.verify_with_actor_with_id(actor_id=self.pk)
+
+    def unverify_moderated_object_with_id(self, moderated_object_id):
+        ModeratedObject = get_moderated_object_model()
+        moderated_object = ModeratedObject.objects.get(pk=moderated_object_id)
+        return self.unverify_moderated_object(moderated_object=moderated_object)
+
+    def unverify_moderated_object(self, moderated_object):
+        self._check_can_unverify_moderated_object(moderated_object=moderated_object)
+        moderated_object.unverify_with_actor_with_id(actor_id=self.pk)
+
+    def approve_moderated_object_with_id(self, moderated_object_id):
+        ModeratedObject = get_moderated_object_model()
+        moderated_object = ModeratedObject.objects.get(pk=moderated_object_id)
+        return self.approve_moderated_object(moderated_object=moderated_object)
+
+    def approve_moderated_object(self, moderated_object):
+        self._check_can_approve_moderated_object(moderated_object=moderated_object)
+        moderated_object.approve_with_actor_with_id(actor_id=self.pk)
+
+    def reject_moderated_object_with_id(self, moderated_object_id):
+        ModeratedObject = get_moderated_object_model()
+        moderated_object = ModeratedObject.objects.get(pk=moderated_object_id)
+        return self.reject_moderated_object(moderated_object=moderated_object)
+
+    def reject_moderated_object(self, moderated_object):
+        self._check_can_reject_moderated_object(moderated_object=moderated_object)
+        moderated_object.reject_with_actor_with_id(actor_id=self.pk)
+
+    def update_moderated_object_with_id(self, moderated_object_id, description=None,
+                                        category_id=None):
+        ModeratedObject = get_moderated_object_model()
+        moderated_object = ModeratedObject.objects.get(pk=moderated_object_id)
+
+        return self.update_moderated_object(moderated_object=moderated_object, description=description,
+                                            category_id=category_id)
+
+    def update_moderated_object(self, moderated_object, description=None,
+                                category_id=None):
+        self._check_can_update_moderated_object(moderated_object=moderated_object)
+        moderated_object.update_with_actor_with_id(actor_id=self.pk, description=description,
+                                                   category_id=category_id)
+        return moderated_object
+
+    def _check_has_not_reported_moderated_object_with_id(self, moderated_object_id):
+        if self.has_reported_moderated_object_with_id(moderated_object_id=moderated_object_id):
+            raise ValidationError(
+                _('You have already reported the moderated_object.'),
+            )
+
+    def _check_can_update_moderated_object(self, moderated_object):
+        self._check_can_moderate_moderated_object(moderated_object=moderated_object)
+
+        if moderated_object.is_verified():
+            raise PermissionDenied(
+                _('The moderated object has been verified and can no longer be edited.')
+            )
+
+        if not moderated_object.is_pending() and not self.is_global_moderator():
+            raise PermissionDenied(
+                _('The moderated object has already been approved/rejected.')
+            )
+
+    def _check_can_approve_moderated_object(self, moderated_object):
+        self._check_can_moderate_moderated_object(moderated_object=moderated_object)
+
+        if moderated_object.is_verified():
+            raise ValidationError(
+                _('The moderated object has already been verified.')
+            )
+
+    def _check_can_reject_moderated_object(self, moderated_object):
+        self._check_can_moderate_moderated_object(moderated_object=moderated_object)
+        if moderated_object.is_verified():
+            raise ValidationError(
+                _('The moderated object has already been verified.')
+            )
+
+    def _check_can_unverify_moderated_object(self, moderated_object):
+        self._check_is_global_moderator()
+        if not moderated_object.is_verified():
+            raise ValidationError(
+                _('The moderated object has not been verified.')
+            )
+
+    def _check_can_verify_moderated_object(self, moderated_object):
+        self._check_is_global_moderator()
+        if moderated_object.is_verified():
+            raise ValidationError(
+                _('The moderated object is already verified.')
+            )
+
+        if moderated_object.is_pending():
+            raise ValidationError(
+                _('You cannot verify a moderated object with status pending. Please approve or reject it.')
+            )
+
+    def _check_can_moderate_moderated_object(self, moderated_object):
+        content_object = moderated_object.content_object
+
+        is_global_moderator = self.is_global_moderator()
+
+        if is_global_moderator:
+            return
+
+        PostComment = get_post_comment_model()
+        Post = get_post_model()
+
+        if isinstance(content_object, Post):
+            if content_object.community:
+                if not self.is_staff_of_community_with_name(community_name=content_object.community.name):
+                    raise ValidationError(_('Only community staff can moderate community posts'))
+            else:
+                raise ValidationError(_('Only global moderators can moderate non-community posts'))
+        elif isinstance(content_object, PostComment):
+            if content_object.post.community:
+                if not self.is_staff_of_community_with_name(community_name=content_object.post.community.name):
+                    raise ValidationError(_('Only community staff can moderate community post comments'))
+            else:
+                raise ValidationError(_('Only global moderators can moderate non-community post comments'))
+        else:
+            raise ValidationError(_('Non global moderators can only moderate posts and post comments.'))
+
+    def _check_is_global_moderator(self):
+        if not self.is_global_moderator():
+            raise PermissionDenied(_('Not a global moderator.'))
+
+    def _check_is_staff_of_community_with_name(self, community_name):
+        if not self.is_staff_of_community_with_name(community_name=community_name):
+            raise PermissionDenied(_('Not a community staff.'))
+
     def _check_can_create_invite(self, nickname):
         if self.invite_count == 0:
             raise ValidationError(_('You have no invites left'))
@@ -1972,7 +2657,7 @@ class User(AbstractUser):
         return '{0}/api/auth/password/verify?token={1}'.format(settings.EMAIL_HOST, token)
 
     def _send_password_reset_email_with_token(self, password_reset_token):
-        mail_subject = _('Reset your password for Openbook')
+        mail_subject = _('Reset your password for Okuna')
         text_content = render_to_string('openbook_auth/email/reset_password.txt', {
             'name': self.profile.name,
             'username': self.username,
@@ -1991,14 +2676,23 @@ class User(AbstractUser):
         email.send()
 
     def _send_post_comment_push_notification(self, post_comment, notification_message, notification_target_user):
-        senders.send_post_comment_push_notification_with_message(post_comment=post_comment,
+        helpers.send_post_comment_push_notification_with_message(post_comment=post_comment,
                                                                  message=notification_message,
                                                                  target_user=notification_target_user)
 
     def _delete_post_comment_notification(self, post_comment):
-        PostCommentNotification = get_post_comment_notification_model()
-        PostCommentNotification.delete_post_comment_notification(post_comment_id=post_comment.pk,
-                                                                 owner_id=post_comment.post.creator_id)
+        if post_comment.parent_comment is not None:
+            PostCommentNotification = get_post_comment_notification_model()
+            PostCommentNotification.delete_post_comment_notification(post_comment_id=post_comment.pk,
+                                                                     owner_id=post_comment.post.creator_id)
+        else:
+            # Comment is a reply
+            self._delete_post_comment_reply_notification(post_comment=post_comment)
+
+    def _delete_post_comment_reply_notification(self, post_comment):
+        PostCommentReplyNotification = get_post_comment_notification_model()
+        PostCommentReplyNotification.delete_post_comment_notification(post_comment_id=post_comment.pk,
+                                                                      owner_id=post_comment.post.creator_id)
 
     def _create_post_reaction_notification(self, post_reaction):
         PostReactionNotification = get_post_reaction_notification_model()
@@ -2006,12 +2700,27 @@ class User(AbstractUser):
                                                                    owner_id=post_reaction.post.creator_id)
 
     def _send_post_reaction_push_notification(self, post_reaction):
-        senders.send_post_reaction_push_notification(post_reaction=post_reaction)
+        helpers.send_post_reaction_push_notification(post_reaction=post_reaction)
 
     def _delete_post_reaction_notification(self, post_reaction):
         PostReactionNotification = get_post_reaction_notification_model()
         PostReactionNotification.delete_post_reaction_notification(post_reaction_id=post_reaction.pk,
                                                                    owner_id=post_reaction.post.creator_id)
+
+    def _create_post_comment_reaction_notification(self, post_comment_reaction):
+        PostCommentReactionNotification = get_post_comment_reaction_notification_model()
+        PostCommentReactionNotification.create_post_comment_reaction_notification(
+            post_comment_reaction_id=post_comment_reaction.pk,
+            owner_id=post_comment_reaction.post_comment.commenter_id)
+
+    def _send_post_comment_reaction_push_notification(self, post_comment_reaction):
+        helpers.send_post_comment_reaction_push_notification(post_comment_reaction=post_comment_reaction)
+
+    def _delete_post_comment_reaction_notification(self, post_comment_reaction):
+        PostCommentReactionNotification = get_post_comment_reaction_notification_model()
+        PostCommentReactionNotification.delete_post_comment_reaction_notification(
+            post_comment_reaction_id=post_comment_reaction.pk,
+            owner_id=post_comment_reaction.post_comment.commenter_id)
 
     def _create_community_invite_notification(self, community_invite):
         CommunityInviteNotification = get_community_invite_notification_model()
@@ -2019,7 +2728,7 @@ class User(AbstractUser):
                                                                          owner_id=community_invite.invited_user_id)
 
     def _send_community_invite_push_notification(self, community_invite):
-        senders.send_community_invite_push_notification(community_invite=community_invite)
+        helpers.send_community_invite_push_notification(community_invite=community_invite)
 
     def _create_follow_notification(self, followed_user_id):
         FollowNotification = get_follow_notification_model()
@@ -2027,7 +2736,7 @@ class User(AbstractUser):
 
     def _send_follow_push_notification(self, followed_user_id):
         followed_user = User.objects.get(pk=followed_user_id)
-        senders.send_follow_push_notification(followed_user=followed_user, following_user=self)
+        helpers.send_follow_push_notification(followed_user=followed_user, following_user=self)
 
     def _delete_follow_notification(self, followed_user_id):
         FollowNotification = get_follow_notification_model()
@@ -2053,7 +2762,7 @@ class User(AbstractUser):
 
     def _send_connection_request_push_notification(self, user_connection_requested_for_id):
         connection_requested_for = User.objects.get(pk=user_connection_requested_for_id)
-        senders.send_connection_request_push_notification(
+        helpers.send_connection_request_push_notification(
             connection_requester=self,
             connection_requested_for=connection_requested_for)
 
@@ -2061,6 +2770,10 @@ class User(AbstractUser):
         ConnectionRequestNotification = get_connection_request_notification_model()
         ConnectionRequestNotification.delete_connection_request_notification_for_users_with_ids(user_a_id=self.pk,
                                                                                                 user_b_id=user_id)
+
+    def _reset_auth_token(self):
+        self.auth_token.delete()
+        bootstrap_user_auth_token(user=self)
 
     def _make_linked_users_query(self, max_id=None):
         # All users which are connected with us and we have accepted by adding
@@ -2076,13 +2789,15 @@ class User(AbstractUser):
         if max_id:
             linked_users_query.add(Q(id__lt=max_id), Q.AND)
 
+        linked_users_query.add(Q(is_deleted=False), Q.AND)
+
         return linked_users_query
 
     def _make_followers_query(self):
-        return Q(follows__followed_user_id=self.pk)
+        return Q(follows__followed_user_id=self.pk, is_deleted=False)
 
     def _make_followings_query(self):
-        return Q(followers__user_id=self.pk)
+        return Q(followers__user_id=self.pk, is_deleted=False)
 
     def _make_blocked_users_query(self, max_id=None):
         blocked_users_query = Q(blocked_by_users__blocker_id=self.pk, )
@@ -2099,7 +2814,7 @@ class User(AbstractUser):
 
     def _make_get_posts_query_for_user(self, user, max_id=None):
 
-        posts_query = Q(creator_id=user.pk)
+        posts_query = Q(creator_id=user.pk, is_deleted=False)
 
         world_circle_id = self._get_world_circle_id()
 
@@ -2114,6 +2829,10 @@ class User(AbstractUser):
 
         if max_id:
             posts_query.add(Q(id__lt=max_id), Q.AND)
+
+        posts_query.add(Q(is_deleted=False), Q.AND)
+
+        posts_query.add(~Q(moderated_object__reports__reporter_id=self.pk), Q.AND)
 
         return posts_query
 
@@ -2269,6 +2988,14 @@ class User(AbstractUser):
                 _('The comment does not belong to the specified post.')
             )
 
+        if post.community and post.is_closed:
+            is_administrator = self.is_administrator_of_community_with_name(post.community.name)
+            is_moderator = self.is_moderator_of_community_with_name(post.community.name)
+            if not is_moderator and not is_administrator:
+                raise ValidationError(
+                    _('Only administrators/moderators can edit a closed post.')
+                )
+
     def _check_has_post_comment_with_id(self, post_comment_id):
         if not self.posts_comments.filter(id=post_comment_id).exists():
             # The comment is not ours
@@ -2287,32 +3014,60 @@ class User(AbstractUser):
             raise ValidationError(
                 _('The comment does not belong to the specified post.')
             )
+        is_comment_creator = self.posts_comments.filter(id=post_comment_id).exists()
 
-        if not self.posts_comments.filter(id=post_comment_id).exists():
-            # The comment is not ours
-            if post.community:
-                # If the comment is in a community, check if we're moderators
-                if not self.is_moderator_of_community_with_name(
-                        post.community.name) and not self.is_administrator_of_community_with_name(
-                    post.community.name):
+        if post.community:
+            is_moderator = self.is_moderator_of_community_with_name(post.community.name)
+            is_administrator = self.is_administrator_of_community_with_name(post.community.name)
+            if not is_administrator and not is_moderator:
+                if post.is_closed:
                     raise ValidationError(
-                        _('Only moderators/administrators can remove community posts.'),
+                        _('Only moderators/administrators can remove closed community posts.'),
                     )
+                elif not is_comment_creator:
+                    raise ValidationError(
+                        _('You cannot remove a comment that does not belong to you')
+                    )
+            else:
+                # is admin or mod
+                post_comment = PostComment.objects.select_related('commenter').get(pk=post_comment_id)
+                if post_comment.parent_comment is not None:
+                    post.community.create_remove_post_comment_reply_log(source_user=self,
+                                                                        target_user=post_comment.commenter)
                 else:
-                    post_comment = PostComment.objects.select_related('commenter').get(pk=post_comment_id)
                     post.community.create_remove_post_comment_log(source_user=self,
                                                                   target_user=post_comment.commenter)
-            else:
-                raise ValidationError(
-                    _('You cannot remove a comment that does not belong to you')
-                )
+        elif not post.creator_id == self.pk and not is_comment_creator:
+            # not a community post
+            raise ValidationError(
+                _('You cannot remove a comment that does not belong to you')
+            )
 
     def _check_can_get_comments_for_post(self, post):
         self._check_can_see_post(post=post)
 
+    def _check_can_get_comment_replies_for_post_and_comment(self, post, post_comment):
+        if post_comment.post_id != post.id:
+            raise ValidationError(
+                _('No comment found with given id for post with given uuid')
+            )
+        self._check_can_see_post(post=post_comment.post)
+
     def _check_can_comment_in_post(self, post):
         self._check_can_see_post(post)
         self._check_comments_enabled_for_post_with_id(post.id)
+
+    def _check_can_reply_to_post_comment_for_post(self, post_comment, post):
+        if post_comment.post_id != post.id:
+            raise ValidationError(
+                _('No comment found with given id for post with given uuid')
+            )
+
+        self._check_can_comment_in_post(post)
+        if post_comment.parent_comment is not None:
+            raise ValidationError(
+                _('You can post a reply to a comment, not to an existing reply')
+            )
 
     def _check_can_delete_reaction_with_id_for_post(self, post_reaction_id, post):
         self._check_can_see_post(post=post)
@@ -2334,17 +3089,15 @@ class User(AbstractUser):
     def _check_can_get_reactions_for_post(self, post):
         self._check_can_see_post(post=post)
 
-    def _check_can_react_with_emoji_id_and_emoji_group_id(self, emoji_id, emoji_group_id):
+    def _check_can_get_reactions_for_post_comment(self, post_comment):
+        return self._check_can_get_reactions_for_post(post=post_comment.post)
+
+    def _check_can_react_with_emoji_id(self, emoji_id):
         EmojiGroup = get_emoji_group_model()
-        try:
-            emoji_group = EmojiGroup.objects.get(pk=emoji_group_id, is_reaction_group=True)
-            if not emoji_group.has_emoji_with_id(emoji_id):
-                raise ValidationError(
-                    _('Emoji does not belong to given emoji group.'),
-                )
-        except EmojiGroup.DoesNotExist:
+
+        if not EmojiGroup.objects.filter(emojis__id=emoji_id, is_reaction_group=True).exists():
             raise ValidationError(
-                _('Emoji group does not exist or is not a reaction group.'),
+                _('Not a valid emoji to react with'),
             )
 
     def _check_can_react_to_post(self, post):
@@ -2354,6 +3107,31 @@ class User(AbstractUser):
         if not self.can_see_post(post):
             raise ValidationError(
                 _('This post is private.'),
+            )
+
+    def _check_can_react_to_post_comment(self, post_comment, emoji_id):
+        self._check_can_react_with_emoji_id(emoji_id=emoji_id)
+        self._check_can_see_post_comment(post_comment=post_comment)
+
+        if post_comment.post.is_closed:
+            raise ValidationError(
+                _('Cant react to comments on a closed post.'),
+            )
+
+    def _check_can_delete_post_comment_reaction(self, post_comment_reaction):
+        self._check_can_see_post_comment(post_comment=post_comment_reaction.post_comment)
+
+        if post_comment_reaction.reactor_id != self.pk:
+            raise ValidationError(
+                _('Can\'t delete a comment reaction that does not belong to you.'),
+            )
+
+    def _check_can_see_post_comment(self, post_comment):
+        self._check_can_see_post(post=post_comment.post)
+
+        if not self.can_see_post_comment(post_comment=post_comment):
+            raise ValidationError(
+                _('This comment is private.'),
             )
 
     def _can_see_post(self, post):
@@ -2405,13 +3183,62 @@ class User(AbstractUser):
 
         return reactions_query
 
-    def _make_get_comments_for_post_query(self, post, max_id=None, min_id=None):
+    def _make_get_reactions_for_post_comment_query(self, post_comment, max_id=None, emoji_id=None):
+        reactions_query = Q(post_comment_id=post_comment.pk)
+
+        post_comment_community = post_comment.post.community
+
+        if post_comment_community:
+            if not self.is_staff_of_community_with_name(community_name=post_comment_community.name):
+                blocked_users_query = ~Q(Q(reactor__blocked_by_users__blocker_id=self.pk) | Q(
+                    reactor__user_blocks__blocked_user_id=self.pk))
+                blocked_users_query_staff_members = Q(
+                    reactor__communities_memberships__community_id=post_comment_community.pk)
+                blocked_users_query_staff_members.add(Q(reactor__communities_memberships__is_administrator=True) | Q(
+                    reactor__communities_memberships__is_moderator=True), Q.AND)
+
+                blocked_users_query.add(~blocked_users_query_staff_members, Q.AND)
+                reactions_query.add(blocked_users_query, Q.AND)
+        else:
+            blocked_users_query = ~Q(Q(reactor__blocked_by_users__blocker_id=self.pk) | Q(
+                reactor__user_blocks__blocked_user_id=self.pk))
+            reactions_query.add(blocked_users_query, Q.AND)
+
+        if max_id:
+            reactions_query.add(Q(id__lt=max_id), Q.AND)
+
+        if emoji_id:
+            reactions_query.add(Q(emoji_id=emoji_id), Q.AND)
+
+        return reactions_query
+
+    def _make_get_post_comment_with_id_query(self, post_comment_id, post, post_comment_parent_id=None):
+
+        post_comments_query = self._make_get_comments_for_post_query(post=post,
+                                                                     post_comment_parent_id=post_comment_parent_id)
+
+        post_comment_query = Q(pk=post_comment_id)
+
+        post_comments_query.add(post_comment_query, Q.AND)
+
+        return post_comments_query
+
+    def _make_get_comments_for_post_query(self, post, post_comment_parent_id=None, max_id=None, min_id=None):
+
+        # Comments from the post
         comments_query = Q(post_id=post.pk)
+
+        # If we are retrieving replies, add the parent_comment to the query
+        if post_comment_parent_id is None:
+            comments_query.add(Q(parent_comment__isnull=True), Q.AND)
+        else:
+            comments_query.add(Q(parent_comment__id=post_comment_parent_id), Q.AND)
 
         post_community = post.community
 
         if post_community:
             if not self.is_staff_of_community_with_name(community_name=post_community.name):
+                # Dont retrieve posts of blocked users, except from staff members
                 blocked_users_query = ~Q(Q(commenter__blocked_by_users__blocker_id=self.pk) | Q(
                     commenter__user_blocks__blocked_user_id=self.pk))
                 blocked_users_query_staff_members = Q(
@@ -2421,21 +3248,40 @@ class User(AbstractUser):
 
                 blocked_users_query.add(~blocked_users_query_staff_members, Q.AND)
                 comments_query.add(blocked_users_query, Q.AND)
+
+                # Don't retrieve items that have been reported and approved
+                ModeratedObject = get_moderated_object_model()
+                comments_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
         else:
+            #  Dont retrieve posts of blocked users
             blocked_users_query = ~Q(Q(commenter__blocked_by_users__blocker_id=self.pk) | Q(
                 commenter__user_blocks__blocked_user_id=self.pk))
             comments_query.add(blocked_users_query, Q.AND)
 
+        # Cursor based scrolling queries
         if max_id:
             comments_query.add(Q(id__lt=max_id), Q.AND)
         elif min_id:
             comments_query.add(Q(id__gte=min_id), Q.AND)
 
+        # Dont retrieve items we have reported
+        comments_query.add(~Q(moderated_object__reports__reporter_id=self.pk), Q.AND)
+
+        # Dont retrieve soft deleted post comments
+        comments_query.add(Q(is_deleted=False), Q.AND)
+
         return comments_query
 
     def _make_get_community_with_id_posts_query(self, community, include_closed_posts_for_staff=True):
         # Retrieve posts from the given community name
-        community_posts_query = Q(community_id=community.pk)
+        community_posts_query = Q(community_id=community.pk, is_deleted=False)
+
+        # Don't retrieve items that have been reported and approved
+        ModeratedObject = get_moderated_object_model()
+        community_posts_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
+        # Dont retrieve items we have reported
+        community_posts_query.add(~Q(moderated_object__reports__reporter_id=self.pk), Q.AND)
 
         # Only retrieve posts if we're not banned
         community_posts_query.add(~Q(community__banned_users__id=self.pk), Q.AND)
@@ -2477,6 +3323,13 @@ class User(AbstractUser):
 
     def _check_can_update_post_with_id(self, post_id):
         self._check_has_post_with_id(post_id=post_id)
+        Post = get_post_model()
+        post = Post.objects.get(id=post_id)
+        if post.is_closed and post.community_id:
+            if not self.is_staff_of_community_with_name(post.community.name):
+                raise ValidationError(
+                    _('You cannot edit a closed post'),
+                )
 
     def _check_can_post_to_circles_with_ids(self, circles_ids=None):
         for circle_id in circles_ids:
@@ -2501,29 +3354,41 @@ class User(AbstractUser):
     def _check_comments_enabled_for_post_with_id(self, post_id):
         Post = get_post_model()
         post = Post.objects.select_related('community').get(id=post_id)
-        is_community_post = Post.is_post_with_id_a_community_post(post_id)
-        if is_community_post:
-            is_administrator = self.is_administrator_of_community_with_name(post.community.name)
-            is_moderator = self.is_moderator_of_community_with_name(post.community.name)
-
-            if not is_administrator and not is_moderator and not post.comments_enabled:
+        if post.community_id is not None:
+            if not self.is_staff_of_community_with_name(post.community.name) and not post.comments_enabled:
                 raise ValidationError(
                     _('Comments are disabled for this post')
                 )
 
+    def _check_can_translate_post_with_id(self, post_id):
+        Post = get_post_model()
+        post = Post.objects.get(id=post_id)
+        if post.is_encircled_post():
+            raise ValidationError(
+                _('Only public posts can be translated')
+            )
+        if post.text is None:
+            raise ValidationError(
+                _('Post has no text to be translated')
+            )
+        if post.language is None:
+            raise ValidationError(
+                _('Post has no assigned language to be able to translate')
+            )
+        if self.translation_language is None:
+            raise ValidationError(
+                _('User\'s preferred translation language not set')
+            )
+
     def _check_can_open_post_with_id(self, post_id):
         Post = get_post_model()
         post = Post.objects.select_related('community').get(id=post_id)
-        is_community_post = Post.is_post_with_id_a_community_post(post_id)
-        if not is_community_post:
+        if post.community_id is None:
             raise ValidationError(
                 _('Only community posts can be opened/closed')
             )
 
-        is_administrator = self.is_administrator_of_community_with_name(post.community.name)
-        is_moderator = self.is_moderator_of_community_with_name(post.community.name)
-
-        if not is_administrator and not is_moderator:
+        if not self.is_staff_of_community_with_name(post.community.name):
             raise ValidationError(
                 _('Only administrators/moderators can open this post')
             )
@@ -2531,16 +3396,12 @@ class User(AbstractUser):
     def _check_can_close_post_with_id(self, post_id):
         Post = get_post_model()
         post = Post.objects.select_related('community').get(id=post_id)
-        is_community_post = Post.is_post_with_id_a_community_post(post_id)
-        if not is_community_post:
+        if post.community_id is None:
             raise ValidationError(
                 _('Only community posts can be opened/closed')
             )
 
-        is_administrator = self.is_administrator_of_community_with_name(post.community.name)
-        is_moderator = self.is_moderator_of_community_with_name(post.community.name)
-
-        if not is_administrator and not is_moderator:
+        if not self.is_staff_of_community_with_name(post.community.name):
             raise ValidationError(
                 _('Only administrators/moderators can close this post')
             )
@@ -2904,7 +3765,6 @@ class User(AbstractUser):
             )
 
         Community = get_community_model()
-
         if not Community.is_user_with_username_moderator_of_community_with_name(username=username,
                                                                                 community_name=community_name):
             raise ValidationError(
@@ -2917,6 +3777,9 @@ class User(AbstractUser):
     def _check_is_not_banned_from_community_with_name(self, community_name):
         if self.is_banned_from_community_with_name(community_name):
             raise PermissionDenied('You have been banned from this community.')
+
+    def _check_can_get_user_with_id(self, user_id):
+        self._check_is_not_blocked_with_user_with_id(user_id=user_id)
 
     def _check_can_update_circle_with_id(self, circle_id):
         if not self.has_circle_with_id(circle_id):
@@ -3048,6 +3911,44 @@ class User(AbstractUser):
                 _('Post is not muted'),
             )
 
+    def _check_can_mute_post_comment(self, post_comment):
+        if self.has_muted_post_comment_with_id(post_comment_id=post_comment.pk):
+            raise ValidationError(
+                _('Post comment already muted'),
+            )
+
+        self._check_can_see_post_comment(post_comment=post_comment)
+
+    def _check_can_unmute_post_comment(self, post_comment):
+        self._check_has_muted_post_comment_with_id(post_comment_id=post_comment.pk)
+        self._check_can_see_post_comment(post_comment)
+
+    def _check_has_muted_post_comment_with_id(self, post_comment_id):
+        if not self.has_muted_post_comment_with_id(post_comment_id=post_comment_id):
+            raise ValidationError(
+                _('Post_comment is not muted'),
+            )
+
+    def _check_can_translate_comment_with_id(self, post_comment_id):
+        PostComment = get_post_comment_model()
+        post_comment = PostComment.objects.get(pk=post_comment_id)
+        if post_comment.post.is_encircled_post():
+            raise ValidationError(
+                _('Only public post comments can be translated')
+            )
+        if post_comment.text is None:
+            raise ValidationError(
+                _('Post comment has no text to be translated')
+            )
+        if post_comment.language is None:
+            raise ValidationError(
+                _('Post comment has no assigned language to be able to translate')
+            )
+        if self.translation_language is None:
+            raise ValidationError(
+                _('User\'s preferred translation language not set')
+            )
+
     def _check_has_post_with_id(self, post_id):
         if not self.has_post_with_id(post_id):
             raise PermissionDenied(
@@ -3068,6 +3969,11 @@ class User(AbstractUser):
         if self.are_guidelines_accepted:
             raise ValidationError('Guidelines were already accepted')
 
+    def _check_can_set_language_with_id(self, language_id):
+        Language = get_language_model()
+        if not Language.objects.filter(pk=language_id).exists():
+            raise ValidationError('Please provide a valid language id')
+
     def _check_can_get_community_with_name(self, community_name):
         self._check_is_not_banned_from_community_with_name(community_name=community_name)
 
@@ -3078,7 +3984,7 @@ class User(AbstractUser):
 
     def _check_can_unblock_user_with_id(self, user_id):
         if not self.has_blocked_user_with_id(user_id=user_id):
-            raise ValidationError(_('You cannot unblock and account you have not blocked.'))
+            raise ValidationError(_('You cannot unblock an account you have not blocked.'))
 
     def _check_is_not_blocked_with_user_with_id(self, user_id):
         """
@@ -3086,6 +3992,61 @@ class User(AbstractUser):
         """
         if self.is_blocked_with_user_with_id(user_id=user_id):
             raise PermissionDenied(_('This account is blocked.'))
+
+    def _check_can_report_comment_for_post(self, post_comment, post):
+        self._check_has_not_reported_post_comment_with_id(post_comment_id=post_comment.pk)
+        self._check_can_see_post(post=post)
+
+        if post_comment.commenter_id == self.pk:
+            raise ValidationError(
+                _('You cannot report your own comment.'),
+            )
+
+    def _check_has_not_reported_post_comment_with_id(self, post_comment_id):
+        if self.has_reported_post_comment_with_id(post_comment_id=post_comment_id):
+            raise ValidationError(
+                _('You have already reported the comment.'),
+            )
+
+    def _check_can_report_post(self, post):
+        self._check_can_see_post(post=post)
+        self._check_has_not_reported_post_with_id(post_id=post.pk)
+        if post.creator_id == self.pk:
+            raise ValidationError(
+                _('You cannot report your own post.'),
+            )
+
+    def _check_has_not_reported_post_with_id(self, post_id):
+        if self.has_reported_post_with_id(post_id=post_id):
+            raise ValidationError(
+                _('You have already reported the post.'),
+            )
+
+    def _check_can_report_user(self, user):
+        self._check_has_not_reported_user_with_id(user_id=user.pk)
+        if self.pk == user.pk:
+            raise ValidationError(
+                _('You cannot report yourself...'),
+            )
+
+    def _check_has_not_reported_user_with_id(self, user_id):
+        if self.has_reported_user_with_id(user_id=user_id):
+            raise ValidationError(
+                _('You have already reported the user.'),
+            )
+
+    def _check_can_report_community(self, community):
+        self._check_has_not_reported_community_with_id(community_id=community.pk)
+        if community.creator.pk == self.pk:
+            raise ValidationError(
+                _('You cannot report your own community.'),
+            )
+
+    def _check_has_not_reported_community_with_id(self, community_id):
+        if self.has_reported_community_with_id(community_id=community_id):
+            raise ValidationError(
+                _('You have already reported the community.'),
+            )
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='bootstrap_auth_token')
@@ -3114,12 +4075,12 @@ class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     is_of_legal_age = models.BooleanField(default=False)
     avatar = ProcessedImageField(verbose_name=_('avatar'), blank=False, null=True, format='JPEG',
-                                 options={'quality': 50}, processors=[ResizeToFill(500, 500)],
+                                 options={'quality': 90}, processors=[ResizeToFill(500, 500)],
                                  upload_to=upload_to_user_avatar_directory)
-    cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 50},
+    cover = ProcessedImageField(verbose_name=_('cover'), blank=False, null=True, format='JPEG', options={'quality': 90},
                                 upload_to=upload_to_user_cover_directory,
                                 processors=[ResizeToFit(width=1024, upscale=False)])
-    bio = models.CharField(_('bio'), max_length=settings.PROFILE_BIO_MAX_LENGTH, blank=False, null=True)
+    bio = models.TextField(_('bio'), max_length=settings.PROFILE_BIO_MAX_LENGTH, blank=False, null=True)
     url = models.URLField(_('url'), blank=False, null=True)
     followers_count_visible = models.BooleanField(_('followers count visible'), blank=False, null=False, default=False)
     badges = models.ManyToManyField(Badge, related_name='users_profiles')
@@ -3143,22 +4104,35 @@ class UserNotificationsSettings(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                                 related_name='notifications_settings')
     post_comment_notifications = models.BooleanField(_('post comment notifications'), default=True)
+    post_comment_reply_notifications = models.BooleanField(_('post comment reply notifications'), default=True)
     post_reaction_notifications = models.BooleanField(_('post reaction notifications'), default=True)
     follow_notifications = models.BooleanField(_('follow notifications'), default=True)
     connection_request_notifications = models.BooleanField(_('connection request notifications'), default=True)
     connection_confirmed_notifications = models.BooleanField(_('connection confirmed notifications'), default=True)
     community_invite_notifications = models.BooleanField(_('community invite notifications'), default=True)
+    post_comment_reaction_notifications = models.BooleanField(_('post comment reaction notifications'), default=True)
 
     @classmethod
     def create_notifications_settings(cls, user):
         return UserNotificationsSettings.objects.create(user=user)
 
-    def update(self, post_comment_notifications=None, post_reaction_notifications=None,
-               follow_notifications=None, connection_request_notifications=None,
-               connection_confirmed_notifications=None, community_invite_notifications=None):
+    def update(self, post_comment_notifications=None,
+               post_comment_reply_notifications=None,
+               post_reaction_notifications=None,
+               follow_notifications=None,
+               connection_request_notifications=None,
+               connection_confirmed_notifications=None,
+               community_invite_notifications=None,
+               post_comment_reaction_notifications=None):
 
         if post_comment_notifications is not None:
             self.post_comment_notifications = post_comment_notifications
+
+        if post_comment_reaction_notifications is not None:
+            self.post_comment_reaction_notifications = post_comment_reaction_notifications
+
+        if post_comment_reply_notifications is not None:
+            self.post_comment_reply_notifications = post_comment_reply_notifications
 
         if post_reaction_notifications is not None:
             self.post_reaction_notifications = post_reaction_notifications

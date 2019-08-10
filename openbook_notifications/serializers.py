@@ -2,13 +2,17 @@ from generic_relations.relations import GenericRelatedField
 from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
-from openbook_common.models import Emoji
+from openbook_common.models import Emoji, Language
+from openbook_common.serializers_fields.post import IsEncircledField
+from openbook_common.serializers_fields.post_comment import PostCommentIsMutedField
 from openbook_communities.models import Community, CommunityInvite
 from openbook_notifications.models import Notification, PostCommentNotification, ConnectionRequestNotification, \
-    ConnectionConfirmedNotification, FollowNotification, CommunityInviteNotification
+    ConnectionConfirmedNotification, FollowNotification, CommunityInviteNotification, PostCommentReplyNotification, \
+    PostCommentReactionNotification
 from openbook_notifications.models.post_reaction_notification import PostReactionNotification
+from openbook_notifications.serializer_fields import ParentCommentField
 from openbook_notifications.validators import notification_id_exists
-from openbook_posts.models import PostComment, PostReaction, Post, PostImage, PostVideo
+from openbook_posts.models import PostComment, PostReaction, Post, PostImage, PostVideo, PostCommentReaction
 
 
 class ReadNotificationsSerializer(serializers.Serializer):
@@ -32,7 +36,8 @@ class PostCommentCommenterProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'name'
         )
 
 
@@ -74,6 +79,7 @@ class PostCommentCreatorProfileSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'avatar',
+            'name'
         )
 
 
@@ -93,6 +99,7 @@ class NotificationPostSerializer(serializers.ModelSerializer):
     image = PostCommentPostImageSerializer()
     video = PostCommentPostVideoSerializer()
     creator = PostCommentCreatorSerializer()
+    is_encircled = IsEncircledField()
 
     class Meta:
         model = Post
@@ -103,26 +110,64 @@ class NotificationPostSerializer(serializers.ModelSerializer):
             'text',
             'video',
             'creator',
-            'created'
+            'created',
+            'is_closed',
+            'is_encircled',
         )
 
 
-class PostCommentSerializer(serializers.ModelSerializer):
+class PostCommentLanguageSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Language
+        fields = (
+            'id',
+            'code',
+            'name',
+        )
+
+
+class NotificationPostCommentParentSerializer(serializers.ModelSerializer):
     commenter = PostCommentCommenterSerializer()
-    post = NotificationPostSerializer()
+    is_muted = PostCommentIsMutedField()
+    language = PostCommentLanguageSerializer()
 
     class Meta:
         model = PostComment
         fields = (
             'id',
             'commenter',
+            'language',
             'text',
-            'post'
+            'created',
+            'is_edited',
+            'is_muted'
+        )
+
+
+class NotificationPostCommentSerializer(serializers.ModelSerializer):
+    commenter = PostCommentCommenterSerializer()
+    post = NotificationPostSerializer()
+    parent_comment = NotificationPostCommentParentSerializer()
+    is_muted = PostCommentIsMutedField()
+    language = PostCommentLanguageSerializer()
+
+    class Meta:
+        model = PostComment
+        fields = (
+            'id',
+            'commenter',
+            'language',
+            'text',
+            'post',
+            'created',
+            'parent_comment',
+            'is_muted'
         )
 
 
 class PostCommentNotificationSerializer(serializers.ModelSerializer):
-    post_comment = PostCommentSerializer()
+    post_comment = NotificationPostCommentSerializer()
 
     class Meta:
         model = PostCommentNotification
@@ -132,12 +177,86 @@ class PostCommentNotificationSerializer(serializers.ModelSerializer):
         )
 
 
+class PostCommentReplyNotificationSerializer(serializers.ModelSerializer):
+    post_comment = NotificationPostCommentSerializer()
+    # TODO Remove after a couple of releases. Not needed anymore as the post_comment includes parent_comment
+    parent_comment = ParentCommentField(parent_comment_serializer=NotificationPostCommentParentSerializer)
+
+    class Meta:
+        model = PostCommentReplyNotification
+        fields = (
+            'id',
+            'post_comment',
+            'parent_comment'
+        )
+
+
+class PostCommentReactionReactorProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = (
+            'id',
+            'avatar',
+            'name'
+        )
+
+
+class PostCommentReactionReactorSerializer(serializers.ModelSerializer):
+    profile = PostCommentReactionReactorProfileSerializer()
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'username',
+            'profile'
+        )
+
+
+class PostCommentReactionEmojiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Emoji
+        fields = (
+            'id',
+            'keyword',
+            'image'
+        )
+
+
+class PostCommentReactionSerializer(serializers.ModelSerializer):
+    reactor = PostCommentReactionReactorSerializer()
+    emoji = PostCommentReactionEmojiSerializer()
+    post_comment = NotificationPostCommentSerializer()
+
+    class Meta:
+        model = PostCommentReaction
+        fields = (
+            'id',
+            'reactor',
+            'emoji',
+            'post_comment',
+            'created'
+        )
+
+
+class PostCommentReactionNotificationSerializer(serializers.ModelSerializer):
+    post_comment_reaction = PostCommentReactionSerializer()
+
+    class Meta:
+        model = PostCommentReactionNotification
+        fields = (
+            'id',
+            'post_comment_reaction'
+        )
+
+
 class PostReactionReactorProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'name'
         )
 
 
@@ -194,7 +313,8 @@ class ConnectionRequesterProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'name'
         )
 
 
@@ -226,7 +346,8 @@ class ConnectionConfirmatorProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'name'
         )
 
 
@@ -258,7 +379,8 @@ class FollowerProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'name'
         )
 
 
@@ -290,7 +412,8 @@ class CommunityInviteCreatorProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'name'
         )
 
 
@@ -346,6 +469,8 @@ class CommunityInviteNotificationSerializer(serializers.ModelSerializer):
 class GetNotificationsNotificationSerializer(serializers.ModelSerializer):
     content_object = GenericRelatedField({
         PostCommentNotification: PostCommentNotificationSerializer(),
+        PostCommentReplyNotification: PostCommentReplyNotificationSerializer(),
+        PostCommentReactionNotification: PostCommentReactionNotificationSerializer(),
         PostReactionNotification: PostReactionNotificationSerializer(),
         ConnectionRequestNotification: ConnectionRequestNotificationSerializer(),
         ConnectionConfirmedNotification: ConnectionConfirmedNotificationSerializer(),

@@ -1,6 +1,7 @@
 # Create your models here.
 # Create your models here.
 from django.db import models
+from django.db.models import QuerySet, Q, Count
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
@@ -40,6 +41,36 @@ class Emoji(models.Model):
     created = models.DateTimeField(editable=False)
     order = models.IntegerField(unique=False, default=100)
 
+    @classmethod
+    def get_emoji_counts_for_post_comment_with_id(cls, post_comment_id, emoji_id=None, reactor_id=None):
+        emoji_query = Q(post_comment_reactions__post_comment_id=post_comment_id, )
+
+        if emoji_id:
+            emoji_query.add(Q(post_comment_reactions__emoji_id=emoji_id), Q.AND)
+
+        if reactor_id:
+            emoji_query.add(Q(post_comment_reactions__reactor_id=reactor_id), Q.AND)
+
+        emojis = Emoji.objects.filter(emoji_query).annotate(Count('post_comment_reactions')).distinct().order_by(
+            '-post_comment_reactions__count').cache().all()
+
+        return [{'emoji': emoji, 'count': emoji.post_comment_reactions__count} for emoji in emojis]
+
+    @classmethod
+    def get_emoji_counts_for_post_with_id(cls, post_id, emoji_id=None, reactor_id=None):
+        emoji_query = Q(post_reactions__post_id=post_id, )
+
+        if emoji_id:
+            emoji_query.add(Q(post_reactions__emoji_id=emoji_id), Q.AND)
+
+        if reactor_id:
+            emoji_query.add(Q(post_reactions__reactor_id=reactor_id), Q.AND)
+
+        emojis = Emoji.objects.filter(emoji_query).annotate(Count('post_reactions')).distinct().order_by(
+            '-post_reactions__count').cache().all()
+
+        return [{'emoji': emoji, 'count': emoji.post_reactions__count} for emoji in emojis]
+
     def __str__(self):
         return 'Emoji: ' + self.keyword
 
@@ -59,3 +90,14 @@ class Badge(models.Model):
         if not self.id:
             self.created = timezone.now()
         return super(Badge, self).save(*args, **kwargs)
+
+
+class Language(models.Model):
+    code = models.CharField(_('code'), max_length=12, blank=False, null=False)
+    name = models.CharField(_('name'), max_length=64, blank=False, null=False)
+    created = models.DateTimeField(editable=False)
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.created = timezone.now()
+        return super(Language, self).save(*args, **kwargs)

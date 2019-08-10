@@ -21,6 +21,10 @@ def get_post_mute_model():
     return apps.get_model('openbook_posts.PostMute')
 
 
+def get_post_comment_mute_model():
+    return apps.get_model('openbook_posts.PostCommentMute')
+
+
 def get_user_block_model():
     return apps.get_model('openbook_auth.UserBlock')
 
@@ -49,6 +53,10 @@ def get_post_reaction_model():
     return apps.get_model('openbook_posts.PostReaction')
 
 
+def get_post_comment_reaction_model():
+    return apps.get_model('openbook_posts.PostCommentReaction')
+
+
 def get_emoji_model():
     return apps.get_model('openbook_common.Emoji')
 
@@ -63,6 +71,10 @@ def get_user_invite_model():
 
 def get_badge_model():
     return apps.get_model('openbook_common.Badge')
+
+
+def get_language_model():
+    return apps.get_model('openbook_common.Language')
 
 
 def get_tag_model():
@@ -81,9 +93,15 @@ def get_post_comment_notification_model():
     return apps.get_model('openbook_notifications.PostCommentNotification')
 
 
+def get_post_comment_reply_notification_model():
+    return apps.get_model('openbook_notifications.PostCommentReplyNotification')
+
+
 def get_post_reaction_notification_model():
     return apps.get_model('openbook_notifications.PostReactionNotification')
 
+def get_post_comment_reaction_notification_model():
+    return apps.get_model('openbook_notifications.PostCommentReactionNotification')
 
 def get_follow_notification_model():
     return apps.get_model('openbook_notifications.FollowNotification')
@@ -111,3 +129,19 @@ def get_device_model():
 
 def get_user_model():
     return apps.get_model('openbook_auth.User')
+
+
+def get_moderated_object_model():
+    return apps.get_model('openbook_moderation.ModeratedObject')
+
+
+def get_moderation_report_model():
+    return apps.get_model('openbook_moderation.ModerationReport')
+
+
+def get_moderation_category_model():
+    return apps.get_model('openbook_moderation.ModerationCategory')
+
+
+def get_moderation_penalty_model():
+    return apps.get_model('openbook_moderation.ModerationPenalty')

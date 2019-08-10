@@ -21,6 +21,8 @@ from sentry_sdk.integrations.django import DjangoIntegration
 from django_replicated.settings import *
 
 # Logging config
+from sentry_sdk.integrations.rq import RqIntegration
+
 from openbook_common.utils.environment import EnvironmentChecker
 
 LOGGING_CONFIG = None
@@ -97,6 +99,7 @@ INSTALLED_APPS = [
     # See https://django-modeltranslation.readthedocs.io/en/latest/installation.html#required-settings
     'modeltranslation',
     'django.contrib.admin',
+    'django.contrib.humanize',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -109,6 +112,7 @@ INSTALLED_APPS = [
     'imagekit',
     'django_media_fixtures',
     'cacheops',
+    'django_rq',
     'django_extensions',
     'openbook_common',
     'openbook_auth',
@@ -124,7 +128,11 @@ INSTALLED_APPS = [
     'openbook_categories',
     'openbook_notifications',
     'openbook_devices',
+    'openbook_moderation',
+    'openbook_translation',
 ]
+
+MODELTRANSLATION_FALLBACK_LANGUAGES = ('en',)
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -195,10 +203,7 @@ CACHEOPS = {
 }
 
 RQ_QUEUES = {
-    'high': {
-        'USE_REDIS_CACHE': 'rq-queues',
-    },
-    'low': {
+    'default': {
         'USE_REDIS_CACHE': 'rq-queues',
     },
 }
@@ -328,6 +333,27 @@ REST_FRAMEWORK = {
     )
 }
 
+# AWS Translate
+AWS_TRANSLATE_REGION = os.environ.get('AWS_TRANSLATE_REGION', '')
+AWS_TRANSLATE_MAX_LENGTH = os.environ.get('AWS_TRANSLATE_MAX_LENGTH', 10000)
+if TESTING:
+    OS_TRANSLATION_STRATEGY_NAME = 'testing'
+else:
+    OS_TRANSLATION_STRATEGY_NAME = 'default'
+
+OS_TRANSLATION_CONFIG = {
+    'default': {
+        'STRATEGY': 'openbook_translation.strategies.amazon.AmazonTranslate',
+        'TEXT_MAX_LENGTH': AWS_TRANSLATE_MAX_LENGTH,
+        'DEFAULT_TRANSLATION_LANGUAGE_CODE': 'en'
+    },
+    'testing': {
+        'STRATEGY': 'openbook_translation.strategies.tests.MockAmazonTranslate',
+        'TEXT_MAX_LENGTH': 40,
+        'DEFAULT_TRANSLATION_LANGUAGE_CODE': 'en'
+    }
+}
+
 UNICODE_JSON = True
 
 # The sentry DSN for error reporting
@@ -337,7 +363,7 @@ if IS_PRODUCTION:
         raise NameError('SENTRY_DSN environment variable is required when running on a production environment')
     sentry_sdk.init(
         dsn=SENTRY_DSN,
-        integrations=[DjangoIntegration()]
+        integrations=[DjangoIntegration(), RqIntegration()]
     )
 else:
     if SENTRY_DSN:
@@ -362,6 +388,7 @@ LOCALE_PATHS = (
 LANGUAGES = [
     ('es', _('Spanish')),
     ('en', _('English')),
+    ('de', _('German')),
 ]
 
 LANGUAGE_CODE = 'en'
@@ -386,8 +413,8 @@ USERNAME_MAX_LENGTH = 30
 USER_MAX_FOLLOWS = int(os.environ.get('USER_MAX_FOLLOWS', '1500'))
 USER_MAX_CONNECTIONS = int(os.environ.get('USER_MAX_CONNECTIONS', '1500'))
 USER_MAX_COMMUNITIES = 200
-POST_MAX_LENGTH = 1120
-POST_COMMENT_MAX_LENGTH = 560
+POST_MAX_LENGTH = int(os.environ.get('POST_MAX_LENGTH', '5000'))
+POST_COMMENT_MAX_LENGTH = int(os.environ.get('POST_MAX_LENGTH', '1500'))
 POST_IMAGE_MAX_SIZE = int(os.environ.get('POST_IMAGE_MAX_SIZE', '10485760'))
 PASSWORD_MIN_LENGTH = 10
 PASSWORD_MAX_LENGTH = 100
@@ -396,7 +423,7 @@ COLOR_ATTR_MAX_LENGTH = 7
 LIST_MAX_LENGTH = 100
 PROFILE_NAME_MAX_LENGTH = 192
 PROFILE_LOCATION_MAX_LENGTH = 64
-PROFILE_BIO_MAX_LENGTH = 150
+PROFILE_BIO_MAX_LENGTH = int(os.environ.get('PROFILE_BIO_MAX_LENGTH', '1000'))
 PROFILE_AVATAR_MAX_SIZE = int(os.environ.get('PROFILE_AVATAR_MAX_SIZE', '10485760'))
 PROFILE_COVER_MAX_SIZE = int(os.environ.get('PROFILE_COVER_MAX_SIZE', '10485760'))
 WORLD_CIRCLE_ID = 1
@@ -406,7 +433,7 @@ COMMUNITY_TITLE_MAX_LENGTH = 32
 COMMUNITY_DESCRIPTION_MAX_LENGTH = 500
 COMMUNITY_USER_ADJECTIVE_MAX_LENGTH = 16
 COMMUNITY_USERS_ADJECTIVE_MAX_LENGTH = 16
-COMMUNITY_RULES_MAX_LENGTH = 1500
+COMMUNITY_RULES_MAX_LENGTH = int(os.environ.get('COMMUNITY_RULES_MAX_LENGTH', '5000'))
 COMMUNITY_CATEGORIES_MAX_AMOUNT = 3
 COMMUNITY_CATEGORIES_MIN_AMOUNT = 1
 COMMUNITY_AVATAR_MAX_SIZE = int(os.environ.get('COMMUNITY_AVATAR_MAX_SIZE', '10485760'))
@@ -420,6 +447,10 @@ DEVICE_UUID_MAX_LENGTH = 64
 SEARCH_QUERIES_MAX_LENGTH = 120
 FEATURE_VIDEO_POSTS_ENABLED = os.environ.get('FEATURE_VIDEO_POSTS_ENABLED', 'True') == 'True'
 FEATURE_IMPORTER_ENABLED = os.environ.get('FEATURE_IMPORTER_ENABLED', 'True') == 'True'
+MODERATION_REPORT_DESCRIPTION_MAX_LENGTH = 1000
+MODERATED_OBJECT_DESCRIPTION_MAX_LENGTH = 1000
+GLOBAL_HIDE_CONTENT_AFTER_REPORTS_AMOUNT = int(os.environ.get('GLOBAL_HIDE_CONTENT_AFTER_REPORTS_AMOUNT', '20'))
+MODERATORS_COMMUNITY_NAME = os.environ.get('MODERATORS_COMMUNITY_NAME', 'mods')
 
 # Email Config
 

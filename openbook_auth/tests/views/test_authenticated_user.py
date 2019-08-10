@@ -12,7 +12,7 @@ import json
 
 from openbook_auth.views.authenticated_user.views import AuthenticatedUserSettings
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_user_bio, \
-    make_user_location, make_user_avatar, make_user_cover
+    make_user_location, make_user_avatar, make_user_cover, make_random_language
 
 fake = Faker()
 
@@ -572,17 +572,21 @@ class AuthenticatedUserNotificationsSettingsTests(APITestCase):
         notifications_settings.connection_request_notifications = fake.boolean()
         notifications_settings.connection_confirmed_notifications = fake.boolean()
         notifications_settings.community_invite_notifications = fake.boolean()
+        notifications_settings.post_comment_reply_notifications = fake.boolean()
+        notifications_settings.post_comment_reaction_notifications = fake.boolean()
 
         notifications_settings.save()
 
         headers = make_authentication_headers_for_user(user)
 
-        new_post_comment_notifications = notifications_settings.post_comment_notifications
-        new_post_reaction_notifications = notifications_settings.post_reaction_notifications
-        new_follow_notifications = notifications_settings.follow_notifications
-        new_connection_request_notifications = notifications_settings.connection_request_notifications
-        new_connection_confirmed_notifications = notifications_settings.connection_confirmed_notifications
-        new_community_invite_notifications = notifications_settings.community_invite_notifications
+        new_post_comment_notifications = not notifications_settings.post_comment_notifications
+        new_post_reaction_notifications = not notifications_settings.post_reaction_notifications
+        new_follow_notifications = not notifications_settings.follow_notifications
+        new_connection_request_notifications = not notifications_settings.connection_request_notifications
+        new_connection_confirmed_notifications = not notifications_settings.connection_confirmed_notifications
+        new_community_invite_notifications = not notifications_settings.community_invite_notifications
+        new_post_comment_reaction_notifications = not notifications_settings.post_comment_reaction_notifications
+        new_post_comment_reply_notifications = not notifications_settings.post_comment_reply_notifications
 
         data = {
             'post_comment_notifications': new_post_comment_notifications,
@@ -590,7 +594,9 @@ class AuthenticatedUserNotificationsSettingsTests(APITestCase):
             'follow_notifications': new_follow_notifications,
             'connection_request_notifications': new_connection_request_notifications,
             'connection_confirmed_notifications': new_connection_confirmed_notifications,
-            'community_invite_notifications': new_community_invite_notifications
+            'community_invite_notifications': new_community_invite_notifications,
+            'post_comment_reply_notifications': new_post_comment_reply_notifications,
+            'post_comment_reaction_notifications': new_post_comment_reaction_notifications,
         }
 
         url = self._get_url()
@@ -608,6 +614,10 @@ class AuthenticatedUserNotificationsSettingsTests(APITestCase):
         self.assertEqual(notifications_settings.community_invite_notifications, new_community_invite_notifications)
         self.assertEqual(notifications_settings.connection_confirmed_notifications,
                          new_connection_confirmed_notifications)
+        self.assertEqual(notifications_settings.post_comment_reply_notifications,
+                         new_post_comment_reply_notifications)
+        self.assertEqual(notifications_settings.post_comment_reaction_notifications,
+                         new_post_comment_reaction_notifications)
 
     def _get_url(self):
         return reverse('authenticated-user-notifications-settings')
@@ -745,3 +755,64 @@ class AuthenticatedUserAcceptGuidelines(APITestCase):
 
         user.refresh_from_db()
         self.assertTrue(user.are_guidelines_accepted)
+
+
+class AuthenticatedUserLanguageAPI(APITestCase):
+    """
+    AuthenticatedUserLanguageAPI API
+    """
+
+    fixtures = [
+        'openbook_common/fixtures/languages.json'
+    ]
+
+    def test_can_get_all_languages(self):
+        """
+        should be able to set user language and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(self.url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        parsed_response = json.loads(response.content)
+        self.assertTrue(len(parsed_response), 25)
+
+    def test_can_set_language(self):
+        """
+        should be able to set user language and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        language = make_random_language()
+
+        response = self.client.post(self.url, {
+            'language_id': language.id
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        user.refresh_from_db()
+        self.assertTrue(user.language.id, language.id)
+
+    def test_cannot_set_invalid_language(self):
+        """
+        should be able to set user language and return 200
+        """
+        user = make_user()
+        language = make_random_language()
+        user.language = language
+        user.save()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.post(self.url, {
+            'language_id': 99999
+        }, **headers)
+
+        print(response)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        user.refresh_from_db()
+        self.assertTrue(user.language.id, language.id)
+
+    url = reverse('user-language')

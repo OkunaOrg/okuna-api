@@ -126,12 +126,13 @@ By illegal content we mean:
 * high impact violence
 * child sexual abuse/child exploitation material
 * terrorist material
+* links to copyrighted material such as books, music, television programs and films.
 
 Sharing any of these will lead to the immediate closure of your account and reporting to the authorities where applicable.
 
 ## 🚮 Ditch the pornography
 
-Printed or visual material containing the explicit description or display of sexual organs, activity or nudity[*](#on-non-sexual-nudity) are not allowed.
+Printed, visual or links to material containing the display of sexual organs, activity or nudity[*](#on-non-sexual-nudity) are not allowed.
 
 ## 🏡 Embrace the shared responsibility
 

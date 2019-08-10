@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_follows.serializers import FollowUserRequestSerializer, FollowSerializer, \
     DeleteFollowSerializer, UpdateFollowSerializer, FollowUserSerializer
@@ -22,7 +23,7 @@ class Follows(APIView):
 
 
 class FollowUser(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request):
         request_data = _prepare_request_data_for_validation(request.data)
@@ -48,7 +49,7 @@ class FollowUser(APIView):
 
 
 class UnfollowUser(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request):
         user = request.user
@@ -69,7 +70,7 @@ class UnfollowUser(APIView):
 
 
 class UpdateFollowUser(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def post(self, request):
         request_data = _prepare_request_data_for_validation(request.data)

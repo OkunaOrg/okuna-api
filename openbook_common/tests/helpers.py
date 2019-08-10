@@ -7,9 +7,12 @@ from mixer.backend.django import mixer
 from openbook_auth.models import User, UserProfile
 from openbook_categories.models import Category
 from openbook_circles.models import Circle
-from openbook_common.models import Emoji, EmojiGroup, Badge
+from openbook_common.models import Emoji, EmojiGroup, Badge, Language
 from openbook_communities.models import Community
 from openbook_devices.models import Device
+from openbook_lists.models import List
+from openbook_moderation.models import ModerationCategory, ModeratedObjectLog, ModeratedObject, ModerationReport, \
+    ModerationPenalty
 from openbook_notifications.models import Notification
 
 fake = Faker()
@@ -40,6 +43,13 @@ def make_user(username=None, invite_count=None):
 
     profile = make_profile(user)
     return user
+
+
+def make_global_moderator():
+    moderator = make_user()
+    make_moderators_community(creator=moderator)
+    return moderator
+
 
 def make_badge():
     return mixer.blend(Badge)
@@ -164,14 +174,25 @@ def make_community_invites_enabled():
     return fake.boolean()
 
 
-def make_community(creator, type=Community.COMMUNITY_TYPE_PUBLIC):
-    community = creator.create_community(name=make_community_name(), title=make_community_title(), type=type,
+def make_community(creator=None, type=Community.COMMUNITY_TYPE_PUBLIC, name=None):
+    if not creator:
+        creator = make_user()
+
+    if not name:
+        name = make_community_name()
+
+    community = creator.create_community(name=name, title=make_community_title(), type=type,
                                          color=fake.hex_color(), description=make_community_description(),
                                          rules=make_community_rules(), user_adjective=make_community_user_adjective(),
                                          users_adjective=make_community_users_adjective(),
                                          categories_names=[make_category().name],
                                          invites_enabled=make_community_invites_enabled())
     return community
+
+
+def make_moderators_community(creator, ):
+    return make_community(name=settings.MODERATORS_COMMUNITY_NAME, creator=creator,
+                          type=Community.COMMUNITY_TYPE_PRIVATE)
 
 
 def make_private_community(creator):
@@ -184,3 +205,39 @@ def make_notification(owner):
 
 def make_device(owner):
     return mixer.blend(Device, owner=owner)
+
+
+def make_moderation_category(severity=ModerationCategory.SEVERITY_MEDIUM):
+    return mixer.blend(ModerationCategory, severity=severity)
+
+
+def make_moderation_report_description():
+    return fake.text(max_nb_chars=settings.MODERATION_REPORT_DESCRIPTION_MAX_LENGTH)
+
+
+def make_moderated_object_description():
+    return fake.text(max_nb_chars=settings.MODERATED_OBJECT_DESCRIPTION_MAX_LENGTH)
+
+
+def make_list(creator):
+    return mixer.blend(List, creator=creator)
+
+
+def make_moderated_object(community=None, ):
+    return mixer.blend(ModeratedObject, community=community)
+
+
+def make_moderated_object_log(moderated_object=None):
+    return mixer.blend(ModeratedObjectLog, moderated_object=moderated_object)
+
+
+def make_moderated_object_report(moderated_object=None):
+    return mixer.blend(ModerationReport, moderated_object=moderated_object)
+
+
+def make_moderation_penalty(user):
+    return mixer.blend(ModerationPenalty, user=user)
+
+
+def make_random_language():
+    return mixer.blend(Language)
