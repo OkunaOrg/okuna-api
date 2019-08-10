@@ -4,7 +4,7 @@ set -eo pipefail
 # start the redis server
 redis-server &
 
-cd /opt/openbook-api
+cd /opt/okuna-api
 
 # install pip env deps, run migrations, collect media, start the server
 pipenv install

@@ -163,13 +163,13 @@ usage: manage.py allocate_invites [-h] [--count INCREMENT_INVITES_BY_COUNT] [--t
 ### Replace .env settings
 ```bash
 # Relational Database Service configuration
-RDS_DB_NAME=openbook
+RDS_DB_NAME=okuna
 RDS_USERNAME=root
-RDS_PASSWORD=openbook
-RDS_HOSTNAME=db.openbook
+RDS_PASSWORD=okuna
+RDS_HOSTNAME=db.okuna
 RDS_PORT=3306
-RDS_HOSTNAME_READER=db.openbook
-RDS_HOSTNAME_WRITER=db.openbook
+RDS_HOSTNAME_READER=db.okuna
+RDS_HOSTNAME_WRITER=db.okuna
 ```
 
 ### Build the container

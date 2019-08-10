@@ -17,7 +17,7 @@ RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
 
-VOLUME ["/opt/openbook-api"]
+VOLUME ["/opt/okuna-api"]
 
 EXPOSE 80 443
 

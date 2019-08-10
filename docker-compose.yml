@@ -7,36 +7,36 @@ services:
       context: ./.docker
     privileged: true
     extra_hosts:
-      - db.openbook:172.16.16.2
+      - db.okuna:172.16.16.2
     volumes:
-     - ./:/opt/openbook-api
+     - ./:/opt/okuna-api
     ports:
       - 80
       - 443
-    working_dir: /opt/openbook-api
+    working_dir: /opt/okuna-api
     networks:
-      openbook:
+      okuna:
         ipv4_address: 172.16.16.1
   db:
     image: mariadb:10.4.5
-    hostname: db.openbook
+    hostname: db.okuna
     volumes:
      - mariadb:/var/lib/mysql
     ports:
       - 3306
     privileged: false
     environment:
-      - MYSQL_ROOT_PASSWORD=openbook
-      - MYSQL_DATABASE=openbook
+      - MYSQL_ROOT_PASSWORD=okuna
+      - MYSQL_DATABASE=okuna
     networks:
-      openbook:
+      okuna:
         ipv4_address: 172.16.16.2
 
 volumes:
   mariadb:
 
 networks:
-  openbook:
+  okuna:
     ipam:
       driver: default
       config:
