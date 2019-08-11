@@ -505,13 +505,13 @@ class PostCommentUserMentionSerializer(serializers.ModelSerializer):
 
 
 class PostCommentUserMentionNotificationSerializer(serializers.ModelSerializer):
-    post_user_mention = PostCommentUserMentionSerializer()
+    post_comment_user_mention = PostCommentUserMentionSerializer()
 
     class Meta:
         model = PostCommentUserMentionNotification
         fields = (
             'id',
-            'post_user_mention',
+            'post_comment_user_mention',
         )
 
 
@@ -524,7 +524,7 @@ class GetNotificationsNotificationSerializer(serializers.ModelSerializer):
         ConnectionRequestNotification: ConnectionRequestNotificationSerializer(),
         ConnectionConfirmedNotification: ConnectionConfirmedNotificationSerializer(),
         FollowNotification: FollowNotificationSerializer(),
-        PostCommentUserMentionNotification: PostUserMentionNotificationSerializer(),
+        PostCommentUserMentionNotification: PostCommentUserMentionNotificationSerializer(),
         PostUserMentionNotification: PostUserMentionNotificationSerializer(),
     })
 
