@@ -171,7 +171,7 @@ def send_post_user_mention_push_notification(post_user_mention):
     post_id = post_user_mention.post_id
     notification_group = 'post_%s' % post_id
 
-    mentioner = post_user_mention.post.ceator
+    mentioner = post_user_mention.post.creator
 
     target_user_language_code = get_notification_language_code_for_target_user(mentioned_user)
     with translation.override(target_user_language_code):
