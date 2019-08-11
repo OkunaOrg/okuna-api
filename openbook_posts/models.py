@@ -1,5 +1,4 @@
 # Create your models here.
-import hashlib
 import uuid
 from datetime import timedelta
 
@@ -29,6 +28,8 @@ from openbook_common.utils.model_loaders import get_emoji_model, \
 from imagekit.models import ProcessedImageField
 
 from openbook_moderation.models import ModeratedObject
+from openbook_notifications.helpers import send_post_comment_user_mention_push_notification, \
+    send_post_user_mention_push_notification
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory
 from openbook_common.helpers import get_language_for_text
 
@@ -612,6 +613,7 @@ class PostUserMention(models.Model):
         PostUserMentionNotification = get_post_user_mention_notification_model()
         PostUserMentionNotification.create_post_user_mention_notification(post_user_mention_id=post_user_mention.pk,
                                                                           owner_id=user.pk)
+        send_post_user_mention_push_notification(post_user_mention=post_user_mention)
         return post_user_mention
 
 
@@ -629,4 +631,5 @@ class PostCommentUserMention(models.Model):
         PostCommentUserMentionNotification.create_post_comment_user_mention_notification(
             post_comment_user_mention_id=post_comment_user_mention.pk,
             owner_id=user.pk)
+        send_post_comment_user_mention_push_notification(post_comment_user_mention=post_comment_user_mention)
         return post_comment_user_mention
