@@ -70,7 +70,8 @@ class PostCreatorProfileSerializer(serializers.ModelSerializer):
         fields = (
             'avatar',
             'cover',
-            'badges'
+            'badges',
+            'name'
         )
 
 
@@ -264,7 +265,8 @@ class PostParticipantProfileSerializer(serializers.ModelSerializer):
         fields = (
             'avatar',
             'cover',
-            'badges'
+            'badges',
+            'name'
         )
 
 
