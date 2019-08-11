@@ -149,7 +149,7 @@ def send_post_comment_user_mention_push_notification(post_comment_user_mention):
         one_signal_notification = onesignal_sdk.Notification(post_body={
             "contents": {
                 "en": _(
-                    '%(post_comment_reactor_name)s · @%(post_comment_reactor_username)s mentioned you in a comment.') % {
+                    '%(mentioner_name)s · @%(mentioner_username)s mentioned you in a comment.') % {
                           'mentioner_name': mentioner.profile.name,
                           'mentioner_username': mentioner.username,
                       }}
@@ -178,7 +178,7 @@ def send_post_user_mention_push_notification(post_user_mention):
         one_signal_notification = onesignal_sdk.Notification(post_body={
             "contents": {
                 "en": _(
-                    '%(post_reactor_name)s · @%(post_reactor_username)s mentioned you in a post.') % {
+                    '%(mentioner_name)s · @%(mentioner_username)s mentioned you in a post.') % {
                           'mentioner_name': mentioner.profile.name,
                           'mentioner_username': mentioner.username,
                       }}
