@@ -967,7 +967,8 @@ class User(AbstractUser):
                 post_id=post_comment.post_id)
 
             if post_notification_target_has_comment_notifications_enabled:
-                target_user_language_code = get_notification_language_code_for_target_user(post_notification_target_user)
+                target_user_language_code = get_notification_language_code_for_target_user(
+                    post_notification_target_user)
                 with translation.override(target_user_language_code):
                     if post_notification_target_user_is_post_creator:
                         notification_message = {
@@ -1021,7 +1022,8 @@ class User(AbstractUser):
                     post_comment=post_comment)
 
             if post_notification_target_has_comment_reply_notifications_enabled:
-                target_user_language_code = get_notification_language_code_for_target_user(post_notification_target_user)
+                target_user_language_code = get_notification_language_code_for_target_user(
+                    post_notification_target_user)
                 with translation.override(target_user_language_code):
                     if post_notification_target_user_is_post_comment_creator:
                         notification_message = {
@@ -2557,11 +2559,13 @@ class User(AbstractUser):
 
         search_post_participants_query = self._make_search_post_participants_query(post=post, query=query)
 
+        post_participants_queryset = User.objects.filter(search_post_participants_query)
+
         search_users_query = self._make_search_users_query(query=query)
 
-        search_post_participants_query.add(search_users_query, Q.OR)
+        search_users_queryset = User.objects.filter(search_users_query)
 
-        return User.objects.filter(search_post_participants_query)
+        return post_participants_queryset.union(search_users_queryset)
 
     def _make_search_post_participants_query(self, post, query):
         post_participants_query = post.make_participants_query()
