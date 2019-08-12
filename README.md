@@ -106,7 +106,7 @@ python manage.py collectmedia
 
 #### Load the fixtures
 ```bash
-python manage.py loaddata circles.json emoji-groups.json emojis.json badges.json categories.json
+python manage.py loaddata circles.json emoji-groups.json emojis.json badges.json categories.json languages.json
 ```
 
 #### Serve with hot reload

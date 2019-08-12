@@ -52,6 +52,16 @@ class PostCreatorProfileBadgeSerializer(serializers.ModelSerializer):
         )
 
 
+class PostLanguageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Language
+        fields = (
+            'id',
+            'code',
+            'name',
+        )
+
+
 class PostCreatorProfileSerializer(serializers.ModelSerializer):
     badges = PostCreatorProfileBadgeSerializer(many=True)
 
@@ -60,18 +70,8 @@ class PostCreatorProfileSerializer(serializers.ModelSerializer):
         fields = (
             'avatar',
             'cover',
-            'badges'
-        )
-
-
-class PostLanguageSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Language
-        fields = (
-            'id',
-            'code',
-            'name',
+            'badges',
+            'name'
         )
 
 
@@ -229,8 +229,60 @@ class TranslatePostSerializer(serializers.Serializer):
     )
 
 
-class OpenClosePostSerializer(serializers.ModelSerializer):
+class SearchPostParticipantsSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+    query = serializers.CharField(
+        max_length=settings.SEARCH_QUERIES_MAX_LENGTH,
+        required=True
+    )
+    count = serializers.IntegerField(
+        required=False,
+        default=10,
+        max_value=10
+    )
 
+
+class GetPostParticipantsSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+    count = serializers.IntegerField(
+        required=False,
+        default=10,
+        max_value=20
+    )
+
+
+class PostParticipantProfileSerializer(serializers.ModelSerializer):
+    badges = PostCreatorProfileBadgeSerializer(many=True)
+
+    class Meta:
+        model = UserProfile
+        fields = (
+            'avatar',
+            'cover',
+            'badges',
+            'name'
+        )
+
+
+class PostParticipantSerializer(serializers.ModelSerializer):
+    profile = PostCreatorProfileSerializer(many=False)
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'profile',
+            'username'
+        )
+
+
+class OpenClosePostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = (
@@ -238,17 +290,3 @@ class OpenClosePostSerializer(serializers.ModelSerializer):
             'uuid',
             'is_closed',
         )
-
-
-class TranslatePostResponseSerializer(serializers.HyperlinkedModelSerializer):
-    translated_text = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Post
-        fields = (
-            'id',
-            'translated_text',
-        )
-
-    def get_translated_text(self, obj):
-        return self.context['translated_text']

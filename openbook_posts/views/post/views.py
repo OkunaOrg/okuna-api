@@ -11,7 +11,8 @@ from openbook_moderation.permissions import IsNotSuspended
 from openbook_posts.views.post.serializers import DeletePostSerializer, GetPostSerializer, GetPostPostSerializer, \
     UnmutePostSerializer, MutePostSerializer, EditPostSerializer, AuthenticatedUserEditPostSerializer, \
     OpenClosePostSerializer, \
-    OpenPostSerializer, ClosePostSerializer, TranslatePostResponseSerializer, TranslatePostSerializer
+    OpenPostSerializer, ClosePostSerializer, TranslatePostSerializer, \
+    SearchPostParticipantsSerializer, PostParticipantSerializer, GetPostParticipantsSerializer
 from openbook_translation.strategies.base import TranslationClientError, UnsupportedLanguagePairException, \
     MaxTextLengthExceededError
 
@@ -201,8 +202,52 @@ class TranslatePost(APIView):
             return ApiMessageResponse(_('Max length of translation text exceeded.'),
                                       status=status.HTTP_400_BAD_REQUEST)
 
-        post_serializer = TranslatePostResponseSerializer(post, context={'request': request,
-                                                                         'translated_text': translated_text})
+        return Response({'translated_text': translated_text}, status=status.HTTP_200_OK)
 
-        return Response(post_serializer.data, status=status.HTTP_200_OK)
 
+class GetPostParticipants(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, post_uuid):
+        request_data = request.query_params.dict()
+
+        request_data['post_uuid'] = post_uuid
+
+        serializer = GetPostParticipantsSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        data = serializer.validated_data
+
+        post_uuid = data['post_uuid']
+        count = data['count']
+
+        post_participants = user.get_participants_for_post_with_uuid(post_uuid=post_uuid)[:count]
+
+        serialized_participants = PostParticipantSerializer(post_participants, many=True, context={'request': request})
+
+        return Response(serialized_participants.data, status=status.HTTP_200_OK)
+
+
+class SearchPostParticipants(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, post_uuid):
+        request_data = request.data.copy()
+        request_data['post_uuid'] = post_uuid
+
+        serializer = SearchPostParticipantsSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        data = serializer.validated_data
+
+        query = data['query']
+        post_uuid = data['post_uuid']
+        count = data['count']
+
+        post_participants = user.search_participants_for_post_with_uuid(post_uuid=post_uuid, query=query)[:count]
+
+        serialized_participants = PostParticipantSerializer(post_participants, many=True, context={'request': request})
+
+        return Response(serialized_participants.data, status=status.HTTP_200_OK)

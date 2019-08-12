@@ -8,10 +8,8 @@ from django.utils.translation import ugettext_lazy as _
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import get_post_id_for_post_uuid
 from openbook_moderation.permissions import IsNotSuspended
-from openbook_posts.views.post.serializers import TranslatePostResponseSerializer
 from openbook_posts.views.post_comment.serializers import DeletePostCommentSerializer, UpdatePostCommentSerializer, \
-    EditPostCommentSerializer, MutePostCommentSerializer, UnmutePostCommentSerializer, TranslatePostCommentSerializer, \
-    TranslatePostCommentResponseSerializer
+    EditPostCommentSerializer, MutePostCommentSerializer, UnmutePostCommentSerializer, TranslatePostCommentSerializer
 from openbook_translation.strategies.base import UnsupportedLanguagePairException, TranslationClientError, \
     MaxTextLengthExceededError
 
@@ -128,9 +126,6 @@ class TranslatePostComment(APIView):
         except MaxTextLengthExceededError:
             return ApiMessageResponse(_('Max length of translation text exceeded.'),
                                       status=status.HTTP_400_BAD_REQUEST)
-
-        comment_serializer = TranslatePostCommentResponseSerializer(
-            post_comment, context={'request': request, 'translated_text': translated_text}
-        )
-
-        return Response(comment_serializer.data, status=status.HTTP_200_OK)
+        return Response({
+            'translated_text': translated_text
+        }, status=status.HTTP_200_OK)
