@@ -275,6 +275,29 @@ class PostsAPITests(APITestCase):
 
         self.assertTrue(PostUserMention.objects.filter(post_id=post.pk, user_id=mentioned_user.pk).exists())
 
+    def test_create_text_post_does_not_detect_creator_mention(self):
+        """
+        should not detect mention if the mentioned person is the creator
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+        circle = make_circle(creator=user)
+
+        post_text = 'Hello @' + user.username
+
+        data = {
+            'text': post_text,
+            'circle_id': circle.pk
+        }
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+
+        self.assertFalse(PostUserMention.objects.filter(post_id=post.pk, user_id=user.pk).exists())
+
     def test_create_post_is_added_to_world_circle(self):
         """
         the created text post should automatically added to world circle
