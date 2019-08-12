@@ -244,11 +244,11 @@ class Post(models.Model):
         if not self.id and not self.created:
             self.created = timezone.now()
 
-        post_comment = super(Post, self).save(*args, **kwargs)
+        post = super(Post, self).save(*args, **kwargs)
 
         self._process_post_mentions()
 
-        return post_comment
+        return post
 
     def delete(self, *args, **kwargs):
         self.delete_media()

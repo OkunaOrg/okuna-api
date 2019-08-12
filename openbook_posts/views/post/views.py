@@ -222,7 +222,7 @@ class GetPostParticipants(APIView):
         post_uuid = data['post_uuid']
         count = data['count']
 
-        post_participants = user.get_post_with_uuid_participants(post_uuid=post_uuid)[:count]
+        post_participants = user.get_participants_for_post_with_uuid(post_uuid=post_uuid)[:count]
 
         serialized_participants = PostParticipantSerializer(post_participants, many=True, context={'request': request})
 
@@ -246,7 +246,7 @@ class SearchPostParticipants(APIView):
         post_uuid = data['post_uuid']
         count = data['count']
 
-        post_participants = user.search_post_with_uuid_participants(post_uuid=post_uuid, query=query)[:count]
+        post_participants = user.search_participants_for_post_with_uuid(post_uuid=post_uuid, query=query)[:count]
 
         serialized_participants = PostParticipantSerializer(post_participants, many=True, context={'request': request})
 

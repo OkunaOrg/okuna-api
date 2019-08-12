@@ -2549,12 +2549,12 @@ class User(AbstractUser):
                                                    category_id=category_id)
         return moderated_object
 
-    def search_post_with_uuid_participants(self, post_uuid, query):
+    def search_participants_for_post_with_uuid(self, post_uuid, query):
         Post = get_post_model()
         post = Post.objects.get(uuid=post_uuid)
-        return self.search_post_participants(post=post, query=query)
+        return self.search_participants_for_post(post=post, query=query)
 
-    def search_post_participants(self, post, query):
+    def search_participants_for_post(self, post, query):
         self.can_see_post(post=post)
 
         search_post_participants_query = self._make_search_post_participants_query(post=post, query=query)
@@ -2581,12 +2581,12 @@ class User(AbstractUser):
 
         return post_participants_query
 
-    def get_post_with_uuid_participants(self, post_uuid):
+    def get_participants_for_post_with_uuid(self, post_uuid):
         Post = get_post_model()
         post = Post.objects.get(uuid=post_uuid)
-        return self.get_post_participants(post=post)
+        return self.get_participants_for_post(post=post)
 
-    def get_post_participants(self, post):
+    def get_participants_for_post(self, post):
         self.can_see_post(post=post)
         post_participants_query = post.make_participants_query()
         return User.objects.filter(post_participants_query).distinct()
