@@ -574,6 +574,8 @@ class AuthenticatedUserNotificationsSettingsTests(APITestCase):
         notifications_settings.community_invite_notifications = fake.boolean()
         notifications_settings.post_comment_reply_notifications = fake.boolean()
         notifications_settings.post_comment_reaction_notifications = fake.boolean()
+        notifications_settings.post_comment_user_mention_notifications = fake.boolean()
+        notifications_settings.post_user_mention_notifications = fake.boolean()
 
         notifications_settings.save()
 
@@ -587,6 +589,8 @@ class AuthenticatedUserNotificationsSettingsTests(APITestCase):
         new_community_invite_notifications = not notifications_settings.community_invite_notifications
         new_post_comment_reaction_notifications = not notifications_settings.post_comment_reaction_notifications
         new_post_comment_reply_notifications = not notifications_settings.post_comment_reply_notifications
+        new_post_comment_user_mention_notifications = not notifications_settings.post_comment_user_mention_notifications
+        new_post_user_mention_notifications = not notifications_settings.post_user_mention_notifications
 
         data = {
             'post_comment_notifications': new_post_comment_notifications,
@@ -597,6 +601,8 @@ class AuthenticatedUserNotificationsSettingsTests(APITestCase):
             'community_invite_notifications': new_community_invite_notifications,
             'post_comment_reply_notifications': new_post_comment_reply_notifications,
             'post_comment_reaction_notifications': new_post_comment_reaction_notifications,
+            'post_comment_user_mention_notifications': new_post_comment_user_mention_notifications,
+            'post_user_mention_notifications': new_post_user_mention_notifications
         }
 
         url = self._get_url()

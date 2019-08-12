@@ -396,9 +396,12 @@ class User(AbstractUser):
                                       community_invite_notifications=None,
                                       post_comment_reaction_notifications=None,
                                       post_comment_reply_notifications=None,
+                                      post_comment_user_mention_notifications=None,
+                                      post_user_mention_notifications=None,
                                       ):
 
         notifications_settings = self.notifications_settings
+
         notifications_settings.update(
             post_comment_notifications=post_comment_notifications,
             post_reaction_notifications=post_reaction_notifications,
@@ -407,7 +410,9 @@ class User(AbstractUser):
             connection_confirmed_notifications=connection_confirmed_notifications,
             community_invite_notifications=community_invite_notifications,
             post_comment_reaction_notifications=post_comment_reaction_notifications,
-            post_comment_reply_notifications=post_comment_reply_notifications
+            post_comment_reply_notifications=post_comment_reply_notifications,
+            post_comment_user_mention_notifications=post_comment_user_mention_notifications,
+            post_user_mention_notifications=post_user_mention_notifications,
         )
         return notifications_settings
 
@@ -4166,6 +4171,8 @@ class UserNotificationsSettings(models.Model):
     connection_confirmed_notifications = models.BooleanField(_('connection confirmed notifications'), default=True)
     community_invite_notifications = models.BooleanField(_('community invite notifications'), default=True)
     post_comment_reaction_notifications = models.BooleanField(_('post comment reaction notifications'), default=True)
+    post_comment_user_mention_notifications = models.BooleanField(_('post comment user mention notifications'), default=True)
+    post_user_mention_notifications = models.BooleanField(_('post user mention notifications'), default=True)
 
     @classmethod
     def create_notifications_settings(cls, user):
@@ -4178,10 +4185,18 @@ class UserNotificationsSettings(models.Model):
                connection_request_notifications=None,
                connection_confirmed_notifications=None,
                community_invite_notifications=None,
-               post_comment_reaction_notifications=None):
+               post_comment_user_mention_notifications=None,
+               post_user_mention_notifications=None,
+               post_comment_reaction_notifications=None,):
 
         if post_comment_notifications is not None:
             self.post_comment_notifications = post_comment_notifications
+
+        if post_comment_user_mention_notifications is not None:
+            self.post_comment_user_mention_notifications = post_comment_user_mention_notifications
+
+        if post_user_mention_notifications is not None:
+            self.post_user_mention_notifications = post_user_mention_notifications
 
         if post_comment_reaction_notifications is not None:
             self.post_comment_reaction_notifications = post_comment_reaction_notifications
