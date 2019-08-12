@@ -1672,6 +1672,34 @@ class PostCommentRepliesAPITests(APITestCase):
 
         self.assertEqual(PostCommentUserMention.objects.filter(post_comment_id=post_comment.pk).count(), 0)
 
+    def test_reply_to_post_comment_ignores_comment_creator_username_mention(self):
+        """
+        should ignore the comment creator username mention when replying to a post comment
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        post = user.create_public_post(text=make_fake_post_text())
+        parent_comment_creator = make_user()
+        parent_comment = parent_comment_creator.comment_post(post=post, text=make_fake_post_comment_text())
+
+        reply_comment_text = 'Hello @' + user.username
+
+        data = self._get_create_post_comment_request_data(reply_comment_text)
+
+        url = self._get_url(post, parent_comment)
+        response = self.client.put(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(PostComment.objects.filter(post_id=post.pk,
+                                                   parent_comment_id=parent_comment.pk,
+                                                   text=reply_comment_text).count() == 1)
+
+        post_comment = PostComment.objects.get(text=reply_comment_text, commenter_id=user.pk)
+
+        self.assertEqual(PostCommentUserMention.objects.filter(post_comment_id=post_comment.pk).count(), 0)
+
     def test_reply_to_post_comment_detects_post_creator_username_mention(self):
         """
         should detect the post creator username mention when replying to a post comment
