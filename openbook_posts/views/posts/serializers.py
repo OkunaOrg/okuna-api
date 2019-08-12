@@ -13,7 +13,7 @@ from openbook_common.models import Language
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_lists.validators import list_id_exists
-from openbook_posts.models import PostImage, Post, PostReaction, PostVideo, PostLinkPreview
+from openbook_posts.models import PostImage, Post, PostReaction, PostVideo, PostPreviewLink
 
 
 class GetPostsSerializer(serializers.Serializer):
@@ -196,9 +196,9 @@ class PostLanguageSerializer(serializers.ModelSerializer):
         )
 
 
-class PostLinkPreviewSerializer(serializers.ModelSerializer):
+class PostPreviewLinkSerializer(serializers.ModelSerializer):
     class Meta:
-        model = PostLinkPreview
+        model = PostPreviewLink
         fields = (
             'link',
         )
@@ -217,7 +217,7 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     is_muted = PostIsMutedField()
     language = PostLanguageSerializer()
     is_encircled = IsEncircledField()
-    link_preview = PostLinkPreviewSerializer()
+    preview_link = PostPreviewLinkSerializer()
 
     class Meta:
         model = Post
@@ -226,7 +226,7 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'uuid',
             'comments_count',
             'reactions_emoji_counts',
-            'link_preview',
+            'preview_link',
             'created',
             'text',
             'image',

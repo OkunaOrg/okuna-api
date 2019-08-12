@@ -19,6 +19,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError, NotFound, PermissionDenied, AuthenticationFailed
 from django.db.models import Q, F, Count
 from django.core.mail import EmailMultiAlternatives
+from webpreview import web_preview
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
@@ -1680,7 +1681,7 @@ class User(AbstractUser):
         self._check_can_update_post_with_id(post_id)
         Post = get_post_model()
         post = Post.objects.get(pk=post_id)
-        link_preview_url = get_first_matched_url_from_text(text)
+        preview_link_url = get_first_matched_url_from_text(text)
         post.update(text=text)
         return post
 
@@ -1709,8 +1710,12 @@ class User(AbstractUser):
         self._check_can_get_user_with_id(user_id=user.pk)
         return user
 
-    def get_link_preview_data_for_post_with_id(self, post_id):
-        pass
+    def get_preview_link_data_for_post_with_id(self, post_id):
+        self._check_can_get_preview_link_data_for_post_with_id(post_id)
+        Post = get_post_model()
+        post = Post.objects.get(pk=post_id)
+        title, description, image = web_preview(post.preview_link.link)
+        return title, description, image
 
     def translate_post_with_id(self, post_id):
         self._check_can_translate_post_with_id(post_id)
@@ -4052,6 +4057,14 @@ class User(AbstractUser):
                 _('You have already reported the community.'),
             )
 
+    def _check_can_get_preview_link_data_for_post_with_id(self, post_id):
+        Post = get_post_model()
+        post = Post.objects.get(pk=post_id)
+        self._check_can_see_post(post=post)
+        if not post.has_preview_link():
+            raise ValidationError(
+                _('No link associated with post.'),
+            )
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='bootstrap_auth_token')
 def create_auth_token(sender, instance=None, created=False, **kwargs):

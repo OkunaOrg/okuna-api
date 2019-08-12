@@ -86,8 +86,8 @@ class Post(models.Model):
         if text:
             post.text = text
             post.language = get_language_for_text(text)
-            link_preview_url = get_first_matched_url_from_text(text)
-            post.update_or_create_link_preview(link_preview_url)
+            preview_link_url = get_first_matched_url_from_text(text)
+            post.update_or_create_preview_link(preview_link_url)
 
         if image:
             PostImage.create_post_image(image=image, post_id=post.pk)
@@ -215,6 +215,14 @@ class Post(models.Model):
 
         return False
 
+    def has_preview_link(self):
+        if hasattr(self, 'preview_link'):
+
+            if self.preview_link:
+                return True
+
+        return False
+
     def comment(self, text, commenter):
         return PostComment.create_comment(text=text, commenter=commenter, post=self)
 
@@ -228,12 +236,12 @@ class Post(models.Model):
             return True
         return False
 
-    def update_or_create_link_preview(self, link_preview_url):
-        if link_preview_url is not None:
-            if not self.link_preview:
-                PostLinkPreview.create_link_preview(link=link_preview_url, post_id=self.pk)
+    def update_or_create_preview_link(self, preview_link_url):
+        if preview_link_url is not None:
+            if not self.has_preview_link():
+                PostPreviewLink.create_preview_link(link=preview_link_url, post_id=self.pk)
             else:
-                self.link_preview.link = link_preview_url
+                self.preview_link.link = preview_link_url
 
     def is_encircled_post(self):
         return not self.is_public_post() and not self.community
@@ -243,8 +251,8 @@ class Post(models.Model):
         self.text = text
         self.is_edited = True
         self.language = get_language_for_text(text)
-        link_preview_url = get_first_matched_url_from_text(text)
-        self.update_or_create_link_preview(link_preview_url)
+        preview_link_url = get_first_matched_url_from_text(text)
+        self.update_or_create_preview_link(preview_link_url)
         self.save()
 
     def save(self, *args, **kwargs):
@@ -522,14 +530,14 @@ class PostCommentMute(models.Model):
         return cls.objects.create(post_comment_id=post_comment_id, muter_id=muter_id)
 
 
-class PostLinkPreview(models.Model):
+class PostPreviewLink(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='link_preview')
+    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='preview_link')
     link = models.CharField(max_length=settings.POST_MAX_LENGTH)
 
     class Meta:
         unique_together = ('post', 'link',)
 
     @classmethod
-    def create_link_preview(cls, link, post_id):
+    def create_preview_link(cls, link, post_id):
         return cls.objects.create(link=link, post_id=post_id)
