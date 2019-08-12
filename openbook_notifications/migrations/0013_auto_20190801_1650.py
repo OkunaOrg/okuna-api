@@ -12,11 +12,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name='notification',
-            name='notification_type',
-            field=models.CharField(choices=[('PR', 'Post Reaction'), ('PC', 'Post Comment'), ('PCR', 'Post Comment Reply'), ('PCRA', 'Post Comment Reaction'), ('CR', 'Connection Request'), ('CC', 'Connection Confirmed'), ('F', 'Follow'), ('CI', 'Community Invite'), ('PUM', 'Post user mention'), ('PCUM', 'Post comment user mention')], max_length=5),
-        ),
         migrations.CreateModel(
             name='PostUserMentionNotification',
             fields=[
