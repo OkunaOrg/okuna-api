@@ -30,7 +30,7 @@ python-magic = "*"
 safety = "*"
 pyjwt = "*"
 django-imagekit = "*"
-rest-framework-generic-relations = {git = "https://github.com/Ian-Foote/rest-framework-generic-relations.git", ref = "11c31d378ac4a2b2805e0ad154832532f8430f50"}
+rest-framework-generic-relations = {git = "https://github.com/Ian-Foote/rest-framework-generic-relations.git",ref = "11c31d378ac4a2b2805e0ad154832532f8430f50"}
 onesignal-sdk = "*"
 django-replicated = "*"
 django-cacheops = "*"
@@ -40,6 +40,7 @@ langdetect = "*"
 django-rq = "*"
 redis = "*"
 webpreview = "*"
+django-image-proxy = "*"
 
 [pipenv]
 allow_prereleases = true
