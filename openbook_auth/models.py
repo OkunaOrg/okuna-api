@@ -609,6 +609,12 @@ class User(AbstractUser):
     def has_follow_notifications_enabled(self):
         return self.notifications_settings.follow_notifications
 
+    def has_post_comment_mention_notifications_enabled(self):
+        return self.notifications_settings.post_comment_user_mention_notifications
+
+    def has_post_mention_notifications_enabled(self):
+        return self.notifications_settings.post_user_mention_notifications
+
     def has_reaction_notifications_enabled_for_post_with_id(self, post_id):
         return self.notifications_settings.post_reaction_notifications and not self.has_muted_post_with_id(
             post_id=post_id)
@@ -4171,7 +4177,8 @@ class UserNotificationsSettings(models.Model):
     connection_confirmed_notifications = models.BooleanField(_('connection confirmed notifications'), default=True)
     community_invite_notifications = models.BooleanField(_('community invite notifications'), default=True)
     post_comment_reaction_notifications = models.BooleanField(_('post comment reaction notifications'), default=True)
-    post_comment_user_mention_notifications = models.BooleanField(_('post comment user mention notifications'), default=True)
+    post_comment_user_mention_notifications = models.BooleanField(_('post comment user mention notifications'),
+                                                                  default=True)
     post_user_mention_notifications = models.BooleanField(_('post user mention notifications'), default=True)
 
     @classmethod
@@ -4187,7 +4194,7 @@ class UserNotificationsSettings(models.Model):
                community_invite_notifications=None,
                post_comment_user_mention_notifications=None,
                post_user_mention_notifications=None,
-               post_comment_reaction_notifications=None,):
+               post_comment_reaction_notifications=None, ):
 
         if post_comment_notifications is not None:
             self.post_comment_notifications = post_comment_notifications
