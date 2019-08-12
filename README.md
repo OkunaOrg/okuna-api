@@ -122,6 +122,25 @@ python manage.py runserver 0.0.0.0:8000
 
 <br>
 
+## Django Translations
+
+1. Use `./manage.py makemessages -l es` to generate messages for any one locale. In this case Ive used spanish.
+2. This generates a new `django.po` file in the `locale/es/LC_MESSAGES/` folder. It will have all the
+source strings and a place to enter the translation strings. It doesnt overwrite previous translations.
+3. Sometimes, if django is confused, it marks a string as fuzzy. So do search for  the word 'fuzzy' in `django.po`
+4. If you find a fuzzy string, you can resolve it manually. Finally each string should like this
+```
+#: openbook_lists/validators.py:10   <- place where the string occurs in code
+msgid "The list does not exist."     <- english translations  
+msgstr "Die Liste ist nicht vorhanden."   <-- this will be empty for new strings
+
+```
+5. Upload this `django.po` file to crowdin. 
+6. Once all language volunteers have translated the new strings, download all the `django.po` files for each locale and 
+put them in their respective folders.
+7. Run `./manage.py compilemessages` to auto-generate `django.mo` files. 
+8. You need to checkin both `django.po` and `django.mo` files for each locale.
+
 ## Django Custom Commands
 
 ### `manage.py create_invite`
