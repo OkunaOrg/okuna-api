@@ -42,6 +42,7 @@ load_badges_fixtures:
 
 load_categories_fixtures:
 	python manage.py loaddata categories.json
+	python manage.py loaddata moderation_categories.json
 
 load_languages_fixtures:
 	python manage.py loaddata languages.json

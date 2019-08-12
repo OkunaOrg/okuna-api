@@ -4,7 +4,7 @@ from django.utils.translation import ugettext_lazy as _
 import onesignal as onesignal_sdk
 
 from openbook_common.utils.model_loaders import get_notification_model
-from openbook_notifications.django_rq_jobs import send_notification_to_user
+from openbook_notifications.django_rq_jobs import send_notification_to_user_with_id
 from openbook_translation import translation_strategy
 
 import logging
@@ -170,4 +170,4 @@ def get_notification_language_code_for_target_user(target_user):
 
 
 def _send_notification_to_user(user, notification):
-    django_rq.enqueue(send_notification_to_user, user=user, notification=notification)
+    django_rq.enqueue(send_notification_to_user_with_id, user_id=user.pk, notification=notification)

@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "26f0e6da3c5b1b8c0a4b405c608a0008be6c3c7217c56db1dcb3a815256aceb2"
+            "sha256": "665ae49c16be01ed4d9bcc16257647c7e7e2d2bec1e5260fad12814a07e522f7"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -31,18 +31,18 @@
         },
         "boto3": {
             "hashes": [
-                "sha256:0fec671879bbddffb0e088d970051f159effa0b7ad2a04541121372c719efd75",
-                "sha256:53c2b5f00990435f5c2a3f3ce1f9543246d8300c6444b4d7da8ffd69063c4182"
+                "sha256:19a77d8ecb05d87123e88a65cba49cdbc8c66717ced21c2093a6f091492c22da",
+                "sha256:e184590781c127358c2d9ae1eab6607441d92fbddd88ba08b891b8c14d0bbfff"
             ],
             "index": "pypi",
-            "version": "==1.9.200"
+            "version": "==1.9.205"
         },
         "botocore": {
             "hashes": [
-                "sha256:9448deffdb58e852935eeaae90682b7a0b4ef3c45eb6f17fa4444873f45f9ae6",
-                "sha256:d2ead76e77e7d0cd4c6bf9445e0ff54e279aee3c727eb30255b4ec327f956d22"
+                "sha256:0d6290f725a69a5950785fb058c2405e438674011eff7c11ce192b561b3c9aa6",
+                "sha256:e9452a8e48aea82157e846eb8ec2e8e57f52366ba3362ec5128ecff2c8b52e2f"
             ],
-            "version": "==1.12.200"
+            "version": "==1.12.205"
         },
         "certifi": {
             "hashes": [
@@ -104,6 +104,13 @@
             ],
             "index": "pypi",
             "version": "==5.0a6"
+        },
+        "ddt": {
+            "hashes": [
+                "sha256:474546b4020ce8a2f9550ba8899c28aa2c284c7bbf175bddede98be949d1ca7c",
+                "sha256:d13e6af8f36238e89d00f4ebccf2bda4f6d1878be560a6600689e42077e164e3"
+            ],
+            "version": "==1.2.1"
         },
         "django": {
             "hashes": [
@@ -205,11 +212,11 @@
         },
         "djangorestframework": {
             "hashes": [
-                "sha256:42979bd5441bb4d8fd69d0f385024a114c3cae7df0f110600b718751250f6929",
-                "sha256:aedb48010ebfab9651aaab1df5fd3b4848eb4182afc909852a2110c24f89a359"
+                "sha256:b6714c3e4b0f8d524f193c91ecf5f5450092c2145439ac2769711f7eba89a9d9",
+                "sha256:c375e4f95a3a64fccac412e36fb42ba36881e52313ec021ef410b40f67cddca4"
             ],
             "index": "pypi",
-            "version": "==3.10.2"
+            "version": "==3.8.2"
         },
         "docutils": {
             "hashes": [
@@ -241,6 +248,12 @@
             ],
             "version": "==1.13"
         },
+        "gitdb": {
+            "hashes": [
+                "sha256:a3ebbc27be035a2e874ed904df516e35f4a29a778a764385de09de9e0f139658"
+            ],
+            "version": "==0.6.4"
+        },
         "gitdb2": {
             "hashes": [
                 "sha256:83361131a1836661a155172932a13c08bda2db3674e4caa32368aa6eb02f38c2",
@@ -250,10 +263,10 @@
         },
         "gitpython": {
             "hashes": [
-                "sha256:c15c55ff890cd3a6a8330059e80885410a328f645551b55a91d858bfb3eb2573",
-                "sha256:df752b6b6f06f11213e91c4925aea7eaf9e37e88fb71c8a7a1aa0a5c10852120"
+                "sha256:556b64796c5e268b35e3b431a429e813ad54aa178e1baaec2a9ba82e8575a89e",
+                "sha256:629867ebf609cef21bb9d849039e281e25963fb7d714a2f6bacc1ecce4800293"
             ],
-            "version": "==2.1.13"
+            "version": "==3.0.0"
         },
         "idna": {
             "hashes": [
@@ -286,12 +299,10 @@
         },
         "mysqlclient": {
             "hashes": [
-                "sha256:425e733b05e359a714d6007c0fc44582be66b63e5a3df0a50949274ae16f4bc6",
-                "sha256:62e4770b6a797b9416bcf70488365b7d6b9c9066878108499c559293bb464380",
-                "sha256:f257d250f2675d0ef99bd318906f3cfc05cef4a2f385ea695ff32a3f04b9f9a7"
+                "sha256:9c737cc55a5dc8dd3583a942d5a9b21be58d16f00f5fefca4e575e7d9682e98c"
             ],
             "index": "pypi",
-            "version": "==1.4.2.post1"
+            "version": "==1.4.4"
         },
         "nose": {
             "hashes": [
@@ -443,11 +454,11 @@
         },
         "redis": {
             "hashes": [
-                "sha256:8106502b96280e8614d30766f28b4e07ca2b368a8d7896bffce9de88756dd481",
-                "sha256:95ccbec607e21fff2823e7da8b7041e0c471eb36d0672f20abcb32adb5b089ca"
+                "sha256:45682ecf226c7611efe731974c4fa3390170ba045b9cdb26f0051114a5c2a68b",
+                "sha256:f2609a85e5f37f489ba3b5652e1175dc3711c4d7a7818c4f657615810afd23df"
             ],
             "index": "pypi",
-            "version": "==3.3.5"
+            "version": "==3.3.6"
         },
         "requests": {
             "hashes": [
@@ -458,7 +469,7 @@
         },
         "rest-framework-generic-relations": {
             "git": "https://github.com/Ian-Foote/rest-framework-generic-relations.git",
-            "ref": "11c31d378ac4a2b2805e0ad154832532f8430f50"
+            "ref": "28592a7e5c4c2f05a5576cd143721f58f061eaf2"
         },
         "rq": {
             "hashes": [
@@ -497,6 +508,12 @@
             ],
             "version": "==1.12.0"
         },
+        "smmap": {
+            "hashes": [
+                "sha256:0e2b62b497bd5f0afebc002eda4d90df9d209c30ef257e8673c90a6b5c119d62"
+            ],
+            "version": "==0.9.0"
+        },
         "smmap2": {
             "hashes": [
                 "sha256:0555a7bf4df71d1ef4218e4807bbf9b201f910174e6e08af2e138d4e517b4dde",
@@ -534,5 +551,14 @@
             "version": "==1.25.3"
         }
     },
-    "develop": {}
+    "develop": {
+        "polib": {
+            "hashes": [
+                "sha256:93b730477c16380c9a96726c54016822ff81acfa553977fdd131f2b90ba858d7",
+                "sha256:fad87d13696127ffb27ea0882d6182f1a9cf8a5e2b37a587751166c51e5a332a"
+            ],
+            "index": "pypi",
+            "version": "==1.1.0"
+        }
+    }
 }
