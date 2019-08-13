@@ -22,8 +22,8 @@
       "description_it": "Per tutto quello che riguarda l'istruzione.",
       "title_tr": "Eğitim",
       "description_tr": "Eğitim ile ilgili her şey.",
-      "title_pt-br": "Educação",
-      "description_pt-br": "Para tudo relacionado a educação."
+      "title_pt_br": "Educação",
+      "description_pt_br": "Para tudo relacionado a educação."
     }
   },
   {
@@ -49,8 +49,8 @@
       "description_it": "Per divertirsi!",
       "title_tr": "Eğlence",
       "description_tr": "Eğlenceli şeyler!",
-      "title_pt-br": "Diversão",
-      "description_pt-br": "Coisas divertidas!"
+      "title_pt_br": "Diversão",
+      "description_pt_br": "Coisas divertidas!"
     }
   },
   {
@@ -76,8 +76,8 @@
       "description_it": "Per tutto quello che riguarda le meraviglie tecnologiche.",
       "title_tr": "Teknoloji",
       "description_tr": "Tüm teknolojik sihirbazlıklarla ilgili.",
-      "title_pt-br": "Tecnologia",
-      "description_pt-br": "Para tudo relacionado a tecnologia."
+      "title_pt_br": "Tecnologia",
+      "description_pt_br": "Para tudo relacionado a tecnologia."
     }
   },
   {
@@ -103,8 +103,8 @@
       "description_it": "Per tutto quello che riguarda lo sport.",
       "title_tr": "Spor Dalları",
       "description_tr": "Spor Dalları ile ilgili her şey.",
-      "title_pt-br": "Esportes",
-      "description_pt-br": "Para tudo relacionado a esportes."
+      "title_pt_br": "Esportes",
+      "description_pt_br": "Para tudo relacionado a esportes."
     }
   },
   {
@@ -130,8 +130,8 @@
       "description_it": "Per tutto quello che riguarda la natura.",
       "title_tr": "Doğa",
       "description_tr": "Doğa ile ilgili her şey.",
-      "title_pt-br": "Natureza",
-      "description_pt-br": "Para tudo relacionado a natureza."
+      "title_pt_br": "Natureza",
+      "description_pt_br": "Para tudo relacionado a natureza."
     }
   },
   {
@@ -157,8 +157,8 @@
       "description_it": "Per tutto quello che riguarda i viaggi.",
       "title_tr": "Seyahat",
       "description_tr": "Seyahat ile ilgili her şey için.",
-      "title_pt-br": "Viagens",
-      "description_pt-br": "Para tudo relacionado a viagens."
+      "title_pt_br": "Viagens",
+      "description_pt_br": "Para tudo relacionado a viagens."
     }
   },
   {
@@ -184,8 +184,8 @@
       "description_it": "Per tutto quello che riguarda le arti.",
       "title_tr": "Sanat",
       "description_tr": "Sanat ile ilgili her şey.",
-      "title_pt-br": "Arte",
-      "description_pt-br": "Para tudo relacionado a arte."
+      "title_pt_br": "Arte",
+      "description_pt_br": "Para tudo relacionado a arte."
     }
   },
   {
@@ -211,8 +211,8 @@
       "description_it": "Per tutto quello che riguarda lo stile di vita.",
       "title_tr": "Yaşam Tarzı-Hobi",
       "description_tr": "Yaşam Tarzı-Hobi ile ilgili her şey için.",
-      "title_pt-br": "Estilo de vida",
-      "description_pt-br": "Para tudo relacionado a estilos de vida."
+      "title_pt_br": "Estilo de vida",
+      "description_pt_br": "Para tudo relacionado a estilos de vida."
     }
   },
   {
@@ -238,8 +238,8 @@
       "description_it": "Per tutto quello che riguarda l'intrattenimento.",
       "title_tr": "Gösteri",
       "description_tr": "Gösteri ile ilgili her şey.",
-      "title_pt-br": "Entretenimento",
-      "description_pt-br": "Para tudo relacionado a entretenimento."
+      "title_pt_br": "Entretenimento",
+      "description_pt_br": "Para tudo relacionado a entretenimento."
     }
   },
   {
@@ -265,8 +265,8 @@
       "description_it": "Per tutto quello che riguarda i luoghi.",
       "title_tr": "Mekanlar",
       "description_tr": "Mekanlar ile ilgili her şey.",
-      "title_pt-br": "Lugares",
-      "description_pt-br": "Para tudo relacionado a lugares."
+      "title_pt_br": "Lugares",
+      "description_pt_br": "Para tudo relacionado a lugares."
     }
   },
   {
@@ -292,8 +292,8 @@
       "description_it": "Per tutto quello che riguarda gli alimenti.",
       "title_tr": "Yemek",
       "description_tr": "Yemek ile ilgili her şey.",
-      "title_pt-br": "Comida",
-      "description_pt-br": "Para tudo relacionado a comidas."
+      "title_pt_br": "Comida",
+      "description_pt_br": "Para tudo relacionado a comidas."
     }
   }
 ]

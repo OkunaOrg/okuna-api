@@ -21,8 +21,8 @@
       "description_it": "I messaggi di spam potrebbero includere titoli ingannevoli, pubblicità, truffe, script bot",
       "title_tr": "İstenmeyen",
       "description_tr": "Spam olarak gönderilen gönderiler clickbait, reklam, dolandırıcılık, script botları içerebilir",
-      "title_pt-br": "Spam",
-      "description_pt-br": "Posts considerados spam incluem clickbait, propaganda, fraude, ações de robôs"
+      "title_pt_br": "Spam",
+      "description_pt_br": "Posts considerados spam incluem clickbait, propaganda, fraude, ações de robôs"
     }
   },
   {
@@ -47,8 +47,8 @@
       "description_it": "Post che mostrano rapporti sessuali, foto e video di rapporto sessuali, nudità ecc",
       "title_tr": "Cinsel içerik",
       "description_tr": "Cinsel ilişki gösteren mesajlar, cinsel ilişki fotoğrafları ve videoları, Çıplaklık vb",
-      "title_pt-br": "Pornografia",
-      "description_pt-br": "Posts que mostram relações sexuais, fotos e vídeos de conteúdo sexual, nudez, etc"
+      "title_pt_br": "Pornografia",
+      "description_pt_br": "Posts que mostram relações sexuais, fotos e vídeos de conteúdo sexual, nudez, etc"
     }
   },
   {
@@ -73,8 +73,8 @@
       "description_it": "Minacce, prende di mira le persone, le degrada o umilia, molesta ecc.",
       "title_tr": "Nefret ve Zorbalık",
       "description_tr": "İnandırıcı tehditler, hedef alınan kişiler, küçük düşürmek veya utandırmak, taciz edilmek vb.",
-      "title_pt-br": "Ódio e bullying",
-      "description_pt-br": "Ameaças reais, perseguição a pessoas, difamação ou humilhação, assédio, etc."
+      "title_pt_br": "Ódio e bullying",
+      "description_pt_br": "Ameaças reais, perseguição a pessoas, difamação ou humilhação, assédio, etc."
     }
   },
   {
@@ -99,8 +99,8 @@
       "description_it": "Post che promuovono o incoraggiano l’autolesionismo",
       "title_tr": "Kendine zarar vermek",
       "description_tr": "Kendine zararı destekleyen veya teşvik eden gönderiler",
-      "title_pt-br": "Autolesão",
-      "description_pt-br": "Posts promovendo ou encorajando autolesão"
+      "title_pt_br": "Autolesão",
+      "description_pt_br": "Posts promovendo ou encorajando autolesão"
     }
   },
   {
@@ -125,8 +125,8 @@
       "description_it": "Foto o video di violenza estrema ed esplicita, post che incoraggiano la violenza, minacce specifiche di violenza fisica",
       "title_tr": "Şiddet, kanlı ve zararlı",
       "description_tr": "Aşırı açık ve net şiddetin fotoğrafları veya videoları, şiddeti teşvik eden gönderiler, fiziksel zararın kesin tehlikeleri",
-      "title_pt-br": "Violência, sangue e ferimentos",
-      "description_pt-br": "Fotos ou vídeos de violência explícita, posts que encorajam violência, ameaças específicas de dano físico"
+      "title_pt_br": "Violência, sangue e ferimentos",
+      "description_pt_br": "Fotos ou vídeos de violência explícita, posts que encorajam violência, ameaças específicas de dano físico"
     }
   },
   {
@@ -151,8 +151,8 @@
       "description_it": "Post con foto o video di rapporti sessuali con bambini, post di bambini nudi/parzialmente nudi.",
       "title_tr": "Çocuğa Cinsel İstismar Materyali",
       "description_tr": "Çocuklarla cinsel ilişkiye girme fotoğrafları veya videoları olan gönderiler, çıplak / kısmen çıplak çocuk gönderileri.",
-      "title_pt-br": "Material de exploração sexual infantil",
-      "description_pt-br": "Posts com fotos ou vídeos de relações sexuais com crianças, posts de crianças nuas/parcialmente nuas."
+      "title_pt_br": "Material de exploração sexual infantil",
+      "description_pt_br": "Posts com fotos ou vídeos de relações sexuais com crianças, posts de crianças nuas/parcialmente nuas."
     }
   },
   {
@@ -177,8 +177,8 @@
       "description_it": "Post che promuovono attività illegali come l'uso, la vendita o la distribuzione di droghe pesanti ecc",
       "title_tr": "Yasadışı Faaliyetler, örneğin Uyuşturucu Kullanımı",
       "description_tr": "Sert uyuşturucu kullanımı, satışı veya dağıtımı gibi yasa dışı faaliyetleri teşvik eden gönderiler",
-      "title_pt-br": "Atividades ilegais (uso de drogas, por exemplo)",
-      "description_pt-br": "Posts que promovem atividades ilegais, como uso, venda ou distribuição de drogas pesadas, etc"
+      "title_pt_br": "Atividades ilegais (uso de drogas, por exemplo)",
+      "description_pt_br": "Posts que promovem atividades ilegais, como uso, venda ou distribuição de drogas pesadas, etc"
     }
   },
   {
@@ -203,8 +203,8 @@
       "description_it": "Post con notizie fittizie o ingannevoli, hoax dimostrati falsi da fonti credibili",
       "title_tr": "Aldatıcı içerik",
       "description_tr": "Kasıtlı olarak sahte veya aldatıcı haberler içeren gönderiler, inandırıcı kaynaklardan gelen aldatmacalar",
-      "title_pt-br": "Conteúdo enganoso",
-      "description_pt-br": "Posts com notícias intencionalmente falsas ou enganosas, boatos desprovidos de fontes confiáveis"
+      "title_pt_br": "Conteúdo enganoso",
+      "description_pt_br": "Posts com notícias intencionalmente falsas ou enganosas, boatos desprovidos de fontes confiáveis"
     }
   },
   {
@@ -229,8 +229,8 @@
       "description_it": "Post con contenuti che violano i diritti d’autore tuoi o di altri.",
       "title_tr": "Telif hakkı ve ticari marka ihlali",
       "description_tr": "Telif hakkınızı ihlal eden veya ihlal eden içeriğe sahip gönderiler.",
-      "title_pt-br": "Violação de direitos autorais e marcas",
-      "description_pt-br": "Posts com conteúdo que viola ou infringe seus direitos autorais."
+      "title_pt_br": "Violação de direitos autorais e marcas",
+      "description_pt_br": "Posts com conteúdo que viola ou infringe seus direitos autorais."
     }
   },
   {
@@ -255,8 +255,8 @@
       "description_it": "L'abuso potrebbe consistere nell'uso di bot, di abuso del pulsante di segnalazione, lo spamming continuo.",
       "title_tr": "Tartışma ortamını kötüye kullanma",
       "description_tr": "Kötüye kullanmayı botlar kullanarak yapabilmek, rapor düğmesini kötüye kullanmak, sürekli spamlamak.",
-      "title_pt-br": "Abuso da plataforma",
-      "description_pt-br": "O abuso pode envolver uso de robôs, uso abusivo do botão de denúncia, spam contínuo."
+      "title_pt_br": "Abuso da plataforma",
+      "description_pt_br": "O abuso pode envolver uso de robôs, uso abusivo do botão de denúncia, spam contínuo."
     }
   },
   {
@@ -281,8 +281,8 @@
       "description_it": "L'elemento non è conforme alle linee guida della comunità.",
       "title_tr": "Topluluk Kuralları İhlali",
       "description_tr": "Madde topluluk kurallarına uymuyor.",
-      "title_pt-br": "Violação das Diretrizes da Comunidade",
-      "description_pt-br": "O item não está em conformidade com as diretrizes da comunidade."
+      "title_pt_br": "Violação das Diretrizes da Comunidade",
+      "description_pt_br": "O item não está em conformidade com as diretrizes da comunidade."
     }
   },
   {
@@ -307,8 +307,8 @@
       "description_it": "Altre ragioni non incluse in altre categorie.",
       "title_tr": "Diğer",
       "description_tr": "Diğer kategorilere dahil edilmeyen diğer sebepler.",
-      "title_pt-br": "Outros",
-      "description_pt-br": "Razões não incluídas nas outras categorias."
+      "title_pt_br": "Outros",
+      "description_pt_br": "Razões não incluídas nas outras categorias."
     }
   }
 ]
