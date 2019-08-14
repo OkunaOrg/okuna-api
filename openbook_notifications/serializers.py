@@ -526,6 +526,7 @@ class GetNotificationsNotificationSerializer(serializers.ModelSerializer):
         FollowNotification: FollowNotificationSerializer(),
         PostCommentUserMentionNotification: PostCommentUserMentionNotificationSerializer(),
         PostUserMentionNotification: PostUserMentionNotificationSerializer(),
+        CommunityInviteNotification: CommunityInviteNotificationSerializer()
     })
 
     class Meta:
