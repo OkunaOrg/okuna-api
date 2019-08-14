@@ -2570,13 +2570,11 @@ class User(AbstractUser):
 
         search_post_participants_query = self._make_search_post_participants_query(post=post, query=query)
 
-        post_participants_queryset = User.objects.filter(search_post_participants_query)
-
         search_users_query = self._make_search_users_query(query=query)
 
-        search_users_queryset = User.objects.filter(search_users_query)
+        search_post_participants_query.add(search_users_query, Q.OR)
 
-        return post_participants_queryset.union(search_users_queryset)
+        return User.objects.filter(search_post_participants_query).distinct()
 
     def _make_search_post_participants_query(self, post, query):
         post_participants_query = post.make_participants_query()
