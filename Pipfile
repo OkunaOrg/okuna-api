@@ -9,7 +9,7 @@ polib = "*"
 [packages]
 django = ">=2.2.2"
 python-dotenv = "*"
-djangorestframework = "<3.9.0"
+djangorestframework = "<3.10.0"
 sentry-sdk = "==0.10.2"
 mysqlclient = "*"
 pillow = "*"
