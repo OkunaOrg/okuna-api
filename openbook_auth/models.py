@@ -2567,28 +2567,12 @@ class User(AbstractUser):
 
     def search_participants_for_post(self, post, query):
         self.can_see_post(post=post)
-
-        search_post_participants_query = self._make_search_post_participants_query(post=post, query=query)
-
+        # In the future this should prioritise post participants above the global search
+        # ATM combining the post participants and global query results in killing perf
+        # Therefore for now uses the global search
         search_users_query = self._make_search_users_query(query=query)
 
-        search_post_participants_query.add(search_users_query, Q.OR)
-
-        return User.objects.filter(search_post_participants_query).distinct()
-
-    def _make_search_post_participants_query(self, post, query):
-        post_participants_query = post.make_participants_query()
-
-        search_participants_query = Q(username__icontains=query)
-        search_participants_query.add(Q(profile__name__icontains=query), Q.OR)
-        search_participants_query.add(
-            ~Q(blocked_by_users__blocker_id=self.pk) & ~Q(user_blocks__blocked_user_id=self.pk),
-            Q.AND)
-        search_participants_query.add(Q(is_deleted=False), Q.AND)
-
-        post_participants_query.add(search_participants_query, Q.AND)
-
-        return post_participants_query
+        return User.objects.filter(search_users_query)
 
     def get_participants_for_post_with_uuid(self, post_uuid):
         Post = get_post_model()
