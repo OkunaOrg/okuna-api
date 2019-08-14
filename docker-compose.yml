@@ -1,0 +1,43 @@
+version: '3'
+
+services:
+  webserver:
+    build:
+      dockerfile: Dockerfile
+      context: ./.docker
+    privileged: true
+    extra_hosts:
+      - db.okuna:172.16.16.2
+    volumes:
+     - ./:/opt/okuna-api
+    ports:
+      - 80
+      - 443
+    working_dir: /opt/okuna-api
+    networks:
+      okuna:
+        ipv4_address: 172.16.16.1
+  db:
+    image: mariadb:10.4.5
+    hostname: db.okuna
+    volumes:
+     - mariadb:/var/lib/mysql
+    ports:
+      - 3306
+    privileged: false
+    environment:
+      - MYSQL_ROOT_PASSWORD=okuna
+      - MYSQL_DATABASE=okuna
+    networks:
+      okuna:
+        ipv4_address: 172.16.16.2
+
+volumes:
+  mariadb:
+
+networks:
+  okuna:
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.16.16.0/16"
