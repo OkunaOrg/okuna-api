@@ -490,11 +490,13 @@ class PostComment(models.Model):
                             continue
 
                         if self.parent_comment:
+                            user_is_parent_comment_creator = self.parent_comment.commenter_id == user.pk
                             user_has_replied_before = self.parent_comment.replies.filter(commenter_id=user.pk).exists()
 
-                            if user_has_replied_before:
+                            if user_has_replied_before or user_is_parent_comment_creator:
                                 # Its a reply to a comment, if the user previously replied to the comment
-                                # he will already be alerted of the reply, no need for mention
+                                # or if he's the creator of the parent comment he will already be alerted of the reply,
+                                # no need for mention
                                 continue
                         else:
                             user_has_commented_before = self.post.comments.filter(commenter_id=user.pk).exists()
