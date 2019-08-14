@@ -207,7 +207,7 @@ class TranslatePost(APIView):
         return Response(post_serializer.data, status=status.HTTP_200_OK)
 
 
-class PostPreviewLink(APIView):
+class PostPreviewLinkData(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request, post_uuid):
@@ -223,9 +223,7 @@ class PostPreviewLink(APIView):
         user = request.user
         post_id = get_post_id_for_post_uuid(post_uuid)
 
-        post = user.get_preview_link_data_for_post_with_id(post_id)
+        preview_link_data = user.get_preview_link_data_for_post_with_id(post_id)
 
-        post_comments_serializer = GetPostPostSerializer(post, context={"request": request})
-
-        return Response(post_comments_serializer.data, status=status.HTTP_200_OK)
+        return Response(preview_link_data, status=status.HTTP_200_OK)
 

@@ -33,17 +33,13 @@ def get_supported_translation_language(language_code):
     return Language.objects.get(code=supported_translation_code)
 
 
-def get_first_matched_url_from_text(text):
+def get_matched_urls_from_text(text):
     match_urls_pattern = re.compile(r"(?i)(http[s]?://|www)(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!#*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
-    # (http[s]?:\/\/|www)(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!#*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+
-    # (?:(https?):\/\/|www\.)(?:\([-A-Z0-9+&@#/%=~_|$?!:,.]*\)|[-A-Z0-9+&@#/%=~_|$?!:,.])*(?:\([-A-Z0-9+&@#/%=~_|$?!:,.]*\)|[A-Z0-9+&@#/%=~_|$])
 
-    # fully matching (http[s]?://|www)(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!#*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+
-
-    result = match_urls_pattern.search(text, re.IGNORECASE)
-    print('URLs found:', result)
+    result = match_urls_pattern.findall(text, re.IGNORECASE)
     if result is not None:
-        return result.group()
+        return result
+    print(result)
 
     return result
 
