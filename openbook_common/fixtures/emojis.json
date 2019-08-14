@@ -396,8 +396,8 @@
     "model": "openbook_common.Emoji",
     "pk": 22,
     "fields": {
-      "group_id": 2,
-      "order": 2,
+      "group_id": 1,
+      "order": 98,
       "keyword": "cool",
       "keyword_en": "Cool",
       "color": "#0089f2",
