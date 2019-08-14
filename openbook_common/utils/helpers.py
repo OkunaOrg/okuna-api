@@ -1,3 +1,4 @@
+import re
 import secrets
 
 from django.core.files.uploadedfile import InMemoryUploadedFile
@@ -89,3 +90,12 @@ def _sha256sum(file):
 def get_post_id_for_post_uuid(post_uuid):
     Post = get_post_model()
     return Post.get_post_id_for_post_with_uuid(post_uuid=post_uuid)
+
+
+# Same as flutter app
+usernames_matcher = re.compile('@[^\s]+')
+
+
+def extract_usernames_from_string(string):
+    usernames = usernames_matcher.findall(string=string)
+    return [username[1:] for username in usernames]

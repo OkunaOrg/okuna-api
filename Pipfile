@@ -4,6 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [dev-packages]
+polib = "*"
 
 [packages]
 django = ">=2.2.2"

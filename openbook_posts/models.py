@@ -1,5 +1,4 @@
 # Create your models here.
-import hashlib
 import uuid
 from datetime import timedelta
 
@@ -20,13 +19,17 @@ from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
 from openbook_common.models import Emoji, Language
-from openbook_common.utils.helpers import delete_file_field, sha256sum
+from openbook_common.utils.helpers import delete_file_field, sha256sum, extract_usernames_from_string
 from openbook_common.utils.model_loaders import get_emoji_model, \
-    get_circle_model, get_community_model, get_notification_model, get_post_comment_notification_model, \
-    get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model
+    get_circle_model, get_community_model, get_post_comment_notification_model, \
+    get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model, \
+    get_post_user_mention_notification_model, get_post_comment_user_mention_notification_model, get_user_model, \
+    get_post_user_mention_model, get_post_comment_user_mention_model
 from imagekit.models import ProcessedImageField
 
 from openbook_moderation.models import ModeratedObject
+from openbook_notifications.helpers import send_post_comment_user_mention_push_notification, \
+    send_post_user_mention_push_notification
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory
 from openbook_common.helpers import get_language_for_text
 
@@ -241,7 +244,11 @@ class Post(models.Model):
         if not self.id and not self.created:
             self.created = timezone.now()
 
-        return super(Post, self).save(*args, **kwargs)
+        post = super(Post, self).save(*args, **kwargs)
+
+        self._process_post_mentions()
+
+        return post
 
     def delete(self, *args, **kwargs):
         self.delete_media()
@@ -280,6 +287,10 @@ class Post(models.Model):
         PostCommentReplyNotification = get_post_comment_notification_model()
         PostCommentReplyNotification.objects.filter(post_comment__post_id=self.pk).delete()
 
+        # Remove all post user mention notifications
+        PostUserMentionNotification = get_post_user_mention_notification_model()
+        PostUserMentionNotification.objects.filter(post_user_mention__post_id=self.pk).delete()
+
     def delete_notifications_for_user(self, user):
         # Remove all post comment notifications
         PostCommentNotification = get_post_comment_notification_model()
@@ -295,6 +306,51 @@ class Post(models.Model):
         PostCommentReplyNotification = get_post_comment_notification_model()
         PostCommentReplyNotification.objects.filter(post_comment__post=self.pk,
                                                     notification__owner_id=user.pk).delete()
+
+    def make_participants_query(self):
+        # Add post creator
+        participants_query = Q(posts__id=self.pk)
+
+        # Add post commentators
+        participants_query.add(Q(posts_comments__post_id=self.pk), Q.OR)
+
+        # If community post, add community members
+        if self.community:
+            participants_query.add(Q(communities_memberships__community_id=self.community_id), Q.OR)
+
+        # No deleted users
+        participants_query.add(Q(is_deleted=False), Q.AND)
+
+        return participants_query
+
+    def _process_post_mentions(self):
+        if not self.text:
+            self.user_mentions.all().delete()
+        else:
+            usernames = extract_usernames_from_string(string=self.text)
+            if not usernames:
+                self.user_mentions.all().delete()
+            else:
+                existing_mention_usernames = []
+                for existing_mention in self.user_mentions.only('id', 'user__username').all().iterator():
+                    if existing_mention.user.username not in usernames:
+                        existing_mention.delete()
+                    else:
+                        existing_mention_usernames = existing_mention.user.username
+
+                PostUserMention = get_post_user_mention_model()
+                User = get_user_model()
+
+                for username in usernames:
+                    if username not in existing_mention_usernames:
+                        try:
+                            user = User.objects.only('id', 'username').get(username=username)
+                            user_is_post_creator = user.pk == self.creator_id
+                            if user.can_see_post(post=self) and not user_is_post_creator:
+                                PostUserMention.create_post_user_mention(user=user, post=self)
+                                existing_mention_usernames.append(username)
+                        except User.DoesNotExist:
+                            pass
 
     def _check_can_be_updated(self, text=None):
         if self.is_text_only_post() and not text:
@@ -401,7 +457,38 @@ class PostComment(models.Model):
         ''' On save, update timestamps '''
         if not self.id:
             self.created = timezone.now()
+
+        self._process_post_comment_mentions()
         return super(PostComment, self).save(*args, **kwargs)
+
+    def _process_post_comment_mentions(self):
+        usernames = extract_usernames_from_string(string=self.text)
+
+        if not usernames:
+            self.user_mentions.all().delete()
+        else:
+            existing_mention_usernames = []
+            for existing_mention in self.user_mentions.only('id', 'user__username').all().iterator():
+                if existing_mention.user.username not in usernames:
+                    existing_mention.delete()
+                else:
+                    existing_mention_usernames = existing_mention.user.username
+
+            PostCommentUserMention = get_post_comment_user_mention_model()
+            User = get_user_model()
+
+            for username in usernames:
+                if username not in existing_mention_usernames:
+                    try:
+                        user = User.objects.only('id', 'username').get(username=username)
+                        user_is_commenter = user.pk == self.commenter_id
+                        user_is_parent_comment_commenter = self.parent_comment and self.parent_comment.commenter_id == user.pk
+                        if user.can_see_post_comment(
+                                post_comment=self) and not user_is_commenter and not user_is_parent_comment_commenter:
+                            PostCommentUserMention.create_post_comment_user_mention(user=user, post_comment=self)
+                            existing_mention_usernames.append(username)
+                    except User.DoesNotExist:
+                        pass
 
     def update_comment(self, text):
         self.text = text
@@ -419,8 +506,14 @@ class PostComment(models.Model):
         self.save()
 
     def delete_notifications(self):
+        # Delete all post comment reply notifications
         PostCommentReplyNotification = get_post_comment_reply_notification_model()
         PostCommentReplyNotification.delete_post_comment_reply_notifications(post_comment_id=self.pk)
+
+        # Delete all post comment user mention notifications
+        PostCommentUserMentionNotification = get_post_comment_user_mention_notification_model()
+        PostCommentUserMentionNotification.objects.filter(
+            post_comment_user_mention__post_comment__post_id=self.pk).delete()
 
     def delete_notifications_for_user(self, user):
         PostCommentReplyNotification = get_post_comment_reply_notification_model()
@@ -509,3 +602,38 @@ class PostCommentMute(models.Model):
     @classmethod
     def create_post_comment_mute(cls, post_comment_id, muter_id):
         return cls.objects.create(post_comment_id=post_comment_id, muter_id=muter_id)
+
+
+class PostUserMention(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_mentions')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='user_mentions')
+
+    class Meta:
+        unique_together = ('user', 'post',)
+
+    @classmethod
+    def create_post_user_mention(cls, user, post):
+        post_user_mention = cls.objects.create(user=user, post=post)
+        PostUserMentionNotification = get_post_user_mention_notification_model()
+        PostUserMentionNotification.create_post_user_mention_notification(post_user_mention_id=post_user_mention.pk,
+                                                                          owner_id=user.pk)
+        send_post_user_mention_push_notification(post_user_mention=post_user_mention)
+        return post_user_mention
+
+
+class PostCommentUserMention(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_comment_mentions')
+    post_comment = models.ForeignKey(PostComment, on_delete=models.CASCADE, related_name='user_mentions')
+
+    class Meta:
+        unique_together = ('user', 'post_comment',)
+
+    @classmethod
+    def create_post_comment_user_mention(cls, user, post_comment):
+        post_comment_user_mention = cls.objects.create(user=user, post_comment=post_comment)
+        PostCommentUserMentionNotification = get_post_comment_user_mention_notification_model()
+        PostCommentUserMentionNotification.create_post_comment_user_mention_notification(
+            post_comment_user_mention_id=post_comment_user_mention.pk,
+            owner_id=user.pk)
+        send_post_comment_user_mention_push_notification(post_comment_user_mention=post_comment_user_mention)
+        return post_comment_user_mention

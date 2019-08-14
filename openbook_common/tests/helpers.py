@@ -31,7 +31,7 @@ def make_fake_post_comment_text():
     return fake.text(max_nb_chars=settings.POST_COMMENT_MAX_LENGTH)
 
 
-def make_user(username=None, invite_count=None):
+def make_user(username=None, invite_count=None, name=None):
     if username and invite_count:
         user = mixer.blend(User, username=username, invite_count=invite_count)
     elif username:
@@ -41,7 +41,7 @@ def make_user(username=None, invite_count=None):
     else:
         user = mixer.blend(User)
 
-    profile = make_profile(user)
+    profile = make_profile(user, name=name)
     return user
 
 
@@ -62,7 +62,10 @@ def make_users(amount):
     return users
 
 
-def make_profile(user=None):
+def make_profile(user=None, name=None):
+    if name:
+        return mixer.blend(UserProfile, user=user, name=name)
+
     return mixer.blend(UserProfile, user=user)
 
 
@@ -241,3 +244,12 @@ def make_moderation_penalty(user):
 
 def make_random_language():
     return mixer.blend(Language)
+
+
+def get_test_usernames():
+    return [
+        'j_oel',
+        'j.o.e.l',
+        'j03l',
+        'j'
+    ]

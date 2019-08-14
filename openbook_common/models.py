@@ -37,7 +37,7 @@ class Emoji(models.Model):
     # Hex colour. #FFFFFF
     color = models.CharField(_('color'), max_length=COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
                              validators=[hex_color_validator], unique=False)
-    image = models.ImageField(_('image'), blank=False, null=False, unique=True)
+    image = models.ImageField(_('image'), blank=False, null=False)
     created = models.DateTimeField(editable=False)
     order = models.IntegerField(unique=False, default=100)
 

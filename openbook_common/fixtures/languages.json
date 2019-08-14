@@ -2824,5 +2824,23 @@
       "name_en": "Spanish",
       "code": "es"
     }
+  },
+  {
+    "model": "openbook_common.Language",
+    "pk": 315,
+    "fields": {
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "name_en": "Swedish",
+      "code": "sv"
+    }
+  },
+  {
+    "model": "openbook_common.Language",
+    "pk": 316,
+    "fields": {
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "name_en": "Portuguese",
+      "code": "pt"
+    }
   }
 ]

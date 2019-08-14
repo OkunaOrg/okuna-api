@@ -5,12 +5,25 @@
     "fields": {
       "order": "8",
       "name": "education",
-      "title": "Education",
+      "title_en": "Education",
       "color": "#6200cc",
       "description_en": "For everything related to Education.",
-      "description_es": "Para todo lo relacionado con la educación.",
       "created": "2018-10-22 12:23:30.382913+00:00",
-      "avatar": "openbook_categories/avatars/category_education-min.png"
+      "avatar": "openbook_categories/avatars/category_education-min.png",
+      "title_es": "Educación",
+      "description_es": "Para todo lo relacionado con la educación.",
+      "title_de": "Bildung",
+      "description_de": "Für alles, was mit Bildung zu tun hat.",
+      "title_sv": "Utbildning",
+      "description_sv": "För allt relaterat till utbildning.",
+      "title_fr": "Éducation",
+      "description_fr": "Pour tout ce qui concerne l'éducation.",
+      "title_it": "Istruzione",
+      "description_it": "Per tutto quello che riguarda l'istruzione.",
+      "title_tr": "Eğitim",
+      "description_tr": "Eğitim ile ilgili her şey.",
+      "title_pt_br": "Educação",
+      "description_pt_br": "Para tudo relacionado a educação."
     }
   },
   {
@@ -19,12 +32,25 @@
     "fields": {
       "order": "1",
       "name": "fun",
-      "title": "Fun",
+      "title_en": "Fun",
       "color": "#ff005d",
       "description_en": "Fun stuff!",
-      "description_es": "Cosas graciosas!",
       "created": "2018-10-22 12:23:30.382913+00:00",
-      "avatar": "openbook_categories/avatars/category_fun-min.png"
+      "avatar": "openbook_categories/avatars/category_fun-min.png",
+      "title_es": "Diversión",
+      "description_es": "¡Qué curiosidad!",
+      "title_de": "Spaß",
+      "description_de": "Witziges!",
+      "title_sv": "Roligt",
+      "description_sv": "Roliga saker!",
+      "title_fr": "Amusement",
+      "description_fr": "Des choses amusantes !",
+      "title_it": "Divertimento",
+      "description_it": "Per divertirsi!",
+      "title_tr": "Eğlence",
+      "description_tr": "Eğlenceli şeyler!",
+      "title_pt_br": "Diversão",
+      "description_pt_br": "Coisas divertidas!"
     }
   },
   {
@@ -33,12 +59,25 @@
     "fields": {
       "order": "3",
       "name": "technology",
-      "title": "Technology",
+      "title_en": "Technology",
       "color": "#0050ff",
       "description_en": "For all tech related wizardry.",
-      "description_es": "Para todas las cosas mágicas de la tecnología.",
       "created": "2018-10-22 12:23:30.382913+00:00",
-      "avatar": "openbook_categories/avatars/category_technology-min.png"
+      "avatar": "openbook_categories/avatars/category_technology-min.png",
+      "title_es": "Tecnología",
+      "description_es": "",
+      "title_de": "Technologie",
+      "description_de": "Für alle Technik-Begeisterten.",
+      "title_sv": "Teknologi",
+      "description_sv": "För allt teknologi-trolleri.",
+      "title_fr": "Technologie",
+      "description_fr": "Pour tout ce qui concerne la magie de la technologie.",
+      "title_it": "Tecnologia",
+      "description_it": "Per tutto quello che riguarda le meraviglie tecnologiche.",
+      "title_tr": "Teknoloji",
+      "description_tr": "Tüm teknolojik sihirbazlıklarla ilgili.",
+      "title_pt_br": "Tecnologia",
+      "description_pt_br": "Para tudo relacionado a tecnologia."
     }
   },
   {
@@ -47,12 +86,25 @@
     "fields": {
       "order": "5",
       "name": "sports",
-      "title": "Sports",
+      "title_en": "Sports",
       "color": "#3c9b48",
       "description_en": "For everything related to sports.",
-      "description_es": "Para todo lo relacionado con deportes.",
       "created": "2018-10-22 12:23:30.382913+00:00",
-      "avatar": "openbook_categories/avatars/category_sports-min.png"
+      "avatar": "openbook_categories/avatars/category_sports-min.png",
+      "title_es": "",
+      "description_es": "",
+      "title_de": "Sport",
+      "description_de": "Für alles, was mit Sport zu tun hat.",
+      "title_sv": "Sport",
+      "description_sv": "För allt relaterat till sport.",
+      "title_fr": "Sports",
+      "description_fr": "Pour tout ce qui concerne les sports.",
+      "title_it": "Sport",
+      "description_it": "Per tutto quello che riguarda lo sport.",
+      "title_tr": "Spor Dalları",
+      "description_tr": "Spor Dalları ile ilgili her şey.",
+      "title_pt_br": "Esportes",
+      "description_pt_br": "Para tudo relacionado a esportes."
     }
   },
   {
@@ -61,12 +113,25 @@
     "fields": {
       "order": "4",
       "name": "nature",
-      "title": "Nature",
+      "title_en": "Nature",
       "color": "#9e5400",
       "description_en": "For everything related to nature.",
-      "description_es": "Para todo lo relacionado con la naturaleza.",
       "created": "2018-10-22 12:23:30.382913+00:00",
-      "avatar": "openbook_categories/avatars/nature-min.png"
+      "avatar": "openbook_categories/avatars/nature-min.png",
+      "title_es": "",
+      "description_es": "",
+      "title_de": "Natur",
+      "description_de": "Für alles, was mit Natur zu tun hat.",
+      "title_sv": "Natur",
+      "description_sv": "För allt relaterat till naturen.",
+      "title_fr": "Nature",
+      "description_fr": "Pour tout ce qui concerne la nature.",
+      "title_it": "Natura",
+      "description_it": "Per tutto quello che riguarda la natura.",
+      "title_tr": "Doğa",
+      "description_tr": "Doğa ile ilgili her şey.",
+      "title_pt_br": "Natureza",
+      "description_pt_br": "Para tudo relacionado a natureza."
     }
   },
   {
@@ -75,12 +140,25 @@
     "fields": {
       "order": "2",
       "name": "travel",
-      "title": "Travel",
+      "title_en": "Travel",
       "color": "#7c00e2",
       "description_en": "For everything related to travel.",
-      "description_es": "Para todo lo relacionado con viajar.",
       "created": "2018-10-22 12:23:30.382913+00:00",
-      "avatar": "openbook_categories/avatars/category_travel-min.png"
+      "avatar": "openbook_categories/avatars/category_travel-min.png",
+      "title_es": "",
+      "description_es": "",
+      "title_de": "Reisen",
+      "description_de": "Für alles, was mit Reisen zu tun hat.",
+      "title_sv": "Resor",
+      "description_sv": "För allt relaterat till resor.",
+      "title_fr": "Voyages",
+      "description_fr": "Pour tout ce qui concerne les voyages.",
+      "title_it": "Turismo",
+      "description_it": "Per tutto quello che riguarda i viaggi.",
+      "title_tr": "Seyahat",
+      "description_tr": "Seyahat ile ilgili her şey için.",
+      "title_pt_br": "Viagens",
+      "description_pt_br": "Para tudo relacionado a viagens."
     }
   },
   {
@@ -89,12 +167,25 @@
     "fields": {
       "order": "6",
       "name": "art",
-      "title": "Art",
+      "title_en": "Art",
       "color": "#595959",
       "description_en": "For everything related to art.",
-      "description_es": "Para todo lo relacionado con arte.",
       "created": "2018-10-22 12:23:30.382913+00:00",
-      "avatar": "openbook_categories/avatars/category_art-min.png"
+      "avatar": "openbook_categories/avatars/category_art-min.png",
+      "title_es": "",
+      "description_es": "",
+      "title_de": "Kunst",
+      "description_de": "Für alles, was mit Kunst zu tun hat.",
+      "title_sv": "Konst",
+      "description_sv": "För allt relaterat till konst.",
+      "title_fr": "Art",
+      "description_fr": "Pour tout ce qui concerne l'art.",
+      "title_it": "Arti",
+      "description_it": "Per tutto quello che riguarda le arti.",
+      "title_tr": "Sanat",
+      "description_tr": "Sanat ile ilgili her şey.",
+      "title_pt_br": "Arte",
+      "description_pt_br": "Para tudo relacionado a arte."
     }
   },
   {
@@ -103,12 +194,25 @@
     "fields": {
       "order": "7",
       "name": "lifestyle",
-      "title": "Lifestyle",
+      "title_en": "Lifestyle",
       "color": "#0085d8",
       "description_en": "For everything related to lifestyle.",
-      "description_es": "Para todo lo relacionado con estilo de vida.",
       "created": "2018-10-22 12:23:30.382913+00:00",
-      "avatar": "openbook_categories/avatars/category_lifestyle-min.png"
+      "avatar": "openbook_categories/avatars/category_lifestyle-min.png",
+      "title_es": "",
+      "description_es": "",
+      "title_de": "Lifestyle",
+      "description_de": "Für alles, was mit Lifestyle zu tun hat.",
+      "title_sv": "Livsstil",
+      "description_sv": "För allt relaterat till livsstil.",
+      "title_fr": "Style de vie",
+      "description_fr": "Pour tout ce qui concerne les styles de vie.",
+      "title_it": "Stile di vita",
+      "description_it": "Per tutto quello che riguarda lo stile di vita.",
+      "title_tr": "Yaşam Tarzı-Hobi",
+      "description_tr": "Yaşam Tarzı-Hobi ile ilgili her şey için.",
+      "title_pt_br": "Estilo de vida",
+      "description_pt_br": "Para tudo relacionado a estilos de vida."
     }
   },
   {
@@ -117,12 +221,25 @@
     "fields": {
       "order": "8",
       "name": "entertainment",
-      "title": "Entertainment",
+      "title_en": "Entertainment",
       "color": "#ffe032",
       "description_en": "For everything related to entertainment.",
-      "description_es": "Para todo lo relacionado con el entretenimiento.",
       "created": "2018-10-22 12:23:30.382913+00:00",
-      "avatar": "openbook_categories/avatars/category_entertainment-min.png"
+      "avatar": "openbook_categories/avatars/category_entertainment-min.png",
+      "title_es": "",
+      "description_es": "",
+      "title_de": "Unterhaltung",
+      "description_de": "Für alles, was mit Unterhaltung zu tun hat.",
+      "title_sv": "Underhållning",
+      "description_sv": "För allt relaterat till underhållning.",
+      "title_fr": "Divertissement",
+      "description_fr": "Pour tout ce qui concerne le divertissement.",
+      "title_it": "Intrattenimento",
+      "description_it": "Per tutto quello che riguarda l'intrattenimento.",
+      "title_tr": "Gösteri",
+      "description_tr": "Gösteri ile ilgili her şey.",
+      "title_pt_br": "Entretenimento",
+      "description_pt_br": "Para tudo relacionado a entretenimento."
     }
   },
   {
@@ -131,12 +248,25 @@
     "fields": {
       "order": "9",
       "name": "places",
-      "title": "Places",
+      "title_en": "Places",
       "color": "#dce3ed",
       "description_en": "For everything related to places.",
-      "description_es": "Para todo lo relacionado con lugares.",
       "created": "2018-10-22 12:23:30.382913+00:00",
-      "avatar": "openbook_categories/avatars/category_entertainment-min.png"
+      "avatar": "openbook_categories/avatars/category_places-min.png",
+      "title_es": "",
+      "description_es": "",
+      "title_de": "Orte",
+      "description_de": "Für alles, was mit besonderen Orten und Plätzen zu tun hat.",
+      "title_sv": "Platser",
+      "description_sv": "För allt relaterat till platser.",
+      "title_fr": "Lieux",
+      "description_fr": "Pour tout ce qui concerne les lieux.",
+      "title_it": "Luoghi",
+      "description_it": "Per tutto quello che riguarda i luoghi.",
+      "title_tr": "Mekanlar",
+      "description_tr": "Mekanlar ile ilgili her şey.",
+      "title_pt_br": "Lugares",
+      "description_pt_br": "Para tudo relacionado a lugares."
     }
   },
   {
@@ -145,12 +275,51 @@
     "fields": {
       "order": "9",
       "name": "food",
-      "title": "Food",
+      "title_en": "Food",
       "color": "#ffa41f",
       "description_en": "For everything related to food.",
-      "description_es": "Para todo lo relacionado con comida.",
       "created": "2018-10-22 12:23:30.382913+00:00",
-      "avatar": "openbook_categories/avatars/category_food-min.png"
+      "avatar": "openbook_categories/avatars/category_food-min.png",
+      "title_es": "",
+      "description_es": "",
+      "title_de": "Ernährung",
+      "description_de": "Für alles, was mit Nahrung zu tun hat.",
+      "title_sv": "Mat",
+      "description_sv": "För allt relaterat till mat.",
+      "title_fr": "Nourriture",
+      "description_fr": "Pour tout ce qui concerne la nourriture.",
+      "title_it": "Cibo",
+      "description_it": "Per tutto quello che riguarda gli alimenti.",
+      "title_tr": "Yemek",
+      "description_tr": "Yemek ile ilgili her şey.",
+      "title_pt_br": "Comida",
+      "description_pt_br": "Para tudo relacionado a comidas."
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 10,
+    "fields": {
+      "order": "7",
+      "name": "animals",
+      "title_en": "Animals",
+      "color": "#b3b3e3",
+      "description_en": "For everything related to animals.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_animals-min.png"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 11,
+    "fields": {
+      "order": "9",
+      "name": "science",
+      "title_en": "Science",
+      "color": "#d0bead",
+      "description_en": "For everything related to science.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_science-min.png"
     }
   }
 ]

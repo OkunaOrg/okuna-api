@@ -120,10 +120,11 @@ def send_post_comment_reaction_push_notification(post_comment_reaction):
     with translation.override(target_user_language_code):
         one_signal_notification = onesignal_sdk.Notification(post_body={
             "contents": {
-                "en": _('%(post_comment_reactor_name)s · @%(post_comment_reactor_username)s reacted to your comment.') % {
-                    'post_comment_reactor_name': post_comment_reactor.profile.name,
-                    'post_comment_reactor_username': post_comment_reactor.username,
-                }}
+                "en": _(
+                    '%(post_comment_reactor_name)s · @%(post_comment_reactor_username)s reacted to your comment.') % {
+                          'post_comment_reactor_name': post_comment_reactor.profile.name,
+                          'post_comment_reactor_username': post_comment_reactor.username,
+                      }}
         })
     Notification = get_notification_model()
     notification_data = {
@@ -133,6 +134,70 @@ def send_post_comment_reaction_push_notification(post_comment_reaction):
     one_signal_notification.set_parameter('!thread_id', notification_group)
     one_signal_notification.set_parameter('android_group', notification_group)
     _send_notification_to_user(notification=one_signal_notification, user=post_comment_commenter)
+
+
+def send_post_comment_user_mention_push_notification(post_comment_user_mention):
+    mentioned_user = post_comment_user_mention.user
+
+    if not mentioned_user.has_post_comment_mention_notifications_enabled():
+        return
+
+    post_comment_id = post_comment_user_mention.post_comment_id
+    notification_group = 'post_comment_%s' % post_comment_id
+
+    mentioner = post_comment_user_mention.post_comment.commenter
+
+    target_user_language_code = get_notification_language_code_for_target_user(mentioned_user)
+    with translation.override(target_user_language_code):
+        one_signal_notification = onesignal_sdk.Notification(post_body={
+            "contents": {
+                "en": _(
+                    '%(mentioner_name)s · @%(mentioner_username)s mentioned you in a comment.') % {
+                          'mentioner_name': mentioner.profile.name,
+                          'mentioner_username': mentioner.username,
+                      }}
+        })
+
+    Notification = get_notification_model()
+    notification_data = {
+        'type': Notification.POST_COMMENT_USER_MENTION,
+    }
+    one_signal_notification.set_parameter('data', notification_data)
+    one_signal_notification.set_parameter('!thread_id', notification_group)
+    one_signal_notification.set_parameter('android_group', notification_group)
+    _send_notification_to_user(notification=one_signal_notification, user=mentioned_user)
+
+
+def send_post_user_mention_push_notification(post_user_mention):
+    mentioned_user = post_user_mention.user
+
+    if not mentioned_user.has_post_mention_notifications_enabled():
+        return
+
+    post_id = post_user_mention.post_id
+    notification_group = 'post_%s' % post_id
+
+    mentioner = post_user_mention.post.creator
+
+    target_user_language_code = get_notification_language_code_for_target_user(mentioned_user)
+    with translation.override(target_user_language_code):
+        one_signal_notification = onesignal_sdk.Notification(post_body={
+            "contents": {
+                "en": _(
+                    '%(mentioner_name)s · @%(mentioner_username)s mentioned you in a post.') % {
+                          'mentioner_name': mentioner.profile.name,
+                          'mentioner_username': mentioner.username,
+                      }}
+        })
+
+    Notification = get_notification_model()
+    notification_data = {
+        'type': Notification.POST_USER_MENTION,
+    }
+    one_signal_notification.set_parameter('data', notification_data)
+    one_signal_notification.set_parameter('!thread_id', notification_group)
+    one_signal_notification.set_parameter('android_group', notification_group)
+    _send_notification_to_user(notification=one_signal_notification, user=mentioned_user)
 
 
 def send_community_invite_push_notification(community_invite):
