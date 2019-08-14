@@ -28,7 +28,7 @@ from imagekit.models import ProcessedImageField
 
 from openbook_moderation.models import ModeratedObject
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory
-from openbook_common.helpers import get_language_for_text, get_first_matched_url_from_text
+from openbook_common.helpers import get_language_for_text, get_matched_urls_from_text
 
 
 class Post(models.Model):
@@ -86,8 +86,6 @@ class Post(models.Model):
         if text:
             post.text = text
             post.language = get_language_for_text(text)
-            preview_link_url = get_first_matched_url_from_text(text)
-            post.update_or_create_preview_link(preview_link_url)
 
         if image:
             PostImage.create_post_image(image=image, post_id=post.pk)
@@ -215,10 +213,8 @@ class Post(models.Model):
 
         return False
 
-    def has_preview_link(self):
-        if hasattr(self, 'preview_link'):
-
-            if self.preview_link:
+    def has_links(self):
+        if self.post_links.exists():
                 return True
 
         return False
@@ -236,12 +232,10 @@ class Post(models.Model):
             return True
         return False
 
-    def update_or_create_preview_link(self, preview_link_url):
-        if preview_link_url is not None:
-            if not self.has_preview_link():
-                PostPreviewLink.create_preview_link(link=preview_link_url, post_id=self.pk)
-            else:
-                self.preview_link.link = preview_link_url
+    def create_links(self, link_urls):
+        self.post_links.all().delete()
+        for link_url in link_urls:
+                PostLink.create_link(link=link_url, post_id=self.pk)
 
     def is_encircled_post(self):
         return not self.is_public_post() and not self.community
@@ -251,14 +245,17 @@ class Post(models.Model):
         self.text = text
         self.is_edited = True
         self.language = get_language_for_text(text)
-        preview_link_url = get_first_matched_url_from_text(text)
-        self.update_or_create_preview_link(preview_link_url)
         self.save()
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
         if not self.id and not self.created:
             self.created = timezone.now()
+
+        if self.has_text() and not self.has_image() and not self.has_video():
+            link_urls = get_matched_urls_from_text(self.text)
+            if len(link_urls) > 0:
+                self.create_links(link_urls)
 
         return super(Post, self).save(*args, **kwargs)
 
@@ -530,14 +527,14 @@ class PostCommentMute(models.Model):
         return cls.objects.create(post_comment_id=post_comment_id, muter_id=muter_id)
 
 
-class PostPreviewLink(models.Model):
+class PostLink(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='preview_link')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='post_links')
     link = models.CharField(max_length=settings.POST_MAX_LENGTH)
 
     class Meta:
         unique_together = ('post', 'link',)
 
     @classmethod
-    def create_preview_link(cls, link, post_id):
+    def create_link(cls, link, post_id):
         return cls.objects.create(link=link, post_id=post_id)
