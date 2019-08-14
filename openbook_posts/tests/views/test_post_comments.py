@@ -605,6 +605,32 @@ class PostCommentsAPITests(APITestCase):
             self.assertEqual(
                 PostCommentUserMention.objects.filter(user_id=test_user.pk, post_comment_id=post_comment.pk).count(), 1)
 
+    def test_commenting_detect_mention_is_case_insensitive(self):
+        """
+        should detect post comment mentions regardless of the username letter cases
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        post = user.create_public_post(text=make_fake_post_text())
+
+        mentioned_user = make_user(username='shantanoodles')
+        post_comment_text = 'Hello @ShAnTaNoOdLes'
+
+        data = {
+            'text': post_comment_text
+        }
+        url = self._get_url(post=post)
+        response = self.client.put(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        post_comment = PostComment.objects.get(text=post_comment_text, commenter_id=user.pk)
+
+        self.assertEqual(
+            PostCommentUserMention.objects.filter(post_comment_id=post_comment.pk, user_id=mentioned_user.pk).count(),
+            1)
+
     def test_create_text_post_comment_ignores_non_existing_mentioned_usernames(self):
         """
         should ignore non existing mentioned usernames when creating a post comment

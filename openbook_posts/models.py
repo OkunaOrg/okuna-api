@@ -342,6 +342,7 @@ class Post(models.Model):
                 User = get_user_model()
 
                 for username in usernames:
+                    username = username.lower()
                     if username not in existing_mention_usernames:
                         try:
                             user = User.objects.only('id', 'username').get(username=username)
@@ -478,6 +479,7 @@ class PostComment(models.Model):
             User = get_user_model()
 
             for username in usernames:
+                username = username.lower()
                 if username not in existing_mention_usernames:
                     try:
                         user = User.objects.only('id', 'username').get(username=username)
