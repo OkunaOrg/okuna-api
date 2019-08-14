@@ -345,7 +345,7 @@ class Post(models.Model):
                     if username not in existing_mention_usernames:
                         try:
                             user = User.objects.only('id', 'username').get(username=username)
-                            user_is_post_creator = user.pk = self.creator_id
+                            user_is_post_creator = user.pk == self.creator_id
                             if user.can_see_post(post=self) and not user_is_post_creator:
                                 PostUserMention.create_post_user_mention(user=user, post=self)
                                 existing_mention_usernames.append(username)
