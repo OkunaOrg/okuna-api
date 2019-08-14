@@ -252,7 +252,7 @@
       "color": "#dce3ed",
       "description_en": "For everything related to places.",
       "created": "2018-10-22 12:23:30.382913+00:00",
-      "avatar": "openbook_categories/avatars/category_entertainment-min.png",
+      "avatar": "openbook_categories/avatars/category_places-min.png",
       "title_es": "",
       "description_es": "",
       "title_de": "Orte",
@@ -294,6 +294,32 @@
       "description_tr": "Yemek ile ilgili her şey.",
       "title_pt_br": "Comida",
       "description_pt_br": "Para tudo relacionado a comidas."
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 10,
+    "fields": {
+      "order": "7",
+      "name": "animals",
+      "title_en": "Animals",
+      "color": "#b3b3e3",
+      "description_en": "For everything related to animals.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_animals-min.png"
+    }
+  },
+  {
+    "model": "openbook_categories.Category",
+    "pk": 11,
+    "fields": {
+      "order": "9",
+      "name": "science",
+      "title_en": "Science",
+      "color": "#d0bead",
+      "description_en": "For everything related to science.",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "avatar": "openbook_categories/avatars/category_science-min.png"
     }
   }
 ]
