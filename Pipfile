@@ -40,7 +40,8 @@ langdetect = "*"
 django-rq = "*"
 redis = "*"
 webpreview = "*"
-django-image-proxy = "*"
+django-proxy = "*"
+beautifulsoup4 = "*"
 
 [pipenv]
 allow_prereleases = true
