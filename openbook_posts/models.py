@@ -342,6 +342,7 @@ class Post(models.Model):
                 User = get_user_model()
 
                 for username in usernames:
+                    username = username.lower()
                     if username not in existing_mention_usernames:
                         try:
                             user = User.objects.only('id', 'username').get(username=username)
@@ -478,15 +479,34 @@ class PostComment(models.Model):
             User = get_user_model()
 
             for username in usernames:
+                username = username.lower()
                 if username not in existing_mention_usernames:
                     try:
                         user = User.objects.only('id', 'username').get(username=username)
+                        user_can_see_post_comment = user.can_see_post_comment(post_comment=self)
                         user_is_commenter = user.pk == self.commenter_id
-                        user_is_parent_comment_commenter = self.parent_comment and self.parent_comment.commenter_id == user.pk
-                        if user.can_see_post_comment(
-                                post_comment=self) and not user_is_commenter and not user_is_parent_comment_commenter:
-                            PostCommentUserMention.create_post_comment_user_mention(user=user, post_comment=self)
-                            existing_mention_usernames.append(username)
+
+                        if not user_can_see_post_comment or user_is_commenter:
+                            continue
+
+                        if self.parent_comment:
+                            user_is_parent_comment_creator = self.parent_comment.commenter_id == user.pk
+                            user_has_replied_before = self.parent_comment.replies.filter(commenter_id=user.pk).exists()
+
+                            if user_has_replied_before or user_is_parent_comment_creator:
+                                # Its a reply to a comment, if the user previously replied to the comment
+                                # or if he's the creator of the parent comment he will already be alerted of the reply,
+                                # no need for mention
+                                continue
+                        else:
+                            user_has_commented_before = self.post.comments.filter(commenter_id=user.pk).exists()
+                            if user_has_commented_before:
+                                # Its a comment to a post, if the user previously commented on the post
+                                # he will already be alerted of the comment, no need for mention
+                                continue
+
+                        PostCommentUserMention.create_post_comment_user_mention(user=user, post_comment=self)
+                        existing_mention_usernames.append(username)
                     except User.DoesNotExist:
                         pass
 

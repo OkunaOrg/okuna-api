@@ -148,6 +148,29 @@ class PostsAPITests(APITestCase):
 
             self.assertEqual(PostUserMention.objects.filter(user_id=test_user.pk, post_id=post.pk).count(), 1)
 
+    def test_create_text_detect_mention_is_case_insensitive(self):
+        """
+        should detect mention regardless of the username letter cases
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        mentioned_user = make_user(username='joel132')
+
+        post_text = 'Hello @JoEl132'
+
+        data = {
+            'text': post_text,
+        }
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+
+        self.assertTrue(PostUserMention.objects.filter(post_id=post.pk, user_id=mentioned_user.pk).exists())
+
     def test_create_text_post_ignores_non_existing_mentioned_usernames(self):
         """
         should ignore non existing mentioned usernames when creating a post
