@@ -405,6 +405,8 @@ STATICFILES_DIRS = (
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
+PROXY_HOST = os.environ.get('PROXY_HOST')
+
 # Openbook config
 
 USERNAME_MAX_LENGTH = 30

@@ -18,6 +18,7 @@ from django.urls import path, include
 from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
+from proxy.views import proxy_view
 
 from openbook_auth.views.auth.views import Register, Login, UsernameCheck, EmailCheck, EmailVerify, \
     PasswordResetRequest, PasswordResetVerify
@@ -61,8 +62,7 @@ from openbook_moderation.views.report.views import ReportUser, ReportPost, Repor
     ReportPostComment
 from openbook_moderation.views.user.views import UserModerationPenalties, UserPendingModeratedObjectsCommunities
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
-from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost, TranslatePost, \
-    PostPreviewLink
+from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost, TranslatePost, PostPreviewLinkData
 from openbook_posts.views.post_comment.post_comment_reaction.views import PostCommentReactionItem
 from openbook_posts.views.post_comment.post_comment_reactions.views import PostCommentReactions, \
     PostCommentReactionsEmojiCount
@@ -176,7 +176,7 @@ post_patterns = [
     path('open/', PostOpen.as_view(), name='open-post'),
     path('report/', ReportPost.as_view(), name='report-post'),
     path('translate/', TranslatePost.as_view(), name='translate-post'),
-    path('link-preview/', PostPreviewLink.as_view(), name='preview-post-link'),
+    path('link-preview/', PostPreviewLinkData.as_view(), name='preview-post-link'),
 ]
 
 posts_patterns = [
@@ -362,6 +362,7 @@ if settings.FEATURE_IMPORTER_ENABLED:
 
 urlpatterns = [
     path('api/', include(api_patterns)),
+    url('proxy/(?P<url>.*)', proxy_view, name='proxy'),
     url('admin/', admin.site.urls),
     url('health/', Health.as_view(), name='health'),
 ]
