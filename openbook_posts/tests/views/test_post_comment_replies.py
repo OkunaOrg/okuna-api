@@ -1672,6 +1672,34 @@ class PostCommentRepliesAPITests(APITestCase):
 
         self.assertEqual(PostCommentUserMention.objects.filter(post_comment_id=post_comment.pk).count(), 0)
 
+    def test_reply_to_post_comment_ignores_if_username_already_replied(self):
+        """
+        should ignore a username if the person already replied
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        post = user.create_public_post(text=make_fake_post_text())
+        parent_comment_creator = make_user()
+        parent_comment = parent_comment_creator.comment_post(post=post, text=make_fake_post_comment_text())
+
+        mentioned_user = make_user()
+        mentioned_user.reply_to_comment_for_post(post_comment=parent_comment, post=post, text=make_fake_post_text())
+
+        reply_comment_text = 'Hello @' + mentioned_user.username
+
+        data = self._get_create_post_comment_request_data(reply_comment_text)
+
+        url = self._get_url(post, parent_comment)
+        response = self.client.put(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        post_comment = PostComment.objects.get(text=reply_comment_text, commenter_id=user.pk)
+
+        self.assertEqual(PostCommentUserMention.objects.filter(post_comment_id=post_comment.pk).count(), 0)
+
     def test_reply_to_post_comment_ignores_comment_creator_username_mention(self):
         """
         should ignore the comment creator username mention when replying to a post comment

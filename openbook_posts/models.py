@@ -483,14 +483,15 @@ class PostComment(models.Model):
                 if username not in existing_mention_usernames:
                     try:
                         user = User.objects.only('id', 'username').get(username=username)
-                        user_can_see_post_comment = user.can_see_post_comment()
+                        user_can_see_post_comment = user.can_see_post_comment(post_comment=self)
                         user_is_commenter = user.pk == self.commenter_id
 
                         if not user_can_see_post_comment or user_is_commenter:
                             continue
 
                         if self.parent_comment:
-                            user_has_replied_before = self.replies.filter(commenter_id=user.pk).exists()
+                            user_has_replied_before = self.parent_comment.replies.filter(commenter_id=user.pk).exists()
+
                             if user_has_replied_before:
                                 # Its a reply to a comment, if the user previously replied to the comment
                                 # he will already be alerted of the reply, no need for mention
