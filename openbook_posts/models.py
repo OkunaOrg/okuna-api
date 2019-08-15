@@ -143,28 +143,46 @@ class Post(models.Model):
         return trending_posts_query
 
     @classmethod
-    def get_post_comment_notification_target_users(cls, post_id, post_commenter_id, post_comment_id=None):
+    def get_post_comment_notification_target_users(cls, post, post_commenter):
         """
         Returns the users that should be notified of a post comment.
         This includes the post creator and other post commenters
-        :param post_id:
-        :param post_commenter_id:
-        :param post_comment_id:
         :return:
         """
 
-        if post_comment_id is not None:
-            post_notification_target_users_query = Q(posts_comments__parent_comment_id=post_comment_id)
-            post_notification_target_users_query.add(Q(posts_comments__id=post_comment_id), Q.OR)
+        # Add other post commenters, exclude replies to comments, the post commenter
+        other_commenters = User.objects.filter(
+            Q(posts_comments__post_id=post.pk, posts_comments__parent_comment_id=None, ) & ~Q(
+                id=post_commenter.pk))
+
+        if post_commenter.pk == post.creator_id:
+            result = other_commenters
         else:
-            post_notification_target_users_query = Q(posts_comments__post_id=post_id,
-                                                     posts_comments__parent_comment_id=None)
-            post_notification_target_users_query.add(Q(posts__id=post_id), Q.OR)
+            post_creator = User.objects.filter(pk=post.creator_id)
+            result = other_commenters.union(post_creator)
 
-        post_notification_target_users_query.add(~Q(id=post_commenter_id), Q.AND)
-        post_notification_target_users_query.add(~Q(user_blocks__blocked_user_id=post_commenter_id), Q.AND)
+        return result
 
-        return User.objects.filter(post_notification_target_users_query).distinct()
+    @classmethod
+    def get_post_comment_reply_notification_target_users(cls, post_commenter, parent_post_comment):
+        """
+        Returns the users that should be notified of a post comment reply.
+        :return:
+        """
+
+        # Add other post commenters, exclude non replies, the post commenter
+        other_repliers = User.objects.filter(
+            Q(posts_comments__parent_comment_id=parent_post_comment.pk, ) & ~Q(
+                id=post_commenter.pk))
+
+        if parent_post_comment.commenter_id == post_commenter.pk:
+            result = other_repliers
+        else:
+            # Add post comment creator
+            post_comment_creator = User.objects.filter(pk=parent_post_comment.commenter_id)
+            result = other_repliers.union(post_comment_creator)
+
+        return result
 
     def count_comments(self):
         return PostComment.count_comments_for_post_with_id(self.pk)

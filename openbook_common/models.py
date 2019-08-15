@@ -97,6 +97,9 @@ class Language(models.Model):
     name = models.CharField(_('name'), max_length=64, blank=False, null=False)
     created = models.DateTimeField(editable=False)
 
+    def __str__(self):
+        return 'Language: ' + self.code
+
     def save(self, *args, **kwargs):
         if not self.id:
             self.created = timezone.now()

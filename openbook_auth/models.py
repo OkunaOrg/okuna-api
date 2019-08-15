@@ -966,8 +966,11 @@ class User(AbstractUser):
         post_commenter = self
 
         Post = get_post_model()
-        post_notification_target_users = Post.get_post_comment_notification_target_users(post_id=post.id,
-                                                                                         post_commenter_id=self.pk)
+
+        # Language should also be prefetched here, for some reason it doesnt work....
+        post_notification_target_users = Post.get_post_comment_notification_target_users(post=post,
+                                                                                         post_commenter=post_commenter).only(
+            'id', 'username', 'notifications_settings__post_comment_notifications')
         PostCommentNotification = get_post_comment_notification_model()
 
         for post_notification_target_user in post_notification_target_users:
@@ -1019,9 +1022,13 @@ class User(AbstractUser):
         post = post_comment.post
 
         Post = get_post_model()
-        post_notification_target_users = Post.get_post_comment_notification_target_users(post_id=post.id,
-                                                                                         post_commenter_id=self.pk,
-                                                                                         post_comment_id=post_comment.pk)
+
+        # Language should also be prefetched here, for some reason it doesnt work....
+        post_notification_target_users = Post.get_post_comment_reply_notification_target_users(
+            post_commenter=self,
+            parent_post_comment=post_comment).only(
+            'id', 'username', 'notifications_settings__post_comment_reply_notifications')
+
         PostCommentReplyNotification = get_post_comment_reply_notification_model()
 
         for post_notification_target_user in post_notification_target_users:
@@ -1035,6 +1042,7 @@ class User(AbstractUser):
             if post_notification_target_has_comment_reply_notifications_enabled:
                 target_user_language_code = get_notification_language_code_for_target_user(
                     post_notification_target_user)
+
                 with translation.override(target_user_language_code):
                     if post_notification_target_user_is_post_comment_creator:
                         notification_message = {
