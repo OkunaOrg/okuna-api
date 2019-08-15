@@ -6,7 +6,6 @@ import uuid
 from django.contrib.auth.validators import UnicodeUsernameValidator, ASCIIUsernameValidator
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
-from django.urls import reverse
 from django.contrib.auth.models import AbstractUser
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -26,7 +25,8 @@ from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
 from openbook_notifications.helpers import get_notification_language_code_for_target_user
 from openbook_translation import translation_strategy
-from openbook_common.helpers import get_supported_translation_language, get_matched_urls_from_text
+from openbook_common.helpers import get_supported_translation_language, make_proxy_image_url, \
+    get_domain_from_link, get_favicon_url_from_link
 from openbook_common.models import Badge, Language
 from openbook_common.utils.helpers import delete_file_field
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
@@ -40,7 +40,6 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_comment_reaction_notification_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications import helpers
-from openbook_posts.helpers import get_favicon_url_from_link
 
 
 class User(AbstractUser):
@@ -1711,23 +1710,30 @@ class User(AbstractUser):
         self._check_can_get_user_with_id(user_id=user.pk)
         return user
 
+    def _get_preview_data_from_link(self, preview_link):
+        title, description, image_url = web_preview(preview_link)
+        favicon_url = get_favicon_url_from_link(preview_link)
+        domain_url = get_domain_from_link(preview_link)
+        proxy_image_url = make_proxy_image_url(image_url)
+        if favicon_url:
+            favicon_url = make_proxy_image_url(favicon_url)
+
+        return title, description, proxy_image_url, favicon_url, domain_url
+
     def get_preview_link_data_for_post_with_id(self, post_id):
         self._check_can_get_preview_link_data_for_post_with_id(post_id)
         Post = get_post_model()
         post = Post.objects.get(pk=post_id)
         preview_link = post.post_links.first().link
-        print('>>>>>> {0}'.format(preview_link))
-        title, description, image_url = web_preview(preview_link)
-        favicon_url = get_favicon_url_from_link(preview_link)
-        proxy_image_url = self._make_proxy_image_url(image_url)
-        if favicon_url:
-            favicon_url = self._make_proxy_image_url(favicon_url)
+        title, description, proxy_image_url, proxy_favicon_url, domain_url \
+            = self._get_preview_data_from_link(preview_link)
 
         return {
             'title': title,
             'description': description,
             'image_url': proxy_image_url,
-            'favicon_url': favicon_url
+            'favicon_url': proxy_favicon_url,
+            'domain_url': domain_url
         }
 
     def translate_post_with_id(self, post_id):
@@ -4078,14 +4084,6 @@ class User(AbstractUser):
             raise ValidationError(
                 _('No link associated with post.'),
             )
-
-    def _make_proxy_image_url(self, image_url):
-        relative_url = reverse('proxy', kwargs={
-            'url': image_url
-        })
-        proxy_image_url = settings.PROXY_HOST + relative_url
-
-        return proxy_image_url
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='bootstrap_auth_token')

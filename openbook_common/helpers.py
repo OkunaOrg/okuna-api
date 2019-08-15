@@ -1,6 +1,11 @@
 from langdetect import DetectorFactory, detect
 from langdetect.lang_detect_exception import LangDetectException
 import re
+from django.conf import settings
+from django.urls import reverse
+import urllib
+from urllib.parse import urlparse
+from bs4 import BeautifulSoup
 
 from openbook_common.utils.model_loaders import get_language_model
 from openbook_translation import translation_strategy
@@ -36,10 +41,44 @@ def get_supported_translation_language(language_code):
 def get_matched_urls_from_text(text):
     match_urls_pattern = re.compile(r"(?i)(http[s]?://|www)(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!#*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
 
-    result = match_urls_pattern.findall(text, re.IGNORECASE)
-    if result is not None:
-        return result
-    print(result)
-
+    result = [url.group() for url in match_urls_pattern.finditer(text, re.IGNORECASE)]
     return result
 
+
+def make_proxy_image_url(image_url):
+    relative_url = reverse('proxy', kwargs={
+        'url': image_url
+    })
+    proxy_image_url = settings.PROXY_HOST + relative_url
+
+    return proxy_image_url
+
+
+def get_domain_from_link(url):
+    parsed_uri = urlparse(url)
+    result = '{uri.netloc}'.format(uri=parsed_uri)
+    return result.lower()
+
+
+def get_domain_full_url_from_link(url):
+    parsed_uri = urlparse(url)
+    result = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_uri)
+    return result.lower()
+
+
+def get_favicon_url_from_link(url):
+    if not urlparse(url).scheme:
+        url = 'https://' + url
+
+    page = urllib.request.urlopen(url)
+    soup = BeautifulSoup(page, features='html.parser')
+    favicon_link = soup.find("link", rel="icon")
+    if not favicon_link:
+        favicon_link = soup.find("link", rel="shortcut icon")
+
+    if favicon_link['href'][0] == '/':
+        favicon_link = get_domain_full_url_from_link(url) + favicon_link['href']
+    else:
+        favicon_link = favicon_link['href']
+
+    return favicon_link
