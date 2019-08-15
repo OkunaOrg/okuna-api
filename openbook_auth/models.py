@@ -1022,7 +1022,8 @@ class User(AbstractUser):
         Post = get_post_model()
         post_notification_target_users = Post.get_post_comment_reply_notification_target_users(
             post_commenter=self,
-            post_comment=post_comment)
+            parent_post_comment=post_comment).only(
+            'id', 'username')
         PostCommentReplyNotification = get_post_comment_reply_notification_model()
 
         for post_notification_target_user in post_notification_target_users:

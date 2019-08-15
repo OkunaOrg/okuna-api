@@ -162,7 +162,7 @@ class Post(models.Model):
             return other_commenters.union(post_creator)
 
     @classmethod
-    def get_post_comment_reply_notification_target_users(cls, post_commenter, post_comment):
+    def get_post_comment_reply_notification_target_users(cls, post_commenter, parent_post_comment):
         """
         Returns the users that should be notified of a post comment reply.
         :return:
@@ -170,13 +170,15 @@ class Post(models.Model):
 
         # Add other post commenters, exclude non replies, the post commenter
         other_repliers = User.objects.filter(
-            Q(posts_comments__parent_comment_id=post_comment.pk, ) & ~Q(
+            Q(posts_comments__parent_comment_id=parent_post_comment.pk, ) & ~Q(
                 id=post_commenter.pk))
 
-        # Add post creator
-        post_comment_creator = User.objects.filter(pk=post_comment.commenter_id)
-
-        return other_repliers.union(post_comment_creator)
+        if parent_post_comment.commenter_id == post_commenter.pk:
+            return other_repliers
+        else:
+            # Add post comment creator
+            post_comment_creator = User.objects.filter(pk=parent_post_comment.commenter_id)
+            return other_repliers.union(post_comment_creator)
 
     def count_comments(self):
         return PostComment.count_comments_for_post_with_id(self.pk)
