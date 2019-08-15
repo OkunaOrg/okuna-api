@@ -1312,8 +1312,8 @@ class PostCommentsAPITests(APITestCase):
         url = self._get_url(post)
         self.client.put(url, data, **headers)
 
-        self.assertTrue(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
-                                                               notification__owner=foreign_user).exists())
+        self.assertEqual(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
+                                                                notification__owner=foreign_user).count(), 1)
 
     def test_commenting_in_own_post_does_not_create_notification(self):
         """
@@ -1376,8 +1376,8 @@ class PostCommentsAPITests(APITestCase):
         url = self._get_url(post)
         self.client.put(url, data, **headers)
 
-        self.assertTrue(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
-                                                               notification__owner=foreign_user).exists())
+        self.assertEqual(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
+                                                                notification__owner=foreign_user).count(), 1)
 
     def test_commenting_in_commented_post_by_foreign_user_creates_foreign_notification_when_muted(self):
         """
@@ -1403,8 +1403,8 @@ class PostCommentsAPITests(APITestCase):
         url = self._get_url(post)
         self.client.put(url, data, **headers)
 
-        self.assertTrue(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
-                                                               notification__owner=foreign_user).exists())
+        self.assertEqual(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
+                                                                notification__owner=foreign_user).count(), 1)
 
     def test_comment_in_an_encircled_post_with_a_user_removed_from_the_circle_not_notifies_it(self):
         """
