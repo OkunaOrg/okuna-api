@@ -966,8 +966,9 @@ class User(AbstractUser):
         post_commenter = self
 
         Post = get_post_model()
-        post_notification_target_users = Post.get_post_comment_notification_target_users(post_id=post.id,
-                                                                                         post_commenter_id=self.pk)
+        post_notification_target_users = Post.get_post_comment_notification_target_users(post=post,
+                                                                                         post_commenter=post_commenter).only(
+            'id', 'username')
         PostCommentNotification = get_post_comment_notification_model()
 
         for post_notification_target_user in post_notification_target_users:
@@ -1019,9 +1020,9 @@ class User(AbstractUser):
         post = post_comment.post
 
         Post = get_post_model()
-        post_notification_target_users = Post.get_post_comment_notification_target_users(post_id=post.id,
-                                                                                         post_commenter_id=self.pk,
-                                                                                         post_comment_id=post_comment.pk)
+        post_notification_target_users = Post.get_post_comment_reply_notification_target_users(
+            post_commenter=self,
+            post_comment=post_comment)
         PostCommentReplyNotification = get_post_comment_reply_notification_model()
 
         for post_notification_target_user in post_notification_target_users:
