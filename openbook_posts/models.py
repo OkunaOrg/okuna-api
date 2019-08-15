@@ -155,13 +155,9 @@ class Post(models.Model):
             Q(posts_comments__post_id=post.pk, posts_comments__parent_comment_id=None, ) & ~Q(
                 id=post_commenter.pk))
 
-        if post_commenter.pk == post.creator_id:
-            result = other_commenters
-        else:
-            post_creator = User.objects.filter(pk=post.creator_id)
-            result = other_commenters.union(post_creator)
+        post_creator = User.objects.filter(pk=post.creator_id)
 
-        return result
+        return other_commenters.union(post_creator)
 
     @classmethod
     def get_post_comment_reply_notification_target_users(cls, post_commenter, parent_post_comment):
@@ -175,14 +171,9 @@ class Post(models.Model):
             Q(posts_comments__parent_comment_id=parent_post_comment.pk, ) & ~Q(
                 id=post_commenter.pk))
 
-        if parent_post_comment.commenter_id == post_commenter.pk:
-            result = other_repliers
-        else:
-            # Add post comment creator
-            post_comment_creator = User.objects.filter(pk=parent_post_comment.commenter_id)
-            result = other_repliers.union(post_comment_creator)
-
-        return result
+        # Add post comment creator
+        post_comment_creator = User.objects.filter(pk=parent_post_comment.commenter_id)
+        return other_repliers.union(post_comment_creator)
 
     def count_comments(self):
         return PostComment.count_comments_for_post_with_id(self.pk)

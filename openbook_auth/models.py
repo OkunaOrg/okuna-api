@@ -974,7 +974,7 @@ class User(AbstractUser):
         PostCommentNotification = get_post_comment_notification_model()
 
         for post_notification_target_user in post_notification_target_users:
-            if not post_notification_target_user.can_see_post(post=post):
+            if post_notification_target_user.pk == post_commenter.pk or not post_notification_target_user.can_see_post(post=post):
                 continue
             post_notification_target_user_is_post_creator = post_notification_target_user.id == post_creator.id
             post_notification_target_has_comment_notifications_enabled = post_notification_target_user.has_comment_notifications_enabled_for_post_with_id(
@@ -1032,7 +1032,7 @@ class User(AbstractUser):
         PostCommentReplyNotification = get_post_comment_reply_notification_model()
 
         for post_notification_target_user in post_notification_target_users:
-            if not post_notification_target_user.can_see_post(post=post):
+            if post_notification_target_user.pk == replier.pk or not post_notification_target_user.can_see_post(post=post):
                 continue
             post_notification_target_user_is_post_comment_creator = post_notification_target_user.id == comment_creator
             post_notification_target_has_comment_reply_notifications_enabled = \
