@@ -2581,8 +2581,7 @@ class User(AbstractUser):
 
     def get_participants_for_post(self, post):
         self.can_see_post(post=post)
-        post_participants_query = post.make_participants_query()
-        return User.objects.filter(post_participants_query)
+        return post.get_participants()
 
     def _check_has_not_reported_moderated_object_with_id(self, moderated_object_id):
         if self.has_reported_moderated_object_with_id(moderated_object_id=moderated_object_id):

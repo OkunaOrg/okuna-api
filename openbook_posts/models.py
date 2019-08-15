@@ -307,21 +307,23 @@ class Post(models.Model):
         PostCommentReplyNotification.objects.filter(post_comment__post=self.pk,
                                                     notification__owner_id=user.pk).delete()
 
-    def make_participants_query(self):
+    def get_participants(self):
+        User = get_user_model()
+
         # Add post creator
-        participants_query = Q(posts__id=self.pk)
+        post_creator = User.objects.filter(pk=self.creator_id)
 
         # Add post commentators
-        participants_query.add(Q(posts_comments__post_id=self.pk), Q.OR)
+        post_commenters = User.objects.filter(posts_comments__post_id=self.pk, is_deleted=False)
+
+        community_members = None
 
         # If community post, add community members
         if self.community:
-            participants_query.add(Q(communities_memberships__community_id=self.community_id), Q.OR)
+            community_members = User.objects.filter(communities_memberships__community_id=self.community_id,
+                                                    is_deleted=False)
 
-        # No deleted users
-        participants_query.add(Q(is_deleted=False), Q.AND)
-
-        return participants_query
+        return post_creator.union(post_commenters, community_members)
 
     def _process_post_mentions(self):
         if not self.text:
