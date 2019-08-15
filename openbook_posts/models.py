@@ -316,14 +316,15 @@ class Post(models.Model):
         # Add post commentators
         post_commenters = User.objects.filter(posts_comments__post_id=self.pk, is_deleted=False)
 
-        community_members = None
-
         # If community post, add community members
         if self.community:
             community_members = User.objects.filter(communities_memberships__community_id=self.community_id,
                                                     is_deleted=False)
+            result = post_creator.union(post_commenters, community_members)
+        else:
+            result = post_creator.union(post_commenters)
 
-        return post_creator.union(post_commenters, community_members)
+        return result
 
     def _process_post_mentions(self):
         if not self.text:
