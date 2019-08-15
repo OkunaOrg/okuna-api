@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: okuna\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-08-06 22:26+0200\n"
-"PO-Revision-Date: 2019-08-08 11:20\n"
+"POT-Creation-Date: 2019-08-12 15:41+0200\n"
+"PO-Revision-Date: 2019-08-13 15:27\n"
 "Last-Translator: Jozsef Sallai (joexyz)\n"
 "Language-Team: Turkish\n"
 "Language: tr_TR\n"
@@ -16,17 +16,37 @@ msgstr ""
 "X-Crowdin-Language: tr\n"
 "X-Crowdin-File: /okuna-api/django.po\n"
 
-#: openbook/settings.py:387
+#: openbook/settings.py:389
 msgid "Spanish"
 msgstr "İspanyolca"
 
-#: openbook/settings.py:388
+#: openbook/settings.py:390
 msgid "English"
 msgstr "İngilizce"
 
-#: openbook/settings.py:389
+#: openbook/settings.py:391
 msgid "German"
 msgstr "Almanca"
+
+#: openbook/settings.py:392
+msgid "Swedish"
+msgstr "İsveççe"
+
+#: openbook/settings.py:393
+msgid "French"
+msgstr "Fransızca"
+
+#: openbook/settings.py:394
+msgid "Italian"
+msgstr "İtalyanca"
+
+#: openbook/settings.py:395
+msgid "Turkish"
+msgstr "Türkçe"
+
+#: openbook/settings.py:396
+msgid "Portuguese, Brazilian"
+msgstr "Portekizce, Brezilya"
 
 #: openbook_auth/models.py:55 openbook_invitations/models.py:23
 msgid "email address"
@@ -65,23 +85,23 @@ msgstr "Hesap oluşturmak için 16 yaşından büyük olduğunuzu onaylamanız g
 msgid "You must accept the guidelines to make an account"
 msgstr "Hesap oluşturmak için yönergeleri kabul etmelisiniz"
 
-#: openbook_auth/models.py:167 openbook_auth/models.py:2885
-#: openbook_auth/models.py:2921
+#: openbook_auth/models.py:167 openbook_auth/models.py:2951
+#: openbook_auth/models.py:2987
 msgid "Token type does not match"
 msgstr "Kupon tipi eşleşmiyor"
 
-#: openbook_auth/models.py:174 openbook_auth/models.py:2895
-#: openbook_auth/models.py:2936
+#: openbook_auth/models.py:174 openbook_auth/models.py:2961
+#: openbook_auth/models.py:3002
 msgid "Invalid token signature"
 msgstr "Geçersiz kupon imzası"
 
-#: openbook_auth/models.py:178 openbook_auth/models.py:2899
-#: openbook_auth/models.py:2940
+#: openbook_auth/models.py:178 openbook_auth/models.py:2965
+#: openbook_auth/models.py:3006
 msgid "Token expired"
 msgstr "Kuponun süresi doldu"
 
-#: openbook_auth/models.py:182 openbook_auth/models.py:2903
-#: openbook_auth/models.py:2944
+#: openbook_auth/models.py:182 openbook_auth/models.py:2969
+#: openbook_auth/models.py:3010
 msgid "Failed to decode token"
 msgstr "Kupon kodu çözülemedi"
 
@@ -89,585 +109,585 @@ msgstr "Kupon kodu çözülemedi"
 msgid "No user found for token"
 msgstr "Kupon için kullanıcı bulunamadı"
 
-#: openbook_auth/models.py:190 openbook_auth/models.py:2907
-#: openbook_auth/models.py:2948
+#: openbook_auth/models.py:190 openbook_auth/models.py:2973
+#: openbook_auth/models.py:3014
 msgid "Invalid token"
 msgstr "Geçersiz kupon"
 
-#: openbook_auth/models.py:974
+#: openbook_auth/models.py:986
 #, python-format
 msgid "%(post_commenter_name)s · %(post_commenter_username)s commented on your post."
 msgstr "%(post_commenter_name)s · %(post_commenter_username)s gönderinize yorum yaptı."
 
-#: openbook_auth/models.py:981
+#: openbook_auth/models.py:993
 #, python-format
 msgid "%(post_commenter_name)s · @%(post_commenter_username)s commented on a post you also commented on."
 msgstr "%(post_commenter_name)s · @%(post_commenter_username)s hakkında yorum yaptığın bir gönderiye yorum yaptı."
 
-#: openbook_auth/models.py:1029
+#: openbook_auth/models.py:1042
 #, python-format
 msgid "%(post_commenter_name)s · @%(post_commenter_username)s replied to your comment on a post."
 msgstr "%(post_commenter_name)s · @%(post_commenter_username)s bir gönderi hakkındaki yorumunuza yanıt verdi."
 
-#: openbook_auth/models.py:1036
+#: openbook_auth/models.py:1049
 #, python-format
 msgid "%(post_commenter_name)s · @%(post_commenter_username)s replied on a comment you also replied on."
 msgstr "%(post_commenter_name)s · @%(post_commenter_username)s 'de cevap verdiğiniz bir yoruma cevap verdi."
 
-#: openbook_auth/models.py:2092
+#: openbook_auth/models.py:2119
 msgid "A user cannot follow itself."
 msgstr "Bir kullanıcı kendini takip edemez."
 
-#: openbook_auth/models.py:2161
+#: openbook_auth/models.py:2188
 msgid "A user cannot connect with itself."
 msgstr "Bir kullanıcı kendi kendine bağlanamaz."
 
-#: openbook_auth/models.py:2200
+#: openbook_auth/models.py:2227
 msgid "No data to update the connection with."
 msgstr "Bağlantıyı güncellemek için veri yok."
 
-#: openbook_auth/models.py:2539
+#: openbook_auth/models.py:2608
 msgid "You have already reported the moderated_object."
 msgstr "Denetlenen nesneyi zaten bildirdiniz."
 
-#: openbook_auth/models.py:2547
+#: openbook_auth/models.py:2616
 msgid "The moderated object has been verified and can no longer be edited."
 msgstr "Denetlenen nesne doğrulandı ve artık düzenlenemiyor."
 
-#: openbook_auth/models.py:2552
+#: openbook_auth/models.py:2621
 msgid "The moderated object has already been approved/rejected."
 msgstr "Yönetilen nesne zaten onaylandı / reddedildi."
 
-#: openbook_auth/models.py:2560 openbook_auth/models.py:2567
+#: openbook_auth/models.py:2629 openbook_auth/models.py:2636
 msgid "The moderated object has already been verified."
 msgstr "Denetlenen nesne zaten doğrulandı."
 
-#: openbook_auth/models.py:2574
+#: openbook_auth/models.py:2643
 msgid "The moderated object has not been verified."
 msgstr "Denetlenen nesne doğrulanmadı."
 
-#: openbook_auth/models.py:2581
+#: openbook_auth/models.py:2650
 msgid "The moderated object is already verified."
 msgstr "Denetlenen nesne zaten doğrulanmış."
 
-#: openbook_auth/models.py:2586
+#: openbook_auth/models.py:2655
 msgid "You cannot verify a moderated object with status pending. Please approve or reject it."
 msgstr "Durumu beklemede olan yönetilen bir nesneyi doğrulayamazsınız. Lütfen onaylayın veya reddedin."
 
-#: openbook_auth/models.py:2603
+#: openbook_auth/models.py:2672
 msgid "Only community staff can moderate community posts"
 msgstr "Yalnızca topluluk çalışanları topluluk gönderilerini denetleyebilir"
 
-#: openbook_auth/models.py:2605
+#: openbook_auth/models.py:2674
 msgid "Only global moderators can moderate non-community posts"
 msgstr "Yalnızca küresel moderatörler topluluk dışı gönderileri denetleyebilir"
 
-#: openbook_auth/models.py:2609
+#: openbook_auth/models.py:2678
 msgid "Only community staff can moderate community post comments"
 msgstr "Sadece topluluk çalışanı topluluk mesaj yorumlarını yönetebilir"
 
-#: openbook_auth/models.py:2611
+#: openbook_auth/models.py:2680
 msgid "Only global moderators can moderate non-community post comments"
 msgstr "Yalnızca küresel moderatörler topluluk dışı gönderileri yorum yapabilir"
 
-#: openbook_auth/models.py:2613
+#: openbook_auth/models.py:2682
 msgid "Non global moderators can only moderate posts and post comments."
 msgstr "Küresel olmayan moderatörler yalnızca gönderileri denetleyebilir ve yorum gönderebilir."
 
-#: openbook_auth/models.py:2617
+#: openbook_auth/models.py:2686
 msgid "Not a global moderator."
 msgstr "Küresel bir moderatör değil."
 
-#: openbook_auth/models.py:2621
+#: openbook_auth/models.py:2690
 msgid "Not a community staff."
 msgstr "Topluluk çalışanı değil."
 
-#: openbook_auth/models.py:2625
+#: openbook_auth/models.py:2694
 msgid "You have no invites left"
 msgstr "Hiç davetiniz kalmadı"
 
-#: openbook_auth/models.py:2639
+#: openbook_auth/models.py:2708
 msgid "Invite email already sent to this address"
 msgstr "Bu adrese zaten gönderilen e-postayı davet et"
 
-#: openbook_auth/models.py:2649
+#: openbook_auth/models.py:2718
 msgid "Invite is already used and cannot be deleted"
 msgstr "Davet zaten kullanılıyor ve silinemiyor"
 
-#: openbook_auth/models.py:2654
+#: openbook_auth/models.py:2723
 msgid "Invite was not created by you"
 msgstr "Davet sizin tarafınızdan oluşturulmadı"
 
-#: openbook_auth/models.py:2660
+#: openbook_auth/models.py:2729
 msgid "Reset your password for Okuna"
 msgstr "Okuna için şifrenizi sıfırlayın"
 
-#: openbook_auth/models.py:2890 openbook_auth/models.py:2931
+#: openbook_auth/models.py:2956 openbook_auth/models.py:2997
 msgid "Token user id does not match"
 msgstr "Kupon kullanıcı kimliği eşleşmiyor"
 
-#: openbook_auth/models.py:2926
+#: openbook_auth/models.py:2992
 msgid "Token email does not match"
 msgstr "Kupon e-postası eşleşmiyor"
 
-#: openbook_auth/models.py:2960
+#: openbook_auth/models.py:3026
 msgid "Can't connect in the world circle."
 msgstr "Dünya genelindeki çevreye bağlanamıyorum."
 
-#: openbook_auth/models.py:2969
+#: openbook_auth/models.py:3035
 msgid "The email is already taken."
 msgstr "E-posta zaten alınmış."
 
-#: openbook_auth/models.py:2978 openbook_auth/validators.py:18
+#: openbook_auth/models.py:3044 openbook_auth/validators.py:18
 msgid "The username is already taken."
 msgstr "Bu kullanıcı adı zaten alınmış."
 
-#: openbook_auth/models.py:2988 openbook_auth/models.py:3015
+#: openbook_auth/models.py:3054 openbook_auth/models.py:3081
 msgid "The comment does not belong to the specified post."
 msgstr "Yorum belirtilen gönderiye ait değil."
 
-#: openbook_auth/models.py:2996
+#: openbook_auth/models.py:3062
 msgid "Only administrators/moderators can edit a closed post."
 msgstr "Yalnızca yöneticiler / moderatörler kapalı bir gönderiyi düzenleyebilir."
 
-#: openbook_auth/models.py:3003
+#: openbook_auth/models.py:3069
 msgid "You cannot edit a comment that does not belong to you"
 msgstr "Size ait olmayan bir yorumu düzenleyemezsiniz"
 
-#: openbook_auth/models.py:3025
+#: openbook_auth/models.py:3091
 msgid "Only moderators/administrators can remove closed community posts."
 msgstr "Sadece moderatörler / yöneticiler kapalı topluluk gönderilerini kaldırabilir."
 
-#: openbook_auth/models.py:3029 openbook_auth/models.py:3043
+#: openbook_auth/models.py:3095 openbook_auth/models.py:3109
 msgid "You cannot remove a comment that does not belong to you"
 msgstr "Size ait olmayan bir yorumu silemezsiniz"
 
-#: openbook_auth/models.py:3052 openbook_auth/models.py:3063
+#: openbook_auth/models.py:3118 openbook_auth/models.py:3129
 msgid "No comment found with given id for post with given uuid"
 msgstr "Verilen uuid ile gönderilen kimliğe ilişkin yorum bulunamadı"
 
-#: openbook_auth/models.py:3069
+#: openbook_auth/models.py:3135
 msgid "You can post a reply to a comment, not to an existing reply"
 msgstr "Mevcut bir cevaba değil, bir yoruma yanıt gönderebilirsiniz"
 
-#: openbook_auth/models.py:3080
+#: openbook_auth/models.py:3146
 msgid "That reaction does not belong to the specified post."
 msgstr "Bu tepki belirtilen postaya ait değil."
 
-#: openbook_auth/models.py:3086
+#: openbook_auth/models.py:3152
 msgid "Can't delete a reaction that does not belong to you."
 msgstr "Size ait olmayan bir tepkiyi silemezsiniz."
 
-#: openbook_auth/models.py:3100
+#: openbook_auth/models.py:3166
 msgid "Not a valid emoji to react with"
 msgstr "Tepki verebilecek geçerli bir emoji değil"
 
-#: openbook_auth/models.py:3109
+#: openbook_auth/models.py:3175
 msgid "This post is private."
 msgstr "Bu gönderi gizli."
 
-#: openbook_auth/models.py:3118
+#: openbook_auth/models.py:3184
 msgid "Cant react to comments on a closed post."
 msgstr "Kapalı bir gönderideki yorumlara tepki veremezsiniz."
 
-#: openbook_auth/models.py:3126
+#: openbook_auth/models.py:3192
 msgid "Can't delete a comment reaction that does not belong to you."
 msgstr "Size ait olmayan bir yorum tepkisini silemezsiniz."
 
-#: openbook_auth/models.py:3134
+#: openbook_auth/models.py:3200
 msgid "This comment is private."
 msgstr "Bu yorum özel."
 
-#: openbook_auth/models.py:3331
+#: openbook_auth/models.py:3397
 msgid "You cannot edit a closed post"
 msgstr "Kapalı bir gönderiyi düzenleyemezsiniz"
 
-#: openbook_auth/models.py:3338
+#: openbook_auth/models.py:3404
 #, python-format
 msgid "You cannot post to circle with id %(id)s"
 msgstr "%(id)s kimliğiyle çevreye gönderemezsiniz"
 
-#: openbook_auth/models.py:3344
+#: openbook_auth/models.py:3410
 msgid "You cannot post to a community you're not member of "
 msgstr "Üye olmadığınız bir topluluğa gönderemezsiniz "
 
-#: openbook_auth/models.py:3351
+#: openbook_auth/models.py:3417
 msgid "Only moderators/administrators can enable/disable comments"
 msgstr "Yalnızca moderatörler / yöneticiler yorumları etkinleştirebilir / devre dışı bırakabilir"
 
-#: openbook_auth/models.py:3360
+#: openbook_auth/models.py:3426
 msgid "Comments are disabled for this post"
 msgstr "Yorumlar bu gönderi için devre dışı bırakıldı"
 
-#: openbook_auth/models.py:3368
+#: openbook_auth/models.py:3434
 msgid "Only public posts can be translated"
 msgstr "Sadece herkese açık gönderiler çevrilebilir"
 
-#: openbook_auth/models.py:3372
+#: openbook_auth/models.py:3438
 msgid "Post has no text to be translated"
 msgstr "Gönderinin çevrilecek metni yok"
 
-#: openbook_auth/models.py:3376
+#: openbook_auth/models.py:3442
 msgid "Post has no assigned language to be able to translate"
 msgstr "Gönderide çeviri yapabilmek için atanmış bir dil bulunmuyor"
 
-#: openbook_auth/models.py:3380 openbook_auth/models.py:3949
+#: openbook_auth/models.py:3446 openbook_auth/models.py:4015
 msgid "User's preferred translation language not set"
 msgstr "Kullanıcının tercih ettiği çeviri dili ayarlanmadı"
 
-#: openbook_auth/models.py:3388 openbook_auth/models.py:3401
+#: openbook_auth/models.py:3454 openbook_auth/models.py:3467
 msgid "Only community posts can be opened/closed"
 msgstr "Yalnızca topluluk gönderileri açılabilir / kapatılabilir"
 
-#: openbook_auth/models.py:3393
+#: openbook_auth/models.py:3459
 msgid "Only administrators/moderators can open this post"
 msgstr "Bu gönderiyi yalnızca yöneticiler / moderatörler açabilir"
 
-#: openbook_auth/models.py:3406
+#: openbook_auth/models.py:3472
 msgid "Only administrators/moderators can close this post"
 msgstr "Bu gönderiyi yalnızca yöneticiler / moderatörler kapatabilir"
 
-#: openbook_auth/models.py:3429
+#: openbook_auth/models.py:3495
 msgid "Already following user."
 msgstr "Kullanıcı zaten takip ediyor."
 
-#: openbook_auth/models.py:3435
+#: openbook_auth/models.py:3501
 msgid "Maximum number of follows reached."
 msgstr "Maksimum takipçi sayısına ulaşıldı."
 
-#: openbook_auth/models.py:3443
+#: openbook_auth/models.py:3509
 msgid "Already following user in list."
 msgstr "Kullanıcı zaten listeyi takip ediyor."
 
-#: openbook_auth/models.py:3451
+#: openbook_auth/models.py:3517
 msgid "Not following user in list."
 msgstr "Kullanıcı listeyi takip etmiyor."
 
-#: openbook_auth/models.py:3457
+#: openbook_auth/models.py:3523
 msgid "Not following user."
 msgstr "Kullanıcı takip etmiyor."
 
-#: openbook_auth/models.py:3463
+#: openbook_auth/models.py:3529
 msgid "Maximum number of connections reached."
 msgstr "Maksimum bağlantı sayısına ulaşıldı."
 
-#: openbook_auth/models.py:3474
+#: openbook_auth/models.py:3540
 msgid "Already connected with user."
 msgstr "Kullanıcıyla zaten bağlı."
 
-#: openbook_auth/models.py:3480
+#: openbook_auth/models.py:3546
 msgid "Already fully connected with user."
 msgstr "Tamamen kullanıcıyla zaten bağlı."
 
-#: openbook_auth/models.py:3486
+#: openbook_auth/models.py:3552
 msgid "Not connected with user."
 msgstr "Kullanıcıyla bağlı değil."
 
-#: openbook_auth/models.py:3492
+#: openbook_auth/models.py:3558
 msgid "Not connected with user in given circle."
 msgstr "Belirtilen çevrede kullanıcıyla bağlantılı değil."
 
-#: openbook_auth/models.py:3498
+#: openbook_auth/models.py:3564
 msgid "Already connected with user in given circle."
 msgstr "Zaten belirtilen çevrede kullanıcıyla bağlantı kuruldu."
 
-#: openbook_auth/models.py:3504
+#: openbook_auth/models.py:3570
 msgid "List does not exist."
 msgstr "Liste mevcut değil."
 
-#: openbook_auth/models.py:3510
+#: openbook_auth/models.py:3576
 msgid "Circle does not exist."
 msgstr "Çevre mevcut değil."
 
-#: openbook_auth/models.py:3516
+#: openbook_auth/models.py:3582
 msgid "One or more of the circles do not exist."
 msgstr "Çevrelerin bir veya daha fazlası mevcut değil."
 
-#: openbook_auth/models.py:3529
+#: openbook_auth/models.py:3595
 msgid "Only moderators/administrators can remove community posts."
 msgstr "Yalnızca moderatörler / yöneticiler topluluk gönderilerini kaldırabilir."
 
-#: openbook_auth/models.py:3537
+#: openbook_auth/models.py:3603
 msgid "You cannot remove a post that does not belong to you"
 msgstr "Size ait olmayan bir gönderiyi silemezsiniz"
 
-#: openbook_auth/models.py:3543
+#: openbook_auth/models.py:3609
 msgid "Can't delete a list that does not belong to you."
 msgstr "Size ait olmayan bir listeyi silemezsiniz."
 
-#: openbook_auth/models.py:3549
+#: openbook_auth/models.py:3615
 msgid "Can't update a list that does not belong to you."
 msgstr "Size ait olmayan bir listeyi güncelleyemezsiniz."
 
-#: openbook_auth/models.py:3555
+#: openbook_auth/models.py:3621
 msgid "Can't delete a community that you do not administrate."
 msgstr "Yönetmediğiniz bir topluluğu silemezsiniz."
 
-#: openbook_auth/models.py:3561
+#: openbook_auth/models.py:3627
 msgid "Can't update a community that you do not administrate."
 msgstr "Yönetmediğiniz bir topluluğu güncelleyemezsiniz."
 
-#: openbook_auth/models.py:3571
+#: openbook_auth/models.py:3637
 msgid "The community is private. You must become a member to retrieve its posts."
 msgstr "Topluluk özeldir. Gönderilere ulaşmak için üye olmalısınız."
 
-#: openbook_auth/models.py:3578
+#: openbook_auth/models.py:3644
 msgid "Only administrators/moderators can view closed posts"
 msgstr "Yalnızca yöneticiler / moderatörler kapalı gönderileri görüntüleyebilir"
 
-#: openbook_auth/models.py:3589
+#: openbook_auth/models.py:3655
 msgid "Can't see the members of a private community."
 msgstr "Özel bir topluluğun üyelerini göremezsiniz."
 
-#: openbook_auth/models.py:3598
+#: openbook_auth/models.py:3664
 msgid "You are already a member of the community."
 msgstr "Zaten topluluğun bir üyesisin."
 
-#: openbook_auth/models.py:3605
+#: openbook_auth/models.py:3671
 msgid "You are not invited to join this community."
 msgstr "Bu topluluğa katılmaya davet edilmedin."
 
-#: openbook_auth/models.py:3611
+#: openbook_auth/models.py:3677
 msgid "You cannot leave a community you're not part of."
 msgstr "Parçası olmadığınız bir topluluktan çıkamazsınız."
 
-#: openbook_auth/models.py:3616
+#: openbook_auth/models.py:3682
 msgid "You cannot leave a community you created."
 msgstr "Oluşturduğunuz bir topluluktan çıkamazsınız."
 
-#: openbook_auth/models.py:3622
+#: openbook_auth/models.py:3688
 msgid "You can only invite people to a community you are member of."
 msgstr "İnsanları sadece üye olduğunuz bir topluluğa davet edebilirsiniz."
 
-#: openbook_auth/models.py:3627
+#: openbook_auth/models.py:3693
 msgid "You have already invited this user to join the community."
 msgstr "Bu kullanıcıyı topluluğa katılmaya zaten davet ettin."
 
-#: openbook_auth/models.py:3635
+#: openbook_auth/models.py:3701
 msgid "The user is already part of the community."
 msgstr "Kullanıcı zaten topluluğun bir parçası."
 
-#: openbook_auth/models.py:3643
+#: openbook_auth/models.py:3709
 msgid "Invites for this community are not enabled. Only administrators & moderators can invite."
 msgstr "Bu topluluk için davet etkin değil. Yalnızca yöneticiler ve moderatörler davet edebilir."
 
-#: openbook_auth/models.py:3650
+#: openbook_auth/models.py:3716
 msgid "No invite to withdraw."
 msgstr "Geri alınan davet yok."
 
-#: openbook_auth/models.py:3658
+#: openbook_auth/models.py:3724
 msgid "Only community administrators & moderators can get banned users."
 msgstr "Yalnızca topluluk yöneticileri ve moderatörler engellenmiş kullanıcıları alabilir."
 
-#: openbook_auth/models.py:3666 openbook_auth/models.py:3688
+#: openbook_auth/models.py:3732 openbook_auth/models.py:3754
 msgid "Only community administrators & moderators can ban community members."
 msgstr "Yalnızca topluluk yöneticileri ve moderatörler topluluk üyelerini engelleyebilir."
 
-#: openbook_auth/models.py:3673
+#: openbook_auth/models.py:3739
 msgid "User is already banned"
 msgstr "Kullanıcı zaten yasaklandı"
 
-#: openbook_auth/models.py:3680
+#: openbook_auth/models.py:3746
 msgid "You can't ban moderators or administrators of the community"
 msgstr "Topluluğun moderatörlerini veya yöneticilerini engelleyemezsiniz"
 
-#: openbook_auth/models.py:3695
+#: openbook_auth/models.py:3761
 msgid "Can't unban a not-banned user."
 msgstr "Engellenmemiş bir kullanıcının engelini kaldıramazsınız."
 
-#: openbook_auth/models.py:3701
+#: openbook_auth/models.py:3767
 msgid "Only the creator of the community can add other administrators."
 msgstr "Yalnızca topluluğu oluşturan başka yöneticiler ekleyebilir."
 
-#: openbook_auth/models.py:3709
+#: openbook_auth/models.py:3775
 msgid "User is already an administrator."
 msgstr "Kullanıcı zaten bir yönetici."
 
-#: openbook_auth/models.py:3715
+#: openbook_auth/models.py:3781
 msgid "Can't make administrator a user that is not part of the community."
 msgstr "Yönetici, topluluğun bir parçası olmayan bir kullanıcıya görev veremez."
 
-#: openbook_auth/models.py:3721
+#: openbook_auth/models.py:3787
 msgid "Only the creator of the community can remove other administrators."
 msgstr "Yalnızca topluluğu oluşturan diğer yöneticileri kaldırabilir."
 
-#: openbook_auth/models.py:3729
+#: openbook_auth/models.py:3795
 msgid "User to remove is not an administrator."
 msgstr "Kaldırılacak kullanıcı bir yönetici değil."
 
-#: openbook_auth/models.py:3738
+#: openbook_auth/models.py:3804
 msgid "Only administrators of the community can add other moderators."
 msgstr "Yalnızca topluluğun yöneticileri başka moderatörler ekleyebilir."
 
-#: openbook_auth/models.py:3746
+#: openbook_auth/models.py:3812
 msgid "User is an administrator."
 msgstr "Kullanıcı bir yöneticidir."
 
-#: openbook_auth/models.py:3752
+#: openbook_auth/models.py:3818
 msgid "User is already a moderator."
 msgstr "Kullanıcı zaten bir moderatör."
 
-#: openbook_auth/models.py:3758
+#: openbook_auth/models.py:3824
 msgid "Can't make moderator a user that is not part of the community."
 msgstr "Moderatör, topluluğun bir parçası olmayan bir kullanıcıya görev veremez."
 
-#: openbook_auth/models.py:3764
+#: openbook_auth/models.py:3830
 msgid "Only administrators of the community can remove other moderators."
 msgstr "Yalnızca topluluk yöneticileri diğer moderatörleri kaldırabilir."
 
-#: openbook_auth/models.py:3771
+#: openbook_auth/models.py:3837
 msgid "User to remove is not an moderator."
 msgstr "Kaldırılacak kullanıcı bir moderatör değil."
 
-#: openbook_auth/models.py:3787
+#: openbook_auth/models.py:3853
 msgid "Can't update a circle that does not belong to you."
 msgstr "Size ait olmayan bir çevreyi güncelleyemezsiniz."
 
-#: openbook_auth/models.py:3792
+#: openbook_auth/models.py:3858
 msgid "Can't update the world circle."
 msgstr "Dünya genelindeki çevre güncellenmiyor."
 
-#: openbook_auth/models.py:3797
+#: openbook_auth/models.py:3863
 msgid "Can't update the connections circle."
 msgstr "Bağlantılarımdaki çevre güncellenmiyor."
 
-#: openbook_auth/models.py:3803
+#: openbook_auth/models.py:3869
 msgid "Can't delete a circle that does not belong to you."
 msgstr "Size ait olmayan bir çevreyi silemezsiniz."
 
-#: openbook_auth/models.py:3808
+#: openbook_auth/models.py:3874
 msgid "Can't delete the world circle."
 msgstr "Dünya genelindeki çevreyi silemezsiniz."
 
-#: openbook_auth/models.py:3813
+#: openbook_auth/models.py:3879
 msgid "Can't delete the connections circle."
 msgstr "Bağlantılarımdaki çevre silinemez."
 
-#: openbook_auth/models.py:3819
+#: openbook_auth/models.py:3885
 msgid "Can't view a circle that does not belong to you."
 msgstr "Size ait olmayan bir çevre görülemez."
 
-#: openbook_auth/models.py:3825
+#: openbook_auth/models.py:3891
 msgid "Can't view a list that does not belong to you."
 msgstr "Size ait olmayan bir liste görülemez."
 
-#: openbook_auth/models.py:3831
+#: openbook_auth/models.py:3897
 msgid "You already have a circle with that name."
 msgstr "Zaten bu isimde bir çevreniz var."
 
-#: openbook_auth/models.py:3837
+#: openbook_auth/models.py:3903
 msgid "You already have a list with that name."
 msgstr "Zaten bu isimde bir listeniz var."
 
-#: openbook_auth/models.py:3847
+#: openbook_auth/models.py:3913
 msgid "A community with that name already exists."
 msgstr "Bu isme sahip bir topluluk zaten var."
 
-#: openbook_auth/models.py:3853
+#: openbook_auth/models.py:3919
 msgid "You must be member of a community before making it a favorite."
 msgstr "Bunu favoriye almadan önce bir topluluğun üyesi olmalısınız."
 
-#: openbook_auth/models.py:3858
+#: openbook_auth/models.py:3924
 msgid "You have already marked this community as favorite."
 msgstr "Bu topluluğu zaten favori olarak işaretledin."
 
-#: openbook_auth/models.py:3864
+#: openbook_auth/models.py:3930
 msgid "You have not favorited the community."
 msgstr "Topluluğu favoriye almadın."
 
-#: openbook_auth/models.py:3870
+#: openbook_auth/models.py:3936
 msgid "You cannot mark as read a notification that doesn't belong to you."
 msgstr "Size ait olmayan bir bildirimi okundu olarak işaretleyemezsiniz."
 
-#: openbook_auth/models.py:3879
+#: openbook_auth/models.py:3945
 msgid "This notification does not belong to you."
 msgstr "Bu bildirim size ait değil."
 
-#: openbook_auth/models.py:3894
+#: openbook_auth/models.py:3960
 msgid "Device not found"
 msgstr "Cihaz bulunamadı"
 
-#: openbook_auth/models.py:3900
+#: openbook_auth/models.py:3966
 msgid "Post already muted"
 msgstr "Gönderi zaten sessizde"
 
-#: openbook_auth/models.py:3911
+#: openbook_auth/models.py:3977
 msgid "Post is not muted"
 msgstr "Gönderi sessiz değil"
 
-#: openbook_auth/models.py:3917
+#: openbook_auth/models.py:3983
 msgid "Post comment already muted"
 msgstr "Gönderi yorumu zaten sessizde"
 
-#: openbook_auth/models.py:3929
+#: openbook_auth/models.py:3995
 msgid "Post_comment is not muted"
 msgstr "Gönderi yorumu sessizde değil"
 
-#: openbook_auth/models.py:3937
+#: openbook_auth/models.py:4003
 msgid "Only public post comments can be translated"
 msgstr "Yalnızca herkese açık gönderi yorumları çevrilebilir"
 
-#: openbook_auth/models.py:3941
+#: openbook_auth/models.py:4007
 msgid "Post comment has no text to be translated"
 msgstr "Gönderi yorumunda çevrilecek metin yok"
 
-#: openbook_auth/models.py:3945
+#: openbook_auth/models.py:4011
 msgid "Post comment has no assigned language to be able to translate"
 msgstr "Gönderi yorumunda çeviri yapabilmek için atanmış bir dil bulunmuyor"
 
-#: openbook_auth/models.py:3955
+#: openbook_auth/models.py:4021
 msgid "This post does not belong to you."
 msgstr "Bu gönderi size ait değil."
 
-#: openbook_auth/models.py:3961
+#: openbook_auth/models.py:4027
 msgid "Wrong password."
 msgstr "Yanlış şifre."
 
-#: openbook_auth/models.py:3982
+#: openbook_auth/models.py:4048
 msgid "You cannot block yourself."
 msgstr "Kendini engelleyemezsin."
 
-#: openbook_auth/models.py:3987
+#: openbook_auth/models.py:4053
 msgid "You cannot unblock an account you have not blocked."
 msgstr "Engellemediğiniz bir hesabın engellemesini kaldıramazsınız."
 
-#: openbook_auth/models.py:3994
+#: openbook_auth/models.py:4060
 msgid "This account is blocked."
 msgstr "Bu hesap engellendi."
 
-#: openbook_auth/models.py:4002
+#: openbook_auth/models.py:4068
 msgid "You cannot report your own comment."
 msgstr "Kendi yorumunu rapor edemezsin."
 
-#: openbook_auth/models.py:4008
+#: openbook_auth/models.py:4074
 msgid "You have already reported the comment."
 msgstr "Yorumu zaten bildirdin."
 
-#: openbook_auth/models.py:4016
+#: openbook_auth/models.py:4082
 msgid "You cannot report your own post."
 msgstr "Kendi gönderini rapor edemezsin."
 
-#: openbook_auth/models.py:4022
+#: openbook_auth/models.py:4088
 msgid "You have already reported the post."
 msgstr "Gönderiyi zaten bildirdin."
 
-#: openbook_auth/models.py:4029
+#: openbook_auth/models.py:4095
 msgid "You cannot report yourself..."
 msgstr "Kendini rapor edemezsin..."
 
-#: openbook_auth/models.py:4035
+#: openbook_auth/models.py:4101
 msgid "You have already reported the user."
 msgstr "Kullanıcıyı zaten bildirdin."
 
-#: openbook_auth/models.py:4042
+#: openbook_auth/models.py:4108
 msgid "You cannot report your own community."
 msgstr "Kendi topluluğunu rapor edemezsin."
 
-#: openbook_auth/models.py:4048
+#: openbook_auth/models.py:4114
 msgid "You have already reported the community."
 msgstr "Topluluğu zaten bildirdin."
 
-#: openbook_auth/models.py:4071 openbook_categories/models.py:15
+#: openbook_auth/models.py:4137 openbook_categories/models.py:15
 #: openbook_circles/models.py:29 openbook_common/models.py:97
 #: openbook_communities/models.py:29 openbook_devices/models.py:17
 #: openbook_lists/models.py:17 openbook_moderation/models.py:16
@@ -675,70 +695,78 @@ msgstr "Topluluğu zaten bildirdin."
 msgid "name"
 msgstr "isim"
 
-#: openbook_auth/models.py:4074
+#: openbook_auth/models.py:4140
 msgid "location"
 msgstr "konum"
 
-#: openbook_auth/models.py:4077 openbook_categories/models.py:22
+#: openbook_auth/models.py:4143 openbook_categories/models.py:22
 #: openbook_communities/models.py:36
 msgid "avatar"
 msgstr "profil resmi"
 
-#: openbook_auth/models.py:4080 openbook_communities/models.py:39
+#: openbook_auth/models.py:4146 openbook_communities/models.py:39
 msgid "cover"
 msgstr "kapak"
 
-#: openbook_auth/models.py:4083
+#: openbook_auth/models.py:4149
 msgid "bio"
 msgstr "biyografi"
 
-#: openbook_auth/models.py:4084
+#: openbook_auth/models.py:4150
 msgid "url"
 msgstr "url"
 
-#: openbook_auth/models.py:4085
+#: openbook_auth/models.py:4151
 msgid "followers count visible"
 msgstr "takipçi sayısı görünür"
 
-#: openbook_auth/models.py:4089
+#: openbook_auth/models.py:4155
 msgid "user profile"
 msgstr "kullanıcı profili"
 
-#: openbook_auth/models.py:4090
+#: openbook_auth/models.py:4156
 msgid "users profiles"
 msgstr "kullanıcı profilleri"
 
-#: openbook_auth/models.py:4106
+#: openbook_auth/models.py:4172
 msgid "post comment notifications"
 msgstr "gönderideki yorum bildirimleri"
 
-#: openbook_auth/models.py:4107
+#: openbook_auth/models.py:4173
 msgid "post comment reply notifications"
 msgstr "gönderi yorumundaki cevap bildirimleri"
 
-#: openbook_auth/models.py:4108
+#: openbook_auth/models.py:4174
 msgid "post reaction notifications"
 msgstr "gönderideki tepki bildirimleri"
 
-#: openbook_auth/models.py:4109
+#: openbook_auth/models.py:4175
 msgid "follow notifications"
 msgstr "takip bildirimleri"
 
-#: openbook_auth/models.py:4110
+#: openbook_auth/models.py:4176
 msgid "connection request notifications"
 msgstr "bağlantı isteği bildirimleri"
 
-#: openbook_auth/models.py:4111
+#: openbook_auth/models.py:4177
 msgid "connection confirmed notifications"
 msgstr "bağlantı onaylandı bildirimleri"
 
-#: openbook_auth/models.py:4112
+#: openbook_auth/models.py:4178
 msgid "community invite notifications"
 msgstr "topluluk davet bildirimleri"
 
-#: openbook_auth/models.py:4113
+#: openbook_auth/models.py:4179
 msgid "post comment reaction notifications"
 msgstr "gönderi yorumundaki tepki bildirimleri"
+
+#: openbook_auth/models.py:4180
+msgid "post comment user mention notifications"
+msgstr "yorum sonrası kullanıcı bildirimleri söz edilmesi"
+
+#: openbook_auth/models.py:4182
+msgid "post user mention notifications"
+msgstr "kullanıcı gönderide bahsetme bildirimleri"
 
 #: openbook_auth/validators.py:11
 msgid "Usernames can only contain alphanumeric characters, periods and underscores."
@@ -788,107 +816,107 @@ msgstr "Mevcut şifre yeni şifre ile birlikte verilmelidir"
 msgid "Goodbye 😔"
 msgstr "Hoşçakal 😔"
 
-#: openbook_auth/views/authenticated_user/views.py:157
+#: openbook_auth/views/authenticated_user/views.py:161
 msgid "Please specify email or password to update"
 msgstr "Lütfen güncellemek için e-posta veya şifre belirtin"
 
-#: openbook_auth/views/authenticated_user/views.py:163
+#: openbook_auth/views/authenticated_user/views.py:167
 msgid "Confirm your email for Openbook"
 msgstr "Openbook için e-postanı onayla"
 
-#: openbook_auth/views/authenticated_user/views.py:195
+#: openbook_auth/views/authenticated_user/views.py:199
 msgid "Guidelines successfully accepted"
 msgstr "İlkeler başarıyla kabul edildi"
 
-#: openbook_auth/views/authenticated_user/views.py:219
+#: openbook_auth/views/authenticated_user/views.py:223
 msgid "Language successfully set"
 msgstr "Dil başarıyla ayarlandı"
 
-#: openbook_categories/i18n.py:3
+#: openbook_categories/i18n/i18n.py:3
 msgid "Education"
 msgstr "Eğitim"
 
-#: openbook_categories/i18n.py:4
+#: openbook_categories/i18n/i18n.py:4
 msgid "For everything related to Education."
 msgstr "Eğitim ile ilgili her şey."
 
-#: openbook_categories/i18n.py:5
+#: openbook_categories/i18n/i18n.py:5
 msgid "Fun"
 msgstr "Eğlence"
 
-#: openbook_categories/i18n.py:6
+#: openbook_categories/i18n/i18n.py:6
 msgid "Fun stuff!"
 msgstr "Eğlenceli şeyler!"
 
-#: openbook_categories/i18n.py:7
+#: openbook_categories/i18n/i18n.py:7
 msgid "Technology"
 msgstr "Teknoloji"
 
-#: openbook_categories/i18n.py:8
+#: openbook_categories/i18n/i18n.py:8
 msgid "For all tech related wizardry."
 msgstr "Tüm teknolojik sihirbazlıklarla ilgili."
 
-#: openbook_categories/i18n.py:9
+#: openbook_categories/i18n/i18n.py:9
 msgid "Sports"
 msgstr "Spor Dalları"
 
-#: openbook_categories/i18n.py:10
+#: openbook_categories/i18n/i18n.py:10
 msgid "For everything related to sports."
 msgstr "Spor Dalları ile ilgili her şey."
 
-#: openbook_categories/i18n.py:11
+#: openbook_categories/i18n/i18n.py:11
 msgid "Nature"
 msgstr "Doğa"
 
-#: openbook_categories/i18n.py:12
+#: openbook_categories/i18n/i18n.py:12
 msgid "For everything related to nature."
 msgstr "Doğa ile ilgili her şey."
 
-#: openbook_categories/i18n.py:13
+#: openbook_categories/i18n/i18n.py:13
 msgid "Travel"
 msgstr "Seyahat"
 
-#: openbook_categories/i18n.py:14
+#: openbook_categories/i18n/i18n.py:14
 msgid "For everything related to travel."
 msgstr "Seyahat ile ilgili her şey için."
 
-#: openbook_categories/i18n.py:15
+#: openbook_categories/i18n/i18n.py:15
 msgid "Art"
 msgstr "Sanat"
 
-#: openbook_categories/i18n.py:16
+#: openbook_categories/i18n/i18n.py:16
 msgid "For everything related to art."
 msgstr "Sanat ile ilgili her şey."
 
-#: openbook_categories/i18n.py:17
+#: openbook_categories/i18n/i18n.py:17
 msgid "Lifestyle"
 msgstr "Yaşam Tarzı-Hobi"
 
-#: openbook_categories/i18n.py:18
+#: openbook_categories/i18n/i18n.py:18
 msgid "For everything related to lifestyle."
 msgstr "Yaşam Tarzı-Hobi ile ilgili her şey için."
 
-#: openbook_categories/i18n.py:19
+#: openbook_categories/i18n/i18n.py:19
 msgid "Entertainment"
 msgstr "Gösteri"
 
-#: openbook_categories/i18n.py:20
+#: openbook_categories/i18n/i18n.py:20
 msgid "For everything related to entertainment."
 msgstr "Gösteri ile ilgili her şey."
 
-#: openbook_categories/i18n.py:21
+#: openbook_categories/i18n/i18n.py:21
 msgid "Places"
 msgstr "Mekanlar"
 
-#: openbook_categories/i18n.py:22
+#: openbook_categories/i18n/i18n.py:22
 msgid "For everything related to places."
 msgstr "Mekanlar ile ilgili her şey."
 
-#: openbook_categories/i18n.py:23
+#: openbook_categories/i18n/i18n.py:23
 msgid "Food"
 msgstr "Yemek"
 
-#: openbook_categories/i18n.py:24
+#: openbook_categories/i18n/i18n.py:24
 msgid "For everything related to food."
 msgstr "Yemek ile ilgili her şey."
 
@@ -929,187 +957,191 @@ msgstr "Çevre ismi mevcut"
 msgid "Circle name not available"
 msgstr "Çevre ismi mevcut değil"
 
-#: openbook_common/i18n.py:3
+#: openbook_common/i18n/i18n.py:3
 msgid "Primary"
 msgstr "Başlıca"
 
-#: openbook_common/i18n.py:4
+#: openbook_common/i18n/i18n.py:4
 msgid "Premium"
 msgstr "Premium"
 
-#: openbook_common/i18n.py:5
+#: openbook_common/i18n/i18n.py:5
 msgid "Objects"
 msgstr "Nesneler"
 
-#: openbook_common/i18n.py:6
+#: openbook_common/i18n/i18n.py:6
 msgid "Waw"
 msgstr "Haw"
 
-#: openbook_common/i18n.py:7
+#: openbook_common/i18n/i18n.py:7
 msgid "Party!"
 msgstr "Parti!"
 
-#: openbook_common/i18n.py:8
+#: openbook_common/i18n/i18n.py:8
 msgid "Love it"
 msgstr "Bayıldım"
 
-#: openbook_common/i18n.py:9
+#: openbook_common/i18n/i18n.py:9
 msgid "Sad"
 msgstr "Üzücü"
 
-#: openbook_common/i18n.py:10
+#: openbook_common/i18n/i18n.py:10
 msgid "Lit"
 msgstr "Aydınlatıcı"
 
-#: openbook_common/i18n.py:11
+#: openbook_common/i18n/i18n.py:11
 msgid "Hooray!"
 msgstr "Yaşasın!"
 
-#: openbook_common/i18n.py:12
+#: openbook_common/i18n/i18n.py:12
 msgid "Upset"
 msgstr "Sinirli"
 
-#: openbook_common/i18n.py:13
+#: openbook_common/i18n/i18n.py:13
 msgid "Wow"
 msgstr "Vay canına"
 
-#: openbook_common/i18n.py:14
+#: openbook_common/i18n/i18n.py:14
 msgid "Haha"
 msgstr "Haha"
 
-#: openbook_common/i18n.py:15
+#: openbook_common/i18n/i18n.py:15
 msgid "Alarm"
 msgstr "Alarm"
 
-#: openbook_common/i18n.py:16
+#: openbook_common/i18n/i18n.py:16
 msgid "Computer"
 msgstr "Bilgisayar"
 
-#: openbook_common/i18n.py:17
+#: openbook_common/i18n/i18n.py:17
+msgid "Game"
+msgstr "Oyun"
+
+#: openbook_common/i18n/i18n.py:18
 msgid "Football"
 msgstr "Futbol"
 
-#: openbook_common/i18n.py:18
+#: openbook_common/i18n/i18n.py:19
 msgid "Lighting"
 msgstr "Aydınlatma"
 
-#: openbook_common/i18n.py:19
+#: openbook_common/i18n/i18n.py:20
 msgid "Lock"
 msgstr "Kilit"
 
-#: openbook_common/i18n.py:20
+#: openbook_common/i18n/i18n.py:21
 msgid "Money"
 msgstr "Para"
 
-#: openbook_common/i18n.py:21
+#: openbook_common/i18n/i18n.py:22
 msgid "Pencil"
 msgstr "Kalem"
 
-#: openbook_common/i18n.py:22
+#: openbook_common/i18n/i18n.py:23
 msgid "Speaker"
 msgstr "Hoparlör"
 
-#: openbook_common/i18n.py:23
+#: openbook_common/i18n/i18n.py:24
 msgid "Camera"
 msgstr "Kamera"
 
-#: openbook_common/i18n.py:24
+#: openbook_common/i18n/i18n.py:25
 msgid "Bravo!"
 msgstr "Aferin!"
 
-#: openbook_common/i18n.py:25
+#: openbook_common/i18n/i18n.py:26
 msgid "Cool"
 msgstr "Güzel hareket"
 
-#: openbook_common/i18n.py:26
+#: openbook_common/i18n/i18n.py:27
 msgid "News"
 msgstr "Haber"
 
-#: openbook_common/i18n.py:27
+#: openbook_common/i18n/i18n.py:28
 msgid "Earth"
 msgstr "Dünya"
 
-#: openbook_common/i18n.py:28
+#: openbook_common/i18n/i18n.py:29
 msgid "Book"
 msgstr "Kitap"
 
-#: openbook_common/i18n.py:29
+#: openbook_common/i18n/i18n.py:30
 msgid "Science"
 msgstr "Bilim"
 
-#: openbook_common/i18n.py:30
+#: openbook_common/i18n/i18n.py:31
 msgid "Bulb"
 msgstr "Ampul"
 
-#: openbook_common/i18n.py:31
+#: openbook_common/i18n/i18n.py:32
 msgid "Fancy hat"
 msgstr "Süslü şapka"
 
-#: openbook_common/i18n.py:32
+#: openbook_common/i18n/i18n.py:33
 msgid "Heart"
 msgstr "Kalp"
 
-#: openbook_common/i18n.py:33
+#: openbook_common/i18n/i18n.py:34
 msgid "Star"
 msgstr "Yıldız"
 
-#: openbook_common/i18n.py:34
+#: openbook_common/i18n/i18n.py:35
 msgid "Trophy"
 msgstr "Kupa"
 
-#: openbook_common/i18n.py:35
+#: openbook_common/i18n/i18n.py:36
 msgid "OMG"
 msgstr "AMAN TANRIM"
 
-#: openbook_common/i18n.py:36
+#: openbook_common/i18n/i18n.py:37
 msgid "Thankful"
 msgstr "Müteşekkir"
 
-#: openbook_common/i18n.py:37
+#: openbook_common/i18n/i18n.py:38
 msgid "Music"
 msgstr "Müzik"
 
-#: openbook_common/i18n.py:38
+#: openbook_common/i18n/i18n.py:39
 msgid "Wohoo!"
 msgstr "Wohoo!"
 
-#: openbook_common/i18n.py:39
+#: openbook_common/i18n/i18n.py:40
 msgid "Palette"
 msgstr "Palet"
 
-#: openbook_common/i18n.py:40
+#: openbook_common/i18n/i18n.py:41
 msgid "Alien"
 msgstr "Uzaylı"
 
-#: openbook_common/i18n.py:41
+#: openbook_common/i18n/i18n.py:42
 msgid "Airplane"
 msgstr "Uçak"
 
-#: openbook_common/i18n.py:42
+#: openbook_common/i18n/i18n.py:43
 msgid "Rocket"
 msgstr "Roket"
 
-#: openbook_common/i18n.py:43
+#: openbook_common/i18n/i18n.py:44
 msgid "Lipstick"
 msgstr "Ruj"
 
-#: openbook_common/i18n.py:44
+#: openbook_common/i18n/i18n.py:45
 msgid "Crown"
 msgstr "Taht"
 
-#: openbook_common/i18n.py:45
+#: openbook_common/i18n/i18n.py:46
 msgid "Map"
 msgstr "Harita"
 
-#: openbook_common/i18n.py:46
+#: openbook_common/i18n/i18n.py:47
 msgid "Pride"
 msgstr "Gurur"
 
-#: openbook_common/i18n.py:47
+#: openbook_common/i18n/i18n.py:48
 msgid "Like it"
 msgstr "Beğendim"
 
-#: openbook_common/i18n.py:48
+#: openbook_common/i18n/i18n.py:49
 msgid "Hehe"
 msgstr "Hehe"
 
@@ -1121,7 +1153,7 @@ msgstr "anahtar kelime"
 msgid "is reaction group"
 msgstr "tepki grubu"
 
-#: openbook_common/models.py:40 openbook_posts/models.py:311
+#: openbook_common/models.py:40 openbook_posts/models.py:366
 msgid "image"
 msgstr "resim"
 
@@ -1250,12 +1282,12 @@ msgid "The invite has been already used."
 msgstr "Davet zaten kullanılmış."
 
 #: openbook_invitations/models.py:96 openbook_invitations/models.py:108
-msgid "You've been invited to join Openbook"
-msgstr "Openbook’a katılmaya davet edildiniz"
+msgid "You've been invited to join Okuna (formerly Openbook)"
+msgstr "Okuna'ya (daha önce Openbook) katılmaya davet edildin"
 
 #: openbook_invitations/models.py:128
-msgid "Action Required: Choose an alternate username for Openbook"
-msgstr "İşlem Gerekli: Openbook için alternatif bir kullanıcı adı seçin"
+msgid "Action Required: Choose an alternate username for Okuna"
+msgstr "İşlem Gerekli: Okuna için alternatif bir kullanıcı adı seçin"
 
 #: openbook_invitations/validators.py:10
 msgid "The invite does not exist."
@@ -1289,99 +1321,99 @@ msgstr "Liste ismi mevcut"
 msgid "List name not available"
 msgstr "Liste ismi mevcut değil"
 
-#: openbook_moderation/i18n.py:4
+#: openbook_moderation/i18n/i18n.py:4
 msgid "Spam"
 msgstr "İstenmeyen"
 
-#: openbook_moderation/i18n.py:5
+#: openbook_moderation/i18n/i18n.py:5
 msgid "Posts as spam could include clickbait, advertising, scams, script bots"
 msgstr "Spam olarak gönderilen gönderiler clickbait, reklam, dolandırıcılık, script botları içerebilir"
 
-#: openbook_moderation/i18n.py:6
+#: openbook_moderation/i18n/i18n.py:6
 msgid "Pornography"
 msgstr "Cinsel içerik"
 
-#: openbook_moderation/i18n.py:7
+#: openbook_moderation/i18n/i18n.py:7
 msgid "Posts showing sexual intercourse, photos and videos of sexual intercourse, nudity etc"
 msgstr "Cinsel ilişki gösteren mesajlar, cinsel ilişki fotoğrafları ve videoları, Çıplaklık vb"
 
-#: openbook_moderation/i18n.py:8
+#: openbook_moderation/i18n/i18n.py:8
 msgid "Hatred & Bullying"
 msgstr "Nefret ve Zorbalık"
 
-#: openbook_moderation/i18n.py:9
+#: openbook_moderation/i18n/i18n.py:9
 msgid "Credible threats, targets people, degrades or shames them, harassment etc."
 msgstr "İnandırıcı tehditler, hedef alınan kişiler, küçük düşürmek veya utandırmak, taciz edilmek vb."
 
-#: openbook_moderation/i18n.py:10
+#: openbook_moderation/i18n/i18n.py:10
 msgid "Self Harm"
 msgstr "Kendine zarar vermek"
 
-#: openbook_moderation/i18n.py:11
+#: openbook_moderation/i18n/i18n.py:11
 msgid "Posts promoting or encouraging self harm"
 msgstr "Kendine zararı destekleyen veya teşvik eden gönderiler"
 
-#: openbook_moderation/i18n.py:12
+#: openbook_moderation/i18n/i18n.py:12
 msgid "Violent, gory and harmful"
 msgstr "Şiddet, kanlı ve zararlı"
 
-#: openbook_moderation/i18n.py:13
+#: openbook_moderation/i18n/i18n.py:13
 msgid "Photos or videos of extreme graphic violence, posts encouraging violence, specific threats of physical harm"
 msgstr "Aşırı açık ve net şiddetin fotoğrafları veya videoları, şiddeti teşvik eden gönderiler, fiziksel zararın kesin tehlikeleri"
 
-#: openbook_moderation/i18n.py:14
+#: openbook_moderation/i18n/i18n.py:14
 msgid "Child Sexual Exploitation Material"
 msgstr "Çocuğa Cinsel İstismar Materyali"
 
-#: openbook_moderation/i18n.py:15
+#: openbook_moderation/i18n/i18n.py:15
 msgid "Posts with photos or videos of sexual intercourse with children, posts of nude/partially nude children."
 msgstr "Çocuklarla cinsel ilişkiye girme fotoğrafları veya videoları olan gönderiler, çıplak / kısmen çıplak çocuk gönderileri."
 
-#: openbook_moderation/i18n.py:16
+#: openbook_moderation/i18n/i18n.py:16
 msgid "Illegal Activities e.g Drug Use"
 msgstr "Yasadışı Faaliyetler, örneğin Uyuşturucu Kullanımı"
 
-#: openbook_moderation/i18n.py:17
+#: openbook_moderation/i18n/i18n.py:17
 msgid "Posts promoting illegal activities such as use, sale or distribution of hard drugs etc"
 msgstr "Sert uyuşturucu kullanımı, satışı veya dağıtımı gibi yasa dışı faaliyetleri teşvik eden gönderiler"
 
-#: openbook_moderation/i18n.py:18
+#: openbook_moderation/i18n/i18n.py:18
 msgid "Deceptive content"
 msgstr "Aldatıcı içerik"
 
-#: openbook_moderation/i18n.py:19
+#: openbook_moderation/i18n/i18n.py:19
 msgid "Posts with purposefully fake or deceitful news, hoax disproved by credible sources"
 msgstr "Kasıtlı olarak sahte veya aldatıcı haberler içeren gönderiler, inandırıcı kaynaklardan gelen aldatmacalar"
 
-#: openbook_moderation/i18n.py:20
+#: openbook_moderation/i18n/i18n.py:20
 msgid "Copyright and trademark infringement"
 msgstr "Telif hakkı ve ticari marka ihlali"
 
-#: openbook_moderation/i18n.py:21
+#: openbook_moderation/i18n/i18n.py:21
 msgid "Posts with content that violates or infringes your copyright."
 msgstr "Telif hakkınızı ihlal eden veya ihlal eden içeriğe sahip gönderiler."
 
-#: openbook_moderation/i18n.py:22
+#: openbook_moderation/i18n/i18n.py:22
 msgid "Platform abuse"
 msgstr "Tartışma ortamını kötüye kullanma"
 
-#: openbook_moderation/i18n.py:23
+#: openbook_moderation/i18n/i18n.py:23
 msgid "Abuse might contain using bots, abusing the report button, spamming continuously."
 msgstr "Kötüye kullanmayı botlar kullanarak yapabilmek, rapor düğmesini kötüye kullanmak, sürekli spamlamak."
 
-#: openbook_moderation/i18n.py:24
+#: openbook_moderation/i18n/i18n.py:24
 msgid "Community Guidelines Infringement"
 msgstr "Topluluk Kuralları İhlali"
 
-#: openbook_moderation/i18n.py:25
+#: openbook_moderation/i18n/i18n.py:25
 msgid "The item does not conform to the community guidelines."
 msgstr "Madde topluluk kurallarına uymuyor."
 
-#: openbook_moderation/i18n.py:26
+#: openbook_moderation/i18n/i18n.py:26
 msgid "Other"
 msgstr "Diğer"
 
-#: openbook_moderation/i18n.py:27
+#: openbook_moderation/i18n/i18n.py:27
 msgid "Other reasons not included in other categories."
 msgstr "Diğer kategorilere dahil edilmeyen diğer sebepler."
 
@@ -1447,12 +1479,22 @@ msgstr "%(following_user_name)s · @%(following_user_username)s seni takip etmey
 msgid "%(connection_requester_name)s · @%(connection_requester_username)s wants to connect with you."
 msgstr "%(connection_requester_name)s · @%(connection_requester_username)s sizinle bağlantı kurmak istiyor."
 
-#: openbook_notifications/helpers.py:123
+#: openbook_notifications/helpers.py:124
 #, python-format
 msgid "%(post_comment_reactor_name)s · @%(post_comment_reactor_username)s reacted to your comment."
 msgstr "%(post_comment_reactor_name)s · @%(post_comment_reactor_username)s yorumunuza yanıt verdi."
 
-#: openbook_notifications/helpers.py:148
+#: openbook_notifications/helpers.py:155
+#, python-format
+msgid "%(mentioner_name)s · @%(mentioner_username)s mentioned you in a comment."
+msgstr "%(mentioner_name)s · @%(mentioner_username)s bir yorumda sizden bahsetti."
+
+#: openbook_notifications/helpers.py:187
+#, python-format
+msgid "%(mentioner_name)s · @%(mentioner_username)s mentioned you in a post."
+msgstr "%(mentioner_name)s · @%(mentioner_username)s bir gönderide sizden bahsetti."
+
+#: openbook_notifications/helpers.py:213
 #, python-format
 msgid "%(invite_creator_name)s · @%(invite_creator_username)s has invited you to join /c/%(community_name)s."
 msgstr "%(invite_creator_name)s · @%(invite_creator_username)s sizi /c/%(community_name)s grubuna davet etti."
@@ -1461,43 +1503,43 @@ msgstr "%(invite_creator_name)s · @%(invite_creator_username)s sizi /c/%(commun
 msgid "No notification with the provided id exists."
 msgstr "Sağlanan kimliğe ilişkin bildirim yok."
 
-#: openbook_posts/models.py:37 openbook_posts/models.py:345
+#: openbook_posts/models.py:40 openbook_posts/models.py:400
 msgid "text"
 msgstr "metin"
 
-#: openbook_posts/models.py:40
+#: openbook_posts/models.py:43
 msgid "comments enabled"
 msgstr "yorumlar etkin"
 
-#: openbook_posts/models.py:41
+#: openbook_posts/models.py:44
 msgid "public reactions"
 msgstr "herkese açık tepkiler"
 
-#: openbook_posts/models.py:73
+#: openbook_posts/models.py:76
 msgid "A post requires circles or a community to be posted to."
 msgstr "Bir gönderinin gönderilmesi için çevreler veya bir topluluk gerekir."
 
-#: openbook_posts/models.py:76
+#: openbook_posts/models.py:79
 msgid "A post cannot be posted both to a community and to circles."
 msgstr "Bir gönderi hem topluluğa hem de çevrelere gönderilemez."
 
-#: openbook_posts/models.py:79
+#: openbook_posts/models.py:82
 msgid "A post requires text or an image/video."
 msgstr "Bir gönderide metin veya resim / video gerekir."
 
-#: openbook_posts/models.py:82
+#: openbook_posts/models.py:85
 msgid "A post must have an image or a video, not both."
 msgstr "Bir gönderide her ikisi birden olamaz, bir resim veya video bulunmalıdır."
 
-#: openbook_posts/models.py:302
+#: openbook_posts/models.py:357
 msgid "Cannot remove the text of a text only post. Try deleting it instead."
 msgstr "Gönderide sadece metin varsa kaldırılamaz. Bunun yerine silmeyi deneyin."
 
-#: openbook_posts/models.py:319 openbook_posts/models.py:331
+#: openbook_posts/models.py:374 openbook_posts/models.py:386
 msgid "hash"
 msgstr "karışık"
 
-#: openbook_posts/models.py:329
+#: openbook_posts/models.py:384
 msgid "video"
 msgstr "video"
 
@@ -1517,22 +1559,22 @@ msgstr "Gönderi yorumunda tepki mevcut değil."
 msgid "The post reaction does not exist."
 msgstr "Gönderide tepki mevcut değil."
 
-#: openbook_posts/views/post/views.py:76
+#: openbook_posts/views/post/views.py:77
 msgid "Post deleted"
 msgstr "Gönderi silindi"
 
-#: openbook_posts/views/post/views.py:195
-#: openbook_posts/views/post_comment/views.py:124
+#: openbook_posts/views/post/views.py:196
+#: openbook_posts/views/post_comment/views.py:122
 msgid "Translation between these languages is not supported."
 msgstr "Bu diller arasındaki çeviri desteklenmiyor."
 
-#: openbook_posts/views/post/views.py:198
-#: openbook_posts/views/post_comment/views.py:126
+#: openbook_posts/views/post/views.py:199
+#: openbook_posts/views/post_comment/views.py:124
 msgid "Translation service returned an error"
 msgstr "Çeviri servisi bir hata verdi"
 
-#: openbook_posts/views/post/views.py:201
-#: openbook_posts/views/post_comment/views.py:129
+#: openbook_posts/views/post/views.py:202
+#: openbook_posts/views/post_comment/views.py:127
 msgid "Max length of translation text exceeded."
 msgstr "Çeviri metni uzunluğu aşıldı."
 
@@ -1540,15 +1582,15 @@ msgstr "Çeviri metni uzunluğu aşıldı."
 msgid "Post comment reaction deleted"
 msgstr "Gönderi yorumundaki tepki silindi"
 
-#: openbook_posts/views/post_comment/views.py:39
+#: openbook_posts/views/post_comment/views.py:37
 msgid "Comment deleted"
 msgstr "Yorum silindi"
 
-#: openbook_posts/views/post_comment/views.py:85
+#: openbook_posts/views/post_comment/views.py:83
 msgid "Post comment muted."
 msgstr "Gönderi Yorumu sessizde."
 
-#: openbook_posts/views/post_comment/views.py:103
+#: openbook_posts/views/post_comment/views.py:101
 msgid "Post comment unmuted."
 msgstr "Gönderi Yorumu sessizde değil."
 

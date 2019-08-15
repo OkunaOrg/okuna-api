@@ -1659,7 +1659,11 @@ class SearchPostParticipantsAPITests(APITestCase):
 
         response_participants = json.loads(response.content)
 
-        self.assertEqual(response_participants[0]['id'], post_creator.pk)
+        for response_participant in response_participants:
+            if response_participant['id'] == post_creator.pk:
+                found = True
+                break
+        self.assertTrue(found)
 
     def test_retrieves_oneself_by_username(self):
         """
@@ -1683,7 +1687,11 @@ class SearchPostParticipantsAPITests(APITestCase):
 
         response_participants = json.loads(response.content)
 
-        self.assertEqual(response_participants[0]['id'], user.pk)
+        for response_participant in response_participants:
+            if response_participant['id'] == user.pk:
+                found = True
+                break
+        self.assertTrue(found)
 
     def test_retrieves_oneself_by_name(self):
         """
@@ -1707,7 +1715,12 @@ class SearchPostParticipantsAPITests(APITestCase):
 
         response_participants = json.loads(response.content)
 
-        self.assertEqual(response_participants[0]['id'], user.pk)
+        for response_participant in response_participants:
+            if response_participant['id'] == user.pk:
+                found = True
+                break
+
+        self.assertTrue(found)
 
     def test_retrieves_post_commentator_by_username(self):
         """

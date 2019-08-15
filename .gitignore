@@ -8,6 +8,7 @@ reports
 coverage.xml
 src/
 static/
+docker-compose.override.yml
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*

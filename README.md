@@ -124,7 +124,7 @@ python manage.py runserver 0.0.0.0:8000
 
 ## Django Translations
 
-1. Use `./manage.py makemessages -l es` to generate messages for any one locale. In this case Ive used spanish.
+1. Use `./manage.py makemessages -l es` to generate messages. Doesn't matter which language we target, the translation tool is agnostic.
 2. This generates a new `django.po` file in the `locale/es/LC_MESSAGES/` folder. It will have all the
 source strings and a place to enter the translation strings. It doesnt overwrite previous translations.
 3. Sometimes, if django is confused, it marks a string as fuzzy. So do search for  the word 'fuzzy' in `django.po`
@@ -133,9 +133,8 @@ source strings and a place to enter the translation strings. It doesnt overwrite
 #: openbook_lists/validators.py:10   <- place where the string occurs in code
 msgid "The list does not exist."     <- english translations  
 msgstr "Die Liste ist nicht vorhanden."   <-- this will be empty for new strings
-
 ```
-5. Upload this `django.po` file to crowdin. 
+5. Upload this `django.po` file to https://crowdin.com/project/okuna/settings#files by pressing `Update` next to the existing `django.po` file.
 6. Once all language volunteers have translated the new strings, download all the `django.po` files for each locale and 
 put them in their respective folders.
 7. Run `./manage.py compilemessages` to auto-generate `django.mo` files. 
@@ -186,6 +185,33 @@ It will update the `.json` files, then check them in.
 ./manage.py shell < openbook_moderation/i18n/update_translations.py
 ./manage.py shell < openbook_categories/i18n/update_translations.py
 ```
+
+## Docker Compose
+
+### Replace .env settings
+```bash
+# Relational Database Service configuration
+RDS_DB_NAME=okuna
+RDS_USERNAME=root
+RDS_PASSWORD=okuna
+RDS_HOSTNAME=db.okuna
+RDS_PORT=3306
+RDS_HOSTNAME_READER=db.okuna
+RDS_HOSTNAME_WRITER=db.okuna
+```
+
+### Build the container
+```bash
+usage: docker-compose build
+```
+
+### Run the container
+```bash
+usage: docker-compose up (-d in background)
+```
+
+### Visit the static webserver IP
+http://172.16.16.1:80
 
 ## Troubleshooting
 

@@ -143,28 +143,37 @@ class Post(models.Model):
         return trending_posts_query
 
     @classmethod
-    def get_post_comment_notification_target_users(cls, post_id, post_commenter_id, post_comment_id=None):
+    def get_post_comment_notification_target_users(cls, post, post_commenter):
         """
         Returns the users that should be notified of a post comment.
         This includes the post creator and other post commenters
-        :param post_id:
-        :param post_commenter_id:
-        :param post_comment_id:
         :return:
         """
 
-        if post_comment_id is not None:
-            post_notification_target_users_query = Q(posts_comments__parent_comment_id=post_comment_id)
-            post_notification_target_users_query.add(Q(posts_comments__id=post_comment_id), Q.OR)
-        else:
-            post_notification_target_users_query = Q(posts_comments__post_id=post_id,
-                                                     posts_comments__parent_comment_id=None)
-            post_notification_target_users_query.add(Q(posts__id=post_id), Q.OR)
+        # Add other post commenters, exclude replies to comments, the post commenter
+        other_commenters = User.objects.filter(
+            Q(posts_comments__post_id=post.pk, posts_comments__parent_comment_id=None, ) & ~Q(
+                id=post_commenter.pk))
 
-        post_notification_target_users_query.add(~Q(id=post_commenter_id), Q.AND)
-        post_notification_target_users_query.add(~Q(user_blocks__blocked_user_id=post_commenter_id), Q.AND)
+        post_creator = User.objects.filter(pk=post.creator_id)
 
-        return User.objects.filter(post_notification_target_users_query).distinct()
+        return other_commenters.union(post_creator)
+
+    @classmethod
+    def get_post_comment_reply_notification_target_users(cls, post_commenter, parent_post_comment):
+        """
+        Returns the users that should be notified of a post comment reply.
+        :return:
+        """
+
+        # Add other post commenters, exclude non replies, the post commenter
+        other_repliers = User.objects.filter(
+            Q(posts_comments__parent_comment_id=parent_post_comment.pk, ) & ~Q(
+                id=post_commenter.pk))
+
+        # Add post comment creator
+        post_comment_creator = User.objects.filter(pk=parent_post_comment.commenter_id)
+        return other_repliers.union(post_comment_creator)
 
     def count_comments(self):
         return PostComment.count_comments_for_post_with_id(self.pk)
@@ -307,21 +316,24 @@ class Post(models.Model):
         PostCommentReplyNotification.objects.filter(post_comment__post=self.pk,
                                                     notification__owner_id=user.pk).delete()
 
-    def make_participants_query(self):
+    def get_participants(self):
+        User = get_user_model()
+
         # Add post creator
-        participants_query = Q(posts__id=self.pk)
+        post_creator = User.objects.filter(pk=self.creator_id)
 
         # Add post commentators
-        participants_query.add(Q(posts_comments__post_id=self.pk), Q.OR)
+        post_commenters = User.objects.filter(posts_comments__post_id=self.pk, is_deleted=False)
 
         # If community post, add community members
         if self.community:
-            participants_query.add(Q(communities_memberships__community_id=self.community_id), Q.OR)
+            community_members = User.objects.filter(communities_memberships__community_id=self.community_id,
+                                                    is_deleted=False)
+            result = post_creator.union(post_commenters, community_members)
+        else:
+            result = post_creator.union(post_commenters)
 
-        # No deleted users
-        participants_query.add(Q(is_deleted=False), Q.AND)
-
-        return participants_query
+        return result
 
     def _process_post_mentions(self):
         if not self.text:
@@ -342,10 +354,12 @@ class Post(models.Model):
                 User = get_user_model()
 
                 for username in usernames:
+                    username = username.lower()
                     if username not in existing_mention_usernames:
                         try:
                             user = User.objects.only('id', 'username').get(username=username)
-                            if user.can_see_post(post=self):
+                            user_is_post_creator = user.pk == self.creator_id
+                            if user.can_see_post(post=self) and not user_is_post_creator:
                                 PostUserMention.create_post_user_mention(user=user, post=self)
                                 existing_mention_usernames.append(username)
                         except User.DoesNotExist:
@@ -477,12 +491,34 @@ class PostComment(models.Model):
             User = get_user_model()
 
             for username in usernames:
+                username = username.lower()
                 if username not in existing_mention_usernames:
                     try:
                         user = User.objects.only('id', 'username').get(username=username)
-                        if user.can_see_post_comment(post_comment=self):
-                            PostCommentUserMention.create_post_comment_user_mention(user=user, post_comment=self)
-                            existing_mention_usernames.append(username)
+                        user_can_see_post_comment = user.can_see_post_comment(post_comment=self)
+                        user_is_commenter = user.pk == self.commenter_id
+
+                        if not user_can_see_post_comment or user_is_commenter:
+                            continue
+
+                        if self.parent_comment:
+                            user_is_parent_comment_creator = self.parent_comment.commenter_id == user.pk
+                            user_has_replied_before = self.parent_comment.replies.filter(commenter_id=user.pk).exists()
+
+                            if user_has_replied_before or user_is_parent_comment_creator:
+                                # Its a reply to a comment, if the user previously replied to the comment
+                                # or if he's the creator of the parent comment he will already be alerted of the reply,
+                                # no need for mention
+                                continue
+                        else:
+                            user_has_commented_before = self.post.comments.filter(commenter_id=user.pk).exists()
+                            if user_has_commented_before:
+                                # Its a comment to a post, if the user previously commented on the post
+                                # he will already be alerted of the comment, no need for mention
+                                continue
+
+                        PostCommentUserMention.create_post_comment_user_mention(user=user, post_comment=self)
+                        existing_mention_usernames.append(username)
                     except User.DoesNotExist:
                         pass
 

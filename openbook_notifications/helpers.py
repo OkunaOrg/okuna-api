@@ -139,6 +139,9 @@ def send_post_comment_reaction_push_notification(post_comment_reaction):
 def send_post_comment_user_mention_push_notification(post_comment_user_mention):
     mentioned_user = post_comment_user_mention.user
 
+    if not mentioned_user.has_post_comment_mention_notifications_enabled():
+        return
+
     post_comment_id = post_comment_user_mention.post_comment_id
     notification_group = 'post_comment_%s' % post_comment_id
 
@@ -167,6 +170,9 @@ def send_post_comment_user_mention_push_notification(post_comment_user_mention):
 
 def send_post_user_mention_push_notification(post_user_mention):
     mentioned_user = post_user_mention.user
+
+    if not mentioned_user.has_post_mention_notifications_enabled():
+        return
 
     post_id = post_user_mention.post_id
     notification_group = 'post_%s' % post_id
@@ -222,7 +228,7 @@ def send_community_invite_push_notification(community_invite):
 
 
 def get_notification_language_code_for_target_user(target_user):
-    if target_user.language is not None and translation.check_for_language(target_user.language.code):
+    if target_user.language and translation.check_for_language(target_user.language.code):
         return target_user.language.code
 
     return translation_strategy.get_default_translation_language_code()

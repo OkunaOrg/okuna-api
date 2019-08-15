@@ -15,7 +15,7 @@
       "keyword_fr": "Principales",
       "keyword_it": "Principale",
       "keyword_tr": "Başlıca",
-      "keyword_pt-br": "Básico"
+      "keyword_pt_br": "Básico"
     }
   },
   {
@@ -34,7 +34,7 @@
       "keyword_fr": "Prémium",
       "keyword_it": "Premium",
       "keyword_tr": "Premium",
-      "keyword_pt-br": "Premium"
+      "keyword_pt_br": "Premium"
     }
   },
   {
@@ -53,7 +53,7 @@
       "keyword_fr": "Objets",
       "keyword_it": "Tipi",
       "keyword_tr": "Nesneler",
-      "keyword_pt-br": "Objetos"
+      "keyword_pt_br": "Objetos"
     }
   }
 ]

@@ -107,6 +107,8 @@ class AuthenticatedUserNotificationsSettings(APIView):
         community_invite_notifications = data.get('community_invite_notifications')
         post_comment_reaction_notifications = data.get('post_comment_reaction_notifications')
         post_comment_reply_notifications = data.get('post_comment_reply_notifications')
+        post_comment_user_mention_notifications = data.get('post_comment_user_mention_notifications')
+        post_user_mention_notifications = data.get('post_user_mention_notifications')
 
         user = request.user
 
@@ -119,7 +121,9 @@ class AuthenticatedUserNotificationsSettings(APIView):
                 connection_confirmed_notifications=connection_confirmed_notifications,
                 community_invite_notifications=community_invite_notifications,
                 post_comment_reaction_notifications=post_comment_reaction_notifications,
-                post_comment_reply_notifications=post_comment_reply_notifications
+                post_comment_reply_notifications=post_comment_reply_notifications,
+                post_comment_user_mention_notifications=post_comment_user_mention_notifications,
+                post_user_mention_notifications=post_user_mention_notifications
             )
 
         user_notifications_settings_serializer = AuthenticatedUserNotificationsSettingsSerializer(
