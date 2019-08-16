@@ -193,7 +193,7 @@ class AuthenticatedUserAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        new_followers_count_visible = fake.boolean()
+        new_followers_count_visible = not user.profile.followers_count_visible
 
         data = {
             'followers_count_visible': new_followers_count_visible
@@ -208,6 +208,29 @@ class AuthenticatedUserAPITests(APITestCase):
         user.refresh_from_db()
 
         self.assertEqual(user.profile.followers_count_visible, new_followers_count_visible)
+
+    def test_can_update_user_community_posts_visible(self):
+        """
+        should be able to update the authenticated user community_posts_visible and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        new_community_posts_visible = not user.profile.community_posts_visible
+
+        data = {
+            'community_posts_visible': new_community_posts_visible
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertEqual(user.profile.community_posts_visible, new_community_posts_visible)
 
     def test_can_update_user_avatar(self):
         """

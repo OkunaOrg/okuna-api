@@ -355,6 +355,7 @@ class User(AbstractUser):
                bio=None,
                url=None,
                followers_count_visible=None,
+               community_posts_visible=None,
                save=True):
 
         profile = self.profile
@@ -385,6 +386,9 @@ class User(AbstractUser):
 
         if followers_count_visible is not None:
             profile.followers_count_visible = followers_count_visible
+
+        if community_posts_visible is not None:
+            profile.community_posts_visible = community_posts_visible
 
         if save:
             profile.save()
@@ -4160,6 +4164,7 @@ class UserProfile(models.Model):
     bio = models.TextField(_('bio'), max_length=settings.PROFILE_BIO_MAX_LENGTH, blank=False, null=True)
     url = models.URLField(_('url'), blank=False, null=True)
     followers_count_visible = models.BooleanField(_('followers count visible'), blank=False, null=False, default=False)
+    community_posts_visible = models.BooleanField(_('community posts visible'), blank=False, null=False, default=True)
     badges = models.ManyToManyField(Badge, related_name='users_profiles')
 
     class Meta:
