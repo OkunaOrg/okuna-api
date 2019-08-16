@@ -678,6 +678,9 @@ class User(AbstractUser):
                                                moderated_object__object_type=ModeratedObject.OBJECT_TYPE_COMMUNITY
                                                ).exists()
 
+    def has_profile_community_posts_visible(self):
+        return self.profile.community_posts_visible
+
     def can_see_post(self, post):
         # Check if post is public
         if post.community:
@@ -1832,6 +1835,9 @@ class User(AbstractUser):
         """
         posts_query = Q(creator_id=self.id)
 
+        if not self.has_profile_community_posts_visible():
+            posts_query.add(Q(community__isnull=True), Q.AND)
+
         if max_id:
             posts_query.add(Q(id__lt=max_id), Q.AND)
 
@@ -1897,7 +1903,12 @@ class User(AbstractUser):
             cursor_scrolling_query
         )
 
-        return world_circle_posts.union(community_posts, connection_circles_posts)
+        if user.has_profile_community_posts_visible():
+            results = world_circle_posts.union(community_posts, connection_circles_posts)
+        else:
+            results = world_circle_posts.union(connection_circles_posts)
+
+        return results
 
     def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None, min_id=None, count=None):
         """
