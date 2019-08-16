@@ -974,7 +974,8 @@ class User(AbstractUser):
         PostCommentNotification = get_post_comment_notification_model()
 
         for post_notification_target_user in post_notification_target_users:
-            if post_notification_target_user.pk == post_commenter.pk or not post_notification_target_user.can_see_post(post=post):
+            if post_notification_target_user.pk == post_commenter.pk or not post_notification_target_user.can_see_post(
+                    post=post):
                 continue
             post_notification_target_user_is_post_creator = post_notification_target_user.id == post_creator.id
             post_notification_target_has_comment_notifications_enabled = post_notification_target_user.has_comment_notifications_enabled_for_post_with_id(
@@ -1032,7 +1033,8 @@ class User(AbstractUser):
         PostCommentReplyNotification = get_post_comment_reply_notification_model()
 
         for post_notification_target_user in post_notification_target_users:
-            if post_notification_target_user.pk == replier.pk or not post_notification_target_user.can_see_post(post=post):
+            if post_notification_target_user.pk == replier.pk or not post_notification_target_user.can_see_post(
+                    post=post):
                 continue
             post_notification_target_user_is_post_comment_creator = post_notification_target_user.id == comment_creator
             post_notification_target_has_comment_reply_notifications_enabled = \
@@ -1824,7 +1826,7 @@ class User(AbstractUser):
         :param max_id:
         :return:
         """
-        posts_query = Q(creator_id=self.id, community__isnull=True)
+        posts_query = Q(creator_id=self.id)
 
         if max_id:
             posts_query.add(Q(id__lt=max_id), Q.AND)
@@ -1834,44 +1836,64 @@ class User(AbstractUser):
 
         return posts
 
-    def get_public_posts_for_user_with_username(self, username, max_id=None, min_id=None):
+    def get_posts_for_user_with_username(self, username, max_id=None, min_id=None):
+        user = User.objects.get(username=username)
+        return self.get_posts_for_user(user=user, max_id=max_id, min_id=min_id)
+
+    def get_posts_for_user(self, user, max_id=None, min_id=None):
+        Post = get_post_model()
         Circle = get_circle_model()
         world_circle_id = Circle.get_world_circle_id()
 
-        posts_query = Q(creator__username=username, circles__id=world_circle_id)
-
-        posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
-            creator__user_blocks__blocked_user_id=self.pk)), Q.AND)
-
-        posts_query.add(Q(is_deleted=False), Q.AND)
-
-        posts_query.add(~Q(moderated_object__reports__reporter_id=self.pk), Q.AND)
+        cursor_scrolling_query = Q()
 
         if max_id:
-            posts_query.add(Q(id__lt=max_id), Q.AND)
+            cursor_scrolling_query = Q(id__lt=max_id)
         elif min_id:
-            posts_query.add(Q(id__gt=min_id), Q.AND)
+            cursor_scrolling_query = Q(id__gt=min_id)
 
-        Post = get_post_model()
-        result = Post.objects.filter(posts_query)
+        exclude_blocked_posts_query = ~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
+            creator__user_blocks__blocked_user_id=self.pk))
 
-        return result
+        exclude_deleted_posts_query = Q(is_deleted=False)
 
-    def get_posts_for_user_with_username(self, username, max_id=None):
-        """
-        Get all the posts for the given user with username
-        :param username:
-        :param max_id:
-        :param post_id:
-        :return:
-        """
-        user = User.objects.get(username=username)
-        posts_query = self._make_get_posts_query_for_user(user, max_id)
+        # Get user world circle posts
 
-        Post = get_post_model()
-        profile_posts = Post.objects.filter(posts_query).distinct()
+        world_circle_posts_query = Q(creator__id=user.pk, circles__id=world_circle_id)
 
-        return profile_posts
+        world_circle_posts = Post.objects.filter(
+            world_circle_posts_query &
+            exclude_deleted_posts_query &
+            exclude_blocked_posts_query &
+            cursor_scrolling_query
+        )
+
+        # Get user community posts
+        Community = get_community_model()
+        community_posts_query = Q(creator__pk=user.pk, community__isnull=False)
+        exclude_private_community_posts_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC) | Q(
+            community__memberships__user__id=self.pk)
+
+        community_posts = Post.objects.filter(
+            community_posts_query &
+            exclude_private_community_posts_query &
+            exclude_deleted_posts_query &
+            exclude_blocked_posts_query &
+            cursor_scrolling_query
+        )
+
+        # Get user connection circles posts
+        connection_circles_query = Q(circles__connections__target_user_id=self.pk,
+                                     circles__connections__target_connection__circles__isnull=False)
+
+        connection_circles_posts = Post.objects.filter(
+            connection_circles_query &
+            exclude_deleted_posts_query &
+            exclude_blocked_posts_query &
+            cursor_scrolling_query
+        )
+
+        return world_circle_posts.union(community_posts, connection_circles_posts)
 
     def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None, min_id=None, count=None):
         """
