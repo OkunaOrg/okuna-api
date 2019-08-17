@@ -2,7 +2,7 @@ from django.contrib import admin
 
 # RegisterView your models here.
 from openbook_circles.models import Circle
-from openbook_posts.models import Post, PostImage, PostComment, PostReaction
+from openbook_posts.models import Post, PostImage, PostComment, PostReaction, PostLinkWhitelistDomain
 
 
 class PostImageInline(admin.TabularInline):
@@ -75,4 +75,11 @@ class PostAdmin(admin.ModelAdmin):
         return False
 
 
+class PostLinkWhitelistDomainAdmin(admin.ModelAdmin):
+    list_display = (
+        'domain',
+    )
+
+
+admin.site.register(PostLinkWhitelistDomain, PostLinkWhitelistDomainAdmin)
 admin.site.register(Post, PostAdmin)
