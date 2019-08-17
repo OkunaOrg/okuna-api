@@ -54,13 +54,37 @@ def make_proxy_image_url(image_url):
     return proxy_image_url
 
 
+def is_url_allowed_in_whitelist_domains(url, allowed_domains):
+    domain = get_domain_from_link(url)
+    is_matched = False
+    domain_parts = domain.split('.')
+    length = len(domain_parts)
+    while length >= 2:
+        if domain in allowed_domains:
+            is_matched = True
+            break
+        domain_parts.pop(0)
+        domain = '.'.join(domain_parts)
+        length = len(domain_parts)
+
+    return is_matched
+
+
 def get_domain_from_link(url):
+    """
+    Returns the domain part from a full url without the scheme
+    """
+    if not urlparse(url).scheme:
+        url = 'https://' + url
     parsed_uri = urlparse(url)
     result = '{uri.netloc}'.format(uri=parsed_uri)
     return result.lower()
 
 
-def get_domain_full_url_from_link(url):
+def _get_domain_full_url_from_link(url):
+    """
+    Returns the domain with scheme
+    """
     parsed_uri = urlparse(url)
     result = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_uri)
     return result.lower()
@@ -77,8 +101,21 @@ def get_favicon_url_from_link(url):
         favicon_link = soup.find("link", rel="shortcut icon")
 
     if favicon_link['href'][0] == '/':
-        favicon_link = get_domain_full_url_from_link(url) + favicon_link['href']
+        favicon_link = _get_domain_full_url_from_link(url) + favicon_link['href']
     else:
         favicon_link = favicon_link['href']
 
     return favicon_link
+
+
+def get_sanitised_url_for_link(url):
+    """
+    Adds the url scheme if not present and converts urls to lowercase to normalise
+    what we store in the model
+    """
+    if not urlparse(url).scheme:
+        url = 'https://' + url
+
+    return url.lower()
+
+
