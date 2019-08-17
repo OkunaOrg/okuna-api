@@ -29,6 +29,7 @@ from openbook_auth.views.blocked_users.views import BlockedUsers, SearchBlockedU
 from openbook_auth.views.followers.views import Followers, SearchFollowers
 from openbook_auth.views.following.views import Followings, SearchFollowings
 from openbook_auth.views.linked_users.views import LinkedUsers, SearchLinkedUsers
+from openbook_auth.views.proxy.views import proxy_auth_view
 from openbook_auth.views.users.views import SearchUsers, GetUser, BlockUser, UnblockUser
 from openbook_categories.views import Categories
 from openbook_circles.views import Circles, CircleItem, CircleNameCheck
@@ -362,7 +363,7 @@ if settings.FEATURE_IMPORTER_ENABLED:
 
 urlpatterns = [
     path('api/', include(api_patterns)),
-    url('proxy/(?P<url>.*)', proxy_view, name='proxy'),
+    url('proxy/(?P<url>.*)', proxy_auth_view, name='proxy'),
     url('admin/', admin.site.urls),
     url('health/', Health.as_view(), name='health'),
 ]

@@ -1714,11 +1714,12 @@ class User(AbstractUser):
         title, description, image_url = web_preview(preview_link)
         favicon_url = get_favicon_url_from_link(preview_link)
         domain_url = get_domain_from_link(preview_link)
-        proxy_image_url = make_proxy_image_url(image_url)
-        if favicon_url:
+        if image_url is not None:
+            image_url = make_proxy_image_url(image_url)
+        if favicon_url is not None:
             favicon_url = make_proxy_image_url(favicon_url)
 
-        return title, description, proxy_image_url, favicon_url, domain_url
+        return title, description, image_url, favicon_url, domain_url
 
     def get_preview_link_data_for_post_with_id(self, post_id):
         self._check_can_get_preview_link_data_for_post_with_id(post_id)
