@@ -422,6 +422,7 @@ class PostComment(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
     parent_comment = models.ForeignKey('self', on_delete=models.CASCADE, related_name='replies', null=True, blank=True)
     created = models.DateTimeField(editable=False, db_index=True)
+    modified = models.DateTimeField(db_index=True, default=timezone.now)
     commenter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_comments')
     text = models.TextField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False)
     language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, related_name='post_comments')
@@ -482,6 +483,8 @@ class PostComment(models.Model):
         ''' On save, update timestamps '''
         if not self.id:
             self.created = timezone.now()
+
+        self.modified = timezone.now()
 
         self._process_post_comment_mentions()
         return super(PostComment, self).save(*args, **kwargs)
