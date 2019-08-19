@@ -726,7 +726,7 @@ def check_has_post_with_id(user, post_id):
 
 
 def check_password_matches(user, password):
-    if not user.check_password(password=password):
+    if not user.check_password(password):
         raise AuthenticationFailed(
             _('Wrong password.'),
         )
