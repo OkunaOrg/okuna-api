@@ -114,7 +114,7 @@ def check_list_data(user, name):
         check_list_name_not_taken(user=user, list_name=name)
 
 
-def check_community_data(user, name=None):
+def check_community_data(user, name=None, cover=None):
     if name:
         check_community_name_not_taken(user=user, community_name=name)
 
