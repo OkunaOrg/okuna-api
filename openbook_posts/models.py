@@ -49,6 +49,13 @@ class Post(models.Model):
     is_edited = models.BooleanField(default=False)
     is_closed = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
+    STATUS_DRAFT = 'D'
+    STATUS_PUBLISHED = 'P'
+    STATUSES = (
+        (STATUS_DRAFT, 'Draft'),
+        (STATUS_PUBLISHED, 'Published'),
+    )
+    status = models.CharField(blank=False, null=False, choices=STATUSES, default=STATUS_DRAFT, max_length=2)
 
     class Meta:
         index_together = [
@@ -248,8 +255,15 @@ class Post(models.Model):
         self.language = get_language_for_text(text)
         self.save()
 
+    def publish_post(self):
+        if self.status != Post.STATUS_DRAFT:
+            raise ValidationError(_('The post needs to be in draft status in order to be published'))
+        self.status = Post.STATUS_PUBLISHED
+        self.created = timezone.now()
+        self.save()
+
     def save(self, *args, **kwargs):
-        ''' On save, update timestamps '''
+        ''' On create, update timestamps '''
         if not self.id and not self.created:
             self.created = timezone.now()
 
