@@ -2,8 +2,8 @@
 -e git+https://github.com/lifenautjoe/django-modeltranslation.git@551af9905961038badad9d9a16b2f47996f7685b#egg=django-modeltranslation
 attrs==19.1.0
 bandit==1.5.1
-boto3==1.9.205
-botocore==1.12.205
+boto3==1.9.210
+botocore==1.12.210
 certifi==2019.6.16
 chardet==3.0.4
 click==7.0
@@ -23,14 +23,13 @@ django-rq==2.1.0
 django-storages==1.7.1
 django==2.2.4
 djangorestframework==3.8.2
-docutils==0.14
+docutils==0.15.2
 dparse==0.4.1
 faker==0.9.1
 funcy==1.13
 git+https://github.com/Ian-Foote/rest-framework-generic-relations.git@28592a7e5c4c2f05a5576cd143721f58f061eaf2#egg=rest-framework-generic-relations
 gitdb2==2.0.5
-gitdb==0.6.4
-gitpython==3.0.0
+gitpython==3.0.1
 idna==2.8
 jmespath==0.9.4
 langdetect==1.0.7
@@ -51,7 +50,7 @@ python-dotenv==0.10.3
 python-magic==0.4.15
 pytz==2019.2
 pyyaml==5.1.2
-redis==3.3.6
+redis==3.3.7
 requests==2.22.0
 rq==1.1.0
 s3transfer==0.2.1
@@ -59,7 +58,6 @@ safety==1.8.5
 sentry-sdk==0.10.2
 six==1.12.0
 smmap2==2.0.5
-smmap==0.9.0
 sqlparse==0.3.0
 stevedore==1.30.1
 text-unidecode==1.2

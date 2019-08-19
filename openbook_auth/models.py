@@ -1739,6 +1739,26 @@ class User(AbstractUser):
 
         return post
 
+    def add_image_to_post_with_uuid(self, image, post_uuid):
+        Post = get_post_model()
+        post = Post.objects.get(uuid=post_uuid)
+        return self.add_image_to_post(post=post, image=image)
+
+    def add_image_to_post(self, image, post):
+        check_can_add_image_to_post(user=self, post=post)
+        post.add_image(image=image)
+        return post
+
+    def publish_post_with_uuid(self, post_uuid):
+        Post = get_post_model()
+        post = Post.objects.get(uuid=post_uuid)
+        return self.publish_post(post=post)
+
+    def publish_post(self, post):
+        check_can_publish_post(user=self, post=post)
+        post.publish()
+        return post
+
     def delete_post(self, post):
         return self.delete_post_with_id(post.pk)
 

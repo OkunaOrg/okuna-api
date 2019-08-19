@@ -1,3 +1,4 @@
+import deprecation
 from rest_framework import serializers
 
 from django.conf import settings
@@ -48,8 +49,10 @@ class GetPostsSerializer(serializers.Serializer):
 
 class CreatePostSerializer(serializers.Serializer):
     text = serializers.CharField(max_length=settings.POST_MAX_LENGTH, required=False, allow_blank=False)
+    # Prefer adding images with post/uuid/images
     image = RestrictedImageFileSizeField(allow_empty_file=False, required=False,
                                          max_upload_size=settings.POST_IMAGE_MAX_SIZE)
+    # Prefer adding videos with post/uuid/videos
     video = serializers.FileField(allow_empty_file=False, required=False)
     circle_id = serializers.ListField(
         required=False,
@@ -186,7 +189,6 @@ class PostCommunitySerializer(serializers.ModelSerializer):
 
 
 class PostLanguageSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Language
         fields = (

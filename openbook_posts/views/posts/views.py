@@ -9,8 +9,8 @@ from rest_framework.views import APIView
 from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.utils.helpers import normalize_list_value_in_request_data
 from openbook_posts.permissions import IsGetOrIsAuthenticated
-from openbook_posts.views.posts.serializers import CreatePostSerializer, AuthenticatedUserPostSerializer, \
-    GetPostsSerializer, UnauthenticatedUserPostSerializer
+from openbook_posts.views.posts.serializers import AuthenticatedUserPostSerializer, \
+    GetPostsSerializer, UnauthenticatedUserPostSerializer, CreatePostSerializer
 
 
 class Posts(APIView):

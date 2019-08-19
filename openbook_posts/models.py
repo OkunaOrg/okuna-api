@@ -30,6 +30,7 @@ from imagekit.models import ProcessedImageField
 from openbook_moderation.models import ModeratedObject
 from openbook_notifications.helpers import send_post_comment_user_mention_push_notification, \
     send_post_user_mention_push_notification
+from openbook_posts.checkers import check_can_be_updated
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory
 from openbook_common.helpers import get_language_for_text
 
@@ -88,9 +89,6 @@ class Post(models.Model):
         if not text and not image and not video:
             raise ValidationError(_('A post requires text or an image/video.'))
 
-        if image and video:
-            raise ValidationError(_('A post must have an image or a video, not both.'))
-
         post = Post.objects.create(creator=creator, created=created)
 
         if text:
@@ -110,6 +108,9 @@ class Post(models.Model):
             post.community = Community.objects.get(name=community_name)
 
         post.save()
+
+        if post.image or post.video:
+            post.publish()
 
         return post
 
@@ -249,18 +250,21 @@ class Post(models.Model):
         return not self.is_public_post() and not self.community
 
     def update(self, text=None):
-        self._check_can_be_updated(text=text)
+        check_can_be_updated(post=self, text=text)
         self.text = text
         self.is_edited = True
         self.language = get_language_for_text(text)
         self.save()
 
-    def publish_post(self):
+    def publish(self):
         if self.status != Post.STATUS_DRAFT:
             raise ValidationError(_('The post needs to be in draft status in order to be published'))
         self.status = Post.STATUS_PUBLISHED
         self.created = timezone.now()
         self.save()
+
+    def is_draft(self):
+        return self.status == Post.STATUS_DRAFT
 
     def save(self, *args, **kwargs):
         ''' On create, update timestamps '''
@@ -378,12 +382,6 @@ class Post(models.Model):
                                 existing_mention_usernames.append(username)
                         except User.DoesNotExist:
                             pass
-
-    def _check_can_be_updated(self, text=None):
-        if self.is_text_only_post() and not text:
-            raise ValidationError(
-                _('Cannot remove the text of a text only post. Try deleting it instead.')
-            )
 
 
 post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else default_storage
