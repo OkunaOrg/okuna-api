@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "881968603d2c561124bb53eed9bd8bde26c9042cbd44658a7dcf80dc47ba4526"
+            "sha256": "665ae49c16be01ed4d9bcc16257647c7e7e2d2bec1e5260fad12814a07e522f7"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -228,11 +228,11 @@
         },
         "djangorestframework": {
             "hashes": [
-                "sha256:42979bd5441bb4d8fd69d0f385024a114c3cae7df0f110600b718751250f6929",
-                "sha256:aedb48010ebfab9651aaab1df5fd3b4848eb4182afc909852a2110c24f89a359"
+                "sha256:b6714c3e4b0f8d524f193c91ecf5f5450092c2145439ac2769711f7eba89a9d9",
+                "sha256:c375e4f95a3a64fccac412e36fb42ba36881e52313ec021ef410b40f67cddca4"
             ],
             "index": "pypi",
-            "version": "==3.10.2"
+            "version": "==3.8.2"
         },
         "docutils": {
             "hashes": [
@@ -485,7 +485,7 @@
         },
         "rest-framework-generic-relations": {
             "git": "https://github.com/Ian-Foote/rest-framework-generic-relations.git",
-            "ref": "11c31d378ac4a2b2805e0ad154832532f8430f50"
+            "ref": "28592a7e5c4c2f05a5576cd143721f58f061eaf2"
         },
         "rq": {
             "hashes": [
@@ -581,5 +581,14 @@
             "version": "==1.6.0"
         }
     },
-    "develop": {}
+    "develop": {
+        "polib": {
+            "hashes": [
+                "sha256:93b730477c16380c9a96726c54016822ff81acfa553977fdd131f2b90ba858d7",
+                "sha256:fad87d13696127ffb27ea0882d6182f1a9cf8a5e2b37a587751166c51e5a332a"
+            ],
+            "index": "pypi",
+            "version": "==1.1.0"
+        }
+    }
 }

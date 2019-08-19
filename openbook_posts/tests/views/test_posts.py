@@ -18,11 +18,13 @@ import json
 
 from openbook_circles.models import Circle
 from openbook_common.tests.helpers import make_user, make_users, make_fake_post_text, \
-    make_authentication_headers_for_user, make_circle, make_community, make_list, make_moderation_category
+    make_authentication_headers_for_user, make_circle, make_community, make_list, make_moderation_category, \
+    get_test_usernames
 from openbook_common.utils.helpers import sha256sum
 from openbook_lists.models import List
 from openbook_moderation.models import ModeratedObject
-from openbook_posts.models import Post
+from openbook_notifications.models import PostUserMentionNotification, Notification
+from openbook_posts.models import Post, PostUserMention
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -117,6 +119,207 @@ class PostsAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         self.assertTrue(user.posts.get(text=post_text).language.code is not None)
+
+    def test_create_text_post_detects_mentions_once(self):
+        """
+        should be able to create a text post with a mention and detect it once
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        test_usernames = get_test_usernames()
+
+        for test_username in test_usernames:
+            test_user = make_user(username=test_username)
+            post_text = 'Hello @' + test_user.username + ' @' + test_user.username
+
+            data = {
+                'text': post_text
+            }
+
+            url = self._get_url()
+
+            response = self.client.put(url, data, **headers, format='multipart')
+
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+            post = Post.objects.get(text=post_text, creator_id=user.pk)
+
+            self.assertEqual(PostUserMention.objects.filter(user_id=test_user.pk, post_id=post.pk).count(), 1)
+
+    def test_create_text_detect_mention_is_case_insensitive(self):
+        """
+        should detect mention regardless of the username letter cases
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        mentioned_user = make_user(username='joel132')
+
+        post_text = 'Hello @JoEl132'
+
+        data = {
+            'text': post_text,
+        }
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+
+        self.assertTrue(PostUserMention.objects.filter(post_id=post.pk, user_id=mentioned_user.pk).exists())
+
+    def test_create_text_post_ignores_non_existing_mentioned_usernames(self):
+        """
+        should ignore non existing mentioned usernames when creating a post
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        fake_username = 'nonexistinguser'
+        post_text = 'Hello @' + fake_username
+
+        data = {
+            'text': post_text
+        }
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+
+        self.assertEqual(PostUserMention.objects.filter(post_id=post.pk).count(), 0)
+
+    def test_create_text_post_creates_mention_notifications(self):
+        """
+        should be able to create a text post with a mention notification
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        test_user = make_user()
+        post_text = 'Hello @' + test_user.username
+
+        data = {
+            'text': post_text
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+
+        post_user_mention = PostUserMention.objects.get(user_id=test_user.pk, post_id=post.pk)
+
+        self.assertEqual(PostUserMentionNotification.objects.filter(post_user_mention_id=post_user_mention.pk,
+                                                                    notification__owner_id=test_user.pk,
+                                                                    notification__notification_type=Notification.POST_USER_MENTION).count(),
+                         1)
+
+    def test_create_text_post_does_not_detect_mention_if_encircled(self):
+        """
+        should not detect mention if the post is encircled and the mentioned person is outside the circle
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+        circle = make_circle(creator=user)
+
+        mentioned_user = make_user()
+
+        post_text = 'Hello @' + mentioned_user.username
+
+        data = {
+            'text': post_text,
+            'circle_id': circle.pk
+        }
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+
+        self.assertFalse(PostUserMention.objects.filter(post_id=post.pk, user_id=mentioned_user.pk).exists())
+
+    def test_create_text_detect_mention_if_encircled_and_part_of(self):
+        """
+        should detect mention if the post is encircled and the mentioned person is in the circle
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+        circle = make_circle(creator=user)
+
+        mentioned_user = make_user()
+
+        user.connect_with_user_with_id(user_id=mentioned_user.pk, circles_ids=[circle.pk])
+        mentioned_user.confirm_connection_with_user_with_id(user_id=user.pk)
+
+        post_text = 'Hello @' + mentioned_user.username
+
+        data = {
+            'text': post_text,
+            'circle_id': circle.pk
+        }
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+
+        self.assertTrue(PostUserMention.objects.filter(post_id=post.pk, user_id=mentioned_user.pk).exists())
+
+    def test_create_text_detect_mention_if_public(self):
+        """
+        should detect mention if the post is public
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        mentioned_user = make_user()
+
+        post_text = 'Hello @' + mentioned_user.username
+
+        data = {
+            'text': post_text,
+        }
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+
+        self.assertTrue(PostUserMention.objects.filter(post_id=post.pk, user_id=mentioned_user.pk).exists())
+
+    def test_create_text_post_does_not_detect_creator_mention(self):
+        """
+        should not detect mention if the mentioned person is the creator
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+        circle = make_circle(creator=user)
+
+        post_text = 'Hello @' + user.username
+
+        data = {
+            'text': post_text,
+            'circle_id': circle.pk
+        }
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+
+        self.assertFalse(PostUserMention.objects.filter(post_id=post.pk, user_id=user.pk).exists())
 
     def test_create_post_is_added_to_world_circle(self):
         """

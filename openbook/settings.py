@@ -21,6 +21,8 @@ from sentry_sdk.integrations.django import DjangoIntegration
 from django_replicated.settings import *
 
 # Logging config
+from sentry_sdk.integrations.rq import RqIntegration
+
 from openbook_common.utils.environment import EnvironmentChecker
 
 LOGGING_CONFIG = None
@@ -361,7 +363,7 @@ if IS_PRODUCTION:
         raise NameError('SENTRY_DSN environment variable is required when running on a production environment')
     sentry_sdk.init(
         dsn=SENTRY_DSN,
-        integrations=[DjangoIntegration()]
+        integrations=[DjangoIntegration(), RqIntegration()]
     )
 else:
     if SENTRY_DSN:
@@ -387,6 +389,11 @@ LANGUAGES = [
     ('es', _('Spanish')),
     ('en', _('English')),
     ('de', _('German')),
+    ('sv', _('Swedish')),
+    ('fr', _('French')),
+    ('it', _('Italian')),
+    ('tr', _('Turkish')),
+    ('pt-br', _('Portuguese, Brazilian')),
 ]
 
 LANGUAGE_CODE = 'en'

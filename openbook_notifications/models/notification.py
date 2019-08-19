@@ -19,6 +19,8 @@ class Notification(models.Model):
     CONNECTION_CONFIRMED = 'CC'
     FOLLOW = 'F'
     COMMUNITY_INVITE = 'CI'
+    POST_USER_MENTION = 'PUM'
+    POST_COMMENT_USER_MENTION = 'PCUM'
 
     NOTIFICATION_TYPES = (
         (POST_REACTION, 'Post Reaction'),
@@ -29,6 +31,8 @@ class Notification(models.Model):
         (CONNECTION_CONFIRMED, 'Connection Confirmed'),
         (FOLLOW, 'Follow'),
         (COMMUNITY_INVITE, 'Community Invite'),
+        (POST_USER_MENTION, 'Post user mention'),
+        (POST_COMMENT_USER_MENTION, 'Post comment user mention'),
     )
 
     notification_type = models.CharField(max_length=5, choices=NOTIFICATION_TYPES)

@@ -8,11 +8,12 @@ from openbook_common.serializers_fields.post_comment import PostCommentIsMutedFi
 from openbook_communities.models import Community, CommunityInvite
 from openbook_notifications.models import Notification, PostCommentNotification, ConnectionRequestNotification, \
     ConnectionConfirmedNotification, FollowNotification, CommunityInviteNotification, PostCommentReplyNotification, \
-    PostCommentReactionNotification
+    PostCommentReactionNotification, PostCommentUserMentionNotification, PostUserMentionNotification
 from openbook_notifications.models.post_reaction_notification import PostReactionNotification
 from openbook_notifications.serializer_fields import ParentCommentField
 from openbook_notifications.validators import notification_id_exists
-from openbook_posts.models import PostComment, PostReaction, Post, PostImage, PostVideo, PostCommentReaction
+from openbook_posts.models import PostComment, PostReaction, Post, PostImage, PostVideo, PostCommentReaction, \
+    PostUserMention, PostCommentUserMention
 
 
 class ReadNotificationsSerializer(serializers.Serializer):
@@ -466,6 +467,54 @@ class CommunityInviteNotificationSerializer(serializers.ModelSerializer):
         )
 
 
+class PostUserMentionSerializer(serializers.ModelSerializer):
+    post = NotificationPostSerializer()
+    user = PostCommentCreatorSerializer()
+
+    class Meta:
+        model = PostUserMention
+        fields = (
+            'id',
+            'post',
+            'user',
+        )
+
+
+class PostUserMentionNotificationSerializer(serializers.ModelSerializer):
+    post_user_mention = PostUserMentionSerializer()
+
+    class Meta:
+        model = PostUserMentionNotification
+        fields = (
+            'id',
+            'post_user_mention',
+        )
+
+
+class PostCommentUserMentionSerializer(serializers.ModelSerializer):
+    post_comment = NotificationPostCommentSerializer()
+    user = PostCommentCreatorSerializer()
+
+    class Meta:
+        model = PostCommentUserMention
+        fields = (
+            'id',
+            'post_comment',
+            'user',
+        )
+
+
+class PostCommentUserMentionNotificationSerializer(serializers.ModelSerializer):
+    post_comment_user_mention = PostCommentUserMentionSerializer()
+
+    class Meta:
+        model = PostCommentUserMentionNotification
+        fields = (
+            'id',
+            'post_comment_user_mention',
+        )
+
+
 class GetNotificationsNotificationSerializer(serializers.ModelSerializer):
     content_object = GenericRelatedField({
         PostCommentNotification: PostCommentNotificationSerializer(),
@@ -475,6 +524,8 @@ class GetNotificationsNotificationSerializer(serializers.ModelSerializer):
         ConnectionRequestNotification: ConnectionRequestNotificationSerializer(),
         ConnectionConfirmedNotification: ConnectionConfirmedNotificationSerializer(),
         FollowNotification: FollowNotificationSerializer(),
+        PostCommentUserMentionNotification: PostCommentUserMentionNotificationSerializer(),
+        PostUserMentionNotification: PostUserMentionNotificationSerializer(),
         CommunityInviteNotification: CommunityInviteNotificationSerializer()
     })
 

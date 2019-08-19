@@ -398,9 +398,12 @@ class User(AbstractUser):
                                       community_invite_notifications=None,
                                       post_comment_reaction_notifications=None,
                                       post_comment_reply_notifications=None,
+                                      post_comment_user_mention_notifications=None,
+                                      post_user_mention_notifications=None,
                                       ):
 
         notifications_settings = self.notifications_settings
+
         notifications_settings.update(
             post_comment_notifications=post_comment_notifications,
             post_reaction_notifications=post_reaction_notifications,
@@ -409,7 +412,9 @@ class User(AbstractUser):
             connection_confirmed_notifications=connection_confirmed_notifications,
             community_invite_notifications=community_invite_notifications,
             post_comment_reaction_notifications=post_comment_reaction_notifications,
-            post_comment_reply_notifications=post_comment_reply_notifications
+            post_comment_reply_notifications=post_comment_reply_notifications,
+            post_comment_user_mention_notifications=post_comment_user_mention_notifications,
+            post_user_mention_notifications=post_user_mention_notifications,
         )
         return notifications_settings
 
@@ -605,6 +610,12 @@ class User(AbstractUser):
 
     def has_follow_notifications_enabled(self):
         return self.notifications_settings.follow_notifications
+
+    def has_post_comment_mention_notifications_enabled(self):
+        return self.notifications_settings.post_comment_user_mention_notifications
+
+    def has_post_mention_notifications_enabled(self):
+        return self.notifications_settings.post_user_mention_notifications
 
     def has_reaction_notifications_enabled_for_post_with_id(self, post_id):
         return self.notifications_settings.post_reaction_notifications and not self.has_muted_post_with_id(
@@ -957,19 +968,23 @@ class User(AbstractUser):
         post_commenter = self
 
         Post = get_post_model()
-        post_notification_target_users = Post.get_post_comment_notification_target_users(post_id=post.id,
-                                                                                         post_commenter_id=self.pk)
+
+        # Language should also be prefetched here, for some reason it doesnt work....
+        post_notification_target_users = Post.get_post_comment_notification_target_users(post=post,
+                                                                                         post_commenter=post_commenter).only(
+            'id', 'username', 'notifications_settings__post_comment_notifications')
         PostCommentNotification = get_post_comment_notification_model()
 
         for post_notification_target_user in post_notification_target_users:
-            if not post_notification_target_user.can_see_post(post=post):
+            if post_notification_target_user.pk == post_commenter.pk or not post_notification_target_user.can_see_post(post=post):
                 continue
             post_notification_target_user_is_post_creator = post_notification_target_user.id == post_creator.id
             post_notification_target_has_comment_notifications_enabled = post_notification_target_user.has_comment_notifications_enabled_for_post_with_id(
                 post_id=post_comment.post_id)
 
             if post_notification_target_has_comment_notifications_enabled:
-                target_user_language_code = get_notification_language_code_for_target_user(post_notification_target_user)
+                target_user_language_code = get_notification_language_code_for_target_user(
+                    post_notification_target_user)
                 with translation.override(target_user_language_code):
                     if post_notification_target_user_is_post_creator:
                         notification_message = {
@@ -1009,13 +1024,17 @@ class User(AbstractUser):
         post = post_comment.post
 
         Post = get_post_model()
-        post_notification_target_users = Post.get_post_comment_notification_target_users(post_id=post.id,
-                                                                                         post_commenter_id=self.pk,
-                                                                                         post_comment_id=post_comment.pk)
+
+        # Language should also be prefetched here, for some reason it doesnt work....
+        post_notification_target_users = Post.get_post_comment_reply_notification_target_users(
+            post_commenter=self,
+            parent_post_comment=post_comment).only(
+            'id', 'username', 'notifications_settings__post_comment_reply_notifications')
+
         PostCommentReplyNotification = get_post_comment_reply_notification_model()
 
         for post_notification_target_user in post_notification_target_users:
-            if not post_notification_target_user.can_see_post(post=post):
+            if post_notification_target_user.pk == replier.pk or not post_notification_target_user.can_see_post(post=post):
                 continue
             post_notification_target_user_is_post_comment_creator = post_notification_target_user.id == comment_creator
             post_notification_target_has_comment_reply_notifications_enabled = \
@@ -1023,7 +1042,9 @@ class User(AbstractUser):
                     post_comment=post_comment)
 
             if post_notification_target_has_comment_reply_notifications_enabled:
-                target_user_language_code = get_notification_language_code_for_target_user(post_notification_target_user)
+                target_user_language_code = get_notification_language_code_for_target_user(
+                    post_notification_target_user)
+
                 with translation.override(target_user_language_code):
                     if post_notification_target_user_is_post_comment_creator:
                         notification_message = {
@@ -1550,18 +1571,32 @@ class User(AbstractUser):
         return self.lists.get(id=list_id)
 
     def search_users_with_query(self, query):
-        # In the future, the user might have blocked users which should not be displayed
-        users_query = Q(username__icontains=query)
-        users_query.add(Q(profile__name__icontains=query), Q.OR)
-        users_query.add(~Q(blocked_by_users__blocker_id=self.pk) & ~Q(user_blocks__blocked_user_id=self.pk), Q.AND)
-        users_query.add(Q(is_deleted=False), Q.AND)
+        users_query = self._make_search_users_query(query=query)
 
         return User.objects.filter(users_query)
+
+    def _make_search_users_query(self, query):
+        users_query = self._make_users_query()
+
+        search_users_query = Q(username__icontains=query)
+        search_users_query.add(Q(profile__name__icontains=query), Q.OR)
+
+        users_query.add(search_users_query, Q.AND)
+        return users_query
+
+    def _make_users_query(self):
+        users_query = Q(is_deleted=False)
+        users_query.add(~Q(blocked_by_users__blocker_id=self.pk) & ~Q(user_blocks__blocked_user_id=self.pk),
+                        Q.AND)
+        return users_query
 
     def get_linked_users(self, max_id=None):
         # All users which are connected with us and we have accepted by adding
         # them to a circle
-        linked_users_query = self._make_linked_users_query(max_id=max_id)
+        linked_users_query = self._make_linked_users_query()
+
+        if max_id:
+            linked_users_query.add(Q(id__lt=max_id), Q.AND)
 
         return User.objects.filter(linked_users_query).distinct()
 
@@ -2562,6 +2597,29 @@ class User(AbstractUser):
                                                    category_id=category_id)
         return moderated_object
 
+    def search_participants_for_post_with_uuid(self, post_uuid, query):
+        Post = get_post_model()
+        post = Post.objects.get(uuid=post_uuid)
+        return self.search_participants_for_post(post=post, query=query)
+
+    def search_participants_for_post(self, post, query):
+        self.can_see_post(post=post)
+        # In the future this should prioritise post participants above the global search
+        # ATM combining the post participants and global query results in killing perf
+        # Therefore for now uses the global search
+        search_users_query = self._make_search_users_query(query=query)
+
+        return User.objects.filter(search_users_query)
+
+    def get_participants_for_post_with_uuid(self, post_uuid):
+        Post = get_post_model()
+        post = Post.objects.get(uuid=post_uuid)
+        return self.get_participants_for_post(post=post)
+
+    def get_participants_for_post(self, post):
+        self.can_see_post(post=post)
+        return post.get_participants()
+
     def _check_has_not_reported_moderated_object_with_id(self, moderated_object_id):
         if self.has_reported_moderated_object_with_id(moderated_object_id=moderated_object_id):
             raise ValidationError(
@@ -2804,7 +2862,7 @@ class User(AbstractUser):
         self.auth_token.delete()
         bootstrap_user_auth_token(user=self)
 
-    def _make_linked_users_query(self, max_id=None):
+    def _make_linked_users_query(self):
         # All users which are connected with us and we have accepted by adding
         # them to a circle
         linked_users_query = Q(circles__connections__target_connection__user_id=self.pk,
@@ -2814,9 +2872,6 @@ class User(AbstractUser):
 
         # All users following us
         linked_users_query.add(followers_query, Q.OR)
-
-        if max_id:
-            linked_users_query.add(Q(id__lt=max_id), Q.AND)
 
         linked_users_query.add(Q(is_deleted=False), Q.AND)
 
@@ -4149,6 +4204,9 @@ class UserNotificationsSettings(models.Model):
     connection_confirmed_notifications = models.BooleanField(_('connection confirmed notifications'), default=True)
     community_invite_notifications = models.BooleanField(_('community invite notifications'), default=True)
     post_comment_reaction_notifications = models.BooleanField(_('post comment reaction notifications'), default=True)
+    post_comment_user_mention_notifications = models.BooleanField(_('post comment user mention notifications'),
+                                                                  default=True)
+    post_user_mention_notifications = models.BooleanField(_('post user mention notifications'), default=True)
 
     @classmethod
     def create_notifications_settings(cls, user):
@@ -4161,10 +4219,18 @@ class UserNotificationsSettings(models.Model):
                connection_request_notifications=None,
                connection_confirmed_notifications=None,
                community_invite_notifications=None,
-               post_comment_reaction_notifications=None):
+               post_comment_user_mention_notifications=None,
+               post_user_mention_notifications=None,
+               post_comment_reaction_notifications=None, ):
 
         if post_comment_notifications is not None:
             self.post_comment_notifications = post_comment_notifications
+
+        if post_comment_user_mention_notifications is not None:
+            self.post_comment_user_mention_notifications = post_comment_user_mention_notifications
+
+        if post_user_mention_notifications is not None:
+            self.post_user_mention_notifications = post_user_mention_notifications
 
         if post_comment_reaction_notifications is not None:
             self.post_comment_reaction_notifications = post_comment_reaction_notifications

@@ -4,12 +4,13 @@ verify_ssl = true
 name = "pypi"
 
 [dev-packages]
+polib = "*"
 
 [packages]
 django = ">=2.2.2"
 python-dotenv = "*"
 djangorestframework = "*"
-sentry-sdk = "*"
+sentry-sdk = "==0.10.2"
 mysqlclient = "*"
 pillow = "*"
 django-nose = "*"

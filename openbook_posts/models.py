@@ -1,5 +1,4 @@
 # Create your models here.
-import hashlib
 import uuid
 from datetime import timedelta
 
@@ -21,13 +20,17 @@ from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
 from openbook_common.models import Emoji, Language
-from openbook_common.utils.helpers import delete_file_field, sha256sum
+from openbook_common.utils.helpers import delete_file_field, sha256sum, extract_usernames_from_string
 from openbook_common.utils.model_loaders import get_emoji_model, \
-    get_circle_model, get_community_model, get_notification_model, get_post_comment_notification_model, \
-    get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model
+    get_circle_model, get_community_model, get_post_comment_notification_model, \
+    get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model, \
+    get_post_user_mention_notification_model, get_post_comment_user_mention_notification_model, get_user_model, \
+    get_post_user_mention_model, get_post_comment_user_mention_model
 from imagekit.models import ProcessedImageField
 
 from openbook_moderation.models import ModeratedObject
+from openbook_notifications.helpers import send_post_comment_user_mention_push_notification, \
+    send_post_user_mention_push_notification
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory
 from openbook_common.helpers import get_language_for_text, get_matched_urls_from_text, get_domain_from_link, \
     is_url_allowed_in_whitelist_domains, get_sanitised_url_for_link
@@ -145,28 +148,37 @@ class Post(models.Model):
         return trending_posts_query
 
     @classmethod
-    def get_post_comment_notification_target_users(cls, post_id, post_commenter_id, post_comment_id=None):
+    def get_post_comment_notification_target_users(cls, post, post_commenter):
         """
         Returns the users that should be notified of a post comment.
         This includes the post creator and other post commenters
-        :param post_id:
-        :param post_commenter_id:
-        :param post_comment_id:
         :return:
         """
 
-        if post_comment_id is not None:
-            post_notification_target_users_query = Q(posts_comments__parent_comment_id=post_comment_id)
-            post_notification_target_users_query.add(Q(posts_comments__id=post_comment_id), Q.OR)
-        else:
-            post_notification_target_users_query = Q(posts_comments__post_id=post_id,
-                                                     posts_comments__parent_comment_id=None)
-            post_notification_target_users_query.add(Q(posts__id=post_id), Q.OR)
+        # Add other post commenters, exclude replies to comments, the post commenter
+        other_commenters = User.objects.filter(
+            Q(posts_comments__post_id=post.pk, posts_comments__parent_comment_id=None, ) & ~Q(
+                id=post_commenter.pk))
 
-        post_notification_target_users_query.add(~Q(id=post_commenter_id), Q.AND)
-        post_notification_target_users_query.add(~Q(user_blocks__blocked_user_id=post_commenter_id), Q.AND)
+        post_creator = User.objects.filter(pk=post.creator_id)
 
-        return User.objects.filter(post_notification_target_users_query).distinct()
+        return other_commenters.union(post_creator)
+
+    @classmethod
+    def get_post_comment_reply_notification_target_users(cls, post_commenter, parent_post_comment):
+        """
+        Returns the users that should be notified of a post comment reply.
+        :return:
+        """
+
+        # Add other post commenters, exclude non replies, the post commenter
+        other_repliers = User.objects.filter(
+            Q(posts_comments__parent_comment_id=parent_post_comment.pk, ) & ~Q(
+                id=post_commenter.pk))
+
+        # Add post comment creator
+        post_comment_creator = User.objects.filter(pk=parent_post_comment.commenter_id)
+        return other_repliers.union(post_comment_creator)
 
     def count_comments(self):
         return PostComment.count_comments_for_post_with_id(self.pk)
@@ -261,12 +273,12 @@ class Post(models.Model):
         if not self.id and not self.created:
             self.created = timezone.now()
 
-        if self.has_text() and not self.has_image() and not self.has_video():
-            link_urls = get_matched_urls_from_text(self.text)
-            if len(link_urls) > 0:
-                self.create_links(link_urls)
+        post = super(Post, self).save(*args, **kwargs)
 
-        return super(Post, self).save(*args, **kwargs)
+        self._process_post_mentions()
+        self._process_post_links()
+
+        return post
 
     def delete(self, *args, **kwargs):
         self.delete_media()
@@ -305,6 +317,10 @@ class Post(models.Model):
         PostCommentReplyNotification = get_post_comment_notification_model()
         PostCommentReplyNotification.objects.filter(post_comment__post_id=self.pk).delete()
 
+        # Remove all post user mention notifications
+        PostUserMentionNotification = get_post_user_mention_notification_model()
+        PostUserMentionNotification.objects.filter(post_user_mention__post_id=self.pk).delete()
+
     def delete_notifications_for_user(self, user):
         # Remove all post comment notifications
         PostCommentNotification = get_post_comment_notification_model()
@@ -320,6 +336,61 @@ class Post(models.Model):
         PostCommentReplyNotification = get_post_comment_notification_model()
         PostCommentReplyNotification.objects.filter(post_comment__post=self.pk,
                                                     notification__owner_id=user.pk).delete()
+
+    def get_participants(self):
+        User = get_user_model()
+
+        # Add post creator
+        post_creator = User.objects.filter(pk=self.creator_id)
+
+        # Add post commentators
+        post_commenters = User.objects.filter(posts_comments__post_id=self.pk, is_deleted=False)
+
+        # If community post, add community members
+        if self.community:
+            community_members = User.objects.filter(communities_memberships__community_id=self.community_id,
+                                                    is_deleted=False)
+            result = post_creator.union(post_commenters, community_members)
+        else:
+            result = post_creator.union(post_commenters)
+
+        return result
+
+    def _process_post_mentions(self):
+        if not self.text:
+            self.user_mentions.all().delete()
+        else:
+            usernames = extract_usernames_from_string(string=self.text)
+            if not usernames:
+                self.user_mentions.all().delete()
+            else:
+                existing_mention_usernames = []
+                for existing_mention in self.user_mentions.only('id', 'user__username').all().iterator():
+                    if existing_mention.user.username not in usernames:
+                        existing_mention.delete()
+                    else:
+                        existing_mention_usernames = existing_mention.user.username
+
+                PostUserMention = get_post_user_mention_model()
+                User = get_user_model()
+
+                for username in usernames:
+                    username = username.lower()
+                    if username not in existing_mention_usernames:
+                        try:
+                            user = User.objects.only('id', 'username').get(username=username)
+                            user_is_post_creator = user.pk == self.creator_id
+                            if user.can_see_post(post=self) and not user_is_post_creator:
+                                PostUserMention.create_post_user_mention(user=user, post=self)
+                                existing_mention_usernames.append(username)
+                        except User.DoesNotExist:
+                            pass
+
+    def _process_post_links(self):
+        if self.has_text() and not self.has_image() and not self.has_video():
+            link_urls = get_matched_urls_from_text(self.text)
+            if len(link_urls) > 0:
+                self.create_links(link_urls)
 
     def _check_can_be_updated(self, text=None):
         if self.is_text_only_post() and not text:
@@ -426,7 +497,57 @@ class PostComment(models.Model):
         ''' On save, update timestamps '''
         if not self.id:
             self.created = timezone.now()
+
+        self._process_post_comment_mentions()
         return super(PostComment, self).save(*args, **kwargs)
+
+    def _process_post_comment_mentions(self):
+        usernames = extract_usernames_from_string(string=self.text)
+
+        if not usernames:
+            self.user_mentions.all().delete()
+        else:
+            existing_mention_usernames = []
+            for existing_mention in self.user_mentions.only('id', 'user__username').all().iterator():
+                if existing_mention.user.username not in usernames:
+                    existing_mention.delete()
+                else:
+                    existing_mention_usernames = existing_mention.user.username
+
+            PostCommentUserMention = get_post_comment_user_mention_model()
+            User = get_user_model()
+
+            for username in usernames:
+                username = username.lower()
+                if username not in existing_mention_usernames:
+                    try:
+                        user = User.objects.only('id', 'username').get(username=username)
+                        user_can_see_post_comment = user.can_see_post_comment(post_comment=self)
+                        user_is_commenter = user.pk == self.commenter_id
+
+                        if not user_can_see_post_comment or user_is_commenter:
+                            continue
+
+                        if self.parent_comment:
+                            user_is_parent_comment_creator = self.parent_comment.commenter_id == user.pk
+                            user_has_replied_before = self.parent_comment.replies.filter(commenter_id=user.pk).exists()
+
+                            if user_has_replied_before or user_is_parent_comment_creator:
+                                # Its a reply to a comment, if the user previously replied to the comment
+                                # or if he's the creator of the parent comment he will already be alerted of the reply,
+                                # no need for mention
+                                continue
+                        else:
+                            user_has_commented_before = self.post.comments.filter(commenter_id=user.pk).exists()
+                            if user_has_commented_before:
+                                # Its a comment to a post, if the user previously commented on the post
+                                # he will already be alerted of the comment, no need for mention
+                                continue
+
+                        PostCommentUserMention.create_post_comment_user_mention(user=user, post_comment=self)
+                        existing_mention_usernames.append(username)
+                    except User.DoesNotExist:
+                        pass
 
     def update_comment(self, text):
         self.text = text
@@ -444,8 +565,14 @@ class PostComment(models.Model):
         self.save()
 
     def delete_notifications(self):
+        # Delete all post comment reply notifications
         PostCommentReplyNotification = get_post_comment_reply_notification_model()
         PostCommentReplyNotification.delete_post_comment_reply_notifications(post_comment_id=self.pk)
+
+        # Delete all post comment user mention notifications
+        PostCommentUserMentionNotification = get_post_comment_user_mention_notification_model()
+        PostCommentUserMentionNotification.objects.filter(
+            post_comment_user_mention__post_comment__post_id=self.pk).delete()
 
     def delete_notifications_for_user(self, user):
         PostCommentReplyNotification = get_post_comment_reply_notification_model()
@@ -567,3 +694,38 @@ class PostLinkWhitelistDomain(models.Model):
             domains = list(cls.objects.values_list('domain', flat=True))
             cache.set(key, domains, timeout_one_day)
         return domains
+
+
+class PostUserMention(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_mentions')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='user_mentions')
+
+    class Meta:
+        unique_together = ('user', 'post',)
+
+    @classmethod
+    def create_post_user_mention(cls, user, post):
+        post_user_mention = cls.objects.create(user=user, post=post)
+        PostUserMentionNotification = get_post_user_mention_notification_model()
+        PostUserMentionNotification.create_post_user_mention_notification(post_user_mention_id=post_user_mention.pk,
+                                                                          owner_id=user.pk)
+        send_post_user_mention_push_notification(post_user_mention=post_user_mention)
+        return post_user_mention
+
+
+class PostCommentUserMention(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_comment_mentions')
+    post_comment = models.ForeignKey(PostComment, on_delete=models.CASCADE, related_name='user_mentions')
+
+    class Meta:
+        unique_together = ('user', 'post_comment',)
+
+    @classmethod
+    def create_post_comment_user_mention(cls, user, post_comment):
+        post_comment_user_mention = cls.objects.create(user=user, post_comment=post_comment)
+        PostCommentUserMentionNotification = get_post_comment_user_mention_notification_model()
+        PostCommentUserMentionNotification.create_post_comment_user_mention_notification(
+            post_comment_user_mention_id=post_comment_user_mention.pk,
+            owner_id=user.pk)
+        send_post_comment_user_mention_push_notification(post_comment_user_mention=post_comment_user_mention)
+        return post_comment_user_mention

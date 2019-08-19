@@ -89,11 +89,11 @@ jobs:
           sudo apt-get -y -qq update
           sudo apt-get install python-pip python-dev build-essential
           sudo pip install awsebcli --upgrade
-    - run:
-        name: Make EB Magic Header Extension
-        command: |
-          . venv/bin/activate
-          python utils/make_magic_header.py --name=$MAGIC_HEADER_NAME --value=$MAGIC_HEADER_VALUE
+#    - run:
+#        name: Make EB Magic Header Extension
+#        command: |
+#          . venv/bin/activate
+#          python utils/make_magic_header.py --name=$MAGIC_HEADER_NAME --value=$MAGIC_HEADER_VALUE
     - run:
         name: Prepare environment variables for creating admin config
         command: |
