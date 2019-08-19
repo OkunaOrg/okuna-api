@@ -40,6 +40,7 @@ class Post(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     text = models.TextField(_('text'), max_length=settings.POST_MAX_LENGTH, blank=False, null=True)
     created = models.DateTimeField(editable=False, db_index=True)
+    modified = models.DateTimeField(db_index=True, default=timezone.now)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
     comments_enabled = models.BooleanField(_('comments enabled'), default=True, editable=False, null=False)
     public_reactions = models.BooleanField(_('public reactions'), default=True, editable=False, null=False)
@@ -270,6 +271,8 @@ class Post(models.Model):
         ''' On create, update timestamps '''
         if not self.id and not self.created:
             self.created = timezone.now()
+
+        self.modified = timezone.now()
 
         post = super(Post, self).save(*args, **kwargs)
 
