@@ -12,7 +12,7 @@ from openbook_posts.views.post.serializers import DeletePostSerializer, GetPostS
     UnmutePostSerializer, MutePostSerializer, EditPostSerializer, AuthenticatedUserEditPostSerializer, \
     OpenClosePostSerializer, \
     OpenPostSerializer, ClosePostSerializer, TranslatePostSerializer, \
-    SearchPostParticipantsSerializer, PostParticipantSerializer, GetPostParticipantsSerializer
+    SearchPostParticipantsSerializer, PostParticipantSerializer, GetPostParticipantsSerializer, PublishPostSerializer
 from openbook_translation.strategies.base import TranslationClientError, UnsupportedLanguagePairException, \
     MaxTextLengthExceededError
 
@@ -251,3 +251,25 @@ class SearchPostParticipants(APIView):
         serialized_participants = PostParticipantSerializer(post_participants, many=True, context={'request': request})
 
         return Response(serialized_participants.data, status=status.HTTP_200_OK)
+
+
+class PublishPost(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, post_uuid):
+        serializer = PublishPostSerializer(data={
+            'post_uuid': post_uuid
+        })
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        post_uuid = data.get('post_uuid')
+
+        user = request.user
+
+        with transaction.atomic():
+            published_post = user.publish_post_with_uuid(post_uuid=post_uuid)
+
+        post_comments_serializer = GetPostPostSerializer(published_post, context={"request": request})
+
+        return Response(post_comments_serializer.data, status=status.HTTP_200_OK)

@@ -290,3 +290,10 @@ class OpenClosePostSerializer(serializers.ModelSerializer):
             'uuid',
             'is_closed',
         )
+
+
+class PublishPostSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
