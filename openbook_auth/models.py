@@ -1296,6 +1296,7 @@ class User(AbstractUser):
 
     def search_community_with_name_members(self, community_name, query, exclude_keywords=None):
         check_can_get_community_with_name_members(
+            user=self,
             community_name=community_name)
 
         Community = get_community_model()
@@ -2301,7 +2302,7 @@ class User(AbstractUser):
         self.notifications.all().delete()
 
     def create_device(self, uuid, name=None):
-        check_device_with_uuid_does_not_exist(user=self, uuid=uuid)
+        check_device_with_uuid_does_not_exist(user=self, device_uuid=uuid)
         Device = get_device_model()
         return Device.create_device(owner=self, uuid=uuid, name=name)
 
