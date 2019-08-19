@@ -113,6 +113,7 @@ INSTALLED_APPS = [
     'django_media_fixtures',
     'cacheops',
     'django_rq',
+    'scheduler',
     'django_extensions',
     'openbook_common',
     'openbook_auth',

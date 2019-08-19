@@ -1,4 +1,3 @@
-import deprecation
 from rest_framework import serializers
 
 from django.conf import settings

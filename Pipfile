@@ -40,6 +40,7 @@ django-extensions = "*"
 langdetect = "*"
 django-rq = "*"
 redis = "*"
+django-rq-scheduler = "*"
 
 [pipenv]
 allow_prereleases = true

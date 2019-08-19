@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "665ae49c16be01ed4d9bcc16257647c7e7e2d2bec1e5260fad12814a07e522f7"
+            "sha256": "f39b4cbaf4de5032eddeb1a7cceea88c1cbc9439053f48b9b53cd863152a1f30"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -105,6 +105,13 @@
             "index": "pypi",
             "version": "==5.0a6"
         },
+        "croniter": {
+            "hashes": [
+                "sha256:0d905dbe6f131a910fd3dde792f0129788cd2cb3a8048c5f7aaa212670b0cef2",
+                "sha256:538adeb3a7f7816c3cdec6db974c441620d764c25ff4ed0146ee7296b8a50590"
+            ],
+            "version": "==0.3.30"
+        },
         "ddt": {
             "hashes": [
                 "sha256:474546b4020ce8a2f9550ba8899c28aa2c284c7bbf175bddede98be949d1ca7c",
@@ -166,6 +173,13 @@
             "index": "pypi",
             "version": "==0.0.3"
         },
+        "django-model-utils": {
+            "hashes": [
+                "sha256:3f130a262e45d73e0950d2be76af4bf4ee86804dd60e5f90afc5cd948fcfe760",
+                "sha256:682f58c1de330cedcda58cc85d5232c5b47a9e2cb67bef4541fb43fdaeb18e96"
+            ],
+            "version": "==3.2.0"
+        },
         "django-modeltranslation": {
             "editable": true,
             "git": "https://github.com/lifenautjoe/django-modeltranslation.git",
@@ -201,6 +215,14 @@
             ],
             "index": "pypi",
             "version": "==2.1.0"
+        },
+        "django-rq-scheduler": {
+            "hashes": [
+                "sha256:4418e1397c5ce02ce1653f97ceb5ebf8b87902e072da81a88770a02b725d1461",
+                "sha256:8300d1cdc839fddd7723f4ff0c09089d6d182be0a6bdfed2357b6d8691010fd4"
+            ],
+            "index": "pypi",
+            "version": "==1.1.3"
         },
         "django-storages": {
             "hashes": [
@@ -471,6 +493,13 @@
                 "sha256:4f27c6a690d1bd02b9157e615d8819555b9b359c0c4ec8ff0013d160c31b40bb"
             ],
             "version": "==1.1.0"
+        },
+        "rq-scheduler": {
+            "hashes": [
+                "sha256:90eb3915e31cc2032c301e5ab1fd5ad6f23d9500435046995e009f098e18efbe",
+                "sha256:ff7d45b34a8a39c9c83634f642aeef950641c75c4eeea3fa140bf574bfc6aca2"
+            ],
+            "version": "==0.9"
         },
         "s3transfer": {
             "hashes": [
