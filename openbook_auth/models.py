@@ -1513,7 +1513,7 @@ class User(AbstractUser):
         return community_to_unban_user_from
 
     def create_list(self, name, emoji_id):
-        check_list_name_not_taken(user=self, name=name)
+        check_list_name_not_taken(user=self, list_name=name)
         List = get_list_model()
         list = List.objects.create(name=name, creator=self, emoji_id=emoji_id)
 

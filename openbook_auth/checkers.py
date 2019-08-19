@@ -1071,7 +1071,7 @@ def check_can_get_reactions_for_post(user, post):
 
 
 def check_can_get_reactions_for_post_comment(user, post_comment):
-    return check_can_get_reactions_for_post(post=post_comment.post)
+    return check_can_get_reactions_for_post(user=user, post=post_comment.post)
 
 
 def check_can_react_with_emoji_id(user, emoji_id):
