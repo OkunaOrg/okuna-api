@@ -255,7 +255,7 @@ class Post(models.Model):
         if self.status != Post.STATUS_DRAFT:
             raise ValidationError(_('The post needs to be in draft status in order to be published'))
 
-        if not self.text and not self.image and not self.video:
+        if not self.text and not hasattr(self, 'image') and not hasattr(self, 'video'):
             raise ValidationError(_('A post requires text or an image/video.'))
 
         self.status = Post.STATUS_PUBLISHED
