@@ -18,18 +18,18 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class PostImagesAPITests(APITestCase):
+class PostImageAPITests(APITestCase):
     """
-    PostImagesAPI
+    PostImageAPI
     """
 
     fixtures = [
         'openbook_circles/fixtures/circles.json',
     ]
 
-    def test_can_add_image_to_draft_post(self):
+    def test_can_set_image_to_draft_post(self):
         """
-        should be able to add an image to a draft post
+        should be able to set an image to a draft post
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
@@ -55,9 +55,9 @@ class PostImagesAPITests(APITestCase):
 
         self.assertIsNotNone(draft_post.image)
 
-    def test_cant_add_image_to_published_post(self):
+    def test_cant_set_image_to_published_post(self):
         """
-        should not be able to add an image to a published post
+        should not be able to set an image to a published post
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
@@ -80,9 +80,9 @@ class PostImagesAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(hasattr(post, 'image'))
 
-    def test_cannot_add_image_to_draft_with_existing_image(self):
+    def test_cannot_set_image_to_draft_with_existing_image(self):
         """
-        should not be able to add an image to a draft post with an existing image
+        should not be able to set an image to a draft post with an existing image
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)

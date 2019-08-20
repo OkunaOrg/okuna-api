@@ -30,7 +30,7 @@ from imagekit.models import ProcessedImageField
 from openbook_moderation.models import ModeratedObject
 from openbook_notifications.helpers import send_post_comment_user_mention_push_notification, \
     send_post_user_mention_push_notification
-from openbook_posts.checkers import check_can_be_updated, check_can_add_image
+from openbook_posts.checkers import check_can_be_updated, check_can_set_image
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory
 from openbook_common.helpers import get_language_for_text
 
@@ -97,7 +97,7 @@ class Post(models.Model):
             post.language = get_language_for_text(text)
 
         if image:
-            post.add_image(image=image)
+            post.set_image(image=image)
 
         if video:
             PostVideo.create_post_video(video=video, post_id=post.pk)
@@ -257,8 +257,8 @@ class Post(models.Model):
         self.language = get_language_for_text(text)
         self.save()
 
-    def add_image(self, image):
-        check_can_add_image(post=self)
+    def set_image(self, image):
+        check_can_set_image(post=self)
         self.image = PostImage.create_post_image(image=image, post_id=self.pk)
 
     def publish(self):

@@ -1754,7 +1754,7 @@ class User(AbstractUser):
 
     def add_image_to_post(self, image, post):
         check_can_add_image_to_post(user=self, post=post)
-        post.add_image(image=image)
+        post.set_image(image=image)
         return post
 
     def publish_post_with_uuid(self, post_uuid):

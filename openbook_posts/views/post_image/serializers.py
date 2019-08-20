@@ -5,7 +5,7 @@ from openbook_common.serializers_fields.request import RestrictedImageFileSizeFi
 from openbook_posts.validators import post_uuid_exists, post_reaction_id_exists
 
 
-class AddPostImageSerializer(serializers.Serializer):
+class SetPostImageSerializer(serializers.Serializer):
     post_uuid = serializers.UUIDField(
         validators=[post_uuid_exists],
         required=True,
