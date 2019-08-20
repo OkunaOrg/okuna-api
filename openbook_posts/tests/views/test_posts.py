@@ -2443,7 +2443,7 @@ class PostsAPITests(APITestCase):
 
         self.assertEqual(0, len(response_posts))
 
-    def test_cant_own_draft_posts_by_username(self):
+    def test_cant_retrieve_own_draft_posts_by_username(self):
         """
         should not be able to retrieve own draft posts by username
         """

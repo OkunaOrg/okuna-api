@@ -1869,7 +1869,9 @@ class User(AbstractUser):
         :param max_id:
         :return:
         """
-        posts_query = Q(creator_id=self.id)
+        Post = get_post_model()
+
+        posts_query = Q(creator_id=self.id, is_deleted=False, status=Post.STATUS_PUBLISHED)
 
         if not self.has_profile_community_posts_visible():
             posts_query.add(Q(community__isnull=True), Q.AND)
@@ -1877,7 +1879,6 @@ class User(AbstractUser):
         if max_id:
             posts_query.add(Q(id__lt=max_id), Q.AND)
 
-        Post = get_post_model()
         posts = Post.objects.filter(posts_query)
 
         return posts
