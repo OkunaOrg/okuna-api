@@ -1869,6 +1869,8 @@ class User(AbstractUser):
 
     def get_public_posts_for_user_with_username(self, username, max_id=None, min_id=None):
         Circle = get_circle_model()
+        Post = get_post_model()
+
         world_circle_id = Circle.get_world_circle_id()
 
         posts_query = Q(creator__username=username, circles__id=world_circle_id)
@@ -1876,7 +1878,7 @@ class User(AbstractUser):
         posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
             creator__user_blocks__blocked_user_id=self.pk)), Q.AND)
 
-        posts_query.add(Q(is_deleted=False), Q.AND)
+        posts_query.add(Q(is_deleted=False, status=Post.STATUS_PUBLISHED), Q.AND)
 
         posts_query.add(~Q(moderated_object__reports__reporter_id=self.pk), Q.AND)
 
@@ -1885,7 +1887,6 @@ class User(AbstractUser):
         elif min_id:
             posts_query.add(Q(id__gt=min_id), Q.AND)
 
-        Post = get_post_model()
         result = Post.objects.filter(posts_query)
 
         return result
@@ -1917,6 +1918,8 @@ class User(AbstractUser):
         return self._get_timeline_posts_with_filters(max_id=max_id, circles_ids=circles_ids, lists_ids=lists_ids)
 
     def _get_timeline_posts_with_filters(self, max_id=None, min_id=None, circles_ids=None, lists_ids=None):
+        Post = get_post_model()
+
         world_circle_id = self._get_world_circle_id()
 
         if circles_ids:
@@ -1955,11 +1958,10 @@ class User(AbstractUser):
         elif min_id:
             timeline_posts_query.add(Q(id__gt=min_id), Q.AND)
 
-        timeline_posts_query.add(Q(is_deleted=False), Q.AND)
+        timeline_posts_query.add(Q(is_deleted=False, status=Post.STATUS_PUBLISHED), Q.AND)
 
         timeline_posts_query.add(~Q(moderated_object__reports__reporter_id=self.pk), Q.AND)
 
-        Post = get_post_model()
         return Post.objects.filter(timeline_posts_query).distinct()
 
     def _get_timeline_posts_with_no_filters(self, max_id=None, min_id=None, count=10):
@@ -1984,7 +1986,7 @@ class User(AbstractUser):
         ModeratedObject = get_moderated_object_model()
         reported_posts_exclusion_query = ~Q(moderated_object__reports__reporter_id=self.pk)
 
-        own_posts_query = Q(creator=self.pk, community__isnull=True, is_deleted=False)
+        own_posts_query = Q(creator=self.pk, community__isnull=True, is_deleted=False, status=Post.STATUS_PUBLISHED)
 
         own_posts_query.add(reported_posts_exclusion_query, Q.AND)
 
@@ -1994,7 +1996,7 @@ class User(AbstractUser):
         own_posts_queryset = self.posts.select_related(*posts_select_related).prefetch_related(
             *posts_prefetch_related).only(*posts_only).filter(own_posts_query)
 
-        community_posts_query = Q(community__memberships__user__id=self.pk, is_closed=False, is_deleted=False)
+        community_posts_query = Q(community__memberships__user__id=self.pk, is_closed=False, is_deleted=False, status=Post.STATUS_PUBLISHED)
 
         community_posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
             creator__user_blocks__blocked_user_id=self.pk)), Q.AND)
@@ -2770,7 +2772,9 @@ class User(AbstractUser):
 
     def _make_get_posts_query_for_user(self, user, max_id=None):
 
-        posts_query = Q(creator_id=user.pk, is_deleted=False)
+        Post = get_post_model()
+
+        posts_query = Q(creator_id=user.pk, is_deleted=False, status=Post.STATUS_PUBLISHED)
 
         world_circle_id = self._get_world_circle_id()
 
@@ -2785,8 +2789,6 @@ class User(AbstractUser):
 
         if max_id:
             posts_query.add(Q(id__lt=max_id), Q.AND)
-
-        posts_query.add(Q(is_deleted=False), Q.AND)
 
         posts_query.add(~Q(moderated_object__reports__reporter_id=self.pk), Q.AND)
 
@@ -2967,8 +2969,11 @@ class User(AbstractUser):
         return comments_query
 
     def _make_get_community_with_id_posts_query(self, community, include_closed_posts_for_staff=True):
+
+        Post = get_post_model()
+
         # Retrieve posts from the given community name
-        community_posts_query = Q(community_id=community.pk, is_deleted=False)
+        community_posts_query = Q(community_id=community.pk, is_deleted=False, status=Post.STATUS_PUBLISHED)
 
         # Don't retrieve items that have been reported and approved
         ModeratedObject = get_moderated_object_model()
