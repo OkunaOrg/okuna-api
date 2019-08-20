@@ -2032,6 +2032,76 @@ class PostsAPITests(APITestCase):
 
         self.assertEqual(0, len(response_posts))
 
+    def test_cant_retrieve_connected_user_draft_posts_by_username(self):
+        """
+        should not be able to retrieve connected user draft posts by username
+        """
+        user = make_user()
+
+        connected_user = make_user()
+        user.connect_with_user_with_id(user_id=connected_user.pk)
+        connected_user_post_circle = make_circle(creator=connected_user)
+        connected_user.confirm_connection_with_user_with_id(user_id=user.pk,
+                                                            circles_ids=[connected_user_post_circle.pk])
+        connected_user.create_encircled_post(text=make_fake_post_text(),
+                                             circles_ids=[connected_user_post_circle.pk], is_draft=True)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': connected_user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_following_user_draft_posts_by_username(self):
+        """
+        should not be able to retrieve following user draft posts by username
+        """
+        user = make_user()
+
+        following_user = make_user()
+        follow_list = make_list(creator=user)
+        user.follow_user_with_id(user_id=following_user.pk, lists_ids=[follow_list.pk])
+
+        following_user.create_public_post(text=make_fake_post_text(), is_draft=True)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': following_user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_own_draft_posts_by_username(self):
+        """
+        should not be able to retrieve own draft posts by username
+        """
+        user = make_user()
+
+        user.create_public_post(text=make_fake_post_text(), is_draft=True)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
     def _get_url(self):
         return reverse('posts')
 
