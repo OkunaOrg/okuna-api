@@ -251,12 +251,9 @@ class Post(models.Model):
 
     def create_links(self, link_urls):
         self.post_links.all().delete()
-        allowed_domains = PostLinkWhitelistDomain.get_whitelisted_domains()
         for link_url in link_urls:
             link_url = get_sanitised_url_for_link(link_url)
-            is_allowed = is_url_allowed_in_whitelist_domains(link_url, allowed_domains)
-            if is_allowed:
-                PostLink.create_link(link=link_url, post_id=self.pk)
+            PostLink.create_link(link=link_url, post_id=self.pk)
 
     def is_encircled_post(self):
         return not self.is_public_post() and not self.community

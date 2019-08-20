@@ -26,7 +26,8 @@ from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user
 from openbook_notifications.helpers import get_notification_language_code_for_target_user
 from openbook_translation import translation_strategy
 from openbook_common.helpers import get_supported_translation_language, make_proxy_image_url, \
-    get_domain_from_link, get_favicon_url_from_link
+    get_domain_from_link, get_favicon_url_from_link, get_matched_urls_from_text, is_url_allowed_in_whitelist_domains, \
+    get_sanitised_url_for_link
 from openbook_common.models import Badge, Language
 from openbook_common.utils.helpers import delete_file_field
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
@@ -37,7 +38,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_mute_model, get_community_invite_notification_model, get_user_block_model, get_emoji_model, \
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
     get_moderation_penalty_model, get_language_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
-    get_post_comment_reaction_notification_model
+    get_post_comment_reaction_notification_model, get_post_link_whitelist_domain_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications import helpers
 
@@ -1761,8 +1762,23 @@ class User(AbstractUser):
         Post = get_post_model()
         post = Post.objects.get(pk=post_id)
         preview_link = post.post_links.first().link
+        self._check_url_is_in_a_whitelisted_domain(preview_link)
+
         title, description, proxy_image_url, proxy_favicon_url, domain_url \
             = self._get_preview_data_from_link(preview_link)
+
+        return {
+            'title': title,
+            'description': description,
+            'image_url': proxy_image_url,
+            'favicon_url': proxy_favicon_url,
+            'domain_url': domain_url
+        }
+
+    def get_preview_link_data_for_url(self, url):
+        self._check_can_get_preview_link_data_for_url(url)
+        title, description, proxy_image_url, proxy_favicon_url, domain_url \
+            = self._get_preview_data_from_link(url)
 
         return {
             'title': title,
@@ -4139,6 +4155,30 @@ class User(AbstractUser):
         if not post.has_links():
             raise ValidationError(
                 _('No link associated with post.'),
+            )
+
+    def _check_can_get_preview_link_data_for_url(self, url):
+        result = get_matched_urls_from_text(url)
+        if len(result) == 0:
+            raise ValidationError(
+                _('Please provide a URL to preview.'),
+            )
+
+        extracted_url = result[0]
+        if not extracted_url == url.lower():
+            raise ValidationError(
+                _('Please use a valid URL for preview.'),
+            )
+
+        self._check_url_is_in_a_whitelisted_domain(extracted_url)
+
+    def _check_url_is_in_a_whitelisted_domain(self, url):
+        PostLinkWhitelistDomain = get_post_link_whitelist_domain_model()
+        allowed_domains = PostLinkWhitelistDomain.get_whitelisted_domains()
+
+        if not is_url_allowed_in_whitelist_domains(url, allowed_domains):
+            raise ValidationError(
+                _('Only whitelisted domains can be previewed'),
             )
 
 

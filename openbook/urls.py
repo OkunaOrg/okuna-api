@@ -29,11 +29,11 @@ from openbook_auth.views.blocked_users.views import BlockedUsers, SearchBlockedU
 from openbook_auth.views.followers.views import Followers, SearchFollowers
 from openbook_auth.views.following.views import Followings, SearchFollowings
 from openbook_auth.views.linked_users.views import LinkedUsers, SearchLinkedUsers
-from openbook_auth.views.proxy.views import proxy_auth_view
+from openbook_auth.views.proxy.views import ProxyAuth
 from openbook_auth.views.users.views import SearchUsers, GetUser, BlockUser, UnblockUser
 from openbook_categories.views import Categories
 from openbook_circles.views import Circles, CircleItem, CircleNameCheck
-from openbook_common.views import Time, Health, EmojiGroups
+from openbook_common.views import Time, Health, EmojiGroups, PreviewLinkData
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
     FavoriteCommunities, SearchCommunities, JoinedCommunities, AdministratedCommunities, ModeratedCommunities, \
     SearchJoinedCommunities
@@ -139,6 +139,7 @@ auth_patterns = [
     path('blocked-users/', include(auth_blocked_users_patterns)),
     path('users/', include(auth_users_patterns)),
     path('user/', include(auth_user_patterns)),
+    path('proxy/', ProxyAuth.as_view(), name='proxy-auth'),
 ]
 
 post_notifications_patterns = [
@@ -362,6 +363,7 @@ api_patterns = [
     path('devices/', include(devices_patterns)),
     path('invites/', include(invites_patterns)),
     path('moderation/', include(moderation_patterns)),
+    path('link-preview/', PreviewLinkData.as_view(), name='preview-link'),
     url('time/', Time.as_view(), name='time'),
     url('emojis/groups/', EmojiGroups.as_view(), name='emoji-groups'),
 ]
@@ -371,7 +373,7 @@ if settings.FEATURE_IMPORTER_ENABLED:
 
 urlpatterns = [
     path('api/', include(api_patterns)),
-    url('proxy/(?P<url>.*)', proxy_auth_view, name='proxy'),
+    url('proxy/(?P<url>.*)', proxy_view, name='proxy'),
     url('admin/', admin.site.urls),
     url('health/', Health.as_view(), name='health'),
 ]

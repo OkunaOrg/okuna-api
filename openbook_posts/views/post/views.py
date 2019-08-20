@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.translation import ugettext_lazy as _
+from webpreview import URLUnreachable, URLNotFound
 
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import get_post_id_for_post_uuid
@@ -252,6 +253,7 @@ class SearchPostParticipants(APIView):
 
         return Response(serialized_participants.data, status=status.HTTP_200_OK)
 
+
 class PostPreviewLinkData(APIView):
     permission_classes = (IsAuthenticated,)
 
@@ -267,8 +269,14 @@ class PostPreviewLinkData(APIView):
 
         user = request.user
         post_id = get_post_id_for_post_uuid(post_uuid)
-
-        preview_link_data = user.get_preview_link_data_for_post_with_id(post_id)
+        try:
+            preview_link_data = user.get_preview_link_data_for_post_with_id(post_id)
+        except URLNotFound:
+            return ApiMessageResponse(_('The linked url associated for preview was not found.'),
+                                      status=status.HTTP_400_BAD_REQUEST)
+        except URLUnreachable:
+            return ApiMessageResponse(_('The linked url associated for preview was not reachable.'),
+                                      status=status.HTTP_400_BAD_REQUEST)
 
         return Response(preview_link_data, status=status.HTTP_200_OK)
 

@@ -6,6 +6,8 @@ from django.urls import reverse
 import urllib
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
+from urlextract import URLExtract
+
 
 from openbook_common.utils.model_loaders import get_language_model
 from openbook_translation import translation_strategy
@@ -39,10 +41,10 @@ def get_supported_translation_language(language_code):
 
 
 def get_matched_urls_from_text(text):
-    match_urls_pattern = re.compile(r"(?i)(http[s]?://|www)(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!#*(),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
-
-    result = [url.group() for url in match_urls_pattern.finditer(text, re.IGNORECASE)]
-    return result
+    text = text.lower()
+    extractor = URLExtract()
+    results = [url for url in extractor.gen_urls(text)]
+    return results
 
 
 def make_proxy_image_url(image_url):
@@ -117,5 +119,3 @@ def get_sanitised_url_for_link(url):
         url = 'https://' + url
 
     return url.lower()
-
-

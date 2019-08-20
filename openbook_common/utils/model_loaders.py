@@ -17,6 +17,10 @@ def get_post_model():
     return apps.get_model('openbook_posts.Post')
 
 
+def get_post_link_whitelist_domain_model():
+    return apps.get_model('openbook_posts.PostLinkWhitelistDomain')
+
+
 def get_post_user_mention_model():
     return apps.get_model('openbook_posts.PostUserMention')
 
