@@ -89,6 +89,9 @@ class Post(models.Model):
 
         post = Post.objects.create(creator=creator, created=created)
 
+        if image and video:
+            raise ValidationError(_('A post must have an image or a video, not both.'))
+
         if text:
             post.text = text
             post.language = get_language_for_text(text)

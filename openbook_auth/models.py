@@ -674,7 +674,7 @@ class User(AbstractUser):
     def can_see_post(self, post):
         # Check if post is public
         if post.community:
-            if self._can_see_community_post_with_id(community=post.community, post_id=post.pk):
+            if self._can_see_community_post(community=post.community, post=post):
                 return True
         elif post.creator_id == self.pk and not post.is_deleted:
             return True
@@ -1723,7 +1723,7 @@ class User(AbstractUser):
         post = Post.create_post(text=text, creator=self, circles_ids=circles_ids, image=image, video=video,
                                 created=created)
         if not is_draft:
-            post.publish()
+            self.publish_post(post=post)
 
         return post
 
@@ -1739,8 +1739,9 @@ class User(AbstractUser):
         Post = get_post_model()
         post = Post.create_post(text=text, creator=self, community_name=community_name, image=image, video=video,
                                 created=created)
+
         if not is_draft:
-            post.publish()
+            self.publish_post(post=post)
         return post
 
     def add_image_to_post_with_uuid(self, image, post_uuid):
@@ -2843,10 +2844,13 @@ class User(AbstractUser):
 
         return profile_posts.exists()
 
-    def _can_see_community_post_with_id(self, community, post_id):
+    def _can_see_community_post(self, community, post):
+        if post.creator_id == self.pk:
+            return True
+
         community_posts_query = self._make_get_community_with_id_posts_query(community=community)
 
-        community_posts_query.add(Q(pk=post_id), Q.AND)
+        community_posts_query.add(Q(pk=post.pk), Q.AND)
 
         Post = get_post_model()
         return Post.objects.filter(community_posts_query).exists()

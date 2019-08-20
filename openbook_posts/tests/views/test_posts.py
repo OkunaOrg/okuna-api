@@ -653,6 +653,59 @@ class PostsAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_create_public_draft_post(self):
+        """
+        should be able to create a public draft post and return 201
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        post_text = make_fake_post_text()
+
+        data = {
+            'text': post_text,
+            'is_draft': True
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        response_post = json.loads(response.content)
+
+        response_post_id = response_post.get('id')
+
+        self.assertEqual(user.posts.filter(text=post_text, pk=response_post_id, status=Post.STATUS_DRAFT).count(), 1)
+
+    def test_create_draft_post_in_circle(self):
+        """
+        should be able to create a draft post in an specified circle and return 201
+        """
+        user = make_user()
+
+        circle = mixer.blend(Circle, creator=user)
+
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'text': post_text,
+            'circle_id': circle.pk,
+            'is_draft': True
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertEqual(user.posts.filter(text=post_text, status=Post.STATUS_DRAFT, circles__id=circle.pk).count(), 1)
+
     def test_get_all_posts(self):
         """
         should be able to retrieve all posts
