@@ -10,6 +10,8 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from django.core.files.images import ImageFile
 from django.core.files import File
+from django.core.cache import cache
+from django.conf import settings
 from unittest import mock
 
 import logging
@@ -20,7 +22,7 @@ from openbook_common.tests.helpers import make_authentication_headers_for_user, 
 from openbook_common.utils.model_loaders import get_language_model
 from openbook_communities.models import Community
 from openbook_notifications.models import PostUserMentionNotification, Notification
-from openbook_posts.models import Post, PostUserMention
+from openbook_posts.models import Post, PostUserMention, PostLinkWhitelistDomain
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -2117,6 +2119,7 @@ class GetPostPreviewDataAPITests(APITestCase):
         """
         should retrieve preview data for a post and return 200
         """
+        cache.delete(settings.POST_LINK_WHITELIST_DOMAIN_CACHE_KEY)  # clear cache value
         user = make_user()
         headers = make_authentication_headers_for_user(user)
         post_text = 'im a text with link www.okuna.io'

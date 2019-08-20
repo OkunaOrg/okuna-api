@@ -1,4 +1,6 @@
 from django.urls import reverse
+from django.core.cache import cache
+from django.conf import settings
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -110,6 +112,7 @@ class PreviewLinkDataAPITests(APITestCase):
         """
         should retrieve preview data for a link in a whitelisted domain and return 200
         """
+        cache.delete(settings.POST_LINK_WHITELIST_DOMAIN_CACHE_KEY)  # clear cache value
         user = make_user()
         headers = make_authentication_headers_for_user(user)
         preview_url = 'www.okuna.io'
