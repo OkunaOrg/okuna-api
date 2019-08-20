@@ -20,8 +20,7 @@ class Posts(APIView):
 
         request_data = request.data.dict()
 
-        circle_id = normalize_list_value_in_request_data('circle_id', request_data)
-        request_data['circle_id'] = circle_id
+        normalize_list_value_in_request_data('circle_id', request_data)
 
         serializer = CreatePostSerializer(data=request_data, context={"request": request})
         serializer.is_valid(raise_exception=True)
