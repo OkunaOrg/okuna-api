@@ -44,6 +44,7 @@ class GetAuthenticatedUserProfileSerializer(serializers.ModelSerializer):
             'cover',
             'is_of_legal_age',
             'followers_count_visible',
+            'community_posts_visible',
             'badges'
         )
 
@@ -109,6 +110,7 @@ class UpdateAuthenticatedUserSerializer(serializers.Serializer):
                                  required=False,
                                  allow_blank=False, validators=[name_characters_validator])
     followers_count_visible = serializers.NullBooleanField(required=False, default=None)
+    community_posts_visible = serializers.NullBooleanField(required=False, default=None)
     bio = serializers.CharField(max_length=settings.PROFILE_BIO_MAX_LENGTH, required=False,
                                 allow_blank=True)
     url = FriendlyUrlField(required=False,
