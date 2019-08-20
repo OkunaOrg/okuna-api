@@ -259,7 +259,7 @@ class Post(models.Model):
 
     def add_image(self, image):
         check_can_add_image(post=self)
-        PostImage.create_post_image(image=image, post_id=self.pk)
+        self.image = PostImage.create_post_image(image=image, post_id=self.pk)
 
     def publish(self):
         if self.status != Post.STATUS_DRAFT:
