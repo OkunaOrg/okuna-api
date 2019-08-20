@@ -2021,14 +2021,12 @@ class User(AbstractUser):
 
         followed_users_ids = [followed_user['followed_user_id'] for followed_user in followed_users]
 
-        followed_users_query = Q(creator__in=followed_users_ids, is_deleted=False)
+        followed_users_query = Q(creator__in=followed_users_ids, is_deleted=False, status=Post.STATUS_PUBLISHED)
 
         followed_users_query.add(reported_posts_exclusion_query, Q.AND)
 
         if max_id:
             followed_users_query.add(Q(id__lt=max_id), Q.AND)
-
-        followed_users_query.add(Q(is_deleted=False), Q.AND)
 
         followed_users_query.add(
             Q(circles__id=world_circle_id) | Q(circles__connections__target_connection__circles__isnull=False,

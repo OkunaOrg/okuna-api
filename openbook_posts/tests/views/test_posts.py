@@ -21,6 +21,7 @@ from openbook_common.tests.helpers import make_user, make_users, make_fake_post_
     make_authentication_headers_for_user, make_circle, make_community, make_list, make_moderation_category, \
     get_test_usernames
 from openbook_common.utils.helpers import sha256sum
+from openbook_communities.models import Community
 from openbook_lists.models import List
 from openbook_moderation.models import ModeratedObject
 from openbook_notifications.models import PostUserMentionNotification, Notification
@@ -1862,6 +1863,168 @@ class PostsAPITests(APITestCase):
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
         response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_draft_public_community_posts(self):
+        """
+        should not be able to retrieve draft public community posts
+        """
+        user = make_user()
+
+        community_creator = make_user()
+
+        community = make_community(creator=community_creator)
+
+        post_creator = make_user()
+
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+
+        number_of_posts = 5
+
+        for i in range(0, number_of_posts):
+            post_creator.create_community_post(community_name=community.name, text=make_fake_post_text(),
+                                                      is_draft=True)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_draft_private_community_part_of_posts(self):
+        """
+        should not be able to retrieve draft private community posts
+        """
+        user = make_user()
+
+        community_creator = make_user()
+
+        community = make_community(creator=community_creator, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        post_creator = make_user()
+
+        community_creator.invite_user_with_username_to_community_with_name(username=user.username, community_name=community.name)
+        community_creator.invite_user_with_username_to_community_with_name(username=post_creator.username, community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+
+        number_of_posts = 5
+
+        for i in range(0, number_of_posts):
+            post_creator.create_community_post(community_name=community.name, text=make_fake_post_text(),
+                                               is_draft=True)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_following_user_draft_posts(self):
+        """
+        should not be able to retrieve following user draft posts
+        """
+        user = make_user()
+
+        following_user = make_user()
+        user.follow_user_with_id(user_id=following_user.pk)
+
+        following_user.create_public_post(text=make_fake_post_text(), is_draft=True)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        print(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_following_user_draft_posts_when_filtering(self):
+        """
+        should not be able to retrieve following user draft posts when filtering
+        """
+        user = make_user()
+
+        following_user = make_user()
+        follow_list = make_list(creator=user)
+        user.follow_user_with_id(user_id=following_user.pk, lists_ids=[follow_list.pk])
+
+        following_user.create_public_post(text=make_fake_post_text(), is_draft=True)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'list_id': follow_list.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_connected_user_draft_posts(self):
+        """
+        should not be able to retrieve connected user draft posts
+        """
+        user = make_user()
+
+        connected_user = make_user()
+        user.connect_with_user_with_id(user_id=connected_user.pk)
+        connected_user_post_circle = make_circle(creator=connected_user)
+        connected_user.confirm_connection_with_user_with_id(user_id=user.pk,
+                                                            circles_ids=[connected_user_post_circle.pk])
+        connected_user.create_encircled_post(text=make_fake_post_text(),
+                                                                   circles_ids=[connected_user_post_circle.pk],
+                                                                   is_draft=True)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_connected_user_draft_posts_when_filtering(self):
+        """
+        should not be able to retrieve connected user draft posts when filtering
+        """
+        user = make_user()
+
+        connected_user = make_user()
+        user.connect_with_user_with_id(user_id=connected_user.pk)
+        connected_user_post_circle = make_circle(creator=connected_user)
+        connected_user.confirm_connection_with_user_with_id(user_id=user.pk,
+                                                            circles_ids=[connected_user_post_circle.pk])
+        connected_user.create_encircled_post(text=make_fake_post_text(),
+                                                                   circles_ids=[connected_user_post_circle.pk], is_draft=True)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'circle_id': connected_user_post_circle.pk
+        }, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
