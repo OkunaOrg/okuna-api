@@ -43,6 +43,7 @@ redis = "*"
 webpreview = "*"
 django-proxy = "*"
 beautifulsoup4 = "*"
+urlextract = "*"
 
 [pipenv]
 allow_prereleases = true
