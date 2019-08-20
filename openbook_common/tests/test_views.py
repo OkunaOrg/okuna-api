@@ -5,7 +5,8 @@ from rest_framework.test import APITestCase
 import logging
 import json
 
-from openbook_common.tests.helpers import make_emoji_group, make_emoji, make_user, make_authentication_headers_for_user
+from openbook_common.tests.helpers import make_emoji_group, make_emoji, make_user, make_authentication_headers_for_user, \
+    make_fake_post_text, make_whitelisted_domain
 
 logger = logging.getLogger(__name__)
 
@@ -98,3 +99,71 @@ class TestEmojiGroups(APITestCase):
 
     def _get_url(self):
         return reverse('emoji-groups')
+
+
+class PreviewLinkDataAPITests(APITestCase):
+    """
+    PreviewLinkDataAPI
+    """
+
+    def test_retrieves_preview_data_for_whitelisted_domain(self):
+        """
+        should retrieve preview data for a link in a whitelisted domain and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        preview_url = 'www.okuna.io'
+        url = self._get_url()
+        make_whitelisted_domain(domain='okuna.io')
+
+        response = self.client.get(url, {'url': preview_url}, **headers)
+        preview_data = json.loads(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue('title' in preview_data.keys())
+        self.assertTrue('description' in preview_data.keys())
+        self.assertTrue('image_url' in preview_data.keys())
+        self.assertTrue('favicon_url' in preview_data.keys())
+        self.assertTrue('domain_url' in preview_data.keys())
+
+    def test_cannot_retrieve_preview_data_for_domain_not_in_whitelist(self):
+        """
+        should not retrieve preview data for a link if the domain is not whitelisted and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        preview_url = 'https://www.techcrunch.com'
+        url = self._get_url()
+
+        response = self.client.get(url, {'url': preview_url}, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cannot_retrieve_preview_data_for_invalid_url(self):
+        """
+        should fail to retrieve preview data for an invalid url and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        preview_url = make_fake_post_text()
+
+        url = self._get_url()
+        response = self.client.get(url, {'url': preview_url}, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cannot_retrieve_post_preview_data_for_url_with_unreachable_link(self):
+        """
+        should fail to retrieve preview data for a url which is unreachable and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        preview_url = 'https://www.invalid-XITSrbQomu0pnj2ISa4OOFq_NySDkyXMsw0cBxKYUc.com/doesntexist/eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9/'
+
+        url = self._get_url()
+        response = self.client.get(url, {'url': preview_url}, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def _get_url(self):
+        return reverse('preview-link')
