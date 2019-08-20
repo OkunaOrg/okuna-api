@@ -684,12 +684,12 @@ class PostLinkWhitelistDomain(models.Model):
 
     @classmethod
     def get_whitelisted_domains(cls):
-        timeout_one_day = 60*60*24
-        key = 'PostLinkWhitelistDomainsList'
+        timeout = settings.POST_LINK_WHITELIST_DOMAIN_CACHE_TIMEOUT
+        key = settings.POST_LINK_WHITELIST_DOMAIN_CACHE_KEY
         domains = cache.get(key)
         if domains is None:
             domains = list(cls.objects.values_list('domain', flat=True))
-            cache.set(key, domains, timeout_one_day)
+            cache.set(key, domains, timeout)
         return domains
 
 
