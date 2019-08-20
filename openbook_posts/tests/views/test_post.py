@@ -2138,7 +2138,7 @@ class PublishPostAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        self.assertTrue(Post.objects.filter(pk=post.pk, status=Post.STATUS_PUBLISHED))
+        self.assertTrue(Post.objects.filter(pk=post.pk, status=Post.STATUS_PUBLISHED).exists())
 
     def test_can_publish_draft_text_post(self):
         """
@@ -2158,7 +2158,7 @@ class PublishPostAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        self.assertTrue(Post.objects.filter(pk=post.pk, status=Post.STATUS_PUBLISHED))
+        self.assertTrue(Post.objects.filter(pk=post.pk, status=Post.STATUS_PUBLISHED).exists())
 
     def test_cant_publish_draft_post_with_no_image_nor_text(self):
         """
@@ -2176,7 +2176,7 @@ class PublishPostAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        self.assertFalse(Post.objects.filter(pk=post.pk, status=Post.STATUS_PUBLISHED))
+        self.assertFalse(Post.objects.filter(pk=post.pk, status=Post.STATUS_PUBLISHED).exists())
 
     def test_cant_publish_an_already_published_post(self):
         """
@@ -2196,7 +2196,74 @@ class PublishPostAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        self.assertTrue(Post.objects.filter(pk=post.pk, status=Post.STATUS_PUBLISHED))
+        self.assertTrue(Post.objects.filter(pk=post.pk, status=Post.STATUS_PUBLISHED).exists())
+
+    def test_cant_publish_foreign_user_draft_public_post(self):
+        """
+        should not be able to publish a foreign user draft public post
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        post_text = make_fake_post_text()
+
+        post = foreign_user.create_public_post(text=post_text, is_draft=True)
+
+        url = self._get_url(post=post)
+
+        response = self.client.post(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertTrue(Post.objects.filter(pk=post.pk, status=Post.STATUS_DRAFT).exists())
+
+    def test_cant_publish_foreign_user_draft_community_post(self):
+        """
+        should not be able to publish a foreign user draft community post
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        post_text = make_fake_post_text()
+
+        community = make_community()
+        foreign_user.join_community_with_name(community_name=community.name)
+
+        post = foreign_user.create_community_post(text=post_text, is_draft=True, community_name=community.name)
+
+        url = self._get_url(post=post)
+
+        response = self.client.post(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertTrue(Post.objects.filter(pk=post.pk, status=Post.STATUS_DRAFT).exists())
+
+    def test_cant_publish_foreign_user_draft_encircled_post(self):
+        """
+        should not be able to publish a foreign user draft encircled post
+        """
+        user = make_user()
+        foreign_user = make_user()
+        circle = make_circle(creator=foreign_user)
+
+        headers = make_authentication_headers_for_user(user)
+
+        post_text = make_fake_post_text()
+
+        post = foreign_user.create_encircled_post(text=post_text, is_draft=True, circles_ids=[circle.pk])
+
+        url = self._get_url(post=post)
+
+        response = self.client.post(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertTrue(Post.objects.filter(pk=post.pk, status=Post.STATUS_DRAFT))
 
     def _get_url(self, post):
         return reverse('publish-post', kwargs={
