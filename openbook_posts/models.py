@@ -87,9 +87,6 @@ class Post(models.Model):
         if community_name and circles_ids:
             raise ValidationError(_('A post cannot be posted both to a community and to circles.'))
 
-        if not text and not image and not video:
-            raise ValidationError(_('A post requires text or an image/video.'))
-
         post = Post.objects.create(creator=creator, created=created)
 
         if text:
@@ -109,9 +106,6 @@ class Post(models.Model):
             post.community = Community.objects.get(name=community_name)
 
         post.save()
-
-        if post.image or post.video:
-            post.publish()
 
         return post
 
@@ -260,6 +254,10 @@ class Post(models.Model):
     def publish(self):
         if self.status != Post.STATUS_DRAFT:
             raise ValidationError(_('The post needs to be in draft status in order to be published'))
+
+        if not self.text and not self.image and not self.video:
+            raise ValidationError(_('A post requires text or an image/video.'))
+
         self.status = Post.STATUS_PUBLISHED
         self.created = timezone.now()
         self.save()

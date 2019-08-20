@@ -33,6 +33,7 @@ class CreateCommunityPostSerializer(serializers.Serializer):
                                            allow_blank=False,
                                            required=True,
                                            validators=[community_name_characters_validator, community_name_exists])
+    is_draft = serializers.BooleanField(default=False)
 
 
 class CommunityPostImageSerializer(serializers.ModelSerializer):

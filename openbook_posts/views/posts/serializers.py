@@ -57,6 +57,8 @@ class CreatePostSerializer(serializers.Serializer):
         required=False,
         child=serializers.IntegerField(validators=[circle_id_exists]),
     )
+    is_draft = serializers.BooleanField(
+        default=False)
 
 
 class PostCreatorProfileBadgeSerializer(serializers.ModelSerializer):

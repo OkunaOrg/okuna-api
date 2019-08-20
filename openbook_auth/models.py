@@ -1712,16 +1712,19 @@ class User(AbstractUser):
         Community = get_community_model()
         return Community.objects.filter(memberships__user=self, memberships__is_moderator=True)
 
-    def create_public_post(self, text=None, image=None, video=None, created=None):
+    def create_public_post(self, text=None, image=None, video=None, created=None, is_draft=False):
         world_circle_id = self._get_world_circle_id()
         return self.create_encircled_post(text=text, image=image, video=video, circles_ids=[world_circle_id],
-                                          created=created)
+                                          created=created, is_draft=is_draft)
 
-    def create_encircled_post(self, circles_ids, text=None, image=None, video=None, created=None):
+    def create_encircled_post(self, circles_ids, text=None, image=None, video=None, created=None, is_draft=False):
         check_can_post_to_circles_with_ids(user=self, circles_ids=circles_ids)
         Post = get_post_model()
         post = Post.create_post(text=text, creator=self, circles_ids=circles_ids, image=image, video=video,
                                 created=created)
+        if not is_draft:
+            post.publish()
+
         return post
 
     def update_post(self, post_id, text=None):
@@ -1731,12 +1734,13 @@ class User(AbstractUser):
         post.update(text=text)
         return post
 
-    def create_community_post(self, community_name, text=None, image=None, video=None, created=None):
+    def create_community_post(self, community_name, text=None, image=None, video=None, created=None, is_draft=False):
         check_can_post_to_community_with_name(user=self, community_name=community_name)
         Post = get_post_model()
         post = Post.create_post(text=text, creator=self, community_name=community_name, image=image, video=video,
                                 created=created)
-
+        if not is_draft:
+            post.publish()
         return post
 
     def add_image_to_post_with_uuid(self, image, post_uuid):
@@ -1996,7 +2000,8 @@ class User(AbstractUser):
         own_posts_queryset = self.posts.select_related(*posts_select_related).prefetch_related(
             *posts_prefetch_related).only(*posts_only).filter(own_posts_query)
 
-        community_posts_query = Q(community__memberships__user__id=self.pk, is_closed=False, is_deleted=False, status=Post.STATUS_PUBLISHED)
+        community_posts_query = Q(community__memberships__user__id=self.pk, is_closed=False, is_deleted=False,
+                                  status=Post.STATUS_PUBLISHED)
 
         community_posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
             creator__user_blocks__blocked_user_id=self.pk)), Q.AND)

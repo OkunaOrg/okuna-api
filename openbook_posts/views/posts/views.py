@@ -1,10 +1,13 @@
+import deprecation
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.utils.translation import ugettext_lazy as _
 
 from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.utils.helpers import normalize_list_value_in_request_data
@@ -20,10 +23,8 @@ class Posts(APIView):
 
         request_data = request.data.dict()
 
-        circle_id = request_data.get('circle_id', None)
-        if circle_id and isinstance(circle_id, str):
-            circle_id = circle_id.split(',')
-            request_data['circle_id'] = circle_id
+        circle_id = normalize_list_value_in_request_data('circle_id', request_data)
+        request_data['circle_id'] = circle_id
 
         serializer = CreatePostSerializer(data=request_data, context={"request": request})
         serializer.is_valid(raise_exception=True)
@@ -32,13 +33,14 @@ class Posts(APIView):
         image = data.get('image')
         video = data.get('video') if settings.FEATURE_VIDEO_POSTS_ENABLED else None
         circles_ids = data.get('circle_id')
+        is_draft = data.get('is_draft')
         user = request.user
 
         with transaction.atomic():
             if circles_ids:
-                post = user.create_encircled_post(text=text, circles_ids=circles_ids, image=image, video=video)
+                post = user.create_encircled_post(text=text, circles_ids=circles_ids, image=image, video=video, is_draft=is_draft)
             else:
-                post = user.create_public_post(text=text, image=image, video=video)
+                post = user.create_public_post(text=text, image=image, video=video, is_draft=is_draft)
 
         post_serializer = AuthenticatedUserPostSerializer(post, context={"request": request})
 
