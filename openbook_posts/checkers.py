@@ -14,3 +14,10 @@ def check_is_draft(post):
         raise ValidationError(
             _('Post is not a draft')
         )
+
+
+def check_can_add_image(post):
+    if hasattr(post, 'image') and post.image:
+        raise ValidationError(
+            _('Post already has an image')
+        )

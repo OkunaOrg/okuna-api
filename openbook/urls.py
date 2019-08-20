@@ -62,7 +62,7 @@ from openbook_moderation.views.report.views import ReportUser, ReportPost, Repor
 from openbook_moderation.views.user.views import UserModerationPenalties, UserPendingModeratedObjectsCommunities
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
 from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost, TranslatePost, \
-    SearchPostParticipants, GetPostParticipants
+    SearchPostParticipants, GetPostParticipants, PublishPost
 from openbook_posts.views.post_comment.post_comment_reaction.views import PostCommentReactionItem
 from openbook_posts.views.post_comment.post_comment_reactions.views import PostCommentReactions, \
     PostCommentReactionsEmojiCount
@@ -70,6 +70,7 @@ from openbook_posts.views.post_comment.post_comment_replies.views import PostCom
 from openbook_posts.views.post_comment.views import PostCommentItem, MutePostComment, UnmutePostComment, \
     TranslatePostComment
 from openbook_posts.views.post_comments.views import PostComments, PostCommentsDisable, PostCommentsEnable
+from openbook_posts.views.post_images.views import PostImages
 from openbook_posts.views.post_reaction.views import PostReactionItem
 from openbook_posts.views.post_reactions.views import PostReactions, PostReactionsEmojiCount, PostReactionEmojiGroups
 from openbook_posts.views.posts.views import Posts, TrendingPosts
@@ -167,6 +168,10 @@ post_participants_patterns = [
     path('search/', SearchPostParticipants.as_view(), name='search-post-participants'),
 ]
 
+post_images_patterns = [
+    path('', PostImages.as_view(), name='post-images'),
+]
+
 post_patterns = [
     path('', PostItem.as_view(), name='post'),
     path('notifications/', include(post_notifications_patterns)),
@@ -181,7 +186,9 @@ post_patterns = [
     path('open/', PostOpen.as_view(), name='open-post'),
     path('report/', ReportPost.as_view(), name='report-post'),
     path('translate/', TranslatePost.as_view(), name='translate-post'),
+    path('publish/', PublishPost.as_view(), name='publish-post'),
     path('participants/', include(post_participants_patterns)),
+    path('images/', include(post_images_patterns)),
 ]
 
 posts_patterns = [

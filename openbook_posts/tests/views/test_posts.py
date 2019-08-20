@@ -654,6 +654,79 @@ class PostsAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_create_post_publishes_post_by_default(self):
+        """
+        should be able to create a post and have it automatically published
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        post_text = make_fake_post_text()
+
+        data = {
+            'text': post_text
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        response_post = json.loads(response.content)
+
+        response_post_id = response_post.get('id')
+
+        self.assertEqual(1, user.posts.filter(pk=response_post_id, status=Post.STATUS_PUBLISHED).count())
+
+    def test_can_create_draft_post_with_no_text_image_nor_video(self):
+        """
+        should be able to create a draft post with no text, image nor video and return 201
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'is_draft': True
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        response_post = json.loads(response.content)
+
+        response_post_id = response_post.get('id')
+
+        self.assertEqual(1, user.posts.filter(pk=response_post_id, status=Post.STATUS_DRAFT).count())
+
+    def test_cant_create_non_draft_post_with_no_text_image_nor_video(self):
+        """
+        should be able to create a draft post with no text, image nor video and return 201
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        post_text = make_fake_post_text()
+
+        data = {
+            # Its default
+            #'is_draft': False
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(user.posts.filter(text=post_text).exists())
+
     def test_create_public_draft_post(self):
         """
         should be able to create a public draft post and return 201
@@ -2309,8 +2382,6 @@ class PostsAPITests(APITestCase):
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
         response = self.client.get(url, **headers)
-
-        print(response.content)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 

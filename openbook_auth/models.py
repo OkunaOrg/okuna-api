@@ -1728,9 +1728,7 @@ class User(AbstractUser):
         check_can_post_to_circles_with_ids(user=self, circles_ids=circles_ids)
         Post = get_post_model()
         post = Post.create_post(text=text, creator=self, circles_ids=circles_ids, image=image, video=video,
-                                created=created)
-        if not is_draft:
-            self.publish_post(post=post)
+                                created=created, is_draft=is_draft)
 
         return post
 
@@ -1745,10 +1743,8 @@ class User(AbstractUser):
         check_can_post_to_community_with_name(user=self, community_name=community_name)
         Post = get_post_model()
         post = Post.create_post(text=text, creator=self, community_name=community_name, image=image, video=video,
-                                created=created)
+                                created=created, is_draft=is_draft)
 
-        if not is_draft:
-            self.publish_post(post=post)
         return post
 
     def add_image_to_post_with_uuid(self, image, post_uuid):

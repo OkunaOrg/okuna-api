@@ -2106,3 +2106,99 @@ class GetPostParticipantsAPITests(APITestCase):
         return reverse('get-post-participants', kwargs={
             'post_uuid': post.uuid
         })
+
+
+class PublishPostAPITests(APITestCase):
+    """
+    PublishPostAPI
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
+    def test_can_publish_draft_image_post(self):
+        """
+        should be able to publish a draft image post and return 200
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        image = Image.new('RGB', (100, 100))
+        tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
+        image.save(tmp_file)
+        tmp_file.seek(0)
+
+        post = user.create_public_post(image=ImageFile(tmp_file), is_draft=True)
+
+        url = self._get_url(post=post)
+
+        response = self.client.post(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(Post.objects.filter(pk=post.pk, status=Post.STATUS_PUBLISHED))
+
+    def test_can_publish_draft_text_post(self):
+        """
+        should be able to publish a draft text post and return 200
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        post_text = make_fake_post_text()
+
+        post = user.create_public_post(text=post_text, is_draft=True)
+
+        url = self._get_url(post=post)
+
+        response = self.client.post(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(Post.objects.filter(pk=post.pk, status=Post.STATUS_PUBLISHED))
+
+    def test_cant_publish_draft_post_with_no_image_nor_text(self):
+        """
+        should not be able to publish a draft post with no image nor text and return 200
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        post = user.create_public_post(is_draft=True)
+
+        url = self._get_url(post=post)
+
+        response = self.client.post(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(Post.objects.filter(pk=post.pk, status=Post.STATUS_PUBLISHED))
+
+    def test_cant_publish_an_already_published_post(self):
+        """
+        should not be able to publish an already published post and return 200
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        post_text = make_fake_post_text()
+
+        post = user.create_public_post(text=post_text, is_draft=False)
+
+        url = self._get_url(post=post)
+
+        response = self.client.post(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(Post.objects.filter(pk=post.pk, status=Post.STATUS_PUBLISHED))
+
+    def _get_url(self, post):
+        return reverse('publish-post', kwargs={
+            'post_uuid': post.uuid
+        })

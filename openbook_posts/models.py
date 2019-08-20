@@ -30,7 +30,7 @@ from imagekit.models import ProcessedImageField
 from openbook_moderation.models import ModeratedObject
 from openbook_notifications.helpers import send_post_comment_user_mention_push_notification, \
     send_post_user_mention_push_notification
-from openbook_posts.checkers import check_can_be_updated
+from openbook_posts.checkers import check_can_be_updated, check_can_add_image
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory
 from openbook_common.helpers import get_language_for_text
 
@@ -79,7 +79,7 @@ class Post(models.Model):
 
     @classmethod
     def create_post(cls, creator, circles_ids=None, community_name=None, image=None, text=None, video=None,
-                    created=None):
+                    created=None, is_draft=False):
 
         if not community_name and not circles_ids:
             raise ValidationError(_('A post requires circles or a community to be posted to.'))
@@ -97,7 +97,7 @@ class Post(models.Model):
             post.language = get_language_for_text(text)
 
         if image:
-            PostImage.create_post_image(image=image, post_id=post.pk)
+            post.add_image(image=image)
 
         if video:
             PostVideo.create_post_video(video=video, post_id=post.pk)
@@ -108,7 +108,10 @@ class Post(models.Model):
             Community = get_community_model()
             post.community = Community.objects.get(name=community_name)
 
-        post.save()
+        if not is_draft:
+            post.publish()
+        else:
+            post.save()
 
         return post
 
@@ -253,6 +256,10 @@ class Post(models.Model):
         self.is_edited = True
         self.language = get_language_for_text(text)
         self.save()
+
+    def add_image(self, image):
+        check_can_add_image(post=self)
+        PostImage.create_post_image(image=image, post_id=self.pk)
 
     def publish(self):
         if self.status != Post.STATUS_DRAFT:

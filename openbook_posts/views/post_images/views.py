@@ -10,15 +10,14 @@ from openbook_moderation.permissions import IsNotSuspended
 from openbook_posts.views.post_images.serializers import AddPostImageSerializer
 
 
-class AddPostImage(APIView):
+class PostImages(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
-    parser_classes = [FileUploadParser]
 
     def put(self, request, post_uuid):
-        serializer = AddPostImageSerializer(data={
-            'image': request.data['file'],
-            'post_uuid': post_uuid
-        })
+        request_data = request.data.dict()
+        request_data['post_uuid'] = post_uuid
+
+        serializer = AddPostImageSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
