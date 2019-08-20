@@ -169,6 +169,9 @@ REDIS_LOCATION = '%(protocol)s%(password)s@%(host)s:%(port)d' % {'protocol': red
                                                                  'host': REDIS_HOST,
                                                                  'port': REDIS_PORT}
 
+
+RQ_SHOW_ADMIN_LINK = True
+
 RQ_QUEUES_REDIS_DB = int(os.environ.get('RQ_QUEUES_REDIS_DB', '2'))
 
 CACHES = {
