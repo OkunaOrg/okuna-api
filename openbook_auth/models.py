@@ -352,6 +352,7 @@ class User(AbstractUser):
                bio=None,
                url=None,
                followers_count_visible=None,
+               community_posts_visible=None,
                save=True):
 
         profile = self.profile
@@ -382,6 +383,9 @@ class User(AbstractUser):
 
         if followers_count_visible is not None:
             profile.followers_count_visible = followers_count_visible
+
+        if community_posts_visible is not None:
+            profile.community_posts_visible = community_posts_visible
 
         if save:
             profile.save()
@@ -670,6 +674,9 @@ class User(AbstractUser):
                                                moderated_object__object_id=community_id,
                                                moderated_object__object_type=ModeratedObject.OBJECT_TYPE_COMMUNITY
                                                ).exists()
+
+    def has_profile_community_posts_visible(self):
+        return self.profile.community_posts_visible
 
     def can_see_post(self, post):
         # Check if post is public
@@ -1862,7 +1869,10 @@ class User(AbstractUser):
         :param max_id:
         :return:
         """
-        posts_query = Q(creator_id=self.id, community__isnull=True)
+        posts_query = Q(creator_id=self.id)
+
+        if not self.has_profile_community_posts_visible():
+            posts_query.add(Q(community__isnull=True), Q.AND)
 
         if max_id:
             posts_query.add(Q(id__lt=max_id), Q.AND)
@@ -1872,45 +1882,69 @@ class User(AbstractUser):
 
         return posts
 
-    def get_public_posts_for_user_with_username(self, username, max_id=None, min_id=None):
-        Circle = get_circle_model()
-        Post = get_post_model()
+    def get_posts_for_user_with_username(self, username, max_id=None, min_id=None):
+        user = User.objects.get(username=username)
+        return self.get_posts_for_user(user=user, max_id=max_id, min_id=min_id)
 
+    def get_posts_for_user(self, user, max_id=None, min_id=None):
+        Post = get_post_model()
+        Circle = get_circle_model()
         world_circle_id = Circle.get_world_circle_id()
 
-        posts_query = Q(creator__username=username, circles__id=world_circle_id)
-
-        posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
-            creator__user_blocks__blocked_user_id=self.pk)), Q.AND)
-
-        posts_query.add(Q(is_deleted=False, status=Post.STATUS_PUBLISHED), Q.AND)
-
-        posts_query.add(~Q(moderated_object__reports__reporter_id=self.pk), Q.AND)
+        cursor_scrolling_query = Q()
 
         if max_id:
-            posts_query.add(Q(id__lt=max_id), Q.AND)
+            cursor_scrolling_query = Q(id__lt=max_id)
         elif min_id:
-            posts_query.add(Q(id__gt=min_id), Q.AND)
+            cursor_scrolling_query = Q(id__gt=min_id)
 
-        result = Post.objects.filter(posts_query)
+        exclude_blocked_posts_query = ~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
+            creator__user_blocks__blocked_user_id=self.pk))
 
-        return result
+        exclude_deleted_posts_query = Q(is_deleted=False, status=Post.STATUS_PUBLISHED)
 
-    def get_posts_for_user_with_username(self, username, max_id=None):
-        """
-        Get all the posts for the given user with username
-        :param username:
-        :param max_id:
-        :param post_id:
-        :return:
-        """
-        user = User.objects.get(username=username)
-        posts_query = self._make_get_posts_query_for_user(user, max_id)
+        # Get user world circle posts
 
-        Post = get_post_model()
-        profile_posts = Post.objects.filter(posts_query).distinct()
+        world_circle_posts_query = Q(creator__id=user.pk, circles__id=world_circle_id)
 
-        return profile_posts
+        world_circle_posts = Post.objects.filter(
+            world_circle_posts_query &
+            exclude_deleted_posts_query &
+            exclude_blocked_posts_query &
+            cursor_scrolling_query
+        )
+
+        # Get user community posts
+        Community = get_community_model()
+        community_posts_query = Q(creator__pk=user.pk, community__isnull=False)
+        exclude_private_community_posts_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC) | Q(
+            community__memberships__user__id=self.pk)
+
+        community_posts = Post.objects.filter(
+            community_posts_query &
+            exclude_private_community_posts_query &
+            exclude_deleted_posts_query &
+            exclude_blocked_posts_query &
+            cursor_scrolling_query
+        )
+
+        # Get user connection circles posts
+        connection_circles_query = Q(circles__connections__target_user_id=self.pk,
+                                     circles__connections__target_connection__circles__isnull=False)
+
+        connection_circles_posts = Post.objects.filter(
+            connection_circles_query &
+            exclude_deleted_posts_query &
+            exclude_blocked_posts_query &
+            cursor_scrolling_query
+        )
+
+        if user.has_profile_community_posts_visible():
+            results = world_circle_posts.union(community_posts, connection_circles_posts)
+        else:
+            results = world_circle_posts.union(connection_circles_posts)
+
+        return results
 
     def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None, min_id=None, count=None):
         """
@@ -3055,6 +3089,7 @@ class UserProfile(models.Model):
     bio = models.TextField(_('bio'), max_length=settings.PROFILE_BIO_MAX_LENGTH, blank=False, null=True)
     url = models.URLField(_('url'), blank=False, null=True)
     followers_count_visible = models.BooleanField(_('followers count visible'), blank=False, null=False, default=False)
+    community_posts_visible = models.BooleanField(_('community posts visible'), blank=False, null=False, default=True)
     badges = models.ManyToManyField(Badge, related_name='users_profiles')
 
     class Meta:

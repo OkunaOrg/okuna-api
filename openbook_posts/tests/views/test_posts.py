@@ -1188,11 +1188,131 @@ class PostsAPITests(APITestCase):
         for post_id in created_posts_ids:
             self.assertIn(post_id, response_posts_ids)
 
-    def test_filter_community_post_from_own_posts(self):
+    def test_filter_public_community_post_from_own_posts_when_not_community_posts_visible(self):
         """
-        should filter out the community posts when retrieving all own posts and return 200
+        should filter public community posts when community_posts_visible is false and return 200
         """
         user = make_user()
+        user.update(community_posts_visible=False)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PUBLIC)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                         community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        amount_of_community_posts = random.randint(1, 5)
+
+        created_posts_ids = []
+
+        for i in range(amount_of_community_posts):
+            post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            created_posts_ids.append(post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), 0)
+
+    def test_filter_private_community_post_from_own_posts_when_not_community_posts_visible(self):
+        """
+        should filter public community posts when community_posts_visible is false and return 200
+        """
+        user = make_user()
+        user.update(community_posts_visible=False)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                         community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        amount_of_community_posts = random.randint(1, 5)
+
+        created_posts_ids = []
+
+        for i in range(amount_of_community_posts):
+            post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            created_posts_ids.append(post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), 0)
+
+    def test_retrieve_own_public_community_post_from_own_posts_when_community_posts_visible(self):
+        """
+        should retrieve our own public community posts when community_posts_visible is true and return 200
+        """
+        user = make_user()
+        user.update(community_posts_visible=True)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PUBLIC)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                         community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        amount_of_community_posts = random.randint(1, 5)
+
+        created_posts_ids = []
+
+        for i in range(amount_of_community_posts):
+            post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            created_posts_ids.append(post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        response_posts_ids = [post['id'] for post in response_posts]
+
+        for post_id in created_posts_ids:
+            self.assertIn(post_id, response_posts_ids)
+
+    def test_retrieve_private_community_post_from_own_posts_when_community_posts_visible(self):
+        """
+        should retrieve the private community posts when community_posts_visible is true and return 200
+        """
+        user = make_user()
+        user.update(community_posts_visible=True)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                         community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
         community = make_community(creator=user)
 
         amount_of_community_posts = random.randint(1, 5)
@@ -1209,6 +1329,247 @@ class PostsAPITests(APITestCase):
 
         response = self.client.get(url, {
             'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        response_posts_ids = [post['id'] for post in response_posts]
+
+        for post_id in created_posts_ids:
+            self.assertIn(post_id, response_posts_ids)
+
+    def test_filter_public_community_post_from_foreign_user_posts_when_not_community_posts_visible(self):
+        """
+        should filter public community posts from foreign user when community_posts_visible is false and return 200
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        foreign_user.update(community_posts_visible=False)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PUBLIC)
+
+        foreign_user.join_community_with_name(community_name=community.name)
+
+        amount_of_community_posts = random.randint(1, 5)
+
+        created_posts_ids = []
+
+        for i in range(amount_of_community_posts):
+            post = foreign_user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            created_posts_ids.append(post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': foreign_user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), 0)
+
+    def test_filter_private_community_post_from_foreign_user_posts_when_not_community_posts_visible(self):
+        """
+        should filter private community posts from foreign user when community_posts_visible is false and return 200
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        foreign_user.update(community_posts_visible=False)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=foreign_user.username,
+                                                                         community_name=community.name)
+        foreign_user.join_community_with_name(community_name=community.name)
+
+        amount_of_community_posts = random.randint(1, 5)
+
+        created_posts_ids = []
+
+        for i in range(amount_of_community_posts):
+            post = foreign_user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            created_posts_ids.append(post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': foreign_user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), 0)
+
+    def test_filter_private_joined_community_post_from_foreign_user_posts_when_not_community_posts_visible(self):
+        """
+        should filter private joined community posts from foreign user when community_posts_visible is false and return 200
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        foreign_user.update(community_posts_visible=False)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=foreign_user.username,
+                                                                         community_name=community.name)
+        foreign_user.join_community_with_name(community_name=community.name)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                         community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        amount_of_community_posts = random.randint(1, 5)
+
+        created_posts_ids = []
+
+        for i in range(amount_of_community_posts):
+            post = foreign_user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            created_posts_ids.append(post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': foreign_user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), 0)
+
+    def test_retrieve_public_community_post_from_foreign_user_posts_when_community_posts_visible(self):
+        """
+        should retrieve public community posts from foreign user when community_posts_visible is true and return 200
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        foreign_user.update(community_posts_visible=True)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PUBLIC)
+
+        foreign_user.join_community_with_name(community_name=community.name)
+
+        amount_of_community_posts = random.randint(1, 5)
+
+        created_posts_ids = []
+
+        for i in range(amount_of_community_posts):
+            post = foreign_user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            created_posts_ids.append(post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': foreign_user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        response_posts_ids = [post['id'] for post in response_posts]
+
+        for post_id in created_posts_ids:
+            self.assertIn(post_id, response_posts_ids)
+
+    def test_retrieve_joined_private_community_post_from_foreign_user_posts_when_community_posts_visible(self):
+        """
+        should retrieve joined private community posts from foreign user when community_posts_visible is true and return 200
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        foreign_user.update(community_posts_visible=True)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=foreign_user.username,
+                                                                         community_name=community.name)
+        foreign_user.join_community_with_name(community_name=community.name)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                         community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        amount_of_community_posts = random.randint(1, 5)
+
+        created_posts_ids = []
+
+        for i in range(amount_of_community_posts):
+            post = foreign_user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            created_posts_ids.append(post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': foreign_user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        response_posts_ids = [post['id'] for post in response_posts]
+
+        for post_id in created_posts_ids:
+            self.assertIn(post_id, response_posts_ids)
+
+    def test_filter_private_community_post_from_foreign_user_posts_when_community_posts_visible(self):
+        """
+        should filter private community posts from foreign user when community_posts_visible is true and return 200
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        foreign_user.update(community_posts_visible=True)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=foreign_user.username,
+                                                                         community_name=community.name)
+        foreign_user.join_community_with_name(community_name=community.name)
+
+        amount_of_community_posts = random.randint(1, 5)
+
+        created_posts_ids = []
+
+        for i in range(amount_of_community_posts):
+            post = foreign_user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            created_posts_ids.append(post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': foreign_user.username
         }, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
