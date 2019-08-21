@@ -2,6 +2,7 @@
 import uuid
 from datetime import timedelta
 
+import magic
 from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.storage import default_storage
@@ -35,7 +36,7 @@ from imagekit.models import ProcessedImageField
 from openbook_moderation.models import ModeratedObject
 from openbook_notifications.helpers import send_post_comment_user_mention_push_notification, \
     send_post_user_mention_push_notification
-from openbook_posts.checkers import check_can_be_updated, check_can_set_image
+from openbook_posts.checkers import check_can_be_updated, check_can_add_media
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory
 from openbook_common.helpers import get_language_for_text
 
@@ -264,9 +265,25 @@ class Post(models.Model):
         self.language = get_language_for_text(text)
         self.save()
 
-    def set_image(self, image):
-        check_can_set_image(post=self)
-        self.image = PostImage.create_post_image(image=image, post_id=self.pk)
+    def add_media(self, file, position):
+        check_can_add_media(post=self)
+        file_mime = magic.from_file(file.name, mime=True)
+        file_mime_type = file_mime.split('/')[0]
+
+        if file_mime_type == 'image':
+            self._add_media_image(image=file, position=position)
+        elif file_mime_type == 'video':
+            self._add_media_video(video=file, position=position)
+        else:
+            raise ValidationError(
+                _('Unsupported media file type')
+            )
+
+    def _add_media_image(self, image, position):
+        PostImage.create_post_media_image(image=image, post_id=self.pk, position=position)
+
+    def _add_media_video(self, video, position):
+        PostVideo.create_post_media_video(video=video, post_id=self.pk, position=position)
 
     def publish(self):
         if self.status != Post.STATUS_DRAFT:
@@ -407,11 +424,11 @@ class PostMedia(models.Model):
     position = PositionField()
 
     MEDIA_TYPE_VIDEO = 'V'
-    MEDIA_TYPE_PHOTO = 'P'
+    MEDIA_TYPE_IMAGE = 'I'
 
     MEDIA_TYPES = (
         (MEDIA_TYPE_VIDEO, 'Video'),
-        (MEDIA_TYPE_PHOTO, 'Photo'),
+        (MEDIA_TYPE_IMAGE, 'Image'),
     )
 
     type = models.CharField(max_length=5, choices=MEDIA_TYPES)
@@ -421,12 +438,16 @@ class PostMedia(models.Model):
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey()
 
+    @classmethod
+    def create_post_media(cls, post_id, type, content_object, position):
+        return cls.objects.create(type=type, content_object=content_object, post_id=post_id, position=position)
+
 
 post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else default_storage
 
 
 class PostImage(models.Model):
-    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='image')
+    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='image', null=True)
     image = ProcessedImageField(verbose_name=_('image'), storage=post_image_storage,
                                 upload_to=upload_to_post_image_directory,
                                 width_field='width',
@@ -443,6 +464,15 @@ class PostImage(models.Model):
     def create_post_image(cls, image, post_id):
         hash = sha256sum(file=image.file)
         return cls.objects.create(image=image, post_id=post_id, hash=hash)
+
+    @classmethod
+    def create_post_media_image(cls, image, post_id, position):
+        hash = sha256sum(file=image.file)
+        post_image = cls.objects.create(image=image, post_id=post_id, hash=hash)
+        PostMedia.create_post_media(type=PostMedia.MEDIA_TYPE_IMAGE,
+                                    content_object=post_image,
+                                    post_id=post_id, position=position)
+        return post_image
 
 
 class PostVideo(models.Model):
@@ -461,9 +491,13 @@ class PostVideo(models.Model):
     format_set = GenericRelation(Format)
 
     @classmethod
-    def create_post_video(cls, video, post_id):
+    def create_post_media_video(cls, video, post_id, position):
         hash = sha256sum(file=video.file)
-        return cls.objects.create(video=video, post_id=post_id, hash=hash)
+        post_video = cls.objects.create(image=video, post_id=post_id, hash=hash)
+        PostMedia.create_post_media(type=PostMedia.MEDIA_TYPE_IMAGE,
+                                    content_object=post_video,
+                                    post_id=post_id, position=position)
+        return post_video
 
 
 class PostComment(models.Model):

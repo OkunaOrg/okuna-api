@@ -16,7 +16,7 @@ def check_is_draft(post):
         )
 
 
-def check_can_set_image(post):
+def check_can_add_media(post):
     if hasattr(post, 'image') and post.image:
         raise ValidationError(
             _('Post already has an image')

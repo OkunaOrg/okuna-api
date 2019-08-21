@@ -70,7 +70,7 @@ from openbook_posts.views.post_comment.post_comment_replies.views import PostCom
 from openbook_posts.views.post_comment.views import PostCommentItem, MutePostComment, UnmutePostComment, \
     TranslatePostComment
 from openbook_posts.views.post_comments.views import PostComments, PostCommentsDisable, PostCommentsEnable
-from openbook_posts.views.post_image.views import PostImage
+from openbook_posts.views.post_media.views import PostMedia
 from openbook_posts.views.post_reaction.views import PostReactionItem
 from openbook_posts.views.post_reactions.views import PostReactions, PostReactionsEmojiCount, PostReactionEmojiGroups
 from openbook_posts.views.posts.views import Posts, TrendingPosts
@@ -168,8 +168,8 @@ post_participants_patterns = [
     path('search/', SearchPostParticipants.as_view(), name='search-post-participants'),
 ]
 
-post_image_patterns = [
-    path('', PostImage.as_view(), name='post-image'),
+post_media_patterns = [
+    path('', PostMedia.as_view(), name='post-media'),
 ]
 
 post_patterns = [
@@ -188,7 +188,7 @@ post_patterns = [
     path('translate/', TranslatePost.as_view(), name='translate-post'),
     path('publish/', PublishPost.as_view(), name='publish-post'),
     path('participants/', include(post_participants_patterns)),
-    path('images/', include(post_image_patterns)),
+    path('media/', include(post_media_patterns)),
 ]
 
 posts_patterns = [

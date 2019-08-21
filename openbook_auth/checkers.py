@@ -1274,7 +1274,7 @@ def check_is_creator_of_invite_with_id(user, invite_id):
         raise ValidationError(_('Invite was not created by you'))
 
 
-def check_can_add_image_to_post(user, post):
+def check_can_add_media_to_post(user, post):
     check_has_post_with_id(user=user, post_id=post.pk)
     post_checkers.check_is_draft(post=post)
 
