@@ -8,7 +8,7 @@ from webpreview import URLNotFound, URLUnreachable
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.responses import ApiMessageResponse
-from openbook_common.serializers import EmojiGroupSerializer, EmojiSerializer
+from openbook_common.serializers import EmojiGroupSerializer, EmojiSerializer, PreviewLinkSerializer
 from openbook_common.utils.model_loaders import get_emoji_group_model, get_emoji_model
 
 
@@ -54,7 +54,11 @@ class PreviewLinkData(APIView):
 
     def get(self, request):
         query_params = request.query_params.dict()
-        url = query_params['url']
+        serializer = PreviewLinkSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        url = data.get('url')
         user = request.user
         try:
             preview_link_data = user.get_preview_link_data_for_url(url)
