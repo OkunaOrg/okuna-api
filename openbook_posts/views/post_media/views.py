@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_moderation.permissions import IsNotSuspended
-from openbook_posts.views.post_media.serializers import AddPostMediaSerializer
+from openbook_posts.views.post_media.serializers import AddPostMediaSerializer, GetPostMediaSerializer
 
 
 class PostMedia(APIView):
@@ -33,3 +33,21 @@ class PostMedia(APIView):
         return Response({
             'message': _('Media added successfully to post')
         }, status=status.HTTP_200_OK)
+
+    def get(self, request, post_uuid):
+        serializer = GetPostMediaSerializer(data={
+            'post_uuid': post_uuid
+        })
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        post_uuid = data.get('post_uuid')
+
+        user = request.user
+
+        post_media = user.get_media_for_post_with_uuid(post_uuid=post_uuid).order_by(
+            'position')
+
+        post_media_serializer = PostMediaSerializer(post_media, many=True, context={"request": request})
+
+        return Response(post_media_serializer.data, status=status.HTTP_200_OK)

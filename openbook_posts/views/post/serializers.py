@@ -182,7 +182,9 @@ class GetPostPostSerializer(serializers.ModelSerializer):
             'is_muted',
             'is_edited',
             'is_closed',
-            'is_encircled'
+            'is_encircled',
+            'media_height',
+            'media_width',
         )
 
 

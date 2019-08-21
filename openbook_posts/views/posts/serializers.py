@@ -234,7 +234,9 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'is_muted',
             'is_encircled',
             'is_edited',
-            'is_closed'
+            'is_closed',
+            'media_height',
+            'media_width',
         )
 
 
@@ -262,5 +264,7 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
             'language',
             'comments_enabled',
             'public_reactions',
-            'is_edited'
+            'is_edited',
+            'media_height',
+            'media_width',
         )

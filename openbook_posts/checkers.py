@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 
@@ -17,7 +18,9 @@ def check_is_draft(post):
 
 
 def check_can_add_media(post):
-    if hasattr(post, 'image') and post.image:
+    existing_media_count = post.count_media()
+
+    if existing_media_count >= settings.POST_MEDIA_MAX_ITEMS:
         raise ValidationError(
-            _('Post already has an image')
+            _('Maximum amount of post media items reached')
         )

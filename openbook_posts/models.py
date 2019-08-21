@@ -105,10 +105,9 @@ class Post(models.Model):
             post.language = get_language_for_text(text)
 
         if image:
-            post.set_image(image=image)
-
-        if video:
-            PostVideo.create_post_video(video=video, post_id=post.pk)
+            post.add_media(file=image)
+        elif video:
+            post.add_media(file=video)
 
         if circles_ids:
             post.circles.add(*circles_ids)
@@ -269,21 +268,30 @@ class Post(models.Model):
         check_can_add_media(post=self)
         file_mime = magic.from_file(file.name, mime=True)
         file_mime_type = file_mime.split('/')[0]
+        has_other_media = self.media.exists()
 
         if file_mime_type == 'image':
-            self._add_media_image(image=file, position=position)
+            post_image = self._add_media_image(image=file, position=position)
+            if not has_other_media:
+                self.media_width = post_image.width
+                self.media_height = post_image.height
         elif file_mime_type == 'video':
-            self._add_media_video(video=file, position=position)
+            post_video = self._add_media_video(video=file, position=position)
+            if not has_other_media:
+                self.media_width = post_video.width
+                self.media_height = post_video.height
         else:
             raise ValidationError(
                 _('Unsupported media file type')
             )
 
+        self.save()
+
     def _add_media_image(self, image, position):
-        PostImage.create_post_media_image(image=image, post_id=self.pk, position=position)
+        return PostImage.create_post_media_image(image=image, post_id=self.pk, position=position)
 
     def _add_media_video(self, video, position):
-        PostVideo.create_post_media_video(video=video, post_id=self.pk, position=position)
+        return PostVideo.create_post_media_video(video=video, post_id=self.pk, position=position)
 
     def publish(self):
         if self.status != Post.STATUS_DRAFT:
@@ -535,6 +543,9 @@ class PostComment(models.Model):
 
     def count_replies(self):
         return self.replies.count()
+
+    def count_media(self):
+        return self.media.count()
 
     def count_replies_with_user(self, user):
         count_query = Q()

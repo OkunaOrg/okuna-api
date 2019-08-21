@@ -114,6 +114,8 @@ class NotificationPostSerializer(serializers.ModelSerializer):
             'created',
             'is_closed',
             'is_encircled',
+            'media_height',
+            'media_width',
         )
 
 
