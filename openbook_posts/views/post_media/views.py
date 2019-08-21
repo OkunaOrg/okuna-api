@@ -7,7 +7,8 @@ from rest_framework.views import APIView
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_moderation.permissions import IsNotSuspended
-from openbook_posts.views.post_media.serializers import AddPostMediaSerializer, GetPostMediaSerializer
+from openbook_posts.views.post_media.serializers import AddPostMediaSerializer, GetPostMediaSerializer, \
+    PostMediaSerializer
 
 
 class PostMedia(APIView):

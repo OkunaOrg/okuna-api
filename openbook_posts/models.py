@@ -36,9 +36,10 @@ from imagekit.models import ProcessedImageField
 from openbook_moderation.models import ModeratedObject
 from openbook_notifications.helpers import send_post_comment_user_mention_push_notification, \
     send_post_user_mention_push_notification
-from openbook_posts.checkers import check_can_be_updated, check_can_add_media
+from openbook_posts.checkers import check_can_be_updated, check_can_add_media, check_can_be_published
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory
 from openbook_common.helpers import get_language_for_text
+from openbook_posts.jobs import process_post_media
 
 
 class Post(models.Model):
@@ -58,9 +59,11 @@ class Post(models.Model):
     is_closed = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     STATUS_DRAFT = 'D'
+    STATUS_PROCESSING = 'PG'
     STATUS_PUBLISHED = 'P'
     STATUSES = (
         (STATUS_DRAFT, 'Draft'),
+        (STATUS_PROCESSING, 'Processing'),
         (STATUS_PUBLISHED, 'Published'),
     )
     status = models.CharField(blank=False, null=False, choices=STATUSES, default=STATUS_DRAFT, max_length=2)
@@ -294,18 +297,27 @@ class Post(models.Model):
         return PostVideo.create_post_media_video(video=video, post_id=self.pk, position=position)
 
     def publish(self):
-        if self.status != Post.STATUS_DRAFT:
-            raise ValidationError(_('The post needs to be in draft status in order to be published'))
+        check_can_be_published(post=self)
 
-        if not self.text and not hasattr(self, 'image') and not hasattr(self, 'video'):
-            raise ValidationError(_('A post requires text or an image/video.'))
+        if self.has_media():
+            # After finishing, this will call _publish()
+            process_post_media.delay(post_id=self.pk)
+        else:
+            self._publish()
 
+    def _publish(self):
         self.status = Post.STATUS_PUBLISHED
         self.created = timezone.now()
         self.save()
 
     def is_draft(self):
         return self.status == Post.STATUS_DRAFT
+
+    def is_empty(self):
+        return not self.text and not hasattr(self, 'image') and not hasattr(self, 'video') and not self.has_media()
+
+    def has_media(self):
+        return self.media.exists()
 
     def save(self, *args, **kwargs):
         ''' On create, update timestamps '''
