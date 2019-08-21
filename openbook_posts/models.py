@@ -17,6 +17,9 @@ from pilkit.processors import ResizeToFit
 from rest_framework.exceptions import ValidationError
 
 from django.conf import settings
+from video_encoding.fields import VideoField
+from video_encoding.models import Format
+
 from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
@@ -443,12 +446,19 @@ class PostImage(models.Model):
 
 
 class PostVideo(models.Model):
-    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='video')
-    video = models.FileField(_('video'), blank=False, null=False, storage=post_image_storage,
-                             upload_to=upload_to_post_video_directory)
     hash = models.CharField(_('hash'), max_length=64, blank=False, null=True)
 
     media = GenericRelation(PostMedia)
+
+    width = models.PositiveIntegerField(editable=False, null=True)
+    height = models.PositiveIntegerField(editable=False, null=True)
+    duration = models.FloatField(editable=False, null=True)
+
+    file = VideoField(width_field='width', height_field='height',
+                      duration_field='duration', storage=post_image_storage,
+                      upload_to=upload_to_post_video_directory, blank=False, null=True)
+
+    format_set = GenericRelation(Format)
 
     @classmethod
     def create_post_video(cls, video, post_id):

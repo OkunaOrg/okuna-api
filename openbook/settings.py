@@ -109,6 +109,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'django_nose',
     'storages',
+    'video_encoding',
     'imagekit',
     'django_media_fixtures',
     'cacheops',
@@ -168,7 +169,6 @@ REDIS_LOCATION = '%(protocol)s%(password)s@%(host)s:%(port)d' % {'protocol': red
                                                                  'password': redis_password,
                                                                  'host': REDIS_HOST,
                                                                  'port': REDIS_PORT}
-
 
 RQ_SHOW_ADMIN_LINK = True
 
@@ -415,6 +415,23 @@ STATICFILES_DIRS = (
 )
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+# Video encoding
+
+VIDEO_ENCODING_FORMATS = {
+    'FFmpeg': [
+        {
+            'name': 'mp4_sd',
+            'extension': 'mp4',
+            'params': [
+                '-codec:v', 'libx264', '-crf', '20', '-preset', 'medium',
+                '-b:v', '1000k', '-maxrate', '1000k', '-bufsize', '2000k',
+                '-vf', 'scale=-2:480',  # http://superuser.com/a/776254
+                '-codec:a', 'aac', '-b:a', '128k', '-strict', '-2',
+            ],
+        },
+    ]
+}
 
 # Openbook config
 
