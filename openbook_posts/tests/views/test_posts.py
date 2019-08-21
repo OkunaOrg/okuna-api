@@ -350,6 +350,31 @@ class PostsAPITests(APITestCase):
             link = get_sanitised_url_for_link(link)
             self.assertTrue(link in result_links)
 
+    def test_create_text_post_skips_http_urls(self):
+        """
+        should skip http urls in post text while creating post links models from them
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        links = ['http://unsafe.com']
+
+        post_text = " | ".join(links)
+
+        data = {
+            'text': post_text
+        }
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+        post_links = PostLink.objects.filter(post_id=post.pk)
+        result_links = [post_link.link for post_link in post_links]
+
+        self.assertEqual(len(result_links), 0)
+
     def test_create_post_is_added_to_world_circle(self):
         """
         the created text post should automatically added to world circle

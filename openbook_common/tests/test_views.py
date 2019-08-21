@@ -155,7 +155,7 @@ class PreviewLinkDataAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_cannot_retrieve_post_preview_data_for_url_with_unreachable_link(self):
+    def test_cannot_retrieve_preview_data_for_url_with_unreachable_link(self):
         """
         should fail to retrieve preview data for a url which is unreachable and return 400
         """
@@ -165,6 +165,17 @@ class PreviewLinkDataAPITests(APITestCase):
 
         url = self._get_url()
         response = self.client.get(url, {'url': preview_url}, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cannot_retrieve_preview_data_if_no_url_param(self):
+        """
+        should fail if url param is missing return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        url = self._get_url()
+        response = self.client.get(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
