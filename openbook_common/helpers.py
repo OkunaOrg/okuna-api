@@ -51,8 +51,9 @@ def get_matched_urls_from_text(text):
     results = [url for url in extractor.gen_urls(text)]
     for url in results:
         scheme = urlparse(url).scheme
-        if scheme and scheme is not 'https':
+        if scheme and scheme != 'https':
             results.remove(url)
+
     return results
 
 

@@ -262,8 +262,7 @@ def get_test_usernames():
 
 def get_post_links():
     return [
-        'https://www.okuna.com',
-        'http://www.insecure.com',
+        'https://www.okuna.io',
         'www.techcrunch.com',
         'https://bbc.co.uk',
         'google.com?filter=evil',
