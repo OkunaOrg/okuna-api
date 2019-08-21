@@ -41,6 +41,7 @@ langdetect = "*"
 django-rq = "*"
 redis = "*"
 django-rq-scheduler = "*"
+django-positions = "*"
 
 [pipenv]
 allow_prereleases = true

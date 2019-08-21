@@ -2,8 +2,8 @@
 -e git+https://github.com/lifenautjoe/django-modeltranslation.git@551af9905961038badad9d9a16b2f47996f7685b#egg=django-modeltranslation
 attrs==19.1.0
 bandit==1.5.1
-boto3==1.9.211
-botocore==1.12.211
+boto3==1.9.212
+botocore==1.12.212
 certifi==2019.6.16
 chardet==3.0.4
 click==7.0
@@ -19,6 +19,7 @@ django-imagekit==4.0.2
 django-media-fixtures==0.0.3
 django-model-utils==3.2.0
 django-nose==1.4.6
+django-positions==0.6.0
 django-redis==4.10.0
 django-replicated==2.6.1
 django-rq-scheduler==1.1.3

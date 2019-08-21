@@ -2,13 +2,15 @@
 import uuid
 from datetime import timedelta
 
-from django.contrib.contenttypes.fields import GenericRelation
+from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.core.files.storage import default_storage
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Count
+from positions import PositionField
 
 # Create your views here.
 from pilkit.processors import ResizeToFit
@@ -58,6 +60,8 @@ class Post(models.Model):
         (STATUS_PUBLISHED, 'Published'),
     )
     status = models.CharField(blank=False, null=False, choices=STATUSES, default=STATUS_DRAFT, max_length=2)
+    media_height = models.PositiveSmallIntegerField(_('media height'), null=True)
+    media_width = models.PositiveSmallIntegerField(_('media height'), null=True)
 
     class Meta:
         index_together = [
@@ -395,6 +399,26 @@ class Post(models.Model):
                             pass
 
 
+class PostMedia(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='media')
+    position = PositionField()
+
+    MEDIA_TYPE_VIDEO = 'V'
+    MEDIA_TYPE_PHOTO = 'P'
+
+    MEDIA_TYPES = (
+        (MEDIA_TYPE_VIDEO, 'Video'),
+        (MEDIA_TYPE_PHOTO, 'Photo'),
+    )
+
+    type = models.CharField(max_length=5, choices=MEDIA_TYPES)
+
+    # Generic relation types
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey()
+
+
 post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else default_storage
 
 
@@ -410,6 +434,8 @@ class PostImage(models.Model):
     height = models.PositiveIntegerField(editable=False, null=False, blank=False)
     hash = models.CharField(_('hash'), max_length=64, blank=False, null=True)
 
+    media = GenericRelation(PostMedia)
+
     @classmethod
     def create_post_image(cls, image, post_id):
         hash = sha256sum(file=image.file)
@@ -421,6 +447,8 @@ class PostVideo(models.Model):
     video = models.FileField(_('video'), blank=False, null=False, storage=post_image_storage,
                              upload_to=upload_to_post_video_directory)
     hash = models.CharField(_('hash'), max_length=64, blank=False, null=True)
+
+    media = GenericRelation(PostMedia)
 
     @classmethod
     def create_post_video(cls, video, post_id):
