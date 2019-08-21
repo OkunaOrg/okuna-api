@@ -41,17 +41,23 @@ def get_supported_translation_language(language_code):
 
 
 def get_matched_urls_from_text(text):
+    """
+    Returns all the raw extracted urls as a list
+    If a URL has a scheme, it ensures that it is https
+    URLs like www. are sanitised in the get_sanitised_url_for_link
+    """
     text = text.lower()
     extractor = URLExtract()
     results = [url for url in extractor.gen_urls(text)]
+    for url in results:
+        scheme = urlparse(url).scheme
+        if scheme and scheme is not 'https':
+            results.remove(url)
     return results
 
 
 def make_proxy_image_url(image_url):
-    relative_url = reverse('proxy', kwargs={
-        'url': image_url
-    })
-    proxy_image_url = settings.PROXY_HOST + relative_url
+    proxy_image_url = settings.PROXY_URL + image_url
 
     return proxy_image_url
 
@@ -74,7 +80,7 @@ def is_url_allowed_in_whitelist_domains(url, allowed_domains):
 
 def get_domain_from_link(url):
     """
-    Returns the domain part from a full url without the scheme
+    Returns the domain from a full url without the scheme
     """
     if not urlparse(url).scheme:
         url = 'https://' + url
@@ -93,10 +99,11 @@ def _get_domain_full_url_from_link(url):
 
 
 def get_favicon_url_from_link(url):
-    if not urlparse(url).scheme:
-        url = 'https://' + url
-
-    page = urllib.request.urlopen(url)
+    """
+    We already check the url for whitelisted domains/https.
+    Hence the nosec
+    """
+    page = urllib.request.urlopen(url)  # nosec
     soup = BeautifulSoup(page, features='html.parser')
     favicon_link = soup.find("link", rel="icon")
     if not favicon_link:

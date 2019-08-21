@@ -1777,6 +1777,7 @@ class User(AbstractUser):
 
     def get_preview_link_data_for_url(self, url):
         self._check_can_get_preview_link_data_for_url(url)
+        url = get_sanitised_url_for_link(url)
         title, description, proxy_image_url, proxy_favicon_url, domain_url \
             = self._get_preview_data_from_link(url)
 
@@ -4161,7 +4162,7 @@ class User(AbstractUser):
         result = get_matched_urls_from_text(url)
         if len(result) == 0:
             raise ValidationError(
-                _('Please provide a URL to preview.'),
+                _('Please provide a URL(https) to preview.'),
             )
 
         extracted_url = result[0]
