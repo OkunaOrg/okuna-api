@@ -299,3 +299,10 @@ class PublishPostSerializer(serializers.Serializer):
         validators=[post_uuid_exists],
         required=True,
     )
+
+
+class GetPostStatusSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )

@@ -500,8 +500,8 @@ class User(AbstractUser):
     def has_circle_with_name(self, circle_name):
         return self.circles.filter(name=circle_name).exists()
 
-    def has_post_with_id(self, post_id):
-        return self.posts.filter(id=post_id).exists()
+    def has_post(self, post):
+        return post.creator_id == self.pk
 
     def has_muted_post_with_id(self, post_id):
         return self.post_mutes.filter(post_id=post_id).exists()
@@ -931,6 +931,15 @@ class User(AbstractUser):
 
     def get_replies_count_for_post_comment(self, post_comment):
         return post_comment.count_replies_with_user(user=self)
+
+    def get_status_for_post_with_uuid(self, post_uuid):
+        Post = get_post_model()
+        post = Post.objects.get(uuid=post_uuid)
+        return self.get_status_for_post(post=post)
+
+    def get_status_for_post(self, post):
+        check_can_get_status_for_post(user=self, post=post)
+        return post.status
 
     def enable_comments_for_post_with_id(self, post_id):
         Post = get_post_model()
@@ -1732,10 +1741,15 @@ class User(AbstractUser):
 
         return post
 
+    def update_post_with_uuid(self, post_uuid, text=None):
+        Post = get_post_model()
+        post = Post.objects.get(uuid=post_uuid)
+        return self.update_post(post=post, text=text)
+
     def update_post(self, post_id, text=None):
-        check_can_update_post_with_id(user=self, post_id=post_id)
         Post = get_post_model()
         post = Post.objects.get(pk=post_id)
+        check_can_update_post(user=self, post=post)
         post.update(text=text)
         return post
 
@@ -1767,14 +1781,13 @@ class User(AbstractUser):
         post.publish()
         return post
 
-    def delete_post(self, post):
-        return self.delete_post_with_id(post.pk)
-
-    def delete_post_with_id(self, post_id):
-        check_can_delete_post_with_id(user=self, post_id=post_id)
+    def delete_post_with_uuid(self, post_uuid):
         Post = get_post_model()
+        post = Post.objects.get(uuid=post_uuid)
+        return self.delete_post(post=post)
 
-        post = Post.objects.get(id=post_id)
+    def delete_post(self, post):
+        check_can_delete_post(user=self, post=post)
         # This method is overriden
         post.delete()
 

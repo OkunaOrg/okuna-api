@@ -399,7 +399,7 @@ class PostItemAPITests(APITestCase):
         post = user.create_public_post(text=make_fake_post_text(), image=image)
         file = post.image.image.file
 
-        user.delete_post_with_id(post.id)
+        user.delete_post(post=post)
 
         self.assertFalse(access(file.name, F_OK))
 
@@ -418,7 +418,7 @@ class PostItemAPITests(APITestCase):
         post = user.create_public_post(text=make_fake_post_text(), video=video)
         file = post.video.video.file
 
-        user.delete_post_with_id(post.id)
+        user.delete_post(post=post)
 
         self.assertFalse(access(file.name, F_OK))
 
@@ -2267,5 +2267,61 @@ class PublishPostAPITests(APITestCase):
 
     def _get_url(self, post):
         return reverse('publish-post', kwargs={
+            'post_uuid': post.uuid
+        })
+
+
+class PostStatusAPITests(APITestCase):
+    """
+    PostStatusAPI
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json',
+    ]
+
+    def test_can_retrieve_own_post_status(self):
+        """
+        should be able to retrieve own post status
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        post_text = make_fake_post_text()
+
+        post = user.create_public_post(text=post_text, is_draft=True)
+
+        url = self._get_url(post=post)
+
+        response = self.client.post(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(parsed_response['status'], post.status)
+
+    def test_cant_retrieve_foreign_post_status(self):
+        """
+        should not be able to retrieve a foreign post status
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        post_text = make_fake_post_text()
+
+        post = foreign_user.create_public_post(text=post_text, is_draft=True)
+
+        url = self._get_url(post=post)
+
+        response = self.client.post(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def _get_url(self, post):
+        return reverse('post-status', kwargs={
             'post_uuid': post.uuid
         })

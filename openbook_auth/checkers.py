@@ -18,8 +18,8 @@ def check_follow_list_id(user, list_id):
     check_has_list_with_id(user=user, list_id=list_id)
 
 
-def check_can_update_post_with_id(user, post_id):
-    check_has_post_with_id(user=user, post_id=post_id)
+def check_can_update_post(user, post):
+    check_has_post(user=user, post=post)
     Post = get_post_model()
     post = Post.objects.get(id=post_id)
     if post.is_closed and post.community_id:
@@ -240,13 +240,12 @@ def check_has_circles_with_ids(user, circles_ids):
         )
 
 
-def check_can_delete_post_with_id(user, post_id):
+def check_can_delete_post(user, post):
     Post = get_post_model()
 
-    if not user.has_post_with_id(post_id):
-        if Post.is_post_with_id_a_community_post(post_id):
+    if not user.has_post(post=post):
+        if Post.is_post_with_id_a_community_post(post.pk):
             # If the comment is in a community, check if we're moderators
-            post = Post.objects.select_related('community').get(pk=post_id)
             if not user.is_moderator_of_community_with_name(
                     post.community.name) and not user.is_administrator_of_community_with_name(post.community.name):
                 raise ValidationError(
@@ -720,8 +719,8 @@ def check_can_translate_comment_with_id(user, post_comment_id):
         )
 
 
-def check_has_post_with_id(user, post_id):
-    if not user.has_post_with_id(post_id):
+def check_has_post(user, post):
+    if not user.has_post(post=post):
         raise PermissionDenied(
             _('This post does not belong to you.'),
         )
@@ -1053,7 +1052,7 @@ def check_can_reply_to_post_comment_for_post(user, post_comment, post):
 def check_can_delete_reaction_with_id_for_post(user, post_reaction_id, post):
     check_can_see_post(user=user, post=post)
     # Check if the post belongs to us
-    if user.has_post_with_id(post_id=post.pk):
+    if user.has_post(post=post):
         # Check that the comment belongs to the post
         PostReaction = get_post_reaction_model()
         if not PostReaction.objects.filter(id=post_reaction_id, post_id=post.pk).exists():
@@ -1275,10 +1274,14 @@ def check_is_creator_of_invite_with_id(user, invite_id):
 
 
 def check_can_add_media_to_post(user, post):
-    check_has_post_with_id(user=user, post_id=post.pk)
+    check_has_post(user=user, post=post)
     post_checkers.check_is_draft(post=post)
 
 
 def check_can_publish_post(user, post):
-    check_has_post_with_id(user=user, post_id=post.pk)
+    check_has_post(user=user, post=post)
     post_checkers.check_is_draft(post=post)
+
+
+def check_can_get_status_for_post(user, post):
+    check_has_post(user=user, post=post)
