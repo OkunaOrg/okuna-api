@@ -2152,7 +2152,7 @@ class PublishPostAPITests(OpenbookAPITestCase):
 
         self.assertEqual(post.status, Post.STATUS_PUBLISHED)
 
-    def test_publishing_draft_video_post_should_process_mp4_media(self):
+    def test_publishing_draft_video_post_should_process_media(self):
         """
         should process draft video post mp4 media when publishing
         """
@@ -2160,34 +2160,61 @@ class PublishPostAPITests(OpenbookAPITestCase):
 
         headers = make_authentication_headers_for_user(user)
 
-        with open('openbook_common/tests/files/test_video.mp4', 'rb') as file:
-            post = user.create_public_post(video=File(file), is_draft=True)
+        test_files = [
+            {
+                'path': 'openbook_common/tests/files/test_video.mp4',
+                'duration': 5.312,
+                'width': 1280,
+                'height': 720
+            },
+            {
+                'path': 'openbook_common/tests/files/test_video.3gp',
+                'duration': 40.667,
+                'width': 176,
+                'height': 144
+            },
+            {
+                'path': 'openbook_common/tests/files/test_gif_medium.gif',
+                'duration': 1.5,
+                'width': 312,
+                'height': 312
+            },
+            {
+                'path': 'openbook_common/tests/files/test_gif_tiny.gif',
+                'duration': 0.771,
+                'width': 256,
+                'height': 256
+            }
+        ]
 
-            url = self._get_url(post=post)
+        for test_file in test_files:
+            with open(test_file['path'], 'rb') as file:
+                post = user.create_public_post(video=File(file), is_draft=True)
 
-            response = self.client.post(url, **headers, format='multipart')
+                url = self._get_url(post=post)
 
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
+                response = self.client.post(url, **headers, format='multipart')
 
-            post = Post.objects.get(pk=post.pk)
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-            self.assertEqual(post.status, Post.STATUS_PROCESSING)
+                post = Post.objects.get(pk=post.pk)
 
-            # Run the process handled by a worker
-            get_worker(worker_class=SimpleWorker).work(burst=True)
+                self.assertEqual(post.status, Post.STATUS_PROCESSING)
 
-            post.refresh_from_db()
+                # Run the process handled by a worker
+                get_worker(worker_class=SimpleWorker).work(burst=True)
 
-            self.assertEqual(post.status, Post.STATUS_PUBLISHED)
+                post.refresh_from_db()
 
-            post_media = post.media.get(type=PostMedia.MEDIA_TYPE_VIDEO)
+                self.assertEqual(post.status, Post.STATUS_PUBLISHED)
 
-            post_media_video = post_media.content_object
+                post_media = post.media.get(type=PostMedia.MEDIA_TYPE_VIDEO)
 
-            self.assertEqual(post_media_video.duration, 5.312)
-            self.assertEqual(post_media_video.width, 1280)
-            self.assertEqual(post_media_video.height, 720)
-            self.assertTrue(post_media_video.format_set.exists())
+                post_media_video = post_media.content_object
+                self.assertEqual(post_media_video.duration, test_file['duration'])
+                self.assertEqual(post_media_video.width, test_file['width'])
+                self.assertEqual(post_media_video.height, test_file['height'])
+                self.assertTrue(post_media_video.format_set.exists())
 
     def test_can_publish_draft_text_post(self):
         """

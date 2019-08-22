@@ -43,6 +43,7 @@ redis = "*"
 django-rq-scheduler = "*"
 django-positions = "*"
 django-video-encoding = "*"
+ffmpy = "*"
 
 [pipenv]
 allow_prereleases = true

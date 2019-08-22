@@ -1,10 +1,13 @@
 # Create your models here.
+import os
+import tempfile
 import uuid
 from datetime import timedelta
 
 import magic
 from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.core.files import File
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db import models
@@ -13,6 +16,7 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Count
 from positions import PositionField
+import ffmpy
 
 # Create your views here.
 from pilkit.processors import ResizeToFit
@@ -272,13 +276,39 @@ class Post(models.Model):
 
     def add_media(self, file, position=None):
         check_can_add_media(post=self)
+        is_in_memory_file = isinstance(file, InMemoryUploadedFile)
 
-        if isinstance(file, InMemoryUploadedFile):
+        if is_in_memory_file:
             file_mime = magic.from_buffer(file.read(), mime=True)
         else:
             file_mime = magic.from_file(file.name, mime=True)
 
-        file_mime_type = file_mime.split('/')[0]
+        file_mime_types = file_mime.split('/')
+
+        file_mime_type = file_mime_types[0]
+        file_mime_subtype = file_mime_types[1]
+
+        temp_files_to_close = []
+
+        if file_mime_subtype == 'gif':
+            if is_in_memory_file:
+                # Write it to disk
+                tmp_file = tempfile.NamedTemporaryFile(suffix='.gif')
+                tmp_file.save(file.read())
+                tmp_file.seek(0)
+                temp_files_to_close.append(tmp_file)
+                file = tmp_file
+
+            temp_dir = tempfile.gettempdir()
+            converted_gif_file_name = os.path.join(temp_dir, str(uuid.uuid4()) + '.mp4')
+
+            ff = ffmpy.FFmpeg(inputs={file.name: None}, outputs={converted_gif_file_name: None})
+            ff.run()
+            converted_gif_file = open(converted_gif_file_name, 'rb')
+            temp_files_to_close.append(converted_gif_file)
+            file = File(file=converted_gif_file)
+            file_mime_type = 'video'
+
         has_other_media = self.media.exists()
 
         if file_mime_type == 'image':
@@ -295,6 +325,9 @@ class Post(models.Model):
             raise ValidationError(
                 _('Unsupported media file type')
             )
+
+        for file_to_close in temp_files_to_close:
+            file_to_close.close()
 
         self.save()
 
