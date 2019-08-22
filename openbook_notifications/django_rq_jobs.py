@@ -1,6 +1,7 @@
 from hashlib import sha256
 import onesignal as onesignal_sdk
 from django.conf import settings
+from django_rq import job
 
 from openbook_common.utils.model_loaders import get_user_model
 
@@ -10,7 +11,11 @@ onesignal_client = onesignal_sdk.Client(
 )
 
 
+@job
 def send_notification_to_user_with_id(user_id, notification):
+    if settings.DEBUG or settings.TESTING:
+        return
+
     User = get_user_model()
     user = User.objects.only('username', 'uuid', 'id').get(pk=user_id)
 

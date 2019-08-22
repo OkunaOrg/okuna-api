@@ -235,4 +235,4 @@ def get_notification_language_code_for_target_user(target_user):
 
 
 def _send_notification_to_user(user, notification):
-    django_rq.enqueue(send_notification_to_user_with_id, user_id=user.pk, notification=notification)
+    send_notification_to_user_with_id.delay(user_id=user.pk, notification=notification)
