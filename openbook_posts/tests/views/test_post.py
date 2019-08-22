@@ -4,12 +4,11 @@ import tempfile
 from os import access, F_OK
 
 from PIL import Image
-from django.test import TransactionTestCase
 from django.urls import reverse
 from django_rq import get_worker
 from faker import Faker
 from rest_framework import status
-from openbook_common.tests.models import OpenbookAPITestCase, APISimpleTestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 from django.core.files.images import ImageFile
 from django.core.files import File
 from unittest import mock
@@ -24,7 +23,7 @@ from openbook_common.tests.helpers import make_authentication_headers_for_user, 
 from openbook_common.utils.model_loaders import get_language_model
 from openbook_communities.models import Community
 from openbook_notifications.models import PostUserMentionNotification, Notification
-from openbook_posts.models import Post, PostUserMention
+from openbook_posts.models import Post, PostUserMention, PostMedia
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -2153,37 +2152,42 @@ class PublishPostAPITests(OpenbookAPITestCase):
 
         self.assertEqual(post.status, Post.STATUS_PUBLISHED)
 
-    def test_publishing_draft_video_post_should_process_media(self):
+    def test_publishing_draft_video_post_should_process_mp4_media(self):
         """
-        should process draft video post when publishing
+        should process draft video post mp4 media when publishing
         """
         user = make_user()
 
         headers = make_authentication_headers_for_user(user)
 
-        video = Video.new('RGB', (100, 100))
-        tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
-        video.save(tmp_file)
-        tmp_file.seek(0)
+        with open('openbook_common/tests/files/test_video.mp4', 'rb') as file:
+            post = user.create_public_post(video=File(file), is_draft=True)
 
-        post = user.create_public_post(video=VideoFile(tmp_file), is_draft=True)
+            url = self._get_url(post=post)
 
-        url = self._get_url(post=post)
+            response = self.client.post(url, **headers, format='multipart')
 
-        response = self.client.post(url, **headers, format='multipart')
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+            post = Post.objects.get(pk=post.pk)
 
-        post = Post.objects.get(pk=post.pk)
+            self.assertEqual(post.status, Post.STATUS_PROCESSING)
 
-        self.assertEqual(post.status, Post.STATUS_PROCESSING)
+            # Run the process handled by a worker
+            get_worker(worker_class=SimpleWorker).work(burst=True)
 
-        # Run the process handled by a worker
-        get_worker(worker_class=SimpleWorker).work(burst=True)
+            post.refresh_from_db()
 
-        post.refresh_from_db()
+            self.assertEqual(post.status, Post.STATUS_PUBLISHED)
 
-        self.assertEqual(post.status, Post.STATUS_PUBLISHED)
+            post_media = post.media.get(type=PostMedia.MEDIA_TYPE_VIDEO)
+
+            post_media_video = post_media.content_object
+
+            self.assertEqual(post_media_video.duration, 5.312)
+            self.assertEqual(post_media_video.width, 1280)
+            self.assertEqual(post_media_video.height, 720)
+            self.assertTrue(post_media_video.format_set.exists())
 
     def test_can_publish_draft_text_post(self):
         """

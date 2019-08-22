@@ -302,7 +302,7 @@ class Post(models.Model):
         return PostImage.create_post_media_image(image=image, post_id=self.pk, position=position)
 
     def _add_media_video(self, video, position):
-        return PostVideo.create_post_media_video(video=video, post_id=self.pk, position=position)
+        return PostVideo.create_post_media_video(file=video, post_id=self.pk, position=position)
 
     def count_media(self):
         return self.media.count()
@@ -509,6 +509,8 @@ class PostImage(models.Model):
 
 
 class PostVideo(models.Model):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='videos', null=True)
+
     hash = models.CharField(_('hash'), max_length=64, blank=False, null=True)
 
     media = GenericRelation(PostMedia)
@@ -524,10 +526,10 @@ class PostVideo(models.Model):
     format_set = GenericRelation(Format)
 
     @classmethod
-    def create_post_media_video(cls, video, post_id, position):
-        hash = sha256sum(file=video.file)
-        post_video = cls.objects.create(image=video, post_id=post_id, hash=hash)
-        PostMedia.create_post_media(type=PostMedia.MEDIA_TYPE_IMAGE,
+    def create_post_media_video(cls, file, post_id, position):
+        hash = sha256sum(file=file.file)
+        post_video = cls.objects.create(file=file, post_id=post_id, hash=hash)
+        PostMedia.create_post_media(type=PostMedia.MEDIA_TYPE_VIDEO,
                                     content_object=post_video,
                                     post_id=post_id, position=position)
         return post_video
