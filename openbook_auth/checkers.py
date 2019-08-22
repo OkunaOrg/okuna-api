@@ -6,8 +6,6 @@ from django.utils.translation import ugettext_lazy as _
 from openbook_common.utils.model_loaders import get_post_model, get_community_model, get_post_comment_model, \
     get_language_model, get_user_model, get_emoji_group_model, get_post_reaction_model, get_user_invite_model
 
-from openbook_posts import checkers as post_checkers
-
 
 def check_follow_lists_ids(user, lists_ids):
     for list_id in lists_ids:
@@ -20,8 +18,6 @@ def check_follow_list_id(user, list_id):
 
 def check_can_update_post(user, post):
     check_has_post(user=user, post=post)
-    Post = get_post_model()
-    post = Post.objects.get(id=post_id)
     if post.is_closed and post.community_id:
         if not user.is_staff_of_community_with_name(post.community.name):
             raise ValidationError(
@@ -1275,12 +1271,10 @@ def check_is_creator_of_invite_with_id(user, invite_id):
 
 def check_can_add_media_to_post(user, post):
     check_has_post(user=user, post=post)
-    post_checkers.check_is_draft(post=post)
 
 
 def check_can_publish_post(user, post):
     check_has_post(user=user, post=post)
-    post_checkers.check_is_draft(post=post)
 
 
 def check_can_get_status_for_post(user, post):

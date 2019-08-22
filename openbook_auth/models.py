@@ -1746,9 +1746,7 @@ class User(AbstractUser):
         post = Post.objects.get(uuid=post_uuid)
         return self.update_post(post=post, text=text)
 
-    def update_post(self, post_id, text=None):
-        Post = get_post_model()
-        post = Post.objects.get(pk=post_id)
+    def update_post(self, post, text=None):
         check_can_update_post(user=self, post=post)
         post.update(text=text)
         return post

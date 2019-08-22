@@ -6,9 +6,10 @@ from openbook_common.tests.helpers import make_user
 from openbook_common.tests.helpers import make_authentication_headers_for_user
 
 
+# DISABLED
 class UploadFileTests(APITestCase):
 
-    def test_upload_file_success(self):
+    def upload_file_success(self):
         """
         Upload valid archive imports 9 posts, return 200
         """
@@ -28,7 +29,7 @@ class UploadFileTests(APITestCase):
         response = self.client.get(reverse('posts'), **headers)
         self.assertEqual(len(response.json()), number_of_posts)
 
-    def test_upload_file_malicious(self):
+    def upload_file_malicious(self):
         """
         the file is malicious, should return 400
         """

@@ -20,6 +20,7 @@ def check_is_draft(post):
 
 
 def check_can_add_media(post):
+    check_is_draft(post=post)
     existing_media_count = post.count_media()
 
     if existing_media_count >= settings.POST_MEDIA_MAX_ITEMS:
@@ -34,12 +35,17 @@ def check_is_not_processing(post):
         raise ValidationError(_('The post is processing'))
 
 
+def check_is_not_published(post):
+    Post = get_post_model()
+    if post.status == Post.STATUS_PUBLISHED:
+        raise ValidationError(_('The post is already published'))
+
+
 def check_is_not_empty(post):
     if post.is_empty():
         raise ValidationError(_('The post is empty. Try adding text or media.'))
 
 
 def check_can_be_published(post):
-    check_is_not_processing(post=post)
     check_is_draft(post=post)
     check_is_not_empty(post=post)

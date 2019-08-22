@@ -54,15 +54,6 @@ class PostCommentCommenterSerializer(serializers.ModelSerializer):
         )
 
 
-class PostCommentPostVideoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PostVideo
-        fields = (
-            'id',
-            'video',
-        )
-
-
 class PostCommentPostImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostImage
@@ -98,7 +89,6 @@ class PostCommentCreatorSerializer(serializers.ModelSerializer):
 
 class NotificationPostSerializer(serializers.ModelSerializer):
     image = PostCommentPostImageSerializer()
-    video = PostCommentPostVideoSerializer()
     creator = PostCommentCreatorSerializer()
     is_encircled = IsEncircledField()
 
@@ -109,7 +99,6 @@ class NotificationPostSerializer(serializers.ModelSerializer):
             'uuid',
             'image',
             'text',
-            'video',
             'creator',
             'created',
             'is_closed',
@@ -120,7 +109,6 @@ class NotificationPostSerializer(serializers.ModelSerializer):
 
 
 class PostCommentLanguageSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Language
         fields = (

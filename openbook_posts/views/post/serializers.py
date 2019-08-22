@@ -98,15 +98,6 @@ class PostImageSerializer(serializers.ModelSerializer):
             'height'
         )
 
-
-class PostVideoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PostVideo
-        fields = (
-            'video',
-        )
-
-
 class CommunityMembershipSerializer(serializers.ModelSerializer):
     class Meta:
         model = CommunityMembership
@@ -149,7 +140,6 @@ class PostCircleSerializer(serializers.ModelSerializer):
 
 class GetPostPostSerializer(serializers.ModelSerializer):
     image = PostImageSerializer(many=False)
-    video = PostVideoSerializer(many=False)
     creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
@@ -171,7 +161,6 @@ class GetPostPostSerializer(serializers.ModelSerializer):
             'created',
             'text',
             'image',
-            'video',
             'creator',
             'reaction',
             'language',

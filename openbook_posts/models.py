@@ -119,6 +119,8 @@ class Post(models.Model):
             Community = get_community_model()
             post.community = Community.objects.get(name=community_name)
 
+        # If on create we have a video or image, we automatically publish it
+        # Backwards compat reasons.
         if not is_draft:
             post.publish()
         else:
@@ -310,6 +312,8 @@ class Post(models.Model):
 
         if self.has_media():
             # After finishing, this will call _publish()
+            self.status = Post.STATUS_PROCESSING
+            self.save()
             process_post_media.delay(post_id=self.pk)
         else:
             self._publish()

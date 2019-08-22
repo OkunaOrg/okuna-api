@@ -81,15 +81,6 @@ class CommunityPostCreatorSerializer(serializers.ModelSerializer):
             'username'
         )
 
-
-class CommunityPostVideoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PostVideo
-        fields = (
-            'video',
-        )
-
-
 class CommunityPostReactionEmojiSerializer(serializers.ModelSerializer):
     class Meta:
         model = Emoji
@@ -161,7 +152,6 @@ class PostLanguageSerializer(serializers.ModelSerializer):
 
 class CommunityPostSerializer(serializers.ModelSerializer):
     image = CommunityPostImageSerializer(many=False)
-    video = CommunityPostVideoSerializer(many=False)
     creator = PostCreatorField(post_creator_serializer=CommunityPostCreatorSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=CommunityPostEmojiCountSerializer)
@@ -182,7 +172,6 @@ class CommunityPostSerializer(serializers.ModelSerializer):
             'created',
             'text',
             'image',
-            'video',
             'language',
             'creator',
             'community',

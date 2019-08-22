@@ -106,15 +106,6 @@ class PostImageSerializer(serializers.ModelSerializer):
             'height'
         )
 
-
-class PostVideoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PostVideo
-        fields = (
-            'video',
-        )
-
-
 class PostReactionEmojiSerializer(serializers.ModelSerializer):
     class Meta:
         model = Emoji
@@ -201,7 +192,6 @@ class PostLanguageSerializer(serializers.ModelSerializer):
 
 class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     image = PostImageSerializer(many=False)
-    video = PostVideoSerializer(many=False)
     creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
@@ -223,7 +213,6 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'created',
             'text',
             'image',
-            'video',
             'creator',
             'reaction',
             'comments_enabled',
@@ -242,7 +231,6 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
 
 class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
     image = PostImageSerializer(many=False)
-    video = PostVideoSerializer(many=False)
     creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
@@ -259,7 +247,6 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
             'created',
             'text',
             'image',
-            'video',
             'creator',
             'language',
             'comments_enabled',

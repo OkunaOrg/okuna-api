@@ -3,6 +3,9 @@ from django_rq import job
 from video_encoding import tasks
 
 from openbook_common.utils.model_loaders import get_post_model, get_post_media_model
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @job
@@ -30,6 +33,7 @@ def process_post_media(post_id):
     Post = get_post_model()
     PostMedia = get_post_media_model()
     post = Post.objects.get(pk=post_id)
+    logger.info('Processing media of post with id: %d' % post_id)
 
     post_media_videos = post.media.filter(type=PostMedia.MEDIA_TYPE_VIDEO)
 
@@ -38,4 +42,5 @@ def process_post_media(post_id):
         tasks.convert_video(post_video.file)
 
     # This updates the status and created attributes
-    post.__publish()
+    post._publish()
+    logger.info('Processed media of post with id: %d' % post_id)
