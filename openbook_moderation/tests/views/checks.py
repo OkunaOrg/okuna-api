@@ -2,7 +2,7 @@ from django.urls import reverse
 from django.utils import timezone
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 from openbook_common.tests.helpers import make_global_moderator, make_user, make_moderation_category, \
     make_authentication_headers_for_user
@@ -12,7 +12,7 @@ from openbook_moderation.models import ModeratedObject, \
 fake = Faker()
 
 
-class IsNotSuspendedCheckAPITests(APITestCase):
+class IsNotSuspendedCheckAPITests(OpenbookAPITestCase):
     """
     IsNotSuspendedCheckAPI
     """

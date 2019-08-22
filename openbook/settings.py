@@ -212,10 +212,6 @@ RQ_QUEUES = {
     },
 }
 
-if DEBUG or TESTING:
-    for queueConfig in iter(RQ_QUEUES.values()):
-        queueConfig['ASYNC'] = False
-
 if IS_BUILD:
     NOSE_ARGS = [
         '--cover-erase',

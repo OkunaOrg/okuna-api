@@ -1,13 +1,13 @@
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 from openbook_common.tests.helpers import make_user
 from openbook_common.tests.helpers import make_authentication_headers_for_user
 
 
 # DISABLED
-class UploadFileTests(APITestCase):
+class UploadFileTests(OpenbookAPITestCase):
 
     def upload_file_success(self):
         """

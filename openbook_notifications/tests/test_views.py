@@ -3,7 +3,7 @@ import json
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_notification
 from openbook_notifications.models import Notification
@@ -11,7 +11,7 @@ from openbook_notifications.models import Notification
 fake = Faker()
 
 
-class NotificationsAPITests(APITestCase):
+class NotificationsAPITests(OpenbookAPITestCase):
     """
     NotificationsAPI
     """
@@ -68,7 +68,7 @@ class NotificationsAPITests(APITestCase):
         return reverse('notifications')
 
 
-class ReadNotificationsAPITests(APITestCase):
+class ReadNotificationsAPITests(OpenbookAPITestCase):
     """
     ReadNotificationsAPI
     """
@@ -127,7 +127,7 @@ class ReadNotificationsAPITests(APITestCase):
         return reverse('read-notifications')
 
 
-class NotificationItemAPITests(APITestCase):
+class NotificationItemAPITests(OpenbookAPITestCase):
     """
     NotificationItemAPI
     """
@@ -175,7 +175,7 @@ class NotificationItemAPITests(APITestCase):
         })
 
 
-class ReadNotificationAPITests(APITestCase):
+class ReadNotificationAPITests(OpenbookAPITestCase):
     """
     ReadNotificationAPI
     """

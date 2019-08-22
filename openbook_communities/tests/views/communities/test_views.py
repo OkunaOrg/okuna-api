@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.conf import settings
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 from mixer.backend.django import mixer
 
 import logging
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class CommunitiesAPITests(APITestCase):
+class CommunitiesAPITests(OpenbookAPITestCase):
     """
     CommunitiesAPI
     """
@@ -546,7 +546,7 @@ class CommunitiesAPITests(APITestCase):
         return reverse('communities')
 
 
-class JoinedCommunities(APITestCase):
+class JoinedCommunities(OpenbookAPITestCase):
     def test_retrieve_joined_communities(self):
         """
         should be able to retrieve all own communities return 200
@@ -614,7 +614,7 @@ class JoinedCommunities(APITestCase):
         return reverse('joined-communities')
 
 
-class SearchJoinedCommunitiesAPITests(APITestCase):
+class SearchJoinedCommunitiesAPITests(OpenbookAPITestCase):
     """
     SearchJoinedCommunitiesAPI
     """
@@ -697,7 +697,7 @@ class SearchJoinedCommunitiesAPITests(APITestCase):
         return reverse('search-joined-communities')
 
 
-class AdministratedCommunities(APITestCase):
+class AdministratedCommunities(OpenbookAPITestCase):
     def test_retrieve_administrated_communities(self):
         """
         should be able to retrieve all administrated communities return 200
@@ -769,7 +769,7 @@ class AdministratedCommunities(APITestCase):
         return reverse('administrated-communities')
 
 
-class ModeratedCommunities(APITestCase):
+class ModeratedCommunities(OpenbookAPITestCase):
     def test_retrieve_moderated_communities(self):
         """
         should be able to retrieve all moderated communities return 200
@@ -845,7 +845,7 @@ class ModeratedCommunities(APITestCase):
         return reverse('moderated-communities')
 
 
-class FavoriteCommunities(APITestCase):
+class FavoriteCommunities(OpenbookAPITestCase):
     def test_retrieve_favorite_communities(self):
         """
         should be able to retrieve all favorite communities and return 200
@@ -930,7 +930,7 @@ class FavoriteCommunities(APITestCase):
         return reverse('favorite-communities')
 
 
-class CommunityNameCheckAPITests(APITestCase):
+class CommunityNameCheckAPITests(OpenbookAPITestCase):
     """
     CommunityNameCheckAPI
     """
@@ -1007,7 +1007,7 @@ class CommunityNameCheckAPITests(APITestCase):
         return reverse('community-name-check')
 
 
-class SearchCommunitiesAPITests(APITestCase):
+class SearchCommunitiesAPITests(OpenbookAPITestCase):
     """
     SearchCommunitiesAPITests
     """
@@ -1104,7 +1104,7 @@ class SearchCommunitiesAPITests(APITestCase):
         return reverse('search-communities')
 
 
-class TrendingCommunitiesAPITests(APITestCase):
+class TrendingCommunitiesAPITests(OpenbookAPITestCase):
     """
     TrendingCommunitiesAPITests
     """

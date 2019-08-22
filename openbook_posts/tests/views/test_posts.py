@@ -6,7 +6,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 from mixer.backend.django import mixer
 
 from openbook.settings import POST_MAX_LENGTH
@@ -34,7 +34,7 @@ fake = Faker()
 # TODO A lot of setup duplication. Perhaps its a good idea to create a single factory on top of mixer or Factory boy
 
 
-class PostsAPITests(APITestCase):
+class PostsAPITests(OpenbookAPITestCase):
     """
     PostsAPI
     """
@@ -2538,7 +2538,7 @@ class PostsAPITests(APITestCase):
         return reverse('posts')
 
 
-class TrendingPostsAPITests(APITestCase):
+class TrendingPostsAPITests(OpenbookAPITestCase):
     """
     TrendingPostsAPITests
     """

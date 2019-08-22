@@ -1,6 +1,6 @@
 from django.urls import reverse
 from faker import Faker
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 from rest_framework import status
 
 import logging
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class CommunityPostsAPITest(APITestCase):
+class CommunityPostsAPITest(OpenbookAPITestCase):
     def test_can_retrieve_posts_from_public_community(self):
         """
         should be able to retrieve the posts for a public community and 200
@@ -713,7 +713,7 @@ class CommunityPostsAPITest(APITestCase):
         })
 
 
-class CommunityClosedPostsAPITest(APITestCase):
+class CommunityClosedPostsAPITest(OpenbookAPITestCase):
 
     def test_can_retrieve_closed_posts_from_community_if_administrator(self):
         """

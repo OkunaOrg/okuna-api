@@ -3,14 +3,14 @@ import json
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_moderation_category
 
 fake = Faker()
 
 
-class ModerationCategoriesAPITests(APITestCase):
+class ModerationCategoriesAPITests(OpenbookAPITestCase):
     """
     ModerationCategoriesAPI
     """

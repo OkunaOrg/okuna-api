@@ -3,7 +3,7 @@ import json
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 import logging
 import random
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class PostCommentsAPITests(APITestCase):
+class PostCommentsAPITests(OpenbookAPITestCase):
     """
     PostCommentsAPI
     """
@@ -1921,7 +1921,7 @@ class PostCommentsAPITests(APITestCase):
         })
 
 
-class PostCommentsEnableAPITests(APITestCase):
+class PostCommentsEnableAPITests(OpenbookAPITestCase):
     """
     PostCommentsEnable APITests
     """
@@ -2025,7 +2025,7 @@ class PostCommentsEnableAPITests(APITestCase):
         })
 
 
-class PostCommentsDisableAPITests(APITestCase):
+class PostCommentsDisableAPITests(OpenbookAPITestCase):
     """
     PostCommentsDisable APITests
     """

@@ -7,7 +7,7 @@ from unittest.mock import ANY
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 import logging
 
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class PostCommentRepliesAPITests(APITestCase):
+class PostCommentRepliesAPITests(OpenbookAPITestCase):
     fixtures = [
         'openbook_circles/fixtures/circles.json'
     ]

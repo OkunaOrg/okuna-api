@@ -1,6 +1,6 @@
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 import logging
 import json
@@ -10,7 +10,7 @@ from openbook_common.tests.helpers import make_emoji_group, make_emoji, make_use
 logger = logging.getLogger(__name__)
 
 
-class TimeAPITests(APITestCase):
+class TimeAPITests(OpenbookAPITestCase):
     """
     TimeAPITests
     """
@@ -31,7 +31,7 @@ class TimeAPITests(APITestCase):
         return reverse('time')
 
 
-class TestHealth(APITestCase):
+class TestHealth(OpenbookAPITestCase):
     """
     Health API
     """
@@ -43,7 +43,7 @@ class TestHealth(APITestCase):
         self.assertTrue(response.status_code, status.HTTP_200_OK)
 
 
-class TestEmojiGroups(APITestCase):
+class TestEmojiGroups(OpenbookAPITestCase):
     """
     EmojiGroups API
     """

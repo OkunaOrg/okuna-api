@@ -1,7 +1,7 @@
 # Create your tests here.
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 from mixer.backend.django import mixer
 
 from openbook_auth.models import User
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class FollowsAPITests(APITestCase):
+class FollowsAPITests(OpenbookAPITestCase):
     """
     FollowsAPI
     """
@@ -59,7 +59,7 @@ class FollowsAPITests(APITestCase):
         return reverse('follows')
 
 
-class FollowAPITests(APITestCase):
+class FollowAPITests(OpenbookAPITestCase):
     def test_follow(self):
         """
         should be able to follow another user on an specific list and return 200
@@ -197,7 +197,7 @@ class FollowAPITests(APITestCase):
         return reverse('follow-user')
 
 
-class UnfollowAPITest(APITestCase):
+class UnfollowAPITest(OpenbookAPITestCase):
     def test_unfollow(self):
         """
         should be able to unfollow a user and return 200
@@ -282,7 +282,7 @@ class UnfollowAPITest(APITestCase):
         return reverse('unfollow-user')
 
 
-class UpdateFollowAPITest(APITestCase):
+class UpdateFollowAPITest(OpenbookAPITestCase):
     def test_update_follow(self):
         """
         should be able to update an own follow and return 200

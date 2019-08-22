@@ -5,12 +5,10 @@ import tempfile
 from PIL import Image
 from django.conf import settings
 from django.core.files import File
-from django.core.files.images import ImageFile
-from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 import random
 
 import logging
@@ -23,7 +21,7 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class PostMediaAPITests(APITestCase):
+class PostMediaAPITests(OpenbookAPITestCase):
     """
     PostMediaAPI
     """

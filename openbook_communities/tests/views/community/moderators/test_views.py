@@ -3,7 +3,7 @@ import random
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 import logging
 import json
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class CommunityModeratorsAPITest(APITestCase):
+class CommunityModeratorsAPITest(OpenbookAPITestCase):
 
     def test_can_get_community_moderators_if_admin(self):
         """
@@ -334,7 +334,7 @@ class CommunityModeratorsAPITest(APITestCase):
         })
 
 
-class CommunityModeratorAPITest(APITestCase):
+class CommunityModeratorAPITest(OpenbookAPITestCase):
     def test_can_remove_community_moderator_if_admin(self):
         """
         should be able to remove a community moderator if user is admin of the community
@@ -437,7 +437,7 @@ class CommunityModeratorAPITest(APITestCase):
         })
 
 
-class SearchCommunityModeratorsAPITests(APITestCase):
+class SearchCommunityModeratorsAPITests(OpenbookAPITestCase):
     """
     SearchCommunityModeratorsAPITests
     """

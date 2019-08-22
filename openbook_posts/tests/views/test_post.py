@@ -9,7 +9,7 @@ from django.urls import reverse
 from django_rq import get_worker
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase, APISimpleTestCase
+from openbook_common.tests.models import OpenbookAPITestCase, APISimpleTestCase
 from django.core.files.images import ImageFile
 from django.core.files import File
 from unittest import mock
@@ -34,7 +34,7 @@ def get_language_for_text_mock(text):
     return text
 
 
-class PostItemAPITests(APITestCase):
+class PostItemAPITests(OpenbookAPITestCase):
     """
     PostItemAPI
     """
@@ -895,7 +895,7 @@ class PostItemAPITests(APITestCase):
         })
 
 
-class MutePostAPITests(APITestCase):
+class MutePostAPITests(OpenbookAPITestCase):
     """
     MutePostAPI
     """
@@ -1146,7 +1146,7 @@ class MutePostAPITests(APITestCase):
         })
 
 
-class UnmutePostAPITests(APITestCase):
+class UnmutePostAPITests(OpenbookAPITestCase):
     """
     UnmutePostAPI
     """
@@ -1291,7 +1291,7 @@ class UnmutePostAPITests(APITestCase):
         })
 
 
-class PostCloseAPITests(APITestCase):
+class PostCloseAPITests(OpenbookAPITestCase):
     """
     PostCloseAPITests APITests
     """
@@ -1389,7 +1389,7 @@ class PostCloseAPITests(APITestCase):
         })
 
 
-class PostOpenAPITests(APITestCase):
+class PostOpenAPITests(OpenbookAPITestCase):
     """
     PostOpenAPITests APITests
     """
@@ -1493,7 +1493,7 @@ class PostOpenAPITests(APITestCase):
         })
 
 
-class TranslatePostAPITests(APITestCase):
+class TranslatePostAPITests(OpenbookAPITestCase):
     """
     TranslatePostAPI
     """
@@ -1608,7 +1608,7 @@ class TranslatePostAPITests(APITestCase):
         })
 
 
-class SearchPostParticipantsAPITests(APITestCase):
+class SearchPostParticipantsAPITests(OpenbookAPITestCase):
     """
     SearchPostParticipantsAPI
     """
@@ -2014,7 +2014,7 @@ class SearchPostParticipantsAPITests(APITestCase):
         })
 
 
-class GetPostParticipantsAPITests(APITestCase):
+class GetPostParticipantsAPITests(OpenbookAPITestCase):
     """
     SearchPostParticipantsAPI
     """
@@ -2112,7 +2112,7 @@ class GetPostParticipantsAPITests(APITestCase):
         })
 
 
-class PublishPostAPITests(APITestCase):
+class PublishPostAPITests(OpenbookAPITestCase):
     """
     PublishPostAPI
     """
@@ -2316,7 +2316,7 @@ class PublishPostAPITests(APITestCase):
         })
 
 
-class PostStatusAPITests(APITestCase):
+class PostStatusAPITests(OpenbookAPITestCase):
     """
     PostStatusAPI
     """
