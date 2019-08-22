@@ -1766,7 +1766,7 @@ class User(AbstractUser):
         post = Post.objects.get(uuid=post_uuid)
         return self.add_media_to_post(post=post, file=file, position=position)
 
-    def add_media_to_post(self, file, post, position):
+    def add_media_to_post(self, file, post, position=None):
         check_can_add_media_to_post(user=self, post=post)
         post.add_media(file=file, position=position)
         return post

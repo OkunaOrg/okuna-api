@@ -6,6 +6,7 @@ import magic
 from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.files.storage import default_storage
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
@@ -267,9 +268,14 @@ class Post(models.Model):
         self.language = get_language_for_text(text)
         self.save()
 
-    def add_media(self, file, position):
+    def add_media(self, file, position=None):
         check_can_add_media(post=self)
-        file_mime = magic.from_file(file.name, mime=True)
+
+        if isinstance(file, InMemoryUploadedFile):
+            file_mime = magic.from_buffer(file.read(), mime=True)
+        else:
+            file_mime = magic.from_file(file.name, mime=True)
+
         file_mime_type = file_mime.split('/')[0]
         has_other_media = self.media.exists()
 
@@ -295,6 +301,9 @@ class Post(models.Model):
 
     def _add_media_video(self, video, position):
         return PostVideo.create_post_media_video(video=video, post_id=self.pk, position=position)
+
+    def count_media(self):
+        return self.media.count()
 
     def publish(self):
         check_can_be_published(post=self)
@@ -555,9 +564,6 @@ class PostComment(models.Model):
 
     def count_replies(self):
         return self.replies.count()
-
-    def count_media(self):
-        return self.media.count()
 
     def count_replies_with_user(self, user):
         count_query = Q()
