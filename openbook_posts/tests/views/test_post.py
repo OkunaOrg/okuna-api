@@ -19,7 +19,7 @@ from rq import SimpleWorker
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_community, make_list, make_moderation_category, \
-    get_test_usernames
+    get_test_usernames, get_test_videos
 from openbook_common.utils.model_loaders import get_language_model
 from openbook_communities.models import Community
 from openbook_notifications.models import PostUserMentionNotification, Notification
@@ -2154,38 +2154,13 @@ class PublishPostAPITests(OpenbookAPITestCase):
 
     def test_publishing_draft_video_post_should_process_media(self):
         """
-        should process draft video post mp4 media when publishing
+        should process draft video post mp4|3gp|gif media when publishing
         """
         user = make_user()
 
         headers = make_authentication_headers_for_user(user)
 
-        test_files = [
-            {
-                'path': 'openbook_common/tests/files/test_video.mp4',
-                'duration': 5.312,
-                'width': 1280,
-                'height': 720
-            },
-            {
-                'path': 'openbook_common/tests/files/test_video.3gp',
-                'duration': 40.667,
-                'width': 176,
-                'height': 144
-            },
-            {
-                'path': 'openbook_common/tests/files/test_gif_medium.gif',
-                'duration': 1.5,
-                'width': 312,
-                'height': 312
-            },
-            {
-                'path': 'openbook_common/tests/files/test_gif_tiny.gif',
-                'duration': 0.771,
-                'width': 256,
-                'height': 256
-            }
-        ]
+        test_files = get_test_videos()
 
         for test_file in test_files:
             with open(test_file['path'], 'rb') as file:

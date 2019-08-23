@@ -14,8 +14,8 @@ import random
 import logging
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
-    make_user
-from openbook_posts.models import PostMedia
+    make_user, get_test_videos
+from openbook_posts.models import PostMedia, Post
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -59,6 +59,8 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
         draft_post.refresh_from_db()
 
+        self.assertEqual(draft_post.status, Post.STATUS_DRAFT)
+
         self.assertTrue(draft_post.media.exists())
 
         post_media = draft_post.media.all()
@@ -79,6 +81,51 @@ class PostMediaAPITests(OpenbookAPITestCase):
         self.assertEqual(post_image.width, image_width)
 
         self.assertFalse(hasattr(draft_post, 'image'))
+
+    def test_can_add_media_video_to_draft_post(self):
+        """
+        should be able to add a media video to a draft post
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        test_videos = get_test_videos()
+
+        for test_video in test_videos:
+            with open(test_video['path'], 'rb') as file:
+                draft_post = user.create_public_post(is_draft=True)
+
+                data = {
+                    'file': file
+                }
+
+                url = self._get_url(post=draft_post)
+
+                response = self.client.put(url, data, **headers, format='multipart')
+
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+                draft_post.refresh_from_db()
+
+                self.assertEqual(draft_post.status, Post.STATUS_DRAFT)
+
+                self.assertTrue(draft_post.media.exists())
+
+                post_media = draft_post.media.all()
+
+                self.assertEqual(len(post_media), 1)
+
+                post_media_video = post_media[0]
+
+                self.assertEqual(post_media_video.type, PostMedia.MEDIA_TYPE_VIDEO)
+
+                print(post_media_video.position)
+
+                self.assertEqual(post_media_video.position, 0)
+
+                post_video = post_media_video.content_object
+
+                self.assertTrue(hasattr(post_video, 'file'))
 
     def test_cant_add_media_image_to_published_post(self):
         """

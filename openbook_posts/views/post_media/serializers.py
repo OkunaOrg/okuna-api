@@ -14,10 +14,7 @@ class AddPostMediaSerializer(serializers.Serializer):
         required=True,
     )
     file = serializers.FileField(max_length=20, required=True,
-                                 allow_empty_file=False,
-                                 validators=[
-                                     FileExtensionValidator(
-                                         allowed_extensions=['mp4', '.3gp', 'gif', 'jpg', 'jpeg', 'png'])])
+                                 allow_empty_file=False)
     position = serializers.IntegerField(required=False)
 
 

@@ -1,6 +1,6 @@
 import re
 
-from rest_framework.exceptions import ValidationError, NotFound
+from rest_framework.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.utils.model_loaders import get_emoji_model, get_emoji_group_model, get_language_model

@@ -15,7 +15,6 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Count
-from positions import PositionField
 import ffmpy
 
 # Create your views here.
@@ -41,7 +40,8 @@ from imagekit.models import ProcessedImageField
 from openbook_moderation.models import ModeratedObject
 from openbook_notifications.helpers import send_post_comment_user_mention_push_notification, \
     send_post_user_mention_push_notification
-from openbook_posts.checkers import check_can_be_updated, check_can_add_media, check_can_be_published
+from openbook_posts.checkers import check_can_be_updated, check_can_add_media, check_can_be_published, \
+    check_mimetype_is_supported_media_mimetypes
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory
 from openbook_common.helpers import get_language_for_text
 from openbook_posts.jobs import process_post_media
@@ -283,6 +283,8 @@ class Post(models.Model):
         else:
             file_mime = magic.from_file(file.name, mime=True)
 
+        check_mimetype_is_supported_media_mimetypes(file_mime)
+
         file_mime_types = file_mime.split('/')
 
         file_mime_type = file_mime_types[0]
@@ -293,10 +295,13 @@ class Post(models.Model):
         if file_mime_subtype == 'gif':
             if is_in_memory_file:
                 # Write it to disk
-                tmp_file = tempfile.NamedTemporaryFile(suffix='.gif')
-                tmp_file.save(file.read())
-                tmp_file.seek(0)
-                temp_files_to_close.append(tmp_file)
+                tmp_file = tempfile.mkstemp(suffix='.gif')
+                tmp_file_path = tmp_file[1]
+                tmp_file = open(tmp_file_path, 'wb')
+                # Was read for the magic headers thing
+                file.seek(0)
+                tmp_file.write(file.read())
+                tmp_file.close()
                 file = tmp_file
 
             temp_dir = tempfile.gettempdir()
@@ -487,7 +492,6 @@ class Post(models.Model):
 
 class PostMedia(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='media')
-    position = PositionField()
 
     MEDIA_TYPE_VIDEO = 'V'
     MEDIA_TYPE_IMAGE = 'I'

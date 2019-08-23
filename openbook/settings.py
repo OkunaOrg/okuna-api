@@ -489,6 +489,14 @@ MODERATED_OBJECT_DESCRIPTION_MAX_LENGTH = 1000
 GLOBAL_HIDE_CONTENT_AFTER_REPORTS_AMOUNT = int(os.environ.get('GLOBAL_HIDE_CONTENT_AFTER_REPORTS_AMOUNT', '20'))
 MODERATORS_COMMUNITY_NAME = os.environ.get('MODERATORS_COMMUNITY_NAME', 'mods')
 
+SUPPORTED_MEDIA_MIMETYPES = [
+    'video/mp4',
+    'video/3gpp',
+    'image/gif',
+    'image/jpeg',
+    'image/png'
+]
+
 # Email Config
 
 EMAIL_BACKEND = 'django_amazon_ses.EmailBackend'

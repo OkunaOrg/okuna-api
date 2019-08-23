@@ -49,3 +49,8 @@ def check_is_not_empty(post):
 def check_can_be_published(post):
     check_is_draft(post=post)
     check_is_not_empty(post=post)
+
+
+def check_mimetype_is_supported_media_mimetypes(mimetype):
+    if not mimetype in settings.SUPPORTED_MEDIA_MIMETYPES:
+        raise ValidationError(_('%s is not a supported mimetype') % mimetype, )

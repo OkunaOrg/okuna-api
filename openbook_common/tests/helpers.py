@@ -253,3 +253,32 @@ def get_test_usernames():
         'j03l',
         'j'
     ]
+
+
+def get_test_videos():
+    return [
+        {
+            'path': 'openbook_common/tests/files/test_video.mp4',
+            'duration': 5.312,
+            'width': 1280,
+            'height': 720
+        },
+        {
+            'path': 'openbook_common/tests/files/test_video.3gp',
+            'duration': 40.667,
+            'width': 176,
+            'height': 144
+        },
+        {
+            'path': 'openbook_common/tests/files/test_gif_medium.gif',
+            'duration': 1.5,
+            'width': 312,
+            'height': 312
+        },
+        {
+            'path': 'openbook_common/tests/files/test_gif_tiny.gif',
+            'duration': 0.771,
+            'width': 256,
+            'height': 256
+        }
+    ]
