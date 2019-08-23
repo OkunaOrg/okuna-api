@@ -4,7 +4,6 @@ import tempfile
 import uuid
 from datetime import timedelta
 
-import magic
 from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.files import File
@@ -30,7 +29,7 @@ from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
 from openbook_common.models import Emoji, Language
-from openbook_common.utils.helpers import delete_file_field, sha256sum, extract_usernames_from_string
+from openbook_common.utils.helpers import delete_file_field, sha256sum, extract_usernames_from_string, get_magic_for_media
 from openbook_common.utils.model_loaders import get_emoji_model, \
     get_circle_model, get_community_model, get_post_comment_notification_model, \
     get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model, \
@@ -46,6 +45,8 @@ from openbook_posts.checkers import check_can_be_updated, check_can_add_media, c
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory
 from openbook_common.helpers import get_language_for_text
 from openbook_posts.jobs import process_post_media
+
+magic = get_magic_for_media()
 
 
 class Post(models.Model):
@@ -280,9 +281,9 @@ class Post(models.Model):
         is_in_memory_file = isinstance(file, InMemoryUploadedFile)
 
         if is_in_memory_file:
-            file_mime = magic.from_buffer(file.read(), mime=True)
+            file_mime = magic.from_buffer(file.read())
         else:
-            file_mime = magic.from_file(file.name, mime=True)
+            file_mime = magic.from_file(file.name)
 
         check_mimetype_is_supported_media_mimetypes(file_mime)
         # Mime check moved pointer

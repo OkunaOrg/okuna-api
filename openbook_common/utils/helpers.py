@@ -1,7 +1,6 @@
 import re
 import secrets
-
-from django.core.files.uploadedfile import InMemoryUploadedFile
+import magic
 from django.http import QueryDict
 from imagekit.utils import get_cache
 from imagekit.models import ProcessedImageField
@@ -99,3 +98,10 @@ usernames_matcher = re.compile('@[^\s]+')
 def extract_usernames_from_string(string):
     usernames = usernames_matcher.findall(string=string)
     return [username[1:] for username in usernames]
+
+
+magic = magic.Magic(magic_file='openbook_common/misc/animation.mgc', mime=True)
+
+
+def get_magic_for_media():
+    return magic

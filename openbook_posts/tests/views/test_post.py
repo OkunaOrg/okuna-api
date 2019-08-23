@@ -1655,7 +1655,7 @@ class SearchPostParticipantsAPITests(OpenbookAPITestCase):
         found = False
 
         for response_participant in response_participants:
-            if response_participants[0]['id'] == post_creator.pk:
+            if response_participant[0]['id'] == post_creator.pk:
                 found = True
 
         self.assertTrue(found)
@@ -2184,8 +2184,6 @@ class PublishPostAPITests(OpenbookAPITestCase):
 
         for test_file in test_files:
             with open(test_file['path'], 'rb') as file:
-                print('PROCESSING')
-                print(test_file)
                 post = user.create_public_post(video=File(file), is_draft=True)
 
                 url = self._get_url(post=post)
@@ -2212,7 +2210,6 @@ class PublishPostAPITests(OpenbookAPITestCase):
                 self.assertEqual(post_media_video.width, test_file['width'])
                 self.assertEqual(post_media_video.height, test_file['height'])
                 self.assertTrue(post_media_video.format_set.exists())
-                print('PROCESSED')
 
     def test_can_publish_draft_text_post(self):
         """
