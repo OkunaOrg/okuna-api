@@ -1775,6 +1775,7 @@ class User(AbstractUser):
             'domain_url': domain_url
         }
 
+
     def get_preview_link_data_for_url(self, url):
         self._check_can_get_preview_link_data_for_url(url)
         url = get_sanitised_url_for_link(url)
@@ -4156,6 +4157,29 @@ class User(AbstractUser):
         if not post.has_links():
             raise ValidationError(
                 _('No link associated with post.'),
+            )
+
+    def check_url_allowed_for_proxy(self, url):
+        #  nginx only accepts 401, 403
+
+        result = get_matched_urls_from_text(url)
+        if len(result) == 0:
+            raise PermissionDenied(
+                _('Please provide a URL(https) to preview.'),
+            )
+
+        extracted_url = result[0]
+        if not extracted_url == url.lower():
+            raise PermissionDenied(
+                _('Please use a valid URL for preview.'),
+            )
+        # check whitelist domains,
+        PostLinkWhitelistDomain = get_post_link_whitelist_domain_model()
+        allowed_domains = PostLinkWhitelistDomain.get_whitelisted_domains()
+
+        if not is_url_allowed_in_whitelist_domains(url, allowed_domains):
+            raise PermissionDenied(
+                _('Only whitelisted domains can be previewed'),
             )
 
     def _check_can_get_preview_link_data_for_url(self, url):
