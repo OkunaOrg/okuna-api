@@ -18,6 +18,7 @@ from django.db.models import Count
 import ffmpy
 
 # Create your views here.
+from ordered_model.models import OrderedModel
 from pilkit.processors import ResizeToFit
 from rest_framework.exceptions import ValidationError
 
@@ -490,8 +491,9 @@ class Post(models.Model):
                             pass
 
 
-class PostMedia(models.Model):
+class PostMedia(OrderedModel):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='media')
+    order_with_respect_to = 'post'
 
     MEDIA_TYPE_VIDEO = 'V'
     MEDIA_TYPE_IMAGE = 'I'

@@ -108,6 +108,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'django_nose',
+    'ordered_model',
     'storages',
     'video_encoding',
     'imagekit',
