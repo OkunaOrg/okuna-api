@@ -338,6 +338,9 @@ class Post(models.Model):
 
         self.save()
 
+    def get_first_media(self):
+        return self.media.first()
+
     def _add_media_image(self, image, order):
         return PostImage.create_post_media_image(image=image, post_id=self.pk, order=order)
 

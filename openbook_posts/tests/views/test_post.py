@@ -406,24 +406,26 @@ class PostItemAPITests(OpenbookAPITestCase):
 
         self.assertFalse(access(file.name, F_OK))
 
-    def disabled_test_delete_video_post(self):
+    def test_delete_video_post(self):
         """
         should be able to delete video post and file return True
         """
         user = make_user()
 
-        video = b"video_file_content"
-        tmp_file = tempfile.NamedTemporaryFile(suffix='.mp4')
-        tmp_file.write(video)
-        tmp_file.seek(0)
-        video = File(tmp_file)
+        test_video = get_test_videos()[0]
 
-        post = user.create_public_post(text=make_fake_post_text(), video=video)
-        file = post.video.video.file
+        with open(test_video['path'], 'rb') as file:
+            video = File(file)
 
-        user.delete_post(post=post)
+            post = user.create_public_post(text=make_fake_post_text(), video=video)
+            post_media_video = post.get_first_media()
+            post_video = post_media_video.content_object
 
-        self.assertFalse(access(file.name, F_OK))
+            file = post_video.file
+
+            user.delete_post(post=post)
+
+            self.assertFalse(access(file.name, F_OK))
 
     def test_can_delete_post_of_community_if_mod(self):
         """
