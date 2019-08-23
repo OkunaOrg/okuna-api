@@ -1652,7 +1652,13 @@ class SearchPostParticipantsAPITests(OpenbookAPITestCase):
 
         response_participants = json.loads(response.content)
 
-        self.assertEqual(response_participants[0]['id'], post_creator.pk)
+        found = False
+
+        for response_participant in response_participants:
+            if response_participants[0]['id'] == post_creator.pk:
+                found = True
+
+        self.assertTrue(found)
 
     def test_retrieves_post_creator_by_name(self):
         """

@@ -4,8 +4,11 @@ import tempfile
 from PIL import Image
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from django_rq import get_worker
 from faker import Faker
 from rest_framework import status
+from rq import SimpleWorker
+
 from openbook_common.tests.models import OpenbookAPITestCase
 from mixer.backend.django import mixer
 
@@ -463,7 +466,16 @@ class PostsAPITests(OpenbookAPITestCase):
 
         created_post = user.posts.filter(pk=response_post_id).get()
 
+        # To be removed
         self.assertTrue(hasattr(created_post, 'image'))
+
+        self.assertTrue(created_post.status, Post.STATUS_PUBLISHED)
+
+        post_media_image = created_post.media.get(post_id=response_post_id, type=PostMedia.MEDIA_TYPE_IMAGE)
+
+        post_image = post_media_image.content_object
+
+        self.assertTrue(hasattr(post_image, 'image'))
 
     def test_create_image_and_text_post(self):
         """
@@ -503,7 +515,16 @@ class PostsAPITests(OpenbookAPITestCase):
 
         self.assertEqual(created_post.text, post_text)
 
+        # To be removed
         self.assertTrue(hasattr(created_post, 'image'))
+
+        self.assertTrue(created_post.status, Post.STATUS_PUBLISHED)
+
+        post_media_image = created_post.media.get(post_id=response_post_id, type=PostMedia.MEDIA_TYPE_IMAGE)
+
+        post_image = post_media_image.content_object
+
+        self.assertTrue(hasattr(post_image, 'image'))
 
     def test_create_image_post_creates_hash(self):
         """
@@ -577,8 +598,6 @@ class PostsAPITests(OpenbookAPITestCase):
 
         test_file = get_test_videos()[0]
 
-        print(test_file)
-
         with open(test_file['path'], 'rb') as file:
             filehash = sha256sum(file=file)
 
@@ -607,32 +626,43 @@ class PostsAPITests(OpenbookAPITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+        test_video = get_test_videos()[0]
 
-        video = SimpleUploadedFile("file.mp4", b"video_file_content", content_type="video/mp4")
+        with open(test_video['path'], 'rb') as file:
+            post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
 
-        data = {
-            'text': post_text,
-            'video': video
-        }
+            data = {
+                'text': post_text,
+                'video': file
+            }
 
-        url = self._get_url()
+            url = self._get_url()
 
-        response = self.client.put(url, data, **headers, format='multipart')
+            response = self.client.put(url, data, **headers, format='multipart')
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        response_post = json.loads(response.content)
+            response_post = json.loads(response.content)
 
-        response_post_id = response_post.get('id')
+            response_post_id = response_post.get('id')
 
-        self.assertTrue(user.posts.count() == 1)
+            self.assertTrue(user.posts.count() == 1)
 
-        created_post = user.posts.filter(pk=response_post_id).get()
+            created_post = user.posts.filter(pk=response_post_id).get()
 
-        self.assertEqual(created_post.text, post_text)
+            self.assertTrue(created_post.status, Post.STATUS_PROCESSING)
 
-        self.assertTrue(hasattr(created_post, 'video'))
+            self.assertEqual(created_post.text, post_text)
+
+            get_worker(worker_class=SimpleWorker).work(burst=True)
+
+            created_post.refresh_from_db()
+
+            self.assertTrue(created_post.status, Post.STATUS_PUBLISHED)
+
+            post_media_video = created_post.media.get(post_id=response_post_id, type=PostMedia.MEDIA_TYPE_VIDEO)
+
+            self.assertTrue(post_media_video.content_object.format_set.exists())
 
     def test_cannot_create_both_video_and_image_post(self):
         """
