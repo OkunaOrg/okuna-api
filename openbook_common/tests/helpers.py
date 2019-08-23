@@ -259,7 +259,7 @@ def get_test_usernames():
 
 
 def get_test_videos():
-    test_videos = [
+    return [
         {
             'path': 'openbook_common/tests/files/test_video.mp4',
             'duration': 5.312,
@@ -285,19 +285,3 @@ def get_test_videos():
             'height': 256
         }
     ]
-
-    test_videos_copies = []
-
-    for test_video in test_videos:
-        temp_dir = tempfile.gettempdir()
-        test_video_extension = os.path.splitext(test_video['path'])[1]
-        temp_path = os.path.join(temp_dir, str(uuid.uuid4()) + test_video_extension)
-        shutil.copy2(test_video['path'], temp_path)
-
-        print(temp_path)
-
-        new_test_video = test_video.copy()
-        new_test_video['path'] = temp_path
-        test_videos_copies.append(new_test_video)
-
-    return test_videos_copies
