@@ -80,7 +80,8 @@ class PostMediaAPITests(OpenbookAPITestCase):
         self.assertEqual(post_image.width, image_width)
         self.assertEqual(post_image.width, image_width)
 
-        self.assertFalse(hasattr(draft_post, 'image'))
+        # Not for long though
+        self.assertTrue(hasattr(draft_post, 'image'))
 
     def test_can_add_media_video_to_draft_post(self):
         """

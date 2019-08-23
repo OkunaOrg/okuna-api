@@ -285,6 +285,8 @@ class Post(models.Model):
             file_mime = magic.from_file(file.name, mime=True)
 
         check_mimetype_is_supported_media_mimetypes(file_mime)
+        # Mime check moved pointer
+        file.seek(0)
 
         file_mime_types = file_mime.split('/')
 
@@ -300,7 +302,6 @@ class Post(models.Model):
                 tmp_file_path = tmp_file[1]
                 tmp_file = open(tmp_file_path, 'wb')
                 # Was read for the magic headers thing
-                file.seek(0)
                 tmp_file.write(file.read())
                 tmp_file.close()
                 file = tmp_file

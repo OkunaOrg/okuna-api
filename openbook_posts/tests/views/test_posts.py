@@ -25,7 +25,7 @@ from openbook_communities.models import Community
 from openbook_lists.models import List
 from openbook_moderation.models import ModeratedObject
 from openbook_notifications.models import PostUserMentionNotification, Notification
-from openbook_posts.models import Post, PostUserMention
+from openbook_posts.models import Post, PostUserMention, PostMedia
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -536,7 +536,8 @@ class PostsAPITests(OpenbookAPITestCase):
 
         self.assertTrue(user.posts.count() == 1)
 
-        self.assertTrue(user.posts.filter(pk=response_post_id, image__hash=filehash).exists())
+        media = PostMedia.objects.get(post_id=response_post_id, type=PostMedia.MEDIA_TYPE_IMAGE)
+        self.assertEqual(media.content_object.hash, filehash)
 
     def test_create_video_post(self):
         """
