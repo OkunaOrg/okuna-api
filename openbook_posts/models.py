@@ -393,9 +393,6 @@ class Post(models.Model):
         super(Post, self).delete(*args, **kwargs)
 
     def delete_media(self):
-        if self.has_video():
-            delete_file_field(self.video.video)
-
         if self.has_image():
             delete_file_field(self.image.image)
 

@@ -418,14 +418,26 @@ class PostItemAPITests(OpenbookAPITestCase):
             video = File(file)
 
             post = user.create_public_post(text=make_fake_post_text(), video=video)
+
+            # Process videos
+            get_worker(worker_class=SimpleWorker).work(burst=True)
+
             post_media_video = post.get_first_media()
             post_video = post_media_video.content_object
 
-            file = post_video.file
+            video_files = [
+                post_video.file.name
+            ]
+
+            for format in post_video.format_set.all():
+                video_files.append(format.file.name)
 
             user.delete_post(post=post)
 
-            self.assertFalse(access(file.name, F_OK))
+            for video_file in video_files:
+                self.assertFalse(access(video_file, F_OK))
+
+            self.assertFalse(Post.objects.filter(pk=post.pk).exists())
 
     def test_can_delete_post_of_community_if_mod(self):
         """
