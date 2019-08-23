@@ -19,7 +19,7 @@ import json
 from openbook_circles.models import Circle
 from openbook_common.tests.helpers import make_user, make_users, make_fake_post_text, \
     make_authentication_headers_for_user, make_circle, make_community, make_list, make_moderation_category, \
-    get_test_usernames
+    get_test_usernames, get_test_videos
 from openbook_common.utils.helpers import sha256sum
 from openbook_communities.models import Community
 from openbook_lists.models import List
@@ -575,25 +575,29 @@ class PostsAPITests(OpenbookAPITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        video = SimpleUploadedFile("file.mp4", b"video_file_content", content_type="video/mp4")
+        test_file = get_test_videos()[0]
 
-        filehash = sha256sum(file=video.file)
+        print(test_file)
 
-        data = {
-            'video': video
-        }
+        with open(test_file['path'], 'rb') as file:
+            filehash = sha256sum(file=file)
 
-        url = self._get_url()
+            data = {
+                'video': file
+            }
 
-        response = self.client.put(url, data, **headers, format='multipart')
+            url = self._get_url()
 
-        response_post = json.loads(response.content)
+            response = self.client.put(url, data, **headers, format='multipart')
 
-        response_post_id = response_post.get('id')
+            response_post = json.loads(response.content)
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            response_post_id = response_post.get('id')
 
-        self.assertTrue(user.posts.filter(pk=response_post_id, video__hash=filehash))
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+            media = PostMedia.objects.get(post_id=response_post_id, type=PostMedia.MEDIA_TYPE_VIDEO)
+            self.assertEqual(media.content_object.hash, filehash)
 
     def test_create_video_and_text_post(self):
         """
@@ -717,7 +721,7 @@ class PostsAPITests(OpenbookAPITestCase):
 
         data = {
             # Its default
-            #'is_draft': False
+            # 'is_draft': False
         }
 
         url = self._get_url()
@@ -2324,7 +2328,7 @@ class PostsAPITests(OpenbookAPITestCase):
 
         for i in range(0, number_of_posts):
             post_creator.create_community_post(community_name=community.name, text=make_fake_post_text(),
-                                                      is_draft=True)
+                                               is_draft=True)
 
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
@@ -2348,8 +2352,10 @@ class PostsAPITests(OpenbookAPITestCase):
 
         post_creator = make_user()
 
-        community_creator.invite_user_with_username_to_community_with_name(username=user.username, community_name=community.name)
-        community_creator.invite_user_with_username_to_community_with_name(username=post_creator.username, community_name=community.name)
+        community_creator.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                           community_name=community.name)
+        community_creator.invite_user_with_username_to_community_with_name(username=post_creator.username,
+                                                                           community_name=community.name)
         user.join_community_with_name(community_name=community.name)
         post_creator.join_community_with_name(community_name=community.name)
 
@@ -2426,8 +2432,8 @@ class PostsAPITests(OpenbookAPITestCase):
         connected_user.confirm_connection_with_user_with_id(user_id=user.pk,
                                                             circles_ids=[connected_user_post_circle.pk])
         connected_user.create_encircled_post(text=make_fake_post_text(),
-                                                                   circles_ids=[connected_user_post_circle.pk],
-                                                                   is_draft=True)
+                                             circles_ids=[connected_user_post_circle.pk],
+                                             is_draft=True)
 
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
@@ -2451,7 +2457,7 @@ class PostsAPITests(OpenbookAPITestCase):
         connected_user.confirm_connection_with_user_with_id(user_id=user.pk,
                                                             circles_ids=[connected_user_post_circle.pk])
         connected_user.create_encircled_post(text=make_fake_post_text(),
-                                                                   circles_ids=[connected_user_post_circle.pk], is_draft=True)
+                                             circles_ids=[connected_user_post_circle.pk], is_draft=True)
 
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
