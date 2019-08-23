@@ -567,27 +567,38 @@ class PostsAPITests(OpenbookAPITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        video = SimpleUploadedFile("file.mp4", b"video_file_content", content_type="video/mp4")
+        test_video = get_test_videos()[0]
 
-        data = {
-            'video': video
-        }
+        with open(test_video['path'], 'rb') as file:
+            data = {
+                'video': file
+            }
 
-        url = self._get_url()
+            url = self._get_url()
 
-        response = self.client.put(url, data, **headers, format='multipart')
+            response = self.client.put(url, data, **headers, format='multipart')
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        response_post = json.loads(response.content)
+            response_post = json.loads(response.content)
 
-        response_post_id = response_post.get('id')
+            response_post_id = response_post.get('id')
 
-        self.assertTrue(user.posts.count() == 1)
+            self.assertTrue(user.posts.count() == 1)
 
-        created_post = user.posts.filter(pk=response_post_id).get()
+            created_post = user.posts.filter(pk=response_post_id).get()
 
-        self.assertTrue(hasattr(created_post, 'video'))
+            self.assertTrue(created_post.status, Post.STATUS_PROCESSING)
+
+            get_worker(worker_class=SimpleWorker).work(burst=True)
+
+            created_post.refresh_from_db()
+
+            self.assertTrue(created_post.status, Post.STATUS_PUBLISHED)
+
+            post_media_video = created_post.media.get(post_id=response_post_id, type=PostMedia.MEDIA_TYPE_VIDEO)
+
+            self.assertTrue(post_media_video.content_object.format_set.exists())
 
     def test_create_video_post_creates_hash(self):
         """
@@ -596,9 +607,9 @@ class PostsAPITests(OpenbookAPITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        test_file = get_test_videos()[0]
+        test_video = get_test_videos()[0]
 
-        with open(test_file['path'], 'rb') as file:
+        with open(test_video['path'], 'rb') as file:
             filehash = sha256sum(file=file)
 
             data = {

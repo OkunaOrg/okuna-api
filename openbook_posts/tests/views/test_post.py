@@ -1655,7 +1655,7 @@ class SearchPostParticipantsAPITests(OpenbookAPITestCase):
         found = False
 
         for response_participant in response_participants:
-            if response_participant[0]['id'] == post_creator.pk:
+            if response_participant['id'] == post_creator.pk:
                 found = True
 
         self.assertTrue(found)
