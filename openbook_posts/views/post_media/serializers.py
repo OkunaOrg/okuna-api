@@ -15,7 +15,7 @@ class AddPostMediaSerializer(serializers.Serializer):
     )
     file = serializers.FileField(max_length=20, required=True,
                                  allow_empty_file=False)
-    position = serializers.IntegerField(required=False)
+    order = serializers.IntegerField(required=False)
 
 
 class GetPostMediaSerializer(serializers.Serializer):
@@ -61,5 +61,5 @@ class PostMediaSerializer(serializers.ModelSerializer):
             'id',
             'type',
             'content_object',
-            'position'
+            'order'
         )

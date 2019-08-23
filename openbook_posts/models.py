@@ -275,7 +275,7 @@ class Post(models.Model):
         self.language = get_language_for_text(text)
         self.save()
 
-    def add_media(self, file, position=None):
+    def add_media(self, file, order=None):
         check_can_add_media(post=self)
         is_in_memory_file = isinstance(file, InMemoryUploadedFile)
 
@@ -318,12 +318,12 @@ class Post(models.Model):
         has_other_media = self.media.exists()
 
         if file_mime_type == 'image':
-            post_image = self._add_media_image(image=file, position=position)
+            post_image = self._add_media_image(image=file, order=order)
             if not has_other_media:
                 self.media_width = post_image.width
                 self.media_height = post_image.height
         elif file_mime_type == 'video':
-            post_video = self._add_media_video(video=file, position=position)
+            post_video = self._add_media_video(video=file, order=order)
             if not has_other_media:
                 self.media_width = post_video.width
                 self.media_height = post_video.height
@@ -337,11 +337,11 @@ class Post(models.Model):
 
         self.save()
 
-    def _add_media_image(self, image, position):
-        return PostImage.create_post_media_image(image=image, post_id=self.pk, position=position)
+    def _add_media_image(self, image, order):
+        return PostImage.create_post_media_image(image=image, post_id=self.pk, order=order)
 
-    def _add_media_video(self, video, position):
-        return PostVideo.create_post_media_video(file=video, post_id=self.pk, position=position)
+    def _add_media_video(self, video, order):
+        return PostVideo.create_post_media_video(file=video, post_id=self.pk, order=order)
 
     def count_media(self):
         return self.media.count()
@@ -511,8 +511,8 @@ class PostMedia(OrderedModel):
     content_object = GenericForeignKey()
 
     @classmethod
-    def create_post_media(cls, post_id, type, content_object, position):
-        return cls.objects.create(type=type, content_object=content_object, post_id=post_id, position=position)
+    def create_post_media(cls, post_id, type, content_object, order):
+        return cls.objects.create(type=type, content_object=content_object, post_id=post_id, order=order)
 
 
 post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else default_storage
@@ -538,12 +538,12 @@ class PostImage(models.Model):
         return cls.objects.create(image=image, post_id=post_id, hash=hash)
 
     @classmethod
-    def create_post_media_image(cls, image, post_id, position):
+    def create_post_media_image(cls, image, post_id, order):
         hash = sha256sum(file=image.file)
         post_image = cls.objects.create(image=image, post_id=post_id, hash=hash)
         PostMedia.create_post_media(type=PostMedia.MEDIA_TYPE_IMAGE,
                                     content_object=post_image,
-                                    post_id=post_id, position=position)
+                                    post_id=post_id, order=order)
         return post_image
 
 
@@ -565,12 +565,12 @@ class PostVideo(models.Model):
     format_set = GenericRelation(Format)
 
     @classmethod
-    def create_post_media_video(cls, file, post_id, position):
+    def create_post_media_video(cls, file, post_id, order):
         hash = sha256sum(file=file.file)
         post_video = cls.objects.create(file=file, post_id=post_id, hash=hash)
         PostMedia.create_post_media(type=PostMedia.MEDIA_TYPE_VIDEO,
                                     content_object=post_video,
-                                    post_id=post_id, position=position)
+                                    post_id=post_id, order=order)
         return post_video
 
 

@@ -1759,14 +1759,14 @@ class User(AbstractUser):
 
         return post
 
-    def add_media_to_post_with_uuid(self, file, post_uuid, position):
+    def add_media_to_post_with_uuid(self, file, post_uuid, order):
         Post = get_post_model()
         post = Post.objects.get(uuid=post_uuid)
-        return self.add_media_to_post(post=post, file=file, position=position)
+        return self.add_media_to_post(post=post, file=file, order=order)
 
-    def add_media_to_post(self, file, post, position=None):
+    def add_media_to_post(self, file, post, order=None):
         check_can_add_media_to_post(user=self, post=post)
-        post.add_media(file=file, position=position)
+        post.add_media(file=file, order=order)
         return post
 
     def publish_post_with_uuid(self, post_uuid):

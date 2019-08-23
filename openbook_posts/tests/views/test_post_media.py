@@ -71,7 +71,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
         self.assertEqual(post_media_image.type, PostMedia.MEDIA_TYPE_IMAGE)
 
-        self.assertEqual(post_media_image.position, 0)
+        self.assertEqual(post_media_image.order, 0)
 
         post_image = post_media_image.content_object
 
@@ -119,9 +119,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
                 self.assertEqual(post_media_video.type, PostMedia.MEDIA_TYPE_VIDEO)
 
-                print(post_media_video.position)
-
-                self.assertEqual(post_media_video.position, 0)
+                self.assertEqual(post_media_video.order, 0)
 
                 post_video = post_media_video.content_object
 

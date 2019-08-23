@@ -24,7 +24,7 @@ class Command(BaseCommand):
                 post_image.post = None
                 PostMedia.create_post_media(type=PostMedia.MEDIA_TYPE_IMAGE,
                                             content_object=post_image,
-                                            post_id=post.pk, position=0)
+                                            post_id=post.pk, order=0)
                 post_image.save()
             migrated_posts = migrated_posts + 1
 

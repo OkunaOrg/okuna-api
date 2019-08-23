@@ -26,10 +26,10 @@ class PostMedia(APIView):
         user = request.user
         post_uuid = data.get('post_uuid')
         file = data.get('file')
-        position = data.get('position')
+        order = data.get('order')
 
         with transaction.atomic():
-            user.add_media_to_post_with_uuid(post_uuid=post_uuid, file=file, position=position)
+            user.add_media_to_post_with_uuid(post_uuid=post_uuid, file=file, order=order)
 
         return Response({
             'message': _('Media added successfully to post')
@@ -47,7 +47,7 @@ class PostMedia(APIView):
         user = request.user
 
         post_media = user.get_media_for_post_with_uuid(post_uuid=post_uuid).order_by(
-            'position')
+            'order')
 
         post_media_serializer = PostMediaSerializer(post_media, many=True, context={"request": request})
 
