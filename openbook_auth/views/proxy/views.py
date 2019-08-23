@@ -9,7 +9,7 @@ class ProxyAuth(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
-        preview_url = request.META.get('HTTP_X_PROXY_HOST')
+        preview_url = request.META.get('HTTP_X_PROXY_URL')
         user = request.user
 
         response = user.check_url_allowed_for_proxy(preview_url)
