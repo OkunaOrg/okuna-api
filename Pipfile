@@ -41,9 +41,10 @@ langdetect = "*"
 django-rq = "*"
 redis = "*"
 django-rq-scheduler = "*"
-django-positions = "*"
 django-video-encoding = "*"
 ffmpy = "*"
+django-positions = "*"
+django-ordered-model = "*"
 
 [pipenv]
 allow_prereleases = true

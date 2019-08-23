@@ -18,6 +18,7 @@ django-imagekit==4.0.2
 django-media-fixtures==0.0.3
 django-model-utils==3.2.0
 django-nose==1.4.6
+django-ordered-model==3.3.0
 django-positions==0.6.0
 django-redis==4.10.0
 django-replicated==2.6.1
