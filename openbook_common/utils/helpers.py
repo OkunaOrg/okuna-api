@@ -100,8 +100,8 @@ def extract_usernames_from_string(string):
     return [username[1:] for username in usernames]
 
 
-magic = magic.Magic(magic_file='openbook_common/misc/animation.mgc', mime=True)
+magic = magic.Magic(magic_file='openbook_common/misc/magic.mgc', mime=True)
 
 
-def get_magic_for_media():
+def get_magic():
     return magic

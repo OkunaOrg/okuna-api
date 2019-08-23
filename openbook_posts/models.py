@@ -29,7 +29,7 @@ from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
 from openbook_common.models import Emoji, Language
-from openbook_common.utils.helpers import delete_file_field, sha256sum, extract_usernames_from_string, get_magic_for_media
+from openbook_common.utils.helpers import delete_file_field, sha256sum, extract_usernames_from_string, get_magic
 from openbook_common.utils.model_loaders import get_emoji_model, \
     get_circle_model, get_community_model, get_post_comment_notification_model, \
     get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model, \
@@ -46,7 +46,7 @@ from openbook_posts.helpers import upload_to_post_image_directory, upload_to_pos
 from openbook_common.helpers import get_language_for_text
 from openbook_posts.jobs import process_post_media
 
-magic = get_magic_for_media()
+magic = get_magic()
 
 
 class Post(models.Model):
