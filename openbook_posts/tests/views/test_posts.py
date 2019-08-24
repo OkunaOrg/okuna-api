@@ -2514,6 +2514,114 @@ class PostsAPITests(OpenbookAPITestCase):
 
         self.assertEqual(0, len(response_posts))
 
+    def test_cant_retrieve_public_community_draft_posts(self):
+        """
+        should not be able to retrieve public community draft posts
+        """
+        user = make_user()
+        community = make_community()
+        community_member = make_user()
+        user.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+
+        community_member.create_community_post(text=make_fake_post_text(), is_draft=True, community_name=community.name)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_private_community_part_of_draft_posts(self):
+        """
+        should not be able to retrieve private community part of draft posts
+        """
+        user = make_user()
+        community_creator = make_user()
+        community = make_community(type=Community.COMMUNITY_TYPE_PRIVATE, creator=community_creator)
+        community_member = make_user()
+
+        community_creator.invite_user_with_username_to_community_with_name(username=community_member.username,
+                                                                           community_name=community.name)
+        community_creator.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                           community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+
+        community_member.create_community_post(text=make_fake_post_text(), is_draft=True, community_name=community.name)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_public_community_processing_posts(self):
+        """
+        should not be able to retrieve public community processing posts
+        """
+        user = make_user()
+        community = make_community()
+        community_member = make_user()
+        user.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+
+        test_image = get_test_image()
+
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            community_member.create_community_post(text=make_fake_post_text(), image=file, community_name=community.name)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_private_community_part_of_processing_posts(self):
+        """
+        should not be able to retrieve private community part of processing posts
+        """
+        user = make_user()
+        community_creator = make_user()
+        community = make_community(type=Community.COMMUNITY_TYPE_PRIVATE, creator=community_creator)
+        community_member = make_user()
+
+        community_creator.invite_user_with_username_to_community_with_name(username=community_member.username,
+                                                                           community_name=community.name)
+        community_creator.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                           community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+
+        test_image = get_test_image()
+
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            community_member.create_community_post(text=make_fake_post_text(), image=file, community_name=community.name)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
     def test_cant_retrieve_connected_user_draft_posts_by_username(self):
         """
         should not be able to retrieve connected user draft posts by username
@@ -2571,6 +2679,54 @@ class PostsAPITests(OpenbookAPITestCase):
         user = make_user()
 
         user.create_public_post(text=make_fake_post_text(), is_draft=True)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_own_public_community_draft_posts_by_username(self):
+        """
+        should not be able to retrieve own public community draft posts by username
+        """
+        user = make_user()
+        community = make_community()
+        user.join_community_with_name(community_name=community.name)
+
+        user.create_community_post(text=make_fake_post_text(), is_draft=True, community_name=community.name)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_own_private_community_part_of_draft_posts_by_username(self):
+        """
+        should not be able to retrieve own private community part of draft posts by username
+        """
+        user = make_user()
+        community_creator = make_user()
+        community = make_community(type=Community.COMMUNITY_TYPE_PRIVATE, creator=community_creator)
+
+        community_creator.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                           community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        user.create_community_post(text=make_fake_post_text(), is_draft=True, community_name=community.name)
 
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
