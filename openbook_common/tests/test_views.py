@@ -133,6 +133,7 @@ class PreviewLinkDataAPITests(APITestCase):
         """
         should not retrieve preview data for a link if the domain is not whitelisted and return 400
         """
+        cache.delete(settings.POST_LINK_WHITELIST_DOMAIN_CACHE_KEY)  # clear cache value
         user = make_user()
         headers = make_authentication_headers_for_user(user)
         preview_url = 'https://www.techcrunch.com'

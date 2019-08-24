@@ -373,7 +373,6 @@ if settings.FEATURE_IMPORTER_ENABLED:
 
 urlpatterns = [
     path('api/', include(api_patterns)),
-    url('proxy/(?P<url>.*)', proxy_view, name='proxy'),
     url('admin/', admin.site.urls),
     url('health/', Health.as_view(), name='health'),
 ]
