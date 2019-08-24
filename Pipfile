@@ -41,7 +41,6 @@ langdetect = "*"
 django-rq = "*"
 redis = "*"
 webpreview = "*"
-django-proxy = "*"
 beautifulsoup4 = "*"
 urlextract = "*"
 

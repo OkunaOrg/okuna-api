@@ -3,14 +3,13 @@ appdirs==1.4.3
 attrs==19.1.0
 bandit==1.5.1
 beautifulsoup4==4.8.0
-boto3==1.9.211
-botocore==1.12.211
+boto3==1.9.215
+botocore==1.12.215
 certifi==2019.6.16
 chardet==3.0.4
 click==7.0
 colorama==0.4.1
 coverage==5.0a6
-ddt==1.2.1
 django-amazon-ses==2.1.1
 django-appconf==1.0.3
 django-cacheops==4.1
@@ -18,7 +17,6 @@ django-extensions==2.2.1
 django-imagekit==4.0.2
 django-media-fixtures==0.0.3
 django-nose==1.4.6
-django-proxy==1.2.1
 django-redis==4.10.0
 django-replicated==2.6.1
 django-rq==2.1.0
@@ -32,7 +30,7 @@ funcy==1.13
 git+https://github.com/Ian-Foote/rest-framework-generic-relations.git@11c31d378ac4a2b2805e0ad154832532f8430f50#egg=rest-framework-generic-relations
 git+https://github.com/lifenautjoe/django-modeltranslation.git@551af9905961038badad9d9a16b2f47996f7685b#egg=django-modeltranslation
 gitdb2==2.0.5
-gitpython==3.0.1
+gitpython==3.0.2
 idna==2.8
 jmespath==0.9.4
 langdetect==1.0.7
