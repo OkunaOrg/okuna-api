@@ -4162,6 +4162,11 @@ class User(AbstractUser):
     def check_url_allowed_for_proxy(self, url):
         #  nginx only accepts 401, 403
 
+        if url is None:
+            raise PermissionDenied(
+                _('Please provide a URL(https) to preview.'),
+            )
+
         result = get_matched_urls_from_text(url)
         if len(result) == 0:
             raise PermissionDenied(

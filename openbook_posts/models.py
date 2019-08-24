@@ -231,10 +231,7 @@ class Post(models.Model):
         return False
 
     def has_links(self):
-        if self.post_links.exists():
-                return True
-
-        return False
+        return self.post_links.exists()
 
     def comment(self, text, commenter):
         return PostComment.create_comment(text=text, commenter=commenter, post=self)

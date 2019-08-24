@@ -12,7 +12,7 @@ class ProxyAuth(APIView):
         preview_url = request.META.get('HTTP_X_PROXY_URL')
         user = request.user
 
-        response = user.check_url_allowed_for_proxy(preview_url)
+        user.check_url_allowed_for_proxy(preview_url)
 
         return Response(_('All Ok'), status=status.HTTP_202_ACCEPTED)
 
