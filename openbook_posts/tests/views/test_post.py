@@ -561,7 +561,7 @@ class PostItemAPITests(OpenbookAPITestCase):
         with open(test_image['path'], 'rb') as file:
             file = File(file)
             circle = make_circle(creator=connected_user)
-            post = connected_user.create_encircled_post(text=make_fake_post_text(), image=file, circles_id=[circle.pk])
+            post = connected_user.create_encircled_post(text=make_fake_post_text(), image=file, circles_ids=[circle.pk])
 
         url = self._get_url(post=post)
         headers = make_authentication_headers_for_user(user)
@@ -579,7 +579,7 @@ class PostItemAPITests(OpenbookAPITestCase):
         user.connect_with_user_with_id(user_id=pending_connection_user.pk)
 
         circle = make_circle(creator=pending_connection_user)
-        post = pending_connection_user.create_encircled_post(text=make_fake_post_text(), is_draft=True, circles_id=[circle.pk])
+        post = pending_connection_user.create_encircled_post(text=make_fake_post_text(), is_draft=True, circles_ids=[circle.pk])
 
         url = self._get_url(post=post)
         headers = make_authentication_headers_for_user(user)
