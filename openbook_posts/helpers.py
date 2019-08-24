@@ -21,3 +21,5 @@ def _upload_to_post_directory_directory(post, filename):
 
     return '%(path)s%(new_filename)s' % {'path': path,
                                          'new_filename': new_filename, }
+
+
