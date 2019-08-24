@@ -22,7 +22,7 @@ import logging
 import json
 
 from openbook_circles.models import Circle
-from openbook_common.helpers import get_sanitised_url_for_link
+from openbook_common.helpers import normalise_url
 from openbook_common.tests.helpers import make_user, make_users, make_fake_post_text, \
     make_authentication_headers_for_user, make_circle, make_community, make_list, make_moderation_category, \
     get_test_usernames, get_test_videos, get_test_image, get_post_links
@@ -353,7 +353,7 @@ class PostsAPITests(OpenbookAPITestCase):
 
         self.assertEqual(len(result_links), len(links))
         for link in links:
-            link = get_sanitised_url_for_link(link)
+            link = normalise_url(link)
             self.assertTrue(link in result_links)
 
     def test_create_text_post_skips_http_urls(self):

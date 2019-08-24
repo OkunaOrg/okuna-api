@@ -23,8 +23,8 @@ from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user
 from openbook_notifications.helpers import get_notification_language_code_for_target_user
 from openbook_translation import translation_strategy
 from openbook_common.helpers import get_supported_translation_language, make_proxy_image_url, \
-    get_domain_from_link, get_favicon_url_from_link, get_matched_urls_from_text, is_url_allowed_in_whitelist_domains, \
-    get_sanitised_url_for_link
+    get_url_domain, get_favicon_url_from_url, \
+    normalise_url, get_url_metadata
 from openbook_common.models import Badge, Language
 from openbook_common.utils.helpers import delete_file_field
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
@@ -34,9 +34,6 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_mute_model, get_community_invite_notification_model, get_user_block_model, get_emoji_model, \
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
     get_moderation_penalty_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
-    get_post_comment_reaction_notification_model, get_post_link_whitelist_domain_model
-
-get_moderation_penalty_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
     get_post_comment_reaction_notification_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications import helpers
@@ -1810,49 +1807,23 @@ class User(AbstractUser):
         check_can_get_user_with_id(user=self, user_id=user.pk)
         return user
 
-    def _get_preview_data_from_link(self, preview_link):
-        title, description, image_url = web_preview(preview_link)
-        favicon_url = get_favicon_url_from_link(preview_link)
-        domain_url = get_domain_from_link(preview_link)
-        if image_url is not None:
-            image_url = make_proxy_image_url(image_url)
-        if favicon_url is not None:
-            favicon_url = make_proxy_image_url(favicon_url)
-
-        return title, description, image_url, favicon_url, domain_url
+    # Preview link data to be removed when parsing becomes in device
 
     def get_preview_link_data_for_post_with_id(self, post_id):
-        self._check_can_get_preview_link_data_for_post_with_id(post_id)
         Post = get_post_model()
         post = Post.objects.get(pk=post_id)
+        return self.get_preview_link_data_for_post(post=post)
+
+    def get_preview_link_data_for_post(self, post):
+        check_can_get_preview_link_data_for_post(user=self, post=post)
         preview_link = post.post_links.first().link
-        self._check_url_is_in_a_whitelisted_domain(preview_link)
+        check_can_preview_url(preview_link)
 
-        title, description, proxy_image_url, proxy_favicon_url, domain_url \
-            = self._get_preview_data_from_link(preview_link)
-
-        return {
-            'title': title,
-            'description': description,
-            'image_url': proxy_image_url,
-            'favicon_url': proxy_favicon_url,
-            'domain_url': domain_url
-        }
-
+        return get_url_metadata(preview_link)
 
     def get_preview_link_data_for_url(self, url):
-        self._check_can_get_preview_link_data_for_url(url)
-        url = get_sanitised_url_for_link(url)
-        title, description, proxy_image_url, proxy_favicon_url, domain_url \
-            = self._get_preview_data_from_link(url)
-
-        return {
-            'title': title,
-            'description': description,
-            'image_url': proxy_image_url,
-            'favicon_url': proxy_favicon_url,
-            'domain_url': domain_url
-        }
+        check_can_preview_url(url)
+        return get_url_metadata(url)
 
     def translate_post_with_id(self, post_id):
         check_can_translate_post_with_id(user=self, post_id=post_id)
@@ -3121,67 +3092,6 @@ class User(AbstractUser):
 
         return community_posts_query
 
-
-    def _check_can_get_preview_link_data_for_post_with_id(self, post_id):
-        Post = get_post_model()
-        post = Post.objects.get(pk=post_id)
-        check_can_see_post(post=post)
-        if not post.has_links():
-            raise ValidationError(
-                _('No link associated with post.'),
-            )
-
-    def check_url_allowed_for_proxy(self, url):
-        #  nginx only accepts 401, 403
-
-        if url is None:
-            raise PermissionDenied(
-                _('Please provide a URL(https) to preview.'),
-            )
-
-        result = get_matched_urls_from_text(url)
-        if len(result) == 0:
-            raise PermissionDenied(
-                _('Please provide a URL(https) to preview.'),
-            )
-
-        extracted_url = result[0]
-        if not extracted_url == url.lower():
-            raise PermissionDenied(
-                _('Please use a valid URL for preview.'),
-            )
-        # check whitelist domains,
-        PostLinkWhitelistDomain = get_post_link_whitelist_domain_model()
-        allowed_domains = PostLinkWhitelistDomain.get_whitelisted_domains()
-
-        if not is_url_allowed_in_whitelist_domains(url, allowed_domains):
-            raise PermissionDenied(
-                _('Only whitelisted domains can be previewed'),
-            )
-
-    def _check_can_get_preview_link_data_for_url(self, url):
-        result = get_matched_urls_from_text(url)
-        if len(result) == 0:
-            raise ValidationError(
-                _('Please provide a URL(https) to preview.'),
-            )
-
-        extracted_url = result[0]
-        if not extracted_url == url.lower():
-            raise ValidationError(
-                _('Please use a valid URL for preview.'),
-            )
-
-        self._check_url_is_in_a_whitelisted_domain(extracted_url)
-
-    def _check_url_is_in_a_whitelisted_domain(self, url):
-        PostLinkWhitelistDomain = get_post_link_whitelist_domain_model()
-        allowed_domains = PostLinkWhitelistDomain.get_whitelisted_domains()
-
-        if not is_url_allowed_in_whitelist_domains(url, allowed_domains):
-            raise ValidationError(
-                _('Only whitelisted domains can be previewed'),
-            )
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='bootstrap_auth_token')
 def create_auth_token(sender, instance=None, created=False, **kwargs):

@@ -6,6 +6,8 @@ from django.utils.translation import ugettext_lazy as _
 from openbook_common.utils.model_loaders import get_post_model, get_community_model, get_post_comment_model, \
     get_language_model, get_user_model, get_emoji_group_model, get_post_reaction_model, get_user_invite_model
 
+from openbook_common import checkers as common_checkers
+
 
 def check_follow_lists_ids(user, lists_ids):
     for list_id in lists_ids:
@@ -1283,3 +1285,15 @@ def check_can_get_status_for_post(user, post):
 
 def check_can_get_media_for_post(user, post):
     check_can_see_post(user=user, post=post)
+
+
+def check_can_get_preview_link_data_for_post(user, post):
+    check_can_see_post(post=post, user=user)
+    if not post.has_links():
+        raise ValidationError(
+            _('No link associated with post.'),
+        )
+
+
+def check_can_preview_url(link):
+    common_checkers.check_url_can_be_proxied(link)

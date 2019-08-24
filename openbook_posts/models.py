@@ -47,7 +47,7 @@ from openbook_posts.helpers import upload_to_post_image_directory, upload_to_pos
 from openbook_posts.jobs import process_post_media
 
 magic = get_magic()
-from openbook_common.helpers import get_language_for_text, get_matched_urls_from_text, get_sanitised_url_for_link
+from openbook_common.helpers import get_language_for_text, extract_urls_from_string, normalise_url
 
 
 class Post(models.Model):
@@ -273,7 +273,7 @@ class Post(models.Model):
     def create_links(self, link_urls):
         self.post_links.all().delete()
         for link_url in link_urls:
-            link_url = get_sanitised_url_for_link(link_url)
+            link_url = normalise_url(link_url)
             PostLink.create_link(link=link_url, post_id=self.pk)
 
     def is_encircled_post(self):
@@ -508,7 +508,7 @@ class Post(models.Model):
 
     def _process_post_links(self):
         if self.has_text() and not self.has_image() and not self.has_video():
-            link_urls = get_matched_urls_from_text(self.text)
+            link_urls = extract_urls_from_string(self.text)
             if len(link_urls) > 0:
                 self.create_links(link_urls)
 
@@ -840,26 +840,6 @@ class PostLink(models.Model):
     @classmethod
     def create_link(cls, link, post_id):
         return cls.objects.create(link=link, post_id=post_id)
-
-
-class PostLinkWhitelistDomain(models.Model):
-    """
-    Model used to store domains that will be whitelisted to be stored as PostLinks.
-    We will store and verify top level domains, foreg. okuna.io, example.com, youtube.com, reddit.com
-    without the www part, as users might share
-    https://reddit.com, https://www.reddit.com or https://subdomain.reddit.com
-    """
-    domain = models.CharField(max_length=settings.POST_LINK_MAX_DOMAIN_LENGTH)
-
-    @classmethod
-    def get_whitelisted_domains(cls):
-        timeout = settings.POST_LINK_WHITELIST_DOMAIN_CACHE_TIMEOUT
-        key = settings.POST_LINK_WHITELIST_DOMAIN_CACHE_KEY
-        domains = cache.get(key)
-        if domains is None:
-            domains = list(cls.objects.values_list('domain', flat=True))
-            cache.set(key, domains, timeout)
-        return domains
 
 
 class PostUserMention(models.Model):
