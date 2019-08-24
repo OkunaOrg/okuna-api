@@ -17,15 +17,16 @@ import logging
 import json
 
 from openbook_circles.models import Circle
+from openbook_common.helpers import get_sanitised_url_for_link
 from openbook_common.tests.helpers import make_user, make_users, make_fake_post_text, \
     make_authentication_headers_for_user, make_circle, make_community, make_list, make_moderation_category, \
-    get_test_usernames
+    get_test_usernames, get_post_links
 from openbook_common.utils.helpers import sha256sum
 from openbook_communities.models import Community
 from openbook_lists.models import List
 from openbook_moderation.models import ModeratedObject
 from openbook_notifications.models import PostUserMentionNotification, Notification
-from openbook_posts.models import Post, PostUserMention
+from openbook_posts.models import Post, PostUserMention, PostLink
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -321,6 +322,59 @@ class PostsAPITests(APITestCase):
         post = Post.objects.get(text=post_text, creator_id=user.pk)
 
         self.assertFalse(PostUserMention.objects.filter(post_id=post.pk, user_id=user.pk).exists())
+
+    def test_create_text_post_detects_all_urls(self):
+        """
+        should detect different links in post text and create post links models from them
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        links = get_post_links()
+
+        post_text = " | ".join(links)
+
+        data = {
+            'text': post_text
+        }
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+        post_links = PostLink.objects.filter(post_id=post.pk)
+        result_links = [post_link.link for post_link in post_links]
+
+        self.assertEqual(len(result_links), len(links))
+        for link in links:
+            link = get_sanitised_url_for_link(link)
+            self.assertTrue(link in result_links)
+
+    def test_create_text_post_skips_http_urls(self):
+        """
+        should skip http urls in post text while creating post links models from them
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        links = ['http://unsafe.com']
+
+        post_text = " | ".join(links)
+
+        data = {
+            'text': post_text
+        }
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+        post_links = PostLink.objects.filter(post_id=post.pk)
+        result_links = [post_link.link for post_link in post_links]
+
+        self.assertEqual(len(result_links), 0)
 
     def test_create_post_is_added_to_world_circle(self):
         """

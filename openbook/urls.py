@@ -18,6 +18,7 @@ from django.urls import path, include
 from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
+from proxy.views import proxy_view
 
 from openbook_auth.views.auth.views import Register, Login, UsernameCheck, EmailCheck, EmailVerify, \
     PasswordResetRequest, PasswordResetVerify
@@ -28,10 +29,11 @@ from openbook_auth.views.blocked_users.views import BlockedUsers, SearchBlockedU
 from openbook_auth.views.followers.views import Followers, SearchFollowers
 from openbook_auth.views.following.views import Followings, SearchFollowings
 from openbook_auth.views.linked_users.views import LinkedUsers, SearchLinkedUsers
+from openbook_auth.views.proxy.views import ProxyAuth
 from openbook_auth.views.users.views import SearchUsers, GetUser, BlockUser, UnblockUser
 from openbook_categories.views import Categories
 from openbook_circles.views import Circles, CircleItem, CircleNameCheck
-from openbook_common.views import Time, Health, EmojiGroups
+from openbook_common.views import Time, Health, EmojiGroups, PreviewLinkData
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
     FavoriteCommunities, SearchCommunities, JoinedCommunities, AdministratedCommunities, ModeratedCommunities, \
     SearchJoinedCommunities
@@ -63,6 +65,7 @@ from openbook_moderation.views.user.views import UserModerationPenalties, UserPe
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
 from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost, TranslatePost, \
     SearchPostParticipants, GetPostParticipants
+from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost, TranslatePost, PostPreviewLinkData
 from openbook_posts.views.post_comment.post_comment_reaction.views import PostCommentReactionItem
 from openbook_posts.views.post_comment.post_comment_reactions.views import PostCommentReactions, \
     PostCommentReactionsEmojiCount
@@ -136,6 +139,7 @@ auth_patterns = [
     path('blocked-users/', include(auth_blocked_users_patterns)),
     path('users/', include(auth_users_patterns)),
     path('user/', include(auth_user_patterns)),
+    path('proxy/', ProxyAuth.as_view(), name='proxy-auth'),
 ]
 
 post_notifications_patterns = [
@@ -182,6 +186,7 @@ post_patterns = [
     path('report/', ReportPost.as_view(), name='report-post'),
     path('translate/', TranslatePost.as_view(), name='translate-post'),
     path('participants/', include(post_participants_patterns)),
+    path('link-preview/', PostPreviewLinkData.as_view(), name='preview-post-link'),
 ]
 
 posts_patterns = [
@@ -358,6 +363,7 @@ api_patterns = [
     path('devices/', include(devices_patterns)),
     path('invites/', include(invites_patterns)),
     path('moderation/', include(moderation_patterns)),
+    path('link-preview/', PreviewLinkData.as_view(), name='preview-link'),
     url('time/', Time.as_view(), name='time'),
     url('emojis/groups/', EmojiGroups.as_view(), name='emoji-groups'),
 ]

@@ -14,6 +14,7 @@ from openbook_lists.models import List
 from openbook_moderation.models import ModerationCategory, ModeratedObjectLog, ModeratedObject, ModerationReport, \
     ModerationPenalty
 from openbook_notifications.models import Notification
+from openbook_posts.models import PostLinkWhitelistDomain
 
 fake = Faker()
 
@@ -246,10 +247,25 @@ def make_random_language():
     return mixer.blend(Language)
 
 
+def make_whitelisted_domain(domain):
+    return mixer.blend(PostLinkWhitelistDomain, domain=domain)
+
+
 def get_test_usernames():
     return [
         'j_oel',
         'j.o.e.l',
         'j03l',
         'j'
+    ]
+
+
+def get_post_links():
+    return [
+        'https://www.okuna.io',
+        'www.techcrunch.com',
+        'https://bbc.co.uk',
+        'google.com?filter=evil',
+        'www.blablacar.com/i/rest/results',
+        'https://longwebsite.social?url=https%3A%2F%2Ftest.com%3Fyes%3Dtrue'
     ]

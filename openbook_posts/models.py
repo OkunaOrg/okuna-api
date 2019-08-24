@@ -9,6 +9,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Count
+from django.core.cache import cache
 
 # Create your views here.
 from pilkit.processors import ResizeToFit
@@ -31,7 +32,11 @@ from openbook_moderation.models import ModeratedObject
 from openbook_notifications.helpers import send_post_comment_user_mention_push_notification, \
     send_post_user_mention_push_notification
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory
-from openbook_common.helpers import get_language_for_text
+from openbook_common.helpers import get_language_for_text, get_matched_urls_from_text, get_domain_from_link, \
+    is_url_allowed_in_whitelist_domains, get_sanitised_url_for_link
+
+# Clear django cache
+cache.clear()
 
 
 class Post(models.Model):
@@ -225,6 +230,9 @@ class Post(models.Model):
 
         return False
 
+    def has_links(self):
+        return self.post_links.exists()
+
     def comment(self, text, commenter):
         return PostComment.create_comment(text=text, commenter=commenter, post=self)
 
@@ -237,6 +245,12 @@ class Post(models.Model):
         if self.circles.filter(id=world_circle_id).exists():
             return True
         return False
+
+    def create_links(self, link_urls):
+        self.post_links.all().delete()
+        for link_url in link_urls:
+            link_url = get_sanitised_url_for_link(link_url)
+            PostLink.create_link(link=link_url, post_id=self.pk)
 
     def is_encircled_post(self):
         return not self.is_public_post() and not self.community
@@ -256,6 +270,7 @@ class Post(models.Model):
         post = super(Post, self).save(*args, **kwargs)
 
         self._process_post_mentions()
+        self._process_post_links()
 
         return post
 
@@ -364,6 +379,12 @@ class Post(models.Model):
                                 existing_mention_usernames.append(username)
                         except User.DoesNotExist:
                             pass
+
+    def _process_post_links(self):
+        if self.has_text() and not self.has_image() and not self.has_video():
+            link_urls = get_matched_urls_from_text(self.text)
+            if len(link_urls) > 0:
+                self.create_links(link_urls)
 
     def _check_can_be_updated(self, text=None):
         if self.is_text_only_post() and not text:
@@ -634,6 +655,39 @@ class PostCommentMute(models.Model):
     @classmethod
     def create_post_comment_mute(cls, post_comment_id, muter_id):
         return cls.objects.create(post_comment_id=post_comment_id, muter_id=muter_id)
+
+
+class PostLink(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='post_links')
+    link = models.CharField(max_length=settings.POST_MAX_LENGTH)
+
+    class Meta:
+        unique_together = ('post', 'link',)
+
+    @classmethod
+    def create_link(cls, link, post_id):
+        return cls.objects.create(link=link, post_id=post_id)
+
+
+class PostLinkWhitelistDomain(models.Model):
+    """
+    Model used to store domains that will be whitelisted to be stored as PostLinks.
+    We will store and verify top level domains, foreg. okuna.io, example.com, youtube.com, reddit.com
+    without the www part, as users might share
+    https://reddit.com, https://www.reddit.com or https://subdomain.reddit.com
+    """
+    domain = models.CharField(max_length=settings.POST_LINK_MAX_DOMAIN_LENGTH)
+
+    @classmethod
+    def get_whitelisted_domains(cls):
+        timeout = settings.POST_LINK_WHITELIST_DOMAIN_CACHE_TIMEOUT
+        key = settings.POST_LINK_WHITELIST_DOMAIN_CACHE_KEY
+        domains = cache.get(key)
+        if domains is None:
+            domains = list(cls.objects.values_list('domain', flat=True))
+            cache.set(key, domains, timeout)
+        return domains
 
 
 class PostUserMention(models.Model):
