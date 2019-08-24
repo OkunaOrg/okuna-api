@@ -202,7 +202,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
         parsed_response = json.loads(response.content)
 
-        self.assertTrue(len(parsed_response), 0)
+        self.assertEqual(len(parsed_response), 0)
 
     def test_can_retrieve_own_post_media_image(self):
         """
@@ -368,7 +368,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
         user = make_user()
         following_user = make_user()
 
-        user.follow_user(suer=following_user)
+        user.follow_user(user=following_user)
 
         headers = make_authentication_headers_for_user(user=user)
 
@@ -466,8 +466,9 @@ class PostMediaAPITests(OpenbookAPITestCase):
         """
         user = make_user()
         connected_user = make_user()
+        circle = make_circle(creator=connected_user)
 
-        connected_user.connect_with_user_with_id(user_id=user.pk)
+        connected_user.connect_with_user_with_id(user_id=user.pk, circles_ids=[circle.pk])
         user.confirm_connection_with_user_with_id(user_id=connected_user.pk)
 
         headers = make_authentication_headers_for_user(user=user)
@@ -476,7 +477,6 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
         with open(test_image['path'], 'rb') as file:
             file = File(file)
-            circle = make_circle(creator=connected_user)
             post = connected_user.create_encircled_post(image=file, circles_ids=[circle.pk])
 
         get_worker(worker_class=SimpleWorker).work(burst=True)
@@ -502,7 +502,9 @@ class PostMediaAPITests(OpenbookAPITestCase):
         user = make_user()
         connected_user = make_user()
 
-        connected_user.connect_with_user_with_id(user_id=user.pk)
+        circle = make_circle(creator=connected_user)
+
+        connected_user.connect_with_user_with_id(user_id=user.pk, circles_ids=[circle.pk])
         user.confirm_connection_with_user_with_id(user_id=connected_user.pk)
 
         headers = make_authentication_headers_for_user(user=user)
@@ -511,7 +513,6 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
         with open(test_video['path'], 'rb') as file:
             file = File(file)
-            circle = make_circle(creator=connected_user)
             post = connected_user.create_encircled_post(video=file, circles_ids=[circle.pk])
 
         get_worker(worker_class=SimpleWorker).work(burst=True)
