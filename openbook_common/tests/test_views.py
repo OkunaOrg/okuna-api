@@ -8,7 +8,7 @@ import logging
 import json
 
 from openbook_common.tests.helpers import make_emoji_group, make_emoji, make_user, make_authentication_headers_for_user, \
-    make_fake_post_text, make_whitelisted_domain
+    make_fake_post_text, make_proxy_whitelisted_domain
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +117,7 @@ class PreviewLinkDataAPITests(APITestCase):
         headers = make_authentication_headers_for_user(user)
         preview_url = 'www.okuna.io'
         url = self._get_url()
-        make_whitelisted_domain(domain='okuna.io')
+        make_proxy_whitelisted_domain(domain='okuna.io')
 
         response = self.client.get(url, {'url': preview_url}, **headers)
         preview_data = json.loads(response.content)

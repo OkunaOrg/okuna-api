@@ -17,7 +17,7 @@ from openbook_lists.models import List
 from openbook_moderation.models import ModerationCategory, ModeratedObjectLog, ModeratedObject, ModerationReport, \
     ModerationPenalty
 from openbook_notifications.models import Notification
-from openbook_posts.models import PostLinkWhitelistDomain
+from openbook_common.models import ProxyWhitelistDomain
 
 fake = Faker()
 
@@ -250,8 +250,8 @@ def make_random_language():
     return mixer.blend(Language)
 
 
-def make_whitelisted_domain(domain):
-    return mixer.blend(PostLinkWhitelistDomain, domain=domain)
+def make_proxy_whitelisted_domain(domain):
+    return mixer.blend(ProxyWhitelistDomain, domain=domain)
 
 
 def get_test_usernames():

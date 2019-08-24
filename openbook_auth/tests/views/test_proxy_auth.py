@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 import logging
 
-from openbook_common.tests.helpers import make_authentication_headers_for_user, make_user, make_whitelisted_domain
+from openbook_common.tests.helpers import make_authentication_headers_for_user, make_user, make_proxy_whitelisted_domain
 
 fake = Faker()
 
@@ -27,6 +27,7 @@ class ProxyAuthAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
         response = self.client.get(url, **headers)
+
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_proxy_auth_does_not_allow_non_whitelisted_domain(self):
@@ -49,7 +50,7 @@ class ProxyAuthAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
         headers['HTTP_X_PROXY_URL'] = 'https://www.techcrunch.com'
-        make_whitelisted_domain(domain='www.techcrunch.com')
+        make_proxy_whitelisted_domain(domain='www.techcrunch.com')
         response = self.client.get(url, **headers)
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
 
