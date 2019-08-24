@@ -285,3 +285,42 @@ def get_test_videos():
             'height': 256
         }
     ]
+
+
+def get_test_images():
+    return [
+        {
+            'path': 'openbook_common/tests/files/test_image_tiny.png',
+            'width': 272,
+            'height': 170
+        },
+        {
+            'path': 'openbook_common/tests/files/test_image_small.png',
+            'width': 912,
+            'height': 513
+        },
+        {
+            'path': 'openbook_common/tests/files/test_image_medium.png',
+            'width': 5891,
+            'height': 2271
+        },
+        {
+            'path': 'openbook_common/tests/files/test_image_tiny.jpg',
+            'width': 300,
+            'height': 300
+        },
+        {
+            'path': 'openbook_common/tests/files/test_image_small.jpg',
+            'width': 2192,
+            'height': 2921
+        },
+        {
+            'path': 'openbook_common/tests/files/test_image_medium.jpg',
+            'width': 10751,
+            'height': 4287
+        },
+    ]
+
+
+def get_test_image():
+    return get_test_images()[0]

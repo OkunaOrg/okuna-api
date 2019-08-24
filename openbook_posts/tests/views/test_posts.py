@@ -1,7 +1,9 @@
 # Create your tests here.
 import tempfile
+from unittest import mock
 
 from PIL import Image
+from django.core.files import File
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django_rq import get_worker
@@ -22,7 +24,7 @@ import json
 from openbook_circles.models import Circle
 from openbook_common.tests.helpers import make_user, make_users, make_fake_post_text, \
     make_authentication_headers_for_user, make_circle, make_community, make_list, make_moderation_category, \
-    get_test_usernames, get_test_videos
+    get_test_usernames, get_test_videos, get_test_image
 from openbook_common.utils.helpers import sha256sum
 from openbook_communities.models import Community
 from openbook_lists.models import List
@@ -2569,6 +2571,272 @@ class PostsAPITests(OpenbookAPITestCase):
         user = make_user()
 
         user.create_public_post(text=make_fake_post_text(), is_draft=True)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_processing_public_community_posts(self, process_post_media_mock):
+        """
+        should not be able to retrieve processing public community posts
+        """
+        user = make_user()
+
+        community_creator = make_user()
+
+        community = make_community(creator=community_creator)
+
+        post_creator = make_user()
+
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+
+        test_image = get_test_image()
+
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            post_creator.create_community_post(community_name=community.name, text=make_fake_post_text(),
+                                               image=file)
+
+            url = self._get_url()
+            headers = make_authentication_headers_for_user(user)
+            response = self.client.get(url, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            response_posts = json.loads(response.content)
+
+            self.assertEqual(0, len(response_posts))
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_processing_private_community_part_of_posts(self, mock):
+        """
+        should not be able to retrieve processing private community posts
+        """
+        user = make_user()
+
+        community_creator = make_user()
+
+        community = make_community(creator=community_creator, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        post_creator = make_user()
+
+        community_creator.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                           community_name=community.name)
+        community_creator.invite_user_with_username_to_community_with_name(username=post_creator.username,
+                                                                           community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+
+        test_image = get_test_image()
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            post_creator.create_community_post(community_name=community.name, text=make_fake_post_text(),
+                                               image=file)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_following_user_processing_posts(self, mock):
+        """
+        should not be able to retrieve following user processing posts
+        """
+        user = make_user()
+
+        following_user = make_user()
+        user.follow_user_with_id(user_id=following_user.pk)
+
+        test_image = get_test_image()
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            following_user.create_public_post(text=make_fake_post_text(), image=file)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_following_user_processing_posts_when_filtering(self, mock):
+        """
+        should not be able to retrieve following user processing posts when filtering
+        """
+        user = make_user()
+
+        following_user = make_user()
+        follow_list = make_list(creator=user)
+        user.follow_user_with_id(user_id=following_user.pk, lists_ids=[follow_list.pk])
+
+        test_image = get_test_image()
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            following_user.create_public_post(text=make_fake_post_text(), image=file)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'list_id': follow_list.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_connected_user_processing_posts(self, mock):
+        """
+        should not be able to retrieve connected user processing posts
+        """
+        user = make_user()
+
+        connected_user = make_user()
+        user.connect_with_user_with_id(user_id=connected_user.pk)
+        connected_user_post_circle = make_circle(creator=connected_user)
+        connected_user.confirm_connection_with_user_with_id(user_id=user.pk,
+                                                            circles_ids=[connected_user_post_circle.pk])
+
+        test_image = get_test_image()
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            connected_user.create_encircled_post(text=make_fake_post_text(),
+                                                 circles_ids=[connected_user_post_circle.pk],
+                                                 image=file)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_connected_user_processing_posts_when_filtering(self, mock):
+        """
+        should not be able to retrieve connected user processing posts when filtering
+        """
+        user = make_user()
+
+        connected_user = make_user()
+        user.connect_with_user_with_id(user_id=connected_user.pk)
+        connected_user_post_circle = make_circle(creator=connected_user)
+        connected_user.confirm_connection_with_user_with_id(user_id=user.pk,
+                                                            circles_ids=[connected_user_post_circle.pk])
+
+        test_image = get_test_image()
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            connected_user.create_encircled_post(text=make_fake_post_text(),
+                                                 circles_ids=[connected_user_post_circle.pk], image=file)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'circle_id': connected_user_post_circle.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_connected_user_processing_posts_by_username(self, file):
+        """
+        should not be able to retrieve connected user processing posts by username
+        """
+        user = make_user()
+
+        connected_user = make_user()
+        user.connect_with_user_with_id(user_id=connected_user.pk)
+        connected_user_post_circle = make_circle(creator=connected_user)
+        connected_user.confirm_connection_with_user_with_id(user_id=user.pk,
+                                                            circles_ids=[connected_user_post_circle.pk])
+
+        test_image = get_test_image()
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            connected_user.create_encircled_post(text=make_fake_post_text(),
+                                                 circles_ids=[connected_user_post_circle.pk], image=file)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': connected_user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_following_user_processing_posts_by_username(self, mock):
+        """
+        should not be able to retrieve following user processing posts by username
+        """
+        user = make_user()
+
+        following_user = make_user()
+        follow_list = make_list(creator=user)
+        user.follow_user_with_id(user_id=following_user.pk, lists_ids=[follow_list.pk])
+
+        test_image = get_test_image()
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            following_user.create_public_post(text=make_fake_post_text(), image=file)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': following_user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_own_processing_posts_by_username(self, mock):
+        """
+        should not be able to retrieve own processing posts by username
+        """
+        user = make_user()
+
+        test_image = get_test_image()
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            user.create_public_post(text=make_fake_post_text(), image=file)
 
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)

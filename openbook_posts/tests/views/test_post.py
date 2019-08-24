@@ -19,7 +19,7 @@ from rq import SimpleWorker
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_community, make_list, make_moderation_category, \
-    get_test_usernames, get_test_videos
+    get_test_usernames, get_test_videos, get_test_image
 from openbook_common.utils.model_loaders import get_language_model
 from openbook_communities.models import Community
 from openbook_notifications.models import PostUserMentionNotification, Notification
@@ -371,6 +371,244 @@ class PostItemAPITests(OpenbookAPITestCase):
 
         response_post = json.loads(response.content)
         self.assertEqual(response_post['id'], post.pk)
+
+    def test_can_retrieve_draft_own_post(self):
+        """
+        should be able to retrieve a draft own post
+        """
+        user = make_user()
+
+        post = user.create_public_post(text=make_fake_post_text(), is_draft=True)
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_post = json.loads(response.content)
+
+        self.assertEqual(response_post['id'], post.pk)
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_can_retrieve_processing_own_post(self, mock):
+        """
+        should be able to retrieve an own processing post
+        """
+        user = make_user()
+
+        test_image = get_test_image()
+
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            post = user.create_public_post(text=make_fake_post_text(), image=file)
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_post = json.loads(response.content)
+
+        self.assertEqual(response_post['id'], post.pk)
+
+    def test_cant_retrieve_draft_foreign_user_post(self):
+        """
+        should not be able to retrieve a foreign user draft post
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        post = foreign_user.create_public_post(text=make_fake_post_text(), is_draft=True)
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_processing_foreign_user_post(self, mock):
+        """
+        should not be able to retrieve a foreign user processing post
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        test_image = get_test_image()
+
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            post = foreign_user.create_public_post(text=make_fake_post_text(), image=file)
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cant_retrieve_draft_following_user_post(self):
+        """
+        should not be able to retrieve a following user draft post
+        """
+        user = make_user()
+        following_user = make_user()
+
+        user.follow_user(user=following_user)
+
+        post = following_user.create_public_post(text=make_fake_post_text(), is_draft=True)
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_processing_following_user_post(self, mock):
+        """
+        should not be able to retrieve a following user processing post
+        """
+        user = make_user()
+        following_user = make_user()
+
+        user.follow_user(user=following_user)
+
+        test_image = get_test_image()
+
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            post = following_user.create_public_post(text=make_fake_post_text(), image=file)
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cant_retrieve_draft_follower_user_post(self):
+        """
+        should not be able to retrieve a follower user draft post
+        """
+        user = make_user()
+        follower_user = make_user()
+
+        follower_user.follow_user(user=user)
+
+        post = follower_user.create_public_post(text=make_fake_post_text(), is_draft=True)
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_processing_follower_user_post(self, mock):
+        """
+        should not be able to retrieve a follower user processing post
+        """
+        user = make_user()
+        follower_user = make_user()
+
+        follower_user.follow_user(user=user)
+
+        test_image = get_test_image()
+
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            post = follower_user.create_public_post(text=make_fake_post_text(), image=file)
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cant_retrieve_draft_connected_user_post(self):
+        """
+        should not be able to retrieve a follower user draft post
+        """
+        user = make_user()
+        connected_user = make_user()
+
+        user.connect_with_user_with_id(user_id=connected_user.pk)
+        connected_user.confirm_connection_with_user_with_id(user_id=user.pk)
+
+        circle = make_circle(creator=connected_user)
+        post = connected_user.create_encircled_post(text=make_fake_post_text(), is_draft=True, circles_id=[circle.pk])
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_processing_connected_user_post(self, mock):
+        """
+        should not be able to retrieve a follower user processing post
+        """
+        user = make_user()
+        connected_user = make_user()
+
+        user.connect_with_user_with_id(user_id=connected_user.pk)
+        connected_user.confirm_connection_with_user_with_id(user_id=user.pk)
+
+        test_image = get_test_image()
+
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            circle = make_circle(creator=connected_user)
+            post = connected_user.create_encircled_post(text=make_fake_post_text(), image=file, circles_id=[circle.pk])
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cant_retrieve_draft_pending_connection_user_post(self):
+        """
+        should not be able to retrieve a follower user draft post
+        """
+        user = make_user()
+        pending_connection_user = make_user()
+
+        user.connect_with_user_with_id(user_id=pending_connection_user.pk)
+
+        circle = make_circle(creator=pending_connection_user)
+        post = pending_connection_user.create_encircled_post(text=make_fake_post_text(), is_draft=True, circles_id=[circle.pk])
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_processing_pending_connection_user_post(self, mock):
+        """
+        should not be able to retrieve a follower user processing post
+        """
+        user = make_user()
+        pending_connection_user = make_user()
+
+        user.connect_with_user_with_id(user_id=pending_connection_user.pk)
+
+        test_image = get_test_image()
+
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            circle = make_circle(creator=pending_connection_user)
+            post = pending_connection_user.create_encircled_post(text=make_fake_post_text(), image=file, circles_ids=[circle.pk])
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_can_delete_own_post(self):
         """
