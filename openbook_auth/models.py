@@ -1759,6 +1759,15 @@ class User(AbstractUser):
 
         return post
 
+    def get_media_for_post_with_uuid(self, post_uuid):
+        Post = get_post_model()
+        post = Post.objects.get(uuid=post_uuid)
+        return self.get_media_for_post(post=post)
+
+    def get_media_for_post(self, post):
+        check_can_get_media_for_post(user=self, post=post)
+        return post.get_media()
+
     def add_media_to_post_with_uuid(self, file, post_uuid, order):
         Post = get_post_model()
         post = Post.objects.get(uuid=post_uuid)

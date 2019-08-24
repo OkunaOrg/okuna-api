@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.validators import FileExtensionValidator
 from generic_relations.relations import GenericRelatedField
 from rest_framework import serializers
+from video_encoding.models import Format
 
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
 from openbook_posts.models import PostMedia, PostImage, PostVideo
@@ -37,7 +38,22 @@ class PostImageSerializer(serializers.ModelSerializer):
         )
 
 
+class PostVideoFormatSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Format
+        fields = (
+            'id',
+            'duration',
+            'progress',
+            'format',
+            'file',
+            'width',
+            'height',
+        )
+
 class PostVideoSerializer(serializers.ModelSerializer):
+    format_set = PostVideoFormatSerializer(many=True)
+
     class Meta:
         model = PostVideo
         fields = (

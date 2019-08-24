@@ -276,6 +276,9 @@ class Post(models.Model):
         self.language = get_language_for_text(text)
         self.save()
 
+    def get_media(self):
+        return self.media
+
     def add_media(self, file, order=None):
         check_can_add_media(post=self)
         is_in_memory_file = isinstance(file, InMemoryUploadedFile)

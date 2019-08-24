@@ -1279,3 +1279,7 @@ def check_can_publish_post(user, post):
 
 def check_can_get_status_for_post(user, post):
     check_has_post(user=user, post=post)
+
+
+def check_can_get_media_for_post(user, post):
+    check_can_see_post(user=user, post=post)

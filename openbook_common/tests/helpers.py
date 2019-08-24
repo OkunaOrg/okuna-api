@@ -324,3 +324,7 @@ def get_test_images():
 
 def get_test_image():
     return get_test_images()[0]
+
+
+def get_test_video():
+    return get_test_videos()[0]
