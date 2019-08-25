@@ -14,7 +14,12 @@ class Notifications(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
+        user = request.user
         query_params = request.query_params.dict()
+
+        if 'types' in query_params:
+            query_params['types'] = query_params['types'].split(sep=",")
+
         serializer = GetNotificationsSerializer(data=query_params)
         serializer.is_valid(raise_exception=True)
 
@@ -22,10 +27,9 @@ class Notifications(APIView):
 
         count = data.get('count', 10)
         max_id = data.get('max_id')
+        types = data.get('types')
 
-        user = request.user
-
-        notifications = user.get_notifications(max_id=max_id).order_by('-created')[:count]
+        notifications = user.get_notifications(max_id=max_id, types=types).order_by('-created')[:count]
 
         response_serializer = GetNotificationsNotificationSerializer(notifications, many=True,
                                                                      context={"request": request})
@@ -46,16 +50,21 @@ class ReadNotifications(APIView):
 
     def post(self, request):
         user = request.user
+        query_data = request.data.dict()
 
-        serializer = ReadNotificationsSerializer(data=request.data)
+        if 'types' in query_data:
+            query_data['types'] = query_data['types'].split(sep=",")
+
+        serializer = ReadNotificationsSerializer(data=query_data)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
 
         max_id = data.get('max_id')
+        types = data.get('types')
 
         with transaction.atomic():
-            user.read_notifications(max_id=max_id)
+            user.read_notifications(max_id=max_id, types=types)
 
         return Response(status=status.HTTP_200_OK)
 
