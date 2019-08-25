@@ -11,9 +11,9 @@ from openbook_notifications.models import Notification, PostCommentNotification,
     PostCommentReactionNotification, PostCommentUserMentionNotification, PostUserMentionNotification
 from openbook_notifications.models.post_reaction_notification import PostReactionNotification
 from openbook_notifications.serializer_fields import ParentCommentField
-from openbook_posts.models import PostComment, PostReaction, Post, PostImage, PostVideo, PostCommentReaction, \
+from openbook_posts.models import PostComment, PostReaction, Post, PostImage, PostCommentReaction, \
     PostUserMention, PostCommentUserMention
-from openbook_notifications.validators import notification_id_exists, notification_type_exists
+from openbook_notifications.validators import notification_id_exists
 
 
 class ReadNotificationsSerializer(serializers.Serializer):
@@ -21,9 +21,9 @@ class ReadNotificationsSerializer(serializers.Serializer):
         required=False,
     )
     types = serializers.ListField(
-        child=serializers.CharField(
+        child=serializers.ChoiceField(
+            choices=Notification.get_notification_types_values(),
             required=False,
-            validators=[notification_type_exists],
         ),
         required=False,
     )
@@ -38,9 +38,9 @@ class GetNotificationsSerializer(serializers.Serializer):
         required=False,
     )
     types = serializers.ListField(
-        child=serializers.CharField(
+        child=serializers.ChoiceField(
+            choices=Notification.get_notification_types_values(),
             required=False,
-            validators=[notification_type_exists],
         ),
         required=False,
     )

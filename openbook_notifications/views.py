@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from openbook_common.utils.helpers import normalize_list_value_in_request_data
 from openbook_moderation.permissions import IsNotSuspended
 from openbook_notifications.serializers import GetNotificationsSerializer, GetNotificationsNotificationSerializer, \
     DeleteNotificationSerializer, ReadNotificationSerializer, ReadNotificationsSerializer
@@ -17,8 +18,7 @@ class Notifications(APIView):
         user = request.user
         query_params = request.query_params.dict()
 
-        if 'types' in query_params:
-            query_params['types'] = query_params['types'].split(sep=",")
+        normalize_list_value_in_request_data('types', query_params)
 
         serializer = GetNotificationsSerializer(data=query_params)
         serializer.is_valid(raise_exception=True)
