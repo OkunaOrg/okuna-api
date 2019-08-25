@@ -1,8 +1,6 @@
 from django.urls import reverse
 from faker import Faker
 
-from django.core.cache import cache
-from django.conf import settings
 from rest_framework import status
 from rest_framework.test import APITestCase
 import logging
@@ -45,7 +43,6 @@ class ProxyAuthAPITests(APITestCase):
         """
         should return 202 if the X-Proxy-Url url is whitelisted
         """
-        cache.delete(settings.POST_LINK_WHITELIST_DOMAIN_CACHE_KEY)  # clear cache value
         url = self._get_url()
         user = make_user()
         headers = make_authentication_headers_for_user(user)

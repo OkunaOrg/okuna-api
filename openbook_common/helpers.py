@@ -49,7 +49,7 @@ def extract_urls_from_string(text):
     results = [url for url in extractor.gen_urls(text)]
     for url in results:
         scheme = urlparse(url).scheme
-        if scheme and (scheme != 'https' or scheme != 'http'):
+        if scheme and scheme != 'https' and scheme != 'http':
             results.remove(url)
 
     return results
