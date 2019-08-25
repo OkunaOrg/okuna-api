@@ -18,6 +18,7 @@ from django.urls import path, include
 from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
+from proxy.views import proxy_view
 
 from openbook_auth.views.auth.views import Register, Login, UsernameCheck, EmailCheck, EmailVerify, \
     PasswordResetRequest, PasswordResetVerify
@@ -387,3 +388,7 @@ urlpatterns = [
 # The static helper works only in debug mode
 # https://docs.djangoproject.com/en/2.1/howto/static-files/#serving-files-uploaded-by-a-user-during-development
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Link previews proxy their urls, use local proxy API on debug/test
+if settings.DEBUG or settings.TESTING:
+    urlpatterns.append(url('proxy/(?P<url>.*)', proxy_view, name='proxy'), )

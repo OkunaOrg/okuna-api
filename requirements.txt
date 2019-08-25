@@ -21,6 +21,7 @@ django-model-utils==3.2.0
 django-nose==1.4.6
 django-ordered-model==3.3.0
 django-positions==0.6.0
+django-proxy==1.2.1
 django-redis==4.10.0
 django-replicated==2.6.1
 django-rq-scheduler==1.1.3

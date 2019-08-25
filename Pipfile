@@ -48,6 +48,7 @@ django-ordered-model = "*"
 webpreview = "*"
 beautifulsoup4 = "*"
 urlextract = "*"
+django-proxy = "*"
 
 [pipenv]
 allow_prereleases = true

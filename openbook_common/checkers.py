@@ -5,6 +5,7 @@ from openbook_common.helpers import extract_urls_from_string
 from openbook_common.utils.model_loaders import get_proxy_whitelist_domain_model
 
 
+# This check is used on nginx auth, doesn't support 400
 def check_url_can_be_proxied(url):
     urls = extract_urls_from_string(url)
 

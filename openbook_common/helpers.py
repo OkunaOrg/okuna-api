@@ -101,7 +101,7 @@ def normalise_url(url):
 
 
 def get_url_metadata(preview_link):
-    title, description, image_url = web_preview(preview_link)
+    title, description, image_url = web_preview(preview_link, parser='html.parser')
     favicon_url = get_favicon_url_from_url(preview_link)
     domain_url = get_url_domain(preview_link)
     if image_url is not None:

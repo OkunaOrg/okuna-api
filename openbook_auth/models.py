@@ -1823,6 +1823,7 @@ class User(AbstractUser):
 
     def get_preview_link_data_for_url(self, url):
         check_can_preview_url(url)
+        url = normalise_url(url)
         return get_url_metadata(url)
 
     def translate_post_with_id(self, post_id):

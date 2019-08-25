@@ -17,6 +17,7 @@ class ProxyAuth(APIView):
         serializer = ProxyAuthSerializer(data={
             'url': url
         })
+
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
