@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from urlextract import URLExtract
 from webpreview import web_preview
+from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.utils.model_loaders import get_language_model
 from openbook_translation import translation_strategy
@@ -79,7 +80,13 @@ def get_domain_with_protocol_from_url(url):
 
 
 def get_favicon_url_from_url(url):
-    page = urllib.request.urlopen(url)
+    url_scheme = urlparse(url).scheme
+
+    if url_scheme != 'http' and url_scheme != 'https':
+        raise PermissionError(_('You can only retrieve favicon urls from protocol http and https.'))
+
+    # Doing validation up here
+    page = urllib.request.urlopen(url) # nosec
     soup = BeautifulSoup(page, features='html.parser')
     favicon_link = soup.find("link", rel="icon")
     if not favicon_link:
