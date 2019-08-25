@@ -25,7 +25,7 @@ from openbook_circles.models import Circle
 from openbook_common.helpers import normalise_url
 from openbook_common.tests.helpers import make_user, make_users, make_fake_post_text, \
     make_authentication_headers_for_user, make_circle, make_community, make_list, make_moderation_category, \
-    get_test_usernames, get_test_videos, get_test_image, get_post_links
+    get_test_usernames, get_test_videos, get_test_image, get_post_links, make_global_moderator
 from openbook_common.utils.helpers import sha256sum
 from openbook_communities.models import Community
 from openbook_lists.models import List
@@ -2408,6 +2408,131 @@ class PostsAPITests(OpenbookAPITestCase):
 
         self.assertEqual(0, len(response_posts))
 
+    def test_cant_retrieve_reported_community_posts_by_username(self):
+        """
+        should not be able to retrieve reported community posts by username
+        """
+        user = make_user()
+
+        community = make_community()
+
+        post_creator = make_user()
+
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+
+        report_category = make_moderation_category()
+
+        post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+        user.report_post(post=post, category_id=report_category.pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': post_creator.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_reported_and_approved_community_posts_by_username(self):
+        """
+        should not be able to retrieve and reported and approved community posts by username
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        post_creator = make_user()
+
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+        post_reporter = make_user()
+
+        report_category = make_moderation_category()
+
+        post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_reporter.report_post(post=post, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=report_category.pk)
+        community_creator.approve_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': post_creator.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_soft_deleted_community_posts_by_username(self):
+        """
+        should not be able to retrieve soft deleted community posts by username
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        post_creator = make_user()
+
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+
+        post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post.soft_delete()
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': post_creator.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_closed_community_posts_by_username(self):
+        """
+        should not be able to retrieve closed community posts by username
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        post_creator = make_user()
+
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+
+        post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        community_creator.close_post(post=post)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': post_creator.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
     def test_cant_retrieve_draft_public_community_posts(self):
         """
         should not be able to retrieve draft public community posts
@@ -2722,6 +2847,70 @@ class PostsAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(user)
         response = self.client.get(url, {
             'username': following_user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_own_reported_and_approved_community_posts_by_username(self):
+        """
+        should not be able to retrieve own approved and reported posts by username
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+        post_reporter = make_user()
+
+        report_category = make_moderation_category()
+
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_reporter.report_post(post=post, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=report_category.pk)
+        community_creator.approve_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_own_reported_and_approved_posts_by_username(self):
+        """
+        should not be able to retrieve own approved and reported posts by username
+        """
+        user = make_user()
+
+        global_moderator = make_global_moderator()
+
+        post_reporter = make_user()
+
+        report_category = make_moderation_category()
+
+        post = user.create_public_post(text=make_fake_post_text())
+        post_reporter.report_post(post=post, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=report_category.pk)
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': user.username
         }, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)

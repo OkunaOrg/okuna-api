@@ -95,9 +95,7 @@ def check_can_open_post_with_id(user, post_id):
         )
 
 
-def check_can_close_post_with_id(user, post_id):
-    Post = get_post_model()
-    post = Post.objects.select_related('community').get(id=post_id)
+def check_can_close_post(user, post):
     if post.community_id is None:
         raise ValidationError(
             _('Only community posts can be opened/closed')

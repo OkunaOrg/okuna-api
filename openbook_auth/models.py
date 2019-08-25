@@ -16,15 +16,12 @@ from pilkit.processors import ResizeToFill, ResizeToFit
 from rest_framework.authtoken.models import Token
 from django.db.models import Q, F, Count
 from django.core.mail import EmailMultiAlternatives
-from webpreview import web_preview
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
 from openbook_notifications.helpers import get_notification_language_code_for_target_user
 from openbook_translation import translation_strategy
-from openbook_common.helpers import get_supported_translation_language, make_proxy_image_url, \
-    get_url_domain, get_favicon_url_from_url, \
-    normalise_url, get_url_metadata
+from openbook_common.helpers import get_supported_translation_language, normalise_url, get_url_metadata
 from openbook_common.models import Badge, Language
 from openbook_common.utils.helpers import delete_file_field
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
@@ -1848,9 +1845,12 @@ class User(AbstractUser):
         return post
 
     def close_post_with_id(self, post_id):
-        check_can_close_post_with_id(user=self, post_id=post_id)
         Post = get_post_model()
         post = Post.objects.select_related('community').get(id=post_id)
+        return self.close_post(post=post)
+
+    def close_post(self, post):
+        check_can_close_post(user=self, post=post)
         post.community.create_close_post_log(source_user=self, target_user=post.creator, post=post)
         post.is_closed = True
         post.save()
@@ -1908,8 +1908,13 @@ class User(AbstractUser):
         :return:
         """
         Post = get_post_model()
+        ModeratedObject = get_moderated_object_model()
 
         posts_query = Q(creator_id=self.id, is_deleted=False, status=Post.STATUS_PUBLISHED)
+
+        exclude_reported_and_approved_posts_query = ~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED)
+
+        posts_query.add(exclude_reported_and_approved_posts_query, Q.AND)
 
         if not self.has_profile_community_posts_visible():
             posts_query.add(Q(community__isnull=True), Q.AND)
@@ -1928,7 +1933,12 @@ class User(AbstractUser):
     def get_posts_for_user(self, user, max_id=None, min_id=None):
         Post = get_post_model()
         Circle = get_circle_model()
+        ModeratedObject = get_moderated_object_model()
         world_circle_id = Circle.get_world_circle_id()
+
+        exclude_reported_and_approved_posts_query = ~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED)
+
+        exclude_reported_posts_query = ~Q(moderated_object__reports__reporter_id=self.pk)
 
         cursor_scrolling_query = Q()
 
@@ -1950,12 +1960,14 @@ class User(AbstractUser):
             world_circle_posts_query &
             exclude_deleted_posts_query &
             exclude_blocked_posts_query &
+            exclude_reported_posts_query &
+            exclude_reported_and_approved_posts_query &
             cursor_scrolling_query
         )
 
         # Get user community posts
         Community = get_community_model()
-        community_posts_query = Q(creator__pk=user.pk, community__isnull=False)
+        community_posts_query = Q(creator__pk=user.pk, community__isnull=False, is_closed=False)
         exclude_private_community_posts_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC) | Q(
             community__memberships__user__id=self.pk)
 
@@ -1964,6 +1976,8 @@ class User(AbstractUser):
             exclude_private_community_posts_query &
             exclude_deleted_posts_query &
             exclude_blocked_posts_query &
+            exclude_reported_posts_query &
+            exclude_reported_and_approved_posts_query &
             cursor_scrolling_query
         )
 
@@ -1975,6 +1989,8 @@ class User(AbstractUser):
             connection_circles_query &
             exclude_deleted_posts_query &
             exclude_blocked_posts_query &
+            exclude_reported_posts_query &
+            exclude_reported_and_approved_posts_query &
             cursor_scrolling_query
         )
 
