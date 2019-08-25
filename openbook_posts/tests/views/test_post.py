@@ -2650,7 +2650,6 @@ class GetPostPreviewDataAPITests(OpenbookAPITestCase):
         """
         should retrieve preview data for a post and return 200
         """
-        cache.delete(settings.POST_LINK_WHITELIST_DOMAIN_CACHE_KEY)  # clear cache value
         user = make_user()
         headers = make_authentication_headers_for_user(user)
         post_text = 'im a text with link www.okuna.io'
@@ -2680,7 +2679,7 @@ class GetPostPreviewDataAPITests(OpenbookAPITestCase):
         url = self._get_url(post)
         response = self.client.get(url, **headers)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_cannot_retrieve_post_preview_data_for_post_with_no_link(self):
         """

@@ -356,17 +356,15 @@ class PostsAPITests(OpenbookAPITestCase):
             link = normalise_url(link)
             self.assertTrue(link in result_links)
 
-    def test_create_text_post_skips_http_urls(self):
+    def test_create_text_post_does_not_skips_http_urls(self):
         """
-        should skip http urls in post text while creating post links models from them
+        should not skip http urls in post text while creating post links models from them
         """
         user = make_user()
 
         headers = make_authentication_headers_for_user(user=user)
 
-        links = ['http://unsafe.com']
-
-        post_text = " | ".join(links)
+        post_text = 'http://unsafe.com'
 
         data = {
             'text': post_text
@@ -379,7 +377,11 @@ class PostsAPITests(OpenbookAPITestCase):
         post_links = PostLink.objects.filter(post_id=post.pk)
         result_links = [post_link.link for post_link in post_links]
 
-        self.assertEqual(len(result_links), 0)
+        result_link = result_links[0]
+
+        self.assertEqual(result_link, post_text)
+
+        self.assertEqual(len(result_links), 1)
 
     def test_create_post_is_added_to_world_circle(self):
         """
@@ -2632,7 +2634,8 @@ class PostsAPITests(OpenbookAPITestCase):
 
         with open(test_image['path'], 'rb') as file:
             file = File(file)
-            community_member.create_community_post(text=make_fake_post_text(), image=file, community_name=community.name)
+            community_member.create_community_post(text=make_fake_post_text(), image=file,
+                                                   community_name=community.name)
 
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
@@ -2664,7 +2667,8 @@ class PostsAPITests(OpenbookAPITestCase):
 
         with open(test_image['path'], 'rb') as file:
             file = File(file)
-            community_member.create_community_post(text=make_fake_post_text(), image=file, community_name=community.name)
+            community_member.create_community_post(text=make_fake_post_text(), image=file,
+                                                   community_name=community.name)
 
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
