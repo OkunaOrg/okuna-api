@@ -687,6 +687,34 @@ class PostsAPITests(OpenbookAPITestCase):
             media = PostMedia.objects.get(post_id=response_post_id, type=PostMedia.MEDIA_TYPE_VIDEO)
             self.assertEqual(media.content_object.hash, filehash)
 
+    def test_create_video_post_creates_thumbnail(self):
+        """
+        creating a video post creates a thumbnail and return 201
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        for test_video in get_test_videos():
+            with open(test_video['path'], 'rb') as file:
+                data = {
+                    'video': file
+                }
+
+                url = self._get_url()
+
+                response = self.client.put(url, data, **headers, format='multipart')
+
+                self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+                response_post = json.loads(response.content)
+
+                response_post_id = response_post.get('id')
+
+                media = PostMedia.objects.get(post_id=response_post_id, type=PostMedia.MEDIA_TYPE_VIDEO)
+                self.assertIsNotNone(media.content_object.thumbnail)
+                self.assertIsNotNone(media.content_object.thumbnail_width)
+                self.assertIsNotNone(media.content_object.thumbnail_height)
+
     def test_create_video_and_text_post(self):
         """
         should be able to create a video and text post and return 201

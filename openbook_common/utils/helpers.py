@@ -113,12 +113,11 @@ def get_magic():
 def write_in_memory_file_to_disk(in_memory_file):
     extension = os.path.splitext(in_memory_file.name)[1]
 
-    print(extension)
-
     tmp_file = tempfile.mkstemp(suffix=extension)
     tmp_file_path = tmp_file[1]
     tmp_file = open(tmp_file_path, 'wb')
     # Was read for the magic headers thing
     tmp_file.write(in_memory_file.read())
+    tmp_file.seek(0)
     tmp_file.close()
     return tmp_file

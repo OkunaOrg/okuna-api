@@ -1,3 +1,7 @@
+import os
+import tempfile
+
+from django.core.files import File
 from langdetect import DetectorFactory
 from langdetect.lang_detect_exception import LangDetectException
 from django.conf import settings
@@ -127,3 +131,14 @@ def get_url_metadata(preview_link):
         'favicon_url': favicon_url,
         'domain_url': domain_url
     }
+
+
+def write_in_memory_file_to_disk(in_memory_file):
+    # Write it to disk
+    tmp_file = tempfile.mkstemp(suffix=in_memory_file.name)
+    tmp_file_path = tmp_file[1]
+    tmp_file = open(tmp_file_path, 'wb')
+    tmp_file.write(in_memory_file.read())
+    tmp_file.seek(0)
+    tmp_file.close()
+    return tmp_file

@@ -15,7 +15,6 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Count
 import ffmpy
-from django.core.cache import cache
 
 # Create your views here.
 from ordered_model.models import OrderedModel
@@ -23,6 +22,7 @@ from pilkit.processors import ResizeToFit
 from rest_framework.exceptions import ValidationError
 
 from django.conf import settings
+from video_encoding.backends import get_backend
 from video_encoding.fields import VideoField
 from video_encoding.models import Format
 
@@ -30,7 +30,8 @@ from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
 from openbook_common.models import Emoji, Language
-from openbook_common.utils.helpers import delete_file_field, sha256sum, extract_usernames_from_string, get_magic
+from openbook_common.utils.helpers import delete_file_field, sha256sum, extract_usernames_from_string, get_magic, \
+    write_in_memory_file_to_disk
 from openbook_common.utils.model_loaders import get_emoji_model, \
     get_circle_model, get_community_model, get_post_comment_notification_model, \
     get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model, \
@@ -311,14 +312,7 @@ class Post(models.Model):
 
         if file_mime_subtype == 'gif':
             if is_in_memory_file:
-                # Write it to disk
-                tmp_file = tempfile.mkstemp(suffix='.gif')
-                tmp_file_path = tmp_file[1]
-                tmp_file = open(tmp_file_path, 'wb')
-                # Was read for the magic headers thing
-                tmp_file.write(file.read())
-                tmp_file.close()
-                file = tmp_file
+                file = write_in_memory_file_to_disk(file)
 
             temp_dir = tempfile.gettempdir()
             converted_gif_file_name = os.path.join(temp_dir, str(uuid.uuid4()) + '.mp4')
@@ -586,10 +580,30 @@ class PostVideo(models.Model):
 
     format_set = GenericRelation(Format)
 
+    thumbnail = ProcessedImageField(verbose_name=_('thumbnail'), storage=post_image_storage,
+                                    upload_to=upload_to_post_image_directory,
+                                    width_field='thumbnail_width',
+                                    height_field='thumbnail_height',
+                                    blank=False, null=True, format='JPEG', options={'quality': 60},
+                                    processors=[ResizeToFit(width=1024, upscale=False)])
+
+    thumbnail_width = models.PositiveIntegerField(editable=False, null=False, blank=False)
+    thumbnail_height = models.PositiveIntegerField(editable=False, null=False, blank=False)
+
     @classmethod
     def create_post_media_video(cls, file, post_id, order):
         hash = sha256sum(file=file.file)
-        post_video = cls.objects.create(file=file, post_id=post_id, hash=hash)
+        video_backend = get_backend()
+
+        if isinstance(file, InMemoryUploadedFile):
+            # If its in memory, doing read shouldn't be an issue as the file should be small.
+            in_disk_file = write_in_memory_file_to_disk(file)
+            thumbnail_path = video_backend.get_thumbnail(video_path=in_disk_file.name)
+        else:
+            thumbnail_path = video_backend.get_thumbnail(video_path=file.file.name)
+
+        with open(thumbnail_path, 'rb+') as thumbnail_file:
+            post_video = cls.objects.create(file=file, post_id=post_id, hash=hash, thumbnail=File(thumbnail_file),)
         PostMedia.create_post_media(type=PostMedia.MEDIA_TYPE_VIDEO,
                                     content_object=post_video,
                                     post_id=post_id, order=order)
