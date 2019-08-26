@@ -64,7 +64,7 @@ class PostVideoSerializer(serializers.ModelSerializer):
             'duration',
             'thumbnail',
             'thumbnail_width',
-            'thumbnail_heigth',
+            'thumbnail_height',
         )
 
 
