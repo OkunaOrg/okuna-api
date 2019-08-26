@@ -86,7 +86,11 @@ def get_favicon_url_from_url(url):
         raise PermissionError(_('You can only retrieve favicon urls from protocol http and https.'))
 
     # Doing validation up here
-    page = urllib.request.urlopen(url) # nosec
+    page = urllib.request.urlopen(url)  # nosec
+
+    if page.getcode() != 200:
+        return None
+
     soup = BeautifulSoup(page, features='html.parser')
     favicon_link = soup.find("link", rel="icon")
     if not favicon_link:

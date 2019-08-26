@@ -512,6 +512,7 @@ class Post(models.Model):
             if len(link_urls) > 0:
                 self.create_links(link_urls)
 
+
 class PostMedia(OrderedModel):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='media')
     order_with_respect_to = 'post'
