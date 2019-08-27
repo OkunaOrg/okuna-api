@@ -147,7 +147,6 @@ class PostLinkSerializer(serializers.ModelSerializer):
 
 
 class GetPostPostSerializer(serializers.ModelSerializer):
-    image = PostImageSerializer(many=False)
     creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
@@ -170,7 +169,6 @@ class GetPostPostSerializer(serializers.ModelSerializer):
             'post_links',
             'created',
             'text',
-            'image',
             'creator',
             'reaction',
             'language',
@@ -184,6 +182,7 @@ class GetPostPostSerializer(serializers.ModelSerializer):
             'is_encircled',
             'media_height',
             'media_width',
+            'media_thumbnail',
         )
 
 

@@ -95,17 +95,6 @@ class PostCreatorSerializer(serializers.ModelSerializer):
         )
 
 
-class PostImageSerializer(serializers.ModelSerializer):
-    image = serializers.ImageField(read_only=True, required=False, allow_empty_file=True)
-
-    class Meta:
-        model = PostImage
-        fields = (
-            'image',
-            'width',
-            'height'
-        )
-
 class PostReactionEmojiSerializer(serializers.ModelSerializer):
     class Meta:
         model = Emoji
@@ -199,7 +188,6 @@ class PostLinkSerializer(serializers.ModelSerializer):
 
 
 class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
-    image = PostImageSerializer(many=False)
     creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
@@ -222,7 +210,6 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'post_links',
             'created',
             'text',
-            'image',
             'creator',
             'reaction',
             'comments_enabled',
@@ -236,11 +223,11 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'is_closed',
             'media_height',
             'media_width',
+            'media_thumbnail',
         )
 
 
 class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
-    image = PostImageSerializer(many=False)
     creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
@@ -256,7 +243,6 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
             'reactions_emoji_counts',
             'created',
             'text',
-            'image',
             'creator',
             'language',
             'comments_enabled',
@@ -264,4 +250,5 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
             'is_edited',
             'media_height',
             'media_width',
+            'media_thumbnail',
         )

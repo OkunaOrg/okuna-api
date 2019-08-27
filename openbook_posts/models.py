@@ -44,11 +44,14 @@ from openbook_notifications.helpers import send_post_comment_user_mention_push_n
     send_post_user_mention_push_notification
 from openbook_posts.checkers import check_can_be_updated, check_can_add_media, check_can_be_published, \
     check_mimetype_is_supported_media_mimetypes
-from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory
+from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory, \
+    upload_to_post_directory
 from openbook_posts.jobs import process_post_media
 
 magic = get_magic()
 from openbook_common.helpers import get_language_for_text, extract_urls_from_string, normalise_url
+
+post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else default_storage
 
 
 class Post(models.Model):
@@ -77,7 +80,11 @@ class Post(models.Model):
     )
     status = models.CharField(blank=False, null=False, choices=STATUSES, default=STATUS_DRAFT, max_length=2)
     media_height = models.PositiveSmallIntegerField(_('media height'), null=True)
-    media_width = models.PositiveSmallIntegerField(_('media height'), null=True)
+    media_width = models.PositiveSmallIntegerField(_('media width'), null=True)
+    media_thumbnail = ProcessedImageField(verbose_name=_('thumbnail'), storage=post_image_storage,
+                                          upload_to=upload_to_post_directory,
+                                          blank=False, null=True, format='JPEG', options={'quality': 30},
+                                          processors=[ResizeToFit(width=512, upscale=False)])
 
     class Meta:
         index_together = [
@@ -297,7 +304,7 @@ class Post(models.Model):
         if is_in_memory_file:
             file_mime = magic.from_buffer(file.read())
         else:
-            file_mime = magic.from_file(file.name)
+            file_mime = magic.from_file(file.temporary_file_path())
 
         check_mimetype_is_supported_media_mimetypes(file_mime)
         # Mime check moved pointer
@@ -331,11 +338,13 @@ class Post(models.Model):
             if not has_other_media:
                 self.media_width = post_image.width
                 self.media_height = post_image.height
+                self.media_thumbnail = file
         elif file_mime_type == 'video':
             post_video = self._add_media_video(video=file, order=order)
             if not has_other_media:
                 self.media_width = post_video.width
                 self.media_height = post_video.height
+                self.media_thumbnail = post_video.thumbnail.file
         else:
             raise ValidationError(
                 _('Unsupported media file type')
@@ -531,9 +540,6 @@ class PostMedia(OrderedModel):
         return cls.objects.create(type=type, content_object=content_object, post_id=post_id, order=order)
 
 
-post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else default_storage
-
-
 class PostImage(models.Model):
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='image', null=True)
     image = ProcessedImageField(verbose_name=_('image'), storage=post_image_storage,
@@ -584,7 +590,7 @@ class PostVideo(models.Model):
                                     upload_to=upload_to_post_image_directory,
                                     width_field='thumbnail_width',
                                     height_field='thumbnail_height',
-                                    blank=False, null=True, format='JPEG', options={'quality': 60},
+                                    blank=False, null=True, format='JPEG', options={'quality': 30},
                                     processors=[ResizeToFit(width=1024, upscale=False)])
 
     thumbnail_width = models.PositiveIntegerField(editable=False, null=False, blank=False)
@@ -603,7 +609,7 @@ class PostVideo(models.Model):
             thumbnail_path = video_backend.get_thumbnail(video_path=file.file.name)
 
         with open(thumbnail_path, 'rb+') as thumbnail_file:
-            post_video = cls.objects.create(file=file, post_id=post_id, hash=hash, thumbnail=File(thumbnail_file),)
+            post_video = cls.objects.create(file=file, post_id=post_id, hash=hash, thumbnail=File(thumbnail_file), )
         PostMedia.create_post_media(type=PostMedia.MEDIA_TYPE_VIDEO,
                                     content_object=post_video,
                                     post_id=post_id, order=order)

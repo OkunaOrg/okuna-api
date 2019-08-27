@@ -14,7 +14,7 @@ class AddPostMediaSerializer(serializers.Serializer):
         validators=[post_uuid_exists],
         required=True,
     )
-    file = serializers.FileField(max_length=20, required=True,
+    file = serializers.FileField(max_length=150, required=True,
                                  allow_empty_file=False)
     order = serializers.IntegerField(required=False)
 

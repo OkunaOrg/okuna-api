@@ -17,7 +17,7 @@ import random
 import logging
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
-    make_user, get_test_videos, get_test_image, get_test_video, make_circle, make_community
+    make_user, get_test_videos, get_test_image, get_test_video, make_circle, make_community, get_test_images
 from openbook_communities.models import Community
 from openbook_posts.models import PostMedia, Post
 
@@ -181,6 +181,62 @@ class PostMediaAPITests(OpenbookAPITestCase):
         response = self.client.put(url, data, **headers, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_add_first_media_video_creates_media_thumbnail_and_dimensions(self):
+        """
+        should create a post media_thumbnail and dimensions when adding the first media video
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user=user)
+
+        for test_video in get_test_videos():
+            with open(test_video['path'], 'rb') as file:
+                post = user.create_public_post(is_draft=True)
+
+                data = {
+                    'file': file
+                }
+
+                url = self._get_url(post=post)
+
+                response = self.client.put(url, data, **headers, format='multipart')
+
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+                post.refresh_from_db()
+
+                self.assertIsNotNone(post.media_thumbnail)
+                self.assertIsNotNone(post.media_width)
+                self.assertIsNotNone(post.media_height)
+
+    def test_add_first_media_image_creates_media_thumbnail_and_dimensions(self):
+        """
+        should create a post media_thumbnail and dimensions when adding the first media image
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user=user)
+
+        for test_image in get_test_images():
+            with open(test_image['path'], 'rb') as file:
+                post = user.create_public_post(is_draft=True)
+
+                data = {
+                    'file': file
+                }
+
+                url = self._get_url(post=post)
+
+                response = self.client.put(url, data, **headers, format='multipart')
+
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+                post.refresh_from_db()
+
+                self.assertIsNotNone(post.media_thumbnail)
+
+                self.assertIsNotNone(post.media_thumbnail)
+                self.assertIsNotNone(post.media_width)
+                self.assertIsNotNone(post.media_height)
 
     def test_can_retrieve_post_empty_media_if_no_media(self):
         """

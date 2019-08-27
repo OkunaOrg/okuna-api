@@ -68,17 +68,6 @@ class PostCommentCommenterSerializer(serializers.ModelSerializer):
         )
 
 
-class PostCommentPostImageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PostImage
-        fields = (
-            'id',
-            'image',
-            'width',
-            'height'
-        )
-
-
 class PostCommentCreatorProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
@@ -102,7 +91,6 @@ class PostCommentCreatorSerializer(serializers.ModelSerializer):
 
 
 class NotificationPostSerializer(serializers.ModelSerializer):
-    image = PostCommentPostImageSerializer()
     creator = PostCommentCreatorSerializer()
     is_encircled = IsEncircledField()
 
@@ -111,7 +99,6 @@ class NotificationPostSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'uuid',
-            'image',
             'text',
             'creator',
             'created',
@@ -119,6 +106,7 @@ class NotificationPostSerializer(serializers.ModelSerializer):
             'is_encircled',
             'media_height',
             'media_width',
+            'media_thumbnail'
         )
 
 
