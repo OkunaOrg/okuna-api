@@ -8,7 +8,7 @@ from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKe
 from django.contrib.contenttypes.models import ContentType
 from django.core.files import File
 from django.core.files.storage import default_storage
-from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile, SimpleUploadedFile
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
@@ -299,12 +299,15 @@ class Post(models.Model):
 
     def add_media(self, file, order=None):
         check_can_add_media(post=self)
-        is_in_memory_file = isinstance(file, InMemoryUploadedFile)
+
+        is_in_memory_file = isinstance(file, InMemoryUploadedFile) or isinstance(file, SimpleUploadedFile)
 
         if is_in_memory_file:
             file_mime = magic.from_buffer(file.read())
-        else:
+        elif isinstance(file, TemporaryUploadedFile):
             file_mime = magic.from_file(file.temporary_file_path())
+        else:
+            file_mime = magic.from_file(file.name)
 
         check_mimetype_is_supported_media_mimetypes(file_mime)
         # Mime check moved pointer
@@ -324,7 +327,9 @@ class Post(models.Model):
             temp_dir = tempfile.gettempdir()
             converted_gif_file_name = os.path.join(temp_dir, str(uuid.uuid4()) + '.mp4')
 
-            ff = ffmpy.FFmpeg(inputs={file.name: None}, outputs={converted_gif_file_name: None})
+            ff = ffmpy.FFmpeg(
+                inputs={file.temporary_file_path() if hasattr(file, 'temporary_file_path') else file.name: None},
+                outputs={converted_gif_file_name: None})
             ff.run()
             converted_gif_file = open(converted_gif_file_name, 'rb')
             temp_files_to_close.append(converted_gif_file)
