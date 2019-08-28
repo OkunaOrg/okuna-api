@@ -348,7 +348,7 @@ class Post(models.Model):
                     if existing_mention.user.username not in usernames:
                         existing_mention.delete()
                     else:
-                        existing_mention_usernames = existing_mention.user.username
+                        existing_mention_usernames.append(existing_mention.user.username)
 
                 PostUserMention = get_post_user_mention_model()
                 User = get_user_model()
