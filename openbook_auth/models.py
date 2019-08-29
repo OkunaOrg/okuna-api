@@ -966,12 +966,15 @@ class User(AbstractUser):
         post_commenter = self
 
         Post = get_post_model()
-        post_notification_target_users = Post.get_post_comment_notification_target_users(post_id=post.id,
-                                                                                         post_commenter_id=self.pk)
+
+        # Language should also be prefetched here, for some reason it doesnt work....
+        post_notification_target_users = Post.get_post_comment_notification_target_users(post=post,
+                                                                                         post_commenter=post_commenter).only(
+            'id', 'username', 'notifications_settings__post_comment_notifications')
         PostCommentNotification = get_post_comment_notification_model()
 
         for post_notification_target_user in post_notification_target_users:
-            if not post_notification_target_user.can_see_post(post=post):
+            if post_notification_target_user.pk == post_commenter.pk or not post_notification_target_user.can_see_post(post=post):
                 continue
             post_notification_target_user_is_post_creator = post_notification_target_user.id == post_creator.id
             post_notification_target_has_comment_notifications_enabled = post_notification_target_user.has_comment_notifications_enabled_for_post_with_id(
@@ -1019,13 +1022,17 @@ class User(AbstractUser):
         post = post_comment.post
 
         Post = get_post_model()
-        post_notification_target_users = Post.get_post_comment_notification_target_users(post_id=post.id,
-                                                                                         post_commenter_id=self.pk,
-                                                                                         post_comment_id=post_comment.pk)
+
+        # Language should also be prefetched here, for some reason it doesnt work....
+        post_notification_target_users = Post.get_post_comment_reply_notification_target_users(
+            post_commenter=self,
+            parent_post_comment=post_comment).only(
+            'id', 'username', 'notifications_settings__post_comment_reply_notifications')
+
         PostCommentReplyNotification = get_post_comment_reply_notification_model()
 
         for post_notification_target_user in post_notification_target_users:
-            if not post_notification_target_user.can_see_post(post=post):
+            if post_notification_target_user.pk == replier.pk or not post_notification_target_user.can_see_post(post=post):
                 continue
             post_notification_target_user_is_post_comment_creator = post_notification_target_user.id == comment_creator
             post_notification_target_has_comment_reply_notifications_enabled = \
@@ -1035,6 +1042,7 @@ class User(AbstractUser):
             if post_notification_target_has_comment_reply_notifications_enabled:
                 target_user_language_code = get_notification_language_code_for_target_user(
                     post_notification_target_user)
+
                 with translation.override(target_user_language_code):
                     if post_notification_target_user_is_post_comment_creator:
                         notification_message = {
@@ -2567,30 +2575,12 @@ class User(AbstractUser):
 
     def search_participants_for_post(self, post, query):
         self.can_see_post(post=post)
-
-        search_post_participants_query = self._make_search_post_participants_query(post=post, query=query)
-
-        post_participants_queryset = User.objects.filter(search_post_participants_query)
-
+        # In the future this should prioritise post participants above the global search
+        # ATM combining the post participants and global query results in killing perf
+        # Therefore for now uses the global search
         search_users_query = self._make_search_users_query(query=query)
 
-        search_users_queryset = User.objects.filter(search_users_query)
-
-        return post_participants_queryset.union(search_users_queryset)
-
-    def _make_search_post_participants_query(self, post, query):
-        post_participants_query = post.make_participants_query()
-
-        search_participants_query = Q(username__icontains=query)
-        search_participants_query.add(Q(profile__name__icontains=query), Q.OR)
-        search_participants_query.add(
-            ~Q(blocked_by_users__blocker_id=self.pk) & ~Q(user_blocks__blocked_user_id=self.pk),
-            Q.AND)
-        search_participants_query.add(Q(is_deleted=False), Q.AND)
-
-        post_participants_query.add(search_participants_query, Q.AND)
-
-        return post_participants_query
+        return User.objects.filter(search_users_query)
 
     def get_participants_for_post_with_uuid(self, post_uuid):
         Post = get_post_model()
@@ -2599,8 +2589,7 @@ class User(AbstractUser):
 
     def get_participants_for_post(self, post):
         self.can_see_post(post=post)
-        post_participants_query = post.make_participants_query()
-        return User.objects.filter(post_participants_query).distinct()
+        return post.get_participants()
 
     def _check_has_not_reported_moderated_object_with_id(self, moderated_object_id):
         if self.has_reported_moderated_object_with_id(moderated_object_id=moderated_object_id):

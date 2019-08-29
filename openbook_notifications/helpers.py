@@ -228,7 +228,7 @@ def send_community_invite_push_notification(community_invite):
 
 
 def get_notification_language_code_for_target_user(target_user):
-    if target_user.language is not None and translation.check_for_language(target_user.language.code):
+    if target_user.language and translation.check_for_language(target_user.language.code):
         return target_user.language.code
 
     return translation_strategy.get_default_translation_language_code()
