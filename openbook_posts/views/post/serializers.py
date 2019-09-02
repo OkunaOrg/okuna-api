@@ -94,6 +94,7 @@ class PostImageSerializer(serializers.ModelSerializer):
         model = PostImage
         fields = (
             'image',
+            'thumbnail',
             'width',
             'height'
         )

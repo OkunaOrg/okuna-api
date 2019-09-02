@@ -556,6 +556,10 @@ class PostImage(models.Model):
     width = models.PositiveIntegerField(editable=False, null=False, blank=False)
     height = models.PositiveIntegerField(editable=False, null=False, blank=False)
     hash = models.CharField(_('hash'), max_length=64, blank=False, null=True)
+    thumbnail = ProcessedImageField(verbose_name=_('thumbnail'), storage=post_image_storage,
+                                    upload_to=upload_to_post_image_directory,
+                                    blank=False, null=True, format='JPEG', options={'quality': 30},
+                                    processors=[ResizeToFit(width=1024, upscale=False)])
 
     media = GenericRelation(PostMedia)
 
@@ -567,7 +571,7 @@ class PostImage(models.Model):
     @classmethod
     def create_post_media_image(cls, image, post_id, order):
         hash = sha256sum(file=image.file)
-        post_image = cls.objects.create(image=image, post_id=post_id, hash=hash)
+        post_image = cls.objects.create(image=image, post_id=post_id, hash=hash, thumbnail=image)
         PostMedia.create_post_media(type=PostMedia.MEDIA_TYPE_IMAGE,
                                     content_object=post_image,
                                     post_id=post_id, order=order)

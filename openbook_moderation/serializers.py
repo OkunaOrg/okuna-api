@@ -50,6 +50,7 @@ class ModeratedObjectPostImageSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'image',
+            'thumbnail',
             'width',
             'height'
         )

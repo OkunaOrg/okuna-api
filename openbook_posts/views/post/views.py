@@ -277,7 +277,7 @@ class PublishPost(APIView):
 class PostStatus(APIView):
     permission_classes = (IsAuthenticated,)
 
-    def post(self, request, post_uuid):
+    def get(self, request, post_uuid):
         serializer = GetPostStatusSerializer(data={
             'post_uuid': post_uuid
         })

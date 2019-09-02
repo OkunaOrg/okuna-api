@@ -238,6 +238,33 @@ class PostMediaAPITests(OpenbookAPITestCase):
                 self.assertIsNotNone(post.media_width)
                 self.assertIsNotNone(post.media_height)
 
+    def test_add_media_image_creates_image_thumbnails(self):
+        """
+        should create an image thumbnail and dimensions when adding a media image
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user=user)
+
+        for test_image in get_test_images():
+            with open(test_image['path'], 'rb') as file:
+                post = user.create_public_post(is_draft=True)
+
+                data = {
+                    'file': file
+                }
+
+                url = self._get_url(post=post)
+
+                response = self.client.put(url, data, **headers, format='multipart')
+
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+                post.refresh_from_db()
+
+                first_media = post.get_first_media()
+                post_image = first_media.content_object
+                self.assertIsNotNone(post_image.thumbnail)
+
     def test_can_retrieve_post_empty_media_if_no_media(self):
         """
         should be able to retrieve a posts empty media if the pos has no media
