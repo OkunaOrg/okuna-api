@@ -613,9 +613,9 @@ class PostVideo(models.Model):
         if isinstance(file, InMemoryUploadedFile):
             # If its in memory, doing read shouldn't be an issue as the file should be small.
             in_disk_file = write_in_memory_file_to_disk(file)
-            thumbnail_path = video_backend.get_thumbnail(video_path=in_disk_file.name)
+            thumbnail_path = video_backend.get_thumbnail(video_path=in_disk_file.name, at_time=0.0)
         else:
-            thumbnail_path = video_backend.get_thumbnail(video_path=file.file.name)
+            thumbnail_path = video_backend.get_thumbnail(video_path=file.file.name, at_time=0.0)
 
         with open(thumbnail_path, 'rb+') as thumbnail_file:
             post_video = cls.objects.create(file=file, post_id=post_id, hash=hash, thumbnail=File(thumbnail_file), )

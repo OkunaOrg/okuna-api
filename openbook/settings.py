@@ -428,17 +428,7 @@ VIDEO_ENCODING_FORMATS = {
                 '-codec:v', 'libx264', '-crf', '20', '-preset', 'medium',
                 '-b:v', '1000k', '-maxrate', '1000k', '-bufsize', '2000k',
                 '-vf', 'scale=-2:480',  # http://superuser.com/a/776254
-                '-codec:a', 'aac', '-b:a', '128k', '-strict', '-2',
-            ],
-        },
-        {
-            'name': 'webm_sd',
-            'extension': 'webm',
-            'params': [
-                '-b:v', '1000k', '-maxrate', '1000k', '-bufsize', '2000k',
-                '-codec:v', 'libvpx', '-r', '30',
-                '-vf', 'scale=-1:480', '-qmin', '10', '-qmax', '42',
-                '-codec:a', 'libvorbis', '-b:a', '128k', '-f', 'webm',
+                '-codec:a', 'aac', '-b:a', '128k', '-strict', '-2', '-preset', 'veryfast'
             ],
         },
     ]
