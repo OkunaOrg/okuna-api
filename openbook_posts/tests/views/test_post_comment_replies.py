@@ -1683,6 +1683,79 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
 
         send_post_comment_reply_push_notification_call.assert_not_called()
 
+    @mock.patch('openbook_notifications.helpers.send_post_comment_push_notification_with_message')
+    def test_replying_on_post_comment_doesnt_create_push_notification_when_user_blocked(self,
+                                                                                      send_post_comment_reply_push_notification_call):
+        """
+         should NOT create notification when replying on a post comment if user is blocked
+         """
+        blocked_user = make_user()
+        headers = make_authentication_headers_for_user(blocked_user)
+
+        post_creator = make_user()
+
+        foreign_user = make_user()
+
+        post = foreign_user.create_public_post(text=make_fake_post_text())
+        post_comment = foreign_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+        post_creator.reply_to_comment_with_id_for_post_with_uuid(post_comment_id=post_comment.pk,
+                                                                 post_uuid=post.uuid,
+                                                                 text=make_fake_post_comment_text())
+
+        # Block user
+        post_creator.block_user_with_id(user_id=blocked_user.pk)
+
+        send_post_comment_reply_push_notification_call.reset_mock()
+
+        reply_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(reply_comment_text)
+
+        url = self._get_url(post, post_comment)
+        self.client.put(url, data, **headers)
+
+        self.assertFalse(PostCommentReplyNotification.objects.filter(post_comment__text=reply_comment_text,
+                                                                    notification__owner=post_creator).exists())
+
+
+    @mock.patch('openbook_notifications.helpers.send_post_comment_push_notification_with_message')
+    def test_replying_on_post_comment_doesnt_send_push_notification_when_user_blocked(self,
+                                                                                      send_post_comment_reply_push_notification_call):
+        """
+         should NOT send push notification when replying on a post comment if user is blocked
+         """
+        blocked_user = make_user()
+        headers = make_authentication_headers_for_user(blocked_user)
+
+        post_creator = make_user()
+        foreign_user = make_user()
+
+        post = post_creator.create_public_post(text=make_fake_post_text())
+        post_comment = foreign_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+        # Block user
+        foreign_user.block_user_with_id(user_id=blocked_user.pk)
+
+        send_post_comment_reply_push_notification_call.reset_mock()
+
+        reply_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(reply_comment_text)
+
+        url = self._get_url(post, post_comment)
+        self.client.put(url, data, **headers)
+
+        post_comment_reply = PostComment.objects.get(text=reply_comment_text, commenter_id=blocked_user.pk)
+
+        # assert notification only for the post creator, not foreign user who blocked the commenting user
+        send_post_comment_reply_push_notification_call.assert_called_once()
+        send_post_comment_reply_push_notification_call.assert_called_with(
+            post_comment=post_comment_reply,
+            message=ANY,
+            target_user=post_creator
+        )
+
     def test_reply_to_post_comment_ignores_parent_comment_creator_username_mention(self):
         """
         should ignore the parent comment creator username mention when replying to a post comment
