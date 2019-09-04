@@ -1683,9 +1683,7 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
 
         send_post_comment_reply_push_notification_call.assert_not_called()
 
-    @mock.patch('openbook_notifications.helpers.send_post_comment_push_notification_with_message')
-    def test_replying_on_post_comment_doesnt_create_push_notification_when_user_blocked(self,
-                                                                                      send_post_comment_reply_push_notification_call):
+    def test_replying_on_post_comment_doesnt_create_push_notification_when_user_blocked(self):
         """
          should NOT create notification when replying on a post comment if user is blocked
          """
@@ -1705,8 +1703,6 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
 
         # Block user
         post_creator.block_user_with_id(user_id=blocked_user.pk)
-
-        send_post_comment_reply_push_notification_call.reset_mock()
 
         reply_comment_text = make_fake_post_comment_text()
 
