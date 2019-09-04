@@ -1064,19 +1064,19 @@ class User(AbstractUser):
                     post_notification_target_user)
 
                 with translation.override(target_user_language_code):
-                    if post_notification_target_user_is_post_creator:
-                        notification_message = {
-                            "en": _('%(post_commenter_name)s · %(post_commenter_username)s replied to a comment on your post.') % {
-                                'post_commenter_username': replier.username,
-                                'post_commenter_name': replier.profile.name,
-                            }}
-                    elif post_notification_target_user_is_post_comment_creator:
+                    if post_notification_target_user_is_post_comment_creator:
                         notification_message = {
                             "en": _(
                                 '%(post_commenter_name)s · @%(post_commenter_username)s replied to your comment on a post.') % {
                                       'post_commenter_username': replier.username,
                                       'post_commenter_name': replier.profile.name,
                                   }}
+                    elif post_notification_target_user_is_post_creator:
+                        notification_message = {
+                            "en": _('%(post_commenter_name)s · %(post_commenter_username)s replied to a comment on your post.') % {
+                                'post_commenter_username': replier.username,
+                                'post_commenter_name': replier.profile.name,
+                            }}
                     else:
                         notification_message = {
                             "en": _(
