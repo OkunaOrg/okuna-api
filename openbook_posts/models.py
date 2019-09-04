@@ -187,12 +187,10 @@ class Post(models.Model):
         :return:
         """
 
-        # Add other post commenters, exclude replies to comments, the post commenter and blocked users
+        # Add other post commenters, exclude replies to comments, the post commenter
         other_commenters = User.objects.filter(
-            Q(posts_comments__post_id=post.pk, posts_comments__parent_comment_id=None, )
-            & ~Q(id=post_commenter.pk)
-            & ~Q(blocked_by_users__blocker_id=post_commenter.pk)
-            & ~Q(user_blocks__blocked_user_id=post_commenter.pk))
+            Q(posts_comments__post_id=post.pk, posts_comments__parent_comment_id=None, ) & ~Q(
+                id=post_commenter.pk))
 
         post_creator = User.objects.filter(pk=post.creator_id)
 
@@ -207,10 +205,8 @@ class Post(models.Model):
 
         # Add other post commenters, exclude non replies, the post commenter
         other_repliers = User.objects.filter(
-            Q(posts_comments__parent_comment_id=parent_post_comment.pk, )
-            & ~Q(id=post_commenter.pk)
-            & ~Q(blocked_by_users__blocker_id=post_commenter.pk)
-            & ~Q(user_blocks__blocked_user_id=post_commenter.pk))
+            Q(posts_comments__parent_comment_id=parent_post_comment.pk, ) & ~Q(
+                id=post_commenter.pk))
 
         # Add post comment creator
         post_comment_creator = User.objects.filter(pk=parent_post_comment.commenter_id)
