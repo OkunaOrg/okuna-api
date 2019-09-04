@@ -485,6 +485,7 @@ MODERATORS_COMMUNITY_NAME = os.environ.get('MODERATORS_COMMUNITY_NAME', 'mods')
 PROXY_WHITELIST_DOMAIN_MAX_LENGTH = 150
 SUPPORTED_MEDIA_MIMETYPES = [
     'video/mp4',
+    'video/quicktime',
     'video/3gpp',
     'image/gif',
     'image/jpeg',
