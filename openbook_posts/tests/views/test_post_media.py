@@ -205,6 +205,14 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
                 post.refresh_from_db()
 
+                post_video = post.get_first_media().content_object
+
+                post_video_aspect_ratio = post_video.width / post_video.height
+                post_video_thumbnail_aspect_ratio = post_video.thumbnail_width / post_video.thumbnail_height
+                post_media_aspect_ratio = post.media_width / post.media_height
+
+                self.assertTrue(post_video_aspect_ratio == post_media_aspect_ratio == post_video_thumbnail_aspect_ratio)
+
                 self.assertIsNotNone(post.media_thumbnail)
                 self.assertIsNotNone(post.media_width)
                 self.assertIsNotNone(post.media_height)
@@ -231,6 +239,13 @@ class PostMediaAPITests(OpenbookAPITestCase):
                 self.assertEqual(response.status_code, status.HTTP_200_OK)
 
                 post.refresh_from_db()
+
+                post_image = post.get_first_media().content_object
+
+                post_image_aspect_ratio = post_image.width / post_image.height
+                post_media_aspect_ratio = post.media_width / post.media_height
+
+                self.assertEqual(post_image_aspect_ratio, post_media_aspect_ratio)
 
                 self.assertIsNotNone(post.media_thumbnail)
 
