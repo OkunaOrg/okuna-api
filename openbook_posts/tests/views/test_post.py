@@ -2608,7 +2608,7 @@ class PostStatusAPITests(OpenbookAPITestCase):
 
         url = self._get_url(post=post)
 
-        response = self.client.post(url, **headers, format='multipart')
+        response = self.client.get(url, **headers, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -2631,7 +2631,7 @@ class PostStatusAPITests(OpenbookAPITestCase):
 
         url = self._get_url(post=post)
 
-        response = self.client.post(url, **headers, format='multipart')
+        response = self.client.get(url, **headers, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
