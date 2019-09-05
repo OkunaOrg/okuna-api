@@ -632,7 +632,7 @@ class PostItemAPITests(OpenbookAPITestCase):
 
     def test_delete_image_post(self):
         """
-        should be able to delete image post and file return True
+        should be able to delete image post and file
         """
         user = make_user()
 
@@ -651,7 +651,7 @@ class PostItemAPITests(OpenbookAPITestCase):
 
     def test_delete_video_post(self):
         """
-        should be able to delete video post and file return True
+        should be able to delete video post and file
         """
         user = make_user()
 

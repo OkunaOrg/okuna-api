@@ -693,9 +693,12 @@ class User(AbstractUser):
         return False
 
     def can_see_post_comment(self, post_comment):
+        post = post_comment.post
+        if not self.can_see_post(post=post):
+            return False
         post_comment_query = self._make_get_post_comment_with_id_query(post_comment_id=post_comment.pk,
                                                                        post_comment_parent_id=post_comment.parent_comment_id,
-                                                                       post=post_comment.post)
+                                                                       post=post)
         PostComment = get_post_comment_model()
         return PostComment.objects.filter(post_comment_query).exists()
 
@@ -987,8 +990,8 @@ class User(AbstractUser):
         PostCommentNotification = get_post_comment_notification_model()
 
         for post_notification_target_user in post_notification_target_users:
-            if post_notification_target_user.pk == post_commenter.pk or not post_notification_target_user.can_see_post(
-                    post=post):
+            if post_notification_target_user.pk == post_commenter.pk or \
+                    not post_notification_target_user.can_see_post_comment(post_comment=post_comment):
                 continue
             post_notification_target_user_is_post_creator = post_notification_target_user.id == post_creator.id
             post_notification_target_has_comment_notifications_enabled = post_notification_target_user.has_comment_notifications_enabled_for_post_with_id(
@@ -1032,6 +1035,7 @@ class User(AbstractUser):
         check_can_reply_to_post_comment_for_post(user=self, post_comment=post_comment, post=post)
         post_comment_reply = post_comment.reply_to_comment(text=text, commenter=self)
         comment_creator = post_comment.commenter.id
+        post_creator = post.creator
         replier = self
         post = post_comment.post
 
@@ -1046,10 +1050,11 @@ class User(AbstractUser):
         PostCommentReplyNotification = get_post_comment_reply_notification_model()
 
         for post_notification_target_user in post_notification_target_users:
-            if post_notification_target_user.pk == replier.pk or not post_notification_target_user.can_see_post(
-                    post=post):
+            if post_notification_target_user.pk == replier.pk or \
+                    not post_notification_target_user.can_see_post_comment(post_comment=post_comment_reply):
                 continue
             post_notification_target_user_is_post_comment_creator = post_notification_target_user.id == comment_creator
+            post_notification_target_user_is_post_creator = post_notification_target_user.id == post_creator.id
             post_notification_target_has_comment_reply_notifications_enabled = \
                 post_notification_target_user.has_reply_notifications_enabled_for_post_comment(
                     post_comment=post_comment)
@@ -1066,6 +1071,12 @@ class User(AbstractUser):
                                       'post_commenter_username': replier.username,
                                       'post_commenter_name': replier.profile.name,
                                   }}
+                    elif post_notification_target_user_is_post_creator:
+                        notification_message = {
+                            "en": _('%(post_commenter_name)s · %(post_commenter_username)s replied to a comment on your post.') % {
+                                'post_commenter_username': replier.username,
+                                'post_commenter_name': replier.profile.name,
+                            }}
                     else:
                         notification_message = {
                             "en": _(

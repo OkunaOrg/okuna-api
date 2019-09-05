@@ -210,7 +210,11 @@ class Post(models.Model):
 
         # Add post comment creator
         post_comment_creator = User.objects.filter(pk=parent_post_comment.commenter_id)
-        return other_repliers.union(post_comment_creator)
+
+        # Add post creator
+        post = parent_post_comment.post
+        post_creator = User.objects.filter(pk=post.creator.id)
+        return other_repliers.union(post_comment_creator, post_creator)
 
     def count_comments(self):
         return PostComment.count_comments_for_post_with_id(self.pk)
