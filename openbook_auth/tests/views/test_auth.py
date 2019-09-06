@@ -46,11 +46,11 @@ class RegistrationAPITests(APITestCase):
         """
         url = self._get_url()
         token = self._make_user_invite_token()
-        first_request_data = {'name': 'Joel Hernandez', 'email': 'joel@open-book.org',
+        first_request_data = {'name': 'Joel Hernandez', 'email': 'joel@okuna.io',
                               'password': 'secretPassword123', 'is_of_legal_age': 'true', 'token': token,
                               'are_guidelines_accepted': True}
         self.client.post(url, first_request_data, format='multipart')
-        second_request_data = {'name': 'Juan Taramera', 'email': 'joel2@open-book.org',
+        second_request_data = {'name': 'Juan Taramera', 'email': 'joel2@okuna.io',
                                'password': 'woahpassword123', 'is_of_legal_age': 'true', 'token': token,
                                'are_guidelines_accepted': True}
         response = self.client.post(url, second_request_data, format='multipart')
@@ -62,7 +62,7 @@ class RegistrationAPITests(APITestCase):
         """
         url = self._get_url()
         token = uuid.uuid4()
-        first_request_data = {'name': 'Joel Hernandez', 'email': 'joel@open-book.org',
+        first_request_data = {'name': 'Joel Hernandez', 'email': 'joel@okuna.io',
                               'password': 'secretPassword123', 'is_of_legal_age': 'true', 'token': token,
                               'are_guidelines_accepted': True}
         response = self.client.post(url, first_request_data, format='multipart')
@@ -169,7 +169,7 @@ class RegistrationAPITests(APITestCase):
         """
         url = self._get_url()
         token = self._make_user_invite_token()
-        email = 'joel@open-book.org'
+        email = 'joel@okuna.io'
         first_request_data = {'name': 'Joel Hernandez', 'email': email,
                               'password': 'secretPassword123', 'is_of_legal_age': 'true', 'token': token,
                               'are_guidelines_accepted': True}
@@ -594,7 +594,7 @@ class EmailCheckAPITests(APITestCase):
         """
         should return status 202 if email is not taken.
         """
-        email = 'joel@open-book.org'
+        email = 'joel@okuna.io'
         request_data = {'email': email}
         url = self._get_url()
         response = self.client.post(url, request_data, format='json')
@@ -604,7 +604,7 @@ class EmailCheckAPITests(APITestCase):
         """
         should return status 400 if the email is taken
         """
-        email = 'joel@open-book.org'
+        email = 'joel@okuna.io'
         User.objects.create_user(email=email, password='SuChSeCuRiTyWow!', username='lifenautjoe')
         request_data = {'email': email}
         url = self._get_url()
@@ -635,7 +635,7 @@ class EmailCheckAPITests(APITestCase):
         should return 202 if the email is a valid email
         """
         url = self._get_url()
-        emails = ('joel@open-book.org', 'gerald@rivia.com', 'obi@wan.com', 'c3po@robot.me')
+        emails = ('joel@okuna.io', 'gerald@rivia.com', 'obi@wan.com', 'c3po@robot.me')
         for email in emails:
             data = {
                 'email': email

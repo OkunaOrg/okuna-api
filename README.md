@@ -54,7 +54,7 @@ Please read carefully [our license](https://github.com/OkunaOrg/okuna-api/blob/m
 
 #### Responsible disclosure
 
-Cyber-hero? Check out our [Vulnerability Disclosure page](https://www.open-book.org/en/vulnerability-report).
+Cyber-hero? Check out our [Vulnerability Disclosure page](https://www.okuna.io/en/vulnerability-report).
 
 #### Other issues
 
