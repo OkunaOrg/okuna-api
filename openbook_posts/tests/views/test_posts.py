@@ -1325,7 +1325,7 @@ class PostsAPITests(APITestCase):
     def test_can_retrieve_posts_with_recent_unconfirmed_connection_encircled_post(self):
         """
         should be able to retrieve the timeline posts with an unconfirmed connection recent posts
-        https://github.com/OpenbookOrg/openbook-api/issues/301
+        https://github.com/OkunaOrg/okuna-api/issues/301
         """
         user = make_user()
 

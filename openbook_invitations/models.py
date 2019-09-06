@@ -128,11 +128,11 @@ class UserInvite(models.Model):
         mail_subject = _('Action Required: Choose an alternate username for Okuna')
         text_message_content = render_to_string('openbook_invitations/email/backer_alternate_username.txt', {
             'username': self.name,
-            'invite_link': 'https://openbook.typeform.com/to/MSbtq9'
+            'invite_link': 'https://okuna.typeform.com/to/MSbtq9'
         })
         html_message_content = render_to_string('openbook_invitations/email/backer_alternate_username.html', {
             'username': self.name,
-            'typeform_link': 'https://openbook.typeform.com/to/MSbtq9'
+            'typeform_link': 'https://okuna.typeform.com/to/MSbtq9'
         })
         email = EmailMultiAlternatives(mail_subject, text_message_content, to=[self.email],
                                        from_email=settings.SERVICE_EMAIL_ADDRESS)

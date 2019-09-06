@@ -141,8 +141,8 @@ Making Openbook a healthy and welcoming community for everyone is a shared respo
 * When everything calls for anger, engage in discussion.
 * When something doesn’t look right, report it.
 * When creating a community, own your community: arm it with moderators and administrators capable and informed to enforce the guidelines of the platform.
-* Have a great idea? [Suggest it on the feature board](https://openbook.canny.io/feature-requests).
-* Found a bug? [Report it on the bug tracker](https://openbook.canny.io/bugs).
+* Have a great idea? [Suggest it on the feature board](https://okuna.canny.io/feature-requests).
+* Found a bug? [Report it on the bug tracker](https://okuna.canny.io/bugs).
 
 **It’s up to each of us to create a digital space we’re proud and happy to be part of. We’re glad you’re here.**
 
@@ -202,4 +202,4 @@ Thanks to the volunteers who with their comments, suggestions and proof-reading 
  [![CC 4.0 License](https://licensebuttons.net/l/by/3.0/88x31.png)](https://creativecommons.org/licenses/by/4.0/)
 
 
-This document is released under the [Creative Commons 4.0 license](https://creativecommons.org/licenses/by/4.0/). Changes, revisions or improvements can be contributed [on Github](https://github.com/OpenbookOrg/openbook-api).
+This document is released under the [Creative Commons 4.0 license](https://creativecommons.org/licenses/by/4.0/). Changes, revisions or improvements can be contributed [on Github](https://github.com/OkunaOrg/okuna-api).
