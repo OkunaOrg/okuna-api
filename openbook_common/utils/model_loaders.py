@@ -17,6 +17,10 @@ def get_post_model():
     return apps.get_model('openbook_posts.Post')
 
 
+def get_top_post_model():
+    return apps.get_model('openbook_posts.TopPost')
+
+
 def get_post_media_model():
     return apps.get_model('openbook_posts.PostMedia')
 
