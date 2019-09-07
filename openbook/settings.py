@@ -491,6 +491,8 @@ SUPPORTED_MEDIA_MIMETYPES = [
     'image/jpeg',
     'image/png'
 ]
+MIN_UNIQUE_TOP_POST_REACTIONS_COUNT = 5
+MIN_UNIQUE_TOP_POST_COMMENTS_COUNT = 5
 
 # Email Config
 
