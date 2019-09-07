@@ -525,6 +525,19 @@ class Post(models.Model):
                 self.create_links(link_urls)
 
 
+class TopPost(models.Model):
+    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='top_post')
+    created = models.DateTimeField(editable=False, db_index=True)
+
+    def save(self, *args, **kwargs):
+        ''' On save, update timestamps '''
+        if not self.id:
+            self.created = timezone.now()
+        self.modified = timezone.now()
+
+        return super(TopPost, self).save(*args, **kwargs)
+
+
 class PostMedia(OrderedModel):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='media')
     order_with_respect_to = 'post'
