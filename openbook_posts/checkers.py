@@ -32,7 +32,7 @@ def check_can_add_media(post):
 def check_is_not_processing(post):
     Post = get_post_model()
     if post.status == Post.STATUS_PROCESSING:
-        raise ValidationError(_('The post is processing'))
+        raise ValidationError(_('The post is being processed'))
 
 
 def check_is_not_published(post):

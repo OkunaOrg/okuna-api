@@ -4,7 +4,7 @@ from generic_relations.relations import GenericRelatedField
 from rest_framework import serializers
 from video_encoding.models import Format
 
-from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
+from openbook_common.serializers_fields.request import RestrictedImageFileSizeField, RestrictedFileSizeField
 from openbook_posts.models import PostMedia, PostImage, PostVideo
 from openbook_posts.validators import post_uuid_exists, post_reaction_id_exists
 
@@ -14,8 +14,8 @@ class AddPostMediaSerializer(serializers.Serializer):
         validators=[post_uuid_exists],
         required=True,
     )
-    file = serializers.FileField(max_length=150, required=True,
-                                 allow_empty_file=False)
+    file = RestrictedFileSizeField(max_length=150, required=True,
+                                   allow_empty_file=False, max_upload_size=settings.POST_MEDIA_MAX_SIZE)
     order = serializers.IntegerField(required=False)
 
 
@@ -51,6 +51,7 @@ class PostVideoFormatSerializer(serializers.ModelSerializer):
             'width',
             'height',
         )
+
 
 class PostVideoSerializer(serializers.ModelSerializer):
     format_set = PostVideoFormatSerializer(many=True)
