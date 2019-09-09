@@ -2041,7 +2041,7 @@ class User(AbstractUser):
             top_community_posts_query.add(Q(id__lt=max_id), Q.AND)
 
         if min_id:
-            top_community_posts_query.add(Q(id__gte=min_id), Q.AND)
+            top_community_posts_query.add(Q(id__gt=min_id), Q.AND)
 
         ModeratedObject = get_moderated_object_model()
         top_community_posts_query.add(~Q(post__moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)

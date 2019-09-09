@@ -5,7 +5,7 @@ from django.db.models import Q, Count, Max
 from django.conf import settings
 
 from openbook_common.utils.model_loaders import get_post_model, get_post_media_model, get_community_model, \
-    get_top_post_model, get_post_comment_model
+    get_top_post_model, get_post_comment_model, get_moderated_object_model
 import logging
 
 logger = logging.getLogger(__name__)
@@ -57,14 +57,20 @@ def _add_post_to_top_post(post):
 
 @job
 def curate_top_posts():
+    """
+    This job should be a scheduled repeatable job
+    """
     Post = get_post_model()
     Community = get_community_model()
     TopPost = get_top_post_model()
     PostComment = get_post_comment_model()
+    ModeratedObject = get_moderated_object_model()
     logger.info('Processing top posts at %s...' % timezone.now())
 
-
     top_posts_community_query = Q(community__isnull=False, community__type=Community.COMMUNITY_TYPE_PUBLIC)
+    top_posts_community_query.add(Q(is_closed=False, is_deleted=False, status=Post.STATUS_PUBLISHED), Q.AND)
+    top_posts_community_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
     top_posts_criteria_query = Q(total_comments_count__gte=settings.MIN_UNIQUE_TOP_POST_COMMENTS_COUNT) | \
                                Q(reactions_count__gte=settings.MIN_UNIQUE_TOP_POST_REACTIONS_COUNT)
 

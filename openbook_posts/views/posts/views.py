@@ -132,7 +132,7 @@ class TopPosts(APIView):
 
         max_id = data.get('max_id')
         min_id = data.get('min_id')
-        count = data.get('count', 10)
+        count = data.get('count', 20)
 
         user = request.user
 
