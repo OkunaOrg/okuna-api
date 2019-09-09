@@ -1,7 +1,7 @@
 from django.utils import timezone
 from django_rq import job
 from video_encoding import tasks
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Max
 from django.conf import settings
 
 from openbook_common.utils.model_loaders import get_post_model, get_post_media_model, get_community_model, \
@@ -49,37 +49,37 @@ def process_post_media(post_id):
     logger.info('Processed media of post with id: %d' % post_id)
 
 
+def _add_post_to_top_post(post):
+    TopPost = get_top_post_model()
+    if not TopPost.objects.filter(post=post).exists():
+        TopPost.objects.create(post=post)
+
+
 @job
 def curate_top_posts():
-    print('runnning')
     Post = get_post_model()
     Community = get_community_model()
     TopPost = get_top_post_model()
     PostComment = get_post_comment_model()
     logger.info('Processing top posts at %s...' % timezone.now())
 
+
     top_posts_community_query = Q(community__isnull=False, community__type=Community.COMMUNITY_TYPE_PUBLIC)
-    top_posts_criteria_query = Q(total_comments_count__gt=settings.MIN_UNIQUE_TOP_POST_COMMENTS_COUNT) | \
-                               Q(reactions_count__gt=settings.MIN_UNIQUE_TOP_POST_REACTIONS_COUNT)
+    top_posts_criteria_query = Q(total_comments_count__gte=settings.MIN_UNIQUE_TOP_POST_COMMENTS_COUNT) | \
+                               Q(reactions_count__gte=settings.MIN_UNIQUE_TOP_POST_REACTIONS_COUNT)
 
     posts = Post.objects.filter(top_posts_community_query).\
         annotate(total_comments_count=Count('comments__commenter_id'),
                  reactions_count=Count('reactions__reactor_id')).\
         filter(top_posts_criteria_query)
 
-    top_posts = []
-
     for post in posts:
-        if not post.reactions_count > settings.MIN_UNIQUE_TOP_POST_REACTIONS_COUNT:
+        if not post.reactions_count >= settings.MIN_UNIQUE_TOP_POST_REACTIONS_COUNT:
             unique_comments_count = PostComment.objects.filter(post=post).\
                 values('commenter_id').\
                 annotate(user_comments_count=Count('commenter_id')).count()
 
-            if unique_comments_count > settings.MIN_UNIQUE_TOP_POST_COMMENTS_COUNT:
-                top_posts.append(post)
+            if unique_comments_count >= settings.MIN_UNIQUE_TOP_POST_COMMENTS_COUNT:
+                _add_post_to_top_post(post=post)
         else:
-            top_posts.append(post)
-
-    for post in posts:
-        if not TopPost.objects.filter(post=post).exists():
-            top_post = TopPost.objects.create(post=post)
+            _add_post_to_top_post(post=post)
