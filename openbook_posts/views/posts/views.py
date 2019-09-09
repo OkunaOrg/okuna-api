@@ -10,7 +10,8 @@ from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.utils.helpers import normalize_list_value_in_request_data
 from openbook_posts.permissions import IsGetOrIsAuthenticated
 from openbook_posts.views.posts.serializers import AuthenticatedUserPostSerializer, \
-    GetPostsSerializer, UnauthenticatedUserPostSerializer, CreatePostSerializer
+    GetPostsSerializer, UnauthenticatedUserPostSerializer, CreatePostSerializer, GetTopPostsSerializer, \
+    AuthenticatedUserTopPostSerializer
 
 
 class Posts(APIView):
@@ -116,4 +117,25 @@ class TrendingPosts(APIView):
 
         posts = user.get_trending_posts()[:30]
         posts_serializer = AuthenticatedUserPostSerializer(posts, many=True, context={"request": request})
+        return Response(posts_serializer.data, status=status.HTTP_200_OK)
+
+
+class TopPosts(APIView):
+    permission_classes = (IsAuthenticated, IsNotSuspended)
+
+    def get(self, request):
+        query_params = request.query_params.dict()
+
+        serializer = GetTopPostsSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        max_id = data.get('max_id')
+        min_id = data.get('min_id')
+        count = data.get('count', 10)
+
+        user = request.user
+
+        top_posts = user.get_top_posts(max_id=max_id, min_id=min_id).order_by('-id')[:count]
+        posts_serializer = AuthenticatedUserTopPostSerializer(top_posts, many=True, context={"request": request})
         return Response(posts_serializer.data, status=status.HTTP_200_OK)

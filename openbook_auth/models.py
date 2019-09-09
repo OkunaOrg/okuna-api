@@ -31,7 +31,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_mute_model, get_community_invite_notification_model, get_user_block_model, get_emoji_model, \
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
     get_moderation_penalty_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
-    get_post_comment_reaction_notification_model
+    get_post_comment_reaction_notification_model, get_top_post_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications import helpers
 from openbook_auth.checkers import *
@@ -2011,6 +2011,47 @@ class User(AbstractUser):
             results = world_circle_posts.union(connection_circles_posts)
 
         return results
+
+    def get_top_posts(self, max_id=None, min_id=None, count=10):
+        """
+        Gets top posts (communities only) for authenticated user excluding reported, closed, blocked users posts
+        """
+        Post = get_post_model()
+        TopPost = get_top_post_model()
+
+        posts_select_related = ('post__creator', 'post__creator__profile', 'post__community', 'post__image')
+        posts_prefetch_related = ('post__circles', 'post__creator__profile__badges')
+
+        posts_only = ('id',
+                      'post__text', 'post__id', 'post__uuid', 'post__created', 'post__image__width', 'post__image__height', 'post__image__image',
+                      'post__creator__username', 'post__creator__id', 'post__creator__profile__name', 'post__creator__profile__avatar',
+                      'post__creator__profile__badges__id', 'post__creator__profile__badges__keyword',
+                      'post__creator__profile__id', 'post__community__id', 'post__community__name', 'post__community__avatar',
+                      'post__community__color', 'post__community__title')
+
+        reported_posts_exclusion_query = ~Q(post__moderated_object__reports__reporter_id=self.pk)
+        top_community_posts_query = Q(post__community__memberships__user__id=self.pk, post__is_closed=False,
+                                      post__is_deleted=False,
+                                      post__status=Post.STATUS_PUBLISHED)
+
+        top_community_posts_query.add(~Q(Q(post__creator__blocked_by_users__blocker_id=self.pk) | Q(
+            post__creator__user_blocks__blocked_user_id=self.pk)), Q.AND)
+
+        if max_id:
+            top_community_posts_query.add(Q(id__lt=max_id), Q.AND)
+
+        if min_id:
+            top_community_posts_query.add(Q(id__gte=min_id), Q.AND)
+
+        ModeratedObject = get_moderated_object_model()
+        top_community_posts_query.add(~Q(post__moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
+        top_community_posts_query.add(reported_posts_exclusion_query, Q.AND)
+
+        top_community_posts_queryset = TopPost.objects.select_related(*posts_select_related).prefetch_related(
+            *posts_prefetch_related).only(*posts_only).filter(top_community_posts_query)
+
+        return top_community_posts_queryset
 
     def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None, min_id=None, count=None):
         """
