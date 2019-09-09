@@ -2030,12 +2030,13 @@ class User(AbstractUser):
                       'post__community__color', 'post__community__title')
 
         reported_posts_exclusion_query = ~Q(post__moderated_object__reports__reporter_id=self.pk)
-        top_community_posts_query = Q(post__community__memberships__user__id=self.pk, post__is_closed=False,
+        top_community_posts_query = Q(post__is_closed=False,
                                       post__is_deleted=False,
                                       post__status=Post.STATUS_PUBLISHED)
 
         top_community_posts_query.add(~Q(Q(post__creator__blocked_by_users__blocker_id=self.pk) | Q(
             post__creator__user_blocks__blocked_user_id=self.pk)), Q.AND)
+        top_community_posts_query.add(~Q(post__community__banned_users__id=self.pk), Q.AND)
 
         if max_id:
             top_community_posts_query.add(Q(id__lt=max_id), Q.AND)
