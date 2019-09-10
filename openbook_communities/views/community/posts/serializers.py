@@ -27,7 +27,7 @@ class GetCommunityPostsSerializer(serializers.Serializer):
 class CreateCommunityPostSerializer(serializers.Serializer):
     text = serializers.CharField(max_length=settings.POST_MAX_LENGTH, required=False, allow_blank=False)
     image = RestrictedImageFileSizeField(allow_empty_file=False, required=False,
-                                         max_upload_size=settings.POST_IMAGE_MAX_SIZE)
+                                         max_upload_size=settings.POST_MEDIA_MAX_SIZE)
     video = serializers.FileField(allow_empty_file=False, required=False)
     community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
                                            allow_blank=False,
