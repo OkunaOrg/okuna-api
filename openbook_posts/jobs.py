@@ -62,7 +62,6 @@ def curate_top_posts():
     """
     Post = get_post_model()
     Community = get_community_model()
-    TopPost = get_top_post_model()
     PostComment = get_post_comment_model()
     ModeratedObject = get_moderated_object_model()
     logger.info('Processing top posts at %s...' % timezone.now())
@@ -74,12 +73,20 @@ def curate_top_posts():
     top_posts_criteria_query = Q(total_comments_count__gte=settings.MIN_UNIQUE_TOP_POST_COMMENTS_COUNT) | \
                                Q(reactions_count__gte=settings.MIN_UNIQUE_TOP_POST_REACTIONS_COUNT)
 
-    posts = Post.objects.filter(top_posts_community_query).\
+    posts_select_related = 'community'
+    posts_prefetch_related = ('comments__commenter', 'reactions__reactor')
+    posts_only = ('id', 'status', 'is_deleted', 'is_closed', 'community__type')
+
+    posts = Post.objects.\
+        select_related(posts_select_related).\
+        prefetch_related(*posts_prefetch_related).\
+        only(*posts_only).\
+        filter(top_posts_community_query).\
         annotate(total_comments_count=Count('comments__commenter_id'),
                  reactions_count=Count('reactions__reactor_id')).\
         filter(top_posts_criteria_query)
 
-    for post in posts:
+    for post in posts.iterator():
         if not post.reactions_count >= settings.MIN_UNIQUE_TOP_POST_REACTIONS_COUNT:
             unique_comments_count = PostComment.objects.filter(post=post).\
                 values('commenter_id').\
@@ -89,3 +96,5 @@ def curate_top_posts():
                 _add_post_to_top_post(post=post)
         else:
             _add_post_to_top_post(post=post)
+
+
