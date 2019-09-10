@@ -121,3 +121,73 @@ def curate_top_posts():
         else:
             _add_post_to_top_post(post=post)
 
+
+@job
+def clean_top_posts():
+    """
+    This job should be a scheduled repeatable job
+    It cleans up top posts, that no longer meet the criteria.
+    """
+    Post = get_post_model()
+    Community = get_community_model()
+    TopPost = get_top_post_model()
+    PostComment = get_post_comment_model()
+    ModeratedObject = get_moderated_object_model()
+
+    # if any of these is true, we will remove the top post
+    top_posts_community_query = Q(post__community__type=Community.COMMUNITY_TYPE_PRIVATE)
+    top_posts_community_query.add(Q(post__is_closed=True), Q.OR)
+    top_posts_community_query.add(Q(post__is_deleted=True), Q.OR)
+    top_posts_community_query.add(Q(status=Post.STATUS_DRAFT) | Q(status=Post.STATUS_PROCESSING), Q.OR)
+    top_posts_community_query.add(Q(post__moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.OR)
+
+    # counts less than minimum
+    top_posts_criteria_query = Q(total_comments_count__lt=settings.MIN_UNIQUE_TOP_POST_COMMENTS_COUNT) & \
+                               Q(reactions_count__lt=settings.MIN_UNIQUE_TOP_POST_REACTIONS_COUNT)
+
+    top_posts_community_query.add(top_posts_criteria_query, Q.OR)
+
+    posts_select_related = 'post__community'
+    posts_prefetch_related = ('post__comments__commenter', 'post__reactions__reactor')
+    posts_only = ('post__id', 'post__status', 'post__is_deleted', 'post__is_closed', 'post__community__type')
+
+    direct_removable_top_posts = TopPost.objects.select_related(posts_select_related).\
+        prefetch_related(*posts_prefetch_related).\
+        only(*posts_only). \
+        annotate(total_comments_count=Count('post__comments__commenter_id'),
+                 reactions_count=Count('post__reactions__reactor_id')).filter(top_posts_community_query)
+
+    # bulk delete all that definitely dont meet the criteria anymore
+    direct_removable_top_posts.delete()
+
+    # Now we need to only check the ones where the unique comments count might have dropped,
+    # while all other criteria is fine
+
+    top_posts_community_query = Q(community__isnull=False, community__type=Community.COMMUNITY_TYPE_PUBLIC)
+    top_posts_community_query.add(Q(is_closed=False, is_deleted=False, status=Post.STATUS_PUBLISHED), Q.AND)
+    top_posts_community_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
+    top_posts_criteria_query = Q(total_comments_count__gte=settings.MIN_UNIQUE_TOP_POST_COMMENTS_COUNT) | \
+                               Q(reactions_count__gte=settings.MIN_UNIQUE_TOP_POST_REACTIONS_COUNT)
+
+    top_posts = TopPost.objects.select_related(posts_select_related). \
+        prefetch_related(*posts_prefetch_related). \
+        only(*posts_only). \
+        filter(top_posts_community_query). \
+        annotate(total_comments_count=Count('post__comments__commenter_id'),
+                 reactions_count=Count('post__reactions__reactor_id')).\
+        filter(top_posts_criteria_query)
+
+    delete_ids = []
+
+    for top_post in chunked_queryset_iterator(top_posts, 1000):
+        if not top_post.post.reactions_count >= settings.MIN_UNIQUE_TOP_POST_REACTIONS_COUNT:
+            unique_comments_count = PostComment.objects.filter(post=top_post.post). \
+                values('commenter_id'). \
+                annotate(user_comments_count=Count('commenter_id')).count()
+
+            if unique_comments_count < settings.MIN_UNIQUE_TOP_POST_COMMENTS_COUNT:
+                delete_ids.append(top_post.pk)
+
+    # bulk delete ids
+    TopPost.objects.filter(id__in=delete_ids).delete()
