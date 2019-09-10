@@ -168,6 +168,7 @@ put them in their respective folders.
 7. Run `./manage.py compilemessages` to auto-generate `django.mo` files. 
 8. You need to checkin both `django.po` and `django.mo` files for each locale.
 
+
 ## Django Custom Commands
 
 ### `manage.py create_invite`
