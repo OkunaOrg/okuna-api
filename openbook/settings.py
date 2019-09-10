@@ -437,7 +437,7 @@ VIDEO_ENCODING_FORMATS = {
     ]
 }
 
-PROXY_URL = os.environ.get('PROXY_URL')
+PROXY_URL = os.environ.get('PROXY_URL', '')
 
 # Openbook config
 
