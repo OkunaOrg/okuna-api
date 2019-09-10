@@ -1,8 +1,9 @@
 from django.utils import timezone
 from django_rq import job
 from video_encoding import tasks
-from django.db.models import Q, Count, Max
+from django.db.models import Q, Count
 from django.conf import settings
+from cursor_pagination import CursorPaginator
 
 from openbook_common.utils.model_loaders import get_post_model, get_post_media_model, get_community_model, \
     get_top_post_model, get_post_comment_model, get_moderated_object_model
@@ -55,6 +56,29 @@ def _add_post_to_top_post(post):
         TopPost.objects.create(post=post)
 
 
+def chunked_queryset_iterator(queryset, size, *, ordering=('id',)):
+    """
+    Split a queryset into chunks.
+    This can be used instead of `queryset.iterator()`,
+    so `.prefetch_related()` also works
+    Note::
+    The ordering must uniquely identify the object,
+    and be in the same order (ASC/DESC). See https://github.com/photocrowd/django-cursor-pagination
+    """
+    pager = CursorPaginator(queryset, ordering)
+    after = None
+    while True:
+        page = pager.page(after=after, first=size)
+        if page:
+            yield from page.items
+        else:
+            return
+        if not page.has_next:
+            break
+        # take last item, next page starts after this.
+        after = pager.cursor(instance=page[-1])
+
+
 @job
 def curate_top_posts():
     """
@@ -86,7 +110,7 @@ def curate_top_posts():
                  reactions_count=Count('reactions__reactor_id')).\
         filter(top_posts_criteria_query)
 
-    for post in posts.iterator():
+    for post in chunked_queryset_iterator(posts, 1000):
         if not post.reactions_count >= settings.MIN_UNIQUE_TOP_POST_REACTIONS_COUNT:
             unique_comments_count = PostComment.objects.filter(post=post).\
                 values('commenter_id').\
@@ -96,5 +120,4 @@ def curate_top_posts():
                 _add_post_to_top_post(post=post)
         else:
             _add_post_to_top_post(post=post)
-
 
