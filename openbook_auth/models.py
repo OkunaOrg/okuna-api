@@ -1947,7 +1947,7 @@ class User(AbstractUser):
         ModeratedObject = get_moderated_object_model()
         world_circle_id = Circle.get_world_circle_id()
 
-        username_query = Q(username=user.username)
+        username_query = Q(creator_id=user.pk)
 
         exclude_reported_and_approved_posts_query = ~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED)
 
