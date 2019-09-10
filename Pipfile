@@ -49,6 +49,7 @@ webpreview = "*"
 beautifulsoup4 = "*"
 urlextract = "*"
 django-proxy = "*"
+django-cursor-pagination = "*"
 
 [pipenv]
 allow_prereleases = true
