@@ -179,5 +179,8 @@ class CommunityPostSerializer(serializers.ModelSerializer):
             'is_muted',
             'reaction',
             'is_edited',
-            'is_closed'
+            'is_closed',
+            'media_height',
+            'media_width',
+            'media_thumbnail',
         )
