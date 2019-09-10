@@ -1947,6 +1947,8 @@ class User(AbstractUser):
         ModeratedObject = get_moderated_object_model()
         world_circle_id = Circle.get_world_circle_id()
 
+        username_query = Q(username=user.username)
+
         exclude_reported_and_approved_posts_query = ~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED)
 
         exclude_reported_posts_query = ~Q(moderated_object__reports__reporter_id=self.pk)
@@ -1968,6 +1970,7 @@ class User(AbstractUser):
         world_circle_posts_query = Q(creator__id=user.pk, circles__id=world_circle_id)
 
         world_circle_posts = Post.objects.filter(
+            username_query &
             world_circle_posts_query &
             exclude_deleted_posts_query &
             exclude_blocked_posts_query &
@@ -1983,6 +1986,7 @@ class User(AbstractUser):
             community__memberships__user__id=self.pk)
 
         community_posts = Post.objects.filter(
+            username_query &
             community_posts_query &
             exclude_private_community_posts_query &
             exclude_deleted_posts_query &
@@ -1997,6 +2001,7 @@ class User(AbstractUser):
                                      circles__connections__target_connection__circles__isnull=False)
 
         connection_circles_posts = Post.objects.filter(
+            username_query &
             connection_circles_query &
             exclude_deleted_posts_query &
             exclude_blocked_posts_query &
