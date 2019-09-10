@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from django.db import transaction, IntegrityError
+from django.db import IntegrityError
 
 from django.contrib.auth import get_user_model
 from django.db.models import F
@@ -36,14 +36,13 @@ class Command(BaseCommand):
         else:
             users = User.objects.all()
 
-        try:
-            with transaction.atomic():
-                for user in users:
-                    user.invite_count = F('invite_count') + count
-                    user.save()
-        except IntegrityError as e:
-            print('IntegrityError %s ' % e)
-            self.stderr.write('Aborting allocation of invites..')
+        for user in users:
+            try:
+                user.invite_count = F('invite_count') + count
+                user.save()
+            except IntegrityError as e:
+                print('IntegrityError %s '.format(e))
+                self.stderr.write('Error during allocation for user %s'.format(user.username))
 
     def handle_set_total_count(self, total_count, username):
         User = get_user_model()
@@ -55,11 +54,10 @@ class Command(BaseCommand):
         else:
             users = User.objects.all()
 
-        try:
-            with transaction.atomic():
-                for user in users:
-                    user.invite_count = total_count
-                    user.save()
-        except IntegrityError as e:
-            print('IntegrityError %s ' % e)
-            self.stderr.write('Aborting allocation of invites..')
+        for user in users:
+            try:
+                user.invite_count = total_count
+                user.save()
+            except IntegrityError as e:
+                print('IntegrityError %s '.format(e))
+                self.stderr.write('Error during allocation for user %s'.format(user.username))
