@@ -2,7 +2,7 @@ from django.contrib import admin
 from modeltranslation.admin import TranslationAdmin
 
 # Register your models here.
-from openbook_common.models import Emoji, EmojiGroup, Badge
+from openbook_common.models import Emoji, EmojiGroup, Badge, ProxyWhitelistDomain
 
 
 class EmojiGroupEmoji(admin.TabularInline):
@@ -38,3 +38,12 @@ class BadgeAdmin(TranslationAdmin):
 
 
 admin.site.register(Badge, BadgeAdmin)
+
+
+class ProxyWhitelistDomainAdmin(admin.ModelAdmin):
+    list_display = (
+        'domain',
+    )
+
+
+admin.site.register(ProxyWhitelistDomain, ProxyWhitelistDomainAdmin)

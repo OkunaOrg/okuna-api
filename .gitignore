@@ -14,3 +14,4 @@ docker-compose.override.yml
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
+/open-book-api

@@ -1,13 +1,16 @@
-from langdetect import DetectorFactory, detect
+import os
+import tempfile
+
+from django.core.files import File
+from langdetect import DetectorFactory
 from langdetect.lang_detect_exception import LangDetectException
-import re
 from django.conf import settings
-from django.urls import reverse
 import urllib
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from urlextract import URLExtract
-
+from webpreview import web_preview
+from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.utils.model_loaders import get_language_model
 from openbook_translation import translation_strategy
@@ -40,18 +43,18 @@ def get_supported_translation_language(language_code):
     return Language.objects.get(code=supported_translation_code)
 
 
-def get_matched_urls_from_text(text):
+def extract_urls_from_string(text):
     """
     Returns all the raw extracted urls as a list
-    If a URL has a scheme, it ensures that it is https
-    URLs like www. are sanitised in the get_sanitised_url_for_link
+    If a URL has a scheme, it ensures that it is http/s
+    URLs like www. are sanitised in the normalise_url
     """
     text = text.lower()
     extractor = URLExtract()
     results = [url for url in extractor.gen_urls(text)]
     for url in results:
         scheme = urlparse(url).scheme
-        if scheme and scheme != 'https':
+        if scheme and scheme != 'https' and scheme != 'http':
             results.remove(url)
 
     return results
@@ -63,23 +66,7 @@ def make_proxy_image_url(image_url):
     return proxy_image_url
 
 
-def is_url_allowed_in_whitelist_domains(url, allowed_domains):
-    domain = get_domain_from_link(url)
-    is_matched = False
-    domain_parts = domain.split('.')
-    length = len(domain_parts)
-    while length >= 2:
-        if domain in allowed_domains:
-            is_matched = True
-            break
-        domain_parts.pop(0)
-        domain = '.'.join(domain_parts)
-        length = len(domain_parts)
-
-    return is_matched
-
-
-def get_domain_from_link(url):
+def get_url_domain(url):
     """
     Returns the domain from a full url without the scheme
     """
@@ -90,40 +77,68 @@ def get_domain_from_link(url):
     return result.lower()
 
 
-def _get_domain_full_url_from_link(url):
-    """
-    Returns the domain with scheme
-    """
+def get_domain_with_protocol_from_url(url):
     parsed_uri = urlparse(url)
     result = '{uri.scheme}://{uri.netloc}'.format(uri=parsed_uri)
     return result.lower()
 
 
-def get_favicon_url_from_link(url):
-    """
-    We already check the url for whitelisted domains/https.
-    Hence the nosec
-    """
+def get_favicon_url_from_url(url):
+    url_scheme = urlparse(url).scheme
+
+    if url_scheme != 'http' and url_scheme != 'https':
+        raise PermissionError(_('You can only retrieve favicon urls from protocol http and https.'))
+
+    # Doing validation up here
     page = urllib.request.urlopen(url)  # nosec
+
+    if page.getcode() != 200:
+        return None
+
     soup = BeautifulSoup(page, features='html.parser')
     favicon_link = soup.find("link", rel="icon")
     if not favicon_link:
         favicon_link = soup.find("link", rel="shortcut icon")
 
     if favicon_link['href'][0] == '/':
-        favicon_link = _get_domain_full_url_from_link(url) + favicon_link['href']
+        favicon_link = get_domain_with_protocol_from_url(url) + favicon_link['href']
     else:
         favicon_link = favicon_link['href']
 
     return favicon_link
 
 
-def get_sanitised_url_for_link(url):
-    """
-    Adds the url scheme if not present and converts urls to lowercase to normalise
-    what we store in the model
-    """
+def normalise_url(url):
     if not urlparse(url).scheme:
         url = 'https://' + url
 
     return url.lower()
+
+
+def get_url_metadata(preview_link):
+    title, description, image_url = web_preview(preview_link, parser='html.parser')
+    favicon_url = get_favicon_url_from_url(preview_link)
+    domain_url = get_url_domain(preview_link)
+    if image_url is not None:
+        image_url = make_proxy_image_url(image_url)
+    if favicon_url is not None:
+        favicon_url = make_proxy_image_url(favicon_url)
+
+    return {
+        'title': title,
+        'description': description,
+        'image_url': image_url,
+        'favicon_url': favicon_url,
+        'domain_url': domain_url
+    }
+
+
+def write_in_memory_file_to_disk(in_memory_file):
+    # Write it to disk
+    tmp_file = tempfile.mkstemp(suffix=in_memory_file.name)
+    tmp_file_path = tmp_file[1]
+    tmp_file = open(tmp_file_path, 'wb')
+    tmp_file.write(in_memory_file.read())
+    tmp_file.seek(0)
+    tmp_file.close()
+    return tmp_file

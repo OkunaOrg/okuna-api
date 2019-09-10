@@ -112,6 +112,7 @@ class ModerationPenaltyModeratedObjectPostImageSerializer(serializers.ModelSeria
         fields = (
             'id',
             'image',
+            'thumbnail',
             'width',
             'height'
         )

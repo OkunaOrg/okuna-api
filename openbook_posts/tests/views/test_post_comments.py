@@ -3,7 +3,9 @@ import json
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from unittest import mock
+from unittest.mock import ANY
+from openbook_common.tests.models import OpenbookAPITestCase
 
 import logging
 import random
@@ -20,7 +22,7 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class PostCommentsAPITests(APITestCase):
+class PostCommentsAPITests(OpenbookAPITestCase):
     """
     PostCommentsAPI
     """
@@ -1342,7 +1344,7 @@ class PostCommentsAPITests(APITestCase):
         blocked_user = make_user()
         headers = make_authentication_headers_for_user(blocked_user)
         post = foreign_user.create_public_post(text=make_fake_post_text())
-
+        post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
         user.block_user_with_username(blocked_user.username)
         post_comment_text = make_fake_post_comment_text()
 
@@ -1353,6 +1355,37 @@ class PostCommentsAPITests(APITestCase):
 
         self.assertFalse(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
                                                                 notification__owner=user).exists())
+
+    @mock.patch('openbook_notifications.helpers.send_post_comment_push_notification_with_message')
+    def test_commenting_in_post_does_not_send_push_notification_if_user_is_blocked(self,
+                                                                                   send_post_comment_push_notification_call):
+        """
+         should NOT send a push notification when a blocked user comments on a post
+         """
+        foreign_user = make_user()
+        user = make_user()
+        blocked_user = make_user()
+        headers = make_authentication_headers_for_user(blocked_user)
+        post = foreign_user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+        user.block_user_with_username(blocked_user.username)
+        post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(post_comment_text)
+        send_post_comment_push_notification_call.reset_mock()
+
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        post_comment = PostComment.objects.get(text=post_comment_text, commenter_id=blocked_user.pk)
+
+        # assert notification only for the post creator, not user who blocked the commenting user
+        send_post_comment_push_notification_call.assert_called_once()
+        send_post_comment_push_notification_call.assert_called_with(
+            post_comment=post_comment,
+            message=ANY,
+            target_user=foreign_user
+        )
 
     def test_commenting_in_commented_post_by_foreign_user_creates_foreign_notification(self):
         """
@@ -1921,7 +1954,7 @@ class PostCommentsAPITests(APITestCase):
         })
 
 
-class PostCommentsEnableAPITests(APITestCase):
+class PostCommentsEnableAPITests(OpenbookAPITestCase):
     """
     PostCommentsEnable APITests
     """
@@ -2025,7 +2058,7 @@ class PostCommentsEnableAPITests(APITestCase):
         })
 
 
-class PostCommentsDisableAPITests(APITestCase):
+class PostCommentsDisableAPITests(OpenbookAPITestCase):
     """
     PostCommentsDisable APITests
     """

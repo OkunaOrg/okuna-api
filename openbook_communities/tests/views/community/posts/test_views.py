@@ -1,6 +1,6 @@
 from django.urls import reverse
 from faker import Faker
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 from rest_framework import status
 
 import logging
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class CommunityPostsAPITest(APITestCase):
+class CommunityPostsAPITest(OpenbookAPITestCase):
     def test_can_retrieve_posts_from_public_community(self):
         """
         should be able to retrieve the posts for a public community and 200
@@ -575,6 +575,29 @@ class CommunityPostsAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Post.objects.filter(image__isnull=False).exists())
 
+    def test_can_create_community_post_draft(self):
+        """
+        should be able to create an post draft for a community part of and return 201
+        """
+        user = make_user()
+        community_creator = make_user()
+        community = make_community(creator=community_creator, type='P')
+
+        user.join_community_with_name(community_name=community.name)
+
+        url = self._get_url(community_name=community.name)
+
+        post_text = make_fake_post_text()
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.put(url, {
+            'text': post_text,
+            'is_draft': True
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(user.posts.filter(text=post_text, status=Post.STATUS_DRAFT).count(), 1)
+
     def test_cant_create_community_post_not_part_of(self):
         """
         should not be able to create a post for a community part of and return 400
@@ -690,7 +713,7 @@ class CommunityPostsAPITest(APITestCase):
         })
 
 
-class CommunityClosedPostsAPITest(APITestCase):
+class CommunityClosedPostsAPITest(OpenbookAPITestCase):
 
     def test_can_retrieve_closed_posts_from_community_if_administrator(self):
         """

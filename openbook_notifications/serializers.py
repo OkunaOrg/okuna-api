@@ -11,13 +11,20 @@ from openbook_notifications.models import Notification, PostCommentNotification,
     PostCommentReactionNotification, PostCommentUserMentionNotification, PostUserMentionNotification
 from openbook_notifications.models.post_reaction_notification import PostReactionNotification
 from openbook_notifications.serializer_fields import ParentCommentField
-from openbook_notifications.validators import notification_id_exists
-from openbook_posts.models import PostComment, PostReaction, Post, PostImage, PostVideo, PostCommentReaction, \
+from openbook_posts.models import PostComment, PostReaction, Post, PostImage, PostCommentReaction, \
     PostUserMention, PostCommentUserMention
+from openbook_notifications.validators import notification_id_exists
 
 
 class ReadNotificationsSerializer(serializers.Serializer):
     max_id = serializers.IntegerField(
+        required=False,
+    )
+    types = serializers.ListField(
+        child=serializers.ChoiceField(
+            choices=Notification.get_notification_types_values(),
+            required=False,
+        ),
         required=False,
     )
 
@@ -28,6 +35,13 @@ class GetNotificationsSerializer(serializers.Serializer):
         max_value=20
     )
     max_id = serializers.IntegerField(
+        required=False,
+    )
+    types = serializers.ListField(
+        child=serializers.ChoiceField(
+            choices=Notification.get_notification_types_values(),
+            required=False,
+        ),
         required=False,
     )
 
@@ -54,26 +68,6 @@ class PostCommentCommenterSerializer(serializers.ModelSerializer):
         )
 
 
-class PostCommentPostVideoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PostVideo
-        fields = (
-            'id',
-            'video',
-        )
-
-
-class PostCommentPostImageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PostImage
-        fields = (
-            'id',
-            'image',
-            'width',
-            'height'
-        )
-
-
 class PostCommentCreatorProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
@@ -96,29 +90,44 @@ class PostCommentCreatorSerializer(serializers.ModelSerializer):
         )
 
 
+class PostImageSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(read_only=True)
+
+    class Meta:
+        model = PostImage
+        fields = (
+            'id',
+            'image',
+            'width',
+            'height'
+        )
+
+
 class NotificationPostSerializer(serializers.ModelSerializer):
-    image = PostCommentPostImageSerializer()
-    video = PostCommentPostVideoSerializer()
     creator = PostCommentCreatorSerializer()
     is_encircled = IsEncircledField()
+    # Temp backwards compat
+    image = PostImageSerializer(many=False)
 
     class Meta:
         model = Post
         fields = (
             'id',
             'uuid',
-            'image',
             'text',
-            'video',
             'creator',
             'created',
             'is_closed',
             'is_encircled',
+            'media_height',
+            'media_width',
+            'media_thumbnail',
+            # Temp backwards compat
+            'image'
         )
 
 
 class PostCommentLanguageSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Language
         fields = (

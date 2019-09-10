@@ -64,8 +64,7 @@ from openbook_moderation.views.report.views import ReportUser, ReportPost, Repor
 from openbook_moderation.views.user.views import UserModerationPenalties, UserPendingModeratedObjectsCommunities
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
 from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost, TranslatePost, \
-    SearchPostParticipants, GetPostParticipants
-from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost, TranslatePost, PostPreviewLinkData
+    PostPreviewLinkData, SearchPostParticipants, GetPostParticipants, PublishPost, PostStatus
 from openbook_posts.views.post_comment.post_comment_reaction.views import PostCommentReactionItem
 from openbook_posts.views.post_comment.post_comment_reactions.views import PostCommentReactions, \
     PostCommentReactionsEmojiCount
@@ -73,6 +72,7 @@ from openbook_posts.views.post_comment.post_comment_replies.views import PostCom
 from openbook_posts.views.post_comment.views import PostCommentItem, MutePostComment, UnmutePostComment, \
     TranslatePostComment
 from openbook_posts.views.post_comments.views import PostComments, PostCommentsDisable, PostCommentsEnable
+from openbook_posts.views.post_media.views import PostMedia
 from openbook_posts.views.post_reaction.views import PostReactionItem
 from openbook_posts.views.post_reactions.views import PostReactions, PostReactionsEmojiCount, PostReactionEmojiGroups
 from openbook_posts.views.posts.views import Posts, TrendingPosts
@@ -171,6 +171,10 @@ post_participants_patterns = [
     path('search/', SearchPostParticipants.as_view(), name='search-post-participants'),
 ]
 
+post_media_patterns = [
+    path('', PostMedia.as_view(), name='post-media'),
+]
+
 post_patterns = [
     path('', PostItem.as_view(), name='post'),
     path('notifications/', include(post_notifications_patterns)),
@@ -185,8 +189,11 @@ post_patterns = [
     path('open/', PostOpen.as_view(), name='open-post'),
     path('report/', ReportPost.as_view(), name='report-post'),
     path('translate/', TranslatePost.as_view(), name='translate-post'),
-    path('participants/', include(post_participants_patterns)),
+    path('publish/', PublishPost.as_view(), name='publish-post'),
+    path('status/', PostStatus.as_view(), name='post-status'),
     path('link-preview/', PostPreviewLinkData.as_view(), name='preview-post-link'),
+    path('participants/', include(post_participants_patterns)),
+    path('media/', include(post_media_patterns)),
 ]
 
 posts_patterns = [
@@ -374,9 +381,14 @@ if settings.FEATURE_IMPORTER_ENABLED:
 urlpatterns = [
     path('api/', include(api_patterns)),
     url('admin/', admin.site.urls),
+    path('django-rq/', include('django_rq.urls')),
     url('health/', Health.as_view(), name='health'),
 ]
 
 # The static helper works only in debug mode
 # https://docs.djangoproject.com/en/2.1/howto/static-files/#serving-files-uploaded-by-a-user-during-development
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Link previews proxy their urls, use local proxy API on debug/test
+if settings.DEBUG or settings.TESTING:
+    urlpatterns.append(url('proxy/(?P<url>.*)', proxy_view, name='proxy'), )

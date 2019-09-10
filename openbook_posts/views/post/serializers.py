@@ -94,18 +94,10 @@ class PostImageSerializer(serializers.ModelSerializer):
         model = PostImage
         fields = (
             'image',
+            'thumbnail',
             'width',
             'height'
         )
-
-
-class PostVideoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PostVideo
-        fields = (
-            'video',
-        )
-
 
 class CommunityMembershipSerializer(serializers.ModelSerializer):
     class Meta:
@@ -156,8 +148,6 @@ class PostLinkSerializer(serializers.ModelSerializer):
 
 
 class GetPostPostSerializer(serializers.ModelSerializer):
-    image = PostImageSerializer(many=False)
-    video = PostVideoSerializer(many=False)
     creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
@@ -180,8 +170,6 @@ class GetPostPostSerializer(serializers.ModelSerializer):
             'post_links',
             'created',
             'text',
-            'image',
-            'video',
             'creator',
             'reaction',
             'language',
@@ -192,7 +180,10 @@ class GetPostPostSerializer(serializers.ModelSerializer):
             'is_muted',
             'is_edited',
             'is_closed',
-            'is_encircled'
+            'is_encircled',
+            'media_height',
+            'media_width',
+            'media_thumbnail',
         )
 
 
@@ -300,3 +291,17 @@ class OpenClosePostSerializer(serializers.ModelSerializer):
             'uuid',
             'is_closed',
         )
+
+
+class PublishPostSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+
+
+class GetPostStatusSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )

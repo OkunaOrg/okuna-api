@@ -108,11 +108,14 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'django_nose',
+    'ordered_model',
     'storages',
+    'video_encoding',
     'imagekit',
     'django_media_fixtures',
     'cacheops',
     'django_rq',
+    'scheduler',
     'django_extensions',
     'openbook_common',
     'openbook_auth',
@@ -167,6 +170,8 @@ REDIS_LOCATION = '%(protocol)s%(password)s@%(host)s:%(port)d' % {'protocol': red
                                                                  'password': redis_password,
                                                                  'host': REDIS_HOST,
                                                                  'port': REDIS_PORT}
+
+RQ_SHOW_ADMIN_LINK = True
 
 RQ_QUEUES_REDIS_DB = int(os.environ.get('RQ_QUEUES_REDIS_DB', '2'))
 
@@ -389,6 +394,9 @@ LANGUAGES = [
     ('es', _('Spanish')),
     ('en', _('English')),
     ('de', _('German')),
+    ('nl', _('Dutch')),
+    ('da', _('Danish')),
+    ('hu', _('Hungarian')),
     ('sv', _('Swedish')),
     ('fr', _('French')),
     ('it', _('Italian')),
@@ -412,6 +420,23 @@ STATICFILES_DIRS = (
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
+# Video encoding
+
+VIDEO_ENCODING_FORMATS = {
+    'FFmpeg': [
+        {
+            'name': 'mp4_sd',
+            'extension': 'mp4',
+            'params': [
+                '-codec:v', 'libx264', '-crf', '20', '-preset', 'medium',
+                '-b:v', '1000k', '-maxrate', '1000k', '-bufsize', '2000k',
+                '-vf', 'scale=-2:480',  # http://superuser.com/a/776254
+                '-codec:a', 'aac', '-b:a', '128k', '-strict', '-2', '-preset', 'veryfast'
+            ],
+        },
+    ]
+}
+
 PROXY_URL = os.environ.get('PROXY_URL')
 
 # Openbook config
@@ -422,8 +447,9 @@ USER_MAX_CONNECTIONS = int(os.environ.get('USER_MAX_CONNECTIONS', '1500'))
 USER_MAX_COMMUNITIES = 200
 POST_MAX_LENGTH = int(os.environ.get('POST_MAX_LENGTH', '5000'))
 POST_COMMENT_MAX_LENGTH = int(os.environ.get('POST_MAX_LENGTH', '1500'))
-POST_IMAGE_MAX_SIZE = int(os.environ.get('POST_IMAGE_MAX_SIZE', '10485760'))
+POST_MEDIA_MAX_SIZE = int(os.environ.get('POST_MEDIA_MAX_SIZE', '10485760'))
 POST_LINK_MAX_DOMAIN_LENGTH = int(os.environ.get('POST_LINK_MAX_DOMAIN_LENGTH', '126'))
+POST_MEDIA_MAX_ITEMS = int(os.environ.get('POST_MEDIA_MAX_ITEMS', '1'))
 PASSWORD_MIN_LENGTH = 10
 PASSWORD_MAX_LENGTH = 100
 CIRCLE_MAX_LENGTH = 100
@@ -453,15 +479,20 @@ CATEGORY_DESCRIPTION_MAX_LENGTH = 64
 DEVICE_NAME_MAX_LENGTH = 32
 DEVICE_UUID_MAX_LENGTH = 64
 SEARCH_QUERIES_MAX_LENGTH = 120
-FEATURE_VIDEO_POSTS_ENABLED = os.environ.get('FEATURE_VIDEO_POSTS_ENABLED', 'True') == 'True'
 FEATURE_IMPORTER_ENABLED = os.environ.get('FEATURE_IMPORTER_ENABLED', 'True') == 'True'
 MODERATION_REPORT_DESCRIPTION_MAX_LENGTH = 1000
 MODERATED_OBJECT_DESCRIPTION_MAX_LENGTH = 1000
 GLOBAL_HIDE_CONTENT_AFTER_REPORTS_AMOUNT = int(os.environ.get('GLOBAL_HIDE_CONTENT_AFTER_REPORTS_AMOUNT', '20'))
 MODERATORS_COMMUNITY_NAME = os.environ.get('MODERATORS_COMMUNITY_NAME', 'mods')
-POST_LINK_WHITELIST_DOMAIN_CACHE_TIMEOUT = 60*60*int(os.environ.get('POST_LINK_WHITELIST_DOMAIN_CACHE_TIMEOUT', '24'))
-POST_LINK_WHITELIST_DOMAIN_CACHE_KEY = 'POST_LINK_WHITELIST_DOMAINS_LIST'
-
+PROXY_WHITELIST_DOMAIN_MAX_LENGTH = 150
+SUPPORTED_MEDIA_MIMETYPES = [
+    'video/mp4',
+    'video/quicktime',
+    'video/3gpp',
+    'image/gif',
+    'image/jpeg',
+    'image/png'
+]
 
 # Email Config
 

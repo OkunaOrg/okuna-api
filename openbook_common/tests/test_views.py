@@ -1,19 +1,18 @@
 from django.urls import reverse
-from django.core.cache import cache
 from django.conf import settings
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 import logging
 import json
 
-from openbook_common.tests.helpers import make_emoji_group, make_emoji, make_user, make_authentication_headers_for_user, \
-    make_fake_post_text, make_whitelisted_domain
+from openbook_common.tests.helpers import make_emoji_group, make_user, make_authentication_headers_for_user, \
+    make_fake_post_text, make_proxy_whitelisted_domain
 
 logger = logging.getLogger(__name__)
 
 
-class TimeAPITests(APITestCase):
+class TimeAPITests(OpenbookAPITestCase):
     """
     TimeAPITests
     """
@@ -34,7 +33,7 @@ class TimeAPITests(APITestCase):
         return reverse('time')
 
 
-class TestHealth(APITestCase):
+class TestHealth(OpenbookAPITestCase):
     """
     Health API
     """
@@ -46,7 +45,7 @@ class TestHealth(APITestCase):
         self.assertTrue(response.status_code, status.HTTP_200_OK)
 
 
-class TestEmojiGroups(APITestCase):
+class TestEmojiGroups(OpenbookAPITestCase):
     """
     EmojiGroups API
     """
@@ -103,7 +102,7 @@ class TestEmojiGroups(APITestCase):
         return reverse('emoji-groups')
 
 
-class PreviewLinkDataAPITests(APITestCase):
+class PreviewLinkDataAPITests(OpenbookAPITestCase):
     """
     PreviewLinkDataAPI
     """
@@ -112,12 +111,11 @@ class PreviewLinkDataAPITests(APITestCase):
         """
         should retrieve preview data for a link in a whitelisted domain and return 200
         """
-        cache.delete(settings.POST_LINK_WHITELIST_DOMAIN_CACHE_KEY)  # clear cache value
         user = make_user()
         headers = make_authentication_headers_for_user(user)
         preview_url = 'www.okuna.io'
         url = self._get_url()
-        make_whitelisted_domain(domain='okuna.io')
+        make_proxy_whitelisted_domain(domain='okuna.io')
 
         response = self.client.get(url, {'url': preview_url}, **headers)
         preview_data = json.loads(response.content)
@@ -131,9 +129,8 @@ class PreviewLinkDataAPITests(APITestCase):
 
     def test_cannot_retrieve_preview_data_for_domain_not_in_whitelist(self):
         """
-        should not retrieve preview data for a link if the domain is not whitelisted and return 400
+        should not retrieve preview data for a link if the domain is not whitelisted and return 403
         """
-        cache.delete(settings.POST_LINK_WHITELIST_DOMAIN_CACHE_KEY)  # clear cache value
         user = make_user()
         headers = make_authentication_headers_for_user(user)
         preview_url = 'https://www.techcrunch.com'
@@ -141,11 +138,11 @@ class PreviewLinkDataAPITests(APITestCase):
 
         response = self.client.get(url, {'url': preview_url}, **headers)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_cannot_retrieve_preview_data_for_invalid_url(self):
         """
-        should fail to retrieve preview data for an invalid url and return 400
+        should fail to retrieve preview data for an invalid url and return 403
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
@@ -154,11 +151,11 @@ class PreviewLinkDataAPITests(APITestCase):
         url = self._get_url()
         response = self.client.get(url, {'url': preview_url}, **headers)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_cannot_retrieve_preview_data_for_url_with_unreachable_link(self):
         """
-        should fail to retrieve preview data for a url which is unreachable and return 400
+        should fail to retrieve preview data for a url which is unreachable and return 403
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
@@ -167,7 +164,7 @@ class PreviewLinkDataAPITests(APITestCase):
         url = self._get_url()
         response = self.client.get(url, {'url': preview_url}, **headers)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_cannot_retrieve_preview_data_if_no_url_param(self):
         """

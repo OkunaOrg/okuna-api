@@ -48,11 +48,13 @@ class CommunityPosts(APIView):
         image = data.get('image')
         video = data.get('video')
         community_name = data.get('community_name')
+        is_draft = data.get('is_draft')
 
         user = request.user
 
         with transaction.atomic():
-            post = user.create_community_post(text=text, community_name=community_name, image=image, video=video)
+            post = user.create_community_post(text=text, community_name=community_name, image=image, video=video,
+                                              is_draft=is_draft)
 
         post_serializer = CommunityPostSerializer(post, context={"request": request})
 

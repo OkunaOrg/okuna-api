@@ -1,7 +1,7 @@
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 from unittest import mock
 import json
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class PostCommentItemAPITests(APITestCase):
+class PostCommentItemAPITests(OpenbookAPITestCase):
     """
     PostCommentItemAPI
     """
@@ -1852,7 +1852,7 @@ class PostCommentItemAPITests(APITestCase):
         })
 
 
-class MutePostCommentAPITests(APITestCase):
+class MutePostCommentAPITests(OpenbookAPITestCase):
     """
     MutePostCommentAPI
     """
@@ -2129,7 +2129,7 @@ class MutePostCommentAPITests(APITestCase):
         })
 
 
-class UnmutePostCommentAPITests(APITestCase):
+class UnmutePostCommentAPITests(OpenbookAPITestCase):
     """
     UnmutePostCommentAPI
     """
@@ -2285,7 +2285,7 @@ class UnmutePostCommentAPITests(APITestCase):
         })
 
 
-class TranslatePostCommentAPITests(APITestCase):
+class TranslatePostCommentAPITests(OpenbookAPITestCase):
     """
     TranslatePostCommentAPI
     """

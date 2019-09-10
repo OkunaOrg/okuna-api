@@ -8,7 +8,7 @@ from openbook_circles.validators import circle_id_exists
 from openbook_common.models import Emoji, Badge
 from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, PostReactionsEmojiCountField, \
     CirclesField, PostCreatorField, PostIsMutedField, IsEncircledField
-from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
+from openbook_common.serializers_fields.request import RestrictedImageFileSizeField, RestrictedFileSizeField
 from openbook_common.models import Language
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import CommunityMembershipsField
@@ -48,13 +48,18 @@ class GetPostsSerializer(serializers.Serializer):
 
 class CreatePostSerializer(serializers.Serializer):
     text = serializers.CharField(max_length=settings.POST_MAX_LENGTH, required=False, allow_blank=False)
+    # Prefer adding images with post/uuid/images
     image = RestrictedImageFileSizeField(allow_empty_file=False, required=False,
-                                         max_upload_size=settings.POST_IMAGE_MAX_SIZE)
-    video = serializers.FileField(allow_empty_file=False, required=False)
+                                         max_upload_size=settings.POST_MEDIA_MAX_SIZE)
+    # Prefer adding videos with post/uuid/videos
+    video = RestrictedFileSizeField(allow_empty_file=False, required=False,
+                                    max_upload_size=settings.POST_MEDIA_MAX_SIZE)
     circle_id = serializers.ListField(
         required=False,
         child=serializers.IntegerField(validators=[circle_id_exists]),
     )
+    is_draft = serializers.BooleanField(
+        default=False)
 
 
 class PostCreatorProfileBadgeSerializer(serializers.ModelSerializer):
@@ -88,26 +93,6 @@ class PostCreatorSerializer(serializers.ModelSerializer):
             'id',
             'profile',
             'username'
-        )
-
-
-class PostImageSerializer(serializers.ModelSerializer):
-    image = serializers.ImageField(read_only=True, required=False, allow_empty_file=True)
-
-    class Meta:
-        model = PostImage
-        fields = (
-            'image',
-            'width',
-            'height'
-        )
-
-
-class PostVideoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PostVideo
-        fields = (
-            'video',
         )
 
 
@@ -186,7 +171,6 @@ class PostCommunitySerializer(serializers.ModelSerializer):
 
 
 class PostLanguageSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Language
         fields = (
@@ -204,9 +188,19 @@ class PostLinkSerializer(serializers.ModelSerializer):
         )
 
 
+class PostImageSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(read_only=True, required=False, allow_empty_file=True)
+
+    class Meta:
+        model = PostImage
+        fields = (
+            'image',
+            'width',
+            'height'
+        )
+
+
 class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
-    image = PostImageSerializer(many=False)
-    video = PostVideoSerializer(many=False)
     creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
@@ -219,6 +213,9 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     is_encircled = IsEncircledField()
     post_links = PostLinkSerializer(many=True)
 
+    # Temp backwards compat
+    image = PostImageSerializer(many=False)
+
     class Meta:
         model = Post
         fields = (
@@ -229,8 +226,6 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'post_links',
             'created',
             'text',
-            'image',
-            'video',
             'creator',
             'reaction',
             'comments_enabled',
@@ -241,18 +236,24 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'is_muted',
             'is_encircled',
             'is_edited',
-            'is_closed'
+            'is_closed',
+            'media_height',
+            'media_width',
+            'media_thumbnail',
+            # Temp backwards compat
+            'image',
         )
 
 
 class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
-    image = PostImageSerializer(many=False)
-    video = PostVideoSerializer(many=False)
     creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
     comments_count = CommentsCountField()
     language = PostLanguageSerializer()
+
+    # Temp backwards compat
+    image = PostImageSerializer(many=False)
 
     class Meta:
         model = Post
@@ -263,11 +264,14 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
             'reactions_emoji_counts',
             'created',
             'text',
-            'image',
-            'video',
             'creator',
             'language',
             'comments_enabled',
             'public_reactions',
-            'is_edited'
+            'is_edited',
+            'media_height',
+            'media_width',
+            'media_thumbnail',
+            # Temp backwards compat
+            'image',
         )

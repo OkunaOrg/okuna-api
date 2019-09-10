@@ -40,9 +40,15 @@ django-extensions = "*"
 langdetect = "*"
 django-rq = "*"
 redis = "*"
+django-rq-scheduler = "*"
+django-video-encoding = "*"
+ffmpy = "*"
+django-positions = "*"
+django-ordered-model = "*"
 webpreview = "*"
 beautifulsoup4 = "*"
 urlextract = "*"
+django-proxy = "*"
 
 [pipenv]
 allow_prereleases = true

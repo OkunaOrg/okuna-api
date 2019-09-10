@@ -2,6 +2,10 @@ import uuid
 from os.path import splitext
 
 
+def upload_to_post_directory(post, filename):
+    return _upload_to_post_directory_directory(post=post, filename=filename)
+
+
 def upload_to_post_image_directory(post_image, filename):
     post = post_image.post
     return _upload_to_post_directory_directory(post=post, filename=filename)
@@ -21,5 +25,3 @@ def _upload_to_post_directory_directory(post, filename):
 
     return '%(path)s%(new_filename)s' % {'path': path,
                                          'new_filename': new_filename, }
-
-

@@ -1,7 +1,7 @@
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 import logging
 import json
@@ -12,7 +12,7 @@ fake = Faker()
 logger = logging.getLogger(__name__)
 
 
-class SearchUsersAPITests(APITestCase):
+class SearchUsersAPITests(OpenbookAPITestCase):
     """
     UsersAPI
     """
@@ -135,7 +135,7 @@ class SearchUsersAPITests(APITestCase):
         return reverse('search-users')
 
 
-class GetUserAPITests(APITestCase):
+class GetUserAPITests(OpenbookAPITestCase):
     """
     UserAPI
     """
@@ -213,7 +213,7 @@ class GetUserAPITests(APITestCase):
         })
 
 
-class BlockUserAPITests(APITestCase):
+class BlockUserAPITests(OpenbookAPITestCase):
     """
     BlockUserAPI
     """
@@ -332,7 +332,7 @@ class BlockUserAPITests(APITestCase):
         })
 
 
-class UnblockUserAPITests(APITestCase):
+class UnblockUserAPITests(OpenbookAPITestCase):
     """
     UnblockUserAPI
     """

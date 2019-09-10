@@ -3,7 +3,7 @@ import json
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_notification, \
     make_fake_post_text, make_moderation_category, make_moderation_report_description, make_circle, make_community, \
@@ -14,7 +14,7 @@ from openbook_moderation.models import ModerationReport, ModeratedObject
 fake = Faker()
 
 
-class ReportPostAPITests(APITestCase):
+class ReportPostAPITests(OpenbookAPITestCase):
     """
     ReportPostAPI
     """
@@ -405,7 +405,7 @@ class ReportPostAPITests(APITestCase):
         })
 
 
-class ReportPostCommentAPITests(APITestCase):
+class ReportPostCommentAPITests(OpenbookAPITestCase):
     """
     ReportPostCommentAPI
     """
@@ -815,7 +815,7 @@ class ReportPostCommentAPITests(APITestCase):
         })
 
 
-class ReportUserAPITests(APITestCase):
+class ReportUserAPITests(OpenbookAPITestCase):
     """
     ReportUserAPI
     """
@@ -993,7 +993,7 @@ class ReportUserAPITests(APITestCase):
         })
 
 
-class ReportCommunityAPITests(APITestCase):
+class ReportCommunityAPITests(OpenbookAPITestCase):
     """
     ReportCommunityAPI
     """
