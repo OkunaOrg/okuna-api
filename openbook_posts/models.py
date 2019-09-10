@@ -173,7 +173,7 @@ class Post(models.Model):
 
         Community = get_community_model()
 
-        trending_posts_sources_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC)
+        trending_posts_sources_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, status=cls.STATUS_PUBLISHED)
 
         trending_posts_query.add(trending_posts_sources_query, Q.AND)
 
