@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
-                ('link', models.CharField(max_length=5000)),
+                ('link', models.CharField(max_length=200)),
                 ('post', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='post_links', to='openbook_posts.Post')),
             ],
             options={

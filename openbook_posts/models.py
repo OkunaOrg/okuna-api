@@ -866,7 +866,7 @@ class PostCommentMute(models.Model):
 class PostLink(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='post_links')
-    link = models.CharField(max_length=settings.POST_MAX_LENGTH)
+    link = models.TextField(max_length=settings.POST_MAX_LENGTH)
 
     class Meta:
         unique_together = ('post', 'link',)
