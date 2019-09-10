@@ -868,9 +868,6 @@ class PostLink(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='post_links')
     link = models.TextField(max_length=settings.POST_MAX_LENGTH)
 
-    class Meta:
-        unique_together = ('post', 'link',)
-
     @classmethod
     def create_link(cls, link, post_id):
         return cls.objects.create(link=link, post_id=post_id)
