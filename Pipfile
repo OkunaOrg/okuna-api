@@ -7,7 +7,7 @@ name = "pypi"
 polib = "*"
 
 [packages]
-django = ">=2.2.2"
+django = "==2.2.5"
 python-dotenv = "*"
 djangorestframework = "*"
 sentry-sdk = "==0.10.2"
