@@ -50,7 +50,7 @@ def extract_urls_from_string(text):
     URLs like www. are sanitised in the normalise_url
     """
     text = text.lower()
-    extractor = URLExtract()
+    extractor = URLExtract(cache_dir=tempfile.gettempdir())
     results = [url for url in extractor.gen_urls(text)]
     for url in results:
         scheme = urlparse(url).scheme
