@@ -1,14 +1,15 @@
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 from openbook_common.tests.helpers import make_user
 from openbook_common.tests.helpers import make_authentication_headers_for_user
 
 
-class UploadFileTests(APITestCase):
+# DISABLED
+class UploadFileTests(OpenbookAPITestCase):
 
-    def test_upload_file_success(self):
+    def upload_file_success(self):
         """
         Upload valid archive imports 9 posts, return 200
         """
@@ -28,7 +29,7 @@ class UploadFileTests(APITestCase):
         response = self.client.get(reverse('posts'), **headers)
         self.assertEqual(len(response.json()), number_of_posts)
 
-    def test_upload_file_malicious(self):
+    def upload_file_malicious(self):
         """
         the file is malicious, should return 400
         """
@@ -56,7 +57,7 @@ class UploadFileTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_upload_file_duplicate(self):
+    def upload_file_duplicate(self):
         """
         Uploading duplicate archive, should skip all imported posts
         and return 200.

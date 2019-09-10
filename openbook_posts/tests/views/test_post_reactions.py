@@ -3,7 +3,7 @@ import json
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 import logging
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class PostReactionsAPITests(APITestCase):
+class PostReactionsAPITests(OpenbookAPITestCase):
     """
     PostReactionsAPI
     """
@@ -594,7 +594,7 @@ class PostReactionsAPITests(APITestCase):
         })
 
 
-class PostReactionsEmojiCountAPITests(APITestCase):
+class PostReactionsEmojiCountAPITests(OpenbookAPITestCase):
     """
     PostReactionsEmojiCountAPI
     """
@@ -852,7 +852,7 @@ class PostReactionsEmojiCountAPITests(APITestCase):
         })
 
 
-class TestPostReactionEmojiGroups(APITestCase):
+class TestPostReactionEmojiGroups(OpenbookAPITestCase):
     """
     PostReactionEmojiGroups API
     """

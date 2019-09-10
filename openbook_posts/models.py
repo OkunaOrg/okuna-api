@@ -1,25 +1,37 @@
 # Create your models here.
+import os
+import tempfile
 import uuid
 from datetime import timedelta
 
-from django.contrib.contenttypes.fields import GenericRelation
+from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+from django.core.files import File
 from django.core.files.storage import default_storage
+from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile, SimpleUploadedFile
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Count
+import ffmpy
 
 # Create your views here.
+from ordered_model.models import OrderedModel
 from pilkit.processors import ResizeToFit
 from rest_framework.exceptions import ValidationError
 
 from django.conf import settings
+from video_encoding.backends import get_backend
+from video_encoding.fields import VideoField
+from video_encoding.models import Format
+
 from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
 from openbook_common.models import Emoji, Language
-from openbook_common.utils.helpers import delete_file_field, sha256sum, extract_usernames_from_string
+from openbook_common.utils.helpers import delete_file_field, sha256sum, extract_usernames_from_string, get_magic, \
+    write_in_memory_file_to_disk
 from openbook_common.utils.model_loaders import get_emoji_model, \
     get_circle_model, get_community_model, get_post_comment_notification_model, \
     get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model, \
@@ -30,8 +42,16 @@ from imagekit.models import ProcessedImageField
 from openbook_moderation.models import ModeratedObject
 from openbook_notifications.helpers import send_post_comment_user_mention_push_notification, \
     send_post_user_mention_push_notification
-from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory
-from openbook_common.helpers import get_language_for_text
+from openbook_posts.checkers import check_can_be_updated, check_can_add_media, check_can_be_published, \
+    check_mimetype_is_supported_media_mimetypes
+from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory, \
+    upload_to_post_directory
+from openbook_posts.jobs import process_post_media
+
+magic = get_magic()
+from openbook_common.helpers import get_language_for_text, extract_urls_from_string, normalise_url
+
+post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else default_storage
 
 
 class Post(models.Model):
@@ -39,6 +59,7 @@ class Post(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     text = models.TextField(_('text'), max_length=settings.POST_MAX_LENGTH, blank=False, null=True)
     created = models.DateTimeField(editable=False, db_index=True)
+    modified = models.DateTimeField(db_index=True, default=timezone.now)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
     comments_enabled = models.BooleanField(_('comments enabled'), default=True, editable=False, null=False)
     public_reactions = models.BooleanField(_('public reactions'), default=True, editable=False, null=False)
@@ -49,6 +70,21 @@ class Post(models.Model):
     is_edited = models.BooleanField(default=False)
     is_closed = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
+    STATUS_DRAFT = 'D'
+    STATUS_PROCESSING = 'PG'
+    STATUS_PUBLISHED = 'P'
+    STATUSES = (
+        (STATUS_DRAFT, 'Draft'),
+        (STATUS_PROCESSING, 'Processing'),
+        (STATUS_PUBLISHED, 'Published'),
+    )
+    status = models.CharField(blank=False, null=False, choices=STATUSES, default=STATUS_DRAFT, max_length=2)
+    media_height = models.PositiveSmallIntegerField(_('media height'), null=True)
+    media_width = models.PositiveSmallIntegerField(_('media width'), null=True)
+    media_thumbnail = ProcessedImageField(verbose_name=_('thumbnail'), storage=post_image_storage,
+                                          upload_to=upload_to_post_directory,
+                                          blank=False, null=True, format='JPEG', options={'quality': 30},
+                                          processors=[ResizeToFit(width=512, upscale=False)])
 
     class Meta:
         index_together = [
@@ -70,7 +106,7 @@ class Post(models.Model):
 
     @classmethod
     def create_post(cls, creator, circles_ids=None, community_name=None, image=None, text=None, video=None,
-                    created=None):
+                    created=None, is_draft=False):
 
         if not community_name and not circles_ids:
             raise ValidationError(_('A post requires circles or a community to be posted to.'))
@@ -78,23 +114,19 @@ class Post(models.Model):
         if community_name and circles_ids:
             raise ValidationError(_('A post cannot be posted both to a community and to circles.'))
 
-        if not text and not image and not video:
-            raise ValidationError(_('A post requires text or an image/video.'))
+        post = Post.objects.create(creator=creator, created=created)
 
         if image and video:
             raise ValidationError(_('A post must have an image or a video, not both.'))
-
-        post = Post.objects.create(creator=creator, created=created)
 
         if text:
             post.text = text
             post.language = get_language_for_text(text)
 
         if image:
-            PostImage.create_post_image(image=image, post_id=post.pk)
-
-        if video:
-            PostVideo.create_post_video(video=video, post_id=post.pk)
+            post.add_media(file=image)
+        elif video:
+            post.add_media(file=video)
 
         if circles_ids:
             post.circles.add(*circles_ids)
@@ -102,7 +134,12 @@ class Post(models.Model):
             Community = get_community_model()
             post.community = Community.objects.get(name=community_name)
 
-        post.save()
+        # If on create we have a video or image, we automatically publish it
+        # Backwards compat reasons.
+        if not is_draft:
+            post.publish()
+        else:
+            post.save()
 
         return post
 
@@ -136,7 +173,7 @@ class Post(models.Model):
 
         Community = get_community_model()
 
-        trending_posts_sources_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC)
+        trending_posts_sources_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, status=cls.STATUS_PUBLISHED)
 
         trending_posts_query.add(trending_posts_sources_query, Q.AND)
 
@@ -173,7 +210,11 @@ class Post(models.Model):
 
         # Add post comment creator
         post_comment_creator = User.objects.filter(pk=parent_post_comment.commenter_id)
-        return other_repliers.union(post_comment_creator)
+
+        # Add post creator
+        post = parent_post_comment.post
+        post_creator = User.objects.filter(pk=post.creator.id)
+        return other_repliers.union(post_comment_creator, post_creator)
 
     def count_comments(self):
         return PostComment.count_comments_for_post_with_id(self.pk)
@@ -225,6 +266,9 @@ class Post(models.Model):
 
         return False
 
+    def has_links(self):
+        return self.post_links.exists()
+
     def comment(self, text, commenter):
         return PostComment.create_comment(text=text, commenter=commenter, post=self)
 
@@ -238,24 +282,136 @@ class Post(models.Model):
             return True
         return False
 
+    def create_links(self, link_urls):
+        self.post_links.all().delete()
+        for link_url in link_urls:
+            link_url = normalise_url(link_url)
+            PostLink.create_link(link=link_url, post_id=self.pk)
+
     def is_encircled_post(self):
         return not self.is_public_post() and not self.community
 
     def update(self, text=None):
-        self._check_can_be_updated(text=text)
+        check_can_be_updated(post=self, text=text)
         self.text = text
         self.is_edited = True
         self.language = get_language_for_text(text)
         self.save()
 
+    def get_media(self):
+        return self.media
+
+    def add_media(self, file, order=None):
+        check_can_add_media(post=self)
+
+        is_in_memory_file = isinstance(file, InMemoryUploadedFile) or isinstance(file, SimpleUploadedFile)
+
+        if is_in_memory_file:
+            file_mime = magic.from_buffer(file.read())
+        elif isinstance(file, TemporaryUploadedFile):
+            file_mime = magic.from_file(file.temporary_file_path())
+        else:
+            file_mime = magic.from_file(file.name)
+
+        check_mimetype_is_supported_media_mimetypes(file_mime)
+        # Mime check moved pointer
+        file.seek(0)
+
+        file_mime_types = file_mime.split('/')
+
+        file_mime_type = file_mime_types[0]
+        file_mime_subtype = file_mime_types[1]
+
+        temp_files_to_close = []
+
+        if file_mime_subtype == 'gif':
+            if is_in_memory_file:
+                file = write_in_memory_file_to_disk(file)
+
+            temp_dir = tempfile.gettempdir()
+            converted_gif_file_name = os.path.join(temp_dir, str(uuid.uuid4()) + '.mp4')
+
+            ff = ffmpy.FFmpeg(
+                inputs={file.temporary_file_path() if hasattr(file, 'temporary_file_path') else file.name: None},
+                outputs={converted_gif_file_name: None})
+            ff.run()
+            converted_gif_file = open(converted_gif_file_name, 'rb')
+            temp_files_to_close.append(converted_gif_file)
+            file = File(file=converted_gif_file)
+            file_mime_type = 'video'
+
+        has_other_media = self.media.exists()
+
+        if file_mime_type == 'image':
+            post_image = self._add_media_image(image=file, order=order)
+            if not has_other_media:
+                self.media_width = post_image.width
+                self.media_height = post_image.height
+                self.media_thumbnail = file
+        elif file_mime_type == 'video':
+            post_video = self._add_media_video(video=file, order=order)
+            if not has_other_media:
+                self.media_width = post_video.width
+                self.media_height = post_video.height
+                self.media_thumbnail = post_video.thumbnail.file
+        else:
+            raise ValidationError(
+                _('Unsupported media file type')
+            )
+
+        for file_to_close in temp_files_to_close:
+            file_to_close.close()
+
+        self.save()
+
+    def get_first_media(self):
+        return self.media.first()
+
+    def _add_media_image(self, image, order):
+        return PostImage.create_post_media_image(image=image, post_id=self.pk, order=order)
+
+    def _add_media_video(self, video, order):
+        return PostVideo.create_post_media_video(file=video, post_id=self.pk, order=order)
+
+    def count_media(self):
+        return self.media.count()
+
+    def publish(self):
+        check_can_be_published(post=self)
+
+        if self.has_media():
+            # After finishing, this will call _publish()
+            self.status = Post.STATUS_PROCESSING
+            self.save()
+            process_post_media.delay(post_id=self.pk)
+        else:
+            self._publish()
+
+    def _publish(self):
+        self.status = Post.STATUS_PUBLISHED
+        self.created = timezone.now()
+        self.save()
+
+    def is_draft(self):
+        return self.status == Post.STATUS_DRAFT
+
+    def is_empty(self):
+        return not self.text and not hasattr(self, 'image') and not hasattr(self, 'video') and not self.has_media()
+
+    def has_media(self):
+        return self.media.exists()
+
     def save(self, *args, **kwargs):
-        ''' On save, update timestamps '''
+        ''' On create, update timestamps '''
         if not self.id and not self.created:
             self.created = timezone.now()
+
+        self.modified = timezone.now()
 
         post = super(Post, self).save(*args, **kwargs)
 
         self._process_post_mentions()
+        self._process_post_links()
 
         return post
 
@@ -264,9 +420,6 @@ class Post(models.Model):
         super(Post, self).delete(*args, **kwargs)
 
     def delete_media(self):
-        if self.has_video():
-            delete_file_field(self.video.video)
-
         if self.has_image():
             delete_file_field(self.image.image)
 
@@ -365,44 +518,115 @@ class Post(models.Model):
                         except User.DoesNotExist:
                             pass
 
-    def _check_can_be_updated(self, text=None):
-        if self.is_text_only_post() and not text:
-            raise ValidationError(
-                _('Cannot remove the text of a text only post. Try deleting it instead.')
-            )
+    def _process_post_links(self):
+        if self.has_text() and not self.has_image() and not self.has_video():
+            link_urls = extract_urls_from_string(self.text)
+            if len(link_urls) > 0:
+                self.create_links(link_urls)
 
 
-post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else default_storage
+class PostMedia(OrderedModel):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='media')
+    order_with_respect_to = 'post'
+
+    MEDIA_TYPE_VIDEO = 'V'
+    MEDIA_TYPE_IMAGE = 'I'
+
+    MEDIA_TYPES = (
+        (MEDIA_TYPE_VIDEO, 'Video'),
+        (MEDIA_TYPE_IMAGE, 'Image'),
+    )
+
+    type = models.CharField(max_length=5, choices=MEDIA_TYPES)
+
+    # Generic relation types
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey()
+
+    @classmethod
+    def create_post_media(cls, post_id, type, content_object, order):
+        return cls.objects.create(type=type, content_object=content_object, post_id=post_id, order=order)
 
 
 class PostImage(models.Model):
-    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='image')
+    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='image', null=True)
     image = ProcessedImageField(verbose_name=_('image'), storage=post_image_storage,
                                 upload_to=upload_to_post_image_directory,
                                 width_field='width',
                                 height_field='height',
-                                blank=False, null=True, format='JPEG', options={'quality': 100},
+                                blank=False, null=True, format='JPEG', options={'quality': 80},
                                 processors=[ResizeToFit(width=1024, upscale=False)])
     width = models.PositiveIntegerField(editable=False, null=False, blank=False)
     height = models.PositiveIntegerField(editable=False, null=False, blank=False)
     hash = models.CharField(_('hash'), max_length=64, blank=False, null=True)
+    thumbnail = ProcessedImageField(verbose_name=_('thumbnail'), storage=post_image_storage,
+                                    upload_to=upload_to_post_image_directory,
+                                    blank=False, null=True, format='JPEG', options={'quality': 30},
+                                    processors=[ResizeToFit(width=1024, upscale=False)])
+
+    media = GenericRelation(PostMedia)
 
     @classmethod
     def create_post_image(cls, image, post_id):
         hash = sha256sum(file=image.file)
         return cls.objects.create(image=image, post_id=post_id, hash=hash)
 
+    @classmethod
+    def create_post_media_image(cls, image, post_id, order):
+        hash = sha256sum(file=image.file)
+        post_image = cls.objects.create(image=image, post_id=post_id, hash=hash, thumbnail=image)
+        PostMedia.create_post_media(type=PostMedia.MEDIA_TYPE_IMAGE,
+                                    content_object=post_image,
+                                    post_id=post_id, order=order)
+        return post_image
+
 
 class PostVideo(models.Model):
-    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='video')
-    video = models.FileField(_('video'), blank=False, null=False, storage=post_image_storage,
-                             upload_to=upload_to_post_video_directory)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='videos', null=True)
+
     hash = models.CharField(_('hash'), max_length=64, blank=False, null=True)
 
+    media = GenericRelation(PostMedia)
+
+    width = models.PositiveIntegerField(editable=False, null=True)
+    height = models.PositiveIntegerField(editable=False, null=True)
+    duration = models.FloatField(editable=False, null=True)
+
+    file = VideoField(width_field='width', height_field='height',
+                      duration_field='duration', storage=post_image_storage,
+                      upload_to=upload_to_post_video_directory, blank=False, null=True)
+
+    format_set = GenericRelation(Format)
+
+    thumbnail = ProcessedImageField(verbose_name=_('thumbnail'), storage=post_image_storage,
+                                    upload_to=upload_to_post_image_directory,
+                                    width_field='thumbnail_width',
+                                    height_field='thumbnail_height',
+                                    blank=False, null=True, format='JPEG', options={'quality': 30},
+                                    processors=[ResizeToFit(width=1024, upscale=False)])
+
+    thumbnail_width = models.PositiveIntegerField(editable=False, null=False, blank=False)
+    thumbnail_height = models.PositiveIntegerField(editable=False, null=False, blank=False)
+
     @classmethod
-    def create_post_video(cls, video, post_id):
-        hash = sha256sum(file=video.file)
-        return cls.objects.create(video=video, post_id=post_id, hash=hash)
+    def create_post_media_video(cls, file, post_id, order):
+        hash = sha256sum(file=file.file)
+        video_backend = get_backend()
+
+        if isinstance(file, InMemoryUploadedFile):
+            # If its in memory, doing read shouldn't be an issue as the file should be small.
+            in_disk_file = write_in_memory_file_to_disk(file)
+            thumbnail_path = video_backend.get_thumbnail(video_path=in_disk_file.name, at_time=0.0)
+        else:
+            thumbnail_path = video_backend.get_thumbnail(video_path=file.file.name, at_time=0.0)
+
+        with open(thumbnail_path, 'rb+') as thumbnail_file:
+            post_video = cls.objects.create(file=file, post_id=post_id, hash=hash, thumbnail=File(thumbnail_file), )
+        PostMedia.create_post_media(type=PostMedia.MEDIA_TYPE_VIDEO,
+                                    content_object=post_video,
+                                    post_id=post_id, order=order)
+        return post_video
 
 
 class PostComment(models.Model):
@@ -410,6 +634,7 @@ class PostComment(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
     parent_comment = models.ForeignKey('self', on_delete=models.CASCADE, related_name='replies', null=True, blank=True)
     created = models.DateTimeField(editable=False, db_index=True)
+    modified = models.DateTimeField(db_index=True, default=timezone.now)
     commenter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_comments')
     text = models.TextField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False)
     language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, related_name='post_comments')
@@ -470,6 +695,8 @@ class PostComment(models.Model):
         ''' On save, update timestamps '''
         if not self.id:
             self.created = timezone.now()
+
+        self.modified = timezone.now()
 
         self._process_post_comment_mentions()
         return super(PostComment, self).save(*args, **kwargs)
@@ -634,6 +861,19 @@ class PostCommentMute(models.Model):
     @classmethod
     def create_post_comment_mute(cls, post_comment_id, muter_id):
         return cls.objects.create(post_comment_id=post_comment_id, muter_id=muter_id)
+
+
+class PostLink(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='post_links')
+    link = models.TextField(max_length=settings.POST_MAX_LENGTH)
+
+    class Meta:
+        unique_together = ('post', 'link',)
+
+    @classmethod
+    def create_link(cls, link, post_id):
+        return cls.objects.create(link=link, post_id=post_id)
 
 
 class PostUserMention(models.Model):

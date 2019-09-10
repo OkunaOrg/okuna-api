@@ -1,7 +1,7 @@
 # Create your tests here.
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 from mixer.backend.django import mixer
 
 from openbook_auth.models import User
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class ConnectionsAPITests(APITestCase):
+class ConnectionsAPITests(OpenbookAPITestCase):
     """
     ConnectionsAPI
     """
@@ -62,7 +62,7 @@ class ConnectionsAPITests(APITestCase):
         return reverse('connections')
 
 
-class ConnectAPITests(APITestCase):
+class ConnectAPITests(OpenbookAPITestCase):
     fixtures = [
         'openbook_circles/fixtures/circles.json'
     ]
@@ -233,7 +233,7 @@ class ConnectAPITests(APITestCase):
         return reverse('connect-with-user')
 
 
-class DisconnectAPITest(APITestCase):
+class DisconnectAPITest(OpenbookAPITestCase):
     fixtures = [
         'openbook_circles/fixtures/circles.json'
     ]
@@ -409,7 +409,7 @@ class DisconnectAPITest(APITestCase):
         return reverse('disconnect-from-user')
 
 
-class UpdateConnectionAPITest(APITestCase):
+class UpdateConnectionAPITest(OpenbookAPITestCase):
     fixtures = [
         'openbook_circles/fixtures/circles.json'
     ]
@@ -523,7 +523,7 @@ class UpdateConnectionAPITest(APITestCase):
         return reverse('update-connection')
 
 
-class ConfirmConnectionAPITest(APITestCase):
+class ConfirmConnectionAPITest(OpenbookAPITestCase):
     fixtures = [
         'openbook_circles/fixtures/circles.json'
     ]

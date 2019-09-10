@@ -5,7 +5,7 @@ from django.core.files import File
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, \
     make_community_name, make_community, \
@@ -18,7 +18,7 @@ from openbook_moderation.models import ModeratedObject
 fake = Faker()
 
 
-class CommunityAPITests(APITestCase):
+class CommunityAPITests(OpenbookAPITestCase):
     """
     CommunityAPITests
     """
@@ -711,7 +711,7 @@ class CommunityAPITests(APITestCase):
         })
 
 
-class CommunityAvatarAPITests(APITestCase):
+class CommunityAvatarAPITests(OpenbookAPITestCase):
     """
     CommunityAvatarAPITests
     """
@@ -769,7 +769,7 @@ class CommunityAvatarAPITests(APITestCase):
         })
 
 
-class CommunityCoverAPITests(APITestCase):
+class CommunityCoverAPITests(OpenbookAPITestCase):
     """
     CommunityCoverAPITests
     """
@@ -827,7 +827,7 @@ class CommunityCoverAPITests(APITestCase):
         })
 
 
-class FavoriteCommunityAPITests(APITestCase):
+class FavoriteCommunityAPITests(OpenbookAPITestCase):
     """
     FavoriteCommunityAPITests
     """

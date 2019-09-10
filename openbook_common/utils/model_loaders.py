@@ -17,6 +17,14 @@ def get_post_model():
     return apps.get_model('openbook_posts.Post')
 
 
+def get_post_media_model():
+    return apps.get_model('openbook_posts.PostMedia')
+
+
+def get_proxy_whitelist_domain_model():
+    return apps.get_model('openbook_common.ProxyWhitelistDomain')
+
+
 def get_post_user_mention_model():
     return apps.get_model('openbook_posts.PostUserMention')
 

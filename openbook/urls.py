@@ -18,6 +18,7 @@ from django.urls import path, include
 from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
+from proxy.views import proxy_view
 
 from openbook_auth.views.auth.views import Register, Login, UsernameCheck, EmailCheck, EmailVerify, \
     PasswordResetRequest, PasswordResetVerify
@@ -28,10 +29,11 @@ from openbook_auth.views.blocked_users.views import BlockedUsers, SearchBlockedU
 from openbook_auth.views.followers.views import Followers, SearchFollowers
 from openbook_auth.views.following.views import Followings, SearchFollowings
 from openbook_auth.views.linked_users.views import LinkedUsers, SearchLinkedUsers
+from openbook_auth.views.proxy.views import ProxyAuth
 from openbook_auth.views.users.views import SearchUsers, GetUser, BlockUser, UnblockUser
 from openbook_categories.views import Categories
 from openbook_circles.views import Circles, CircleItem, CircleNameCheck
-from openbook_common.views import Time, Health, EmojiGroups
+from openbook_common.views import Time, Health, EmojiGroups, PreviewLinkData
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
     FavoriteCommunities, SearchCommunities, JoinedCommunities, AdministratedCommunities, ModeratedCommunities, \
     SearchJoinedCommunities
@@ -62,7 +64,7 @@ from openbook_moderation.views.report.views import ReportUser, ReportPost, Repor
 from openbook_moderation.views.user.views import UserModerationPenalties, UserPendingModeratedObjectsCommunities
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
 from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost, TranslatePost, \
-    SearchPostParticipants, GetPostParticipants
+    PostPreviewLinkData, SearchPostParticipants, GetPostParticipants, PublishPost, PostStatus
 from openbook_posts.views.post_comment.post_comment_reaction.views import PostCommentReactionItem
 from openbook_posts.views.post_comment.post_comment_reactions.views import PostCommentReactions, \
     PostCommentReactionsEmojiCount
@@ -70,6 +72,7 @@ from openbook_posts.views.post_comment.post_comment_replies.views import PostCom
 from openbook_posts.views.post_comment.views import PostCommentItem, MutePostComment, UnmutePostComment, \
     TranslatePostComment
 from openbook_posts.views.post_comments.views import PostComments, PostCommentsDisable, PostCommentsEnable
+from openbook_posts.views.post_media.views import PostMedia
 from openbook_posts.views.post_reaction.views import PostReactionItem
 from openbook_posts.views.post_reactions.views import PostReactions, PostReactionsEmojiCount, PostReactionEmojiGroups
 from openbook_posts.views.posts.views import Posts, TrendingPosts
@@ -136,6 +139,7 @@ auth_patterns = [
     path('blocked-users/', include(auth_blocked_users_patterns)),
     path('users/', include(auth_users_patterns)),
     path('user/', include(auth_user_patterns)),
+    path('proxy/', ProxyAuth.as_view(), name='proxy-auth'),
 ]
 
 post_notifications_patterns = [
@@ -167,6 +171,10 @@ post_participants_patterns = [
     path('search/', SearchPostParticipants.as_view(), name='search-post-participants'),
 ]
 
+post_media_patterns = [
+    path('', PostMedia.as_view(), name='post-media'),
+]
+
 post_patterns = [
     path('', PostItem.as_view(), name='post'),
     path('notifications/', include(post_notifications_patterns)),
@@ -181,7 +189,11 @@ post_patterns = [
     path('open/', PostOpen.as_view(), name='open-post'),
     path('report/', ReportPost.as_view(), name='report-post'),
     path('translate/', TranslatePost.as_view(), name='translate-post'),
+    path('publish/', PublishPost.as_view(), name='publish-post'),
+    path('status/', PostStatus.as_view(), name='post-status'),
+    path('link-preview/', PostPreviewLinkData.as_view(), name='preview-post-link'),
     path('participants/', include(post_participants_patterns)),
+    path('media/', include(post_media_patterns)),
 ]
 
 posts_patterns = [
@@ -358,6 +370,7 @@ api_patterns = [
     path('devices/', include(devices_patterns)),
     path('invites/', include(invites_patterns)),
     path('moderation/', include(moderation_patterns)),
+    path('link-preview/', PreviewLinkData.as_view(), name='preview-link'),
     url('time/', Time.as_view(), name='time'),
     url('emojis/groups/', EmojiGroups.as_view(), name='emoji-groups'),
 ]
@@ -368,9 +381,14 @@ if settings.FEATURE_IMPORTER_ENABLED:
 urlpatterns = [
     path('api/', include(api_patterns)),
     url('admin/', admin.site.urls),
+    path('django-rq/', include('django_rq.urls')),
     url('health/', Health.as_view(), name='health'),
 ]
 
 # The static helper works only in debug mode
 # https://docs.djangoproject.com/en/2.1/howto/static-files/#serving-files-uploaded-by-a-user-during-development
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Link previews proxy their urls, use local proxy API on debug/test
+if settings.DEBUG or settings.TESTING:
+    urlpatterns.append(url('proxy/(?P<url>.*)', proxy_view, name='proxy'), )

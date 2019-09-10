@@ -4,7 +4,7 @@ from urllib.parse import urlsplit
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 from openbook_auth.models import User
 
 import logging
@@ -19,7 +19,7 @@ fake = Faker()
 logger = logging.getLogger(__name__)
 
 
-class AuthenticatedUserAPITests(APITestCase):
+class AuthenticatedUserAPITests(OpenbookAPITestCase):
     """
     AuthenticatedUserAPI
     """
@@ -193,7 +193,7 @@ class AuthenticatedUserAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        new_followers_count_visible = fake.boolean()
+        new_followers_count_visible = not user.profile.followers_count_visible
 
         data = {
             'followers_count_visible': new_followers_count_visible
@@ -208,6 +208,29 @@ class AuthenticatedUserAPITests(APITestCase):
         user.refresh_from_db()
 
         self.assertEqual(user.profile.followers_count_visible, new_followers_count_visible)
+
+    def test_can_update_user_community_posts_visible(self):
+        """
+        should be able to update the authenticated user community_posts_visible and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        new_community_posts_visible = not user.profile.community_posts_visible
+
+        data = {
+            'community_posts_visible': new_community_posts_visible
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertEqual(user.profile.community_posts_visible, new_community_posts_visible)
 
     def test_can_update_user_avatar(self):
         """
@@ -460,7 +483,7 @@ class AuthenticatedUserAPITests(APITestCase):
         return reverse('authenticated-user')
 
 
-class AuthenticatedUserDeleteTests(APITestCase):
+class AuthenticatedUserDeleteTests(OpenbookAPITestCase):
     fixtures = [
         'openbook_circles/fixtures/circles.json'
     ]
@@ -534,7 +557,7 @@ class AuthenticatedUserDeleteTests(APITestCase):
         return reverse('delete-authenticated-user')
 
 
-class AuthenticatedUserNotificationsSettingsTests(APITestCase):
+class AuthenticatedUserNotificationsSettingsTests(OpenbookAPITestCase):
     """
     AuthenticatedUserNotificationsSettings
     """
@@ -629,7 +652,7 @@ class AuthenticatedUserNotificationsSettingsTests(APITestCase):
         return reverse('authenticated-user-notifications-settings')
 
 
-class AuthenticatedUserSettingsAPITests(APITestCase):
+class AuthenticatedUserSettingsAPITests(OpenbookAPITestCase):
     """
     User Settings API
     """
@@ -724,7 +747,7 @@ class AuthenticatedUserSettingsAPITests(APITestCase):
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
-class AuthenticatedUserAcceptGuidelines(APITestCase):
+class AuthenticatedUserAcceptGuidelines(OpenbookAPITestCase):
     """
     AuthenticatedUserAcceptGuidelines API
     """
@@ -763,7 +786,7 @@ class AuthenticatedUserAcceptGuidelines(APITestCase):
         self.assertTrue(user.are_guidelines_accepted)
 
 
-class AuthenticatedUserLanguageAPI(APITestCase):
+class AuthenticatedUserLanguageAPI(OpenbookAPITestCase):
     """
     AuthenticatedUserLanguageAPI API
     """

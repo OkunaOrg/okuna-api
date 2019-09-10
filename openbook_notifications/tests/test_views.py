@@ -3,7 +3,7 @@ import json
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_notification
 from openbook_notifications.models import Notification
@@ -11,7 +11,7 @@ from openbook_notifications.models import Notification
 fake = Faker()
 
 
-class NotificationsAPITests(APITestCase):
+class NotificationsAPITests(OpenbookAPITestCase):
     """
     NotificationsAPI
     """
@@ -43,6 +43,54 @@ class NotificationsAPITests(APITestCase):
             response_notification_id = response_notification.get('id')
             self.assertIn(response_notification_id, notifications_ids)
 
+    def test_can_retrieve_notifications_by_type(self):
+        """
+        should be able to retrieve notifications of the specified types and return 200
+        """
+        user = make_user()
+
+        amount_of_notifications = len(Notification.NOTIFICATION_TYPES)
+        notifications_ids = []
+        valid_ids = []
+        valid_types = []
+
+        for i in range(0, amount_of_notifications):
+            notification_type = Notification.NOTIFICATION_TYPES.__getitem__(i)[0]
+            notification = make_notification(owner=user, notification_type=notification_type)
+            notifications_ids.append(notification.pk)
+
+            if i < 3:
+                valid_types.append(notification_type)
+                valid_ids.append(notification.pk)
+
+        url = '{0}?types={1}'.format(self._get_url(), ','.join(valid_types))
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_notifications = json.loads(response.content)
+
+        self.assertEqual(len(response_notifications), len(valid_types))
+
+        for response_notification in response_notifications:
+            response_notification_id = response_notification.get('id')
+            response_notification_type = response_notification.get('notification_type')
+            self.assertIn(response_notification_id, valid_ids)
+            self.assertIn(response_notification_type, valid_types)
+
+    def test_cant_retrieve_notifications_with_bad_type(self):
+        """
+        should return 400 if invalid a notification type is specified
+        """
+        user = make_user()
+
+        url = '{0}?types={1}'.format(self._get_url(), 'AA')
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_can_delete_notifications(self):
         """
         should be able to delete all notifications and return 200
@@ -68,7 +116,7 @@ class NotificationsAPITests(APITestCase):
         return reverse('notifications')
 
 
-class ReadNotificationsAPITests(APITestCase):
+class ReadNotificationsAPITests(OpenbookAPITestCase):
     """
     ReadNotificationsAPI
     """
@@ -88,7 +136,7 @@ class ReadNotificationsAPITests(APITestCase):
 
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
-        response = self.client.post(url, **headers)
+        response = self.client.post(url, {}, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -123,11 +171,67 @@ class ReadNotificationsAPITests(APITestCase):
 
         self.assertTrue(Notification.objects.filter(owner=user, read=False, id__gt=max_id).exists())
 
+    def test_should_be_able_to_read_notifications_by_type(self):
+        """
+        should be able to read notifications of the specified types and return 200
+        """
+        user = make_user()
+
+        amount_of_notifications = len(Notification.NOTIFICATION_TYPES)
+        notifications_ids = []
+        valid_ids = []
+        valid_types = []
+
+        for i in range(0, amount_of_notifications):
+            notification_type = Notification.NOTIFICATION_TYPES.__getitem__(i)[0]
+            notification = make_notification(owner=user, notification_type=notification_type)
+            notifications_ids.append(notification.pk)
+
+            if i < 3:
+                valid_types.append(notification_type)
+                valid_ids.append(notification.pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.post(url, {
+            'types': ','.join(valid_types)
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        invalid_ids = set(notifications_ids) - set(valid_ids)
+        self.assertEqual(Notification.objects.filter(owner=user, read=True, id__in=valid_ids).count(),
+                         len(valid_ids))
+        self.assertEqual(Notification.objects.filter(owner=user, read=False, id__in=invalid_ids).count(),
+                         len(invalid_ids))
+
+    def test_should_not_be_able_to_read_notifications_with_bad_type(self):
+        """
+        should return 400 if an invalid notification type is specified
+        """
+        user = make_user()
+
+        amount_of_notifications = len(Notification.NOTIFICATION_TYPES)
+        notifications_ids = []
+
+        for i in range(0, amount_of_notifications):
+            notification = make_notification(owner=user)
+            notifications_ids.append(notification.pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.post(url, {
+            'types': 'AA'
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Notification.objects.filter(owner=user, read=True, id__in=notifications_ids).count(), 0)
+
     def _get_url(self):
         return reverse('read-notifications')
 
 
-class NotificationItemAPITests(APITestCase):
+class NotificationItemAPITests(OpenbookAPITestCase):
     """
     NotificationItemAPI
     """
@@ -175,7 +279,7 @@ class NotificationItemAPITests(APITestCase):
         })
 
 
-class ReadNotificationAPITests(APITestCase):
+class ReadNotificationAPITests(OpenbookAPITestCase):
     """
     ReadNotificationAPI
     """

@@ -1,4 +1,7 @@
+import os
+import shutil
 import tempfile
+import uuid
 
 from PIL import Image
 from faker import Faker
@@ -14,6 +17,7 @@ from openbook_lists.models import List
 from openbook_moderation.models import ModerationCategory, ModeratedObjectLog, ModeratedObject, ModerationReport, \
     ModerationPenalty
 from openbook_notifications.models import Notification
+from openbook_common.models import ProxyWhitelistDomain
 
 fake = Faker()
 
@@ -202,8 +206,11 @@ def make_private_community(creator):
     return make_community(creator=creator, type=Community.COMMUNITY_TYPE_PRIVATE)
 
 
-def make_notification(owner):
-    return mixer.blend(Notification, owner=owner)
+def make_notification(owner, notification_type=None):
+    if notification_type:
+        return mixer.blend(Notification, owner=owner, notification_type=notification_type)
+    else:
+        return mixer.blend(Notification, owner=owner)
 
 
 def make_device(owner):
@@ -246,10 +253,97 @@ def make_random_language():
     return mixer.blend(Language)
 
 
+def make_proxy_whitelisted_domain(domain):
+    return mixer.blend(ProxyWhitelistDomain, domain=domain)
+
+
 def get_test_usernames():
     return [
         'j_oel',
         'j.o.e.l',
         'j03l',
         'j'
+    ]
+
+
+def get_test_videos():
+    return [
+        {
+            'path': 'openbook_common/tests/files/test_video.mp4',
+            'duration': 5.312,
+            'width': 1280,
+            'height': 720
+        },
+        {
+            'path': 'openbook_common/tests/files/test_video.3gp',
+            'duration': 40.667,
+            'width': 176,
+            'height': 144
+        },
+        {
+            'path': 'openbook_common/tests/files/test_gif_medium.gif',
+            'duration': 1.5,
+            'width': 312,
+            'height': 312
+        },
+        {
+            'path': 'openbook_common/tests/files/test_gif_tiny.gif',
+            'duration': 0.771,
+            'width': 256,
+            'height': 256
+        }
+    ]
+
+
+def get_test_images():
+    return [
+        {
+            'path': 'openbook_common/tests/files/test_image_tiny.png',
+            'width': 272,
+            'height': 170
+        },
+        {
+            'path': 'openbook_common/tests/files/test_image_small.png',
+            'width': 912,
+            'height': 513
+        },
+        {
+            'path': 'openbook_common/tests/files/test_image_medium.png',
+            'width': 5891,
+            'height': 2271
+        },
+        {
+            'path': 'openbook_common/tests/files/test_image_tiny.jpg',
+            'width': 300,
+            'height': 300
+        },
+        {
+            'path': 'openbook_common/tests/files/test_image_small.jpg',
+            'width': 2192,
+            'height': 2921
+        },
+        {
+            'path': 'openbook_common/tests/files/test_image_medium.jpg',
+            'width': 10751,
+            'height': 4287
+        },
+    ]
+
+
+def get_test_image():
+    return get_test_images()[0]
+
+
+def get_test_video():
+    return get_test_videos()[0]
+
+
+def get_post_links():
+    return [
+        'https://www.okuna.io',
+        'www.techcrunch.com',
+        'https://bbc.co.uk',
+        'google.com?filter=evil',
+        'www.blablacar.com/i/rest/results',
+        'https://longwebsite.social?url=https%3A%2F%2Ftest.com%3Fyes%3Dtrue'
     ]

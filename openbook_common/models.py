@@ -1,5 +1,6 @@
 # Create your models here.
 # Create your models here.
+from django.conf import settings
 from django.db import models
 from django.db.models import QuerySet, Q, Count
 from django.utils import timezone
@@ -7,6 +8,7 @@ from django.utils.translation import ugettext_lazy as _
 
 # Create your views here.
 from openbook.settings import COLOR_ATTR_MAX_LENGTH
+from openbook_common.helpers import get_url_domain
 from openbook_common.validators import hex_color_validator
 
 
@@ -104,3 +106,24 @@ class Language(models.Model):
         if not self.id:
             self.created = timezone.now()
         return super(Language, self).save(*args, **kwargs)
+
+
+class ProxyWhitelistDomain(models.Model):
+    domain = models.CharField(max_length=settings.PROXY_WHITELIST_DOMAIN_MAX_LENGTH)
+
+    @classmethod
+    def is_url_domain_whitelisted(cls, url):
+        whitelisted_domains = cls.objects.values_list('domain', flat=True).cache()
+        url_domain = get_url_domain(url)
+        is_matched = False
+        domain_parts = url_domain.split('.')
+        length = len(domain_parts)
+        while length >= 2:
+            if url_domain in whitelisted_domains:
+                is_matched = True
+                break
+            domain_parts.pop(0)
+            url_domain = '.'.join(domain_parts)
+            length = len(domain_parts)
+
+        return is_matched
