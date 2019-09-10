@@ -52,7 +52,8 @@ class CreatePostSerializer(serializers.Serializer):
     image = RestrictedImageFileSizeField(allow_empty_file=False, required=False,
                                          max_upload_size=settings.POST_MEDIA_MAX_SIZE)
     # Prefer adding videos with post/uuid/videos
-    video = RestrictedFileSizeField(allow_empty_file=False, required=False, max_upload_size=settings.POST_MEDIA_MAX_SIZE)
+    video = RestrictedFileSizeField(allow_empty_file=False, required=False,
+                                    max_upload_size=settings.POST_MEDIA_MAX_SIZE)
     circle_id = serializers.ListField(
         required=False,
         child=serializers.IntegerField(validators=[circle_id_exists]),
@@ -187,6 +188,18 @@ class PostLinkSerializer(serializers.ModelSerializer):
         )
 
 
+class PostImageSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(read_only=True, required=False, allow_empty_file=True)
+
+    class Meta:
+        model = PostImage
+        fields = (
+            'image',
+            'width',
+            'height'
+        )
+
+
 class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
@@ -199,6 +212,9 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     language = PostLanguageSerializer()
     is_encircled = IsEncircledField()
     post_links = PostLinkSerializer(many=True)
+
+    # Temp backwards compat
+    image = PostImageSerializer(many=False)
 
     class Meta:
         model = Post
@@ -224,6 +240,8 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'media_height',
             'media_width',
             'media_thumbnail',
+            # Temp backwards compat
+            'image',
         )
 
 
@@ -233,6 +251,9 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
     comments_count = CommentsCountField()
     language = PostLanguageSerializer()
+
+    # Temp backwards compat
+    image = PostImageSerializer(many=False)
 
     class Meta:
         model = Post
@@ -251,4 +272,6 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
             'media_height',
             'media_width',
             'media_thumbnail',
+            # Temp backwards compat
+            'image',
         )

@@ -152,6 +152,7 @@ class PostLanguageSerializer(serializers.ModelSerializer):
 
 
 class CommunityPostSerializer(serializers.ModelSerializer):
+    # Temp backwards compat
     image = CommunityPostImageSerializer(many=False)
     creator = PostCreatorField(post_creator_serializer=CommunityPostCreatorSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
@@ -172,6 +173,7 @@ class CommunityPostSerializer(serializers.ModelSerializer):
             'reactions_emoji_counts',
             'created',
             'text',
+            # Temp backwards compat
             'image',
             'language',
             'creator',
