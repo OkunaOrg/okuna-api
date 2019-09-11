@@ -53,7 +53,8 @@ def process_post_media(post_id):
 def _add_post_to_top_post(post):
     TopPost = get_top_post_model()
     if not TopPost.objects.filter(post=post).exists():
-        TopPost.objects.create(post=post)
+        return TopPost(post=post, created=timezone.now())
+    return None
 
 
 def chunked_queryset_iterator(queryset, size, *, ordering=('id',)):
@@ -88,6 +89,7 @@ def curate_top_posts():
     Community = get_community_model()
     PostComment = get_post_comment_model()
     ModeratedObject = get_moderated_object_model()
+    TopPost = get_top_post_model()
     logger.info('Processing top posts at %s...' % timezone.now())
 
     top_posts_community_query = Q(community__isnull=False, community__type=Community.COMMUNITY_TYPE_PUBLIC)
@@ -110,6 +112,8 @@ def curate_top_posts():
                  reactions_count=Count('reactions__reactor_id')).\
         filter(top_posts_criteria_query)
 
+    top_posts_objects = []
+
     for post in chunked_queryset_iterator(posts, 1000):
         if not post.reactions_count >= settings.MIN_UNIQUE_TOP_POST_REACTIONS_COUNT:
             unique_comments_count = PostComment.objects.filter(post=post).\
@@ -117,9 +121,15 @@ def curate_top_posts():
                 annotate(user_comments_count=Count('commenter_id')).count()
 
             if unique_comments_count >= settings.MIN_UNIQUE_TOP_POST_COMMENTS_COUNT:
-                _add_post_to_top_post(post=post)
+                top_post = _add_post_to_top_post(post=post)
+                if top_post is not None:
+                    top_posts_objects.append(top_post)
         else:
-            _add_post_to_top_post(post=post)
+            top_post = _add_post_to_top_post(post=post)
+            if top_post is not None:
+                top_posts_objects.append(top_post)
+
+    TopPost.objects.bulk_create(top_posts_objects)
 
 
 @job
