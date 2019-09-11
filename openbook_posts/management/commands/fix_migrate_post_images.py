@@ -3,7 +3,8 @@ import logging
 
 from django.db import transaction
 
-from openbook_common.utils.model_loaders import  get_post_model, get_post_media_model
+from openbook_common.utils.model_loaders import get_post_model
+from openbook_posts.models import PostImage
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +21,10 @@ class Command(BaseCommand):
         for post in posts_to_migrate.iterator():
             with transaction.atomic():
                 post_image = post.get_first_media().content_object
-                post_image.post = post
-                post_image.save()
-            logger.info('Fixed migrated post with id:' + str(post.pk))
+                if isinstance(post_image, PostImage):
+                    post_image.post = post
+                    post_image.save()
+                    logger.info('Fixed migrated post with id:' + str(post.pk))
             migrated_posts = migrated_posts + 1
 
         logger.info('Fixed migrated %d posts' % migrated_posts)
