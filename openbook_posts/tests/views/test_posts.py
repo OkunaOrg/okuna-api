@@ -3518,6 +3518,10 @@ class TopPostsAPITests(OpenbookAPITestCase):
     TopPostsAPITests
     """
 
+    fixtures = [
+        'openbook_circles/fixtures/circles.json',
+    ]
+
     def test_displays_community_posts_only(self):
         """
         should display community posts only in top posts and return 200
@@ -3553,6 +3557,78 @@ class TopPostsAPITests(OpenbookAPITestCase):
         top_posts = TopPost.objects.all()
         self.assertEqual(1, len(top_posts))
         self.assertTrue(TopPost.objects.filter(post__id=community_post.pk).exists())
+
+    def test_does_not_curate_encircled_posts(self):
+        """
+        should not curate encircled posts in top posts
+        """
+        post_creator = make_user()
+        user = make_user()
+
+        # clear all top posts
+        TopPost.objects.all().delete()
+
+        circle = make_circle(creator=post_creator)
+
+        post_creator.connect_with_user_with_id(user_id=user.pk, circles_ids=[circle.pk])
+        user.confirm_connection_with_user_with_id(user_id=post_creator.pk)
+
+        post_text = make_fake_post_text()
+        post = post_creator.create_encircled_post(text=post_text, circles_ids=[circle.pk])
+
+        # comment on post to qualify for top
+        user.comment_post(post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(0, len(response_posts))
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(0, len(top_posts))
+        self.assertFalse(TopPost.objects.filter(post__id=post.pk).exists())
+
+    def test_does_not_curate_private_community_posts(self):
+        """
+        should not curate private community posts in top posts
+        """
+        user = make_user()
+
+        # clear all top posts
+        TopPost.objects.all().delete()
+
+        community = make_community(creator=user, type=Community.COMMUNITY_TYPE_PRIVATE)
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        # comment on post to qualify for top
+        user.comment_post(post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(0, len(response_posts))
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(0, len(top_posts))
+        self.assertFalse(TopPost.objects.filter(post__id=post.pk).exists())
 
     def test_does_not_display_closed_community_posts(self):
         """
