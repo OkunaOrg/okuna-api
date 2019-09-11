@@ -5,6 +5,7 @@ from django.apps import apps
 from django.contrib.contenttypes.models import ContentType
 from django.core.files import File
 
+from video_encoding.utils import get_fieldfile_local_path
 from .backends import get_backend
 from .config import settings
 from .exceptions import VideoEncodingError
@@ -40,8 +41,10 @@ def convert_video(fieldfile, force=False):
     instance = fieldfile.instance
     field = fieldfile.field
 
-    filename = os.path.basename(fieldfile.path)
-    source_path = fieldfile.path
+    local_path, temp_file = get_fieldfile_local_path(fieldfile=fieldfile)
+
+    filename = os.path.basename(local_path)
+    source_path = local_path
 
     encoding_backend = get_backend()
 
@@ -88,3 +91,7 @@ def convert_video(fieldfile, force=False):
 
         # remove temporary file
         os.remove(target_path)
+
+        if temp_file:
+            os.unlink(temp_file.name)
+            temp_file.close()
