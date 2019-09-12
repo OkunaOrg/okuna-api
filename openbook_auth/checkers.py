@@ -609,15 +609,20 @@ def check_can_favorite_community_with_name(user, community_name):
         )
 
 
-def check_can_exclude_community_with_name(user, community_name):
-    if user.has_excluded_community_with_name(community_name=community_name):
+def check_can_exclude_community(user, community):
+    if user.has_excluded_community_with_name(community_name=community.name):
         raise ValidationError(
             _('You have already marked this community as excluded.'),
         )
+    Community = get_community_model()
+    if community.type == Community.COMMUNITY_TYPE_PRIVATE:
+        raise ValidationError(
+            _('Private communities are always excluded from top posts.'),
+        )
 
 
-def check_can_remove_exclusion_for_community_with_name(user, community_name):
-    if not user.has_excluded_community_with_name(community_name=community_name):
+def check_can_remove_exclusion_for_community(user, community):
+    if not user.has_excluded_community_with_name(community_name=community.name):
         raise ValidationError(
             _('You have not marked this community as excluded.'),
         )

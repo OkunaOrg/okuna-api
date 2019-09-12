@@ -2020,23 +2020,31 @@ class User(AbstractUser):
 
         return results
 
-    def exclude_community_with_name_from_top_posts(self, community_name):
-        check_can_exclude_community_with_name(user=self, community_name=community_name)
+    def exclude_community_from_top_posts(self, community):
+        check_can_exclude_community(user=self, community=community)
 
-        Community = get_community_model()
-        community_to_exclude = Community.objects.get(name=community_name)
         TopPostCommunityExclusion = get_top_post_community_exclusion_model()
         top_post_community_exclusion = TopPostCommunityExclusion(
             user=self,
-            community=community_to_exclude
+            community=community
         )
         self.top_posts_community_exclusions.add(top_post_community_exclusion, bulk=False)
 
-    def remove_exclusion_for_community_with_name_from_top_posts(self, community_name):
-        check_can_remove_exclusion_for_community_with_name(user=self, community_name=community_name)
+    def exclude_community_with_name_from_top_posts(self, community_name):
+        Community = get_community_model()
+        community_to_exclude = Community.objects.get(name=community_name)
+        self.exclude_community_from_top_posts(community_to_exclude)
+
+    def remove_exclusion_for_community_from_top_posts(self, community):
+        check_can_remove_exclusion_for_community(user=self, community=community)
 
         TopPostCommunityExclusion = get_top_post_community_exclusion_model()
-        TopPostCommunityExclusion.objects.get(user=self, community__name=community_name).delete()
+        TopPostCommunityExclusion.objects.get(user=self, community=community).delete()
+
+    def remove_exclusion_for_community_with_name_from_top_posts(self, community_name):
+        Community = get_community_model()
+        community = Community.objects.get(name=community_name)
+        self.remove_exclusion_for_community_from_top_posts(community)
 
     def get_top_posts(self, max_id=None, min_id=None, count=10):
         """
@@ -2056,6 +2064,7 @@ class User(AbstractUser):
                       'post__community__color', 'post__community__title')
 
         reported_posts_exclusion_query = ~Q(post__moderated_object__reports__reporter_id=self.pk)
+        excluded_communities_query = ~Q(post__community__top_posts_community_exclusions__user=self.pk)
         top_community_posts_query = Q(post__is_closed=False,
                                       post__is_deleted=False,
                                       post__status=Post.STATUS_PUBLISHED)
@@ -2074,6 +2083,7 @@ class User(AbstractUser):
         top_community_posts_query.add(~Q(post__moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
 
         top_community_posts_query.add(reported_posts_exclusion_query, Q.AND)
+        top_community_posts_query.add(excluded_communities_query, Q.AND)
 
         top_community_posts_queryset = TopPost.objects.select_related(*posts_select_related).prefetch_related(
             *posts_prefetch_related).only(*posts_only).filter(top_community_posts_query)
