@@ -26,6 +26,7 @@ class Command(BaseCommand):
                                             content_object=post_image,
                                             post_id=post.pk, order=0)
                 post_image.save()
+            logger.info('Migrated post with id:' + str(post.pk))
             migrated_posts = migrated_posts + 1
 
         logger.info('Migrated %d posts' % migrated_posts)

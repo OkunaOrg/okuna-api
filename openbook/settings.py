@@ -390,6 +390,9 @@ LANGUAGES = [
     ('es', _('Spanish')),
     ('en', _('English')),
     ('de', _('German')),
+    ('nl', _('Dutch')),
+    ('da', _('Danish')),
+    ('hu', _('Hungarian')),
     ('sv', _('Swedish')),
     ('fr', _('French')),
     ('it', _('Italian')),
@@ -430,7 +433,7 @@ VIDEO_ENCODING_FORMATS = {
     ]
 }
 
-PROXY_URL = os.environ.get('PROXY_URL')
+PROXY_URL = os.environ.get('PROXY_URL', '')
 
 # Openbook config
 
@@ -440,7 +443,7 @@ USER_MAX_CONNECTIONS = int(os.environ.get('USER_MAX_CONNECTIONS', '1500'))
 USER_MAX_COMMUNITIES = 200
 POST_MAX_LENGTH = int(os.environ.get('POST_MAX_LENGTH', '5000'))
 POST_COMMENT_MAX_LENGTH = int(os.environ.get('POST_MAX_LENGTH', '1500'))
-POST_IMAGE_MAX_SIZE = int(os.environ.get('POST_IMAGE_MAX_SIZE', '10485760'))
+POST_MEDIA_MAX_SIZE = int(os.environ.get('POST_MEDIA_MAX_SIZE', '10485760'))
 POST_LINK_MAX_DOMAIN_LENGTH = int(os.environ.get('POST_LINK_MAX_DOMAIN_LENGTH', '126'))
 POST_MEDIA_MAX_ITEMS = int(os.environ.get('POST_MEDIA_MAX_ITEMS', '1'))
 PASSWORD_MIN_LENGTH = 10
@@ -472,7 +475,6 @@ CATEGORY_DESCRIPTION_MAX_LENGTH = 64
 DEVICE_NAME_MAX_LENGTH = 32
 DEVICE_UUID_MAX_LENGTH = 64
 SEARCH_QUERIES_MAX_LENGTH = 120
-FEATURE_VIDEO_POSTS_ENABLED = os.environ.get('FEATURE_VIDEO_POSTS_ENABLED', 'True') == 'True'
 FEATURE_IMPORTER_ENABLED = os.environ.get('FEATURE_IMPORTER_ENABLED', 'True') == 'True'
 MODERATION_REPORT_DESCRIPTION_MAX_LENGTH = 1000
 MODERATED_OBJECT_DESCRIPTION_MAX_LENGTH = 1000

@@ -90,9 +90,24 @@ class PostCommentCreatorSerializer(serializers.ModelSerializer):
         )
 
 
+class PostImageSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(read_only=True)
+
+    class Meta:
+        model = PostImage
+        fields = (
+            'id',
+            'image',
+            'width',
+            'height'
+        )
+
+
 class NotificationPostSerializer(serializers.ModelSerializer):
     creator = PostCommentCreatorSerializer()
     is_encircled = IsEncircledField()
+    # Temp backwards compat
+    image = PostImageSerializer(many=False)
 
     class Meta:
         model = Post
@@ -106,7 +121,9 @@ class NotificationPostSerializer(serializers.ModelSerializer):
             'is_encircled',
             'media_height',
             'media_width',
-            'media_thumbnail'
+            'media_thumbnail',
+            # Temp backwards compat
+            'image'
         )
 
 

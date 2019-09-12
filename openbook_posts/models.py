@@ -173,7 +173,7 @@ class Post(models.Model):
 
         Community = get_community_model()
 
-        trending_posts_sources_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC)
+        trending_posts_sources_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, status=cls.STATUS_PUBLISHED)
 
         trending_posts_query.add(trending_posts_sources_query, Q.AND)
 
@@ -501,7 +501,7 @@ class Post(models.Model):
                     if existing_mention.user.username not in usernames:
                         existing_mention.delete()
                     else:
-                        existing_mention_usernames = existing_mention.user.username
+                        existing_mention_usernames.append(existing_mention.user.username)
 
                 PostUserMention = get_post_user_mention_model()
                 User = get_user_model()
@@ -568,7 +568,7 @@ class PostImage(models.Model):
                                 upload_to=upload_to_post_image_directory,
                                 width_field='width',
                                 height_field='height',
-                                blank=False, null=True, format='JPEG', options={'quality': 100},
+                                blank=False, null=True, format='JPEG', options={'quality': 80},
                                 processors=[ResizeToFit(width=1024, upscale=False)])
     width = models.PositiveIntegerField(editable=False, null=False, blank=False)
     height = models.PositiveIntegerField(editable=False, null=False, blank=False)
@@ -725,7 +725,7 @@ class PostComment(models.Model):
                 if existing_mention.user.username not in usernames:
                     existing_mention.delete()
                 else:
-                    existing_mention_usernames = existing_mention.user.username
+                    existing_mention_usernames.append(existing_mention.user.username)
 
             PostCommentUserMention = get_post_comment_user_mention_model()
             User = get_user_model()
@@ -879,10 +879,7 @@ class PostCommentMute(models.Model):
 class PostLink(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='post_links')
-    link = models.CharField(max_length=settings.POST_MAX_LENGTH)
-
-    class Meta:
-        unique_together = ('post', 'link',)
+    link = models.TextField(max_length=settings.POST_MAX_LENGTH)
 
     @classmethod
     def create_link(cls, link, post_id):

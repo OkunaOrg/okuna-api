@@ -28,7 +28,7 @@ class Posts(APIView):
         data = serializer.validated_data
         text = data.get('text')
         image = data.get('image')
-        video = data.get('video') if settings.FEATURE_VIDEO_POSTS_ENABLED else None
+        video = data.get('video')
         circles_ids = data.get('circle_id')
         is_draft = data.get('is_draft')
         user = request.user

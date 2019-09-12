@@ -24,6 +24,7 @@ The API server for Okuna.
 * [MySQL](https://www.mysql.com/de/products/community/)
 * [Redis](https://redis.io/)
 * [libmagic](https://www.darwinsys.com/file/)
+* [ffmpeg](https://ffmpeg.org/)
 
 ## Project overview
 
@@ -120,6 +121,33 @@ For app development you have to bind the server to your local network:
 python manage.py runserver 0.0.0.0:8000
 ```
 
+#### Spawn an rq-worker
+
+We use rq-workers to process media, deliver push notifications and more.
+
+```bash
+python manage.py rqworker
+```
+
+#### Spawn an rq-scheduler
+
+We use rq-schedulers to run one time or repetitive tasks like cleaning up failed to upload posts.
+
+```bash
+python manage.py rqscheduler
+```
+
+To schedule a job, go to the `/admin/scheduler` route.
+
+The available jobs are
+
+##### openbook_posts.jobs.flush_draft_posts
+
+Cleans up all draft posts which have not being modified for a day.
+
+Should be run every hour or so.
+
+
 <br>
 
 ## Django Translations
@@ -139,6 +167,7 @@ msgstr "Die Liste ist nicht vorhanden."   <-- this will be empty for new strings
 put them in their respective folders.
 7. Run `./manage.py compilemessages` to auto-generate `django.mo` files. 
 8. You need to checkin both `django.po` and `django.mo` files for each locale.
+
 
 ## Django Custom Commands
 
@@ -175,7 +204,28 @@ Assign user invites to all or specific users.
 ```bash
 usage: manage.py allocate_invites [-h] [--count INCREMENT_INVITES_BY_COUNT] [--total TOTAL_INVITE_COUNT_TO_SET] [--username USERNAME]
 ```
-### Automatic model translations from Crowdin
+
+### `manage.py create_post_media_thumbnails`
+
+Creates media_thumbnail, media_height and media_width for items which don't have it using the Post -> PostMedia relationship.
+
+The command was created as a one off migration tool.
+
+```bash
+usage: manage.py create_post_media_thumbnails
+```
+
+### `manage.py migrate_post_images`
+
+Migrates Post -> PostImage to Post -> PostMedia -> PostImage.
+
+The command was created as a one off migration tool.
+
+```bash
+usage: manage.py migrate_post_images
+```
+
+### Crowdin translations update
 Download the latest django.po files in the respective locale/ folders from crowdin. 
 Then locally run all or some of these commands depending on which models need updating.
 It will update the `.json` files, then check them in.
@@ -212,6 +262,9 @@ usage: docker-compose up (-d in background)
 
 ### Visit the static webserver IP
 http://172.16.16.1:80
+
+### Overrides
+Copy `docker-compose.override.yml.dist` to `docker-compose.override.yml` to override any settings. By default it will override the network information and fallback to localhost:80/443/3306. [Docker-Compose YML Reference](https://docs.docker.com/compose/compose-file)
 
 ## Troubleshooting
 
