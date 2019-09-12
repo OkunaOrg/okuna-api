@@ -46,7 +46,8 @@ from openbook_communities.views.community.members.views import CommunityMembers,
 from openbook_communities.views.community.moderators.views import CommunityModeratorItem, CommunityModerators, \
     SearchCommunityModerators
 from openbook_communities.views.community.posts.views import CommunityPosts, ClosedCommunityPosts
-from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, FavoriteCommunity
+from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, FavoriteCommunity, \
+    TopPostCommunityExclusion
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
 from openbook_invitations.views import UserInvite, UserInvites, SearchUserInvites, SendUserInviteEmail
@@ -261,6 +262,7 @@ community_patterns = [
     path('moderators/', include(community_moderators_patterns)),
     path('moderated-objects/', include(community_moderated_objects_patterns)),
     path('report/', ReportCommunity.as_view(), name='report-community'),
+    path('top-posts/exclude/', TopPostCommunityExclusion.as_view(), name='exclude-community-from-top-posts'),
 ]
 
 communities_patterns = [
