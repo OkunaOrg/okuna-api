@@ -609,6 +609,20 @@ def check_can_favorite_community_with_name(user, community_name):
         )
 
 
+def check_can_exclude_community_with_name(user, community_name):
+    if user.has_excluded_community_with_name(community_name=community_name):
+        raise ValidationError(
+            _('You have already marked this community as excluded.'),
+        )
+
+
+def check_can_remove_exclusion_for_community_with_name(user, community_name):
+    if not user.has_excluded_community_with_name(community_name=community_name):
+        raise ValidationError(
+            _('You have not marked this community as excluded.'),
+        )
+
+
 def check_can_unfavorite_community_with_name(user, community_name):
     if not user.has_favorite_community_with_name(community_name=community_name):
         raise ValidationError(

@@ -31,7 +31,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_mute_model, get_community_invite_notification_model, get_user_block_model, get_emoji_model, \
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
     get_moderation_penalty_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
-    get_post_comment_reaction_notification_model, get_top_post_model
+    get_post_comment_reaction_notification_model, get_top_post_model, get_top_post_community_exclusion_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications import helpers
 from openbook_auth.checkers import *
@@ -575,6 +575,9 @@ class User(AbstractUser):
 
     def has_favorite_community_with_name(self, community_name):
         return self.favorite_communities.filter(name=community_name).exists()
+
+    def has_excluded_community_with_name(self, community_name):
+        return self.top_posts_community_exclusions.filter(community__name=community_name).exists()
 
     def has_list_with_name(self, list_name):
         return self.lists.filter(name=list_name).exists()
@@ -2016,6 +2019,24 @@ class User(AbstractUser):
             results = world_circle_posts.union(connection_circles_posts)
 
         return results
+
+    def exclude_community_with_name_from_top_posts(self, community_name):
+        check_can_exclude_community_with_name(user=self, community_name=community_name)
+
+        Community = get_community_model()
+        community_to_exclude = Community.objects.get(name=community_name)
+        TopPostCommunityExclusion = get_top_post_community_exclusion_model()
+        top_post_community_exclusion = TopPostCommunityExclusion(
+            user=self,
+            community=community_to_exclude
+        )
+        self.top_posts_community_exclusions.add(top_post_community_exclusion, bulk=False)
+
+    def remove_exclusion_for_community_with_name_from_top_posts(self, community_name):
+        check_can_remove_exclusion_for_community_with_name(user=self, community_name=community_name)
+
+        TopPostCommunityExclusion = get_top_post_community_exclusion_model()
+        TopPostCommunityExclusion.objects.get(user=self, community__name=community_name).delete()
 
     def get_top_posts(self, max_id=None, min_id=None, count=10):
         """
