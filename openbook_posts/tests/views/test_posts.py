@@ -622,41 +622,43 @@ class PostsAPITests(OpenbookAPITestCase):
         """
         should be able to create a video post and return 201
         """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
 
-        test_video = get_test_videos()[0]
+        test_videos = get_test_videos()
 
-        with open(test_video['path'], 'rb') as file:
-            data = {
-                'video': file
-            }
+        for test_video in test_videos:
+            with open(test_video['path'], 'rb') as file:
+                user = make_user()
+                headers = make_authentication_headers_for_user(user)
 
-            url = self._get_url()
+                data = {
+                    'video': file
+                }
 
-            response = self.client.put(url, data, **headers, format='multipart')
+                url = self._get_url()
 
-            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+                response = self.client.put(url, data, **headers, format='multipart')
 
-            response_post = json.loads(response.content)
+                self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-            response_post_id = response_post.get('id')
+                response_post = json.loads(response.content)
 
-            self.assertTrue(user.posts.count() == 1)
+                response_post_id = response_post.get('id')
 
-            created_post = user.posts.filter(pk=response_post_id).get()
+                self.assertTrue(user.posts.count() == 1)
 
-            self.assertTrue(created_post.status, Post.STATUS_PROCESSING)
+                created_post = user.posts.filter(pk=response_post_id).get()
 
-            get_worker(worker_class=SimpleWorker).work(burst=True)
+                self.assertTrue(created_post.status, Post.STATUS_PROCESSING)
 
-            created_post.refresh_from_db()
+                get_worker(worker_class=SimpleWorker).work(burst=True)
 
-            self.assertTrue(created_post.status, Post.STATUS_PUBLISHED)
+                created_post.refresh_from_db()
 
-            post_media_video = created_post.media.get(post_id=response_post_id, type=PostMedia.MEDIA_TYPE_VIDEO)
+                self.assertTrue(created_post.status, Post.STATUS_PUBLISHED)
 
-            self.assertTrue(post_media_video.content_object.format_set.exists())
+                post_media_video = created_post.media.get(post_id=response_post_id, type=PostMedia.MEDIA_TYPE_VIDEO)
+
+                self.assertTrue(post_media_video.content_object.format_set.exists())
 
     def test_create_video_post_creates_hash(self):
         """
