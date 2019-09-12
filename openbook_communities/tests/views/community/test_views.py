@@ -961,6 +961,23 @@ class TopPostCommunityExclusionAPITests(OpenbookAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
         self.assertTrue(user.has_excluded_community_with_name(community_name=community.name))
 
+    def test_cannot_exclude_private_community(self):
+        """
+        should not be able to exclude a private community from top posts
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        url = self._get_url(community_name=community.name)
+
+        response = self.client.put(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(user.has_excluded_community_with_name(community_name=community.name))
+
     def test_cannot_exclude_community_already_excluded(self):
         """
         should not be able to exclude a community if already excluded from top posts

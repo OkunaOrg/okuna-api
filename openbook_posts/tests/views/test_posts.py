@@ -3558,6 +3558,42 @@ class TopPostsAPITests(OpenbookAPITestCase):
         self.assertEqual(1, len(top_posts))
         self.assertTrue(TopPost.objects.filter(post__id=community_post.pk).exists())
 
+    def test_does_not_display_excluded_community_posts(self):
+        """
+        should not display excluded community posts in top posts
+        """
+        user = make_user()
+        community = make_community(creator=user)
+        # clear all top posts
+        TopPost.objects.all().delete()
+
+        public_post = user.create_public_post(text=make_fake_post_text())
+        community_post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        # comment on both posts to qualify for top
+        user.comment_post(community_post, text=make_fake_post_comment_text())
+        user.comment_post(public_post, text=make_fake_post_comment_text())
+
+        user.exclude_community_with_name_from_top_posts(community.name)
+
+        # curate top posts
+        curate_top_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(0, len(response_posts))
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(1, len(top_posts))
+        self.assertTrue(TopPost.objects.filter(post__id=community_post.pk).exists())
+
     def test_does_not_curate_encircled_posts(self):
         """
         should not curate encircled posts in top posts
