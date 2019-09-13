@@ -191,7 +191,7 @@ class TopPostCommunityExclusion(APIView):
         with transaction.atomic():
             user.exclude_community_with_name_from_top_posts(community_name)
 
-        return ApiMessageResponse(_('Community excluded'), status=status.HTTP_202_ACCEPTED)
+        return ApiMessageResponse(_('Community excluded from this feed'), status=status.HTTP_202_ACCEPTED)
 
     def delete(self, request, community_name):
         request_data = normalise_request_data(request.data)
