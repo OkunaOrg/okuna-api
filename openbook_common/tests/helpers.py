@@ -1,7 +1,4 @@
-import os
-import shutil
 import tempfile
-import uuid
 
 from PIL import Image
 from faker import Faker
