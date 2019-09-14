@@ -30,6 +30,7 @@ from openbook_auth.views.followers.views import Followers, SearchFollowers
 from openbook_auth.views.following.views import Followings, SearchFollowings
 from openbook_auth.views.linked_users.views import LinkedUsers, SearchLinkedUsers
 from openbook_auth.views.proxy.views import ProxyAuth
+from openbook_auth.views.top_posts.views import TopPostCommunityExclusions
 from openbook_auth.views.users.views import SearchUsers, GetUser, BlockUser, UnblockUser
 from openbook_categories.views import Categories
 from openbook_circles.views import Circles, CircleItem, CircleNameCheck
@@ -140,6 +141,7 @@ auth_patterns = [
     path('blocked-users/', include(auth_blocked_users_patterns)),
     path('users/', include(auth_users_patterns)),
     path('user/', include(auth_user_patterns)),
+    path('top-posts/exclusions/', TopPostCommunityExclusions.as_view(), name='user-community-exclusions'),
     path('proxy/', ProxyAuth.as_view(), name='proxy-auth'),
 ]
 
