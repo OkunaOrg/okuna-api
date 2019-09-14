@@ -171,7 +171,7 @@ REDIS_LOCATION = '%(protocol)s%(password)s@%(host)s:%(port)d' % {'protocol': red
                                                                  'host': REDIS_HOST,
                                                                  'port': REDIS_PORT}
 
-RQ_SHOW_ADMIN_LINK = True
+RQ_SHOW_ADMIN_LINK = False
 
 RQ_QUEUES_REDIS_DB = int(os.environ.get('RQ_QUEUES_REDIS_DB', '2'))
 
@@ -493,6 +493,10 @@ SUPPORTED_MEDIA_MIMETYPES = [
     'image/jpeg',
     'image/png'
 ]
+FAILED_JOB_TRESHOLD = 20
+ACTIVE_JOB_TRESHOLD = 50
+ACTIVE_WORKER_TRESHOLD = 5
+ALERT_HOOK_URL = os.environ.get('ALERT_HOOK_URL')
 
 # Email Config
 
