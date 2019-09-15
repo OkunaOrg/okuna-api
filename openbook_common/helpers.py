@@ -150,9 +150,9 @@ def send_alert_to_channel(alert):
     post = {"text": alert}
 
     json_data = dumps(post)
-    req = requests.post(ALERT_HOOK_URL,
-                       data=json_data.encode('utf-8'),
-                       headers={'Content-Type': 'application/json'})
+    response = requests.post(ALERT_HOOK_URL,
+                             data=json_data.encode('utf-8'),
+                             headers={'Content-Type': 'application/json'})
 
-    if rq.status_code != requests.status_codes.codes.ok:
-        raise ValueError(f"{rq.status_code} != 200")
+    if response.status_code != requests.status_codes.codes.ok:
+        raise ValueError(f"{response.status_code} != 200")
