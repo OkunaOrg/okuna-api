@@ -156,3 +156,24 @@ class CommunitiesCommunitySerializer(serializers.ModelSerializer):
             'invites_enabled',
             'memberships'
         )
+
+
+class GetTopPostCommunityExclusionSerializer(serializers.Serializer):
+    offset = serializers.IntegerField(
+        required=False,
+    )
+    count = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
+
+
+class TopPostExclusionCommunitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Community
+        fields = (
+            'id',
+            'name',
+            'title',
+        )
+

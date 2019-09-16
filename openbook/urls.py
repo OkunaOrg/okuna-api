@@ -30,14 +30,13 @@ from openbook_auth.views.followers.views import Followers, SearchFollowers
 from openbook_auth.views.following.views import Followings, SearchFollowings
 from openbook_auth.views.linked_users.views import LinkedUsers, SearchLinkedUsers
 from openbook_auth.views.proxy.views import ProxyAuth
-from openbook_auth.views.top_posts.views import TopPostCommunityExclusions
 from openbook_auth.views.users.views import SearchUsers, GetUser, BlockUser, UnblockUser
 from openbook_categories.views import Categories
 from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups, PreviewLinkData
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
     FavoriteCommunities, SearchCommunities, JoinedCommunities, AdministratedCommunities, ModeratedCommunities, \
-    SearchJoinedCommunities
+    SearchJoinedCommunities, TopPostCommunityExclusions
 from openbook_communities.views.community.administrators.views import CommunityAdministratorItem, \
     CommunityAdministrators, SearchCommunityAdministrators
 from openbook_communities.views.community.banned_users.views import BanUser, UnbanUser, CommunityBannedUsers, \
@@ -141,7 +140,6 @@ auth_patterns = [
     path('blocked-users/', include(auth_blocked_users_patterns)),
     path('users/', include(auth_users_patterns)),
     path('user/', include(auth_user_patterns)),
-    path('top-posts/exclusions/', TopPostCommunityExclusions.as_view(), name='user-community-exclusions'),
     path('proxy/', ProxyAuth.as_view(), name='proxy-auth'),
 ]
 
@@ -276,6 +274,7 @@ communities_patterns = [
     path('administrated/', AdministratedCommunities.as_view(), name='administrated-communities'),
     path('moderated/', ModeratedCommunities.as_view(), name='moderated-communities'),
     path('name-check/', CommunityNameCheck.as_view(), name='community-name-check'),
+    path('top-posts/exclusions/', TopPostCommunityExclusions.as_view(), name='top-posts-excluded-communities'),
     path('search/', SearchCommunities.as_view(), name='search-communities'),
     path('<str:community_name>/', include(community_patterns)),
 ]

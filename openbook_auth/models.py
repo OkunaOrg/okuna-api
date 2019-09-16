@@ -1666,17 +1666,11 @@ class User(AbstractUser):
 
         return User.objects.filter(blocked_users_query).distinct()
 
-    def get_top_post_community_exclusions(self, max_id=None):
+    def get_top_post_community_exclusions(self):
         TopPostCommunityExclusion = get_top_post_community_exclusion_model()
-        if max_id:
-            communities_exclusion_query = Q(community__id__lt=max_id)
-            top_post_community_exclusions = TopPostCommunityExclusion.objects \
-                .select_related('community') \
-                .filter(communities_exclusion_query)
-        else:
-            top_post_community_exclusions = TopPostCommunityExclusion.objects \
-                .select_related('community') \
-                .all()
+        top_post_community_exclusions = TopPostCommunityExclusion.objects \
+            .select_related('community') \
+            .all()
 
         return top_post_community_exclusions
 

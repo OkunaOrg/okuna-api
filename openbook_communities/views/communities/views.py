@@ -13,7 +13,8 @@ from openbook_common.utils.model_loaders import get_community_model
 from openbook_communities.views.communities.serializers import CreateCommunitySerializer, \
     CommunitiesCommunitySerializer, SearchCommunitiesSerializer, CommunityNameCheckSerializer, \
     GetFavoriteCommunitiesSerializer, GetJoinedCommunitiesSerializer, TrendingCommunitiesSerializer, \
-    GetModeratedCommunitiesSerializer, GetAdministratedCommunitiesSerializer
+    GetModeratedCommunitiesSerializer, GetAdministratedCommunitiesSerializer, GetTopPostCommunityExclusionSerializer, \
+    TopPostExclusionCommunitySerializer
 
 
 class Communities(APIView):
@@ -242,3 +243,27 @@ class SearchCommunities(APIView):
                                                              context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class TopPostCommunityExclusions(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        query_params = request.query_params.dict()
+        serializer = GetTopPostCommunityExclusionSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 10)
+        offset = data.get('offset', 0)
+
+        user = request.user
+        exclusions = user.get_top_post_community_exclusions()[offset:offset + count]
+
+        communities = [exclusion.community for exclusion in exclusions]
+
+        users_serializer = TopPostExclusionCommunitySerializer(communities, many=True, context={'request': request})
+
+        return Response(users_serializer.data, status=status.HTTP_200_OK)
+
