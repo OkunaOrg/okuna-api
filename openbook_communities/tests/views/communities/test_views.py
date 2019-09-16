@@ -1197,3 +1197,92 @@ class TrendingCommunitiesAPITests(OpenbookAPITestCase):
 
     def _get_url(self):
         return reverse('trending-communities')
+
+
+class TopPostsExcludedCommunitiesAPITests(OpenbookAPITestCase):
+    """
+    TopPostsExcludedCommunitiesAPI
+    """
+
+    def test_retrieve_excluded_communities(self):
+        """
+        should be able to retrieve all excluded communities and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        communities = mixer.cycle(5).blend(Community, creator=user)
+        communities_ids = [community.pk for community in communities]
+        for community in communities:
+            user.join_community_with_name(community_name=community.name)
+            user.exclude_community_with_name_from_top_posts(community_name=community.name)
+
+        url = self._get_url()
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), len(communities_ids))
+
+        for response_community in response_communities:
+            response_community_id = response_community.get('id')
+            self.assertIn(response_community_id, communities_ids)
+
+    def test_should_not_retrieve_non_excluded_communities(self):
+        """
+        should NOT retrieve non-excluded communities and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        communities = mixer.cycle(5).blend(Community, creator=user)
+        for community in communities:
+            user.join_community_with_name(community_name=community.name)
+
+        url = self._get_url()
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), 0)
+
+    def test_retrieve_excluded_communities_offset(self):
+        """
+        should be able to retrieve all excluded communities with an offset return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        total_amount_of_communities = 10
+        offset = 5
+
+        communities = mixer.cycle(total_amount_of_communities).blend(Community, creator=user)
+
+        offsetted_communities = communities[offset: total_amount_of_communities]
+        offsetted_communities_ids = [community.pk for community in offsetted_communities]
+
+        for community in communities:
+            user.join_community_with_name(community_name=community.name)
+            user.exclude_community_with_name_from_top_posts(community_name=community.name)
+
+        url = self._get_url()
+        response = self.client.get(url, {
+            'offset': offset
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), total_amount_of_communities - offset)
+
+        for response_community in response_communities:
+            response_community_id = response_community.get('id')
+            self.assertIn(response_community_id, offsetted_communities_ids)
+
+    def _get_url(self):
+        return reverse('top-posts-excluded-communities')
