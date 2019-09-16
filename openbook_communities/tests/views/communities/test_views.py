@@ -1286,3 +1286,86 @@ class TopPostsExcludedCommunitiesAPITests(OpenbookAPITestCase):
 
     def _get_url(self):
         return reverse('top-posts-excluded-communities')
+
+
+class SearchTopPostsExcludedCommunitiesAPITests(OpenbookAPITestCase):
+    """
+    SearchTopPostsExcludedCommunitiesAPI
+    """
+
+    def test_can_search_excluded_communities_by_name(self):
+        """
+        should be able to search for excluded communities by their name and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_joined_communities_to_search_for = 5
+
+        for i in range(0, amount_of_joined_communities_to_search_for):
+            community_name = fake.user_name().lower()
+            community = mixer.blend(Community, name=community_name, type=Community.COMMUNITY_TYPE_PUBLIC)
+
+            user.exclude_community_with_name_from_top_posts(community_name)
+
+            amount_of_characters_to_query = random.randint(1, len(community_name))
+            query = community_name[0:amount_of_characters_to_query]
+
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url()
+
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            parsed_response = json.loads(response.content)
+            self.assertEqual(len(parsed_response), 1)
+
+            retrieved_community = parsed_response[0]
+            self.assertEqual(retrieved_community['name'], community_name.lower())
+            community.delete()
+
+    def test_can_search_excluded_communities_by_title(self):
+        """
+        should be able to search for excluded communities by their title and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_joined_communities_to_search_for = 5
+
+        for i in range(0, amount_of_joined_communities_to_search_for):
+            community_title = fake.user_name().lower()
+            community = mixer.blend(Community, title=community_title, type=Community.COMMUNITY_TYPE_PUBLIC)
+
+            user.exclude_community_with_name_from_top_posts(community.name)
+
+            amount_of_characters_to_query = random.randint(1, len(community_title))
+            query = community_title[0:amount_of_characters_to_query]
+
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url()
+
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            parsed_response = json.loads(response.content)
+            self.assertEqual(len(parsed_response), 1)
+
+            retrieved_community = parsed_response[0]
+            self.assertEqual(retrieved_community['title'], community_title.lower())
+            community.delete()
+
+    def _get_url(self):
+        return reverse('search-top-posts-excluded-communities')

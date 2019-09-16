@@ -167,13 +167,3 @@ class GetTopPostCommunityExclusionSerializer(serializers.Serializer):
         max_value=20
     )
 
-
-class TopPostExclusionCommunitySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Community
-        fields = (
-            'id',
-            'name',
-            'title',
-        )
-

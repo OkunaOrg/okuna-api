@@ -1666,6 +1666,15 @@ class User(AbstractUser):
 
         return User.objects.filter(blocked_users_query).distinct()
 
+    def search_top_posts_excluded_communities_with_query(self, query):
+
+        excluded_communities_search_query = Q(community__name__icontains=query)
+        excluded_communities_search_query.add(Q(community__title__icontains=query), Q.OR)
+
+        TopPostCommunityExclusion = get_top_post_community_exclusion_model()
+
+        return TopPostCommunityExclusion.objects.filter(excluded_communities_search_query)
+
     def get_top_post_community_exclusions(self):
         TopPostCommunityExclusion = get_top_post_community_exclusion_model()
         top_post_community_exclusions = TopPostCommunityExclusion.objects \
