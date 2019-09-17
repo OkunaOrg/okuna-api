@@ -28,28 +28,39 @@ class ProxyAuthAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_proxy_auth_does_not_allow_non_whitelisted_domain(self):
+    def test_proxy_auth_allows_non_blacklisted_domain(self):
         """
         should return 403 if the X-Proxy-Url url is not in whitelisted
         """
         url = self._get_url()
         user = make_user()
         headers = make_authentication_headers_for_user(user)
-        headers['HTTP_X_PROXY_URL'] = 'https://notwhitelisted.com'
+        headers['HTTP_X_PROXY_URL'] = 'https://notblacklisted.com'
         response = self.client.get(url, **headers)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
 
-    def test_proxy_auth_allows_whitelisted_domain(self):
+    def test_proxy_auth_disallows_blacklisted_domain(self):
         """
-        should return 202 if the X-Proxy-Url url is whitelisted
+        should return 403 if the X-Proxy-Url url is blacklisted
         """
         url = self._get_url()
         user = make_user()
         headers = make_authentication_headers_for_user(user)
         headers['HTTP_X_PROXY_URL'] = 'https://www.techcrunch.com'
-        make_proxy_blacklisted_domain(domain='www.techcrunch.com')
+        make_proxy_blacklisted_domain(domain='techcrunch.com')
         response = self.client.get(url, **headers)
-        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_proxy_auth_disallows_invalid_domain(self):
+        """
+        should return 403 if the X-Proxy-Url url is invalid
+        """
+        url = self._get_url()
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        headers['HTTP_X_PROXY_URL'] = 'https://wwwinvalic.poptaer'
+        response = self.client.get(url, **headers)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def _get_url(self):
         return reverse('proxy-auth')
