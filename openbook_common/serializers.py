@@ -1,6 +1,5 @@
 from rest_framework import serializers
 
-from openbook_common.helpers import normalise_url
 from openbook_common.models import Emoji, EmojiGroup, Badge
 
 
@@ -48,10 +47,7 @@ class UserProfileBadgeSerializer(serializers.ModelSerializer):
         )
 
 
-class PreviewLinkSerializer(serializers.Serializer):
+class ProxyDomainCheckSerializer(serializers.Serializer):
     url = serializers.CharField(
         required=True,
-        validators=[
-            normalise_url
-        ]
     )

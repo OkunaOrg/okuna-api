@@ -221,8 +221,26 @@ Migrates Post -> PostImage to Post -> PostMedia -> PostImage.
 
 The command was created as a one off migration tool.
 
+### `manage.py import_proxy_blacklisted_domains`
+
+Import a list of domains to be blacklisted when calling the `ProxyAuth` and `ProxyDomainCheck` APIs.
+
 ```bash
-usage: manage.py migrate_post_images
+usage: manage.py import_proxy_blacklisted_domains [--file The path to the file with the domains to import]
+```
+
+#### Example
+
+```bash
+python manage.py import_proxy_blacklisted_domains --file ./openbook_common/misc/domain_blacklists/porn/domains
+```
+
+### `manage.py flush_proxy_blacklisted_domains`
+
+Flush all of the blacklisted proxy domains
+
+```bash
+usage: manage.py flush_proxy_blacklisted_domains
 ```
 
 ### Crowdin translations update

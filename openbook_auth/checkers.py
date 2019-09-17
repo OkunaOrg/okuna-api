@@ -1292,6 +1292,3 @@ def check_can_get_preview_link_data_for_post(user, post):
             _('No link associated with post.'),
         )
 
-
-def check_can_preview_url(link):
-    common_checkers.check_url_can_be_proxied(link)

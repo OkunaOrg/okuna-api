@@ -17,7 +17,7 @@ from openbook_lists.models import List
 from openbook_moderation.models import ModerationCategory, ModeratedObjectLog, ModeratedObject, ModerationReport, \
     ModerationPenalty
 from openbook_notifications.models import Notification
-from openbook_common.models import ProxyWhitelistDomain
+from openbook_common.models import ProxyBlacklistedDomain
 
 fake = Faker()
 
@@ -253,8 +253,8 @@ def make_random_language():
     return mixer.blend(Language)
 
 
-def make_proxy_whitelisted_domain(domain):
-    return mixer.blend(ProxyWhitelistDomain, domain=domain)
+def make_proxy_blacklisted_domain(domain):
+    return mixer.blend(ProxyBlacklistedDomain, domain=domain)
 
 
 def get_test_usernames():
@@ -336,14 +336,3 @@ def get_test_image():
 
 def get_test_video():
     return get_test_videos()[0]
-
-
-def get_post_links():
-    return [
-        'https://www.okuna.io',
-        'www.techcrunch.com',
-        'https://bbc.co.uk',
-        'google.com?filter=evil',
-        'www.blablacar.com/i/rest/results',
-        'https://longwebsite.social?url=https%3A%2F%2Ftest.com%3Fyes%3Dtrue'
-    ]
