@@ -336,14 +336,3 @@ def get_test_image():
 
 def get_test_video():
     return get_test_videos()[0]
-
-
-def get_post_links():
-    return [
-        'https://www.okuna.io',
-        'www.techcrunch.com',
-        'https://bbc.co.uk',
-        'google.com?filter=evil',
-        'www.blablacar.com/i/rest/results',
-        'https://longwebsite.social?url=https%3A%2F%2Ftest.com%3Fyes%3Dtrue'
-    ]
