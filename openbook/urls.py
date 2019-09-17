@@ -33,7 +33,7 @@ from openbook_auth.views.proxy.views import ProxyAuth
 from openbook_auth.views.users.views import SearchUsers, GetUser, BlockUser, UnblockUser
 from openbook_categories.views import Categories
 from openbook_circles.views import Circles, CircleItem, CircleNameCheck
-from openbook_common.views import Time, Health, EmojiGroups, PreviewLinkData
+from openbook_common.views import Time, Health, EmojiGroups
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
     FavoriteCommunities, SearchCommunities, JoinedCommunities, AdministratedCommunities, ModeratedCommunities, \
     SearchJoinedCommunities
@@ -370,7 +370,6 @@ api_patterns = [
     path('devices/', include(devices_patterns)),
     path('invites/', include(invites_patterns)),
     path('moderation/', include(moderation_patterns)),
-    path('link-preview/', PreviewLinkData.as_view(), name='preview-link'),
     url('time/', Time.as_view(), name='time'),
     url('emojis/groups/', EmojiGroups.as_view(), name='emoji-groups'),
 ]

@@ -26,7 +26,7 @@ from openbook_common.utils.model_loaders import get_language_model
 from openbook_communities.models import Community
 from openbook_notifications.models import PostUserMentionNotification, Notification
 from openbook_posts.models import Post, PostUserMention, PostMedia
-from openbook_common.models import ProxyWhitelistDomain
+from openbook_common.models import ProxyBlacklistedDomain
 
 logger = logging.getLogger(__name__)
 fake = Faker()

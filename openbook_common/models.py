@@ -1,5 +1,7 @@
 # Create your models here.
 # Create your models here.
+from urllib.parse import urlparse
+
 from django.conf import settings
 from django.db import models
 from django.db.models import QuerySet, Q, Count
@@ -10,6 +12,7 @@ from django.utils.translation import ugettext_lazy as _
 from openbook.settings import COLOR_ATTR_MAX_LENGTH
 from openbook_common.helpers import get_url_domain
 from openbook_common.validators import hex_color_validator
+import tldextract
 
 
 class EmojiGroup(models.Model):
@@ -108,22 +111,20 @@ class Language(models.Model):
         return super(Language, self).save(*args, **kwargs)
 
 
-class ProxyWhitelistDomain(models.Model):
-    domain = models.CharField(max_length=settings.PROXY_WHITELIST_DOMAIN_MAX_LENGTH)
+class ProxyBlacklistedDomain(models.Model):
+    domain = models.CharField(max_length=settings.PROXY_BLACKLIST_DOMAIN_MAX_LENGTH)
 
     @classmethod
-    def is_url_domain_whitelisted(cls, url):
-        whitelisted_domains = cls.objects.values_list('domain', flat=True).cache()
-        url_domain = get_url_domain(url)
-        is_matched = False
-        domain_parts = url_domain.split('.')
-        length = len(domain_parts)
-        while length >= 2:
-            if url_domain in whitelisted_domains:
-                is_matched = True
-                break
-            domain_parts.pop(0)
-            url_domain = '.'.join(domain_parts)
-            length = len(domain_parts)
+    def is_url_domain_blacklisted(cls, url):
+        url = url.lower()
 
-        return is_matched
+        if not urlparse(url).scheme:
+            url = 'http://' + url
+
+        # This uses a list of public suffixes
+        tld_extract_result = tldextract.extract(url)
+
+        # [google, com] = google.com
+        url_root_domain = ''.join([tld_extract_result.domain, tld_extract_result.suffix])
+
+        return cls.objects.filter(domain=url_root_domain).exists()
