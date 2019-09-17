@@ -111,7 +111,7 @@ class Language(models.Model):
 
 
 class ProxyBlacklistedDomain(models.Model):
-    domain = models.CharField(max_length=settings.PROXY_BLACKLIST_DOMAIN_MAX_LENGTH)
+    domain = models.CharField(max_length=settings.PROXY_BLACKLIST_DOMAIN_MAX_LENGTH, unique=True)
 
     @classmethod
     def is_url_domain_blacklisted(cls, url):
