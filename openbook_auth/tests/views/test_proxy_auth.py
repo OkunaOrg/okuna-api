@@ -62,5 +62,47 @@ class ProxyAuthAPITests(APITestCase):
         response = self.client.get(url, **headers)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_proxy_auth_disallows_blacklisted_root_domain(self):
+        """
+        should disallow when calling with a blacklisted root domain and return 403
+        """
+        url = self._get_url()
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        make_proxy_blacklisted_domain(domain='blogspot.com')
+
+        headers['HTTP_X_PROXY_URL'] = 'test.blogspot.com'
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_proxy_auth_disallows_blacklisted_subdomain_domain(self):
+        """
+        should disallow when calling with a blacklisted subdomain domain and return 403
+        """
+        url = self._get_url()
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        make_proxy_blacklisted_domain(domain='test.blogspot.com')
+
+        headers['HTTP_X_PROXY_URL'] = 'test.blogspot.com'
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_allows_non_blacklisted_root_domain_with_blacklisted_subdomain(self):
+        """
+        should allow when calling with a non blacklisted root domain that also has a blacklisted subdomain and return 403
+        """
+        url = self._get_url()
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        make_proxy_blacklisted_domain(domain='test.blogspot.com')
+
+        headers['HTTP_X_PROXY_URL'] = 'blogspot.com'
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+
     def _get_url(self):
         return reverse('proxy-auth')

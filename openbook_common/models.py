@@ -123,7 +123,12 @@ class ProxyBlacklistedDomain(models.Model):
         # This uses a list of public suffixes
         tld_extract_result = tldextract.extract(url)
 
-        # [google, com] = google.com
+        # given test.blogspot.com
+
+        # blogspot.com
         url_root_domain = '.'.join([tld_extract_result.domain, tld_extract_result.suffix])
 
-        return cls.objects.filter(domain=url_root_domain).exists()
+        # test.blogspot.com
+        url_full_domain = '.'.join([tld_extract_result.subdomain, tld_extract_result.domain, tld_extract_result.suffix])
+
+        return cls.objects.filter(Q(domain=url_root_domain) | Q(domain=url_full_domain)).exists()
