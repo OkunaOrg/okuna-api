@@ -4,8 +4,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils import timezone
+from django.utils.translation import ugettext_lazy as _
 
-from openbook_common.serializers import EmojiGroupSerializer
+from openbook_common.checkers import check_url_can_be_proxied
+from openbook_common.serializers import EmojiGroupSerializer, \
+    ProxyDomainCheckSerializer
 from openbook_common.utils.model_loaders import get_emoji_group_model
 
 
@@ -44,3 +47,19 @@ class EmojiGroups(APIView):
         serializer = EmojiGroupSerializer(emoji_groups, many=True, context={'request': request})
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ProxyDomainCheck(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        query_params = request.query_params.dict()
+        serializer = ProxyDomainCheckSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        url = data.get('url')
+
+        check_url_can_be_proxied(url)
+
+        return Response(_('Domain is okay to be proxied'), status=status.HTTP_202_ACCEPTED)

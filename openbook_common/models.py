@@ -10,7 +10,6 @@ from django.utils.translation import ugettext_lazy as _
 
 # Create your views here.
 from openbook.settings import COLOR_ATTR_MAX_LENGTH
-from openbook_common.helpers import get_url_domain
 from openbook_common.validators import hex_color_validator
 import tldextract
 
@@ -125,6 +124,6 @@ class ProxyBlacklistedDomain(models.Model):
         tld_extract_result = tldextract.extract(url)
 
         # [google, com] = google.com
-        url_root_domain = ''.join([tld_extract_result.domain, tld_extract_result.suffix])
+        url_root_domain = '.'.join([tld_extract_result.domain, tld_extract_result.suffix])
 
         return cls.objects.filter(domain=url_root_domain).exists()

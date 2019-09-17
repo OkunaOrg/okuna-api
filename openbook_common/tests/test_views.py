@@ -7,7 +7,7 @@ import logging
 import json
 
 from openbook_common.tests.helpers import make_emoji_group, make_user, make_authentication_headers_for_user, \
-    make_fake_post_text, make_proxy_whitelisted_domain
+    make_fake_post_text, make_proxy_blacklisted_domain
 
 logger = logging.getLogger(__name__)
 
@@ -102,34 +102,28 @@ class TestEmojiGroups(OpenbookAPITestCase):
         return reverse('emoji-groups')
 
 
-class PreviewLinkDataAPITests(OpenbookAPITestCase):
+class ProxyDomainCheckAPITests(OpenbookAPITestCase):
     """
-    PreviewLinkDataAPI
+    ProxyDomainCheckAPI
     """
 
-    def test_retrieves_preview_data_for_whitelisted_domain(self):
+    def test_fails_on_blacklisted_domain(self):
         """
-        should retrieve preview data for a link in a whitelisted domain and return 200
+        should fail when calling with a blacklisted domain and return 403
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
-        preview_url = 'www.okuna.io'
+        request_url = 'www.okuna.io'
         url = self._get_url()
-        make_proxy_whitelisted_domain(domain='okuna.io')
+        make_proxy_blacklisted_domain(domain='okuna.io')
 
-        response = self.client.get(url, {'url': preview_url}, **headers)
-        preview_data = json.loads(response.content)
+        response = self.client.get(url, {'url': request_url}, **headers)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue('title' in preview_data.keys())
-        self.assertTrue('description' in preview_data.keys())
-        self.assertTrue('image_url' in preview_data.keys())
-        self.assertTrue('favicon_url' in preview_data.keys())
-        self.assertTrue('domain_url' in preview_data.keys())
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_cannot_retrieve_preview_data_for_domain_not_in_whitelist(self):
+    def test_succeeds_with_non_blacklisted_domain(self):
         """
-        should not retrieve preview data for a link if the domain is not whitelisted and return 403
+        should succeed with a non blacklisted domain and return 202
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
@@ -138,44 +132,20 @@ class PreviewLinkDataAPITests(OpenbookAPITestCase):
 
         response = self.client.get(url, {'url': preview_url}, **headers)
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
 
-    def test_cannot_retrieve_preview_data_for_invalid_url(self):
+    def test_fails_on_invalid_domain(self):
         """
-        should fail to retrieve preview data for an invalid url and return 403
-        """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
-        preview_url = make_fake_post_text()
-
-        url = self._get_url()
-        response = self.client.get(url, {'url': preview_url}, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_cannot_retrieve_preview_data_for_url_with_unreachable_link(self):
-        """
-        should fail to retrieve preview data for a url which is unreachable and return 403
+        should fail when calling with an invalid domain and return 403
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
-        preview_url = 'https://www.invalid-XITSrbQomu0pnj2ISa4OOFq_NySDkyXMsw0cBxKYUc.com/doesntexist/eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9/'
-
+        request_url = 'invalid.potato'
         url = self._get_url()
-        response = self.client.get(url, {'url': preview_url}, **headers)
+
+        response = self.client.get(url, {'url': request_url}, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_cannot_retrieve_preview_data_if_no_url_param(self):
-        """
-        should fail if url param is missing return 400
-        """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
-        url = self._get_url()
-        response = self.client.get(url, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def _get_url(self):
-        return reverse('preview-link')
+        return reverse('proxy-domain-check')

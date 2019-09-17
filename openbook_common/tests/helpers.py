@@ -253,7 +253,7 @@ def make_random_language():
     return mixer.blend(Language)
 
 
-def make_proxy_whitelisted_domain(domain):
+def make_proxy_blacklisted_domain(domain):
     return mixer.blend(ProxyBlacklistedDomain, domain=domain)
 
 

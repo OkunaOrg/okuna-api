@@ -21,7 +21,7 @@ from rq import SimpleWorker
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_community, make_moderation_category, \
-    get_test_videos, get_test_image, make_proxy_whitelisted_domain
+    get_test_videos, get_test_image, make_proxy_blacklisted_domain
 from openbook_common.utils.model_loaders import get_language_model
 from openbook_communities.models import Community
 from openbook_notifications.models import PostUserMentionNotification, Notification
@@ -2654,7 +2654,7 @@ class GetPostPreviewDataAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(user)
         post_text = 'im a text with link www.okuna.io'
         post = user.create_public_post(text=post_text)
-        make_proxy_whitelisted_domain(domain='okuna.io')
+        make_proxy_blacklisted_domain(domain='okuna.io')
 
         url = self._get_url(post)
         response = self.client.get(url, **headers)
