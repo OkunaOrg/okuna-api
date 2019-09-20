@@ -48,6 +48,7 @@ webpreview = "*"
 beautifulsoup4 = "*"
 urlextract = "*"
 django-proxy = "*"
+tldextract = "*"
 django-cursor-pagination = "*"
 
 [pipenv]

@@ -29,8 +29,8 @@ def get_post_media_model():
     return apps.get_model('openbook_posts.PostMedia')
 
 
-def get_proxy_whitelist_domain_model():
-    return apps.get_model('openbook_common.ProxyWhitelistDomain')
+def get_proxy_blacklist_domain_model():
+    return apps.get_model('openbook_common.ProxyBlacklistedDomain')
 
 
 def get_post_user_mention_model():

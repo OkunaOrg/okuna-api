@@ -21,7 +21,7 @@ from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
 from openbook_notifications.helpers import get_notification_language_code_for_target_user
 from openbook_translation import translation_strategy
-from openbook_common.helpers import get_supported_translation_language, normalise_url, get_url_metadata
+from openbook_common.helpers import get_supported_translation_language
 from openbook_common.models import Badge, Language
 from openbook_common.utils.helpers import delete_file_field
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
@@ -1076,10 +1076,11 @@ class User(AbstractUser):
                                   }}
                     elif post_notification_target_user_is_post_creator:
                         notification_message = {
-                            "en": _('%(post_commenter_name)s · %(post_commenter_username)s replied to a comment on your post.') % {
-                                'post_commenter_username': replier.username,
-                                'post_commenter_name': replier.profile.name,
-                            }}
+                            "en": _(
+                                '%(post_commenter_name)s · %(post_commenter_username)s replied to a comment on your post.') % {
+                                      'post_commenter_username': replier.username,
+                                      'post_commenter_name': replier.profile.name,
+                                  }}
                     else:
                         notification_message = {
                             "en": _(
@@ -1834,25 +1835,6 @@ class User(AbstractUser):
         user = User.objects.get(user_query)
         check_can_get_user_with_id(user=self, user_id=user.pk)
         return user
-
-    # Preview link data to be removed when parsing becomes in device
-
-    def get_preview_link_data_for_post_with_id(self, post_id):
-        Post = get_post_model()
-        post = Post.objects.get(pk=post_id)
-        return self.get_preview_link_data_for_post(post=post)
-
-    def get_preview_link_data_for_post(self, post):
-        check_can_get_preview_link_data_for_post(user=self, post=post)
-        preview_link = post.post_links.first().link
-        check_can_preview_url(preview_link)
-
-        return get_url_metadata(preview_link)
-
-    def get_preview_link_data_for_url(self, url):
-        check_can_preview_url(url)
-        url = normalise_url(url)
-        return get_url_metadata(url)
 
     def translate_post_with_id(self, post_id):
         check_can_translate_post_with_id(user=self, post_id=post_id)
