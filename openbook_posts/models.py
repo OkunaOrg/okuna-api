@@ -49,7 +49,7 @@ from openbook_posts.helpers import upload_to_post_image_directory, upload_to_pos
 from openbook_posts.jobs import process_post_media
 
 magic = get_magic()
-from openbook_common.helpers import get_language_for_text, extract_urls_from_string, normalise_url
+from openbook_common.helpers import get_language_for_text, extract_urls_from_string
 
 post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else default_storage
 
@@ -152,12 +152,13 @@ class Post(models.Model):
     def get_trending_posts_for_user_with_id(cls, user_id):
         trending_posts_query = cls._get_trending_posts_query()
         trending_posts_query.add(~Q(community__banned_users__id=user_id), Q.AND)
-        trending_posts_query.add(Q(is_closed=False, is_deleted=False), Q.AND)
 
         trending_posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=user_id) | Q(
             creator__user_blocks__blocked_user_id=user_id)), Q.AND)
 
         trending_posts_query.add(~Q(moderated_object__reports__reporter_id=user_id), Q.AND)
+
+        trending_posts_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
 
         return cls._get_trending_posts_with_query(query=trending_posts_query)
 
@@ -173,7 +174,8 @@ class Post(models.Model):
 
         Community = get_community_model()
 
-        trending_posts_sources_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, status=cls.STATUS_PUBLISHED)
+        trending_posts_sources_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, status=cls.STATUS_PUBLISHED,
+                                         is_closed=False, is_deleted=False)
 
         trending_posts_query.add(trending_posts_sources_query, Q.AND)
 
@@ -266,9 +268,6 @@ class Post(models.Model):
 
         return False
 
-    def has_links(self):
-        return self.post_links.exists()
-
     def comment(self, text, commenter):
         return PostComment.create_comment(text=text, commenter=commenter, post=self)
 
@@ -281,12 +280,6 @@ class Post(models.Model):
         if self.circles.filter(id=world_circle_id).exists():
             return True
         return False
-
-    def create_links(self, link_urls):
-        self.post_links.all().delete()
-        for link_url in link_urls:
-            link_url = normalise_url(link_url)
-            PostLink.create_link(link=link_url, post_id=self.pk)
 
     def is_encircled_post(self):
         return not self.is_public_post() and not self.community
@@ -411,7 +404,6 @@ class Post(models.Model):
         post = super(Post, self).save(*args, **kwargs)
 
         self._process_post_mentions()
-        self._process_post_links()
 
         return post
 
@@ -517,12 +509,6 @@ class Post(models.Model):
                                 existing_mention_usernames.append(username)
                         except User.DoesNotExist:
                             pass
-
-    def _process_post_links(self):
-        if self.has_text() and not self.has_image() and not self.has_video():
-            link_urls = extract_urls_from_string(self.text)
-            if len(link_urls) > 0:
-                self.create_links(link_urls)
 
 
 class PostMedia(OrderedModel):
@@ -861,19 +847,6 @@ class PostCommentMute(models.Model):
     @classmethod
     def create_post_comment_mute(cls, post_comment_id, muter_id):
         return cls.objects.create(post_comment_id=post_comment_id, muter_id=muter_id)
-
-
-class PostLink(models.Model):
-    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='post_links')
-    link = models.TextField(max_length=settings.POST_MAX_LENGTH)
-
-    class Meta:
-        unique_together = ('post', 'link',)
-
-    @classmethod
-    def create_link(cls, link, post_id):
-        return cls.objects.create(link=link, post_id=post_id)
 
 
 class PostUserMention(models.Model):

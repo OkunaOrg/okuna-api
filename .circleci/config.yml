@@ -39,7 +39,7 @@ jobs:
     - save_cache:
         paths:
         - ./venv
-        key: $CACHE_VERSION-dependencies-{{ checksum "requirements.txt" }}
+        key: $CACHE_VERSION-pip-dependencies-{{ checksum "requirements.txt" }}
 
     - run:
         name: Setup Code Climate test-reporter

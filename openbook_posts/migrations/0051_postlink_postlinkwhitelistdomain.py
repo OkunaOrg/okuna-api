@@ -26,9 +26,6 @@ class Migration(migrations.Migration):
                 ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
                 ('link', models.CharField(max_length=200)),
                 ('post', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='post_links', to='openbook_posts.Post')),
-            ],
-            options={
-                'unique_together': {('post', 'link')},
-            },
+            ]
         ),
     ]

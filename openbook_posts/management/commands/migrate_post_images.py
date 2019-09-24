@@ -21,11 +21,11 @@ class Command(BaseCommand):
         for post in posts_to_migrate.iterator():
             with transaction.atomic():
                 post_image = post.image
-                post_image.post = None
                 PostMedia.create_post_media(type=PostMedia.MEDIA_TYPE_IMAGE,
                                             content_object=post_image,
                                             post_id=post.pk, order=0)
                 post_image.save()
+            logger.info('Migrated post with id:' + str(post.pk))
             migrated_posts = migrated_posts + 1
 
         logger.info('Migrated %d posts' % migrated_posts)

@@ -22,16 +22,15 @@ import logging
 import json
 
 from openbook_circles.models import Circle
-from openbook_common.helpers import normalise_url
 from openbook_common.tests.helpers import make_user, make_users, make_fake_post_text, \
     make_authentication_headers_for_user, make_circle, make_community, make_list, make_moderation_category, \
-    get_test_usernames, get_test_videos, get_test_image, get_post_links, make_global_moderator
+    get_test_usernames, get_test_videos, get_test_image, make_global_moderator
 from openbook_common.utils.helpers import sha256sum
 from openbook_communities.models import Community
 from openbook_lists.models import List
 from openbook_moderation.models import ModeratedObject
 from openbook_notifications.models import PostUserMentionNotification, Notification
-from openbook_posts.models import Post, PostUserMention, PostMedia, PostLink
+from openbook_posts.models import Post, PostUserMention, PostMedia
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -328,61 +327,6 @@ class PostsAPITests(OpenbookAPITestCase):
 
         self.assertFalse(PostUserMention.objects.filter(post_id=post.pk, user_id=user.pk).exists())
 
-    def test_create_text_post_detects_all_urls(self):
-        """
-        should detect different links in post text and create post links models from them
-        """
-        user = make_user()
-
-        headers = make_authentication_headers_for_user(user=user)
-
-        links = get_post_links()
-
-        post_text = " | ".join(links)
-
-        data = {
-            'text': post_text
-        }
-
-        url = self._get_url()
-        response = self.client.put(url, data, **headers, format='multipart')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        post = Post.objects.get(text=post_text, creator_id=user.pk)
-        post_links = PostLink.objects.filter(post_id=post.pk)
-        result_links = [post_link.link for post_link in post_links]
-
-        self.assertEqual(len(result_links), len(links))
-        for link in links:
-            link = normalise_url(link)
-            self.assertTrue(link in result_links)
-
-    def test_create_text_post_does_not_skips_http_urls(self):
-        """
-        should not skip http urls in post text while creating post links models from them
-        """
-        user = make_user()
-
-        headers = make_authentication_headers_for_user(user=user)
-
-        post_text = 'http://unsafe.com'
-
-        data = {
-            'text': post_text
-        }
-
-        url = self._get_url()
-        response = self.client.put(url, data, **headers, format='multipart')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        post = Post.objects.get(text=post_text, creator_id=user.pk)
-        post_links = PostLink.objects.filter(post_id=post.pk)
-        result_links = [post_link.link for post_link in post_links]
-
-        result_link = result_links[0]
-
-        self.assertEqual(result_link, post_text)
-
-        self.assertEqual(len(result_links), 1)
-
     def test_create_post_is_added_to_world_circle(self):
         """
         the created text post should automatically added to world circle
@@ -622,41 +566,43 @@ class PostsAPITests(OpenbookAPITestCase):
         """
         should be able to create a video post and return 201
         """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
 
-        test_video = get_test_videos()[0]
+        test_videos = get_test_videos()
 
-        with open(test_video['path'], 'rb') as file:
-            data = {
-                'video': file
-            }
+        for test_video in test_videos:
+            with open(test_video['path'], 'rb') as file:
+                user = make_user()
+                headers = make_authentication_headers_for_user(user)
 
-            url = self._get_url()
+                data = {
+                    'video': file
+                }
 
-            response = self.client.put(url, data, **headers, format='multipart')
+                url = self._get_url()
 
-            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+                response = self.client.put(url, data, **headers, format='multipart')
 
-            response_post = json.loads(response.content)
+                self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-            response_post_id = response_post.get('id')
+                response_post = json.loads(response.content)
 
-            self.assertTrue(user.posts.count() == 1)
+                response_post_id = response_post.get('id')
 
-            created_post = user.posts.filter(pk=response_post_id).get()
+                self.assertTrue(user.posts.count() == 1)
 
-            self.assertTrue(created_post.status, Post.STATUS_PROCESSING)
+                created_post = user.posts.filter(pk=response_post_id).get()
 
-            get_worker(worker_class=SimpleWorker).work(burst=True)
+                self.assertTrue(created_post.status, Post.STATUS_PROCESSING)
 
-            created_post.refresh_from_db()
+                get_worker(worker_class=SimpleWorker).work(burst=True)
 
-            self.assertTrue(created_post.status, Post.STATUS_PUBLISHED)
+                created_post.refresh_from_db()
 
-            post_media_video = created_post.media.get(post_id=response_post_id, type=PostMedia.MEDIA_TYPE_VIDEO)
+                self.assertTrue(created_post.status, Post.STATUS_PUBLISHED)
 
-            self.assertTrue(post_media_video.content_object.format_set.exists())
+                post_media_video = created_post.media.get(post_id=response_post_id, type=PostMedia.MEDIA_TYPE_VIDEO)
+
+                self.assertTrue(post_media_video.content_object.format_set.exists())
 
     def test_create_video_post_creates_hash(self):
         """
