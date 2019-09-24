@@ -5,6 +5,8 @@ name = "pypi"
 
 [dev-packages]
 polib = "*"
+uwsgi = "*"
+pytz = "*"
 
 [packages]
 django = "==2.2.5"

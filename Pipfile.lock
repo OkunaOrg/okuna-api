@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "587b3de94af7e6120eee5680a50c7d80c93d5752c3cbd9f646f26c0c5498b964"
+            "sha256": "2c6d7c0ec85351b3a167422e291e33bac7644fa89e9a1d82dc2148e122ea7aca"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -40,18 +40,18 @@
         },
         "boto3": {
             "hashes": [
-                "sha256:0e4d047feb4d7d701e9b2107f10bb8d674952243385cd35d0b413a273c299751",
-                "sha256:67f957389cf56fb4c24c1093c6d58baebe6cf18139f6dca0f8a177239b0a4f8c"
+                "sha256:012dee0d170d9ee637831a2766c3d5a9cddbe3b18bf688b4c348ec591411bd21",
+                "sha256:2fd733957e83546547cede51ebf7356a14eeb369293e1e918e7eabcc7cf30e2c"
             ],
             "index": "pypi",
-            "version": "==1.9.232"
+            "version": "==1.9.233"
         },
         "botocore": {
             "hashes": [
-                "sha256:724d2349198c6f15f3cee0c0e4d33ecf4435e6d0db311bb79a3a28f6cf5a4090",
-                "sha256:a57a8fd0145c68e31bb4baab549b27a12f6695068c8dd5f2901d8dc06572dbeb"
+                "sha256:9b0bf5614a0e6a29838dc1bc3d38405c57ec6dc3e25709776f9d2d7f7e84b0e0",
+                "sha256:9b93ca5743e9209daaece3e682626d8370f04c9693760c7c1e7fd95b746e45ff"
             ],
-            "version": "==1.12.232"
+            "version": "==1.12.233"
         },
         "certifi": {
             "hashes": [
@@ -661,6 +661,20 @@
             ],
             "index": "pypi",
             "version": "==1.1.0"
+        },
+        "pytz": {
+            "hashes": [
+                "sha256:26c0b32e437e54a18161324a2fca3c4b9846b74a8dccddd843113109e1116b32",
+                "sha256:c894d57500a4cd2d5c71114aaab77dbab5eabd9022308ce5ac9bb93a60a6f0c7"
+            ],
+            "version": "==2019.2"
+        },
+        "uwsgi": {
+            "hashes": [
+                "sha256:4972ac538800fb2d421027f49b4a1869b66048839507ccf0aa2fda792d99f583"
+            ],
+            "index": "pypi",
+            "version": "==2.0.18"
         }
     }
 }
