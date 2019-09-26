@@ -57,7 +57,7 @@ def _add_post_to_top_post(post):
     return None
 
 
-def chunked_queryset_iterator(queryset, size, *, ordering=('id',)):
+def _chunked_queryset_iterator(queryset, size, *, ordering=('id',)):
     """
     Split a queryset into chunks.
     This can be used instead of `queryset.iterator()`,
@@ -114,7 +114,7 @@ def curate_top_posts():
 
     top_posts_objects = []
 
-    for post in chunked_queryset_iterator(posts, 1000):
+    for post in _chunked_queryset_iterator(posts, 1000):
         if not post.reactions_count >= settings.MIN_UNIQUE_TOP_POST_REACTIONS_COUNT:
             unique_comments_count = PostComment.objects.filter(post=post).\
                 values('commenter_id').\
@@ -191,7 +191,7 @@ def clean_top_posts():
 
     delete_ids = []
 
-    for top_post in chunked_queryset_iterator(top_posts, 1000):
+    for top_post in _chunked_queryset_iterator(top_posts, 1000):
         if not top_post.reactions_count >= settings.MIN_UNIQUE_TOP_POST_REACTIONS_COUNT:
             unique_comments_count = PostComment.objects.filter(post=top_post.post). \
                 values('commenter_id'). \

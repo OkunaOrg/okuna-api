@@ -1676,13 +1676,13 @@ class User(AbstractUser):
 
         return TopPostCommunityExclusion.objects.filter(excluded_communities_search_query)
 
-    def get_top_post_community_exclusions(self):
+    def get_top_posts_community_exclusions(self):
         TopPostCommunityExclusion = get_top_post_community_exclusion_model()
-        top_post_community_exclusions = TopPostCommunityExclusion.objects \
+        top_posts_community_exclusions = TopPostCommunityExclusion.objects \
             .select_related('community') \
             .all()
 
-        return top_post_community_exclusions
+        return top_posts_community_exclusions
 
     def get_followers(self, max_id=None):
         followers_query = self._make_followers_query()
@@ -2074,8 +2074,7 @@ class User(AbstractUser):
 
         if max_id:
             top_community_posts_query.add(Q(id__lt=max_id), Q.AND)
-
-        if min_id:
+        elif min_id:
             top_community_posts_query.add(Q(id__gt=min_id), Q.AND)
 
         ModeratedObject = get_moderated_object_model()

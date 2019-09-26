@@ -257,7 +257,7 @@ class TopPostCommunityExclusions(APIView):
         offset = data.get('offset', 0)
 
         user = request.user
-        exclusions = user.get_top_post_community_exclusions()[offset:offset + count]
+        exclusions = user.get_top_posts_community_exclusions()[offset:offset + count]
 
         communities = [exclusion.community for exclusion in exclusions]
 
