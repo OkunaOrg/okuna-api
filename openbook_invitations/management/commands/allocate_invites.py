@@ -41,7 +41,7 @@ class Command(BaseCommand):
         else:
             users = User.objects.all()
 
-        for user in users:
+        for user in users.iterator():
             try:
                 if limit:
                     # ensure new count is less than equal to limit
@@ -70,7 +70,7 @@ class Command(BaseCommand):
         else:
             users = User.objects.all()
 
-        for user in users:
+        for user in users.iterator():
             try:
                 user.invite_count = total_count
                 user.save()
