@@ -7,7 +7,7 @@ from rest_framework import status
 import logging
 import json
 
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, \
     make_community
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class CommunityMembersAPITest(APITestCase):
+class CommunityMembersAPITest(OpenbookAPITestCase):
     def test_can_retrieve_members_of_public_community(self):
         """
         should be able to retrieve the members of a public community
@@ -311,7 +311,7 @@ class CommunityMembersAPITest(APITestCase):
         })
 
 
-class InviteCommunityMembersAPITest(APITestCase):
+class InviteCommunityMembersAPITest(OpenbookAPITestCase):
     def test_can_invite_user_to_community_part_of_with_invites_enabled(self):
         """
         should be able to invite a user to join a community part of with invites enabled and return 200
@@ -470,7 +470,7 @@ class InviteCommunityMembersAPITest(APITestCase):
         })
 
 
-class UninviteCommunityMembersAPITest(APITestCase):
+class UninviteCommunityMembersAPITest(OpenbookAPITestCase):
     def test_can_uninvite_user_from_community(self):
         """
         should be able to uninvite a user from a community and return 200
@@ -525,7 +525,7 @@ class UninviteCommunityMembersAPITest(APITestCase):
         })
 
 
-class JoinCommunityAPITest(APITestCase):
+class JoinCommunityAPITest(OpenbookAPITestCase):
     def test_can_join_public_community(self):
         """
         should be able to join a public community and return 200
@@ -637,7 +637,7 @@ class JoinCommunityAPITest(APITestCase):
         })
 
 
-class SearchCommunityMembersAPITests(APITestCase):
+class SearchCommunityMembersAPITests(OpenbookAPITestCase):
     """
     SearchCommunityMembersAPITests
     """

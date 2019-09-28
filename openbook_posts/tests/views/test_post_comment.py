@@ -1,26 +1,31 @@
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
+from unittest import mock
+import json
 
 import logging
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_community
-from openbook_notifications.models import PostCommentNotification, Notification, PostCommentReplyNotification
-from openbook_posts.models import PostComment
+from openbook_common.utils.model_loaders import get_language_model
+from openbook_notifications.models import PostCommentNotification, Notification, PostCommentReplyNotification, \
+    PostCommentUserMentionNotification
+from openbook_posts.models import PostComment, PostCommentUserMention
 
 logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class PostCommentItemAPITests(APITestCase):
+class PostCommentItemAPITests(OpenbookAPITestCase):
     """
     PostCommentItemAPI
     """
 
     fixtures = [
-        'openbook_circles/fixtures/circles.json'
+        'openbook_circles/fixtures/circles.json',
+        'openbook_common/fixtures/languages.json'
     ]
 
     def test_can_delete_foreign_comment_in_own_post(self):
@@ -675,6 +680,143 @@ class PostCommentItemAPITests(APITestCase):
         post_comment.refresh_from_db()
         self.assertTrue(post_comment.text == edited_post_comment_text)
         self.assertTrue(post_comment.is_edited)
+
+    def test_editing_own_post_comment_updates_mentions(self):
+        """
+        should update mentions when updating text
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        mentioned_user = make_user()
+        post_comment_text = 'Hello @' + mentioned_user.username
+
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post(post=post, text=post_comment_text)
+
+        post_comment_user_mention = PostCommentUserMention.objects.get(user_id=mentioned_user.pk,
+                                                                       post_comment_id=post_comment.pk)
+
+        newly_mentioned_user = make_user()
+
+        post_comment_text = 'Hello @' + newly_mentioned_user.username
+
+        data = {
+            'text': post_comment_text
+        }
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        post_comment = PostComment.objects.get(text=post_comment_text, commenter_id=user.pk)
+
+        self.assertFalse(
+            PostCommentUserMention.objects.filter(user_id=mentioned_user.pk, post_comment_id=post_comment.pk).exists())
+        self.assertEqual(PostCommentUserMention.objects.filter(user_id=newly_mentioned_user.pk,
+                                                               post_comment_id=post_comment.pk).count(), 1)
+
+        new_post_comment_user_mention = PostCommentUserMention.objects.get(user_id=newly_mentioned_user.pk,
+                                                                           post_comment_id=post_comment.pk)
+
+        self.assertFalse(
+            PostCommentUserMentionNotification.objects.filter(post_comment_user_mention_id=post_comment_user_mention.pk,
+                                                              notification__owner_id=mentioned_user.pk,
+                                                              notification__notification_type=Notification.POST_COMMENT_USER_MENTION).exists())
+
+        self.assertTrue(PostCommentUserMentionNotification.objects.filter(
+            post_comment_user_mention_id=new_post_comment_user_mention.pk,
+            notification__owner_id=newly_mentioned_user.pk,
+            notification__notification_type=Notification.POST_COMMENT_USER_MENTION).exists())
+
+    def test_editing_text_post_comment_ignores_non_existing_mentioned_usernames(self):
+        """
+        should ignore non existing mentioned usernames when editing a post_comment
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post(post=post, text=make_fake_post_text())
+
+        fake_username = 'nonexistinguser'
+        post_comment_text = 'Hello @' + fake_username
+
+        data = {
+            'text': post_comment_text
+        }
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        post_comment = PostComment.objects.get(text=post_comment_text, commenter_id=user.pk)
+
+        self.assertEqual(PostCommentUserMention.objects.filter(post_comment_id=post_comment.pk).count(), 0)
+
+    def test_editing_own_post_comment_does_not_create_double_mentions(self):
+        """
+        should not create double mentions when editing our own post_comment
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        mentioned_user = make_user()
+        post_comment_text = 'Hello @' + mentioned_user.username
+
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post(post=post, text=post_comment_text)
+
+        post_comment_user_mention = PostCommentUserMention.objects.get(user_id=mentioned_user.pk,
+                                                                       post_comment_id=post_comment.pk)
+
+        data = {
+            'text': post_comment_text
+        }
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        post_comment = PostComment.objects.get(text=post_comment_text, commenter_id=user.pk)
+
+        self.assertEqual(
+            PostCommentUserMention.objects.filter(user_id=mentioned_user.pk, post_comment_id=post_comment.pk).count(),
+            1)
+        new_post_comment_user_mention = PostCommentUserMention.objects.get(user_id=mentioned_user.pk,
+                                                                           post_comment_id=post_comment.pk,
+                                                                           id=post_comment_user_mention.pk)
+        self.assertEqual(new_post_comment_user_mention.pk, post_comment_user_mention.pk)
+
+    @mock.patch('openbook_posts.models.get_language_for_text')
+    def test_editing_own_post_comment_updates_language_of_comment(self, get_language_for_text_call):
+        """
+            should update language of comment when editing post comment
+        """
+        Language = get_language_model()
+        get_language_for_text_call.return_value = Language.objects.get(id=1)
+        user = make_user()
+        post = user.create_public_post(text=make_fake_post_text())
+        original_post_comment_text = make_fake_post_comment_text()
+        post_comment = user.comment_post_with_id(post.pk, text=original_post_comment_text)
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        edited_post_comment_text = make_fake_post_comment_text()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.patch(url, {
+            'text': edited_post_comment_text
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        get_language_for_text_call.assert_called_with(edited_post_comment_text)
 
     def test_can_edit_own_post_comment_on_others_post(self):
         """
@@ -1710,7 +1852,7 @@ class PostCommentItemAPITests(APITestCase):
         })
 
 
-class MutePostCommentAPITests(APITestCase):
+class MutePostCommentAPITests(OpenbookAPITestCase):
     """
     MutePostCommentAPI
     """
@@ -1987,9 +2129,9 @@ class MutePostCommentAPITests(APITestCase):
         })
 
 
-class UnmutePost_commentAPITests(APITestCase):
+class UnmutePostCommentAPITests(OpenbookAPITestCase):
     """
-    UnmutePost_commentAPI
+    UnmutePostCommentAPI
     """
 
     fixtures = [
@@ -2138,6 +2280,129 @@ class UnmutePost_commentAPITests(APITestCase):
 
     def _get_url(self, post, post_comment):
         return reverse('unmute-post-comment', kwargs={
+            'post_uuid': post.uuid,
+            'post_comment_id': post_comment.id,
+        })
+
+
+class TranslatePostCommentAPITests(OpenbookAPITestCase):
+    """
+    TranslatePostCommentAPI
+    """
+
+    fixtures = [
+        'openbook_common/fixtures/languages.json'
+    ]
+
+    def test_translate_post_comment_text(self):
+        """
+        should translate post comment text and return 200
+        """
+        user = make_user()
+        Language = get_language_model()
+        user.translation_language = Language.objects.get(code='en')
+        user.save()
+        text = 'Ik ben en man 😀. Jij bent en vrouw.'
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post(post=post, text=text)
+
+        url = self._get_url(post=post, post_comment=post_comment)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_post = json.loads(response.content)
+
+        self.assertEqual(response_post['translated_text'], 'I am a man 😀. You\'re a woman.')
+
+    def test_cannot_translate_post_comment_text_without_user_language(self):
+        """
+        should not translate post comment text and return 400 if user language is not set
+        """
+        user = make_user()
+        text = 'Ik ben en man 😀. Jij bent en vrouw.'
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post(post=post, text=text)
+
+        url = self._get_url(post=post, post_comment=post_comment)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cannot_translate_comment_in_encircled_post(self):
+        """
+        should not translate post comment text in an encircled post and return 400
+        """
+        user = make_user()
+        text = 'Ik ben en man 😀. Jij bent en vrouw.'
+        headers = make_authentication_headers_for_user(user)
+        circle = make_circle(creator=user)
+        post = user.create_encircled_post(text=text, circles_ids=[circle.pk])
+        post_comment = user.comment_post(post=post, text=text)
+
+        url = self._get_url(post=post, post_comment=post_comment)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cannot_translate_post_comment_text_without_post_comment_language(self):
+        """
+        should not translate post comment text and return 400 if post comment language is not set
+        """
+        user = make_user()
+        text = 'Ik ben en man 😀. Jij bent en vrouw.'
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post(post=post, text=text)
+        post_comment.language = None
+        post_comment.save()
+
+        url = self._get_url(post=post, post_comment=post_comment)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_return_error_between_unsupported_translate_pairs(self):
+        """
+        should return error using aws translate when translating comment between unsupported pairs (Norwegian to arabic) and return 400
+        """
+        user = make_user()
+        Language = get_language_model()
+        user.translation_language = Language.objects.get(code='ar')
+        user.save()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post(post=post, text=fake.text(max_nb_chars=30))
+        post_comment.language = Language.objects.get(code='no')
+        post_comment.save()
+
+        url = self._get_url(post=post, post_comment=post_comment)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_return_error_when_text_length_exceeds_max_setting(self):
+        """
+        should return appropriate error when length of text is more than maximum in settings.py return 400
+        """
+        user = make_user()
+        Language = get_language_model()
+        user.translation_language = Language.objects.get(code='ar')
+        user.save()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post(post=post, text=make_fake_post_comment_text())
+        post_comment.language = Language.objects.get(code='no')
+        post_comment.save()
+
+        url = self._get_url(post=post, post_comment=post_comment)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def _get_url(self, post, post_comment):
+        return reverse('translate-post-comment', kwargs={
             'post_uuid': post.uuid,
             'post_comment_id': post_comment.id,
         })

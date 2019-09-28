@@ -6,11 +6,17 @@
       "order": 9,
       "group_id": 2,
       "keyword": "waw",
-      "keyword_es": "Waw",
       "keyword_en": "Waw",
       "color": "#f1b01b",
       "image": "openbook_common/emojis/doge.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Wuff",
+      "keyword_sv": "Waw",
+      "keyword_fr": "Wouf",
+      "keyword_it": "Waw",
+      "keyword_tr": "Haw",
+      "keyword_pt_br": "Auau"
     }
   },
   {
@@ -20,11 +26,17 @@
       "group_id": 2,
       "order": 8,
       "keyword": "party",
-      "keyword_es": "Fiesta!",
       "keyword_en": "Party!",
       "color": "#000000",
       "image": "openbook_common/emojis/dancing_parrot.gif",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Party!",
+      "keyword_sv": "Fest!",
+      "keyword_fr": "Party !",
+      "keyword_it": "Festa!",
+      "keyword_tr": "Parti!",
+      "keyword_pt_br": "Festa!"
     }
   },
   {
@@ -34,11 +46,17 @@
       "group_id": 1,
       "order": 1,
       "keyword": "love",
-      "keyword_es": "Me gusta",
       "keyword_en": "Love it",
       "color": "#bd0043",
       "image": "openbook_common/emojis/love.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Liebe es",
+      "keyword_sv": "Älskar det",
+      "keyword_fr": "J'adore !",
+      "keyword_it": "Lo adoro",
+      "keyword_tr": "Bayıldım",
+      "keyword_pt_br": "Amei"
     }
   },
   {
@@ -48,11 +66,17 @@
       "group_id": 1,
       "order": 4,
       "keyword": "sad",
-      "keyword_es": "Triste",
       "keyword_en": "Sad",
       "color": "#505050",
       "image": "openbook_common/emojis/sad.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Traurig",
+      "keyword_sv": "Ledsen",
+      "keyword_fr": "Triste",
+      "keyword_it": "Triste",
+      "keyword_tr": "Üzücü",
+      "keyword_pt_br": "Triste"
     }
   },
   {
@@ -62,11 +86,17 @@
       "group_id": 2,
       "order": 7,
       "keyword": "lit",
-      "keyword_es": "Prendido",
       "keyword_en": "Lit",
       "color": "#e48200",
       "image": "openbook_common/emojis/fire.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Lit",
+      "keyword_sv": "Häftigt",
+      "keyword_fr": "Allumé.e",
+      "keyword_it": "Da urlo",
+      "keyword_tr": "Aydınlatıcı",
+      "keyword_pt_br": "Fogo"
     }
   },
   {
@@ -76,11 +106,17 @@
       "group_id": 2,
       "order": 6,
       "keyword": "hooray",
-      "keyword_es": "Hurra!",
       "keyword_en": "Hooray!",
       "color": "#5200d4",
       "image": "openbook_common/emojis/party.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Hurra!",
+      "keyword_sv": "Hurra!",
+      "keyword_fr": "Hourra !",
+      "keyword_it": "Urrà!",
+      "keyword_tr": "Yaşasın!",
+      "keyword_pt_br": "Viva!"
     }
   },
   {
@@ -89,12 +125,18 @@
     "fields": {
       "group_id": 1,
       "order": 5,
-      "keyword": "upset",
-      "keyword_es": "Enojadx",
-      "keyword_en": "Upset",
+      "keyword": "hehe",
+      "keyword_en": "Hehe",
       "color": "#1b1b1b",
-      "image": "openbook_common/emojis/upset.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "image": "openbook_common/emojis/hehe.png",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "Jeje",
+      "keyword_de": "Hehe",
+      "keyword_sv": "Hehe",
+      "keyword_fr": "Hehe",
+      "keyword_it": "Hehe",
+      "keyword_tr": "Hehe",
+      "keyword_pt_br": "Hehe"
     }
   },
   {
@@ -104,11 +146,17 @@
       "group_id": 1,
       "order": 3,
       "keyword": "wow",
-      "keyword_es": "Wow",
       "keyword_en": "Wow",
       "color": "#00d546",
       "image": "openbook_common/emojis/wow.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Wow",
+      "keyword_sv": "Wow",
+      "keyword_fr": "Wow",
+      "keyword_it": "Wow",
+      "keyword_tr": "Vay canına",
+      "keyword_pt_br": "Uau"
     }
   },
   {
@@ -118,11 +166,17 @@
       "group_id": 1,
       "order": 2,
       "keyword": "haha",
-      "keyword_es": "Jaja",
       "keyword_en": "Haha",
       "color": "#0089f2",
       "image": "openbook_common/emojis/haha.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Haha",
+      "keyword_sv": "Haha",
+      "keyword_fr": "Haha",
+      "keyword_it": "Haha",
+      "keyword_tr": "Haha",
+      "keyword_pt_br": "Haha"
     }
   },
   {
@@ -132,11 +186,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "alarm",
-      "keyword_es": "Alarma",
       "keyword_en": "Alarm",
       "color": "#0089f2",
       "image": "openbook_common/emojis/alarm.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Alarm",
+      "keyword_sv": "Larm",
+      "keyword_fr": "Alarme",
+      "keyword_it": "Allarme",
+      "keyword_tr": "Alarm",
+      "keyword_pt_br": "Alarme"
     }
   },
   {
@@ -146,11 +206,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "computer",
-      "keyword_es": "Computadora",
       "keyword_en": "Computer",
       "color": "#0089f2",
       "image": "openbook_common/emojis/computer.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Computer",
+      "keyword_sv": "Dator",
+      "keyword_fr": "Ordinateur",
+      "keyword_it": "Computer",
+      "keyword_tr": "Bilgisayar",
+      "keyword_pt_br": "Computador"
     }
   },
   {
@@ -160,7 +226,6 @@
       "group_id": 3,
       "order": 2,
       "keyword": "game",
-      "keyword_es": "Juego",
       "keyword_en": "Game",
       "color": "#0089f2",
       "image": "openbook_common/emojis/game.png",
@@ -174,11 +239,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "football",
-      "keyword_es": "Balón",
       "keyword_en": "Football",
       "color": "#0089f2",
       "image": "openbook_common/emojis/football.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Fußball",
+      "keyword_sv": "Fotboll",
+      "keyword_fr": "Football",
+      "keyword_it": "Calcio",
+      "keyword_tr": "Futbol",
+      "keyword_pt_br": "Futebol"
     }
   },
   {
@@ -188,11 +259,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "lighting",
-      "keyword_es": "Rayo",
       "keyword_en": "Lighting",
       "color": "#0089f2",
       "image": "openbook_common/emojis/lighting.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Blitz",
+      "keyword_sv": "Blixt",
+      "keyword_fr": "Éclairage",
+      "keyword_it": "Illuminazione",
+      "keyword_tr": "Aydınlatma",
+      "keyword_pt_br": "Iluminação"
     }
   },
   {
@@ -202,11 +279,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "lock",
-      "keyword_es": "Candado",
       "keyword_en": "Lock",
       "color": "#0089f2",
       "image": "openbook_common/emojis/lock.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Schloss",
+      "keyword_sv": "Lås",
+      "keyword_fr": "Serrure",
+      "keyword_it": "Lucchetto",
+      "keyword_tr": "Kilit",
+      "keyword_pt_br": "Cadeado"
     }
   },
   {
@@ -216,11 +299,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "money",
-      "keyword_es": "Dinero",
       "keyword_en": "Money",
       "color": "#0089f2",
       "image": "openbook_common/emojis/money.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Geld",
+      "keyword_sv": "Pengar",
+      "keyword_fr": "Argent",
+      "keyword_it": "Soldi",
+      "keyword_tr": "Para",
+      "keyword_pt_br": "Dinheiro"
     }
   },
   {
@@ -230,11 +319,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "pencil",
-      "keyword_es": "Lapiz",
       "keyword_en": "Pencil",
       "color": "#0089f2",
       "image": "openbook_common/emojis/pencil.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Stift",
+      "keyword_sv": "Penna",
+      "keyword_fr": "Crayon",
+      "keyword_it": "Matita",
+      "keyword_tr": "Kalem",
+      "keyword_pt_br": "Lápis"
     }
   },
   {
@@ -244,11 +339,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "speaker",
-      "keyword_es": "Altavoz",
       "keyword_en": "Speaker",
       "color": "#0089f2",
       "image": "openbook_common/emojis/speaker.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Lautsprecher",
+      "keyword_sv": "Högtalare",
+      "keyword_fr": "Haut-parleur",
+      "keyword_it": "Altoparlante",
+      "keyword_tr": "Hoparlör",
+      "keyword_pt_br": "Alto-falante"
     }
   },
   {
@@ -258,11 +359,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "camera",
-      "keyword_es": "Camara",
       "keyword_en": "Camera",
       "color": "#0089f2",
       "image": "openbook_common/emojis/camera.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Kamera",
+      "keyword_sv": "Kamera",
+      "keyword_fr": "Caméra",
+      "keyword_it": "Fotocamera",
+      "keyword_tr": "Kamera",
+      "keyword_pt_br": "Câmera"
     }
   },
   {
@@ -272,25 +379,37 @@
       "group_id": 2,
       "order": 2,
       "keyword": "bravo",
-      "keyword_es": "Bravo!",
       "keyword_en": "Bravo!",
       "color": "#0089f2",
       "image": "openbook_common/emojis/bravo.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Bravo!",
+      "keyword_sv": "Bravo!",
+      "keyword_fr": "Bravo !",
+      "keyword_it": "Bravo!",
+      "keyword_tr": "Aferin!",
+      "keyword_pt_br": "Bravo!"
     }
   },
   {
     "model": "openbook_common.Emoji",
     "pk": 22,
     "fields": {
-      "group_id": 2,
-      "order": 2,
+      "group_id": 1,
+      "order": 98,
       "keyword": "cool",
-      "keyword_es": "Cool",
       "keyword_en": "Cool",
       "color": "#0089f2",
       "image": "openbook_common/emojis/cool.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Cool",
+      "keyword_sv": "Cool",
+      "keyword_fr": "Cool",
+      "keyword_it": "Bello",
+      "keyword_tr": "Güzel hareket",
+      "keyword_pt_br": "Legal"
     }
   },
   {
@@ -300,11 +419,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "news",
-      "keyword_es": "Noticias",
       "keyword_en": "News",
       "color": "#0089f2",
       "image": "openbook_common/emojis/news.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "News",
+      "keyword_sv": "Nyheter",
+      "keyword_fr": "Actualité",
+      "keyword_it": "Notizie",
+      "keyword_tr": "Haber",
+      "keyword_pt_br": "Notícias"
     }
   },
   {
@@ -314,11 +439,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "earth",
-      "keyword_es": "Tierra",
       "keyword_en": "Earth",
       "color": "#0089f2",
       "image": "openbook_common/emojis/earth.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Erde",
+      "keyword_sv": "Jorden",
+      "keyword_fr": "Terre",
+      "keyword_it": "Terra",
+      "keyword_tr": "Dünya",
+      "keyword_pt_br": "Terra"
     }
   },
   {
@@ -328,11 +459,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "book",
-      "keyword_es": "Libro",
       "keyword_en": "Book",
       "color": "#0089f2",
       "image": "openbook_common/emojis/book.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Buch",
+      "keyword_sv": "Bok",
+      "keyword_fr": "Livre",
+      "keyword_it": "Libro",
+      "keyword_tr": "Kitap",
+      "keyword_pt_br": "Livro"
     }
   },
   {
@@ -342,11 +479,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "science",
-      "keyword_es": "Ciencia",
       "keyword_en": "Science",
       "color": "#0089f2",
       "image": "openbook_common/emojis/science.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Wissenschaft",
+      "keyword_sv": "Vetenskap",
+      "keyword_fr": "Science",
+      "keyword_it": "Scienza",
+      "keyword_tr": "Bilim",
+      "keyword_pt_br": "Ciência"
     }
   },
   {
@@ -356,11 +499,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "bulb",
-      "keyword_es": "Bulbo",
       "keyword_en": "Bulb",
       "color": "#0089f2",
       "image": "openbook_common/emojis/bulb.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Glühbirne",
+      "keyword_sv": "Glödlampa",
+      "keyword_fr": "Ampoule",
+      "keyword_it": "Lampadina",
+      "keyword_tr": "Ampul",
+      "keyword_pt_br": "Lâmpada"
     }
   },
   {
@@ -370,11 +519,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "fancyhat",
-      "keyword_es": "Sombrero",
       "keyword_en": "Fancy hat",
       "color": "#0089f2",
       "image": "openbook_common/emojis/fancy_hat.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Zauberhut",
+      "keyword_sv": "Stilig hatt",
+      "keyword_fr": "Chapeau luxueux",
+      "keyword_it": "Cappello stiloso",
+      "keyword_tr": "Süslü şapka",
+      "keyword_pt_br": "Chapéu estiloso"
     }
   },
   {
@@ -384,11 +539,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "heart",
-      "keyword_es": "Corazón",
       "keyword_en": "Heart",
       "color": "#0089f2",
       "image": "openbook_common/emojis/heart.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Herz",
+      "keyword_sv": "Hjärta",
+      "keyword_fr": "Cœur",
+      "keyword_it": "Cuore",
+      "keyword_tr": "Kalp",
+      "keyword_pt_br": "Coração"
     }
   },
   {
@@ -398,11 +559,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "star",
-      "keyword_es": "Estrella",
       "keyword_en": "Star",
       "color": "#0089f2",
       "image": "openbook_common/emojis/star.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Stern",
+      "keyword_sv": "Stjärna",
+      "keyword_fr": "Étoile",
+      "keyword_it": "Stella",
+      "keyword_tr": "Yıldız",
+      "keyword_pt_br": "Estrela"
     }
   },
   {
@@ -412,11 +579,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "trophy",
-      "keyword_es": "Trofeo",
       "keyword_en": "Trophy",
       "color": "#0089f2",
       "image": "openbook_common/emojis/trophy.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Pokal",
+      "keyword_sv": "Trofé",
+      "keyword_fr": "Trophée",
+      "keyword_it": "Trofeo",
+      "keyword_tr": "Kupa",
+      "keyword_pt_br": "Troféu"
     }
   },
   {
@@ -426,11 +599,17 @@
       "group_id": 2,
       "order": 2,
       "keyword": "omg",
-      "keyword_es": "OMG",
       "keyword_en": "OMG",
       "color": "#0089f2",
       "image": "openbook_common/emojis/omg.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "OMG",
+      "keyword_sv": "Herre gud",
+      "keyword_fr": "Oh là là",
+      "keyword_it": "OMG",
+      "keyword_tr": "AMAN TANRIM",
+      "keyword_pt_br": "MDS"
     }
   },
   {
@@ -440,11 +619,17 @@
       "group_id": 2,
       "order": 2,
       "keyword": "thankful",
-      "keyword_es": "Agradecido",
       "keyword_en": "Thankful",
       "color": "#0089f2",
       "image": "openbook_common/emojis/thanks.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Dankbar",
+      "keyword_sv": "Tacksam",
+      "keyword_fr": "Reconnaisant.e",
+      "keyword_it": "Grato",
+      "keyword_tr": "Müteşekkir",
+      "keyword_pt_br": "Gratidão"
     }
   },
   {
@@ -454,11 +639,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "music",
-      "keyword_es": "Musica",
       "keyword_en": "Music",
       "color": "#0089f2",
       "image": "openbook_common/emojis/music.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Musik",
+      "keyword_sv": "Musik",
+      "keyword_fr": "Musique",
+      "keyword_it": "Musica",
+      "keyword_tr": "Müzik",
+      "keyword_pt_br": "Música"
     }
   },
   {
@@ -468,11 +659,17 @@
       "group_id": 2,
       "order": 2,
       "keyword": "wohoo",
-      "keyword_es": "Wuju!",
       "keyword_en": "Wohoo!",
       "color": "#0089f2",
       "image": "openbook_common/emojis/wohoo.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Wohoo!",
+      "keyword_sv": "Wohoo!",
+      "keyword_fr": "Super !",
+      "keyword_it": "Wohoo!",
+      "keyword_tr": "Wohoo!",
+      "keyword_pt_br": "Uhull!"
     }
   },
   {
@@ -482,11 +679,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "palette",
-      "keyword_es": "Paleta",
       "keyword_en": "Palette",
       "color": "#0089f2",
       "image": "openbook_common/emojis/palette.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Farbpalette",
+      "keyword_sv": "Palett",
+      "keyword_fr": "Palette",
+      "keyword_it": "Tavolozza",
+      "keyword_tr": "Palet",
+      "keyword_pt_br": "Paleta"
     }
   },
   {
@@ -496,11 +699,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "alien",
-      "keyword_es": "Alien",
       "keyword_en": "Alien",
       "color": "#0089f2",
       "image": "openbook_common/emojis/alien.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Alien",
+      "keyword_sv": "Utomjording",
+      "keyword_fr": "Extraterrestre",
+      "keyword_it": "Alieno",
+      "keyword_tr": "Uzaylı",
+      "keyword_pt_br": "Alienígena"
     }
   },
   {
@@ -510,11 +719,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "airplane",
-      "keyword_es": "Avión",
       "keyword_en": "Airplane",
       "color": "#0089f2",
       "image": "openbook_common/emojis/airplane.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Flugzeug",
+      "keyword_sv": "Flygplan",
+      "keyword_fr": "Avion",
+      "keyword_it": "Aeroplano",
+      "keyword_tr": "Uçak",
+      "keyword_pt_br": "Avião"
     }
   },
   {
@@ -524,11 +739,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "rocket",
-      "keyword_es": "Cohete",
       "keyword_en": "Rocket",
       "color": "#0089f2",
       "image": "openbook_common/emojis/rocket.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Rakete",
+      "keyword_sv": "Raket",
+      "keyword_fr": "Fusée",
+      "keyword_it": "Razzo",
+      "keyword_tr": "Roket",
+      "keyword_pt_br": "Foguete"
     }
   },
   {
@@ -538,11 +759,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "lipstick",
-      "keyword_es": "Lápiz Labial",
       "keyword_en": "Lipstick",
       "color": "#0089f2",
       "image": "openbook_common/emojis/lipstick.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Lippenstift",
+      "keyword_sv": "Läppstift",
+      "keyword_fr": "Rouge à lèvres",
+      "keyword_it": "Rossetto",
+      "keyword_tr": "Ruj",
+      "keyword_pt_br": "Batom"
     }
   },
   {
@@ -552,11 +779,17 @@
       "group_id": 3,
       "order": 2,
       "keyword": "crown",
-      "keyword_es": "Corona",
       "keyword_en": "Crown",
       "color": "#0089f2",
       "image": "openbook_common/emojis/crown.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Krone",
+      "keyword_sv": "Krona",
+      "keyword_fr": "Couronne",
+      "keyword_it": "Corona",
+      "keyword_tr": "Taht",
+      "keyword_pt_br": "Coroa"
     }
   },
   {
@@ -566,25 +799,37 @@
       "group_id": 3,
       "order": 2,
       "keyword": "map",
-      "keyword_es": "Mapa",
       "keyword_en": "Map",
       "color": "#0089f2",
       "image": "openbook_common/emojis/map.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Landkarte",
+      "keyword_sv": "Karta",
+      "keyword_fr": "Carte",
+      "keyword_it": "Mappa",
+      "keyword_tr": "Harita",
+      "keyword_pt_br": "Mapa"
     }
   },
   {
     "model": "openbook_common.Emoji",
     "pk": 43,
     "fields": {
-      "group_id": 2,
-      "order": 10,
-      "keyword": "pride",
-      "keyword_es": "Pride",
-      "keyword_en": "Pride",
+      "group_id": 1,
+      "order": 99,
+      "keyword": "likey",
+      "keyword_en": "Likey",
       "color": "#0089f2",
-      "image": "openbook_common/emojis/pride.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "image": "openbook_common/emojis/thumbs_up.png",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Gefällt mir",
+      "keyword_sv": "Gillar det",
+      "keyword_fr": "J'aime",
+      "keyword_it": "Mi piace",
+      "keyword_tr": "Beğendim",
+      "keyword_pt_br": "Curti"
     }
   },
   {
@@ -592,13 +837,19 @@
     "pk": 44,
     "fields": {
       "group_id": 2,
-      "order": 1,
-      "keyword": "like",
-      "keyword_es": "Like it",
-      "keyword_en": "Me gusta",
+      "order": 100,
+      "keyword": "pride",
+      "keyword_en": "Pride",
       "color": "#0089f2",
-      "image": "openbook_common/emojis/thumbs_up.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "image": "openbook_common/emojis/pride.png",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "",
+      "keyword_de": "Stolz",
+      "keyword_sv": "Stolthet",
+      "keyword_fr": "Fierté",
+      "keyword_it": "Orgoglio",
+      "keyword_tr": "Gurur",
+      "keyword_pt_br": "Orgulho"
     }
   },
   {
@@ -606,13 +857,139 @@
     "pk": 45,
     "fields": {
       "group_id": 2,
-      "order": 1,
-      "keyword": "Hehe",
-      "keyword_es": "Hehe",
-      "keyword_en": "Hehe",
+      "order": 100,
+      "keyword": "whoop",
+      "keyword_en": "Whoop!",
       "color": "#0089f2",
-      "image": "openbook_common/emojis/hehe.png",
-      "created": "2018-10-22 12:23:30.382913+00:00"
+      "image": "openbook_common/emojis/whoop.gif",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "Whoop!",
+      "keyword_de": "Whoop!",
+      "keyword_sv": "Whoop!",
+      "keyword_fr": "Whoop!",
+      "keyword_it": "Whoop!",
+      "keyword_tr": "Whoop!",
+      "keyword_pt_br": "Whoop!"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 46,
+    "fields": {
+      "group_id": 1,
+      "order": 96,
+      "keyword": "hmm",
+      "keyword_en": "Hmm",
+      "color": "#0089f2",
+      "image": "openbook_common/emojis/hmm.png",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "Hmm",
+      "keyword_de": "Hmm",
+      "keyword_sv": "Hmm",
+      "keyword_fr": "Hmm",
+      "keyword_it": "Hmm",
+      "keyword_tr": "Hmm",
+      "keyword_pt_br": "Hmm"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 47,
+    "fields": {
+      "group_id": 2,
+      "order": 100,
+      "keyword": "yummy",
+      "keyword_en": "Yummy",
+      "color": "#0089f2",
+      "image": "openbook_common/emojis/yummy.png",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "Yummy",
+      "keyword_de": "Yummy",
+      "keyword_sv": "Yummy",
+      "keyword_fr": "Yummy",
+      "keyword_it": "Yummy",
+      "keyword_tr": "Yummy",
+      "keyword_pt_br": "Yummy"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 48,
+    "fields": {
+      "group_id": 1,
+      "order": 100,
+      "keyword": "Ehh",
+      "keyword_en": "Ehh",
+      "color": "#0089f2",
+      "image": "openbook_common/emojis/ehh.png",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "Ehh",
+      "keyword_de": "Ehh",
+      "keyword_sv": "Ehh",
+      "keyword_fr": "Ehh",
+      "keyword_it": "Ehh",
+      "keyword_tr": "Ehh",
+      "keyword_pt_br": "Ehh"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 49,
+    "fields": {
+      "group_id": 1,
+      "order": 100,
+      "keyword": "Hug",
+      "keyword_en": "Hug",
+      "color": "#0089f2",
+      "image": "openbook_common/emojis/hug.png",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "Hug",
+      "keyword_de": "Hug",
+      "keyword_sv": "Hug",
+      "keyword_fr": "Hug",
+      "keyword_it": "Hug",
+      "keyword_tr": "Hug",
+      "keyword_pt_br": "Hug"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 50,
+    "fields": {
+      "group_id": 2,
+      "order": 2,
+      "keyword": "Cheers!",
+      "keyword_en": "Cheers!",
+      "color": "#0089f2",
+      "image": "openbook_common/emojis/cheers.png",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "Cheers!",
+      "keyword_de": "Cheers!",
+      "keyword_sv": "Cheers!",
+      "keyword_fr": "Cheers!",
+      "keyword_it": "Cheers!",
+      "keyword_tr": "Cheers!",
+      "keyword_pt_br": "Cheers!"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 51,
+    "fields": {
+      "group_id": 2,
+      "order": 200,
+      "keyword": "Hoot!",
+      "keyword_en": "Hoot!",
+      "color": "#0089f2",
+      "image": "openbook_common/emojis/hoot.png",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "Hoot!",
+      "keyword_de": "Hoot!",
+      "keyword_sv": "Hoot!",
+      "keyword_fr": "Hoot!",
+      "keyword_it": "Hoot!",
+      "keyword_tr": "Hoot!",
+      "keyword_pt_br": "Hoot!"
     }
   }
 ]

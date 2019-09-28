@@ -30,7 +30,7 @@ jobs:
         name: install dependencies
         command: |
           sudo apt-get -y -qq update
-          sudo apt-get install redis-server
+          sudo apt-get install ffmpeg redis-server libmagic-dev
           sudo /etc/init.d/redis-server start
           python3 -m venv venv
           . venv/bin/activate
@@ -39,7 +39,7 @@ jobs:
     - save_cache:
         paths:
         - ./venv
-        key: $CACHE_VERSION-dependencies-{{ checksum "requirements.txt" }}
+        key: $CACHE_VERSION-pip-dependencies-{{ checksum "requirements.txt" }}
 
     - run:
         name: Setup Code Climate test-reporter
@@ -89,11 +89,11 @@ jobs:
           sudo apt-get -y -qq update
           sudo apt-get install python-pip python-dev build-essential
           sudo pip install awsebcli --upgrade
-    - run:
-        name: Make EB Magic Header Extension
-        command: |
-          . venv/bin/activate
-          python utils/make_magic_header.py --name=$MAGIC_HEADER_NAME --value=$MAGIC_HEADER_VALUE
+#    - run:
+#        name: Make EB Magic Header Extension
+#        command: |
+#          . venv/bin/activate
+#          python utils/make_magic_header.py --name=$MAGIC_HEADER_NAME --value=$MAGIC_HEADER_VALUE
     - run:
         name: Prepare environment variables for creating admin config
         command: |

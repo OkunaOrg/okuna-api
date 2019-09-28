@@ -44,7 +44,7 @@ class UpdateCommunitySerializer(serializers.Serializer):
                                            allow_blank=True)
     users_adjective = serializers.CharField(max_length=settings.COMMUNITY_USERS_ADJECTIVE_MAX_LENGTH, required=False,
                                             allow_blank=True)
-    invites_enabled = serializers.BooleanField(required=False, allow_null=False)
+    invites_enabled = serializers.BooleanField(required=False)
     categories = serializers.ListField(
         required=False,
         min_length=settings.COMMUNITY_CATEGORIES_MIN_AMOUNT,
@@ -74,6 +74,13 @@ class UpdateCommunityCoverSerializer(serializers.Serializer):
 
 
 class FavoriteCommunitySerializer(serializers.Serializer):
+    community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
+                                           allow_blank=False,
+                                           required=True,
+                                           validators=[community_name_characters_validator, community_name_exists])
+
+
+class TopPostCommunityExclusionSerializer(serializers.Serializer):
     community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
                                            allow_blank=False,
                                            required=True,

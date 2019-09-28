@@ -6,7 +6,7 @@ from faker import Faker
 from unittest import mock
 from django.core import mail
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 from django.contrib.auth import authenticate
 from openbook_auth.models import User, UserProfile
 from rest_framework.authtoken.models import Token
@@ -23,7 +23,7 @@ fake = Faker()
 logger = logging.getLogger(__name__)
 
 
-class RegistrationAPITests(APITestCase):
+class RegistrationAPITests(OpenbookAPITestCase):
     """
     RegistrationAPI
     """
@@ -337,7 +337,7 @@ class RegistrationAPITests(APITestCase):
         return user_invite.token
 
 
-class RequestPasswordResetAPITests(APITestCase):
+class RequestPasswordResetAPITests(OpenbookAPITestCase):
 
     def test_cannot_request_password_reset_with_invalid_username(self):
         """
@@ -381,7 +381,7 @@ class RequestPasswordResetAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(email_message.to[0], user.email)
-        self.assertEqual(email_message.subject, 'Reset your password for Openbook')
+        self.assertEqual(email_message.subject, 'Reset your password for Okuna')
 
     def test_request_password_reset_successfully_with_valid_email(self):
         """
@@ -398,13 +398,13 @@ class RequestPasswordResetAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(email_message.to[0], user.email)
-        self.assertEqual(email_message.subject, 'Reset your password for Openbook')
+        self.assertEqual(email_message.subject, 'Reset your password for Okuna')
 
     def _get_url(self):
         return reverse('request-password-reset')
 
 
-class VerifyResetPasswordAPITests(APITestCase):
+class VerifyResetPasswordAPITests(OpenbookAPITestCase):
 
     def test_can_update_password_with_valid_token(self):
         """
@@ -523,7 +523,7 @@ class VerifyResetPasswordAPITests(APITestCase):
         return reverse('verify-reset-password')
 
 
-class UsernameCheckAPITests(APITestCase):
+class UsernameCheckAPITests(OpenbookAPITestCase):
     """
     UsernameCheckAPI
     """
@@ -585,7 +585,7 @@ class UsernameCheckAPITests(APITestCase):
         return reverse('username-check')
 
 
-class EmailCheckAPITests(APITestCase):
+class EmailCheckAPITests(OpenbookAPITestCase):
     """
     EmailCheckAPI
     """
@@ -647,7 +647,7 @@ class EmailCheckAPITests(APITestCase):
         return reverse('email-check')
 
 
-class LoginAPITests(APITestCase):
+class LoginAPITests(OpenbookAPITestCase):
     """
     LoginAPI
     """
@@ -704,7 +704,7 @@ class LoginAPITests(APITestCase):
         return reverse('login-user')
 
 
-class VerifyChangeEmailAPITests(APITestCase):
+class VerifyChangeEmailAPITests(OpenbookAPITestCase):
 
     def test_can_verify_email_token_successfully(self):
         """

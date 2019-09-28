@@ -19,6 +19,8 @@ class Notification(models.Model):
     CONNECTION_CONFIRMED = 'CC'
     FOLLOW = 'F'
     COMMUNITY_INVITE = 'CI'
+    POST_USER_MENTION = 'PUM'
+    POST_COMMENT_USER_MENTION = 'PCUM'
 
     NOTIFICATION_TYPES = (
         (POST_REACTION, 'Post Reaction'),
@@ -29,6 +31,8 @@ class Notification(models.Model):
         (CONNECTION_CONFIRMED, 'Connection Confirmed'),
         (FOLLOW, 'Follow'),
         (COMMUNITY_INVITE, 'Community Invite'),
+        (POST_USER_MENTION, 'Post user mention'),
+        (POST_COMMENT_USER_MENTION, 'Post comment user mention'),
     )
 
     notification_type = models.CharField(max_length=5, choices=NOTIFICATION_TYPES)
@@ -41,6 +45,10 @@ class Notification(models.Model):
     @classmethod
     def create_notification(cls, owner_id, type, content_object):
         return cls.objects.create(notification_type=type, content_object=content_object, owner_id=owner_id)
+
+    @classmethod
+    def get_notification_types_values(cls):
+        return [a for (a, b) in Notification.NOTIFICATION_TYPES]
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''

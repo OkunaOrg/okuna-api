@@ -45,3 +45,9 @@ class UserProfileBadgeSerializer(serializers.ModelSerializer):
             'keyword',
             'keyword_description'
         )
+
+
+class ProxyDomainCheckSerializer(serializers.Serializer):
+    url = serializers.CharField(
+        required=True,
+    )

@@ -3,29 +3,33 @@ import json
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from unittest import mock
+from unittest.mock import ANY
+from openbook_common.tests.models import OpenbookAPITestCase
 
 import logging
 import random
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_community, make_private_community, \
-    make_moderation_category
+    make_moderation_category, get_test_usernames
 from openbook_moderation.models import ModeratedObject
-from openbook_notifications.models import PostCommentNotification, PostCommentReplyNotification
-from openbook_posts.models import PostComment
+from openbook_notifications.models import PostCommentNotification, PostCommentReplyNotification, \
+    PostCommentUserMentionNotification, Notification
+from openbook_posts.models import PostComment, PostCommentUserMention
 
 logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class PostCommentsAPITests(APITestCase):
+class PostCommentsAPITests(OpenbookAPITestCase):
     """
     PostCommentsAPI
     """
 
     fixtures = [
-        'openbook_circles/fixtures/circles.json'
+        'openbook_circles/fixtures/circles.json',
+        'openbook_common/fixtures/languages.json'
     ]
 
     def test_can_retrieve_comments_from_public_community_post(self):
@@ -571,6 +575,189 @@ class PostCommentsAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(PostComment.objects.filter(post_id=post.pk, text=post_comment_text).count() == 1)
+
+    def test_commenting_detects_mentions(self):
+        """
+        should be able to comment with a mention and detect it once
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        test_usernames = get_test_usernames()
+
+        post = user.create_public_post(text=make_fake_post_text())
+
+        for test_username in test_usernames:
+            test_user = make_user(username=test_username)
+            post_text = 'Hello @' + test_user.username + ' @' + test_user.username
+
+            data = {
+                'text': post_text
+            }
+
+            url = self._get_url(post=post)
+
+            response = self.client.put(url, data, **headers, format='multipart')
+
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+            post_comment = PostComment.objects.get(text=post_text, commenter_id=user.pk)
+
+            self.assertEqual(
+                PostCommentUserMention.objects.filter(user_id=test_user.pk, post_comment_id=post_comment.pk).count(), 1)
+
+    def test_commenting_detect_mention_is_case_insensitive(self):
+        """
+        should detect post comment mentions regardless of the username letter cases
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        post = user.create_public_post(text=make_fake_post_text())
+
+        mentioned_user = make_user(username='shantanoodles')
+        post_comment_text = 'Hello @ShAnTaNoOdLes'
+
+        data = {
+            'text': post_comment_text
+        }
+        url = self._get_url(post=post)
+        response = self.client.put(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        post_comment = PostComment.objects.get(text=post_comment_text, commenter_id=user.pk)
+
+        self.assertEqual(
+            PostCommentUserMention.objects.filter(post_comment_id=post_comment.pk, user_id=mentioned_user.pk).count(),
+            1)
+
+    def test_create_text_post_comment_ignores_non_existing_mentioned_usernames(self):
+        """
+        should ignore non existing mentioned usernames when creating a post comment
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        post = user.create_public_post(text=make_fake_post_text())
+
+        fake_username = 'nonexistinguser'
+        post_comment_text = 'Hello @' + fake_username
+
+        data = {
+            'text': post_comment_text
+        }
+        url = self._get_url(post=post)
+        response = self.client.put(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        post_comment = PostComment.objects.get(text=post_comment_text, commenter_id=user.pk)
+
+        self.assertEqual(PostCommentUserMention.objects.filter(post_comment_id=post_comment.pk).count(), 0)
+
+    def test_create_text_post_comment_ignores_comment_creator_username_mention(self):
+        """
+        should ignore the comment creator username mention when creating a post comment
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        post = user.create_public_post(text=make_fake_post_text())
+
+        post_comment_text = 'Hello @' + user.username
+
+        data = {
+            'text': post_comment_text
+        }
+        url = self._get_url(post=post)
+        response = self.client.put(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        post_comment = PostComment.objects.get(text=post_comment_text, commenter_id=user.pk)
+
+        self.assertEqual(PostCommentUserMention.objects.filter(post_comment_id=post_comment.pk).count(), 0)
+
+    def test_create_text_post_comment_ignores_if_username_already_commented(self):
+        """
+        should ignore a username if the person already commented
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        post = user.create_public_post(text=make_fake_post_text())
+        mentioned_user = make_user()
+
+        mentioned_user.comment_post(post=post, text=make_fake_post_comment_text())
+
+        post_comment_text = 'Hello @' + mentioned_user.username
+
+        data = {
+            'text': post_comment_text
+        }
+        url = self._get_url(post=post)
+        response = self.client.put(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        post_comment = PostComment.objects.get(text=post_comment_text, commenter_id=user.pk)
+
+        self.assertEqual(PostCommentUserMention.objects.filter(post_comment_id=post_comment.pk).count(), 0)
+
+    def test_create_text_post_comment_creates_mention_notifications(self):
+        """
+        should be able to create a text post comment with a mention notification
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        test_user = make_user()
+        post_comment_text = 'Hello @' + test_user.username
+
+        post = user.create_public_post(text=make_fake_post_text())
+
+        data = {
+            'text': post_comment_text
+        }
+
+        url = self._get_url(post=post)
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        post_comment = PostComment.objects.get(text=post_comment_text, commenter_id=user.pk)
+
+        post_comment_user_mention = PostCommentUserMention.objects.get(user_id=test_user.pk,
+                                                                       post_comment_id=post_comment.pk)
+
+        self.assertEqual(
+            PostCommentUserMentionNotification.objects.filter(post_comment_user_mention_id=post_comment_user_mention.pk,
+                                                              notification__owner_id=test_user.pk,
+                                                              notification__notification_type=Notification.POST_COMMENT_USER_MENTION).count(),
+            1)
+
+    def test_commenting_in_a_post_sets_language_for_comment(self):
+        """
+         should set comment language when user comments in a post and return 201
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        response = self.client.put(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post_comment = PostComment.objects.get(post_id=post.pk, text=post_comment_text)
+        self.assertTrue(post_comment.language is not None)
 
     def test_cannot_comment_in_foreign_post(self):
         """
@@ -1127,8 +1314,8 @@ class PostCommentsAPITests(APITestCase):
         url = self._get_url(post)
         self.client.put(url, data, **headers)
 
-        self.assertTrue(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
-                                                               notification__owner=foreign_user).exists())
+        self.assertEqual(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
+                                                                notification__owner=foreign_user).count(), 1)
 
     def test_commenting_in_own_post_does_not_create_notification(self):
         """
@@ -1157,7 +1344,7 @@ class PostCommentsAPITests(APITestCase):
         blocked_user = make_user()
         headers = make_authentication_headers_for_user(blocked_user)
         post = foreign_user.create_public_post(text=make_fake_post_text())
-
+        post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
         user.block_user_with_username(blocked_user.username)
         post_comment_text = make_fake_post_comment_text()
 
@@ -1168,6 +1355,37 @@ class PostCommentsAPITests(APITestCase):
 
         self.assertFalse(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
                                                                 notification__owner=user).exists())
+
+    @mock.patch('openbook_notifications.helpers.send_post_comment_push_notification_with_message')
+    def test_commenting_in_post_does_not_send_push_notification_if_user_is_blocked(self,
+                                                                                   send_post_comment_push_notification_call):
+        """
+         should NOT send a push notification when a blocked user comments on a post
+         """
+        foreign_user = make_user()
+        user = make_user()
+        blocked_user = make_user()
+        headers = make_authentication_headers_for_user(blocked_user)
+        post = foreign_user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+        user.block_user_with_username(blocked_user.username)
+        post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(post_comment_text)
+        send_post_comment_push_notification_call.reset_mock()
+
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        post_comment = PostComment.objects.get(text=post_comment_text, commenter_id=blocked_user.pk)
+
+        # assert notification only for the post creator, not user who blocked the commenting user
+        send_post_comment_push_notification_call.assert_called_once()
+        send_post_comment_push_notification_call.assert_called_with(
+            post_comment=post_comment,
+            message=ANY,
+            target_user=foreign_user
+        )
 
     def test_commenting_in_commented_post_by_foreign_user_creates_foreign_notification(self):
         """
@@ -1191,8 +1409,8 @@ class PostCommentsAPITests(APITestCase):
         url = self._get_url(post)
         self.client.put(url, data, **headers)
 
-        self.assertTrue(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
-                                                               notification__owner=foreign_user).exists())
+        self.assertEqual(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
+                                                                notification__owner=foreign_user).count(), 1)
 
     def test_commenting_in_commented_post_by_foreign_user_creates_foreign_notification_when_muted(self):
         """
@@ -1218,8 +1436,8 @@ class PostCommentsAPITests(APITestCase):
         url = self._get_url(post)
         self.client.put(url, data, **headers)
 
-        self.assertTrue(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
-                                                               notification__owner=foreign_user).exists())
+        self.assertEqual(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
+                                                                notification__owner=foreign_user).count(), 1)
 
     def test_comment_in_an_encircled_post_with_a_user_removed_from_the_circle_not_notifies_it(self):
         """
@@ -1736,7 +1954,7 @@ class PostCommentsAPITests(APITestCase):
         })
 
 
-class PostCommentsEnableAPITests(APITestCase):
+class PostCommentsEnableAPITests(OpenbookAPITestCase):
     """
     PostCommentsEnable APITests
     """
@@ -1840,7 +2058,7 @@ class PostCommentsEnableAPITests(APITestCase):
         })
 
 
-class PostCommentsDisableAPITests(APITestCase):
+class PostCommentsDisableAPITests(OpenbookAPITestCase):
     """
     PostCommentsDisable APITests
     """

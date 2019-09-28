@@ -17,6 +17,30 @@ def get_post_model():
     return apps.get_model('openbook_posts.Post')
 
 
+def get_top_post_model():
+    return apps.get_model('openbook_posts.TopPost')
+
+
+def get_top_post_community_exclusion_model():
+    return apps.get_model('openbook_posts.TopPostCommunityExclusion')
+
+
+def get_post_media_model():
+    return apps.get_model('openbook_posts.PostMedia')
+
+
+def get_proxy_blacklist_domain_model():
+    return apps.get_model('openbook_common.ProxyBlacklistedDomain')
+
+
+def get_post_user_mention_model():
+    return apps.get_model('openbook_posts.PostUserMention')
+
+
+def get_post_comment_user_mention_model():
+    return apps.get_model('openbook_posts.PostCommentUserMention')
+
+
 def get_post_mute_model():
     return apps.get_model('openbook_posts.PostMute')
 
@@ -73,6 +97,10 @@ def get_badge_model():
     return apps.get_model('openbook_common.Badge')
 
 
+def get_language_model():
+    return apps.get_model('openbook_common.Language')
+
+
 def get_tag_model():
     return apps.get_model('openbook_tags.Tag')
 
@@ -89,6 +117,14 @@ def get_post_comment_notification_model():
     return apps.get_model('openbook_notifications.PostCommentNotification')
 
 
+def get_post_user_mention_notification_model():
+    return apps.get_model('openbook_notifications.PostUserMentionNotification')
+
+
+def get_post_comment_user_mention_notification_model():
+    return apps.get_model('openbook_notifications.PostCommentUserMentionNotification')
+
+
 def get_post_comment_reply_notification_model():
     return apps.get_model('openbook_notifications.PostCommentReplyNotification')
 
@@ -96,8 +132,10 @@ def get_post_comment_reply_notification_model():
 def get_post_reaction_notification_model():
     return apps.get_model('openbook_notifications.PostReactionNotification')
 
+
 def get_post_comment_reaction_notification_model():
     return apps.get_model('openbook_notifications.PostCommentReactionNotification')
+
 
 def get_follow_notification_model():
     return apps.get_model('openbook_notifications.FollowNotification')

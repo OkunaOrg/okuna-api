@@ -6,7 +6,7 @@ from unittest.mock import patch
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 import logging
 
@@ -24,7 +24,7 @@ def send_post_comment_reaction_push_notification_mock(post_comment_reaction):
     return post_comment_reaction
 
 
-class PostCommentReactionsAPITests(APITestCase):
+class PostCommentReactionsAPITests(OpenbookAPITestCase):
     """
     PostCommentReactionsAPI
     """
@@ -742,7 +742,7 @@ class PostCommentReactionsAPITests(APITestCase):
         })
 
 
-class PostCommentReactionsEmojiCountAPITests(APITestCase):
+class PostCommentReactionsEmojiCountAPITests(OpenbookAPITestCase):
     """
     PostCommentReactionsEmojiCountAPI
     """

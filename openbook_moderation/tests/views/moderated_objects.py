@@ -3,7 +3,7 @@ import json
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, \
     make_community, make_fake_post_text, make_global_moderator, make_moderation_category, \
@@ -13,7 +13,7 @@ from openbook_moderation.models import ModeratedObject
 fake = Faker()
 
 
-class GlobalModeratedObjectsAPITests(APITestCase):
+class GlobalModeratedObjectsAPITests(OpenbookAPITestCase):
     """
     GlobalModeratedObjectsAPI
     """
@@ -568,7 +568,7 @@ class GlobalModeratedObjectsAPITests(APITestCase):
         return reverse('global-moderated-objects')
 
 
-class CommunityModeratedObjectsAPITests(APITestCase):
+class CommunityModeratedObjectsAPITests(OpenbookAPITestCase):
     """
     CommunityModeratedObjectsAPI
     """

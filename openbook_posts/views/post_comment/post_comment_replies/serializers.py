@@ -8,7 +8,7 @@ from openbook_posts.models import PostComment, PostCommentReaction
 from openbook_posts.validators import post_comment_id_exists, post_uuid_exists
 
 from openbook_posts.views.post_comments.serializers import PostCommentCommenterSerializer, \
-    PostCommenterCommunityMembershipSerializer
+    PostCommenterCommunityMembershipSerializer, PostCommentLanguageSerializer
 
 
 class CommentRepliesPostSerializer(serializers.Serializer):
@@ -24,10 +24,13 @@ class CommentRepliesPostSerializer(serializers.Serializer):
 
 
 class PostCommentReplyParentSerializer(serializers.ModelSerializer):
+    language = PostCommentLanguageSerializer()
+
     class Meta:
         model = PostComment
         fields = (
             'id',
+            'language'
         )
 
 
@@ -65,6 +68,7 @@ class PostCommentReplySerializer(serializers.ModelSerializer):
     reactions_emoji_counts = PostCommentReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
     reaction = PostCommentReactionField(post_comment_reaction_serializer=PostCommentReactionSerializer)
     is_muted = PostCommentIsMutedField()
+    language = PostCommentLanguageSerializer()
 
     class Meta:
         model = PostComment
@@ -73,6 +77,7 @@ class PostCommentReplySerializer(serializers.ModelSerializer):
             'reactions_emoji_counts',
             'reaction',
             'text',
+            'language',
             'created',
             'parent_comment',
             'is_edited',

@@ -1,6 +1,9 @@
 from hashlib import sha256
 import onesignal as onesignal_sdk
 from django.conf import settings
+from django_rq import job
+
+from openbook_common.utils.model_loaders import get_user_model
 
 onesignal_client = onesignal_sdk.Client(
     app_id=settings.ONE_SIGNAL_APP_ID,
@@ -8,7 +11,11 @@ onesignal_client = onesignal_sdk.Client(
 )
 
 
-def send_notification_to_user(user, notification):
+@job
+def send_notification_to_user_with_id(user_id, notification):
+    User = get_user_model()
+    user = User.objects.only('username', 'uuid', 'id').get(pk=user_id)
+
     for device in user.devices.all():
         notification.set_parameter('ios_badgeType', 'Increase')
         notification.set_parameter('ios_badgeCount', '1')

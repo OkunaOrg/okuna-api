@@ -3,7 +3,7 @@ import random
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 import logging
 import json
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class Communitybanned_usersAPITest(APITestCase):
+class Communitybanned_usersAPITest(OpenbookAPITestCase):
     def test_cannot_retrieve_banned_users_of_private_community(self):
         """
         should not be able to retrieve the banned users of a private community and return 400
@@ -162,7 +162,7 @@ class Communitybanned_usersAPITest(APITestCase):
         })
 
 
-class BanCommunityUserAPITest(APITestCase):
+class BanCommunityUserAPITest(OpenbookAPITestCase):
     def test_can_ban_user_from_community_if_mod(self):
         """
         should be able to ban user from a community if is moderator and return 200
@@ -338,7 +338,7 @@ class BanCommunityUserAPITest(APITestCase):
         })
 
 
-class UnbanCommunityUserAPITest(APITestCase):
+class UnbanCommunityUserAPITest(OpenbookAPITestCase):
     def test_can_unban_user_from_community_if_mod(self):
         """
         should be able to unban user from a community if is moderator and return 200
@@ -510,7 +510,7 @@ class UnbanCommunityUserAPITest(APITestCase):
         })
 
 
-class SearchCommunityBannedUsersAPITests(APITestCase):
+class SearchCommunityBannedUsersAPITests(OpenbookAPITestCase):
     """
     SearchCommunityBannedUsersAPITests
     """

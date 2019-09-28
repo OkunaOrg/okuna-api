@@ -1,0 +1,1700 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: okuna\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2019-09-09 12:40+0200\n"
+"PO-Revision-Date: 2019-09-20 08:48\n"
+"Last-Translator: Jozsef Sallai (joexyz)\n"
+"Language-Team: Swedish\n"
+"Language: sv_SE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: crowdin.com\n"
+"X-Crowdin-Project: okuna\n"
+"X-Crowdin-Language: sv-SE\n"
+"X-Crowdin-File: /okuna-api/django.po\n"
+
+#: openbook/settings.py:394
+msgid "Spanish"
+msgstr "Spanska"
+
+#: openbook/settings.py:395
+msgid "English"
+msgstr "Engelska"
+
+#: openbook/settings.py:396
+msgid "German"
+msgstr "Tyska"
+
+#: openbook/settings.py:397
+msgid "Dutch"
+msgstr "Nederländska"
+
+#: openbook/settings.py:398
+msgid "Danish"
+msgstr "Danska"
+
+#: openbook/settings.py:399
+msgid "Hungarian"
+msgstr "Ungerska"
+
+#: openbook/settings.py:400
+msgid "Swedish"
+msgstr "Svenska"
+
+#: openbook/settings.py:401
+msgid "French"
+msgstr "Franska"
+
+#: openbook/settings.py:402
+msgid "Italian"
+msgstr "Italienska"
+
+#: openbook/settings.py:403
+msgid "Turkish"
+msgstr "Turkiska"
+
+#: openbook/settings.py:404
+msgid "Portuguese, Brazilian"
+msgstr "Portugisiska, Brasilien"
+
+#: openbook_auth/checkers.py:26
+msgid "You cannot edit a closed post"
+msgstr "Du kan inte redigera ett stängt inlägg"
+
+#: openbook_auth/checkers.py:34
+#, python-format
+msgid "You cannot post to circle with id %(id)s"
+msgstr "Du kan inte skapa inlägg i kretsen med id %(id)s"
+
+#: openbook_auth/checkers.py:41
+msgid "You cannot post to a community you're not member of "
+msgstr "Du kan inte skapa inlägg i en gemenskap du inte är medlem i "
+
+#: openbook_auth/checkers.py:49
+msgid "Only moderators/administrators can enable/disable comments"
+msgstr "Endast moderatorer/administratörer kan aktivera/inaktivera kommentarer"
+
+#: openbook_auth/checkers.py:59
+msgid "Comments are disabled for this post"
+msgstr "Kommentarer är inaktiverade för detta inlägg"
+
+#: openbook_auth/checkers.py:68
+msgid "Only public posts can be translated"
+msgstr "Endast offentliga inlägg kan översättas"
+
+#: openbook_auth/checkers.py:72
+msgid "Post has no text to be translated"
+msgstr "Inlägget har ingen text att översätta"
+
+#: openbook_auth/checkers.py:76
+msgid "Post has no assigned language to be able to translate"
+msgstr "Inlägget har inget angivet språk för att kunna översätta"
+
+#: openbook_auth/checkers.py:80 openbook_auth/checkers.py:714
+msgid "User's preferred translation language not set"
+msgstr "Användaren har inte ställt in något föredraget språk"
+
+#: openbook_auth/checkers.py:89 openbook_auth/checkers.py:101
+msgid "Only community posts can be opened/closed"
+msgstr "Endast gemenskapsinlägg kan bli öppnade/stängda"
+
+#: openbook_auth/checkers.py:94
+msgid "Only administrators/moderators can open this post"
+msgstr "Endast administratörer/moderatorer kan öppna detta inlägg"
+
+#: openbook_auth/checkers.py:106
+msgid "Only administrators/moderators can close this post"
+msgstr "Endast administratörer/moderatorer kan stänga detta inlägg"
+
+#: openbook_auth/checkers.py:134
+msgid "Already following user."
+msgstr "Följer redan användaren."
+
+#: openbook_auth/checkers.py:141
+msgid "Maximum number of follows reached."
+msgstr "Maximala antalet följningar har nåtts."
+
+#: openbook_auth/checkers.py:150
+msgid "Already following user in list."
+msgstr "Följer redan användaren i listan."
+
+#: openbook_auth/checkers.py:159
+msgid "Not following user in list."
+msgstr "Följer inte användaren i listan."
+
+#: openbook_auth/checkers.py:166
+msgid "Not following user."
+msgstr "Följer inte användaren."
+
+#: openbook_auth/checkers.py:173
+msgid "Maximum number of connections reached."
+msgstr "Maximala antalet kontakter har nåtts."
+
+#: openbook_auth/checkers.py:186
+msgid "Already connected with user."
+msgstr "Användaren är redan en kontakt."
+
+#: openbook_auth/checkers.py:193
+msgid "Already fully connected with user."
+msgstr "Användaren är redan en full kontakt."
+
+#: openbook_auth/checkers.py:200
+msgid "Not connected with user."
+msgstr "Användaren är inte en kontakt."
+
+#: openbook_auth/checkers.py:207
+msgid "Not connected with user in given circle."
+msgstr "Användaren är inte en kontakt i den givna kretsen."
+
+#: openbook_auth/checkers.py:214
+msgid "Already connected with user in given circle."
+msgstr "Användaren är redan en kontakt i den givna kretsen."
+
+#: openbook_auth/checkers.py:221
+msgid "List does not exist."
+msgstr "Listan finns inte."
+
+#: openbook_auth/checkers.py:228
+msgid "Circle does not exist."
+msgstr "Kretsen finns inte."
+
+#: openbook_auth/checkers.py:235
+msgid "One or more of the circles do not exist."
+msgstr "En eller fler av cirklarna finns inte."
+
+#: openbook_auth/checkers.py:248
+msgid "Only moderators/administrators can remove community posts."
+msgstr "Endast moderatorer/administratörer kan ta bort gemenskapsinlägg."
+
+#: openbook_auth/checkers.py:256
+msgid "You cannot remove a post that does not belong to you"
+msgstr "Du kan inte ta bort ett inlägg som inte tillhör dig"
+
+#: openbook_auth/checkers.py:263
+msgid "Can't delete a list that does not belong to you."
+msgstr "Du kan inte ta bort en lista som inte tillhör dig."
+
+#: openbook_auth/checkers.py:270
+msgid "Can't update a list that does not belong to you."
+msgstr "Du kan inte uppdatera en lista som inte tillhör dig."
+
+#: openbook_auth/checkers.py:277
+msgid "Can't delete a community that you do not administrate."
+msgstr "Du kan inte ta bort en gemenskap som du inte administrerar."
+
+#: openbook_auth/checkers.py:284
+msgid "Can't update a community that you do not administrate."
+msgstr "Du kan inte uppdatera en gemenskap som du inte administrerar."
+
+#: openbook_auth/checkers.py:295
+msgid "The community is private. You must become a member to retrieve its posts."
+msgstr "Gemenskapen är privat. Du måste bli medlem för att kunna hämta dess inlägg."
+
+#: openbook_auth/checkers.py:303
+msgid "Only administrators/moderators can view closed posts"
+msgstr "Endast administratörer/moderatorer kan se stängda inlägg"
+
+#: openbook_auth/checkers.py:315
+msgid "Can't see the members of a private community."
+msgstr "Du kan inte se medlemmarna i en privat gemenskap."
+
+#: openbook_auth/checkers.py:325
+msgid "You are already a member of the community."
+msgstr "Du är redan medlem i gemenskapen."
+
+#: openbook_auth/checkers.py:332
+msgid "You are not invited to join this community."
+msgstr "Du är inte inbjuden till den här gemenskapen."
+
+#: openbook_auth/checkers.py:339
+msgid "You cannot leave a community you're not part of."
+msgstr "Du kan inte lämna en gemenskap du inte är medlem i."
+
+#: openbook_auth/checkers.py:344
+msgid "You cannot leave a community you created."
+msgstr "Du kan inte lämna en gemenskap som du skapade."
+
+#: openbook_auth/checkers.py:351
+msgid "You can only invite people to a community you are member of."
+msgstr "Du kan endast bjuda in folk till en gemenskap som du är medlem i."
+
+#: openbook_auth/checkers.py:356
+msgid "You have already invited this user to join the community."
+msgstr "Du har redan bjudit in den här användaren till gemenskapen."
+
+#: openbook_auth/checkers.py:364
+msgid "The user is already part of the community."
+msgstr "Användaren är redan medlem i gemenskapen."
+
+#: openbook_auth/checkers.py:372
+msgid "Invites for this community are not enabled. Only administrators & moderators can invite."
+msgstr "Inbjudningar är inte aktiverade för den här gemenskapen. Endast administratörer och moderatorer kan bjuda in."
+
+#: openbook_auth/checkers.py:380
+msgid "No invite to withdraw."
+msgstr "Ingen inbjudan att dra tillbaka."
+
+#: openbook_auth/checkers.py:389
+msgid "Only community administrators & moderators can get banned users."
+msgstr "Endast gemenskapsadministratörer och -moderatorer kan hämta de bannade användarna."
+
+#: openbook_auth/checkers.py:398 openbook_auth/checkers.py:421
+msgid "Only community administrators & moderators can ban community members."
+msgstr "Endast gemenskapsadministratörer och -moderatorer kan banna gemenskapsmedlemmar."
+
+#: openbook_auth/checkers.py:405
+msgid "User is already banned"
+msgstr "Användaren är redan bannad"
+
+#: openbook_auth/checkers.py:412
+msgid "You can't ban moderators or administrators of the community"
+msgstr "Du kan inte banna gemenskapens moderatorer och administratörer"
+
+#: openbook_auth/checkers.py:428
+msgid "Can't unban a not-banned user."
+msgstr "Kan inte häva en ban för en användare som inte är bannad."
+
+#: openbook_auth/checkers.py:435
+msgid "Only the creator of the community can add other administrators."
+msgstr "Endast skaparen av gemenskapen kan lägga till andra administratörer."
+
+#: openbook_auth/checkers.py:443
+msgid "User is already an administrator."
+msgstr "Användaren är redan en administratör."
+
+#: openbook_auth/checkers.py:449
+msgid "Can't make administrator a user that is not part of the community."
+msgstr "Kan inte göra en administratör av en användare som inte är medlem i gemenskapen."
+
+#: openbook_auth/checkers.py:456
+msgid "Only the creator of the community can remove other administrators."
+msgstr "Endast skaparen av gemenskapen kan ta bort andra administratörer."
+
+#: openbook_auth/checkers.py:464
+msgid "User to remove is not an administrator."
+msgstr "Användaren att ta bort är inte en administratör."
+
+#: openbook_auth/checkers.py:475
+msgid "Only administrators of the community can add other moderators."
+msgstr "Endast administratörer av gemenskapen kan lägga till andra moderatorer."
+
+#: openbook_auth/checkers.py:483
+msgid "User is an administrator."
+msgstr "Användaren är en administratör."
+
+#: openbook_auth/checkers.py:489
+msgid "User is already a moderator."
+msgstr "Användaren är redan en moderator."
+
+#: openbook_auth/checkers.py:495
+msgid "Can't make moderator a user that is not part of the community."
+msgstr "Kan inte göra en moderator av en användare som inte är medlem i gemenskapen."
+
+#: openbook_auth/checkers.py:502
+msgid "Only administrators of the community can remove other moderators."
+msgstr "Endast administratörer av gemenskapen kan ta bort andra moderatorer."
+
+#: openbook_auth/checkers.py:509
+msgid "User to remove is not an moderator."
+msgstr "Användaren att ta bort är inte en moderator."
+
+#: openbook_auth/checkers.py:529
+msgid "Can't update a circle that does not belong to you."
+msgstr "Kan inte uppdatera en krets som inte tillhör dig."
+
+#: openbook_auth/checkers.py:534
+msgid "Can't update the world circle."
+msgstr "Kan inte uppdatera världskretsen."
+
+#: openbook_auth/checkers.py:539
+msgid "Can't update the connections circle."
+msgstr "Kan inte uppdatera kontakter-kretsen."
+
+#: openbook_auth/checkers.py:546
+msgid "Can't delete a circle that does not belong to you."
+msgstr "Kan inte ta bort en krets som inte tillhör dig."
+
+#: openbook_auth/checkers.py:551
+msgid "Can't delete the world circle."
+msgstr "Kan inte ta bort världskretsen."
+
+#: openbook_auth/checkers.py:556
+msgid "Can't delete the connections circle."
+msgstr "Kan inte ta bort kontakter-kretsen."
+
+#: openbook_auth/checkers.py:563
+msgid "Can't view a circle that does not belong to you."
+msgstr "Kan inte visa en krets som inte tillhör dig."
+
+#: openbook_auth/checkers.py:570
+msgid "Can't view a list that does not belong to you."
+msgstr "Kan inte visa en lista som inte tillhör dig."
+
+#: openbook_auth/checkers.py:577
+msgid "You already have a circle with that name."
+msgstr "Du har redan en krets med det namnet."
+
+#: openbook_auth/checkers.py:584
+msgid "You already have a list with that name."
+msgstr "Du har redan en lista med det namnet."
+
+#: openbook_auth/checkers.py:596
+msgid "A community with that name already exists."
+msgstr "Det finns redan en gemenskap med det namnet."
+
+#: openbook_auth/checkers.py:603
+msgid "You must be member of a community before making it a favorite."
+msgstr "Du måste vara medlem i en gemenskap innan du kan göra den till en favorit."
+
+#: openbook_auth/checkers.py:608
+msgid "You have already marked this community as favorite."
+msgstr "Du har redan gjort den här gemenskapen till en favorit."
+
+#: openbook_auth/checkers.py:615
+msgid "You have not favorited the community."
+msgstr "Du har inte markerat gemenskapen som en favorit."
+
+#: openbook_auth/checkers.py:622
+msgid "You cannot mark as read a notification that doesn't belong to you."
+msgstr "Du kan inte markera aviseringar som inte tillhör dig som lästa."
+
+#: openbook_auth/checkers.py:633
+msgid "This notification does not belong to you."
+msgstr "Den här aviseringen tillhör inte dig."
+
+#: openbook_auth/checkers.py:652
+msgid "Device not found"
+msgstr "Enheten hittades inte"
+
+#: openbook_auth/checkers.py:659
+msgid "Post already muted"
+msgstr "Inlägget är redan tystat"
+
+#: openbook_auth/checkers.py:672
+msgid "Post is not muted"
+msgstr "Inlägget har inte tystats"
+
+#: openbook_auth/checkers.py:679
+msgid "Post comment already muted"
+msgstr "Kommentaren är redan tystad"
+
+#: openbook_auth/checkers.py:693
+msgid "Post_comment is not muted"
+msgstr "Kommentaren är inte tystad"
+
+#: openbook_auth/checkers.py:702
+msgid "Only public post comments can be translated"
+msgstr "Endast offentliga inläggskommentarer kan översättas"
+
+#: openbook_auth/checkers.py:706
+msgid "Post comment has no text to be translated"
+msgstr "Kommentaren har ingen text att översätta"
+
+#: openbook_auth/checkers.py:710
+msgid "Post comment has no assigned language to be able to translate"
+msgstr "Kommentaren har inga angivna språk för att kunna översätta"
+
+#: openbook_auth/checkers.py:721
+msgid "This post does not belong to you."
+msgstr "Detta inlägg tillhör inte dig."
+
+#: openbook_auth/checkers.py:728
+msgid "Wrong password."
+msgstr "Fel lösenord."
+
+#: openbook_auth/checkers.py:754
+msgid "You cannot block yourself."
+msgstr "Du kan inte blockera dig själv."
+
+#: openbook_auth/checkers.py:760
+msgid "You cannot unblock an account you have not blocked."
+msgstr "Du kan inte avblockera ett konto du inte har blockerat."
+
+#: openbook_auth/checkers.py:768
+msgid "This account is blocked."
+msgstr "Detta konto är blockerat."
+
+#: openbook_auth/checkers.py:777
+msgid "You cannot report your own comment."
+msgstr "Du kan inte anmäla din egen kommentar."
+
+#: openbook_auth/checkers.py:784
+msgid "You have already reported the comment."
+msgstr "Du har redan anmält kommentaren."
+
+#: openbook_auth/checkers.py:793
+msgid "You cannot report your own post."
+msgstr "Du kan inte anmäla ditt egna inlägg."
+
+#: openbook_auth/checkers.py:800
+msgid "You have already reported the post."
+msgstr "Du har redan anmält inlägget."
+
+#: openbook_auth/checkers.py:808
+msgid "You cannot report yourself..."
+msgstr "Du kan inte anmäla dig själv..."
+
+#: openbook_auth/checkers.py:815
+msgid "You have already reported the user."
+msgstr "Du har redan anmält användaren."
+
+#: openbook_auth/checkers.py:823
+msgid "You cannot report your own community."
+msgstr "Du kan inte anmäla din egen gemenskap."
+
+#: openbook_auth/checkers.py:830
+msgid "You have already reported the community."
+msgstr "Du har redan anmält gemenskapen."
+
+#: openbook_auth/checkers.py:844 openbook_auth/checkers.py:881
+#: openbook_auth/models.py:164
+msgid "Token type does not match"
+msgstr "Kodtypen matchar inte"
+
+#: openbook_auth/checkers.py:849 openbook_auth/checkers.py:891
+msgid "Token user id does not match"
+msgstr "Kodens användar-id matchar inte"
+
+#: openbook_auth/checkers.py:854 openbook_auth/checkers.py:896
+#: openbook_auth/models.py:171
+msgid "Invalid token signature"
+msgstr "Ogiltig kodsignatur"
+
+#: openbook_auth/checkers.py:858 openbook_auth/checkers.py:900
+#: openbook_auth/models.py:175
+msgid "Token expired"
+msgstr "Koden har gått ut"
+
+#: openbook_auth/checkers.py:862 openbook_auth/checkers.py:904
+#: openbook_auth/models.py:179
+msgid "Failed to decode token"
+msgstr "Koden kunde inte avkodas"
+
+#: openbook_auth/checkers.py:866 openbook_auth/checkers.py:908
+#: openbook_auth/models.py:187
+msgid "Invalid token"
+msgstr "Ogiltig kod"
+
+#: openbook_auth/checkers.py:886
+msgid "Token email does not match"
+msgstr "Kodens e-post matchar inte"
+
+#: openbook_auth/checkers.py:922
+msgid "Can't connect in the world circle."
+msgstr "Kan inte lägga en kontakt i världskretsen."
+
+#: openbook_auth/checkers.py:934
+msgid "The email is already taken."
+msgstr "E-postadressen är redan tagen."
+
+#: openbook_auth/checkers.py:946 openbook_auth/validators.py:18
+msgid "The username is already taken."
+msgstr "Användarnamnet är redan taget."
+
+#: openbook_auth/checkers.py:957 openbook_auth/checkers.py:986
+msgid "The comment does not belong to the specified post."
+msgstr "Kommentaren tillhör inte det angivna inlägget."
+
+#: openbook_auth/checkers.py:965
+msgid "Only administrators/moderators can edit a closed post."
+msgstr "Endast administratörer/moderatorer kan redigera ett stängt inlägg."
+
+#: openbook_auth/checkers.py:973
+msgid "You cannot edit a comment that does not belong to you"
+msgstr "Du kan inte redigera en kommentar som inte tillhör dig"
+
+#: openbook_auth/checkers.py:996
+msgid "Only moderators/administrators can remove closed community posts."
+msgstr "Endast moderatorer/administratörer kan ta bort stängda gemenskapsinlägg."
+
+#: openbook_auth/checkers.py:1000 openbook_auth/checkers.py:1014
+msgid "You cannot remove a comment that does not belong to you"
+msgstr "Du kan inte ta bort en kommentar som inte tillhör dig"
+
+#: openbook_auth/checkers.py:1025 openbook_auth/checkers.py:1038
+msgid "No comment found with given id for post with given uuid"
+msgstr "Ingen kommentar hittades med den angivna id:n för inlägget med den angivna uuid:n"
+
+#: openbook_auth/checkers.py:1044
+msgid "You can post a reply to a comment, not to an existing reply"
+msgstr "Du kan skriva svar till kommentarer, inte till existerande svar"
+
+#: openbook_auth/checkers.py:1056
+msgid "That reaction does not belong to the specified post."
+msgstr "Den reaktionen tillhör inte det specificerade inlägget."
+
+#: openbook_auth/checkers.py:1062
+msgid "Can't delete a reaction that does not belong to you."
+msgstr "Du kan inte ta bort en reaktion som inte tillhör dig."
+
+#: openbook_auth/checkers.py:1079
+msgid "Not a valid emoji to react with"
+msgstr "Inte en giltig emoji att reagera med"
+
+#: openbook_auth/checkers.py:1090
+msgid "This post is private."
+msgstr "Detta inlägg är privat."
+
+#: openbook_auth/checkers.py:1100
+msgid "Cant react to comments on a closed post."
+msgstr "Du kan inte reagera på kommentarer till ett stängt inlägg."
+
+#: openbook_auth/checkers.py:1109
+msgid "Can't delete a comment reaction that does not belong to you."
+msgstr "Du kan inte ta bort en kommentarsreaktion som inte tillhör dig."
+
+#: openbook_auth/checkers.py:1118
+msgid "This comment is private."
+msgstr "Denna kommentar är privat."
+
+#: openbook_auth/checkers.py:1140
+msgid "You have already reported the moderated_object."
+msgstr "Du har redan anmält det modererade objektet."
+
+#: openbook_auth/checkers.py:1149
+msgid "The moderated object has been verified and can no longer be edited."
+msgstr "Det modererade objektet har verifierats och kan inte lägre redigeras."
+
+#: openbook_auth/checkers.py:1154
+msgid "The moderated object has already been approved/rejected."
+msgstr "Det modererade objektet har redan blivit godkänt/avvisat."
+
+#: openbook_auth/checkers.py:1163 openbook_auth/checkers.py:1171
+msgid "The moderated object has already been verified."
+msgstr "Det modererade objektet har redan blivit verifierat."
+
+#: openbook_auth/checkers.py:1179
+msgid "The moderated object has not been verified."
+msgstr "Det modererade objektet har inte verifierats."
+
+#: openbook_auth/checkers.py:1187
+msgid "The moderated object is already verified."
+msgstr "Det modererade objektet är redan verifierat."
+
+#: openbook_auth/checkers.py:1192
+msgid "You cannot verify a moderated object with status pending. Please approve or reject it."
+msgstr "Du kan inte verifiera ett modererat objekt som har en väntande status. Vänligen godkänn eller avvisa det."
+
+#: openbook_auth/checkers.py:1210
+msgid "Only community staff can moderate community posts"
+msgstr "Endast gemenskapspersonal kan moderera gemenskapsinlägg"
+
+#: openbook_auth/checkers.py:1212
+msgid "Only global moderators can moderate non-community posts"
+msgstr "Endast globala moderatorer kan moderera inlägg utanför gemenskaper"
+
+#: openbook_auth/checkers.py:1216
+msgid "Only community staff can moderate community post comments"
+msgstr "Endast gemenskapspersonal kan moderera kommentarer på gemenskapsinlägg"
+
+#: openbook_auth/checkers.py:1218
+msgid "Only global moderators can moderate non-community post comments"
+msgstr "Endast globala moderatorer kan moderera kommentarer på inlägg utanför gemenskaper"
+
+#: openbook_auth/checkers.py:1220
+msgid "Non global moderators can only moderate posts and post comments."
+msgstr "Icke-globala moderatorer kan endast moderera inlägg och kommentarer."
+
+#: openbook_auth/checkers.py:1225
+msgid "Not a global moderator."
+msgstr "Inte en global moderator."
+
+#: openbook_auth/checkers.py:1230
+msgid "Not a community staff."
+msgstr "Inte gemenskapspersonal."
+
+#: openbook_auth/checkers.py:1235
+msgid "You have no invites left"
+msgstr "Du har inga inbjudningar kvar"
+
+#: openbook_auth/checkers.py:1251
+msgid "Invite email already sent to this address"
+msgstr "E-postinbjudan har redan skickats till den här adressen"
+
+#: openbook_auth/checkers.py:1263
+msgid "Invite is already used and cannot be deleted"
+msgstr "Inbjudan har redan använts och kan inte tas bort"
+
+#: openbook_auth/checkers.py:1269
+msgid "Invite was not created by you"
+msgstr "Inbjudan skapades inte av dig"
+
+#: openbook_auth/checkers.py:1292
+msgid "No link associated with post."
+msgstr "Ingen länk är förknippad med inlägget."
+
+#: openbook_auth/models.py:52 openbook_invitations/models.py:23
+msgid "email address"
+msgstr "e-postadress"
+
+#: openbook_auth/models.py:61 openbook_communities/models.py:62
+msgid "is deleted"
+msgstr "har raderats"
+
+#: openbook_auth/models.py:66 openbook_invitations/models.py:26
+msgid "username"
+msgstr "användarnamn"
+
+#: openbook_auth/models.py:71 openbook_invitations/models.py:31
+#, python-format
+msgid "Required. %(username_max_length)d characters or fewer. Letters, digits and _ only."
+msgstr "Krävs. %(username_max_length)d tecken eller färre. Endast bokstäver, siffror och _."
+
+#: openbook_auth/models.py:75 openbook_invitations/models.py:35
+msgid "A user with that username already exists."
+msgstr "Det finns redan en användare med det namnet."
+
+#: openbook_auth/models.py:86
+msgid "user"
+msgstr "användare"
+
+#: openbook_auth/models.py:87
+msgid "users"
+msgstr "användare"
+
+#: openbook_auth/models.py:96
+msgid "You must confirm you are over 16 years old to make an account"
+msgstr "Du måste bekräfta att du är äldre än 16 år för att skapa ett konto"
+
+#: openbook_auth/models.py:101
+msgid "You must accept the guidelines to make an account"
+msgstr "Du måste godkänna riktlinjerna för att skapa ett konto"
+
+#: openbook_auth/models.py:183
+msgid "No user found for token"
+msgstr "Ingen användare hittades för den givna koden"
+
+#: openbook_auth/models.py:1003
+#, python-format
+msgid "%(post_commenter_name)s · %(post_commenter_username)s commented on your post."
+msgstr "%(post_commenter_name)s · %(post_commenter_username)s kommenterade på ditt inlägg."
+
+#: openbook_auth/models.py:1010
+#, python-format
+msgid "%(post_commenter_name)s · @%(post_commenter_username)s commented on a post you also commented on."
+msgstr "%(post_commenter_name)s · @%(post_commenter_username)s kommenterade på ett inlägg du också kommenterat på."
+
+#: openbook_auth/models.py:1065
+#, python-format
+msgid "%(post_commenter_name)s · @%(post_commenter_username)s replied to your comment on a post."
+msgstr "%(post_commenter_name)s · @%(post_commenter_username)s svarade på din kommentar på ett inlägg."
+
+#: openbook_auth/models.py:1072
+#, python-format
+msgid "%(post_commenter_name)s · @%(post_commenter_username)s replied on a comment you also replied on."
+msgstr "%(post_commenter_name)s · @%(post_commenter_username)s svarade på en kommentar du också svarat på."
+
+#: openbook_auth/models.py:2243
+msgid "A user cannot follow itself."
+msgstr "En användare kan inte följa sig själv."
+
+#: openbook_auth/models.py:2312
+msgid "A user cannot connect with itself."
+msgstr "En användare kan inte knyta kontakt med sig själv."
+
+#: openbook_auth/models.py:2351
+msgid "No data to update the connection with."
+msgstr "Ingen data att uppdatera kontakten med."
+
+#: openbook_auth/models.py:2719
+msgid "Reset your password for Okuna"
+msgstr "Återställ ditt lösenord för Okuna"
+
+#: openbook_auth/models.py:3137 openbook_categories/models.py:15
+#: openbook_circles/models.py:29 openbook_common/models.py:99
+#: openbook_communities/models.py:29 openbook_devices/models.py:17
+#: openbook_lists/models.py:17 openbook_moderation/models.py:16
+#: openbook_tags/models.py:17
+msgid "name"
+msgstr "namn"
+
+#: openbook_auth/models.py:3140
+msgid "location"
+msgstr "plats"
+
+#: openbook_auth/models.py:3143 openbook_categories/models.py:22
+#: openbook_communities/models.py:36
+msgid "avatar"
+msgstr "avatar"
+
+#: openbook_auth/models.py:3146 openbook_communities/models.py:39
+msgid "cover"
+msgstr "omslagsbild"
+
+#: openbook_auth/models.py:3149
+msgid "bio"
+msgstr "bio"
+
+#: openbook_auth/models.py:3150
+msgid "url"
+msgstr "url"
+
+#: openbook_auth/models.py:3151
+msgid "followers count visible"
+msgstr "följarantal synligt"
+
+#: openbook_auth/models.py:3152
+msgid "community posts visible"
+msgstr "gemenskapsinlägg synliga"
+
+#: openbook_auth/models.py:3156
+msgid "user profile"
+msgstr "användarprofil"
+
+#: openbook_auth/models.py:3157
+msgid "users profiles"
+msgstr "användarprofiler"
+
+#: openbook_auth/models.py:3173
+msgid "post comment notifications"
+msgstr "aviseringar för inläggskommentarer"
+
+#: openbook_auth/models.py:3174
+msgid "post comment reply notifications"
+msgstr "aviseringar för svar på kommentarer"
+
+#: openbook_auth/models.py:3175
+msgid "post reaction notifications"
+msgstr "aviseringar för inläggsreaktioner"
+
+#: openbook_auth/models.py:3176
+msgid "follow notifications"
+msgstr "aviseringar för nya följare"
+
+#: openbook_auth/models.py:3177
+msgid "connection request notifications"
+msgstr "aviseringar för kontaktförfrågningar"
+
+#: openbook_auth/models.py:3178
+msgid "connection confirmed notifications"
+msgstr "aviseringar för bekräftade kontaktförfrågningar"
+
+#: openbook_auth/models.py:3179
+msgid "community invite notifications"
+msgstr "aviseringar för inbjudningar till gemenskaper"
+
+#: openbook_auth/models.py:3180
+msgid "post comment reaction notifications"
+msgstr "aviseringar för kommentarsreaktioner"
+
+#: openbook_auth/models.py:3181
+msgid "post comment user mention notifications"
+msgstr "aviseringar vid omnämnande i kommentarer"
+
+#: openbook_auth/models.py:3183
+msgid "post user mention notifications"
+msgstr "aviseringar vid omnämnande i inlägg"
+
+#: openbook_auth/validators.py:11
+msgid "Usernames can only contain alphanumeric characters, periods and underscores."
+msgstr "Användarnamn kan endast innehålla alfanumeriska tecken, punkter och understreck."
+
+#: openbook_auth/validators.py:25
+msgid "An account for the email already exists."
+msgstr "Det finns redan ett konto med denna e-postadress."
+
+#: openbook_auth/validators.py:32
+msgid "No user with the provided username exists."
+msgstr "Det finns ingen användare med det angivna användarnamnet."
+
+#: openbook_auth/validators.py:39
+msgid "No user with the provided email exists."
+msgstr "Det finns ingen användare med den angivna e-postadressen."
+
+#: openbook_auth/views/auth/views.py:73
+msgid "Username available"
+msgstr "Användarnamn tillgängligt"
+
+#: openbook_auth/views/auth/views.py:86
+msgid "Email available"
+msgstr "E-postadress tillgänglig"
+
+#: openbook_auth/views/auth/views.py:104
+msgid "Email verified"
+msgstr "E-postadress verifierad"
+
+#: openbook_auth/views/auth/views.py:142 openbook_auth/views/auth/views.py:190
+msgid "Password set successfully"
+msgstr "Lösenordet har uppdaterats"
+
+#: openbook_auth/views/auth/views.py:171
+msgid "A password reset link was sent to the email"
+msgstr "En lösenordsåterställningslänk har skickats till e-postadressen"
+
+#: openbook_auth/views/authenticated_user/serializers.py:136
+msgid "New password must be supplied together with the current password"
+msgstr "Ett nytt lösenord måste ges tillsammans med det nuvarande lösenordet"
+
+#: openbook_auth/views/authenticated_user/serializers.py:139
+msgid "Current password must be supplied together with the new password"
+msgstr "Det nuvarande lösenordet måste ges tillsammans med det nya lösenordet"
+
+#: openbook_auth/views/authenticated_user/views.py:87
+msgid "Goodbye 😔"
+msgstr "Hej då 😔"
+
+#: openbook_auth/views/authenticated_user/views.py:162
+msgid "Please specify email or password to update"
+msgstr "Vänligen specificera e-postadress eller lösenord att uppdatera"
+
+#: openbook_auth/views/authenticated_user/views.py:168
+msgid "Confirm your email for Openbook"
+msgstr "Bekräfta din e-postadress för Okuna"
+
+#: openbook_auth/views/authenticated_user/views.py:200
+msgid "Guidelines successfully accepted"
+msgstr "Riktlinjerna har godkänts"
+
+#: openbook_auth/views/authenticated_user/views.py:224
+msgid "Language successfully set"
+msgstr "Språket har valts"
+
+#: openbook_auth/views/proxy/views.py:29
+msgid "All Ok"
+msgstr "Allt OK"
+
+#: openbook_categories/i18n/i18n.py:3
+msgid "Education"
+msgstr "Utbildning"
+
+#: openbook_categories/i18n/i18n.py:4
+msgid "For everything related to Education."
+msgstr "För allt relaterat till utbildning."
+
+#: openbook_categories/i18n/i18n.py:5
+msgid "Fun"
+msgstr "Roligt"
+
+#: openbook_categories/i18n/i18n.py:6
+msgid "Fun stuff!"
+msgstr "Roliga saker!"
+
+#: openbook_categories/i18n/i18n.py:7
+msgid "Technology"
+msgstr "Teknologi"
+
+#: openbook_categories/i18n/i18n.py:8
+msgid "For all tech related wizardry."
+msgstr "För allt teknologi-trolleri."
+
+#: openbook_categories/i18n/i18n.py:9
+msgid "Sports"
+msgstr "Sport"
+
+#: openbook_categories/i18n/i18n.py:10
+msgid "For everything related to sports."
+msgstr "För allt relaterat till sport."
+
+#: openbook_categories/i18n/i18n.py:11
+msgid "Nature"
+msgstr "Natur"
+
+#: openbook_categories/i18n/i18n.py:12
+msgid "For everything related to nature."
+msgstr "För allt relaterat till naturen."
+
+#: openbook_categories/i18n/i18n.py:13
+msgid "Travel"
+msgstr "Resor"
+
+#: openbook_categories/i18n/i18n.py:14
+msgid "For everything related to travel."
+msgstr "För allt relaterat till resor."
+
+#: openbook_categories/i18n/i18n.py:15
+msgid "Art"
+msgstr "Konst"
+
+#: openbook_categories/i18n/i18n.py:16
+msgid "For everything related to art."
+msgstr "För allt relaterat till konst."
+
+#: openbook_categories/i18n/i18n.py:17
+msgid "Lifestyle"
+msgstr "Livsstil"
+
+#: openbook_categories/i18n/i18n.py:18
+msgid "For everything related to lifestyle."
+msgstr "För allt relaterat till livsstil."
+
+#: openbook_categories/i18n/i18n.py:19
+msgid "Entertainment"
+msgstr "Underhållning"
+
+#: openbook_categories/i18n/i18n.py:20
+msgid "For everything related to entertainment."
+msgstr "För allt relaterat till underhållning."
+
+#: openbook_categories/i18n/i18n.py:21
+msgid "Places"
+msgstr "Platser"
+
+#: openbook_categories/i18n/i18n.py:22
+msgid "For everything related to places."
+msgstr "För allt relaterat till platser."
+
+#: openbook_categories/i18n/i18n.py:23
+msgid "Food"
+msgstr "Mat"
+
+#: openbook_categories/i18n/i18n.py:24
+msgid "For everything related to food."
+msgstr "För allt relaterat till mat."
+
+#: openbook_categories/models.py:17 openbook_communities/models.py:31
+#: openbook_moderation/models.py:17
+msgid "title"
+msgstr "titel"
+
+#: openbook_categories/models.py:18 openbook_communities/models.py:32
+#: openbook_moderation/models.py:18 openbook_moderation/models.py:48
+#: openbook_moderation/models.py:274
+msgid "description"
+msgstr "beskrivning"
+
+#: openbook_categories/models.py:23 openbook_circles/models.py:30
+#: openbook_common/models.py:17 openbook_common/models.py:40
+#: openbook_communities/models.py:53 openbook_tags/models.py:18
+msgid "color"
+msgstr "färg"
+
+#: openbook_categories/validators.py:13
+msgid "No category with the provided name exists."
+msgstr "Det finns ingen kategori med det angivna namnet."
+
+#: openbook_circles/models.py:46
+msgid "Connections"
+msgstr "Kontakter"
+
+#: openbook_circles/validators.py:12
+msgid "The circle does not exist."
+msgstr "Kretsen finns inte."
+
+#: openbook_circles/views.py:103
+msgid "Circle name available"
+msgstr "Kretsnamn tillgängligt"
+
+#: openbook_circles/views.py:105
+msgid "Circle name not available"
+msgstr "Kretsnamn ej tillgängligt"
+
+#: openbook_common/checkers.py:14
+msgid "No valid URL given"
+msgstr "Ingen giltig URL angavs"
+
+#: openbook_common/checkers.py:20
+msgid "Url domain is not proxy whitelisted"
+msgstr "Url-domänen är inte proxy-vitlistad"
+
+#: openbook_common/helpers.py:90
+msgid "You can only retrieve favicon urls from protocol http and https."
+msgstr "En favicon-url kan endast hämtas med http- eller https-protokoll."
+
+#: openbook_common/i18n/i18n.py:3
+msgid "Primary"
+msgstr "Primära"
+
+#: openbook_common/i18n/i18n.py:4
+msgid "Premium"
+msgstr "Premium"
+
+#: openbook_common/i18n/i18n.py:5
+msgid "Objects"
+msgstr "Objekt"
+
+#: openbook_common/i18n/i18n.py:6
+msgid "Waw"
+msgstr "Waw"
+
+#: openbook_common/i18n/i18n.py:7
+msgid "Party!"
+msgstr "Fest!"
+
+#: openbook_common/i18n/i18n.py:8
+msgid "Love it"
+msgstr "Älskar det"
+
+#: openbook_common/i18n/i18n.py:9
+msgid "Sad"
+msgstr "Ledsen"
+
+#: openbook_common/i18n/i18n.py:10
+msgid "Lit"
+msgstr "Häftigt"
+
+#: openbook_common/i18n/i18n.py:11
+msgid "Hooray!"
+msgstr "Hurra!"
+
+#: openbook_common/i18n/i18n.py:12
+msgid "Upset"
+msgstr "Upprörd"
+
+#: openbook_common/i18n/i18n.py:13
+msgid "Wow"
+msgstr "Wow"
+
+#: openbook_common/i18n/i18n.py:14
+msgid "Haha"
+msgstr "Haha"
+
+#: openbook_common/i18n/i18n.py:15
+msgid "Alarm"
+msgstr "Larm"
+
+#: openbook_common/i18n/i18n.py:16
+msgid "Computer"
+msgstr "Dator"
+
+#: openbook_common/i18n/i18n.py:17
+msgid "Game"
+msgstr "Spel"
+
+#: openbook_common/i18n/i18n.py:18
+msgid "Football"
+msgstr "Fotboll"
+
+#: openbook_common/i18n/i18n.py:19
+msgid "Lighting"
+msgstr "Blixt"
+
+#: openbook_common/i18n/i18n.py:20
+msgid "Lock"
+msgstr "Lås"
+
+#: openbook_common/i18n/i18n.py:21
+msgid "Money"
+msgstr "Pengar"
+
+#: openbook_common/i18n/i18n.py:22
+msgid "Pencil"
+msgstr "Penna"
+
+#: openbook_common/i18n/i18n.py:23
+msgid "Speaker"
+msgstr "Högtalare"
+
+#: openbook_common/i18n/i18n.py:24
+msgid "Camera"
+msgstr "Kamera"
+
+#: openbook_common/i18n/i18n.py:25
+msgid "Bravo!"
+msgstr "Bravo!"
+
+#: openbook_common/i18n/i18n.py:26
+msgid "Cool"
+msgstr "Cool"
+
+#: openbook_common/i18n/i18n.py:27
+msgid "News"
+msgstr "Nyheter"
+
+#: openbook_common/i18n/i18n.py:28
+msgid "Earth"
+msgstr "Jorden"
+
+#: openbook_common/i18n/i18n.py:29
+msgid "Book"
+msgstr "Bok"
+
+#: openbook_common/i18n/i18n.py:30
+msgid "Science"
+msgstr "Vetenskap"
+
+#: openbook_common/i18n/i18n.py:31
+msgid "Bulb"
+msgstr "Glödlampa"
+
+#: openbook_common/i18n/i18n.py:32
+msgid "Fancy hat"
+msgstr "Stilig hatt"
+
+#: openbook_common/i18n/i18n.py:33
+msgid "Heart"
+msgstr "Hjärta"
+
+#: openbook_common/i18n/i18n.py:34
+msgid "Star"
+msgstr "Stjärna"
+
+#: openbook_common/i18n/i18n.py:35
+msgid "Trophy"
+msgstr "Trofé"
+
+#: openbook_common/i18n/i18n.py:36
+msgid "OMG"
+msgstr "Herre gud"
+
+#: openbook_common/i18n/i18n.py:37
+msgid "Thankful"
+msgstr "Tacksam"
+
+#: openbook_common/i18n/i18n.py:38
+msgid "Music"
+msgstr "Musik"
+
+#: openbook_common/i18n/i18n.py:39
+msgid "Wohoo!"
+msgstr "Wohoo!"
+
+#: openbook_common/i18n/i18n.py:40
+msgid "Palette"
+msgstr "Palett"
+
+#: openbook_common/i18n/i18n.py:41
+msgid "Alien"
+msgstr "Utomjording"
+
+#: openbook_common/i18n/i18n.py:42
+msgid "Airplane"
+msgstr "Flygplan"
+
+#: openbook_common/i18n/i18n.py:43
+msgid "Rocket"
+msgstr "Raket"
+
+#: openbook_common/i18n/i18n.py:44
+msgid "Lipstick"
+msgstr "Läppstift"
+
+#: openbook_common/i18n/i18n.py:45
+msgid "Crown"
+msgstr "Krona"
+
+#: openbook_common/i18n/i18n.py:46
+msgid "Map"
+msgstr "Karta"
+
+#: openbook_common/i18n/i18n.py:47
+msgid "Pride"
+msgstr "Pride"
+
+#: openbook_common/i18n/i18n.py:48
+msgid "Like it"
+msgstr "Gillar det"
+
+#: openbook_common/i18n/i18n.py:49
+msgid "Hehe"
+msgstr "Hehe"
+
+#: openbook_common/models.py:16 openbook_common/models.py:38
+msgid "keyword"
+msgstr "nyckelord"
+
+#: openbook_common/models.py:21
+msgid "is reaction group"
+msgstr "är reaktionsgrupp"
+
+#: openbook_common/models.py:42 openbook_posts/models.py:550
+msgid "image"
+msgstr "bild"
+
+#: openbook_common/models.py:88
+msgid "keyword_description"
+msgstr "nyckelordsbeskrivning"
+
+#: openbook_common/models.py:98
+msgid "code"
+msgstr "kod"
+
+#: openbook_common/serializers_fields/request.py:40
+msgid "Please keep filesize under %maxfilesize. Current filesize %currentfilesize"
+msgstr "Vänligen håll filstorleken under %maxfilesize. Nuvarande filstorlek är %currentfilesize"
+
+#: openbook_common/serializers_fields/request.py:51
+msgid "Upload a valid image. The file you uploaded was either not an image or a corrupted image."
+msgstr "Ladda upp en giltig bild. Filen du laddade upp var antingen inte en bild eller korrupt."
+
+#: openbook_common/validators.py:12
+msgid "The provided value is not a valid hex color."
+msgstr "Det angivna värdet är inte en giltig hexadecimal färg."
+
+#: openbook_common/validators.py:20
+msgid "No emoji with the provided id exists."
+msgstr "Det finns ingen emoji med den angivna id:n."
+
+#: openbook_common/validators.py:28
+msgid "No emoji group with the provided id exists."
+msgstr "Det finns ingen emojigrupp med den angivna id:n."
+
+#: openbook_common/validators.py:35
+msgid "Names can't contain < or >."
+msgstr "Namn kan inte innehålla < eller >."
+
+#: openbook_common/validators.py:43
+msgid "No supported language with the provided id exists."
+msgstr "Det finns inget stött språk med den angivna id:n."
+
+#: openbook_common/validators.py:51
+msgid "No supported language with the provided code exists."
+msgstr "Det finns inget stött språk med den angivna koden."
+
+#: openbook_common/views.py:66
+msgid "The specified url was not found."
+msgstr "Den angivna url:en hittades inte."
+
+#: openbook_common/views.py:68
+msgid "The specified url was not reachable."
+msgstr "Den angivna url:en kunde inte nås."
+
+#: openbook_communities/models.py:34
+msgid "rules"
+msgstr "regler"
+
+#: openbook_communities/models.py:55
+msgid "user adjective"
+msgstr "användare-adjektiv"
+
+#: openbook_communities/models.py:57
+msgid "users adjective"
+msgstr "användare-adjektiv"
+
+#: openbook_communities/models.py:59
+msgid "invites enabled"
+msgstr "inbjudningar aktiverade"
+
+#: openbook_communities/models.py:499
+msgid "is administrator"
+msgstr "är administratör"
+
+#: openbook_communities/models.py:500
+msgid "is moderator"
+msgstr "är moderator"
+
+#: openbook_communities/validators.py:12
+msgid "Community_names can only contain alphanumeric characters, underscores and dashes."
+msgstr "Gemenskapsnamn kan endast innehålla alfanumeriska tecken, understreck och bindestreck."
+
+#: openbook_communities/validators.py:20
+msgid "Community name already taken."
+msgstr "Gemenskapsnamnet är upptaget."
+
+#: openbook_communities/validators.py:28
+msgid "No community with the provided name exists."
+msgstr "Det finns ingen gemenskap med det angivna namnet."
+
+#: openbook_communities/views/communities/views.py:88
+msgid "Community name available"
+msgstr "Gemenskapsnamn tillgängligt"
+
+#: openbook_communities/views/community/administrators/views.py:84
+msgid "Removed administrator"
+msgstr "Tog bort administratör"
+
+#: openbook_communities/views/community/banned_users/views.py:61
+msgid "Banned user!"
+msgstr "Bannade användare!"
+
+#: openbook_communities/views/community/banned_users/views.py:83
+msgid "Unbanned user!"
+msgstr "Hävde ban för användare!"
+
+#: openbook_communities/views/community/moderators/views.py:82
+msgid "Removed moderator"
+msgstr "Tog bort moderator"
+
+#: openbook_devices/models.py:15
+msgid "uuid"
+msgstr "uuid"
+
+#: openbook_importer/views.py:45
+msgid "done"
+msgstr "klar"
+
+#: openbook_importer/views.py:95 openbook_importer/views.py:103
+msgid "invalid archive"
+msgstr "ogiltigt arkiv"
+
+#: openbook_invitations/models.py:19
+msgid "invited datetime"
+msgstr "tid för inbjudan"
+
+#: openbook_invitations/models.py:76
+msgid "The token is invalid."
+msgstr "Koden är ogiltig."
+
+#: openbook_invitations/models.py:81
+msgid "No invite exists for given token."
+msgstr "Ingen inbjudan finns för den givna koden."
+
+#: openbook_invitations/models.py:86
+msgid "The invite has been already used."
+msgstr "Inbjudan har redan använts."
+
+#: openbook_invitations/models.py:96 openbook_invitations/models.py:108
+msgid "You've been invited to join Okuna (formerly Openbook)"
+msgstr "Du har blivit inbjuden till Okuna (tidigare Openbook)"
+
+#: openbook_invitations/models.py:128
+msgid "Action Required: Choose an alternate username for Okuna"
+msgstr "Handling krävs: Välj ett alternativt användarnamn för Okuna"
+
+#: openbook_invitations/validators.py:10
+msgid "The invite does not exist."
+msgstr "Inbjudan finns inte."
+
+#: openbook_invitations/validators.py:17
+msgid "The invite has already been used."
+msgstr "Inbjudan har redan använts."
+
+#: openbook_invitations/views.py:96
+msgid "Successfully deleted invite"
+msgstr "Inbjudan borttagen"
+
+#: openbook_invitations/views.py:135
+msgid "An error occurred sending the invite, please try again"
+msgstr "Ett fel uppstod när inbjudan skickades, vänligen försök igen"
+
+#: openbook_invitations/views.py:137
+msgid "Invite email sent"
+msgstr "E-postinbjudan skickad"
+
+#: openbook_lists/validators.py:10
+msgid "The list does not exist."
+msgstr "Listan finns inte."
+
+#: openbook_lists/views.py:105
+msgid "List name available"
+msgstr "Listnamn tillgängligt"
+
+#: openbook_lists/views.py:107
+msgid "List name not available"
+msgstr "Listnamn ej tillgängligt"
+
+#: openbook_moderation/i18n/i18n.py:4
+msgid "Spam"
+msgstr "Spam"
+
+#: openbook_moderation/i18n/i18n.py:5
+msgid "Posts as spam could include clickbait, advertising, scams, script bots"
+msgstr "Spaminlägg kan inkludera klickbete, annonsering, svindelförsök, skript-bottar"
+
+#: openbook_moderation/i18n/i18n.py:6
+msgid "Pornography"
+msgstr "Pornografi"
+
+#: openbook_moderation/i18n/i18n.py:7
+msgid "Posts showing sexual intercourse, photos and videos of sexual intercourse, nudity etc"
+msgstr "Inlägg som visar samlag, foton eller videor av samlag, nakenhet, osv"
+
+#: openbook_moderation/i18n/i18n.py:8
+msgid "Hatred & Bullying"
+msgstr "Hat & Mobbning"
+
+#: openbook_moderation/i18n/i18n.py:9
+msgid "Credible threats, targets people, degrades or shames them, harassment etc."
+msgstr "Trovärdiga hot, inlägg riktade mot folk för att förnedra eller skämma ut dem, trakasseri, osv."
+
+#: openbook_moderation/i18n/i18n.py:10
+msgid "Self Harm"
+msgstr "Självskadebeteende"
+
+#: openbook_moderation/i18n/i18n.py:11
+msgid "Posts promoting or encouraging self harm"
+msgstr "Inlägg som främjar eller uppmuntrar till självskadebeteende"
+
+#: openbook_moderation/i18n/i18n.py:12
+msgid "Violent, gory and harmful"
+msgstr "Våldsamt, blodigt eller skadligt"
+
+#: openbook_moderation/i18n/i18n.py:13
+msgid "Photos or videos of extreme graphic violence, posts encouraging violence, specific threats of physical harm"
+msgstr "Foton eller videor som visar extremt våld, inlägg som uppmuntrar våld, hot om fysiska skador"
+
+#: openbook_moderation/i18n/i18n.py:14
+msgid "Child Sexual Exploitation Material"
+msgstr "Barnpornografiskt material"
+
+#: openbook_moderation/i18n/i18n.py:15
+msgid "Posts with photos or videos of sexual intercourse with children, posts of nude/partially nude children."
+msgstr "Inlägg med foton eller videor som visar samlag med barn, inlägg med nakna eller delvis nakna barn."
+
+#: openbook_moderation/i18n/i18n.py:16
+msgid "Illegal Activities e.g Drug Use"
+msgstr "Olagliga aktiviteter, t. ex. användande av droger"
+
+#: openbook_moderation/i18n/i18n.py:17
+msgid "Posts promoting illegal activities such as use, sale or distribution of hard drugs etc"
+msgstr "Inlägg som främjar olagliga aktiviteter som att använda, sälja eller sprida starka droger, osv"
+
+#: openbook_moderation/i18n/i18n.py:18
+msgid "Deceptive content"
+msgstr "Vilseledande innehåll"
+
+#: openbook_moderation/i18n/i18n.py:19
+msgid "Posts with purposefully fake or deceitful news, hoax disproved by credible sources"
+msgstr "Inlägg med medvetet falska eller vilseledande nyheter, bluffar som motbevisats av pålitliga källor"
+
+#: openbook_moderation/i18n/i18n.py:20
+msgid "Copyright and trademark infringement"
+msgstr "Upphovsrätts- och varumärkesbrott"
+
+#: openbook_moderation/i18n/i18n.py:21
+msgid "Posts with content that violates or infringes your copyright."
+msgstr "Inlägg med innehåll som bryter mot eller överträder din upphovsrätt."
+
+#: openbook_moderation/i18n/i18n.py:22
+msgid "Platform abuse"
+msgstr "Missbruk av plattformen"
+
+#: openbook_moderation/i18n/i18n.py:23
+msgid "Abuse might contain using bots, abusing the report button, spamming continuously."
+msgstr "Missbruk kan innefatta användandet av bottar, missbruk av anmälningsknappen, upprepat spammande."
+
+#: openbook_moderation/i18n/i18n.py:24
+msgid "Community Guidelines Infringement"
+msgstr "Brytande av gemenskapsriktlinjerna"
+
+#: openbook_moderation/i18n/i18n.py:25
+msgid "The item does not conform to the community guidelines."
+msgstr "Objektet håller sig inte inom gemenskapsriktlinjerna."
+
+#: openbook_moderation/i18n/i18n.py:26
+msgid "Other"
+msgstr "Annat"
+
+#: openbook_moderation/i18n/i18n.py:27
+msgid "Other reasons not included in other categories."
+msgstr "Andra anledningar som inte täcks av de andra kategorierna."
+
+#: openbook_moderation/models.py:50
+msgid "verified"
+msgstr "verifierad"
+
+#: openbook_moderation/models.py:399 openbook_moderation/models.py:416
+#: openbook_moderation/models.py:433
+msgid "changed from"
+msgstr "ändrad från"
+
+#: openbook_moderation/models.py:401 openbook_moderation/models.py:419
+#: openbook_moderation/models.py:435
+msgid "changed to"
+msgstr "ändrad till"
+
+#: openbook_moderation/permissions.py:24
+#, python-format
+msgid "Your account has been suspended and will be unsuspended in %s"
+msgstr "Ditt konto har blivit avstängt och kommer öppnas igen om %s"
+
+#: openbook_moderation/views/checks.py:14
+msgid "Congrats, you're not suspended :-)"
+msgstr "Gratulerar, du är inte avstängd :-)"
+
+#: openbook_moderation/views/report/views.py:34
+msgid "Post reported, thanks!"
+msgstr "Inlägg anmält, tack!"
+
+#: openbook_moderation/views/report/views.py:62
+msgid "Post comment reported, thanks!"
+msgstr "Kommentar anmäld, tack!"
+
+#: openbook_moderation/views/report/views.py:87
+msgid "User reported, thanks!"
+msgstr "Användare anmäld, tack!"
+
+#: openbook_moderation/views/report/views.py:112
+msgid "Community reported, thanks!"
+msgstr "Gemenskap anmäld, tack!"
+
+#: openbook_moderation/views/validators.py:10
+msgid "The category does not exist."
+msgstr "Kategorin finns inte."
+
+#: openbook_moderation/views/validators.py:17
+msgid "The moderated object does not exist."
+msgstr "Det modererade objektet finns inte."
+
+#: openbook_notifications/helpers.py:26
+#, python-format
+msgid "%(post_reactor_name)s · @%(post_reactor_username)s reacted to your post."
+msgstr "%(post_reactor_name)s · @%(post_reactor_username)s reagerade på ditt inlägg."
+
+#: openbook_notifications/helpers.py:73
+#, python-format
+msgid "%(following_user_name)s · @%(following_user_username)s started following you"
+msgstr "%(following_user_name)s · @%(following_user_username)s började följa dig"
+
+#: openbook_notifications/helpers.py:96
+#, python-format
+msgid "%(connection_requester_name)s · @%(connection_requester_username)s wants to connect with you."
+msgstr "%(connection_requester_name)s · @%(connection_requester_username)s vill knyta kontakt med dig."
+
+#: openbook_notifications/helpers.py:124
+#, python-format
+msgid "%(post_comment_reactor_name)s · @%(post_comment_reactor_username)s reacted to your comment."
+msgstr "%(post_comment_reactor_name)s · @%(post_comment_reactor_username)s reagerade på din kommentar."
+
+#: openbook_notifications/helpers.py:155
+#, python-format
+msgid "%(mentioner_name)s · @%(mentioner_username)s mentioned you in a comment."
+msgstr "%(mentioner_name)s · @%(mentioner_username)s nämnde dig i en kommentar."
+
+#: openbook_notifications/helpers.py:187
+#, python-format
+msgid "%(mentioner_name)s · @%(mentioner_username)s mentioned you in a post."
+msgstr "%(mentioner_name)s · @%(mentioner_username)s nämnde dig i ett inlägg."
+
+#: openbook_notifications/helpers.py:213
+#, python-format
+msgid "%(invite_creator_name)s · @%(invite_creator_username)s has invited you to join /c/%(community_name)s."
+msgstr "%(invite_creator_name)s · @%(invite_creator_username)s har bjudit in dig till /c/%(community_name)s."
+
+#: openbook_notifications/validators.py:10
+msgid "No notification with the provided id exists."
+msgstr "Det finns ingen avisering med den angivna id:n."
+
+#: openbook_posts/checkers.py:11
+msgid "Cannot remove the text of a text only post. Try deleting it instead."
+msgstr "Kan inte ta bort texten från ett inlägg med enbart text. Testa att ta bort inlägget istället."
+
+#: openbook_posts/checkers.py:18
+msgid "Post is not a draft"
+msgstr "Inlägget är inte ett utkast"
+
+#: openbook_posts/checkers.py:28
+msgid "Maximum amount of post media items reached"
+msgstr "Det maximala antalet mediaobjekt har nåtts för inlägget"
+
+#: openbook_posts/checkers.py:35
+msgid "The post is being processed"
+msgstr "Inlägget bearbetas"
+
+#: openbook_posts/checkers.py:41
+msgid "The post is already published"
+msgstr "Inlägget har redan publicerats"
+
+#: openbook_posts/checkers.py:46
+msgid "The post is empty. Try adding text or media."
+msgstr "Inlägget är tomt. Prova att lägga till text eller media."
+
+#: openbook_posts/checkers.py:56
+#, python-format
+msgid "%s is not a supported mimetype"
+msgstr "%s är inte en stödd MIME-typ"
+
+#: openbook_posts/models.py:60 openbook_posts/models.py:635
+msgid "text"
+msgstr "text"
+
+#: openbook_posts/models.py:64
+msgid "comments enabled"
+msgstr "kommentarer aktiverade"
+
+#: openbook_posts/models.py:65
+msgid "public reactions"
+msgstr "offentliga reaktioner"
+
+#: openbook_posts/models.py:82
+msgid "media height"
+msgstr "mediahöjd"
+
+#: openbook_posts/models.py:83
+msgid "media width"
+msgstr "mediabredd"
+
+#: openbook_posts/models.py:84 openbook_posts/models.py:559
+#: openbook_posts/models.py:598
+msgid "thumbnail"
+msgstr "miniatyrbild"
+
+#: openbook_posts/models.py:112
+msgid "A post requires circles or a community to be posted to."
+msgstr "Ett inlägg måste ha en krets eller gemenskap att skapas i."
+
+#: openbook_posts/models.py:115
+msgid "A post cannot be posted both to a community and to circles."
+msgstr "Ett inlägg kan inte skapas i både en gemenskap och kretsar."
+
+#: openbook_posts/models.py:120
+msgid "A post must have an image or a video, not both."
+msgstr "Ett inlägg kan antingen ha en bild eller en video, inte båda."
+
+#: openbook_posts/models.py:355
+msgid "Unsupported media file type"
+msgstr "Icke stödd mediafiltyp"
+
+#: openbook_posts/models.py:558 openbook_posts/models.py:584
+msgid "hash"
+msgstr "hash"
+
+#: openbook_posts/validators.py:12 openbook_posts/validators.py:19
+msgid "The post does not exist."
+msgstr "Inlägget finns inte."
+
+#: openbook_posts/validators.py:26 openbook_posts/validators.py:33
+msgid "The post comment does not exist."
+msgstr "Kommentaren finns inte."
+
+#: openbook_posts/validators.py:42 openbook_posts/validators.py:56
+msgid "The post comment reaction does not exist."
+msgstr "Kommentarsreaktionen finns inte."
+
+#: openbook_posts/validators.py:49
+msgid "The post reaction does not exist."
+msgstr "Inläggsreaktionen finns inte."
+
+#: openbook_posts/views/post/views.py:76
+msgid "Post deleted"
+msgstr "Inlägg borttaget"
+
+#: openbook_posts/views/post/views.py:195
+#: openbook_posts/views/post_comment/views.py:122
+msgid "Translation between these languages is not supported."
+msgstr "Översättning mellan dessa språk stöds inte."
+
+#: openbook_posts/views/post/views.py:198
+#: openbook_posts/views/post_comment/views.py:124
+msgid "Translation service returned an error"
+msgstr "Översättningstjänsten svarade med ett fel"
+
+#: openbook_posts/views/post/views.py:201
+#: openbook_posts/views/post_comment/views.py:127
+msgid "Max length of translation text exceeded."
+msgstr "Den maximala längden för text att översätta överskreds."
+
+#: openbook_posts/views/post/views.py:316
+msgid "The linked url associated for preview was not found."
+msgstr "Url:en som är förknippad med förhandsvisningen hittades inte."
+
+#: openbook_posts/views/post/views.py:319
+msgid "The linked url associated for preview was not reachable."
+msgstr "Url:en som är förknippad med förhandsvisningen kunde inte nås."
+
+#: openbook_posts/views/post_comment/post_comment_reaction/views.py:31
+msgid "Post comment reaction deleted"
+msgstr "Kommentarsreaktion borttagen"
+
+#: openbook_posts/views/post_comment/views.py:37
+msgid "Comment deleted"
+msgstr "Kommentar borttagen"
+
+#: openbook_posts/views/post_comment/views.py:83
+msgid "Post comment muted."
+msgstr "Aviseringar för kommentar avstängda."
+
+#: openbook_posts/views/post_comment/views.py:101
+msgid "Post comment unmuted."
+msgstr "Aviseringar för kommentar påslagna."
+
+#: openbook_posts/views/post_media/views.py:35
+msgid "Media added successfully to post"
+msgstr "Media har lagts till i inlägget"
+
+#: openbook_posts/views/post_reaction/views.py:42
+msgid "Reaction deleted"
+msgstr "Reaktion borttagen"
+
+#: openbook_tags/validators.py:13
+msgid "No tag with the provided name exists."
+msgstr "Det finns ingen tagg med det angivna namnet."
+
+#~ msgid "A post requires text or an image/video."
+#~ msgstr "Un post requiere texto o una imagen/vídeo."
+
+#~ msgid "video"
+#~ msgstr "video"
+

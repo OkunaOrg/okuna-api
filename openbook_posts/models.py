@@ -1,33 +1,58 @@
 # Create your models here.
-import hashlib
+import os
+import tempfile
 import uuid
 from datetime import timedelta
 
-from django.contrib.contenttypes.fields import GenericRelation
+from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+from django.core.files import File
 from django.core.files.storage import default_storage
+from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile, SimpleUploadedFile
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Count
+import ffmpy
 
 # Create your views here.
+from ordered_model.models import OrderedModel
 from pilkit.processors import ResizeToFit
 from rest_framework.exceptions import ValidationError
 
 from django.conf import settings
+
+from video_encoding.backends import get_backend
+from video_encoding.fields import VideoField
+from video_encoding.models import Format
+
 from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_auth.models import User
 
-from openbook_common.models import Emoji
-from openbook_common.utils.helpers import delete_file_field, sha256sum
+from openbook_common.models import Emoji, Language
+from openbook_common.utils.helpers import delete_file_field, sha256sum, extract_usernames_from_string, get_magic, \
+    write_in_memory_file_to_disk
 from openbook_common.utils.model_loaders import get_emoji_model, \
-    get_circle_model, get_community_model, get_notification_model, get_post_comment_notification_model, \
-    get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model
+    get_circle_model, get_community_model, get_post_comment_notification_model, \
+    get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model, \
+    get_post_user_mention_notification_model, get_post_comment_user_mention_notification_model, get_user_model, \
+    get_post_user_mention_model, get_post_comment_user_mention_model
 from imagekit.models import ProcessedImageField
 
 from openbook_moderation.models import ModeratedObject
-from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory
+from openbook_notifications.helpers import send_post_comment_user_mention_push_notification, \
+    send_post_user_mention_push_notification
+from openbook_posts.checkers import check_can_be_updated, check_can_add_media, check_can_be_published, \
+    check_mimetype_is_supported_media_mimetypes
+from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory, \
+    upload_to_post_directory
+from openbook_posts.jobs import process_post_media
+
+magic = get_magic()
+from openbook_common.helpers import get_language_for_text, extract_urls_from_string
+
+post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else default_storage
 
 
 class Post(models.Model):
@@ -35,15 +60,32 @@ class Post(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
     text = models.TextField(_('text'), max_length=settings.POST_MAX_LENGTH, blank=False, null=True)
     created = models.DateTimeField(editable=False, db_index=True)
+    modified = models.DateTimeField(db_index=True, default=timezone.now)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
     comments_enabled = models.BooleanField(_('comments enabled'), default=True, editable=False, null=False)
     public_reactions = models.BooleanField(_('public reactions'), default=True, editable=False, null=False)
     community = models.ForeignKey('openbook_communities.Community', on_delete=models.CASCADE, related_name='posts',
                                   null=True,
                                   blank=False)
+    language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, related_name='posts')
     is_edited = models.BooleanField(default=False)
     is_closed = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
+    STATUS_DRAFT = 'D'
+    STATUS_PROCESSING = 'PG'
+    STATUS_PUBLISHED = 'P'
+    STATUSES = (
+        (STATUS_DRAFT, 'Draft'),
+        (STATUS_PROCESSING, 'Processing'),
+        (STATUS_PUBLISHED, 'Published'),
+    )
+    status = models.CharField(blank=False, null=False, choices=STATUSES, default=STATUS_DRAFT, max_length=2)
+    media_height = models.PositiveSmallIntegerField(_('media height'), null=True)
+    media_width = models.PositiveSmallIntegerField(_('media width'), null=True)
+    media_thumbnail = ProcessedImageField(verbose_name=_('thumbnail'), storage=post_image_storage,
+                                          upload_to=upload_to_post_directory,
+                                          blank=False, null=True, format='JPEG', options={'quality': 30},
+                                          processors=[ResizeToFit(width=512, upscale=False)])
 
     class Meta:
         index_together = [
@@ -65,7 +107,7 @@ class Post(models.Model):
 
     @classmethod
     def create_post(cls, creator, circles_ids=None, community_name=None, image=None, text=None, video=None,
-                    created=None):
+                    created=None, is_draft=False):
 
         if not community_name and not circles_ids:
             raise ValidationError(_('A post requires circles or a community to be posted to.'))
@@ -73,22 +115,19 @@ class Post(models.Model):
         if community_name and circles_ids:
             raise ValidationError(_('A post cannot be posted both to a community and to circles.'))
 
-        if not text and not image and not video:
-            raise ValidationError(_('A post requires text or an image/video.'))
+        post = Post.objects.create(creator=creator, created=created)
 
         if image and video:
             raise ValidationError(_('A post must have an image or a video, not both.'))
 
-        post = Post.objects.create(creator=creator, created=created)
-
         if text:
             post.text = text
+            post.language = get_language_for_text(text)
 
         if image:
-            PostImage.create_post_image(image=image, post_id=post.pk)
-
-        if video:
-            PostVideo.create_post_video(video=video, post_id=post.pk)
+            post.add_media(file=image)
+        elif video:
+            post.add_media(file=video)
 
         if circles_ids:
             post.circles.add(*circles_ids)
@@ -96,7 +135,12 @@ class Post(models.Model):
             Community = get_community_model()
             post.community = Community.objects.get(name=community_name)
 
-        post.save()
+        # If on create we have a video or image, we automatically publish it
+        # Backwards compat reasons.
+        if not is_draft:
+            post.publish()
+        else:
+            post.save()
 
         return post
 
@@ -109,12 +153,13 @@ class Post(models.Model):
     def get_trending_posts_for_user_with_id(cls, user_id):
         trending_posts_query = cls._get_trending_posts_query()
         trending_posts_query.add(~Q(community__banned_users__id=user_id), Q.AND)
-        trending_posts_query.add(Q(is_closed=False, is_deleted=False), Q.AND)
 
         trending_posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=user_id) | Q(
             creator__user_blocks__blocked_user_id=user_id)), Q.AND)
 
         trending_posts_query.add(~Q(moderated_object__reports__reporter_id=user_id), Q.AND)
+
+        trending_posts_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
 
         return cls._get_trending_posts_with_query(query=trending_posts_query)
 
@@ -130,44 +175,68 @@ class Post(models.Model):
 
         Community = get_community_model()
 
-        trending_posts_sources_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC)
+        trending_posts_sources_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, status=cls.STATUS_PUBLISHED,
+                                         is_closed=False, is_deleted=False)
 
         trending_posts_query.add(trending_posts_sources_query, Q.AND)
 
         return trending_posts_query
 
     @classmethod
-    def get_post_comment_notification_target_users(cls, post_id, post_commenter_id, post_comment_id=None):
+    def get_post_comment_notification_target_users(cls, post, post_commenter):
         """
         Returns the users that should be notified of a post comment.
         This includes the post creator and other post commenters
-        :param post_id:
-        :param post_commenter_id:
-        :param post_comment_id:
         :return:
         """
 
-        if post_comment_id is not None:
-            post_notification_target_users_query = Q(posts_comments__parent_comment_id=post_comment_id)
-            post_notification_target_users_query.add(Q(posts_comments__id=post_comment_id), Q.OR)
-        else:
-            post_notification_target_users_query = Q(posts_comments__post_id=post_id,
-                                                     posts_comments__parent_comment_id=None)
-            post_notification_target_users_query.add(Q(posts__id=post_id), Q.OR)
+        # Add other post commenters, exclude replies to comments, the post commenter
+        other_commenters = User.objects.filter(
+            Q(posts_comments__post_id=post.pk, posts_comments__parent_comment_id=None, ) & ~Q(
+                id=post_commenter.pk))
 
-        post_notification_target_users_query.add(~Q(id=post_commenter_id), Q.AND)
-        post_notification_target_users_query.add(~Q(user_blocks__blocked_user_id=post_commenter_id), Q.AND)
+        post_creator = User.objects.filter(pk=post.creator_id)
 
-        return User.objects.filter(post_notification_target_users_query).distinct()
+        return other_commenters.union(post_creator)
+
+    @classmethod
+    def get_post_comment_reply_notification_target_users(cls, post_commenter, parent_post_comment):
+        """
+        Returns the users that should be notified of a post comment reply.
+        :return:
+        """
+
+        # Add other post commenters, exclude non replies, the post commenter
+        other_repliers = User.objects.filter(
+            Q(posts_comments__parent_comment_id=parent_post_comment.pk, ) & ~Q(
+                id=post_commenter.pk))
+
+        # Add post comment creator
+        post_comment_creator = User.objects.filter(pk=parent_post_comment.commenter_id)
+
+        # Add post creator
+        post = parent_post_comment.post
+        post_creator = User.objects.filter(pk=post.creator.id)
+        return other_repliers.union(post_comment_creator, post_creator)
 
     def count_comments(self):
         return PostComment.count_comments_for_post_with_id(self.pk)
 
     def count_comments_with_user(self, user):
-        # Only count top level comments
-        count_query = Q(parent_comment__isnull=True)
+        # Count comments excluding users blocked by authenticated user
+        count_query = ~Q(Q(commenter__blocked_by_users__blocker_id=user.pk) | Q(
+            commenter__user_blocks__blocked_user_id=user.pk))
 
         if self.community:
+            if not user.is_staff_of_community_with_name(community_name=self.community.name):
+                # Dont retrieve comments except from staff members
+                blocked_users_query_staff_members = Q(
+                    commenter__communities_memberships__community_id=self.community.pk)
+                blocked_users_query_staff_members.add(Q(commenter__communities_memberships__is_administrator=True) | Q(
+                    commenter__communities_memberships__is_moderator=True), Q.AND)
+
+                count_query.add(~blocked_users_query_staff_members, Q.AND)
+
             # Don't count items that have been reported and approved by community moderators
             ModeratedObject = get_moderated_object_model()
             count_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
@@ -227,26 +296,133 @@ class Post(models.Model):
         return not self.is_public_post() and not self.community
 
     def update(self, text=None):
-        self._check_can_be_updated(text=text)
+        check_can_be_updated(post=self, text=text)
         self.text = text
         self.is_edited = True
+        self.language = get_language_for_text(text)
         self.save()
 
+    def get_media(self):
+        return self.media
+
+    def add_media(self, file, order=None):
+        check_can_add_media(post=self)
+
+        is_in_memory_file = isinstance(file, InMemoryUploadedFile) or isinstance(file, SimpleUploadedFile)
+
+        if is_in_memory_file:
+            file_mime = magic.from_buffer(file.read())
+        elif isinstance(file, TemporaryUploadedFile):
+            file_mime = magic.from_file(file.temporary_file_path())
+        else:
+            file_mime = magic.from_file(file.name)
+
+        check_mimetype_is_supported_media_mimetypes(file_mime)
+        # Mime check moved pointer
+        file.seek(0)
+
+        file_mime_types = file_mime.split('/')
+
+        file_mime_type = file_mime_types[0]
+        file_mime_subtype = file_mime_types[1]
+
+        temp_files_to_close = []
+
+        if file_mime_subtype == 'gif':
+            if is_in_memory_file:
+                file = write_in_memory_file_to_disk(file)
+
+            temp_dir = tempfile.gettempdir()
+            converted_gif_file_name = os.path.join(temp_dir, str(uuid.uuid4()) + '.mp4')
+
+            ff = ffmpy.FFmpeg(
+                inputs={file.temporary_file_path() if hasattr(file, 'temporary_file_path') else file.name: None},
+                outputs={converted_gif_file_name: None})
+            ff.run()
+            converted_gif_file = open(converted_gif_file_name, 'rb')
+            temp_files_to_close.append(converted_gif_file)
+            file = File(file=converted_gif_file)
+            file_mime_type = 'video'
+
+        has_other_media = self.media.exists()
+
+        if file_mime_type == 'image':
+            post_image = self._add_media_image(image=file, order=order)
+            if not has_other_media:
+                self.media_width = post_image.width
+                self.media_height = post_image.height
+                self.media_thumbnail = file
+        elif file_mime_type == 'video':
+            post_video = self._add_media_video(video=file, order=order)
+            if not has_other_media:
+                self.media_width = post_video.width
+                self.media_height = post_video.height
+                self.media_thumbnail = post_video.thumbnail.file
+        else:
+            raise ValidationError(
+                _('Unsupported media file type')
+            )
+
+        for file_to_close in temp_files_to_close:
+            file_to_close.close()
+
+        self.save()
+
+    def get_first_media(self):
+        return self.media.first()
+
+    def _add_media_image(self, image, order):
+        return PostImage.create_post_media_image(image=image, post_id=self.pk, order=order)
+
+    def _add_media_video(self, video, order):
+        return PostVideo.create_post_media_video(file=video, post_id=self.pk, order=order)
+
+    def count_media(self):
+        return self.media.count()
+
+    def publish(self):
+        check_can_be_published(post=self)
+
+        if self.has_media():
+            # After finishing, this will call _publish()
+            self.status = Post.STATUS_PROCESSING
+            self.save()
+            process_post_media.delay(post_id=self.pk)
+        else:
+            self._publish()
+
+    def _publish(self):
+        self.status = Post.STATUS_PUBLISHED
+        self.created = timezone.now()
+        self.save()
+
+    def is_draft(self):
+        return self.status == Post.STATUS_DRAFT
+
+    def is_empty(self):
+        return not self.text and not hasattr(self, 'image') and not hasattr(self, 'video') and not self.has_media()
+
+    def has_media(self):
+        return self.media.exists()
+
     def save(self, *args, **kwargs):
-        ''' On save, update timestamps '''
+        ''' On create, update timestamps '''
         if not self.id and not self.created:
             self.created = timezone.now()
 
-        return super(Post, self).save(*args, **kwargs)
+        self.modified = timezone.now()
+
+        post = super(Post, self).save(*args, **kwargs)
+
+        self._process_post_mentions()
+
+        return post
 
     def delete(self, *args, **kwargs):
         self.delete_media()
         super(Post, self).delete(*args, **kwargs)
 
     def delete_media(self):
-        if self.has_video():
-            delete_file_field(self.video.video)
-
         if self.has_image():
             delete_file_field(self.image.image)
 
@@ -276,6 +452,10 @@ class Post(models.Model):
         PostCommentReplyNotification = get_post_comment_notification_model()
         PostCommentReplyNotification.objects.filter(post_comment__post_id=self.pk).delete()
 
+        # Remove all post user mention notifications
+        PostUserMentionNotification = get_post_user_mention_notification_model()
+        PostUserMentionNotification.objects.filter(post_user_mention__post_id=self.pk).delete()
+
     def delete_notifications_for_user(self, user):
         # Remove all post comment notifications
         PostCommentNotification = get_post_comment_notification_model()
@@ -292,44 +472,185 @@ class Post(models.Model):
         PostCommentReplyNotification.objects.filter(post_comment__post=self.pk,
                                                     notification__owner_id=user.pk).delete()
 
-    def _check_can_be_updated(self, text=None):
-        if self.is_text_only_post() and not text:
-            raise ValidationError(
-                _('Cannot remove the text of a text only post. Try deleting it instead.')
-            )
+    def get_participants(self):
+        User = get_user_model()
+
+        # Add post creator
+        post_creator = User.objects.filter(pk=self.creator_id)
+
+        # Add post commentators
+        post_commenters = User.objects.filter(posts_comments__post_id=self.pk, is_deleted=False)
+
+        # If community post, add community members
+        if self.community:
+            community_members = User.objects.filter(communities_memberships__community_id=self.community_id,
+                                                    is_deleted=False)
+            result = post_creator.union(post_commenters, community_members)
+        else:
+            result = post_creator.union(post_commenters)
+
+        return result
+
+    def _process_post_mentions(self):
+        if not self.text:
+            self.user_mentions.all().delete()
+        else:
+            usernames = extract_usernames_from_string(string=self.text)
+            if not usernames:
+                self.user_mentions.all().delete()
+            else:
+                existing_mention_usernames = []
+                for existing_mention in self.user_mentions.only('id', 'user__username').all().iterator():
+                    if existing_mention.user.username not in usernames:
+                        existing_mention.delete()
+                    else:
+                        existing_mention_usernames.append(existing_mention.user.username)
+
+                PostUserMention = get_post_user_mention_model()
+                User = get_user_model()
+
+                for username in usernames:
+                    username = username.lower()
+                    if username not in existing_mention_usernames:
+                        try:
+                            user = User.objects.only('id', 'username').get(username=username)
+                            user_is_post_creator = user.pk == self.creator_id
+                            if user.can_see_post(post=self) and not user_is_post_creator:
+                                PostUserMention.create_post_user_mention(user=user, post=self)
+                                existing_mention_usernames.append(username)
+                        except User.DoesNotExist:
+                            pass
 
 
-post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else default_storage
+class TopPost(models.Model):
+    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='top_post')
+    created = models.DateTimeField(editable=False, db_index=True)
+
+    def save(self, *args, **kwargs):
+        ''' On save, update timestamps '''
+        if not self.id:
+            self.created = timezone.now()
+        self.modified = timezone.now()
+
+        return super(TopPost, self).save(*args, **kwargs)
+
+
+class TopPostCommunityExclusion(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='top_posts_community_exclusions')
+    community = models.ForeignKey('openbook_communities.Community', on_delete=models.CASCADE, related_name='top_posts_community_exclusions')
+    created = models.DateTimeField(editable=False, db_index=True)
+
+    def save(self, *args, **kwargs):
+        ''' On save, update timestamps '''
+        if not self.id:
+            self.created = timezone.now()
+        self.modified = timezone.now()
+
+        return super(TopPostCommunityExclusion, self).save(*args, **kwargs)
+
+
+class PostMedia(OrderedModel):
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='media')
+    order_with_respect_to = 'post'
+
+    MEDIA_TYPE_VIDEO = 'V'
+    MEDIA_TYPE_IMAGE = 'I'
+
+    MEDIA_TYPES = (
+        (MEDIA_TYPE_VIDEO, 'Video'),
+        (MEDIA_TYPE_IMAGE, 'Image'),
+    )
+
+    type = models.CharField(max_length=5, choices=MEDIA_TYPES)
+
+    # Generic relation types
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey()
+
+    @classmethod
+    def create_post_media(cls, post_id, type, content_object, order):
+        return cls.objects.create(type=type, content_object=content_object, post_id=post_id, order=order)
 
 
 class PostImage(models.Model):
-    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='image')
+    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='image', null=True)
     image = ProcessedImageField(verbose_name=_('image'), storage=post_image_storage,
                                 upload_to=upload_to_post_image_directory,
                                 width_field='width',
                                 height_field='height',
-                                blank=False, null=True, format='JPEG', options={'quality': 100},
+                                blank=False, null=True, format='JPEG', options={'quality': 80},
                                 processors=[ResizeToFit(width=1024, upscale=False)])
     width = models.PositiveIntegerField(editable=False, null=False, blank=False)
     height = models.PositiveIntegerField(editable=False, null=False, blank=False)
     hash = models.CharField(_('hash'), max_length=64, blank=False, null=True)
+    thumbnail = ProcessedImageField(verbose_name=_('thumbnail'), storage=post_image_storage,
+                                    upload_to=upload_to_post_image_directory,
+                                    blank=False, null=True, format='JPEG', options={'quality': 30},
+                                    processors=[ResizeToFit(width=1024, upscale=False)])
+
+    media = GenericRelation(PostMedia)
 
     @classmethod
     def create_post_image(cls, image, post_id):
         hash = sha256sum(file=image.file)
         return cls.objects.create(image=image, post_id=post_id, hash=hash)
 
+    @classmethod
+    def create_post_media_image(cls, image, post_id, order):
+        hash = sha256sum(file=image.file)
+        post_image = cls.objects.create(image=image, post_id=post_id, hash=hash, thumbnail=image)
+        PostMedia.create_post_media(type=PostMedia.MEDIA_TYPE_IMAGE,
+                                    content_object=post_image,
+                                    post_id=post_id, order=order)
+        return post_image
+
 
 class PostVideo(models.Model):
-    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='video')
-    video = models.FileField(_('video'), blank=False, null=False, storage=post_image_storage,
-                             upload_to=upload_to_post_video_directory)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='videos', null=True)
+
     hash = models.CharField(_('hash'), max_length=64, blank=False, null=True)
 
+    media = GenericRelation(PostMedia)
+
+    width = models.PositiveIntegerField(editable=False, null=True)
+    height = models.PositiveIntegerField(editable=False, null=True)
+    duration = models.FloatField(editable=False, null=True)
+
+    file = VideoField(width_field='width', height_field='height',
+                      duration_field='duration', storage=post_image_storage,
+                      upload_to=upload_to_post_video_directory, blank=False, null=True)
+
+    format_set = GenericRelation(Format)
+
+    thumbnail = ProcessedImageField(verbose_name=_('thumbnail'), storage=post_image_storage,
+                                    upload_to=upload_to_post_image_directory,
+                                    width_field='thumbnail_width',
+                                    height_field='thumbnail_height',
+                                    blank=False, null=True, format='JPEG', options={'quality': 30},
+                                    processors=[ResizeToFit(width=1024, upscale=False)])
+
+    thumbnail_width = models.PositiveIntegerField(editable=False, null=False, blank=False)
+    thumbnail_height = models.PositiveIntegerField(editable=False, null=False, blank=False)
+
     @classmethod
-    def create_post_video(cls, video, post_id):
-        hash = sha256sum(file=video.file)
-        return cls.objects.create(video=video, post_id=post_id, hash=hash)
+    def create_post_media_video(cls, file, post_id, order):
+        hash = sha256sum(file=file.file)
+        video_backend = get_backend()
+
+        if isinstance(file, InMemoryUploadedFile):
+            # If its in memory, doing read shouldn't be an issue as the file should be small.
+            in_disk_file = write_in_memory_file_to_disk(file)
+            thumbnail_path = video_backend.get_thumbnail(video_path=in_disk_file.name, at_time=0.0)
+        else:
+            thumbnail_path = video_backend.get_thumbnail(video_path=file.file.name, at_time=0.0)
+
+        with open(thumbnail_path, 'rb+') as thumbnail_file:
+            post_video = cls.objects.create(file=file, post_id=post_id, hash=hash, thumbnail=File(thumbnail_file), )
+        PostMedia.create_post_media(type=PostMedia.MEDIA_TYPE_VIDEO,
+                                    content_object=post_video,
+                                    post_id=post_id, order=order)
+        return post_video
 
 
 class PostComment(models.Model):
@@ -337,15 +658,22 @@ class PostComment(models.Model):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
     parent_comment = models.ForeignKey('self', on_delete=models.CASCADE, related_name='replies', null=True, blank=True)
     created = models.DateTimeField(editable=False, db_index=True)
+    modified = models.DateTimeField(db_index=True, default=timezone.now)
     commenter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_comments')
     text = models.TextField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False)
+    language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, related_name='post_comments')
     is_edited = models.BooleanField(default=False, null=False, blank=False)
     # This only happens if the comment was reported and found with critical severity content
     is_deleted = models.BooleanField(default=False)
 
     @classmethod
     def create_comment(cls, text, commenter, post, parent_comment=None):
-        return PostComment.objects.create(text=text, commenter=commenter, post=post, parent_comment=parent_comment)
+        post_comment = PostComment.objects.create(text=text, commenter=commenter, post=post,
+                                                  parent_comment=parent_comment)
+        post_comment.language = get_language_for_text(text)
+        post_comment.save()
+
+        return post_comment
 
     @classmethod
     def count_comments_for_post_with_id(cls, post_id):
@@ -362,9 +690,20 @@ class PostComment(models.Model):
         return self.replies.count()
 
     def count_replies_with_user(self, user):
-        count_query = Q()
+        # Count replies excluding users blocked by authenticated user
+        count_query = ~Q(Q(commenter__blocked_by_users__blocker_id=user.pk) | Q(
+            commenter__user_blocks__blocked_user_id=user.pk))
 
-        if self.post.community_id:
+        if self.post.community:
+            if not user.is_staff_of_community_with_name(community_name=self.post.community.name):
+                # Dont retrieve comments except from staff members
+                blocked_users_query_staff_members = Q(
+                    commenter__communities_memberships__community_id=self.post.community.pk)
+                blocked_users_query_staff_members.add(Q(commenter__communities_memberships__is_administrator=True) | Q(
+                    commenter__communities_memberships__is_moderator=True), Q.AND)
+
+                count_query.add(~blocked_users_query_staff_members, Q.AND)
+
             # Don't count items that have been reported and approved by community moderators
             ModeratedObject = get_moderated_object_model()
             count_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
@@ -378,7 +717,11 @@ class PostComment(models.Model):
         return self.replies.filter(count_query).count()
 
     def reply_to_comment(self, commenter, text):
-        return PostComment.create_comment(text=text, commenter=commenter, post=self.post, parent_comment=self)
+        post_comment = PostComment.create_comment(text=text, commenter=commenter, post=self.post, parent_comment=self)
+        post_comment.language = get_language_for_text(text)
+        post_comment.save()
+
+        return post_comment
 
     def react(self, reactor, emoji_id):
         return PostCommentReaction.create_reaction(reactor=reactor, emoji_id=emoji_id, post_comment=self)
@@ -387,7 +730,65 @@ class PostComment(models.Model):
         ''' On save, update timestamps '''
         if not self.id:
             self.created = timezone.now()
+
+        self.modified = timezone.now()
+
+        self._process_post_comment_mentions()
         return super(PostComment, self).save(*args, **kwargs)
+
+    def _process_post_comment_mentions(self):
+        usernames = extract_usernames_from_string(string=self.text)
+
+        if not usernames:
+            self.user_mentions.all().delete()
+        else:
+            existing_mention_usernames = []
+            for existing_mention in self.user_mentions.only('id', 'user__username').all().iterator():
+                if existing_mention.user.username not in usernames:
+                    existing_mention.delete()
+                else:
+                    existing_mention_usernames.append(existing_mention.user.username)
+
+            PostCommentUserMention = get_post_comment_user_mention_model()
+            User = get_user_model()
+
+            for username in usernames:
+                username = username.lower()
+                if username not in existing_mention_usernames:
+                    try:
+                        user = User.objects.only('id', 'username').get(username=username)
+                        user_can_see_post_comment = user.can_see_post_comment(post_comment=self)
+                        user_is_commenter = user.pk == self.commenter_id
+
+                        if not user_can_see_post_comment or user_is_commenter:
+                            continue
+
+                        if self.parent_comment:
+                            user_is_parent_comment_creator = self.parent_comment.commenter_id == user.pk
+                            user_has_replied_before = self.parent_comment.replies.filter(commenter_id=user.pk).exists()
+
+                            if user_has_replied_before or user_is_parent_comment_creator:
+                                # Its a reply to a comment, if the user previously replied to the comment
+                                # or if he's the creator of the parent comment he will already be alerted of the reply,
+                                # no need for mention
+                                continue
+                        else:
+                            user_has_commented_before = self.post.comments.filter(commenter_id=user.pk).exists()
+                            if user_has_commented_before:
+                                # Its a comment to a post, if the user previously commented on the post
+                                # he will already be alerted of the comment, no need for mention
+                                continue
+
+                        PostCommentUserMention.create_post_comment_user_mention(user=user, post_comment=self)
+                        existing_mention_usernames.append(username)
+                    except User.DoesNotExist:
+                        pass
+
+    def update_comment(self, text):
+        self.text = text
+        self.is_edited = True
+        self.language = get_language_for_text(text)
+        self.save()
 
     def soft_delete(self):
         self.is_deleted = True
@@ -399,8 +800,14 @@ class PostComment(models.Model):
         self.save()
 
     def delete_notifications(self):
+        # Delete all post comment reply notifications
         PostCommentReplyNotification = get_post_comment_reply_notification_model()
         PostCommentReplyNotification.delete_post_comment_reply_notifications(post_comment_id=self.pk)
+
+        # Delete all post comment user mention notifications
+        PostCommentUserMentionNotification = get_post_comment_user_mention_notification_model()
+        PostCommentUserMentionNotification.objects.filter(
+            post_comment_user_mention__post_comment__post_id=self.pk).delete()
 
     def delete_notifications_for_user(self, user):
         PostCommentReplyNotification = get_post_comment_reply_notification_model()
@@ -489,3 +896,38 @@ class PostCommentMute(models.Model):
     @classmethod
     def create_post_comment_mute(cls, post_comment_id, muter_id):
         return cls.objects.create(post_comment_id=post_comment_id, muter_id=muter_id)
+
+
+class PostUserMention(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_mentions')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='user_mentions')
+
+    class Meta:
+        unique_together = ('user', 'post',)
+
+    @classmethod
+    def create_post_user_mention(cls, user, post):
+        post_user_mention = cls.objects.create(user=user, post=post)
+        PostUserMentionNotification = get_post_user_mention_notification_model()
+        PostUserMentionNotification.create_post_user_mention_notification(post_user_mention_id=post_user_mention.pk,
+                                                                          owner_id=user.pk)
+        send_post_user_mention_push_notification(post_user_mention=post_user_mention)
+        return post_user_mention
+
+
+class PostCommentUserMention(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_comment_mentions')
+    post_comment = models.ForeignKey(PostComment, on_delete=models.CASCADE, related_name='user_mentions')
+
+    class Meta:
+        unique_together = ('user', 'post_comment',)
+
+    @classmethod
+    def create_post_comment_user_mention(cls, user, post_comment):
+        post_comment_user_mention = cls.objects.create(user=user, post_comment=post_comment)
+        PostCommentUserMentionNotification = get_post_comment_user_mention_notification_model()
+        PostCommentUserMentionNotification.create_post_comment_user_mention_notification(
+            post_comment_user_mention_id=post_comment_user_mention.pk,
+            owner_id=user.pk)
+        send_post_comment_user_mention_push_notification(post_comment_user_mention=post_comment_user_mention)
+        return post_comment_user_mention

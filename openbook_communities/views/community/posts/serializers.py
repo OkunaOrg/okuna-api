@@ -2,7 +2,7 @@ from django.conf import settings
 from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
-from openbook_common.models import Emoji, Badge
+from openbook_common.models import Emoji, Badge, Language
 from openbook_common.serializers_fields.post import PostReactionsEmojiCountField, CommentsCountField, PostCreatorField, \
     PostIsMutedField, ReactionField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
@@ -27,12 +27,13 @@ class GetCommunityPostsSerializer(serializers.Serializer):
 class CreateCommunityPostSerializer(serializers.Serializer):
     text = serializers.CharField(max_length=settings.POST_MAX_LENGTH, required=False, allow_blank=False)
     image = RestrictedImageFileSizeField(allow_empty_file=False, required=False,
-                                         max_upload_size=settings.POST_IMAGE_MAX_SIZE)
+                                         max_upload_size=settings.POST_MEDIA_MAX_SIZE)
     video = serializers.FileField(allow_empty_file=False, required=False)
     community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
                                            allow_blank=False,
                                            required=True,
                                            validators=[community_name_characters_validator, community_name_exists])
+    is_draft = serializers.BooleanField(default=False)
 
 
 class CommunityPostImageSerializer(serializers.ModelSerializer):
@@ -42,6 +43,7 @@ class CommunityPostImageSerializer(serializers.ModelSerializer):
         model = PostImage
         fields = (
             'image',
+            'thumbnail',
             'width',
             'height'
         )
@@ -79,15 +81,6 @@ class CommunityPostCreatorSerializer(serializers.ModelSerializer):
             'profile',
             'username'
         )
-
-
-class CommunityPostVideoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PostVideo
-        fields = (
-            'video',
-        )
-
 
 class CommunityPostReactionEmojiSerializer(serializers.ModelSerializer):
     class Meta:
@@ -147,9 +140,20 @@ class PostReactionSerializer(serializers.ModelSerializer):
         )
 
 
+class PostLanguageSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Language
+        fields = (
+            'id',
+            'code',
+            'name',
+        )
+
+
 class CommunityPostSerializer(serializers.ModelSerializer):
+    # Temp backwards compat
     image = CommunityPostImageSerializer(many=False)
-    video = CommunityPostVideoSerializer(many=False)
     creator = PostCreatorField(post_creator_serializer=CommunityPostCreatorSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=CommunityPostEmojiCountSerializer)
@@ -157,6 +161,7 @@ class CommunityPostSerializer(serializers.ModelSerializer):
     community = CommunityPostCommunitySerializer(many=False)
     is_muted = PostIsMutedField()
     reaction = ReactionField(reaction_serializer=PostReactionSerializer)
+    language = PostLanguageSerializer()
 
     class Meta:
         model = Post
@@ -168,12 +173,16 @@ class CommunityPostSerializer(serializers.ModelSerializer):
             'reactions_emoji_counts',
             'created',
             'text',
+            # Temp backwards compat
             'image',
-            'video',
+            'language',
             'creator',
             'community',
             'is_muted',
             'reaction',
             'is_edited',
-            'is_closed'
+            'is_closed',
+            'media_height',
+            'media_width',
+            'media_thumbnail',
         )

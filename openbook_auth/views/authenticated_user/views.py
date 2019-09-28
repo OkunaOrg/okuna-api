@@ -12,7 +12,9 @@ from django.utils.translation import gettext as _
 from openbook_auth.views.auth.serializers import AuthenticatedUserNotificationsSettingsSerializer, \
     UpdateAuthenticatedUserNotificationsSettingsSerializer
 from openbook_auth.views.authenticated_user.serializers import GetAuthenticatedUserSerializer, \
-    UpdateAuthenticatedUserSerializer, DeleteAuthenticatedUserSerializer, UpdateAuthenticatedUserSettingsSerializer
+    UpdateAuthenticatedUserSerializer, DeleteAuthenticatedUserSerializer, UpdateAuthenticatedUserSettingsSerializer, \
+    AuthenticatedUserLanguageSerializer, AuthenticatedUserAllLanguagesSerializer
+from openbook_common.utils.model_loaders import get_language_model
 from openbook_moderation.permissions import IsNotSuspended, check_user_is_not_suspended
 from openbook_common.responses import ApiMessageResponse
 
@@ -40,6 +42,7 @@ class AuthenticatedUser(APIView):
                 bio=data.get('bio'),
                 url=data.get('url'),
                 followers_count_visible=data.get('followers_count_visible'),
+                community_posts_visible=data.get('community_posts_visible'),
                 save=False
             )
 
@@ -105,6 +108,8 @@ class AuthenticatedUserNotificationsSettings(APIView):
         community_invite_notifications = data.get('community_invite_notifications')
         post_comment_reaction_notifications = data.get('post_comment_reaction_notifications')
         post_comment_reply_notifications = data.get('post_comment_reply_notifications')
+        post_comment_user_mention_notifications = data.get('post_comment_user_mention_notifications')
+        post_user_mention_notifications = data.get('post_user_mention_notifications')
 
         user = request.user
 
@@ -117,7 +122,9 @@ class AuthenticatedUserNotificationsSettings(APIView):
                 connection_confirmed_notifications=connection_confirmed_notifications,
                 community_invite_notifications=community_invite_notifications,
                 post_comment_reaction_notifications=post_comment_reaction_notifications,
-                post_comment_reply_notifications=post_comment_reply_notifications
+                post_comment_reply_notifications=post_comment_reply_notifications,
+                post_comment_user_mention_notifications=post_comment_user_mention_notifications,
+                post_user_mention_notifications=post_user_mention_notifications
             )
 
         user_notifications_settings_serializer = AuthenticatedUserNotificationsSettingsSerializer(
@@ -191,3 +198,27 @@ class AuthenticatedUserAcceptGuidelines(APIView):
             user.accept_guidelines()
 
         return ApiMessageResponse(_('Guidelines successfully accepted'), status=status.HTTP_200_OK)
+
+
+class AuthenticatedUserLanguage(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        Language = get_language_model()
+        languages = Language.objects.all()
+        all_languages_serializer = AuthenticatedUserAllLanguagesSerializer(
+            languages, context={'request': request}, many=True)
+        return Response(all_languages_serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        request_data = request.data
+        serializer = AuthenticatedUserLanguageSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        user = request.user
+
+        with transaction.atomic():
+            user.set_language_with_id(language_id=data.get('language_id'))
+
+        return ApiMessageResponse(_('Language successfully set'), status=status.HTTP_200_OK)

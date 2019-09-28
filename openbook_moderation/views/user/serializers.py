@@ -5,6 +5,7 @@ from openbook_auth.models import UserProfile, User
 from openbook_communities.models import Community
 from openbook_moderation.models import ModerationPenalty, ModeratedObject, \
     ModerationCategory
+from openbook_moderation.serializers import LanguageSerializer
 from openbook_moderation.serializers_fields.community import CommunityPendingModeratedObjectsCountField
 from openbook_posts.models import Post, PostComment, PostImage
 
@@ -111,6 +112,7 @@ class ModerationPenaltyModeratedObjectPostImageSerializer(serializers.ModelSeria
         fields = (
             'id',
             'image',
+            'thumbnail',
             'width',
             'height'
         )
@@ -120,12 +122,14 @@ class ModerationPenaltyModeratedObjectPostSerializer(serializers.ModelSerializer
     creator = ModerationPenaltyModeratedObjectUserSerializer()
     community = ModerationPenaltyModeratedObjectCommunitySerializer()
     image = ModerationPenaltyModeratedObjectPostImageSerializer()
+    language = LanguageSerializer()
 
     class Meta:
         model = Post
         fields = (
             'id',
             'text',
+            'language',
             'creator',
             'community',
             'image',
@@ -136,12 +140,14 @@ class ModerationPenaltyModeratedObjectPostSerializer(serializers.ModelSerializer
 class ModerationPenaltyModeratedObjectPostCommentSerializer(serializers.ModelSerializer):
     commenter = ModerationPenaltyModeratedObjectUserSerializer()
     post = ModerationPenaltyModeratedObjectPostSerializer()
+    language = LanguageSerializer()
 
     class Meta:
         model = PostComment
         fields = (
             'id',
             'text',
+            'language',
             'commenter',
             'commenter',
             'created',
