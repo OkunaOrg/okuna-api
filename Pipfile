@@ -5,6 +5,7 @@ name = "pypi"
 
 [dev-packages]
 polib = "*"
+pytz = "*"
 
 [packages]
 django = "==2.2.5"
@@ -49,6 +50,7 @@ beautifulsoup4 = "*"
 urlextract = "*"
 django-proxy = "*"
 tldextract = "*"
+django-cursor-pagination = "*"
 
 [pipenv]
 allow_prereleases = true

@@ -23,17 +23,20 @@ class Command(BaseCommand):
 
         for post in posts_to_migrate.iterator():
             with transaction.atomic():
-                post_first_media = post.get_first_media()
-                if post_first_media.type == PostMedia.MEDIA_TYPE_IMAGE:
-                    post.media_width = post_first_media.content_object.width
-                    post.media_height = post_first_media.content_object.height
-                    post.media_thumbnail = post_first_media.content_object.image.file
-                elif post_first_media.type == PostMedia.MEDIA_TYPE_VIDEO:
-                    post.media_width = post_first_media.content_object.width
-                    post.media_height = post_first_media.content_object.height
-                    post.media_thumbnail = post_first_media.content_object.thumbnail.file
+                try:
+                    post_first_media = post.get_first_media()
+                    if post_first_media.type == PostMedia.MEDIA_TYPE_IMAGE:
+                        post.media_width = post_first_media.content_object.width
+                        post.media_height = post_first_media.content_object.height
+                        post.media_thumbnail = post_first_media.content_object.image.file
+                    elif post_first_media.type == PostMedia.MEDIA_TYPE_VIDEO:
+                        post.media_width = post_first_media.content_object.width
+                        post.media_height = post_first_media.content_object.height
+                        post.media_thumbnail = post_first_media.content_object.thumbnail.file
 
-                post.save()
+                    post.save()
+                except FileNotFoundError as e:
+                    print('Ignoring post due to image not found')
 
             logger.info(post.media_width)
             logger.info(post.media_height)

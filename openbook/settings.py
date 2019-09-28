@@ -341,11 +341,7 @@ REST_FRAMEWORK = {
 # AWS Translate
 AWS_TRANSLATE_REGION = os.environ.get('AWS_TRANSLATE_REGION', '')
 AWS_TRANSLATE_MAX_LENGTH = os.environ.get('AWS_TRANSLATE_MAX_LENGTH', 10000)
-if TESTING:
-    OS_TRANSLATION_STRATEGY_NAME = 'testing'
-else:
-    OS_TRANSLATION_STRATEGY_NAME = 'default'
-
+OS_TRANSLATION_STRATEGY_NAME = 'default'
 OS_TRANSLATION_CONFIG = {
     'default': {
         'STRATEGY': 'openbook_translation.strategies.amazon.AmazonTranslate',
@@ -493,6 +489,8 @@ SUPPORTED_MEDIA_MIMETYPES = [
     'image/jpeg',
     'image/png'
 ]
+MIN_UNIQUE_TOP_POST_REACTIONS_COUNT = int(os.environ.get('MIN_UNIQUE_TOP_POST_REACTIONS_COUNT', '5'))
+MIN_UNIQUE_TOP_POST_COMMENTS_COUNT = int(os.environ.get('MIN_UNIQUE_TOP_POST_COMMENTS_COUNT', '5'))
 
 # Email Config
 
@@ -509,6 +507,13 @@ AWS_PUBLIC_MEDIA_LOCATION = os.environ.get('AWS_PUBLIC_MEDIA_LOCATION')
 AWS_STATIC_LOCATION = 'static'
 AWS_PRIVATE_MEDIA_LOCATION = os.environ.get('AWS_PRIVATE_MEDIA_LOCATION')
 AWS_DEFAULT_ACL = None
+
+# Testing overrides
+if TESTING:
+    OS_TRANSLATION_STRATEGY_NAME = 'testing'
+    MIN_UNIQUE_TOP_POST_REACTIONS_COUNT = 1
+    MIN_UNIQUE_TOP_POST_COMMENTS_COUNT = 1
+
 
 if IS_PRODUCTION:
     AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')

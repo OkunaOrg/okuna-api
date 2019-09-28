@@ -24,13 +24,15 @@ import json
 from openbook_circles.models import Circle
 from openbook_common.tests.helpers import make_user, make_users, make_fake_post_text, \
     make_authentication_headers_for_user, make_circle, make_community, make_list, make_moderation_category, \
-    get_test_usernames, get_test_videos, get_test_image, make_global_moderator, make_fake_post_comment_text
+    get_test_usernames, get_test_videos, get_test_image, make_global_moderator, \
+    make_fake_post_comment_text, make_reactions_emoji_group, make_emoji
 from openbook_common.utils.helpers import sha256sum
 from openbook_communities.models import Community
 from openbook_lists.models import List
 from openbook_moderation.models import ModeratedObject
 from openbook_notifications.models import PostUserMentionNotification, Notification
-from openbook_posts.models import Post, PostUserMention, PostMedia
+from openbook_posts.jobs import curate_top_posts
+from openbook_posts.models import Post, PostUserMention, PostMedia, TopPost
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -3549,3 +3551,528 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
 
     def _get_url(self):
         return reverse('trending-posts')
+
+
+class TopPostsAPITests(OpenbookAPITestCase):
+    """
+    TopPostsAPITests
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json',
+    ]
+
+    def test_displays_community_posts_only(self):
+        """
+        should display community posts only in top posts and return 200
+        """
+        user = make_user()
+        community = make_community(creator=user)
+        # clear all top posts
+        TopPost.objects.all().delete()
+
+        public_post = user.create_public_post(text=make_fake_post_text())
+        community_post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        # comment on both posts to qualify for top
+        user.comment_post(community_post, text=make_fake_post_comment_text())
+        user.comment_post(public_post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+        response_post = response_posts[0]
+        self.assertEqual(response_post['post']['id'], community_post.pk)
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(1, len(top_posts))
+        self.assertTrue(TopPost.objects.filter(post__id=community_post.pk).exists())
+
+    def test_does_not_display_excluded_community_posts(self):
+        """
+        should not display excluded community posts in top posts
+        """
+        user = make_user()
+        community = make_community(creator=user)
+        # clear all top posts
+        TopPost.objects.all().delete()
+
+        public_post = user.create_public_post(text=make_fake_post_text())
+        community_post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        # comment on both posts to qualify for top
+        user.comment_post(community_post, text=make_fake_post_comment_text())
+        user.comment_post(public_post, text=make_fake_post_comment_text())
+
+        user.exclude_community_with_name_from_top_posts(community.name)
+
+        # curate top posts
+        curate_top_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(0, len(response_posts))
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(1, len(top_posts))
+        self.assertTrue(TopPost.objects.filter(post__id=community_post.pk).exists())
+
+    def test_does_not_curate_encircled_posts(self):
+        """
+        should not curate encircled posts in top posts
+        """
+        post_creator = make_user()
+        user = make_user()
+
+        # clear all top posts
+        TopPost.objects.all().delete()
+
+        circle = make_circle(creator=post_creator)
+
+        post_creator.connect_with_user_with_id(user_id=user.pk, circles_ids=[circle.pk])
+        user.confirm_connection_with_user_with_id(user_id=post_creator.pk)
+
+        post_text = make_fake_post_text()
+        post = post_creator.create_encircled_post(text=post_text, circles_ids=[circle.pk])
+
+        # comment on post to qualify for top
+        user.comment_post(post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(0, len(response_posts))
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(0, len(top_posts))
+        self.assertFalse(TopPost.objects.filter(post__id=post.pk).exists())
+
+    def test_does_not_curate_private_community_posts(self):
+        """
+        should not curate private community posts in top posts
+        """
+        user = make_user()
+
+        # clear all top posts
+        TopPost.objects.all().delete()
+
+        community = make_community(creator=user, type=Community.COMMUNITY_TYPE_PRIVATE)
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        # comment on post to qualify for top
+        user.comment_post(post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(0, len(response_posts))
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(0, len(top_posts))
+        self.assertFalse(TopPost.objects.filter(post__id=post.pk).exists())
+
+    def test_does_not_display_closed_community_posts(self):
+        """
+        should not display community posts that are closed in top posts
+        """
+        user = make_user()
+        community = make_community(creator=user)
+
+        # clear all top posts
+        TopPost.objects.all().delete()
+
+        user.create_public_post(text=make_fake_post_text())
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two.is_closed = True
+        post_two.save()
+
+        # comment on both posts to qualify for top
+        user.comment_post(post, text=make_fake_post_comment_text())
+        user.comment_post(post_two, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+        response_post = response_posts[0]
+        self.assertEqual(response_post['post']['id'], post.pk)
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(1, len(top_posts))
+        self.assertTrue(TopPost.objects.filter(post__id=post.pk).exists())
+
+    def test_does_not_display_reported_community_posts_that_are_approved(self):
+        """
+        should not display community posts that are reported and approved by staff in top posts
+        """
+        user = make_user()
+        post_reporter = make_user()
+        community = make_community(creator=user)
+        post_reporter.join_community_with_name(community_name=community.name)
+
+        # clear all top posts
+        TopPost.objects.all().delete()
+
+        user.create_public_post(text=make_fake_post_text())
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        # comment on both posts to qualify for top
+        user.comment_post(post, text=make_fake_post_comment_text())
+        user.comment_post(post_two, text=make_fake_post_comment_text())
+
+        # report and approve the report for one post
+        moderation_category = make_moderation_category()
+        post_reporter.report_post(post=post, category_id=moderation_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=moderation_category.pk)
+        user.approve_moderated_object(moderated_object=moderated_object)
+
+        # curate top posts
+        curate_top_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+        response_post = response_posts[0]
+        self.assertEqual(response_post['post']['id'], post_two.pk)
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(1, len(top_posts))
+        self.assertTrue(TopPost.objects.filter(post__id=post_two.pk).exists())
+
+    def test_does_not_display_post_from_community_banned_from(self):
+        """
+        should not display posts from a community banned from and return 200 in top posts
+        """
+        user = make_user()
+        community_owner = make_user()
+
+        # clear all top posts
+        TopPost.objects.all().delete()
+
+        community = make_community(creator=community_owner)
+        user.join_community_with_name(community_name=community.name)
+        community_owner.ban_user_with_username_from_community_with_name(username=user.username,
+                                                                        community_name=community.name)
+
+        post = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
+        # comment on post to qualify for top
+        community_owner.comment_post(post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_post_of_blocked_user(self):
+        """
+        should not be able to retrieve posts of a blocked user in top posts
+        """
+        user = make_user()
+
+        # clear all top posts
+        TopPost.objects.all().delete()
+
+        user_to_retrieve_posts_from = make_user()
+        community = make_community(creator=user_to_retrieve_posts_from)
+        post = user_to_retrieve_posts_from.create_community_post(community_name=community.name, text=make_fake_post_text())
+        user_to_retrieve_posts_from.comment_post(post, text=make_fake_post_comment_text())
+
+        user.follow_user_with_id(user_id=user_to_retrieve_posts_from.pk)
+        user.block_user_with_id(user_id=user_to_retrieve_posts_from.pk)
+
+        # curate top posts
+        curate_top_posts()
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_post_of_blocking_user(self):
+        """
+        should not be able to retrieve posts of a blocking user in top posts
+        """
+        user = make_user()
+
+        # clear all top posts
+        TopPost.objects.all().delete()
+
+        user_to_retrieve_posts_from = make_user()
+        community = make_community(creator=user_to_retrieve_posts_from)
+        post = user_to_retrieve_posts_from.create_community_post(community_name=community.name, text=make_fake_post_text())
+        user_to_retrieve_posts_from.comment_post(post, text=make_fake_post_comment_text())
+
+        user_to_retrieve_posts_from.block_user_with_id(user_id=user.pk)
+
+        # curate top posts
+        curate_top_posts()
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_post_of_blocked_community_staff_member(self):
+        """
+        should not be able to retrieve posts of a blocked community staff member
+        """
+        user = make_user()
+        community_owner = make_user()
+
+        # clear all top posts
+        TopPost.objects.all().delete()
+
+        community = make_community(creator=community_owner)
+        post = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
+        community_owner.comment_post(post, text=make_fake_post_comment_text())
+
+        user.block_user_with_id(user_id=community_owner.pk)
+
+        # curate top posts
+        curate_top_posts()
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_should_have_minimum_comments_to_curate_as_top_post(self):
+        """
+        should not curate a post as top post unless it has minimum no of comments
+        """
+        user = make_user()
+        community_owner = make_user()
+
+        # clear all top posts
+        TopPost.objects.all().delete()
+
+        community = make_community(creator=community_owner)
+        post = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        # comment once, min comments required while testing
+        community_owner.comment_post(post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        top_posts = TopPost.objects.all()
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(1, len(top_posts))
+        self.assertTrue(TopPost.objects.filter(post__id=post.pk).exists())
+
+    def test_should_have_minimum_reactions_to_curate_as_top_post(self):
+        """
+        should not curate a post as top post unless it has minimum no of reactions
+        """
+        user = make_user()
+        community_owner = make_user()
+
+        # clear all top posts
+        TopPost.objects.all().delete()
+
+        community = make_community(creator=community_owner)
+        post = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        community_owner.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, )
+
+        # curate top posts
+        curate_top_posts()
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(1, len(top_posts))
+        self.assertTrue(TopPost.objects.filter(post__id=post.pk).exists())
+
+    def test_should_respect_max_id_param_for_top_posts(self):
+        """
+        should take into account max_id in when returning top posts
+        """
+        user = make_user()
+
+        # clear all top posts
+        TopPost.objects.all().delete()
+
+        total_posts = 10
+
+        community = make_community(creator=user)
+
+        for i in range(total_posts):
+            post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            user.comment_post(post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, {'max_id': 5}, **headers)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(4, len(response_posts))
+
+        for top_post in response_posts:
+            self.assertTrue(top_post['id'] < 5)
+
+    def test_should_respect_min_id_param_for_top_posts(self):
+        """
+        should take into account min_id in when returning top posts
+        """
+        user = make_user()
+
+        # clear all top posts
+        TopPost.objects.all().delete()
+
+        total_posts = 10
+
+        community = make_community(creator=user)
+
+        for i in range(total_posts):
+            post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            user.comment_post(post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, {'min_id': 5}, **headers)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(5, len(response_posts))
+
+        for top_post in response_posts:
+            self.assertTrue(top_post['id'] > 5)
+
+    def test_should_respect_count_param_for_top_posts(self):
+        """
+        should take into account count when returning top posts
+        """
+        user = make_user()
+
+        # clear all top posts
+        TopPost.objects.all().delete()
+
+        total_posts = 10
+
+        community = make_community(creator=user)
+
+        for i in range(total_posts):
+            post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            user.comment_post(post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, {'count': 5}, **headers)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(5, len(response_posts))
+
+    def _get_url(self):
+        return reverse('top-posts')

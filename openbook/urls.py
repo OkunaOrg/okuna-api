@@ -36,7 +36,7 @@ from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups, ProxyDomainCheck
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
     FavoriteCommunities, SearchCommunities, JoinedCommunities, AdministratedCommunities, ModeratedCommunities, \
-    SearchJoinedCommunities
+    SearchJoinedCommunities, TopPostCommunityExclusions, TopPostCommunityExclusionsSearch
 from openbook_communities.views.community.administrators.views import CommunityAdministratorItem, \
     CommunityAdministrators, SearchCommunityAdministrators
 from openbook_communities.views.community.banned_users.views import BanUser, UnbanUser, CommunityBannedUsers, \
@@ -46,7 +46,8 @@ from openbook_communities.views.community.members.views import CommunityMembers,
 from openbook_communities.views.community.moderators.views import CommunityModeratorItem, CommunityModerators, \
     SearchCommunityModerators
 from openbook_communities.views.community.posts.views import CommunityPosts, ClosedCommunityPosts
-from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, FavoriteCommunity
+from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, FavoriteCommunity, \
+    TopPostCommunityExclusion
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
 from openbook_invitations.views import UserInvite, UserInvites, SearchUserInvites, SendUserInviteEmail
@@ -75,7 +76,7 @@ from openbook_posts.views.post_comments.views import PostComments, PostCommentsD
 from openbook_posts.views.post_media.views import PostMedia
 from openbook_posts.views.post_reaction.views import PostReactionItem
 from openbook_posts.views.post_reactions.views import PostReactions, PostReactionsEmojiCount, PostReactionEmojiGroups
-from openbook_posts.views.posts.views import Posts, TrendingPosts
+from openbook_posts.views.posts.views import Posts, TrendingPosts, TopPosts
 from openbook_importer.views import ImportItem
 
 auth_auth_patterns = [
@@ -200,6 +201,7 @@ posts_patterns = [
     path('<uuid:post_uuid>/', include(post_patterns)),
     path('', Posts.as_view(), name='posts'),
     path('trending/', TrendingPosts.as_view(), name='trending-posts'),
+    path('top/', TopPosts.as_view(), name='top-posts'),
     path('emojis/groups/', PostReactionEmojiGroups.as_view(), name='posts-emoji-groups'),
 ]
 
@@ -260,6 +262,7 @@ community_patterns = [
     path('moderators/', include(community_moderators_patterns)),
     path('moderated-objects/', include(community_moderated_objects_patterns)),
     path('report/', ReportCommunity.as_view(), name='report-community'),
+    path('top-posts/exclude/', TopPostCommunityExclusion.as_view(), name='exclude-community-from-top-posts'),
 ]
 
 communities_patterns = [
@@ -271,6 +274,8 @@ communities_patterns = [
     path('administrated/', AdministratedCommunities.as_view(), name='administrated-communities'),
     path('moderated/', ModeratedCommunities.as_view(), name='moderated-communities'),
     path('name-check/', CommunityNameCheck.as_view(), name='community-name-check'),
+    path('top-posts/exclusions/', TopPostCommunityExclusions.as_view(), name='top-posts-excluded-communities'),
+    path('top-posts/exclusions/search/', TopPostCommunityExclusionsSearch.as_view(), name='search-top-posts-excluded-communities'),
     path('search/', SearchCommunities.as_view(), name='search-communities'),
     path('<str:community_name>/', include(community_patterns)),
 ]

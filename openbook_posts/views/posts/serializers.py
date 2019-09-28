@@ -13,7 +13,7 @@ from openbook_common.models import Language
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_lists.validators import list_id_exists
-from openbook_posts.models import PostImage, Post, PostReaction
+from openbook_posts.models import PostImage, Post, PostReaction, TopPost
 
 
 class GetPostsSerializer(serializers.Serializer):
@@ -43,6 +43,19 @@ class GetPostsSerializer(serializers.Serializer):
             user_username_exists
         ],
         required=False
+    )
+
+
+class GetTopPostsSerializer(serializers.Serializer):
+    max_id = serializers.IntegerField(
+        required=False,
+    )
+    min_id = serializers.IntegerField(
+        required=False,
+    )
+    count = serializers.IntegerField(
+        required=False,
+        max_value=20
     )
 
 
@@ -232,6 +245,18 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'media_thumbnail',
             # Temp backwards compat
             'image',
+        )
+
+
+class AuthenticatedUserTopPostSerializer(serializers.ModelSerializer):
+    post = AuthenticatedUserPostSerializer()
+
+    class Meta:
+        model = TopPost
+        fields = (
+            'id',
+            'post',
+            'created'
         )
 
 
