@@ -223,10 +223,20 @@ class Post(models.Model):
         return PostComment.count_comments_for_post_with_id(self.pk)
 
     def count_comments_with_user(self, user):
-        # Only count top level comments
-        count_query = Q(parent_comment__isnull=True)
+        # Count comments excluding users blocked by authenticated user
+        count_query = ~Q(Q(commenter__blocked_by_users__blocker_id=user.pk) | Q(
+            commenter__user_blocks__blocked_user_id=user.pk))
 
         if self.community:
+            if not user.is_staff_of_community_with_name(community_name=self.community.name):
+                # Dont retrieve comments except from staff members
+                blocked_users_query_staff_members = Q(
+                    commenter__communities_memberships__community_id=self.community.pk)
+                blocked_users_query_staff_members.add(Q(commenter__communities_memberships__is_administrator=True) | Q(
+                    commenter__communities_memberships__is_moderator=True), Q.AND)
+
+                count_query.add(~blocked_users_query_staff_members, Q.AND)
+
             # Don't count items that have been reported and approved by community moderators
             ModeratedObject = get_moderated_object_model()
             count_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
@@ -680,9 +690,20 @@ class PostComment(models.Model):
         return self.replies.count()
 
     def count_replies_with_user(self, user):
-        count_query = Q()
+        # Count replies excluding users blocked by authenticated user
+        count_query = ~Q(Q(commenter__blocked_by_users__blocker_id=user.pk) | Q(
+            commenter__user_blocks__blocked_user_id=user.pk))
 
-        if self.post.community_id:
+        if self.post.community:
+            if not user.is_staff_of_community_with_name(community_name=self.post.community.name):
+                # Dont retrieve comments except from staff members
+                blocked_users_query_staff_members = Q(
+                    commenter__communities_memberships__community_id=self.post.community.pk)
+                blocked_users_query_staff_members.add(Q(commenter__communities_memberships__is_administrator=True) | Q(
+                    commenter__communities_memberships__is_moderator=True), Q.AND)
+
+                count_query.add(~blocked_users_query_staff_members, Q.AND)
+
             # Don't count items that have been reported and approved by community moderators
             ModeratedObject = get_moderated_object_model()
             count_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)

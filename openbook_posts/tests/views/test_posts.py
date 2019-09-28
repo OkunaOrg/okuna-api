@@ -2895,6 +2895,100 @@ class PostsAPITests(OpenbookAPITestCase):
 
         self.assertEqual(0, len(response_posts))
 
+    def test_comment_counts_on_community_post_should_exclude_blocked_users(self):
+        """
+        should not count blocked users that are not admins in the comment counts on a community post
+        """
+        user = make_user()
+        blocked_user = make_user()
+
+        community_creator = make_user()
+
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        blocked_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+        user.block_user_with_id(user_id=blocked_user.pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(1, len(response_posts))
+
+        response_post = response_posts[0]
+        comments_count = response_post['comments_count']
+        self.assertEqual(comments_count, 0)
+
+    def test_comment_counts_on_community_post_should_include_blocked_users_if_they_are_admins(self):
+        """
+        should count blocked users that ARE admins of that community in the comment counts on a community post
+        """
+        user = make_user()
+        blocked_user = make_user()
+
+        community = make_community(creator=blocked_user)
+
+        user.join_community_with_name(community_name=community.name)
+
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        blocked_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+        user.block_user_with_id(user_id=blocked_user.pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(1, len(response_posts))
+
+        response_post = response_posts[0]
+        comments_count = response_post['comments_count']
+        self.assertEqual(comments_count, 1)
+
+    def test_comment_counts_on_posts_should_include_replies(self):
+        """
+        should count replies in the comment counts on posts
+        """
+        user = make_user()
+        replier = make_user()
+
+        post = user.create_public_post(text=make_fake_post_text())
+
+        post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+        replier.reply_to_comment_with_id_for_post_with_uuid(post_comment_id=post_comment.pk,
+                                                            post_uuid=post.uuid,
+                                                            text=make_fake_post_comment_text())
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(1, len(response_posts))
+
+        response_post = response_posts[0]
+        comments_count = response_post['comments_count']
+        self.assertTrue(comments_count, 2)
+
     def test_cant_retrieve_own_draft_posts_by_username(self):
         """
         should not be able to retrieve own draft posts by username
