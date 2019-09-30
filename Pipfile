@@ -51,6 +51,7 @@ urlextract = "*"
 django-proxy = "*"
 tldextract = "*"
 django-cursor-pagination = "*"
+shutilwhich = "*"
 
 [pipenv]
 allow_prereleases = true
