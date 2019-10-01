@@ -4,6 +4,7 @@ from video_encoding import tasks
 from django.db.models import Q, Count
 from django.conf import settings
 from cursor_pagination import CursorPaginator
+from django.db import IntegrityError
 
 from openbook_common.utils.model_loaders import get_post_model, get_post_media_model, get_community_model, \
     get_top_post_model, get_post_comment_model, get_moderated_object_model
