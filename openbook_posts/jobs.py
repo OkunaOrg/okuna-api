@@ -4,6 +4,7 @@ from video_encoding import tasks
 from django.db.models import Q, Count
 from django.conf import settings
 from cursor_pagination import CursorPaginator
+from django.db import IntegrityError
 
 from openbook_common.utils.model_loaders import get_post_model, get_post_media_model, get_community_model, \
     get_top_post_model, get_post_comment_model, get_moderated_object_model
@@ -80,6 +81,14 @@ def _chunked_queryset_iterator(queryset, size, *, ordering=('id',)):
         after = pager.cursor(instance=page[-1])
 
 
+def _bulk_create_top_posts(top_posts_objects):
+    TopPost = get_top_post_model()
+    try:
+        TopPost.objects.bulk_create(top_posts_objects)
+    except IntegrityError as e:
+        logger.error('Integrity error during bulk create top posts job', e)
+
+
 @job
 def curate_top_posts():
     """
@@ -130,11 +139,11 @@ def curate_top_posts():
                 top_posts_objects.append(top_post)
 
         if len(top_posts_objects) > 1000:
-            TopPost.objects.bulk_create(top_posts_objects)
+            _bulk_create_top_posts(top_posts_objects)
             top_posts_objects = []
 
     if len(top_posts_objects) > 0:
-        TopPost.objects.bulk_create(top_posts_objects)
+        _bulk_create_top_posts(top_posts_objects)
 
 
 @job
