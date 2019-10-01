@@ -129,7 +129,12 @@ def curate_top_posts():
             if top_post is not None:
                 top_posts_objects.append(top_post)
 
-    TopPost.objects.bulk_create(top_posts_objects)
+        if len(top_posts_objects) > 1000:
+            TopPost.objects.bulk_create(top_posts_objects)
+            top_posts_objects = []
+
+    if len(top_posts_objects) > 0:
+        TopPost.objects.bulk_create(top_posts_objects)
 
 
 @job
