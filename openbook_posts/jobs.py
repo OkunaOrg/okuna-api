@@ -133,6 +133,9 @@ def curate_top_posts():
             TopPost.objects.bulk_create(top_posts_objects)
             top_posts_objects = []
 
+    if len(top_posts_objects) > 0:
+        TopPost.objects.bulk_create(top_posts_objects)
+
 
 @job
 def clean_top_posts():
