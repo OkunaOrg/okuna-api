@@ -29,7 +29,7 @@ class ReadNotificationsSerializer(serializers.Serializer):
     )
 
 
-class UnreadNotificationsSerializer(serializers.Serializer):
+class UnreadNotificationsCountSerializer(serializers.Serializer):
     max_id = serializers.IntegerField(
         required=False,
     )

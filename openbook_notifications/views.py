@@ -8,7 +8,8 @@ from rest_framework.views import APIView
 from openbook_common.utils.helpers import normalize_list_value_in_request_data
 from openbook_moderation.permissions import IsNotSuspended
 from openbook_notifications.serializers import GetNotificationsSerializer, GetNotificationsNotificationSerializer, \
-    DeleteNotificationSerializer, ReadNotificationSerializer, ReadNotificationsSerializer, UnreadNotificationsSerializer
+    DeleteNotificationSerializer, ReadNotificationSerializer, ReadNotificationsSerializer, \
+    UnreadNotificationsCountSerializer
 
 
 class Notifications(APIView):
@@ -78,7 +79,7 @@ class UnreadNotificationsCount(APIView):
 
         normalize_list_value_in_request_data('types', query_params)
 
-        serializer = UnreadNotificationsSerializer(data=query_params)
+        serializer = UnreadNotificationsCountSerializer(data=query_params)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
