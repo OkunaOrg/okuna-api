@@ -2493,6 +2493,16 @@ class User(AbstractUser):
 
         self.notifications.filter(notifications_query).update(read=True)
 
+    def get_unread_notifications(self, max_id=None, types=None):
+        notifications_query = Q(read=False)
+
+        if max_id:
+            notifications_query.add(Q(id__lte=max_id), Q.AND)
+        if types:
+            notifications_query.add(Q(notification_type__in=types), Q.AND)
+
+        return self.notifications.filter(notifications_query)
+
     def read_notification_with_id(self, notification_id):
         check_can_read_notification_with_id(user=self, notification_id=notification_id)
         notification = self.notifications.get(id=notification_id)

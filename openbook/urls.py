@@ -63,7 +63,8 @@ from openbook_moderation.views.moderation_categories.views import ModerationCate
 from openbook_moderation.views.report.views import ReportUser, ReportPost, ReportCommunity, \
     ReportPostComment
 from openbook_moderation.views.user.views import UserModerationPenalties, UserPendingModeratedObjectsCommunities
-from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
+from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification, \
+    UnreadNotificationsCount
 from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost, TranslatePost, \
     PostPreviewLinkData, SearchPostParticipants, GetPostParticipants, PublishPost, PostStatus
 from openbook_posts.views.post_comment.post_comment_reaction.views import PostCommentReactionItem
@@ -323,6 +324,7 @@ notification_patterns = [
 notifications_patterns = [
     path('', Notifications.as_view(), name='notifications'),
     path('read/', ReadNotifications.as_view(), name='read-notifications'),
+    path('unread/count/', UnreadNotificationsCount.as_view(), name='unread-notifications-count'),
     path('<int:notification_id>/', include(notification_patterns)),
 ]
 
