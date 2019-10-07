@@ -93,7 +93,8 @@ def curate_top_posts():
     TopPost = get_top_post_model()
     logger.info('Processing top posts at %s...' % timezone.now())
 
-    top_posts_community_query = Q(community__isnull=False, community__type=Community.COMMUNITY_TYPE_PUBLIC)
+    top_posts_community_query = Q(top_post__isnull=True)
+    top_posts_community_query.add(Q(community__isnull=False, community__type=Community.COMMUNITY_TYPE_PUBLIC), Q.AND)
     top_posts_community_query.add(Q(is_closed=False, is_deleted=False, status=Post.STATUS_PUBLISHED), Q.AND)
     top_posts_community_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
 
