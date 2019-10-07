@@ -1120,6 +1120,18 @@ class User(AbstractUser):
         post_comment.update_comment(text)
         return post_comment
 
+    def get_comment_with_id_for_post_with_uuid(self, post_comment_id, post_uuid):
+        Post = get_post_model()
+        post = Post.objects.get(uuid=post_uuid)
+
+        PostComment = get_post_comment_model()
+        post_comment = PostComment.objects.get(pk=post_comment_id)
+        return self.get_comment_for_post(post_comment=post_comment, post=post)
+
+    def get_comment_for_post(self, post, post_comment):
+        check_can_get_comment_for_post(user=self, post_comment=post_comment, post=post)
+        return post_comment
+
     def create_circle(self, name, color):
         check_circle_name_not_taken(user=self, circle_name=name)
         Circle = get_circle_model()
@@ -2057,10 +2069,13 @@ class User(AbstractUser):
         posts_prefetch_related = ('post__circles', 'post__creator__profile__badges')
 
         posts_only = ('id',
-                      'post__text', 'post__id', 'post__uuid', 'post__created', 'post__image__width', 'post__image__height', 'post__image__image',
-                      'post__creator__username', 'post__creator__id', 'post__creator__profile__name', 'post__creator__profile__avatar',
+                      'post__text', 'post__id', 'post__uuid', 'post__created', 'post__image__width',
+                      'post__image__height', 'post__image__image',
+                      'post__creator__username', 'post__creator__id', 'post__creator__profile__name',
+                      'post__creator__profile__avatar',
                       'post__creator__profile__badges__id', 'post__creator__profile__badges__keyword',
-                      'post__creator__profile__id', 'post__community__id', 'post__community__name', 'post__community__avatar',
+                      'post__creator__profile__id', 'post__community__id', 'post__community__name',
+                      'post__community__avatar',
                       'post__community__color', 'post__community__title')
 
         reported_posts_exclusion_query = ~Q(post__moderated_object__reports__reporter_id=self.pk)

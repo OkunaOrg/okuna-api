@@ -9,13 +9,32 @@ from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import get_post_id_for_post_uuid
 from openbook_moderation.permissions import IsNotSuspended
 from openbook_posts.views.post_comment.serializers import DeletePostCommentSerializer, UpdatePostCommentSerializer, \
-    EditPostCommentSerializer, MutePostCommentSerializer, UnmutePostCommentSerializer, TranslatePostCommentSerializer
+    EditPostCommentSerializer, MutePostCommentSerializer, UnmutePostCommentSerializer, TranslatePostCommentSerializer, \
+    GetPostCommentSerializer
 from openbook_translation.strategies.base import UnsupportedLanguagePairException, TranslationClientError, \
     MaxTextLengthExceededError
 
 
 class PostCommentItem(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
+
+    def get(self, request, post_uuid, post_comment_id):
+        request_data = self._get_request_data(request, post_uuid, post_comment_id)
+
+        serializer = GetPostCommentSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        post_uuid = data.get('post_uuid')
+        post_comment_id = data.get('post_comment_id')
+
+        user = request.user
+
+        post_comment = user.get_comment_with_id_for_post_with_uuid(post_comment_id=post_comment_id,
+                                                                   post_uuid=post_uuid)
+
+        post_comment_serializer = GetPostCommentSerializer(post_comment, context={"request": request})
+        return Response(post_comment_serializer.data, status=status.HTTP_200_OK)
 
     def delete(self, request, post_uuid, post_comment_id):
         request_data = self._get_request_data(request, post_uuid, post_comment_id)
@@ -119,7 +138,8 @@ class TranslatePostComment(APIView):
         try:
             post_comment, translated_text = user.translate_post_comment_with_id(post_comment_id=post_comment_id)
         except UnsupportedLanguagePairException:
-            return ApiMessageResponse(_('Translation between these languages is not supported.'), status=status.HTTP_400_BAD_REQUEST)
+            return ApiMessageResponse(_('Translation between these languages is not supported.'),
+                                      status=status.HTTP_400_BAD_REQUEST)
         except TranslationClientError:
             return ApiMessageResponse(_('Translation service returned an error'),
                                       status=status.HTTP_500_INTERNAL_SERVER_ERROR)

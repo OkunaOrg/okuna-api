@@ -1,6 +1,13 @@
 from rest_framework import serializers
 from django.conf import settings
-from openbook_posts.models import PostComment
+
+from openbook_auth.models import UserProfile, User
+from openbook_common.models import Language, Emoji
+from openbook_common.serializers import UserProfileBadgeSerializer
+from openbook_common.serializers_fields.post_comment import PostCommenterField, PostCommentReactionsEmojiCountField, \
+    PostCommentReactionField, PostCommentIsMutedField, RepliesCountField
+from openbook_communities.models import CommunityMembership
+from openbook_posts.models import PostComment, PostCommentReaction
 from openbook_posts.validators import post_comment_id_exists, post_uuid_exists, \
     post_comment_id_exists_for_post_with_uuid
 from openbook_posts.views.posts.serializers import PostLanguageSerializer
@@ -20,6 +27,17 @@ class EditPostCommentSerializer(serializers.ModelSerializer):
 
 
 class DeletePostCommentSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+    post_comment_id = serializers.IntegerField(
+        validators=[post_comment_id_exists],
+        required=True,
+    )
+
+
+class GetPostCommentSerializer(serializers.Serializer):
     post_uuid = serializers.UUIDField(
         validators=[post_uuid_exists],
         required=True,
@@ -70,3 +88,113 @@ class TranslatePostCommentSerializer(serializers.Serializer):
         validators=[post_comment_id_exists],
         required=True,
     )
+
+
+class GetPostCommenterProfileSerializer(serializers.ModelSerializer):
+    badges = UserProfileBadgeSerializer(many=True)
+
+    class Meta:
+        model = UserProfile
+        fields = (
+            'avatar',
+            'badges',
+            'name'
+        )
+
+
+class GetPostCommentCommenterSerializer(serializers.ModelSerializer):
+    profile = GetPostCommenterProfileSerializer(many=False)
+
+    class Meta:
+        model = User
+        fields = (
+            'username',
+            'profile',
+            'id'
+        )
+
+
+class GetPostCommenterCommunityMembershipSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommunityMembership
+        fields = (
+            'id',
+            'user_id',
+            'community_id',
+            'is_administrator',
+            'is_moderator',
+        )
+
+
+class PostCommentLanguageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Language
+        fields = (
+            'id',
+            'code',
+            'name',
+        )
+
+
+class PostCommentRepliesParentCommentSerializer(serializers.ModelSerializer):
+    language = PostCommentLanguageSerializer()
+
+    class Meta:
+        model = PostComment
+        fields = (
+            'id',
+            'language',
+        )
+
+
+class PostCommentReactionEmojiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Emoji
+        fields = (
+            'id',
+            'keyword',
+            'image',
+            'created',
+        )
+
+
+class GetPostCommentReactionEmojiCountSerializer(serializers.Serializer):
+    emoji = PostCommentReactionEmojiSerializer(many=False)
+    count = serializers.IntegerField(required=True, )
+
+
+class GetPostCommentReactionSerializer(serializers.ModelSerializer):
+    emoji = PostCommentReactionEmojiSerializer(many=False)
+
+    class Meta:
+        model = PostCommentReaction
+        fields = (
+            'emoji',
+            'id'
+        )
+
+
+class GetPostCommentSerializer(serializers.ModelSerializer):
+    commenter = PostCommenterField(post_commenter_serializer=GetPostCommentCommenterSerializer,
+                                   community_membership_serializer=GetPostCommenterCommunityMembershipSerializer)
+    replies_count = RepliesCountField()
+    reactions_emoji_counts = PostCommentReactionsEmojiCountField(
+        emoji_count_serializer=GetPostCommentReactionEmojiCountSerializer)
+    reaction = PostCommentReactionField(post_comment_reaction_serializer=GetPostCommentReactionSerializer)
+    is_muted = PostCommentIsMutedField()
+    language = PostCommentLanguageSerializer()
+
+    class Meta:
+        model = PostComment
+        fields = (
+            'commenter',
+            'text',
+            'language',
+            'created',
+            'reactions_emoji_counts',
+            'replies_count',
+            'reaction',
+            'is_edited',
+            'is_muted',
+            'id'
+        )
