@@ -147,6 +147,25 @@ Cleans up all draft posts which have not being modified for a day.
 
 Should be run every hour or so.
 
+##### openbook_posts.jobs.curate_top_posts
+
+Curates the top posts, which end up in the explore tab.
+
+Should be run every 5 minutes or so.
+
+
+##### openbook_posts.jobs.clean_top_posts
+
+Cleans the top posts which should no longer be top posts.
+
+This happens if an item is soft deleted, reported and approved
+
+Should be run every 5 minutes or so.
+
+
+
+
+
 
 <br>
 
