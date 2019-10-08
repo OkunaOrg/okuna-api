@@ -5,7 +5,6 @@ from django.core.files import File
 from video_encoding.utils import get_fieldfile_local_path
 from .backends import get_backend
 
-
 class VideoFile(File):
     """
     A mixin for use alongside django.core.files.base.File, which provides
@@ -44,6 +43,9 @@ class VideoFile(File):
             encoding_backend = get_backend()
 
             local_path, local_tmp_file = get_fieldfile_local_path(fieldfile=self)
+
+            if (not local_path or not os.path.exists(local_path)) or (local_tmp_file and not os.path.exists(local_tmp_file)):
+                return {}
 
             info_cache = encoding_backend.get_media_info(local_path)
 
