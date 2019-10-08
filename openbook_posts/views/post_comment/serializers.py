@@ -37,7 +37,7 @@ class DeletePostCommentSerializer(serializers.Serializer):
     )
 
 
-class GetPostCommentSerializer(serializers.Serializer):
+class GetPostCommentRequestSerializer(serializers.Serializer):
     post_uuid = serializers.UUIDField(
         validators=[post_uuid_exists],
         required=True,

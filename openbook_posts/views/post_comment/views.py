@@ -10,7 +10,7 @@ from openbook_common.utils.helpers import get_post_id_for_post_uuid
 from openbook_moderation.permissions import IsNotSuspended
 from openbook_posts.views.post_comment.serializers import DeletePostCommentSerializer, UpdatePostCommentSerializer, \
     EditPostCommentSerializer, MutePostCommentSerializer, UnmutePostCommentSerializer, TranslatePostCommentSerializer, \
-    GetPostCommentSerializer
+    GetPostCommentSerializer, GetPostCommentRequestSerializer
 from openbook_translation.strategies.base import UnsupportedLanguagePairException, TranslationClientError, \
     MaxTextLengthExceededError
 
@@ -19,9 +19,10 @@ class PostCommentItem(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request, post_uuid, post_comment_id):
-        request_data = self._get_request_data(request, post_uuid, post_comment_id)
-
-        serializer = GetPostCommentSerializer(data=request_data)
+        serializer = GetPostCommentRequestSerializer(data={
+            'post_uuid': post_uuid,
+            'post_comment_id': post_comment_id
+        })
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
