@@ -2051,6 +2051,7 @@ class User(AbstractUser):
         """
         Post = get_post_model()
         TopPost = get_top_post_model()
+        Community = get_community_model()
 
         posts_select_related = ('post__creator', 'post__creator__profile', 'post__community', 'post__image')
         posts_prefetch_related = ('post__circles', 'post__creator__profile__badges')
@@ -2070,6 +2071,7 @@ class User(AbstractUser):
 
         top_community_posts_query.add(~Q(Q(post__creator__blocked_by_users__blocker_id=self.pk) | Q(
             post__creator__user_blocks__blocked_user_id=self.pk)), Q.AND)
+        top_community_posts_query.add(Q(post__community__type=Community.COMMUNITY_TYPE_PUBLIC), Q.AND)
         top_community_posts_query.add(~Q(post__community__banned_users__id=self.pk), Q.AND)
 
         if max_id:
@@ -2492,6 +2494,16 @@ class User(AbstractUser):
             notifications_query.add(Q(notification_type__in=types), Q.AND)
 
         self.notifications.filter(notifications_query).update(read=True)
+
+    def get_unread_notifications(self, max_id=None, types=None):
+        notifications_query = Q(read=False)
+
+        if max_id:
+            notifications_query.add(Q(id__lte=max_id), Q.AND)
+        if types:
+            notifications_query.add(Q(notification_type__in=types), Q.AND)
+
+        return self.notifications.filter(notifications_query)
 
     def read_notification_with_id(self, notification_id):
         check_can_read_notification_with_id(user=self, notification_id=notification_id)

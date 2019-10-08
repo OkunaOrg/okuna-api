@@ -523,7 +523,7 @@ class Post(models.Model):
 
 
 class TopPost(models.Model):
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='top_post', unique=True)
+    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='top_post')
     created = models.DateTimeField(editable=False, db_index=True)
 
     def save(self, *args, **kwargs):

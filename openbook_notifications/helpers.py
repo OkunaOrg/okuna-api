@@ -92,11 +92,11 @@ def send_connection_request_push_notification(connection_requester, connection_r
         target_user_language_code = get_notification_language_code_for_target_user(connection_requested_for)
         with translation.override(target_user_language_code):
             one_signal_notification = onesignal_sdk.Notification(
-                post_body={"en": _(
+                post_body={"contents": {"en": _(
                     '%(connection_requester_name)s · @%(connection_requester_username)s wants to connect with you.') % {
                                      'connection_requester_username': connection_requester.username,
                                      'connection_requester_name': connection_requester.profile.name,
-                                 }})
+                                 }}})
 
         Notification = get_notification_model()
 
@@ -106,7 +106,7 @@ def send_connection_request_push_notification(connection_requester, connection_r
 
         one_signal_notification.set_parameter('data', notification_data)
 
-        _send_notification_to_user(user=connection_requested_for, notification=one_signal_notification, )
+        _send_notification_to_user(user=connection_requested_for, notification=one_signal_notification)
 
 
 def send_post_comment_reaction_push_notification(post_comment_reaction):
@@ -209,12 +209,12 @@ def send_community_invite_push_notification(community_invite):
         target_user_language_code = get_notification_language_code_for_target_user(invited_user)
         with translation.override(target_user_language_code):
             one_signal_notification = onesignal_sdk.Notification(
-                post_body={"en": _(
+                post_body={"contents": {"en": _(
                     '%(invite_creator_name)s · @%(invite_creator_username)s has invited you to join /c/%(community_name)s.') % {
                                      'invite_creator_username': invite_creator.username,
                                      'invite_creator_name': invite_creator.profile.name,
                                      'community_name': community.name,
-                                 }})
+                                 }}})
 
         Notification = get_notification_model()
 
