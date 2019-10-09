@@ -1138,6 +1138,10 @@ def check_can_see_post_comment(user, post_comment):
         )
 
 
+def check_can_get_comment_for_post(user, post_comment, post, ):
+    check_can_see_post_comment(user=user, post_comment=post_comment)
+
+
 def check_can_get_global_moderated_objects(user):
     check_is_global_moderator(user=user)
 
@@ -1310,4 +1314,3 @@ def check_can_get_preview_link_data_for_post(user, post):
         raise ValidationError(
             _('No link associated with post.'),
         )
-
