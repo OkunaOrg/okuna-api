@@ -5,6 +5,7 @@ from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import user_username_exists, username_characters_validator
 from openbook_circles.models import Circle
 from openbook_circles.validators import circle_id_exists
+from openbook_common.models import Badge
 from openbook_common.serializers_fields.user import IsConnectedField, ConnectedCirclesField, IsFollowingField, \
     IsPendingConnectionConfirmation, IsFullyConnectedField
 
@@ -26,12 +27,24 @@ class ConnectWithUserSerializer(serializers.Serializer):
     )
 
 
+class ConnectionUserProfileBadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Badge
+        fields = (
+            'keyword',
+            'keyword_description'
+        )
+
+
 class ConnectionUserProfileSerializer(serializers.ModelSerializer):
+    badges = ConnectionUserProfileBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
             'name',
-            'avatar'
+            'avatar',
+            'badges'
         )
 
 

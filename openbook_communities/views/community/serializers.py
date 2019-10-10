@@ -4,6 +4,7 @@ from rest_framework import serializers
 from openbook_auth.models import User, UserProfile
 from openbook_categories.models import Category
 from openbook_categories.validators import category_name_exists
+from openbook_common.models import Badge
 from openbook_common.serializers_fields.community import IsCommunityReportedField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
 from openbook_common.serializers_fields.user import IsFollowingField
@@ -98,12 +99,24 @@ class GetCommunityCommunityCategorySerializer(serializers.ModelSerializer):
         )
 
 
+class GetCommunityStaffUserBadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Badge
+        fields = (
+            'keyword',
+            'keyword_description'
+        )
+
+
 class GetCommunityModeratorProfileSerializer(serializers.ModelSerializer):
+    badges = GetCommunityStaffUserBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
             'avatar',
-            'name'
+            'name',
+            'badges'
         )
 
 
@@ -117,7 +130,7 @@ class GetCommunityStaffUserSerializer(serializers.ModelSerializer):
             'id',
             'username',
             'profile',
-            'is_following'
+            'is_following',
         )
 
 

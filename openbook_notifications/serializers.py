@@ -2,7 +2,7 @@ from generic_relations.relations import GenericRelatedField
 from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
-from openbook_common.models import Emoji, Language
+from openbook_common.models import Emoji, Language, Badge
 from openbook_common.serializers_fields.post import IsEncircledField
 from openbook_common.serializers_fields.post_comment import PostCommentIsMutedField
 from openbook_communities.models import Community, CommunityInvite
@@ -59,7 +59,18 @@ class GetNotificationsSerializer(serializers.Serializer):
     )
 
 
+class NotificationsBadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Badge
+        fields = (
+            'keyword',
+            'keyword_description'
+        )
+
+
 class PostCommentCommenterProfileSerializer(serializers.ModelSerializer):
+    badges = NotificationsBadgeSerializer(many=True)
+    
     class Meta:
         model = UserProfile
         fields = (
@@ -82,12 +93,15 @@ class PostCommentCommenterSerializer(serializers.ModelSerializer):
 
 
 class PostCommentCreatorProfileSerializer(serializers.ModelSerializer):
+    badges = NotificationsBadgeSerializer(many=True)
+    
     class Meta:
         model = UserProfile
         fields = (
             'id',
             'avatar',
-            'name'
+            'name',
+            'badges'
         )
 
 
@@ -215,12 +229,15 @@ class PostCommentReplyNotificationSerializer(serializers.ModelSerializer):
 
 
 class PostCommentReactionReactorProfileSerializer(serializers.ModelSerializer):
+    badges = NotificationsBadgeSerializer(many=True)
+    
     class Meta:
         model = UserProfile
         fields = (
             'id',
             'avatar',
-            'name'
+            'name',
+            'badges'
         )
 
 
@@ -274,12 +291,15 @@ class PostCommentReactionNotificationSerializer(serializers.ModelSerializer):
 
 
 class PostReactionReactorProfileSerializer(serializers.ModelSerializer):
+    badges = NotificationsBadgeSerializer(many=True)
+    
     class Meta:
         model = UserProfile
         fields = (
             'id',
             'avatar',
-            'name'
+            'name',
+            'badges'
         )
 
 
@@ -332,12 +352,15 @@ class PostReactionNotificationSerializer(serializers.ModelSerializer):
 
 
 class ConnectionRequesterProfileSerializer(serializers.ModelSerializer):
+    badges = NotificationsBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
             'id',
             'avatar',
-            'name'
+            'name',
+            'badges'
         )
 
 
@@ -365,12 +388,15 @@ class ConnectionRequestNotificationSerializer(serializers.ModelSerializer):
 
 
 class ConnectionConfirmatorProfileSerializer(serializers.ModelSerializer):
+    badges = NotificationsBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
             'id',
             'avatar',
-            'name'
+            'name',
+            'badges'
         )
 
 
@@ -398,12 +424,15 @@ class ConnectionConfirmedNotificationSerializer(serializers.ModelSerializer):
 
 
 class FollowerProfileSerializer(serializers.ModelSerializer):
+    badges = NotificationsBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
             'id',
             'avatar',
-            'name'
+            'name',
+            'badges'
         )
 
 
@@ -431,12 +460,15 @@ class FollowNotificationSerializer(serializers.ModelSerializer):
 
 
 class CommunityInviteCreatorProfileSerializer(serializers.ModelSerializer):
+    badges = NotificationsBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
             'id',
             'avatar',
-            'name'
+            'name',
+            'badges'
         )
 
 
