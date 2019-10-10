@@ -663,7 +663,7 @@ class PostItemAPITests(OpenbookAPITestCase):
             post = user.create_public_post(text=make_fake_post_text(), video=video)
 
             # Process videos
-            get_worker(worker_class=SimpleWorker).work(burst=True)
+            get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
             post_media_video = post.get_first_media()
             post_video = post_media_video.content_object
@@ -2409,7 +2409,7 @@ class PublishPostAPITests(OpenbookAPITestCase):
         self.assertEqual(post.status, Post.STATUS_PROCESSING)
 
         # Run the process handled by a worker
-        get_worker(worker_class=SimpleWorker).work(burst=True)
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         post.refresh_from_db()
 
@@ -2440,7 +2440,7 @@ class PublishPostAPITests(OpenbookAPITestCase):
                 self.assertEqual(post.status, Post.STATUS_PROCESSING)
 
                 # Run the process handled by a worker
-                get_worker(worker_class=SimpleWorker).work(burst=True)
+                get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
                 post.refresh_from_db()
 

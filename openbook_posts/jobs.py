@@ -4,7 +4,6 @@ from video_encoding import tasks
 from django.db.models import Q, Count
 from django.conf import settings
 from cursor_pagination import CursorPaginator
-from django.db import IntegrityError
 
 from openbook_common.utils.model_loaders import get_post_model, get_post_media_model, get_community_model, \
     get_top_post_model, get_post_comment_model, get_moderated_object_model
@@ -13,7 +12,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@job
+@job('low')
 def flush_draft_posts():
     """
     This job should be scheduled to get all pending draft posts for a day and remove them
@@ -32,7 +31,7 @@ def flush_draft_posts():
     return 'Flushed %s posts' % str(flushed_posts)
 
 
-@job
+@job('high')
 def process_post_media(post_id):
     """
     This job is called to process post media and mark it as published
@@ -53,7 +52,7 @@ def process_post_media(post_id):
     logger.info('Processed media of post with id: %d' % post_id)
 
 
-@job
+@job('low')
 def curate_top_posts():
     """
     Curates the top posts.
@@ -88,8 +87,11 @@ def curate_top_posts():
         filter(top_posts_criteria_query)
 
     top_posts_objects = []
+    total_checked_posts = 0
+    total_curated_posts = 0
 
     for post in _chunked_queryset_iterator(posts, 1000):
+        total_checked_posts = total_checked_posts + 1
         if not post.reactions_count >= settings.MIN_UNIQUE_TOP_POST_REACTIONS_COUNT:
             unique_comments_count = PostComment.objects.filter(post=post). \
                 values('commenter_id'). \
@@ -106,13 +108,17 @@ def curate_top_posts():
 
         if len(top_posts_objects) > 1000:
             TopPost.objects.bulk_create(top_posts_objects)
+            total_curated_posts += len(top_posts_objects)
             top_posts_objects = []
 
     if len(top_posts_objects) > 0:
+        total_curated_posts += len(top_posts_objects)
         TopPost.objects.bulk_create(top_posts_objects)
 
+    return 'Checked: %d. Curated: %d' % (total_checked_posts, total_curated_posts)
 
-@job
+
+@job('low')
 def clean_top_posts():
     """
     Cleans up top posts, that no longer meet the criteria.

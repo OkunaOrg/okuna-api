@@ -160,7 +160,6 @@ JWT_ALGORITHM = os.environ.get('JWT_ALGORITHM', 'HS256')
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.environ.get('REDIS_PORT', '6379'))
 REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
-REDIS_DEFAULT_DB = int(os.environ.get('REDIS_DEFAULT_DB', '0'))
 
 redis_protocol = 'rediss://' if IS_PRODUCTION else 'redis://'
 
@@ -173,25 +172,44 @@ REDIS_LOCATION = '%(protocol)s%(password)s@%(host)s:%(port)d' % {'protocol': red
 
 RQ_SHOW_ADMIN_LINK = True
 
-RQ_QUEUES_REDIS_DB = int(os.environ.get('RQ_QUEUES_REDIS_DB', '2'))
+REDIS_DEFAULT_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 0}
+REDIS_RQ_DEFAULT_JOBS_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 1}
+REDIS_RQ_HIGH_JOBS_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 2}
+REDIS_RQ_LOW_JOBS_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 3}
 
 CACHES = {
     'default': {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': REDIS_DEFAULT_DB},
+        "LOCATION": REDIS_DEFAULT_CACHE_LOCATION,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient"
         },
         "KEY_PREFIX": "ob-api-"
     },
-    'rq-queues': {
+    'rq-default-jobs': {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': RQ_QUEUES_REDIS_DB},
+        "LOCATION": REDIS_RQ_DEFAULT_JOBS_CACHE_LOCATION,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient"
         },
-        "KEY_PREFIX": "ob-api-rq-"
-    }
+        "KEY_PREFIX": "ob-api-rq-default-job-"
+    },
+    'rq-high-jobs': {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_RQ_HIGH_JOBS_CACHE_LOCATION,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient"
+        },
+        "KEY_PREFIX": "ob-api-rq-high-job-"
+    },
+    'rq-low-jobs': {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_RQ_LOW_JOBS_CACHE_LOCATION,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient"
+        },
+        "KEY_PREFIX": "ob-api-rq-low-job-"
+    },
 }
 
 CACHEOPS_REDIS_DB = int(os.environ.get('CACHEOPS_REDIS_DB', '1'))
@@ -209,7 +227,13 @@ CACHEOPS = {
 
 RQ_QUEUES = {
     'default': {
-        'USE_REDIS_CACHE': 'rq-queues',
+        'USE_REDIS_CACHE': 'rq-default-jobs',
+    },
+    'high': {
+        'USE_REDIS_CACHE': 'rq-high-jobs',
+    },
+    'low': {
+        'USE_REDIS_CACHE': 'rq-low-jobs',
     },
 }
 
@@ -513,7 +537,6 @@ if TESTING:
     OS_TRANSLATION_STRATEGY_NAME = 'testing'
     MIN_UNIQUE_TOP_POST_REACTIONS_COUNT = 1
     MIN_UNIQUE_TOP_POST_COMMENTS_COUNT = 1
-
 
 if IS_PRODUCTION:
     AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')
