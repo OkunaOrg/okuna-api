@@ -21,7 +21,7 @@ from django.conf.urls.static import static
 from proxy.views import proxy_view
 
 from openbook_auth.views.auth.views import Register, Login, UsernameCheck, EmailCheck, EmailVerify, \
-    PasswordResetRequest, PasswordResetVerify
+    PasswordResetRequest, PasswordResetVerify, VerifyRegistrationToken
 from openbook_auth.views.authenticated_user.views import AuthenticatedUser, AuthenticatedUserSettings, \
     DeleteAuthenticatedUser, AuthenticatedUserNotificationsSettings, AuthenticatedUserAcceptGuidelines, \
     AuthenticatedUserLanguage
@@ -82,6 +82,7 @@ from openbook_importer.views import ImportItem
 
 auth_auth_patterns = [
     path('register/', Register.as_view(), name='register-user'),
+    path('register/verify-token/', VerifyRegistrationToken.as_view(), name='verify-register-token'),
     path('login/', Login.as_view(), name='login-user'),
     path('username-check/', UsernameCheck.as_view(), name='username-check'),
     path('email-check/', EmailCheck.as_view(), name='email-check'),

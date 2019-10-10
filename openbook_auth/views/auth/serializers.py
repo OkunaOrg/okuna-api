@@ -24,6 +24,10 @@ class RegisterSerializer(serializers.Serializer):
     token = serializers.CharField()
 
 
+class RegisterTokenSerializer(serializers.Serializer):
+    token = serializers.CharField()
+
+
 class UsernameCheckSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=USERNAME_MAX_LENGTH,
                                      allow_blank=False,

@@ -10,7 +10,8 @@ from django.utils.translation import gettext as _
 from rest_framework.authtoken.models import Token
 
 from openbook_auth.views.auth.serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheckSerializer, \
-    EmailVerifySerializer, LoginSerializer, VerifyPasswordResetSerializer, RequestPasswordResetSerializer
+    EmailVerifySerializer, LoginSerializer, VerifyPasswordResetSerializer, RequestPasswordResetSerializer, \
+    RegisterTokenSerializer
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.model_loaders import get_user_invite_model
 
@@ -58,6 +59,25 @@ class Register(APIView):
             'token': user_auth_token.key,
             'username': new_user.username
         }, status=status.HTTP_201_CREATED)
+
+
+class VerifyRegistrationToken(APIView):
+    """
+    The API to verify a registration token
+    """
+
+    def post(self, request):
+        serializer = RegisterTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+        token = validated_data.get('token')
+
+        UserInvite = get_user_invite_model()
+
+        # raises error if invalid
+        UserInvite.check_token_is_valid(token=token)
+
+        return ApiMessageResponse(_('Token valid'), status=status.HTTP_202_ACCEPTED)
 
 
 class UsernameCheck(APIView):
