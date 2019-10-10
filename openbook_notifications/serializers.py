@@ -29,6 +29,19 @@ class ReadNotificationsSerializer(serializers.Serializer):
     )
 
 
+class UnreadNotificationsCountSerializer(serializers.Serializer):
+    max_id = serializers.IntegerField(
+        required=False,
+    )
+    types = serializers.ListField(
+        child=serializers.ChoiceField(
+            choices=Notification.get_notification_types_values(),
+            required=False,
+        ),
+        required=False,
+    )
+
+
 class GetNotificationsSerializer(serializers.Serializer):
     count = serializers.IntegerField(
         required=False,

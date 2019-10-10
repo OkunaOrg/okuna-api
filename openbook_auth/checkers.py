@@ -609,6 +609,25 @@ def check_can_favorite_community_with_name(user, community_name):
         )
 
 
+def check_can_exclude_community(user, community):
+    if user.has_excluded_community_with_name(community_name=community.name):
+        raise ValidationError(
+            _('You have already marked this community as excluded.'),
+        )
+    Community = get_community_model()
+    if community.type == Community.COMMUNITY_TYPE_PRIVATE:
+        raise ValidationError(
+            _('Private communities are always excluded from top posts.'),
+        )
+
+
+def check_can_remove_exclusion_for_community(user, community):
+    if not user.has_excluded_community_with_name(community_name=community.name):
+        raise ValidationError(
+            _('You have not marked this community as excluded.'),
+        )
+
+
 def check_can_unfavorite_community_with_name(user, community_name):
     if not user.has_favorite_community_with_name(community_name=community_name):
         raise ValidationError(
@@ -1119,6 +1138,10 @@ def check_can_see_post_comment(user, post_comment):
         )
 
 
+def check_can_get_comment_for_post(user, post_comment, post, ):
+    check_can_see_post_comment(user=user, post_comment=post_comment)
+
+
 def check_can_get_global_moderated_objects(user):
     check_is_global_moderator(user=user)
 
@@ -1291,4 +1314,3 @@ def check_can_get_preview_link_data_for_post(user, post):
         raise ValidationError(
             _('No link associated with post.'),
         )
-

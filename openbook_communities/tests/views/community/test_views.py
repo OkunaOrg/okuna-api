@@ -937,3 +937,101 @@ class FavoriteCommunityAPITests(OpenbookAPITestCase):
         return reverse('favorite-community', kwargs={
             'community_name': community_name
         })
+
+
+class TopPostCommunityExclusionAPITests(OpenbookAPITestCase):
+    """
+    TopPostCommunityExclusionAPITests
+    """
+
+    def test_can_exclude_community(self):
+        """
+        should be able to exclude a community from top posts
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user)
+
+        url = self._get_url(community_name=community.name)
+
+        response = self.client.put(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertTrue(user.has_excluded_community_with_name(community_name=community.name))
+
+    def test_cannot_exclude_private_community(self):
+        """
+        should not be able to exclude a private community from top posts
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        url = self._get_url(community_name=community.name)
+
+        response = self.client.put(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(user.has_excluded_community_with_name(community_name=community.name))
+
+    def test_cannot_exclude_community_already_excluded(self):
+        """
+        should not be able to exclude a community if already excluded from top posts
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user)
+        user.exclude_community_with_name_from_top_posts(community.name)
+
+        url = self._get_url(community_name=community.name)
+
+        response = self.client.put(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(user.has_excluded_community_with_name(community_name=community.name))
+
+    def test_can_remove_excluded_community(self):
+        """
+        should be able to remove an community exclusion
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user)
+        user.exclude_community_with_name_from_top_posts(community.name)
+
+        url = self._get_url(community_name=community.name)
+
+        response = self.client.delete(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertFalse(user.has_excluded_community_with_name(community_name=community.name))
+
+    def test_cannot_remove_exclusion_for_community_if_not_excluded(self):
+        """
+        should not be able to remove an community exclusion, if the community is not excluded in the first place
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user)
+
+        url = self._get_url(community_name=community.name)
+
+        response = self.client.delete(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(user.has_excluded_community_with_name(community_name=community.name))
+
+    def _get_url(self, community_name):
+        return reverse('exclude-community-from-top-posts', kwargs={
+            'community_name': community_name
+        })
