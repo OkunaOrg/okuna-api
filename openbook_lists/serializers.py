@@ -4,7 +4,7 @@ from rest_framework import serializers
 from openbook.settings import LIST_MAX_LENGTH
 from openbook_auth.models import UserProfile, User
 from openbook_auth.validators import username_characters_validator, user_username_exists
-from openbook_common.models import Emoji
+from openbook_common.models import Emoji, Badge
 from openbook_lists.models import List
 from openbook_common.validators import emoji_id_exists
 from openbook_lists.validators import list_id_exists
@@ -33,8 +33,18 @@ class UpdateListSerializer(serializers.Serializer):
     )
 
 
+class ListUserProfileBadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Badge
+        fields = (
+            'keyword',
+            'keyword_description'
+        )
+
+
 class ListUserProfileSerializer(serializers.ModelSerializer):
     avatar = serializers.ImageField(max_length=None, use_url=True, allow_null=True, required=False)
+    badges = ListUserProfileBadgeSerializer(many=True)
 
     class Meta:
         model = UserProfile
@@ -42,6 +52,7 @@ class ListUserProfileSerializer(serializers.ModelSerializer):
             'id',
             'name',
             'avatar',
+            'badges'
         )
 
 
