@@ -21,7 +21,7 @@ from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
 from openbook_notifications.helpers import get_notification_language_code_for_target_user
 from openbook_translation import translation_strategy
-from openbook_common.helpers import get_supported_translation_language, normalise_url, get_url_metadata
+from openbook_common.helpers import get_supported_translation_language
 from openbook_common.models import Badge, Language
 from openbook_common.utils.helpers import delete_file_field
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
@@ -31,7 +31,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_mute_model, get_community_invite_notification_model, get_user_block_model, get_emoji_model, \
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
     get_moderation_penalty_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
-    get_post_comment_reaction_notification_model
+    get_post_comment_reaction_notification_model, get_top_post_model, get_top_post_community_exclusion_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications import helpers
 from openbook_auth.checkers import *
@@ -576,6 +576,9 @@ class User(AbstractUser):
     def has_favorite_community_with_name(self, community_name):
         return self.favorite_communities.filter(name=community_name).exists()
 
+    def has_excluded_community_with_name(self, community_name):
+        return self.top_posts_community_exclusions.filter(community__name=community_name).exists()
+
     def has_list_with_name(self, list_name):
         return self.lists.filter(name=list_name).exists()
 
@@ -1073,10 +1076,11 @@ class User(AbstractUser):
                                   }}
                     elif post_notification_target_user_is_post_creator:
                         notification_message = {
-                            "en": _('%(post_commenter_name)s · %(post_commenter_username)s replied to a comment on your post.') % {
-                                'post_commenter_username': replier.username,
-                                'post_commenter_name': replier.profile.name,
-                            }}
+                            "en": _(
+                                '%(post_commenter_name)s · %(post_commenter_username)s replied to a comment on your post.') % {
+                                      'post_commenter_username': replier.username,
+                                      'post_commenter_name': replier.profile.name,
+                                  }}
                     else:
                         notification_message = {
                             "en": _(
@@ -1114,6 +1118,18 @@ class User(AbstractUser):
         PostComment = get_post_comment_model()
         post_comment = PostComment.objects.get(pk=post_comment_id)
         post_comment.update_comment(text)
+        return post_comment
+
+    def get_comment_with_id_for_post_with_uuid(self, post_comment_id, post_uuid):
+        Post = get_post_model()
+        post = Post.objects.get(uuid=post_uuid)
+
+        PostComment = get_post_comment_model()
+        post_comment = PostComment.objects.get(pk=post_comment_id)
+        return self.get_comment_for_post(post_comment=post_comment, post=post)
+
+    def get_comment_for_post(self, post, post_comment):
+        check_can_get_comment_for_post(user=self, post_comment=post_comment, post=post)
         return post_comment
 
     def create_circle(self, name, color):
@@ -1663,6 +1679,23 @@ class User(AbstractUser):
 
         return User.objects.filter(blocked_users_query).distinct()
 
+    def search_top_posts_excluded_communities_with_query(self, query):
+
+        excluded_communities_search_query = Q(community__name__icontains=query)
+        excluded_communities_search_query.add(Q(community__title__icontains=query), Q.OR)
+
+        TopPostCommunityExclusion = get_top_post_community_exclusion_model()
+
+        return TopPostCommunityExclusion.objects.filter(excluded_communities_search_query)
+
+    def get_top_posts_community_exclusions(self):
+        TopPostCommunityExclusion = get_top_post_community_exclusion_model()
+        top_posts_community_exclusions = TopPostCommunityExclusion.objects \
+            .select_related('community') \
+            .all()
+
+        return top_posts_community_exclusions
+
     def get_followers(self, max_id=None):
         followers_query = self._make_followers_query()
 
@@ -1814,25 +1847,6 @@ class User(AbstractUser):
         user = User.objects.get(user_query)
         check_can_get_user_with_id(user=self, user_id=user.pk)
         return user
-
-    # Preview link data to be removed when parsing becomes in device
-
-    def get_preview_link_data_for_post_with_id(self, post_id):
-        Post = get_post_model()
-        post = Post.objects.get(pk=post_id)
-        return self.get_preview_link_data_for_post(post=post)
-
-    def get_preview_link_data_for_post(self, post):
-        check_can_get_preview_link_data_for_post(user=self, post=post)
-        preview_link = post.post_links.first().link
-        check_can_preview_url(preview_link)
-
-        return get_url_metadata(preview_link)
-
-    def get_preview_link_data_for_url(self, url):
-        check_can_preview_url(url)
-        url = normalise_url(url)
-        return get_url_metadata(url)
 
     def translate_post_with_id(self, post_id):
         check_can_translate_post_with_id(user=self, post_id=post_id)
@@ -2016,6 +2030,80 @@ class User(AbstractUser):
             results = world_circle_posts.union(connection_circles_posts)
 
         return results
+
+    def exclude_community_from_top_posts(self, community):
+        check_can_exclude_community(user=self, community=community)
+
+        TopPostCommunityExclusion = get_top_post_community_exclusion_model()
+        top_post_community_exclusion = TopPostCommunityExclusion(
+            user=self,
+            community=community
+        )
+        self.top_posts_community_exclusions.add(top_post_community_exclusion, bulk=False)
+
+    def exclude_community_with_name_from_top_posts(self, community_name):
+        Community = get_community_model()
+        community_to_exclude = Community.objects.get(name=community_name)
+        self.exclude_community_from_top_posts(community_to_exclude)
+
+    def remove_exclusion_for_community_from_top_posts(self, community):
+        check_can_remove_exclusion_for_community(user=self, community=community)
+
+        TopPostCommunityExclusion = get_top_post_community_exclusion_model()
+        TopPostCommunityExclusion.objects.get(user=self, community=community).delete()
+
+    def remove_exclusion_for_community_with_name_from_top_posts(self, community_name):
+        Community = get_community_model()
+        community = Community.objects.get(name=community_name)
+        self.remove_exclusion_for_community_from_top_posts(community)
+
+    def get_top_posts(self, max_id=None, min_id=None, count=10):
+        """
+        Gets top posts (communities only) for authenticated user excluding reported, closed, blocked users posts
+        """
+        Post = get_post_model()
+        TopPost = get_top_post_model()
+        Community = get_community_model()
+
+        posts_select_related = ('post__creator', 'post__creator__profile', 'post__community', 'post__image')
+        posts_prefetch_related = ('post__circles', 'post__creator__profile__badges')
+
+        posts_only = ('id',
+                      'post__text', 'post__id', 'post__uuid', 'post__created', 'post__image__width',
+                      'post__image__height', 'post__image__image',
+                      'post__creator__username', 'post__creator__id', 'post__creator__profile__name',
+                      'post__creator__profile__avatar',
+                      'post__creator__profile__badges__id', 'post__creator__profile__badges__keyword',
+                      'post__creator__profile__id', 'post__community__id', 'post__community__name',
+                      'post__community__avatar',
+                      'post__community__color', 'post__community__title')
+
+        reported_posts_exclusion_query = ~Q(post__moderated_object__reports__reporter_id=self.pk)
+        excluded_communities_query = ~Q(post__community__top_posts_community_exclusions__user=self.pk)
+        top_community_posts_query = Q(post__is_closed=False,
+                                      post__is_deleted=False,
+                                      post__status=Post.STATUS_PUBLISHED)
+
+        top_community_posts_query.add(~Q(Q(post__creator__blocked_by_users__blocker_id=self.pk) | Q(
+            post__creator__user_blocks__blocked_user_id=self.pk)), Q.AND)
+        top_community_posts_query.add(Q(post__community__type=Community.COMMUNITY_TYPE_PUBLIC), Q.AND)
+        top_community_posts_query.add(~Q(post__community__banned_users__id=self.pk), Q.AND)
+
+        if max_id:
+            top_community_posts_query.add(Q(id__lt=max_id), Q.AND)
+        elif min_id:
+            top_community_posts_query.add(Q(id__gt=min_id), Q.AND)
+
+        ModeratedObject = get_moderated_object_model()
+        top_community_posts_query.add(~Q(post__moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
+        top_community_posts_query.add(reported_posts_exclusion_query, Q.AND)
+        top_community_posts_query.add(excluded_communities_query, Q.AND)
+
+        top_community_posts_queryset = TopPost.objects.select_related(*posts_select_related).prefetch_related(
+            *posts_prefetch_related).only(*posts_only).filter(top_community_posts_query)
+
+        return top_community_posts_queryset
 
     def get_timeline_posts(self, lists_ids=None, circles_ids=None, max_id=None, min_id=None, count=None):
         """
@@ -2421,6 +2509,16 @@ class User(AbstractUser):
             notifications_query.add(Q(notification_type__in=types), Q.AND)
 
         self.notifications.filter(notifications_query).update(read=True)
+
+    def get_unread_notifications(self, max_id=None, types=None):
+        notifications_query = Q(read=False)
+
+        if max_id:
+            notifications_query.add(Q(id__lte=max_id), Q.AND)
+        if types:
+            notifications_query.add(Q(notification_type__in=types), Q.AND)
+
+        return self.notifications.filter(notifications_query)
 
     def read_notification_with_id(self, notification_id):
         check_can_read_notification_with_id(user=self, notification_id=notification_id)

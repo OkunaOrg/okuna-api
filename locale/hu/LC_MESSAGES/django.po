@@ -1,0 +1,1700 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: okuna\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2019-09-09 12:40+0200\n"
+"PO-Revision-Date: 2019-09-20 08:47\n"
+"Last-Translator: Jozsef Sallai (joexyz)\n"
+"Language-Team: Hungarian\n"
+"Language: hu_HU\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: crowdin.com\n"
+"X-Crowdin-Project: okuna\n"
+"X-Crowdin-Language: hu\n"
+"X-Crowdin-File: /okuna-api/django.po\n"
+
+#: openbook/settings.py:394
+msgid "Spanish"
+msgstr "Spanyol"
+
+#: openbook/settings.py:395
+msgid "English"
+msgstr "Angol"
+
+#: openbook/settings.py:396
+msgid "German"
+msgstr "Német"
+
+#: openbook/settings.py:397
+msgid "Dutch"
+msgstr "Dutch"
+
+#: openbook/settings.py:398
+msgid "Danish"
+msgstr "Dán"
+
+#: openbook/settings.py:399
+msgid "Hungarian"
+msgstr "Magyar"
+
+#: openbook/settings.py:400
+msgid "Swedish"
+msgstr "Svéd"
+
+#: openbook/settings.py:401
+msgid "French"
+msgstr "Francia"
+
+#: openbook/settings.py:402
+msgid "Italian"
+msgstr "Olasz"
+
+#: openbook/settings.py:403
+msgid "Turkish"
+msgstr "Török"
+
+#: openbook/settings.py:404
+msgid "Portuguese, Brazilian"
+msgstr "Portugál (brazíliai)"
+
+#: openbook_auth/checkers.py:26
+msgid "You cannot edit a closed post"
+msgstr "Nem szerkeszthetsz egy zárt bejegyzést"
+
+#: openbook_auth/checkers.py:34
+#, python-format
+msgid "You cannot post to circle with id %(id)s"
+msgstr "Nem posztolhatsz ehhez a körhöz, id %(id)s"
+
+#: openbook_auth/checkers.py:41
+msgid "You cannot post to a community you're not member of "
+msgstr "Nem posztolhatsz egy közösségben, melynek nem vagy tagja "
+
+#: openbook_auth/checkers.py:49
+msgid "Only moderators/administrators can enable/disable comments"
+msgstr "Csak moderátorok/adminisztrátorok engedélyezhetik illetve tilthatják le a hozzászólásokat"
+
+#: openbook_auth/checkers.py:59
+msgid "Comments are disabled for this post"
+msgstr "A hozzászólások le vannak tiltva ezen a bejegyzésen"
+
+#: openbook_auth/checkers.py:68
+msgid "Only public posts can be translated"
+msgstr "Csak nyilvános bejegyzések fordíthatóak le"
+
+#: openbook_auth/checkers.py:72
+msgid "Post has no text to be translated"
+msgstr "A bejegyzés nem tartalmaz lefordítható szöveget"
+
+#: openbook_auth/checkers.py:76
+msgid "Post has no assigned language to be able to translate"
+msgstr "A bejegyzés nem rendelkezik megadott nyelvvel, így nem fordítható le"
+
+#: openbook_auth/checkers.py:80 openbook_auth/checkers.py:714
+msgid "User's preferred translation language not set"
+msgstr "A felhasználó nyelvi beállításai nincsenek megadva"
+
+#: openbook_auth/checkers.py:89 openbook_auth/checkers.py:101
+msgid "Only community posts can be opened/closed"
+msgstr "Csak közösségi bejegyzések nyithatóak meg/zárhatóak be"
+
+#: openbook_auth/checkers.py:94
+msgid "Only administrators/moderators can open this post"
+msgstr "Csak adminisztrátorok/moderátorok nyithatják meg ezt a bejegyzést"
+
+#: openbook_auth/checkers.py:106
+msgid "Only administrators/moderators can close this post"
+msgstr "Csak adminisztrátorok/moderátorok zárhatják be ezt a bejegyzést"
+
+#: openbook_auth/checkers.py:134
+msgid "Already following user."
+msgstr "Már követed ezt a felhasználót."
+
+#: openbook_auth/checkers.py:141
+msgid "Maximum number of follows reached."
+msgstr "Elérted a maximális követések számát."
+
+#: openbook_auth/checkers.py:150
+msgid "Already following user in list."
+msgstr "Már követed a felhasználót ebben a listában."
+
+#: openbook_auth/checkers.py:159
+msgid "Not following user in list."
+msgstr "Nem követed a felhasználót ebben a listában."
+
+#: openbook_auth/checkers.py:166
+msgid "Not following user."
+msgstr "Nem követed a felhasználót."
+
+#: openbook_auth/checkers.py:173
+msgid "Maximum number of connections reached."
+msgstr "Elérted a maximális kapcsolatok számát."
+
+#: openbook_auth/checkers.py:186
+msgid "Already connected with user."
+msgstr "A felhasználó már a kapcsolataid között van."
+
+#: openbook_auth/checkers.py:193
+msgid "Already fully connected with user."
+msgstr "A felhasználó már teljesen a kapcsolataid között van."
+
+#: openbook_auth/checkers.py:200
+msgid "Not connected with user."
+msgstr "A felhasználó nincs kapcsolataid között."
+
+#: openbook_auth/checkers.py:207
+msgid "Not connected with user in given circle."
+msgstr "A felhasználó nincs a kapcsolataid között a megadott körben."
+
+#: openbook_auth/checkers.py:214
+msgid "Already connected with user in given circle."
+msgstr "A felhasználó már a kapcsolataid között van a megadott körben."
+
+#: openbook_auth/checkers.py:221
+msgid "List does not exist."
+msgstr "A lista nem létezik."
+
+#: openbook_auth/checkers.py:228
+msgid "Circle does not exist."
+msgstr "A kör nem létezik."
+
+#: openbook_auth/checkers.py:235
+msgid "One or more of the circles do not exist."
+msgstr "Egy vagy több kör nem létezik."
+
+#: openbook_auth/checkers.py:248
+msgid "Only moderators/administrators can remove community posts."
+msgstr "Csak moderátorok/adminisztrátorok törölhetnek bejegyzéseket egy közösségben."
+
+#: openbook_auth/checkers.py:256
+msgid "You cannot remove a post that does not belong to you"
+msgstr "Nem törölhetsz egy bejegyzést amit nem te írtál"
+
+#: openbook_auth/checkers.py:263
+msgid "Can't delete a list that does not belong to you."
+msgstr "Nem törölhetsz egy listát amely nem hozzád tartozik."
+
+#: openbook_auth/checkers.py:270
+msgid "Can't update a list that does not belong to you."
+msgstr "Nem frissíthetsz egy listát amely nem hozzád tartozik."
+
+#: openbook_auth/checkers.py:277
+msgid "Can't delete a community that you do not administrate."
+msgstr "Nem törölhetsz egy közösséget, melynek nem vagy az adminisztrátora."
+
+#: openbook_auth/checkers.py:284
+msgid "Can't update a community that you do not administrate."
+msgstr "Nem frissíthetsz egy közösséget, melynek nem vagy az adminisztrátora."
+
+#: openbook_auth/checkers.py:295
+msgid "The community is private. You must become a member to retrieve its posts."
+msgstr "A közösség zárt. Ahhoz hogy megjelenítsd a bejegyzéseit, tagnak kell lenned."
+
+#: openbook_auth/checkers.py:303
+msgid "Only administrators/moderators can view closed posts"
+msgstr "Csak adminisztrátorok/moderátorok tekinthetnek meg zárt bejegyzéseket"
+
+#: openbook_auth/checkers.py:315
+msgid "Can't see the members of a private community."
+msgstr "Nem tekintheted meg egy zárt közösség tagjait."
+
+#: openbook_auth/checkers.py:325
+msgid "You are already a member of the community."
+msgstr "Már tagja vagy ennek a közösségnek."
+
+#: openbook_auth/checkers.py:332
+msgid "You are not invited to join this community."
+msgstr "Nem hívtak meg téged, hogy csatlakozz ehhez a közösséghez."
+
+#: openbook_auth/checkers.py:339
+msgid "You cannot leave a community you're not part of."
+msgstr "Nem hagyhatsz el egy közösséget, melynek nem vagy tagja."
+
+#: openbook_auth/checkers.py:344
+msgid "You cannot leave a community you created."
+msgstr "Nem hagyhatsz el egy közösséget, melyet te hoztál létre."
+
+#: openbook_auth/checkers.py:351
+msgid "You can only invite people to a community you are member of."
+msgstr "Csak olyan közösségekbe hívhatsz meg embereket, amelyeknek tagja vagy."
+
+#: openbook_auth/checkers.py:356
+msgid "You have already invited this user to join the community."
+msgstr "Már meghívtad ezt a felhasználót a közösségbe."
+
+#: openbook_auth/checkers.py:364
+msgid "The user is already part of the community."
+msgstr "A felhasználó már a közösség tagja."
+
+#: openbook_auth/checkers.py:372
+msgid "Invites for this community are not enabled. Only administrators & moderators can invite."
+msgstr "A meghívók nincsenek engedélyezve ebben a közösségben. Csak adminisztrátorok és moderátorok hívhatnak meg."
+
+#: openbook_auth/checkers.py:380
+msgid "No invite to withdraw."
+msgstr "Nincs kiküldhető meghívó."
+
+#: openbook_auth/checkers.py:389
+msgid "Only community administrators & moderators can get banned users."
+msgstr "Csak a közösség moderátorai és adminisztrátorai tekinthetik meg a letiltott felhasználókat."
+
+#: openbook_auth/checkers.py:398 openbook_auth/checkers.py:421
+msgid "Only community administrators & moderators can ban community members."
+msgstr "Csak a közösség moderátorai és adminisztrátorai tilthatnak ki felhasználókat."
+
+#: openbook_auth/checkers.py:405
+msgid "User is already banned"
+msgstr "A felhasználó már le van tiltva"
+
+#: openbook_auth/checkers.py:412
+msgid "You can't ban moderators or administrators of the community"
+msgstr "Nem tilthatod le a közösség moderátorait vagy adminisztrátorait"
+
+#: openbook_auth/checkers.py:428
+msgid "Can't unban a not-banned user."
+msgstr "Nem törölheted a tiltást egy le nem tiltott felhasználóról."
+
+#: openbook_auth/checkers.py:435
+msgid "Only the creator of the community can add other administrators."
+msgstr "Csak a közösség létrehozója nevezhet ki adminisztrátorokat."
+
+#: openbook_auth/checkers.py:443
+msgid "User is already an administrator."
+msgstr "A felhasználó már adminisztrátor."
+
+#: openbook_auth/checkers.py:449
+msgid "Can't make administrator a user that is not part of the community."
+msgstr "Nem nevezhetsz ki adminisztrátornak egy felhasználót, aki nem része a közösségnek."
+
+#: openbook_auth/checkers.py:456
+msgid "Only the creator of the community can remove other administrators."
+msgstr "Csak a közösség létrehozója törölhet adminisztrátorokat."
+
+#: openbook_auth/checkers.py:464
+msgid "User to remove is not an administrator."
+msgstr "A megadott felhasználó nem egy adminisztrátor."
+
+#: openbook_auth/checkers.py:475
+msgid "Only administrators of the community can add other moderators."
+msgstr "Csak a közösség adminisztrátorai nevezhetnek ki moderátorokat."
+
+#: openbook_auth/checkers.py:483
+msgid "User is an administrator."
+msgstr "A felhasználó nem adminisztrátor."
+
+#: openbook_auth/checkers.py:489
+msgid "User is already a moderator."
+msgstr "A felhasználó már moderátor."
+
+#: openbook_auth/checkers.py:495
+msgid "Can't make moderator a user that is not part of the community."
+msgstr "Nem nevezhetsz ki moderátornak egy felhasználót, aki nem része a közösségnek."
+
+#: openbook_auth/checkers.py:502
+msgid "Only administrators of the community can remove other moderators."
+msgstr "Csak a közösség adminisztrátorai törölhetnek moderátorokat."
+
+#: openbook_auth/checkers.py:509
+msgid "User to remove is not an moderator."
+msgstr "A megadott felhasználó nem egy moderátor."
+
+#: openbook_auth/checkers.py:529
+msgid "Can't update a circle that does not belong to you."
+msgstr "Nem frissíthetsz egy kört amely nem hozzád tartozik."
+
+#: openbook_auth/checkers.py:534
+msgid "Can't update the world circle."
+msgstr "Nem sikerült frissíteni a világ kört."
+
+#: openbook_auth/checkers.py:539
+msgid "Can't update the connections circle."
+msgstr "Nem sikerült frissíteni a kapcsolatok kört."
+
+#: openbook_auth/checkers.py:546
+msgid "Can't delete a circle that does not belong to you."
+msgstr "Nem törölhetsz egy kört amely nem hozzád tartozik."
+
+#: openbook_auth/checkers.py:551
+msgid "Can't delete the world circle."
+msgstr "Nem törölheted a világ kört."
+
+#: openbook_auth/checkers.py:556
+msgid "Can't delete the connections circle."
+msgstr "Nem törölheted a kapcsolatok kört."
+
+#: openbook_auth/checkers.py:563
+msgid "Can't view a circle that does not belong to you."
+msgstr "Nem tekinthetsz meg egy kört amely nem hozzád tartozik."
+
+#: openbook_auth/checkers.py:570
+msgid "Can't view a list that does not belong to you."
+msgstr "Nem tekinthetsz meg egy listát amely nem hozzád tartozik."
+
+#: openbook_auth/checkers.py:577
+msgid "You already have a circle with that name."
+msgstr "Már létezik ilyen nevű kör."
+
+#: openbook_auth/checkers.py:584
+msgid "You already have a list with that name."
+msgstr "Már létezik ilyen nevű lista."
+
+#: openbook_auth/checkers.py:596
+msgid "A community with that name already exists."
+msgstr "Már létezik ilyen nevű közösség."
+
+#: openbook_auth/checkers.py:603
+msgid "You must be member of a community before making it a favorite."
+msgstr "Tagja kell lenned egy közösségnek mielőtt hozzáadnád azt a kedvenceidhez."
+
+#: openbook_auth/checkers.py:608
+msgid "You have already marked this community as favorite."
+msgstr "Már kedvencnek jelölted ezt a közösséget."
+
+#: openbook_auth/checkers.py:615
+msgid "You have not favorited the community."
+msgstr "Nem jelölted kedvencnek ezt a közösséget."
+
+#: openbook_auth/checkers.py:622
+msgid "You cannot mark as read a notification that doesn't belong to you."
+msgstr "Nem jelölhetsz olvasottnak olyan értesítéseket, melyek nem hozzád tartoznak."
+
+#: openbook_auth/checkers.py:633
+msgid "This notification does not belong to you."
+msgstr "Ez az értesítés nem a tiéd."
+
+#: openbook_auth/checkers.py:652
+msgid "Device not found"
+msgstr "Eszköz nem található"
+
+#: openbook_auth/checkers.py:659
+msgid "Post already muted"
+msgstr "A bejegyzés már le van némítva"
+
+#: openbook_auth/checkers.py:672
+msgid "Post is not muted"
+msgstr "A bejegyzés nincs némítva"
+
+#: openbook_auth/checkers.py:679
+msgid "Post comment already muted"
+msgstr "A hozzászólás már le van némítva"
+
+#: openbook_auth/checkers.py:693
+msgid "Post_comment is not muted"
+msgstr "A hozzászólás nincs némítva"
+
+#: openbook_auth/checkers.py:702
+msgid "Only public post comments can be translated"
+msgstr "Csak nyilvános hozzászólások szerkeszthetőek"
+
+#: openbook_auth/checkers.py:706
+msgid "Post comment has no text to be translated"
+msgstr "A hozzászólás nem tartalmaz lefordítható szöveget"
+
+#: openbook_auth/checkers.py:710
+msgid "Post comment has no assigned language to be able to translate"
+msgstr "A hozzászólás nem rendelkezik megadott nyelvvel, így nem fordítható le"
+
+#: openbook_auth/checkers.py:721
+msgid "This post does not belong to you."
+msgstr "Ez a bejegyzés nem a tiéd."
+
+#: openbook_auth/checkers.py:728
+msgid "Wrong password."
+msgstr "Hibás jelszó."
+
+#: openbook_auth/checkers.py:754
+msgid "You cannot block yourself."
+msgstr "Nem tudod letiltani saját magad."
+
+#: openbook_auth/checkers.py:760
+msgid "You cannot unblock an account you have not blocked."
+msgstr "Nem törölheted a tiltást olyan fiókról, amelyet le se tiltottál."
+
+#: openbook_auth/checkers.py:768
+msgid "This account is blocked."
+msgstr "Ez a fiók le van tiltva."
+
+#: openbook_auth/checkers.py:777
+msgid "You cannot report your own comment."
+msgstr "Nem jelentheted a saját hozzászólásodat."
+
+#: openbook_auth/checkers.py:784
+msgid "You have already reported the comment."
+msgstr "Már jelentetted ezt a hozzászólást."
+
+#: openbook_auth/checkers.py:793
+msgid "You cannot report your own post."
+msgstr "Nem jelentheted a saját bejegyzésedet."
+
+#: openbook_auth/checkers.py:800
+msgid "You have already reported the post."
+msgstr "Már jelentetted ezt a bejegyzést."
+
+#: openbook_auth/checkers.py:808
+msgid "You cannot report yourself..."
+msgstr "Nem jelentheted saját magad..."
+
+#: openbook_auth/checkers.py:815
+msgid "You have already reported the user."
+msgstr "Már jelentetted ezt a felhasználót."
+
+#: openbook_auth/checkers.py:823
+msgid "You cannot report your own community."
+msgstr "Nem jelentheted a saját közösségedet."
+
+#: openbook_auth/checkers.py:830
+msgid "You have already reported the community."
+msgstr "Már jelentetted ezt a közösséget."
+
+#: openbook_auth/checkers.py:844 openbook_auth/checkers.py:881
+#: openbook_auth/models.py:164
+msgid "Token type does not match"
+msgstr "A token típusa nem egyezik"
+
+#: openbook_auth/checkers.py:849 openbook_auth/checkers.py:891
+msgid "Token user id does not match"
+msgstr "A token felhasználó id nem egyezik"
+
+#: openbook_auth/checkers.py:854 openbook_auth/checkers.py:896
+#: openbook_auth/models.py:171
+msgid "Invalid token signature"
+msgstr "Érvénytelen token aláírás"
+
+#: openbook_auth/checkers.py:858 openbook_auth/checkers.py:900
+#: openbook_auth/models.py:175
+msgid "Token expired"
+msgstr "A token lejárt"
+
+#: openbook_auth/checkers.py:862 openbook_auth/checkers.py:904
+#: openbook_auth/models.py:179
+msgid "Failed to decode token"
+msgstr "Nem sikerült dekódolni a tokent"
+
+#: openbook_auth/checkers.py:866 openbook_auth/checkers.py:908
+#: openbook_auth/models.py:187
+msgid "Invalid token"
+msgstr "Érvénytelen token"
+
+#: openbook_auth/checkers.py:886
+msgid "Token email does not match"
+msgstr "A token e-mail cím nem egyezik"
+
+#: openbook_auth/checkers.py:922
+msgid "Can't connect in the world circle."
+msgstr "Nem sikerült kapcsolódni a világ körhöz."
+
+#: openbook_auth/checkers.py:934
+msgid "The email is already taken."
+msgstr "Az e-mail cím már használatban van."
+
+#: openbook_auth/checkers.py:946 openbook_auth/validators.py:18
+msgid "The username is already taken."
+msgstr "A felhasználónév már foglalt."
+
+#: openbook_auth/checkers.py:957 openbook_auth/checkers.py:986
+msgid "The comment does not belong to the specified post."
+msgstr "A hozzászólás nem a megadott bejegyzéshez tartozik."
+
+#: openbook_auth/checkers.py:965
+msgid "Only administrators/moderators can edit a closed post."
+msgstr "Csak adminisztrátorok/moderátorok szerkeszthetnek egy zárt bejegyzést."
+
+#: openbook_auth/checkers.py:973
+msgid "You cannot edit a comment that does not belong to you"
+msgstr "Nem szerkeszthetsz egy hozzászólást amit nem te írtál"
+
+#: openbook_auth/checkers.py:996
+msgid "Only moderators/administrators can remove closed community posts."
+msgstr "Csak moderátorok/adminisztrátorok törölhetnek zárt bejegyzéseket egy közösségben."
+
+#: openbook_auth/checkers.py:1000 openbook_auth/checkers.py:1014
+msgid "You cannot remove a comment that does not belong to you"
+msgstr "Nem törölhetsz egy hozzászólást amit nem te írtál"
+
+#: openbook_auth/checkers.py:1025 openbook_auth/checkers.py:1038
+msgid "No comment found with given id for post with given uuid"
+msgstr "Nem található hozzászólás a megadott id-ra a megadott uuid-vel rendelkező bejegyzésben"
+
+#: openbook_auth/checkers.py:1044
+msgid "You can post a reply to a comment, not to an existing reply"
+msgstr "Választ csak hozzászólásokhoz írhatsz, nem pedig egy már létező válaszhoz"
+
+#: openbook_auth/checkers.py:1056
+msgid "That reaction does not belong to the specified post."
+msgstr "A reakció nem a megadott bejegyzéshez tartozik."
+
+#: openbook_auth/checkers.py:1062
+msgid "Can't delete a reaction that does not belong to you."
+msgstr "Nem törölhetsz egy reakciót amely nem hozzád tartozik."
+
+#: openbook_auth/checkers.py:1079
+msgid "Not a valid emoji to react with"
+msgstr "A reagáláshoz megadott emoji érvénytelen"
+
+#: openbook_auth/checkers.py:1090
+msgid "This post is private."
+msgstr "Ez a bejegyzés privát."
+
+#: openbook_auth/checkers.py:1100
+msgid "Cant react to comments on a closed post."
+msgstr "Nem reagálhatsz hozzászólásokhoz egy zárt bejegyzésen."
+
+#: openbook_auth/checkers.py:1109
+msgid "Can't delete a comment reaction that does not belong to you."
+msgstr "Nem törölhetsz egy hozzászólás-reakciót amely nem hozzád tartozik."
+
+#: openbook_auth/checkers.py:1118
+msgid "This comment is private."
+msgstr "Ez a hozzászólás privát."
+
+#: openbook_auth/checkers.py:1140
+msgid "You have already reported the moderated_object."
+msgstr "Már jelentetted ezt a moderált tárgyat."
+
+#: openbook_auth/checkers.py:1149
+msgid "The moderated object has been verified and can no longer be edited."
+msgstr "A moderált tárgy ellenőrizve lett és nem szerkeszthető többé."
+
+#: openbook_auth/checkers.py:1154
+msgid "The moderated object has already been approved/rejected."
+msgstr "A moderált tárgy már jóvá volt hagyva vagy vissza lett utasítva."
+
+#: openbook_auth/checkers.py:1163 openbook_auth/checkers.py:1171
+msgid "The moderated object has already been verified."
+msgstr "A moderált tárgy már ellenőrizve van."
+
+#: openbook_auth/checkers.py:1179
+msgid "The moderated object has not been verified."
+msgstr "A moderált tárgy még nincs ellenőrizve."
+
+#: openbook_auth/checkers.py:1187
+msgid "The moderated object is already verified."
+msgstr "A moderált tárgy már ellenőrizve van."
+
+#: openbook_auth/checkers.py:1192
+msgid "You cannot verify a moderated object with status pending. Please approve or reject it."
+msgstr "Nem ellenőrizhetsz egy függőben levő moderált tárgyat. Kérünk, hagyd jóvá vagy mellőzd."
+
+#: openbook_auth/checkers.py:1210
+msgid "Only community staff can moderate community posts"
+msgstr "Csak a közösség staffja moderálhatja a bejegyzéseket"
+
+#: openbook_auth/checkers.py:1212
+msgid "Only global moderators can moderate non-community posts"
+msgstr "Csak globális moderátorok moderálhatnak bejegyzéseket, melyek nem egy közösségen belül lettek létrehozva"
+
+#: openbook_auth/checkers.py:1216
+msgid "Only community staff can moderate community post comments"
+msgstr "Csak a közösség staffja moderálhatja a hozzászólásokat"
+
+#: openbook_auth/checkers.py:1218
+msgid "Only global moderators can moderate non-community post comments"
+msgstr "Csak globális moderátorok moderálhatnak hozzászólásokat, melyek nem egy közösségen belül lettek létrehozva"
+
+#: openbook_auth/checkers.py:1220
+msgid "Non global moderators can only moderate posts and post comments."
+msgstr "A nem-globális moderátorok csak bejegyzéseket és hozzászólásokat moderálhatnak."
+
+#: openbook_auth/checkers.py:1225
+msgid "Not a global moderator."
+msgstr "Nem globális moderátor."
+
+#: openbook_auth/checkers.py:1230
+msgid "Not a community staff."
+msgstr "Nem közösségi stafftag."
+
+#: openbook_auth/checkers.py:1235
+msgid "You have no invites left"
+msgstr "Jelenleg nem hozhatsz létre több meghívót"
+
+#: openbook_auth/checkers.py:1251
+msgid "Invite email already sent to this address"
+msgstr "Már el lett küldve egy meghívó erre az e-mail címre"
+
+#: openbook_auth/checkers.py:1263
+msgid "Invite is already used and cannot be deleted"
+msgstr "A meghívó már fel lett használva és nem lehet törölni"
+
+#: openbook_auth/checkers.py:1269
+msgid "Invite was not created by you"
+msgstr "A meghívót nem te hoztad létre"
+
+#: openbook_auth/checkers.py:1292
+msgid "No link associated with post."
+msgstr "Nincs link asszociálva ehhez a bejegyzéshez."
+
+#: openbook_auth/models.py:52 openbook_invitations/models.py:23
+msgid "email address"
+msgstr "e-mail cím"
+
+#: openbook_auth/models.py:61 openbook_communities/models.py:62
+msgid "is deleted"
+msgstr "törölve"
+
+#: openbook_auth/models.py:66 openbook_invitations/models.py:26
+msgid "username"
+msgstr "felhasználónév"
+
+#: openbook_auth/models.py:71 openbook_invitations/models.py:31
+#, python-format
+msgid "Required. %(username_max_length)d characters or fewer. Letters, digits and _ only."
+msgstr "Kötelező. Legfeljebb %(username_max_length)d karakter. Csak betűk, számok és _."
+
+#: openbook_auth/models.py:75 openbook_invitations/models.py:35
+msgid "A user with that username already exists."
+msgstr "Már létezik felhasználó ezzel a felhasználónévvel."
+
+#: openbook_auth/models.py:86
+msgid "user"
+msgstr "felhasználó"
+
+#: openbook_auth/models.py:87
+msgid "users"
+msgstr "felhasználók"
+
+#: openbook_auth/models.py:96
+msgid "You must confirm you are over 16 years old to make an account"
+msgstr "A fiók létrehozásához meg kell erősítened, hogy elmúltál 16 éves"
+
+#: openbook_auth/models.py:101
+msgid "You must accept the guidelines to make an account"
+msgstr "A fiók létrehozásához el kell fogadnod az irányelveket"
+
+#: openbook_auth/models.py:183
+msgid "No user found for token"
+msgstr "Nem található felhasználó ezzel a tokennel"
+
+#: openbook_auth/models.py:1003
+#, python-format
+msgid "%(post_commenter_name)s · %(post_commenter_username)s commented on your post."
+msgstr "%(post_commenter_name)s · %(post_commenter_username)s hozzászólt a bejegyzésedhez."
+
+#: openbook_auth/models.py:1010
+#, python-format
+msgid "%(post_commenter_name)s · @%(post_commenter_username)s commented on a post you also commented on."
+msgstr "%(post_commenter_name)s · @%(post_commenter_username)s hozzászólt egy bejegyzéshez, melyhez te is hozzászóltál."
+
+#: openbook_auth/models.py:1065
+#, python-format
+msgid "%(post_commenter_name)s · @%(post_commenter_username)s replied to your comment on a post."
+msgstr "%(post_commenter_name)s · @%(post_commenter_username)s válaszolt a hozzászólásodra egy bejegyzésen."
+
+#: openbook_auth/models.py:1072
+#, python-format
+msgid "%(post_commenter_name)s · @%(post_commenter_username)s replied on a comment you also replied on."
+msgstr "%(post_commenter_name)s · @%(post_commenter_username)s válaszolt egy hozzászólásra, melyhez te is írtál egy választ."
+
+#: openbook_auth/models.py:2243
+msgid "A user cannot follow itself."
+msgstr "Egy felhasználó nem követheti saját magát."
+
+#: openbook_auth/models.py:2312
+msgid "A user cannot connect with itself."
+msgstr "Egy felhasználó nem léphet kapcsolatba saját magával."
+
+#: openbook_auth/models.py:2351
+msgid "No data to update the connection with."
+msgstr "Nincs adat amivel frissíteni lehet a kapcsolatot."
+
+#: openbook_auth/models.py:2719
+msgid "Reset your password for Okuna"
+msgstr "Okuna jelszó visszaállítása"
+
+#: openbook_auth/models.py:3137 openbook_categories/models.py:15
+#: openbook_circles/models.py:29 openbook_common/models.py:99
+#: openbook_communities/models.py:29 openbook_devices/models.py:17
+#: openbook_lists/models.py:17 openbook_moderation/models.py:16
+#: openbook_tags/models.py:17
+msgid "name"
+msgstr "név"
+
+#: openbook_auth/models.py:3140
+msgid "location"
+msgstr "hely"
+
+#: openbook_auth/models.py:3143 openbook_categories/models.py:22
+#: openbook_communities/models.py:36
+msgid "avatar"
+msgstr "avatar"
+
+#: openbook_auth/models.py:3146 openbook_communities/models.py:39
+msgid "cover"
+msgstr "borító"
+
+#: openbook_auth/models.py:3149
+msgid "bio"
+msgstr "bemutatkozás"
+
+#: openbook_auth/models.py:3150
+msgid "url"
+msgstr "url"
+
+#: openbook_auth/models.py:3151
+msgid "followers count visible"
+msgstr "követő statisztika láthatósága"
+
+#: openbook_auth/models.py:3152
+msgid "community posts visible"
+msgstr "közösségi bejegyzések láthatósága"
+
+#: openbook_auth/models.py:3156
+msgid "user profile"
+msgstr "felhasználói profil"
+
+#: openbook_auth/models.py:3157
+msgid "users profiles"
+msgstr "felhasználók profiljai"
+
+#: openbook_auth/models.py:3173
+msgid "post comment notifications"
+msgstr "hozzászólás értesítések"
+
+#: openbook_auth/models.py:3174
+msgid "post comment reply notifications"
+msgstr "hozzászólás válasz értesítések"
+
+#: openbook_auth/models.py:3175
+msgid "post reaction notifications"
+msgstr "hozzászólás reakció értesítések"
+
+#: openbook_auth/models.py:3176
+msgid "follow notifications"
+msgstr "követés értesítések"
+
+#: openbook_auth/models.py:3177
+msgid "connection request notifications"
+msgstr "kapcsolatfelkérés értesítések"
+
+#: openbook_auth/models.py:3178
+msgid "connection confirmed notifications"
+msgstr "kapcsolatfelkérés elfogadási értesítések"
+
+#: openbook_auth/models.py:3179
+msgid "community invite notifications"
+msgstr "közösség meghívás értesítések"
+
+#: openbook_auth/models.py:3180
+msgid "post comment reaction notifications"
+msgstr "hozzászólásra való reagálás értesítések"
+
+#: openbook_auth/models.py:3181
+msgid "post comment user mention notifications"
+msgstr "hozzászólásban való megjelölés értesítések"
+
+#: openbook_auth/models.py:3183
+msgid "post user mention notifications"
+msgstr "bejegyzésben való megjelölés értesítések"
+
+#: openbook_auth/validators.py:11
+msgid "Usernames can only contain alphanumeric characters, periods and underscores."
+msgstr "A felhasználónevek csak alfanumerikus karaktereket, pontokat és alulvonásokat tartalmazhat."
+
+#: openbook_auth/validators.py:25
+msgid "An account for the email already exists."
+msgstr "Már létezik egy fiók ezzel az e-mail címmel."
+
+#: openbook_auth/validators.py:32
+msgid "No user with the provided username exists."
+msgstr "Nem létezik a megadott felhasználónévvel rendelkező felhasználó."
+
+#: openbook_auth/validators.py:39
+msgid "No user with the provided email exists."
+msgstr "Nem létezik a megadott e-mail címmel rendelkező felhasználó."
+
+#: openbook_auth/views/auth/views.py:73
+msgid "Username available"
+msgstr "Felhasználónév elérhető"
+
+#: openbook_auth/views/auth/views.py:86
+msgid "Email available"
+msgstr "E-mail cím elérhető"
+
+#: openbook_auth/views/auth/views.py:104
+msgid "Email verified"
+msgstr "E-mail cím ellenőrizve"
+
+#: openbook_auth/views/auth/views.py:142 openbook_auth/views/auth/views.py:190
+msgid "Password set successfully"
+msgstr "Jelszó sikeresen megadva"
+
+#: openbook_auth/views/auth/views.py:171
+msgid "A password reset link was sent to the email"
+msgstr "Egy jelszó-helyreállítási link el lett küldve az e-mail címedre"
+
+#: openbook_auth/views/authenticated_user/serializers.py:136
+msgid "New password must be supplied together with the current password"
+msgstr "Az új jelszót a régi jelszóval együtt kell megadni"
+
+#: openbook_auth/views/authenticated_user/serializers.py:139
+msgid "Current password must be supplied together with the new password"
+msgstr "A jelenlegi jelszót az új jelszóval együtt kell megadni"
+
+#: openbook_auth/views/authenticated_user/views.py:87
+msgid "Goodbye 😔"
+msgstr "Viszlát 😔"
+
+#: openbook_auth/views/authenticated_user/views.py:162
+msgid "Please specify email or password to update"
+msgstr "Kérünk add meg a módosítani kívánt e-mail címet vagy jelszót"
+
+#: openbook_auth/views/authenticated_user/views.py:168
+msgid "Confirm your email for Openbook"
+msgstr "Erősítsd meg az Okuna e-mail címedet"
+
+#: openbook_auth/views/authenticated_user/views.py:200
+msgid "Guidelines successfully accepted"
+msgstr "Az irányelvek sikeresen elfogadva"
+
+#: openbook_auth/views/authenticated_user/views.py:224
+msgid "Language successfully set"
+msgstr "Nyelv sikeresen beállítva"
+
+#: openbook_auth/views/proxy/views.py:29
+msgid "All Ok"
+msgstr "Minden OK"
+
+#: openbook_categories/i18n/i18n.py:3
+msgid "Education"
+msgstr "Oktatás"
+
+#: openbook_categories/i18n/i18n.py:4
+msgid "For everything related to Education."
+msgstr "Minden, ami az oktatásról szól."
+
+#: openbook_categories/i18n/i18n.py:5
+msgid "Fun"
+msgstr "Móka"
+
+#: openbook_categories/i18n/i18n.py:6
+msgid "Fun stuff!"
+msgstr "Szórakoztató dolgok!"
+
+#: openbook_categories/i18n/i18n.py:7
+msgid "Technology"
+msgstr "Technológia"
+
+#: openbook_categories/i18n/i18n.py:8
+msgid "For all tech related wizardry."
+msgstr "Minden a technológiával kapcsolatban."
+
+#: openbook_categories/i18n/i18n.py:9
+msgid "Sports"
+msgstr "Sport"
+
+#: openbook_categories/i18n/i18n.py:10
+msgid "For everything related to sports."
+msgstr "Minden, ami a sportról szól."
+
+#: openbook_categories/i18n/i18n.py:11
+msgid "Nature"
+msgstr "Természet"
+
+#: openbook_categories/i18n/i18n.py:12
+msgid "For everything related to nature."
+msgstr "Minden, ami a természetről szól."
+
+#: openbook_categories/i18n/i18n.py:13
+msgid "Travel"
+msgstr "Utazás"
+
+#: openbook_categories/i18n/i18n.py:14
+msgid "For everything related to travel."
+msgstr "Minden, ami az utazásról szól."
+
+#: openbook_categories/i18n/i18n.py:15
+msgid "Art"
+msgstr "Művészet"
+
+#: openbook_categories/i18n/i18n.py:16
+msgid "For everything related to art."
+msgstr "Minden, ami a művészetről szól."
+
+#: openbook_categories/i18n/i18n.py:17
+msgid "Lifestyle"
+msgstr "Életstílus"
+
+#: openbook_categories/i18n/i18n.py:18
+msgid "For everything related to lifestyle."
+msgstr "Minden, ami életstílusokról szól."
+
+#: openbook_categories/i18n/i18n.py:19
+msgid "Entertainment"
+msgstr "Szórakozás"
+
+#: openbook_categories/i18n/i18n.py:20
+msgid "For everything related to entertainment."
+msgstr "Minden, ami a szórakozásról szól."
+
+#: openbook_categories/i18n/i18n.py:21
+msgid "Places"
+msgstr "Helyek"
+
+#: openbook_categories/i18n/i18n.py:22
+msgid "For everything related to places."
+msgstr "Helyekről szóló dolgok."
+
+#: openbook_categories/i18n/i18n.py:23
+msgid "Food"
+msgstr "Ételek"
+
+#: openbook_categories/i18n/i18n.py:24
+msgid "For everything related to food."
+msgstr "Minden, ami az ételekről szól."
+
+#: openbook_categories/models.py:17 openbook_communities/models.py:31
+#: openbook_moderation/models.py:17
+msgid "title"
+msgstr "cím"
+
+#: openbook_categories/models.py:18 openbook_communities/models.py:32
+#: openbook_moderation/models.py:18 openbook_moderation/models.py:48
+#: openbook_moderation/models.py:274
+msgid "description"
+msgstr "leírás"
+
+#: openbook_categories/models.py:23 openbook_circles/models.py:30
+#: openbook_common/models.py:17 openbook_common/models.py:40
+#: openbook_communities/models.py:53 openbook_tags/models.py:18
+msgid "color"
+msgstr "szín"
+
+#: openbook_categories/validators.py:13
+msgid "No category with the provided name exists."
+msgstr "Nem létezik a megadott névvel rendelkező kategória."
+
+#: openbook_circles/models.py:46
+msgid "Connections"
+msgstr "Kapcsolatok"
+
+#: openbook_circles/validators.py:12
+msgid "The circle does not exist."
+msgstr "A kör nem létezik."
+
+#: openbook_circles/views.py:103
+msgid "Circle name available"
+msgstr "A körnév elérhető"
+
+#: openbook_circles/views.py:105
+msgid "Circle name not available"
+msgstr "A körnév nem elérhető"
+
+#: openbook_common/checkers.py:14
+msgid "No valid URL given"
+msgstr "Nincs érvényes URL"
+
+#: openbook_common/checkers.py:20
+msgid "Url domain is not proxy whitelisted"
+msgstr "Az URL domain nincs a proxy fehérlistán"
+
+#: openbook_common/helpers.py:90
+msgid "You can only retrieve favicon urls from protocol http and https."
+msgstr "Favicon url-eket csak http és https protokollok esetén lehet betölteni."
+
+#: openbook_common/i18n/i18n.py:3
+msgid "Primary"
+msgstr "Elsődleges"
+
+#: openbook_common/i18n/i18n.py:4
+msgid "Premium"
+msgstr "Prémium"
+
+#: openbook_common/i18n/i18n.py:5
+msgid "Objects"
+msgstr "Tárgyak"
+
+#: openbook_common/i18n/i18n.py:6
+msgid "Waw"
+msgstr "Vau"
+
+#: openbook_common/i18n/i18n.py:7
+msgid "Party!"
+msgstr "Parti!"
+
+#: openbook_common/i18n/i18n.py:8
+msgid "Love it"
+msgstr "Imádom"
+
+#: openbook_common/i18n/i18n.py:9
+msgid "Sad"
+msgstr "Szomorú"
+
+#: openbook_common/i18n/i18n.py:10
+msgid "Lit"
+msgstr "Forró"
+
+#: openbook_common/i18n/i18n.py:11
+msgid "Hooray!"
+msgstr "Hurrá!"
+
+#: openbook_common/i18n/i18n.py:12
+msgid "Upset"
+msgstr "Letört"
+
+#: openbook_common/i18n/i18n.py:13
+msgid "Wow"
+msgstr "Hűha"
+
+#: openbook_common/i18n/i18n.py:14
+msgid "Haha"
+msgstr "Haha"
+
+#: openbook_common/i18n/i18n.py:15
+msgid "Alarm"
+msgstr "Riasztás"
+
+#: openbook_common/i18n/i18n.py:16
+msgid "Computer"
+msgstr "Számítógép"
+
+#: openbook_common/i18n/i18n.py:17
+msgid "Game"
+msgstr "Játék"
+
+#: openbook_common/i18n/i18n.py:18
+msgid "Football"
+msgstr "Foci"
+
+#: openbook_common/i18n/i18n.py:19
+msgid "Lighting"
+msgstr "Villám"
+
+#: openbook_common/i18n/i18n.py:20
+msgid "Lock"
+msgstr "Zár"
+
+#: openbook_common/i18n/i18n.py:21
+msgid "Money"
+msgstr "Pénz"
+
+#: openbook_common/i18n/i18n.py:22
+msgid "Pencil"
+msgstr "Ceruza"
+
+#: openbook_common/i18n/i18n.py:23
+msgid "Speaker"
+msgstr "Hangszóró"
+
+#: openbook_common/i18n/i18n.py:24
+msgid "Camera"
+msgstr "Kamera"
+
+#: openbook_common/i18n/i18n.py:25
+msgid "Bravo!"
+msgstr "Bravó!"
+
+#: openbook_common/i18n/i18n.py:26
+msgid "Cool"
+msgstr "Klassz"
+
+#: openbook_common/i18n/i18n.py:27
+msgid "News"
+msgstr "Hír"
+
+#: openbook_common/i18n/i18n.py:28
+msgid "Earth"
+msgstr "Föld"
+
+#: openbook_common/i18n/i18n.py:29
+msgid "Book"
+msgstr "Könyv"
+
+#: openbook_common/i18n/i18n.py:30
+msgid "Science"
+msgstr "Tudomány"
+
+#: openbook_common/i18n/i18n.py:31
+msgid "Bulb"
+msgstr "Izzó"
+
+#: openbook_common/i18n/i18n.py:32
+msgid "Fancy hat"
+msgstr "Puccos sapka"
+
+#: openbook_common/i18n/i18n.py:33
+msgid "Heart"
+msgstr "Szív"
+
+#: openbook_common/i18n/i18n.py:34
+msgid "Star"
+msgstr "Csillag"
+
+#: openbook_common/i18n/i18n.py:35
+msgid "Trophy"
+msgstr "Trófea"
+
+#: openbook_common/i18n/i18n.py:36
+msgid "OMG"
+msgstr "Jesszusom!"
+
+#: openbook_common/i18n/i18n.py:37
+msgid "Thankful"
+msgstr "Hálás"
+
+#: openbook_common/i18n/i18n.py:38
+msgid "Music"
+msgstr "Zene"
+
+#: openbook_common/i18n/i18n.py:39
+msgid "Wohoo!"
+msgstr "Woohoo!"
+
+#: openbook_common/i18n/i18n.py:40
+msgid "Palette"
+msgstr "Paletta"
+
+#: openbook_common/i18n/i18n.py:41
+msgid "Alien"
+msgstr "Földönkívüli"
+
+#: openbook_common/i18n/i18n.py:42
+msgid "Airplane"
+msgstr "Repülő"
+
+#: openbook_common/i18n/i18n.py:43
+msgid "Rocket"
+msgstr "Rakéta"
+
+#: openbook_common/i18n/i18n.py:44
+msgid "Lipstick"
+msgstr "Rúzs"
+
+#: openbook_common/i18n/i18n.py:45
+msgid "Crown"
+msgstr "Korona"
+
+#: openbook_common/i18n/i18n.py:46
+msgid "Map"
+msgstr "Térkép"
+
+#: openbook_common/i18n/i18n.py:47
+msgid "Pride"
+msgstr "Pride"
+
+#: openbook_common/i18n/i18n.py:48
+msgid "Like it"
+msgstr "Tetszik"
+
+#: openbook_common/i18n/i18n.py:49
+msgid "Hehe"
+msgstr "Hehe"
+
+#: openbook_common/models.py:16 openbook_common/models.py:38
+msgid "keyword"
+msgstr "kulcsszó"
+
+#: openbook_common/models.py:21
+msgid "is reaction group"
+msgstr "reakciócsoport"
+
+#: openbook_common/models.py:42 openbook_posts/models.py:550
+msgid "image"
+msgstr "kép"
+
+#: openbook_common/models.py:88
+msgid "keyword_description"
+msgstr "kulcsszó leírás"
+
+#: openbook_common/models.py:98
+msgid "code"
+msgstr "kód"
+
+#: openbook_common/serializers_fields/request.py:40
+msgid "Please keep filesize under %maxfilesize. Current filesize %currentfilesize"
+msgstr "A fájl mérete %maxfilesize alatt kell legyen. Jelenlegi fájlméret: %currentfilesize"
+
+#: openbook_common/serializers_fields/request.py:51
+msgid "Upload a valid image. The file you uploaded was either not an image or a corrupted image."
+msgstr "Tölts fel egy érvényes képet. A megadott fájl vagy nem egy kép vagy egy sérült kép volt."
+
+#: openbook_common/validators.py:12
+msgid "The provided value is not a valid hex color."
+msgstr "A megadott érték nem egy hexadecimális színérték."
+
+#: openbook_common/validators.py:20
+msgid "No emoji with the provided id exists."
+msgstr "Nincs emoji a megadott id-val."
+
+#: openbook_common/validators.py:28
+msgid "No emoji group with the provided id exists."
+msgstr "Nincs emojicsoport a megadott id-val."
+
+#: openbook_common/validators.py:35
+msgid "Names can't contain < or >."
+msgstr "A nevek nem tartalmazhatnak < vagy > karaktereket."
+
+#: openbook_common/validators.py:43
+msgid "No supported language with the provided id exists."
+msgstr "Nem létezik a megadott id-val rendelkező nyelv."
+
+#: openbook_common/validators.py:51
+msgid "No supported language with the provided code exists."
+msgstr "Nem létezik a megadott kóddal rendelkező nyelv."
+
+#: openbook_common/views.py:66
+msgid "The specified url was not found."
+msgstr "A megadott url nem található."
+
+#: openbook_common/views.py:68
+msgid "The specified url was not reachable."
+msgstr "A megadott url nem elérhető."
+
+#: openbook_communities/models.py:34
+msgid "rules"
+msgstr "szabályok"
+
+#: openbook_communities/models.py:55
+msgid "user adjective"
+msgstr "felhasználó melléknév"
+
+#: openbook_communities/models.py:57
+msgid "users adjective"
+msgstr "felhasználó melléknév (többesszám)"
+
+#: openbook_communities/models.py:59
+msgid "invites enabled"
+msgstr "engedélyezett meghívók"
+
+#: openbook_communities/models.py:499
+msgid "is administrator"
+msgstr "adminisztrátor"
+
+#: openbook_communities/models.py:500
+msgid "is moderator"
+msgstr "moderátor"
+
+#: openbook_communities/validators.py:12
+msgid "Community_names can only contain alphanumeric characters, underscores and dashes."
+msgstr "A közösségnevek csak alfanumerikus karaktereket, alulvonásokat és kötőjeleket tartalmazhat."
+
+#: openbook_communities/validators.py:20
+msgid "Community name already taken."
+msgstr "A közösségnév már foglalt."
+
+#: openbook_communities/validators.py:28
+msgid "No community with the provided name exists."
+msgstr "Nem létezik a megadott névvel rendelkező közösség."
+
+#: openbook_communities/views/communities/views.py:88
+msgid "Community name available"
+msgstr "A közösség neve elérhető"
+
+#: openbook_communities/views/community/administrators/views.py:84
+msgid "Removed administrator"
+msgstr "Adminisztrátor törölve"
+
+#: openbook_communities/views/community/banned_users/views.py:61
+msgid "Banned user!"
+msgstr "Felhasználó letiltva!"
+
+#: openbook_communities/views/community/banned_users/views.py:83
+msgid "Unbanned user!"
+msgstr "Felhasználó tiltása törölve!"
+
+#: openbook_communities/views/community/moderators/views.py:82
+msgid "Removed moderator"
+msgstr "Moderátor törölve"
+
+#: openbook_devices/models.py:15
+msgid "uuid"
+msgstr "uuid"
+
+#: openbook_importer/views.py:45
+msgid "done"
+msgstr "kész"
+
+#: openbook_importer/views.py:95 openbook_importer/views.py:103
+msgid "invalid archive"
+msgstr "érvénytelen archívum"
+
+#: openbook_invitations/models.py:19
+msgid "invited datetime"
+msgstr "érvéntelen datetime"
+
+#: openbook_invitations/models.py:76
+msgid "The token is invalid."
+msgstr "A token érvénytelen."
+
+#: openbook_invitations/models.py:81
+msgid "No invite exists for given token."
+msgstr "Nem létezik ezzel a tokennel rendelkező meghívó."
+
+#: openbook_invitations/models.py:86
+msgid "The invite has been already used."
+msgstr "A meghívó már fel volt használva."
+
+#: openbook_invitations/models.py:96 openbook_invitations/models.py:108
+msgid "You've been invited to join Okuna (formerly Openbook)"
+msgstr "Téged meghívtak az Okuna közösségi hálózathoz (régebbi nevén Openbook)"
+
+#: openbook_invitations/models.py:128
+msgid "Action Required: Choose an alternate username for Okuna"
+msgstr "Művelet szükséges: Válassz egy alternatív felhasználónevet az Okunának"
+
+#: openbook_invitations/validators.py:10
+msgid "The invite does not exist."
+msgstr "A meghívó nem létezik."
+
+#: openbook_invitations/validators.py:17
+msgid "The invite has already been used."
+msgstr "A meghívót már felhasználták."
+
+#: openbook_invitations/views.py:96
+msgid "Successfully deleted invite"
+msgstr "Meghívó sikeresen törölve"
+
+#: openbook_invitations/views.py:135
+msgid "An error occurred sending the invite, please try again"
+msgstr "Hiba történt a meghívó küldése közben, kérünk próbáld újra"
+
+#: openbook_invitations/views.py:137
+msgid "Invite email sent"
+msgstr "Meghívó email elküldve"
+
+#: openbook_lists/validators.py:10
+msgid "The list does not exist."
+msgstr "A lista nem létezik."
+
+#: openbook_lists/views.py:105
+msgid "List name available"
+msgstr "A listanév elérhető"
+
+#: openbook_lists/views.py:107
+msgid "List name not available"
+msgstr "A listanév nem elérhető"
+
+#: openbook_moderation/i18n/i18n.py:4
+msgid "Spam"
+msgstr "Spam"
+
+#: openbook_moderation/i18n/i18n.py:5
+msgid "Posts as spam could include clickbait, advertising, scams, script bots"
+msgstr "Spam bejegyzésnek számítanak a kattintásvadász linkek, kéretlen reklámok, átverések, szkript botok"
+
+#: openbook_moderation/i18n/i18n.py:6
+msgid "Pornography"
+msgstr "Pornográfia"
+
+#: openbook_moderation/i18n/i18n.py:7
+msgid "Posts showing sexual intercourse, photos and videos of sexual intercourse, nudity etc"
+msgstr "Szexuális tevékenységeket vagy meztelenséget megjelenítő képeket vagy videókat tartalmazó bejegyzések"
+
+#: openbook_moderation/i18n/i18n.py:8
+msgid "Hatred & Bullying"
+msgstr "Gyűlölet és zaklatás"
+
+#: openbook_moderation/i18n/i18n.py:9
+msgid "Credible threats, targets people, degrades or shames them, harassment etc."
+msgstr "Fenyegetések, zaklatás, bizonyos emberek vagy embercsoportok megcélzása vagy meggyalázása, stb."
+
+#: openbook_moderation/i18n/i18n.py:10
+msgid "Self Harm"
+msgstr "Önbántalmazás"
+
+#: openbook_moderation/i18n/i18n.py:11
+msgid "Posts promoting or encouraging self harm"
+msgstr "Bejegyzések, melyek az önbántalmazást népszerűsítik, illetve bíztatják"
+
+#: openbook_moderation/i18n/i18n.py:12
+msgid "Violent, gory and harmful"
+msgstr "Erőszak, borzasztó vagy káros"
+
+#: openbook_moderation/i18n/i18n.py:13
+msgid "Photos or videos of extreme graphic violence, posts encouraging violence, specific threats of physical harm"
+msgstr "Képek vagy videók, melyek extrém erőszakot jelenítenek meg, bejegyzések, melyek az erőszakot biztatják, fizikai bántalmazással való fenyegetőzések"
+
+#: openbook_moderation/i18n/i18n.py:14
+msgid "Child Sexual Exploitation Material"
+msgstr "Gyerekek szexuális kizsákmányolásával kapcsolatos tartalom"
+
+#: openbook_moderation/i18n/i18n.py:15
+msgid "Posts with photos or videos of sexual intercourse with children, posts of nude/partially nude children."
+msgstr "Képek és videók, melyek gyerekekkel való szexuális kapcsolatot vagy meztelen/félmeztelen gyerekeket jelenítenek meg."
+
+#: openbook_moderation/i18n/i18n.py:16
+msgid "Illegal Activities e.g Drug Use"
+msgstr "Illegális tevékenységek (pl.: drogfogyasztás)"
+
+#: openbook_moderation/i18n/i18n.py:17
+msgid "Posts promoting illegal activities such as use, sale or distribution of hard drugs etc"
+msgstr "Bejegyzések, melyek illegális tevékenységeket jelenítenek meg, mint például kemény kábítószerek használata, forgalmazása vagy terjesztése"
+
+#: openbook_moderation/i18n/i18n.py:18
+msgid "Deceptive content"
+msgstr "Félrevezető tartalom"
+
+#: openbook_moderation/i18n/i18n.py:19
+msgid "Posts with purposefully fake or deceitful news, hoax disproved by credible sources"
+msgstr "Bejegyzések, melyek szándékosan tartalmaznak hamis vagy megtévesztő híreket, illetve hoaxokat"
+
+#: openbook_moderation/i18n/i18n.py:20
+msgid "Copyright and trademark infringement"
+msgstr "Szerzői jogok/védjegyek megsértése"
+
+#: openbook_moderation/i18n/i18n.py:21
+msgid "Posts with content that violates or infringes your copyright."
+msgstr "Bejegyzések, melyek sértik a szerzői jogaidat/védjegyedet."
+
+#: openbook_moderation/i18n/i18n.py:22
+msgid "Platform abuse"
+msgstr "Visszaélés a rendszerrel"
+
+#: openbook_moderation/i18n/i18n.py:23
+msgid "Abuse might contain using bots, abusing the report button, spamming continuously."
+msgstr "Például: botok melyek visszaélnek a jelentés gombbal vagy folyamatosan spammelnek."
+
+#: openbook_moderation/i18n/i18n.py:24
+msgid "Community Guidelines Infringement"
+msgstr "Közösségi irányelvek megsértése"
+
+#: openbook_moderation/i18n/i18n.py:25
+msgid "The item does not conform to the community guidelines."
+msgstr "Az elem ellenkezik a közösségi irányelveinnkel."
+
+#: openbook_moderation/i18n/i18n.py:26
+msgid "Other"
+msgstr "Egyéb"
+
+#: openbook_moderation/i18n/i18n.py:27
+msgid "Other reasons not included in other categories."
+msgstr "Más okok, melyek nem voltak az imént felsorolva."
+
+#: openbook_moderation/models.py:50
+msgid "verified"
+msgstr "ellenőrizve"
+
+#: openbook_moderation/models.py:399 openbook_moderation/models.py:416
+#: openbook_moderation/models.py:433
+msgid "changed from"
+msgstr "megváltozott erről:"
+
+#: openbook_moderation/models.py:401 openbook_moderation/models.py:419
+#: openbook_moderation/models.py:435
+msgid "changed to"
+msgstr "megváltozott erre:"
+
+#: openbook_moderation/permissions.py:24
+#, python-format
+msgid "Your account has been suspended and will be unsuspended in %s"
+msgstr "A fiókod fel lett függesztve. A felfüggesztés lejárta: %s"
+
+#: openbook_moderation/views/checks.py:14
+msgid "Congrats, you're not suspended :-)"
+msgstr "Hurrá, nem vagy többé felfüggesztve :)"
+
+#: openbook_moderation/views/report/views.py:34
+msgid "Post reported, thanks!"
+msgstr "Bejegyzés jelentve. Köszönjük!"
+
+#: openbook_moderation/views/report/views.py:62
+msgid "Post comment reported, thanks!"
+msgstr "Hozzászólás jelentve. Köszönjük!"
+
+#: openbook_moderation/views/report/views.py:87
+msgid "User reported, thanks!"
+msgstr "Felhasználó jelentve. Köszönjük!"
+
+#: openbook_moderation/views/report/views.py:112
+msgid "Community reported, thanks!"
+msgstr "Közösség jelentve. Köszönjük!"
+
+#: openbook_moderation/views/validators.py:10
+msgid "The category does not exist."
+msgstr "A kategória nem létezik."
+
+#: openbook_moderation/views/validators.py:17
+msgid "The moderated object does not exist."
+msgstr "A moderált tárgy nem létezik."
+
+#: openbook_notifications/helpers.py:26
+#, python-format
+msgid "%(post_reactor_name)s · @%(post_reactor_username)s reacted to your post."
+msgstr "%(post_reactor_name)s · @%(post_reactor_username)s reagált a bejegyzésedre."
+
+#: openbook_notifications/helpers.py:73
+#, python-format
+msgid "%(following_user_name)s · @%(following_user_username)s started following you"
+msgstr "%(following_user_name)s · @%(following_user_username)s elkezdett követni téged"
+
+#: openbook_notifications/helpers.py:96
+#, python-format
+msgid "%(connection_requester_name)s · @%(connection_requester_username)s wants to connect with you."
+msgstr "%(connection_requester_name)s · @%(connection_requester_username)s kapcsolatkérelmet küldött."
+
+#: openbook_notifications/helpers.py:124
+#, python-format
+msgid "%(post_comment_reactor_name)s · @%(post_comment_reactor_username)s reacted to your comment."
+msgstr "%(post_comment_reactor_name)s · @%(post_comment_reactor_username)s reagált a hozzászólásodra."
+
+#: openbook_notifications/helpers.py:155
+#, python-format
+msgid "%(mentioner_name)s · @%(mentioner_username)s mentioned you in a comment."
+msgstr "%(mentioner_name)s · @%(mentioner_username)s megjelölt egy hozzászólásban."
+
+#: openbook_notifications/helpers.py:187
+#, python-format
+msgid "%(mentioner_name)s · @%(mentioner_username)s mentioned you in a post."
+msgstr "%(mentioner_name)s · @%(mentioner_username)s megjelölt egy bejegyzésben."
+
+#: openbook_notifications/helpers.py:213
+#, python-format
+msgid "%(invite_creator_name)s · @%(invite_creator_username)s has invited you to join /c/%(community_name)s."
+msgstr "%(invite_creator_name)s · @%(invite_creator_username)s meghívott téged a(z) /c/%(community_name)s közösségbe."
+
+#: openbook_notifications/validators.py:10
+msgid "No notification with the provided id exists."
+msgstr "Nem létezik a megadott id-val rendelkező értesítés."
+
+#: openbook_posts/checkers.py:11
+msgid "Cannot remove the text of a text only post. Try deleting it instead."
+msgstr "Nem törölheted a szövegét egy csak szöveggel rendelkező bejegyzésnek. Próbáld meg törölni a bejegyzést inkább."
+
+#: openbook_posts/checkers.py:18
+msgid "Post is not a draft"
+msgstr "A bejegyzés nem egy piszkozat"
+
+#: openbook_posts/checkers.py:28
+msgid "Maximum amount of post media items reached"
+msgstr "A bejegyzés médiaelemeinek maximális száma elérve"
+
+#: openbook_posts/checkers.py:35
+msgid "The post is being processed"
+msgstr "A bejegyzés feldolgozás alatt van"
+
+#: openbook_posts/checkers.py:41
+msgid "The post is already published"
+msgstr "A bejegyzés már közzé lett téve"
+
+#: openbook_posts/checkers.py:46
+msgid "The post is empty. Try adding text or media."
+msgstr "A bejegyzés üres. Kérünk, adj meg szöveget vagy médiát."
+
+#: openbook_posts/checkers.py:56
+#, python-format
+msgid "%s is not a supported mimetype"
+msgstr "%s nem egy támogatott mime típus"
+
+#: openbook_posts/models.py:60 openbook_posts/models.py:635
+msgid "text"
+msgstr "szöveg"
+
+#: openbook_posts/models.py:64
+msgid "comments enabled"
+msgstr "hozzászólások engedélyezve"
+
+#: openbook_posts/models.py:65
+msgid "public reactions"
+msgstr "nyilvános reakciók"
+
+#: openbook_posts/models.py:82
+msgid "media height"
+msgstr "média magasság"
+
+#: openbook_posts/models.py:83
+msgid "media width"
+msgstr "média szélesség"
+
+#: openbook_posts/models.py:84 openbook_posts/models.py:559
+#: openbook_posts/models.py:598
+msgid "thumbnail"
+msgstr "miniatűrkép"
+
+#: openbook_posts/models.py:112
+msgid "A post requires circles or a community to be posted to."
+msgstr "Egy bejegyzésnél meg kell határozni a köröket vagy a közösséget, melybe közzé kell tenni."
+
+#: openbook_posts/models.py:115
+msgid "A post cannot be posted both to a community and to circles."
+msgstr "Egy bejegyzést egyszerre nem lehet közzétenni egy közösségben és körökben is."
+
+#: openbook_posts/models.py:120
+msgid "A post must have an image or a video, not both."
+msgstr "Egy bejegyzés tartalmazhat egy képet vagy egy videót, nem pedig mindkettőt."
+
+#: openbook_posts/models.py:355
+msgid "Unsupported media file type"
+msgstr "Nem támogatott média fájltípus"
+
+#: openbook_posts/models.py:558 openbook_posts/models.py:584
+msgid "hash"
+msgstr "hash"
+
+#: openbook_posts/validators.py:12 openbook_posts/validators.py:19
+msgid "The post does not exist."
+msgstr "A bejegyzés nem létezik."
+
+#: openbook_posts/validators.py:26 openbook_posts/validators.py:33
+msgid "The post comment does not exist."
+msgstr "A hozzászólás nem létezik."
+
+#: openbook_posts/validators.py:42 openbook_posts/validators.py:56
+msgid "The post comment reaction does not exist."
+msgstr "A hozzászólás reakció nem létezik."
+
+#: openbook_posts/validators.py:49
+msgid "The post reaction does not exist."
+msgstr "A bejegyzés reakció nem létezik."
+
+#: openbook_posts/views/post/views.py:76
+msgid "Post deleted"
+msgstr "Bejegyzés törölve"
+
+#: openbook_posts/views/post/views.py:195
+#: openbook_posts/views/post_comment/views.py:122
+msgid "Translation between these languages is not supported."
+msgstr "A megadott nyelvek közötti fordítás nem támogatott."
+
+#: openbook_posts/views/post/views.py:198
+#: openbook_posts/views/post_comment/views.py:124
+msgid "Translation service returned an error"
+msgstr "A fordítási szolgáltatás hibát küldött vissza"
+
+#: openbook_posts/views/post/views.py:201
+#: openbook_posts/views/post_comment/views.py:127
+msgid "Max length of translation text exceeded."
+msgstr "A fordítási szöveg maximális hossza túl lett lépve."
+
+#: openbook_posts/views/post/views.py:316
+msgid "The linked url associated for preview was not found."
+msgstr "Az előnézethez asszociált url nem található."
+
+#: openbook_posts/views/post/views.py:319
+msgid "The linked url associated for preview was not reachable."
+msgstr "Az előnézethez asszociált url nem elérhető."
+
+#: openbook_posts/views/post_comment/post_comment_reaction/views.py:31
+msgid "Post comment reaction deleted"
+msgstr "Hozzászólás reakció törölve"
+
+#: openbook_posts/views/post_comment/views.py:37
+msgid "Comment deleted"
+msgstr "Hozzászólás törölve"
+
+#: openbook_posts/views/post_comment/views.py:83
+msgid "Post comment muted."
+msgstr "Hozzászólás némítva."
+
+#: openbook_posts/views/post_comment/views.py:101
+msgid "Post comment unmuted."
+msgstr "Hozzászólás némítása törölve."
+
+#: openbook_posts/views/post_media/views.py:35
+msgid "Media added successfully to post"
+msgstr "Média sikeresen hozzáadva a bejegyzéshez"
+
+#: openbook_posts/views/post_reaction/views.py:42
+msgid "Reaction deleted"
+msgstr "Reakció törölve"
+
+#: openbook_tags/validators.py:13
+msgid "No tag with the provided name exists."
+msgstr "Nem létezik a megadott névvel rendelkező címke."
+
+#~ msgid "A post requires text or an image/video."
+#~ msgstr "Un post requiere texto o una imagen/vídeo."
+
+#~ msgid "video"
+#~ msgstr "video"
+

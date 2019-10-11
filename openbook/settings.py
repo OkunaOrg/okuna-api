@@ -160,7 +160,6 @@ JWT_ALGORITHM = os.environ.get('JWT_ALGORITHM', 'HS256')
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.environ.get('REDIS_PORT', '6379'))
 REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
-REDIS_DEFAULT_DB = int(os.environ.get('REDIS_DEFAULT_DB', '0'))
 
 redis_protocol = 'rediss://' if IS_PRODUCTION else 'redis://'
 
@@ -173,25 +172,44 @@ REDIS_LOCATION = '%(protocol)s%(password)s@%(host)s:%(port)d' % {'protocol': red
 
 RQ_SHOW_ADMIN_LINK = False
 
-RQ_QUEUES_REDIS_DB = int(os.environ.get('RQ_QUEUES_REDIS_DB', '2'))
+REDIS_DEFAULT_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 0}
+REDIS_RQ_DEFAULT_JOBS_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 1}
+REDIS_RQ_HIGH_JOBS_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 2}
+REDIS_RQ_LOW_JOBS_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 3}
 
 CACHES = {
     'default': {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': REDIS_DEFAULT_DB},
+        "LOCATION": REDIS_DEFAULT_CACHE_LOCATION,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient"
         },
         "KEY_PREFIX": "ob-api-"
     },
-    'rq-queues': {
+    'rq-default-jobs': {
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': RQ_QUEUES_REDIS_DB},
+        "LOCATION": REDIS_RQ_DEFAULT_JOBS_CACHE_LOCATION,
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient"
         },
-        "KEY_PREFIX": "ob-api-rq-"
-    }
+        "KEY_PREFIX": "ob-api-rq-default-job-"
+    },
+    'rq-high-jobs': {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_RQ_HIGH_JOBS_CACHE_LOCATION,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient"
+        },
+        "KEY_PREFIX": "ob-api-rq-high-job-"
+    },
+    'rq-low-jobs': {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_RQ_LOW_JOBS_CACHE_LOCATION,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient"
+        },
+        "KEY_PREFIX": "ob-api-rq-low-job-"
+    },
 }
 
 CACHEOPS_REDIS_DB = int(os.environ.get('CACHEOPS_REDIS_DB', '1'))
@@ -209,7 +227,13 @@ CACHEOPS = {
 
 RQ_QUEUES = {
     'default': {
-        'USE_REDIS_CACHE': 'rq-queues',
+        'USE_REDIS_CACHE': 'rq-default-jobs',
+    },
+    'high': {
+        'USE_REDIS_CACHE': 'rq-high-jobs',
+    },
+    'low': {
+        'USE_REDIS_CACHE': 'rq-low-jobs',
     },
 }
 
@@ -339,13 +363,9 @@ REST_FRAMEWORK = {
 }
 
 # AWS Translate
-AWS_TRANSLATE_REGION = os.environ.get('AWS_TRANSLATE_REGION', '')
+AWS_TRANSLATE_REGION = os.environ.get('AWS_TRANSLATE_REGION', 'eu-central-1')
 AWS_TRANSLATE_MAX_LENGTH = os.environ.get('AWS_TRANSLATE_MAX_LENGTH', 10000)
-if TESTING:
-    OS_TRANSLATION_STRATEGY_NAME = 'testing'
-else:
-    OS_TRANSLATION_STRATEGY_NAME = 'default'
-
+OS_TRANSLATION_STRATEGY_NAME = 'default'
 OS_TRANSLATION_CONFIG = {
     'default': {
         'STRATEGY': 'openbook_translation.strategies.amazon.AmazonTranslate',
@@ -484,7 +504,7 @@ MODERATION_REPORT_DESCRIPTION_MAX_LENGTH = 1000
 MODERATED_OBJECT_DESCRIPTION_MAX_LENGTH = 1000
 GLOBAL_HIDE_CONTENT_AFTER_REPORTS_AMOUNT = int(os.environ.get('GLOBAL_HIDE_CONTENT_AFTER_REPORTS_AMOUNT', '20'))
 MODERATORS_COMMUNITY_NAME = os.environ.get('MODERATORS_COMMUNITY_NAME', 'mods')
-PROXY_WHITELIST_DOMAIN_MAX_LENGTH = 150
+PROXY_BLACKLIST_DOMAIN_MAX_LENGTH = 150
 SUPPORTED_MEDIA_MIMETYPES = [
     'video/mp4',
     'video/quicktime',
@@ -493,10 +513,14 @@ SUPPORTED_MEDIA_MIMETYPES = [
     'image/jpeg',
     'image/png'
 ]
+
 FAILED_JOB_THRESHOLD = 20
 ACTIVE_JOB_THRESHOLD = 50
 ACTIVE_WORKER_THRESHOLD = 5
 ALERT_HOOK_URL = os.environ.get('ALERT_HOOK_URL')
+
+MIN_UNIQUE_TOP_POST_REACTIONS_COUNT = int(os.environ.get('MIN_UNIQUE_TOP_POST_REACTIONS_COUNT', '5'))
+MIN_UNIQUE_TOP_POST_COMMENTS_COUNT = int(os.environ.get('MIN_UNIQUE_TOP_POST_COMMENTS_COUNT', '5'))
 
 # Email Config
 
@@ -513,6 +537,12 @@ AWS_PUBLIC_MEDIA_LOCATION = os.environ.get('AWS_PUBLIC_MEDIA_LOCATION')
 AWS_STATIC_LOCATION = 'static'
 AWS_PRIVATE_MEDIA_LOCATION = os.environ.get('AWS_PRIVATE_MEDIA_LOCATION')
 AWS_DEFAULT_ACL = None
+
+# Testing overrides
+if TESTING:
+    OS_TRANSLATION_STRATEGY_NAME = 'testing'
+    MIN_UNIQUE_TOP_POST_REACTIONS_COUNT = 1
+    MIN_UNIQUE_TOP_POST_COMMENTS_COUNT = 1
 
 if IS_PRODUCTION:
     AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')

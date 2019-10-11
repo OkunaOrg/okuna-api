@@ -147,6 +147,25 @@ Cleans up all draft posts which have not being modified for a day.
 
 Should be run every hour or so.
 
+##### openbook_posts.jobs.curate_top_posts
+
+Curates the top posts, which end up in the explore tab.
+
+Should be run every 5 minutes or so.
+
+
+##### openbook_posts.jobs.clean_top_posts
+
+Cleans the top posts which should no longer be top posts.
+
+This happens if an item is soft deleted, reported and approved
+
+Should be run every 5 minutes or so.
+
+
+
+
+
 
 #### RQ Monitoring
 
@@ -238,8 +257,26 @@ Migrates Post -> PostImage to Post -> PostMedia -> PostImage.
 
 The command was created as a one off migration tool.
 
+### `manage.py import_proxy_blacklisted_domains`
+
+Import a list of domains to be blacklisted when calling the `ProxyAuth` and `ProxyDomainCheck` APIs.
+
 ```bash
-usage: manage.py migrate_post_images
+usage: manage.py import_proxy_blacklisted_domains [--file The path to the file with the domains to import]
+```
+
+#### Example
+
+```bash
+python manage.py import_proxy_blacklisted_domains --file ./openbook_common/misc/domain_blacklists/porn/domains
+```
+
+### `manage.py flush_proxy_blacklisted_domains`
+
+Flush all of the blacklisted proxy domains
+
+```bash
+usage: manage.py flush_proxy_blacklisted_domains
 ```
 
 ### Crowdin translations update

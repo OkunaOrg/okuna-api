@@ -21,12 +21,12 @@ from rq import SimpleWorker
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_community, make_moderation_category, \
-    get_test_videos, get_test_image, make_proxy_whitelisted_domain
+    get_test_videos, get_test_image, make_proxy_blacklisted_domain
 from openbook_common.utils.model_loaders import get_language_model
 from openbook_communities.models import Community
 from openbook_notifications.models import PostUserMentionNotification, Notification
 from openbook_posts.models import Post, PostUserMention, PostMedia
-from openbook_common.models import ProxyWhitelistDomain
+from openbook_common.models import ProxyBlacklistedDomain
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -663,7 +663,7 @@ class PostItemAPITests(OpenbookAPITestCase):
             post = user.create_public_post(text=make_fake_post_text(), video=video)
 
             # Process videos
-            get_worker(worker_class=SimpleWorker).work(burst=True)
+            get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
             post_media_video = post.get_first_media()
             post_video = post_media_video.content_object
@@ -2409,7 +2409,7 @@ class PublishPostAPITests(OpenbookAPITestCase):
         self.assertEqual(post.status, Post.STATUS_PROCESSING)
 
         # Run the process handled by a worker
-        get_worker(worker_class=SimpleWorker).work(burst=True)
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         post.refresh_from_db()
 
@@ -2440,7 +2440,7 @@ class PublishPostAPITests(OpenbookAPITestCase):
                 self.assertEqual(post.status, Post.STATUS_PROCESSING)
 
                 # Run the process handled by a worker
-                get_worker(worker_class=SimpleWorker).work(burst=True)
+                get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
                 post.refresh_from_db()
 
@@ -2637,78 +2637,5 @@ class PostStatusAPITests(OpenbookAPITestCase):
 
     def _get_url(self, post):
         return reverse('post-status', kwargs={
-            'post_uuid': post.uuid
-        })
-
-
-class GetPostPreviewDataAPITests(OpenbookAPITestCase):
-    """
-    PostPreviewDataAPITests
-    """
-
-    def test_retrieves_post_preview_data_for_whitelisted_domain(self):
-        """
-        should retrieve preview data for a post and return 200
-        """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
-        post_text = 'im a text with link www.okuna.io'
-        post = user.create_public_post(text=post_text)
-        make_proxy_whitelisted_domain(domain='okuna.io')
-
-        url = self._get_url(post)
-        response = self.client.get(url, **headers)
-        preview_data = json.loads(response.content)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue('title' in preview_data.keys())
-        self.assertTrue('description' in preview_data.keys())
-        self.assertTrue('image_url' in preview_data.keys())
-        self.assertTrue('favicon_url' in preview_data.keys())
-        self.assertTrue('domain_url' in preview_data.keys())
-
-    def test_cannot_retrieve_post_preview_data_for_domain_not_in_whitelist(self):
-        """
-        should not retrieve preview data for a post link not whitelisted and return 400
-        """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
-        post_text = 'im a text with link www.google.nl www.testsite.com'
-        post = user.create_public_post(text=post_text)
-
-        url = self._get_url(post)
-        response = self.client.get(url, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
-    def test_cannot_retrieve_post_preview_data_for_post_with_no_link(self):
-        """
-        should fail to retrieve preview data for a post which has no link associated and return 400
-        """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
-        post = user.create_public_post(text=make_fake_post_text())
-
-        url = self._get_url(post)
-        response = self.client.get(url, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_cannot_retrieve_post_preview_data_for_post_with_unreachable_link(self):
-        """
-        should fail to retrieve preview data for a post which has an unreachable link and return 400
-        """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
-        post_text = 'This link will never exist https://www.invalid-XITSrbQomu0pnj2ISa4OOFq_NySDkyXMsw0cBxKYUc.com/doesntexist/eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9/'
-        post = user.create_public_post(text=post_text)
-
-        url = self._get_url(post)
-        response = self.client.get(url, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def _get_url(self, post):
-        return reverse('preview-post-link', kwargs={
             'post_uuid': post.uuid
         })

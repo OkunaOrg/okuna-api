@@ -325,3 +325,118 @@ class ReadNotificationAPITests(OpenbookAPITestCase):
         return reverse('read-notification', kwargs={
             'notification_id': notification_id
         })
+
+
+class UnreadNotificationsCountAPITests(OpenbookAPITestCase):
+    """
+    UnreadNotificationsCountAPI
+    """
+
+    def test_should_be_able_to_get_unread_notifications_count(self):
+        """
+        should be able to get all unread count notifications and return 200
+        """
+        user = make_user()
+
+        amount_of_notifications = 5
+        notifications_ids = []
+
+        for i in range(0, amount_of_notifications):
+            notification = make_notification(owner=user)
+            notifications_ids.append(notification.pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {}, **headers)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(parsed_response['count'] == 5)
+
+    def test_should_be_able_to_get_unread_notifications_count_with_max_id(self):
+        """
+        should be able to get all unread notifications count with a max_id and return 200
+        """
+        user = make_user()
+
+        amount_of_notifications = 5
+
+        notifications_ids = []
+
+        for i in range(0, amount_of_notifications):
+            notification = make_notification(owner=user)
+            notifications_ids.append(notification.pk)
+
+        max_id = notifications_ids[3]
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'max_id': max_id
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        parsed_response = json.loads(response.content)
+
+        print(parsed_response['count'])
+
+        self.assertTrue(parsed_response['count'] == 4)
+
+    def test_should_be_able_to_get_unread_notifications_count_by_type(self):
+        """
+        should be able to get unread notifications count of the specified types and return 200
+        """
+        user = make_user()
+
+        amount_of_notifications = len(Notification.NOTIFICATION_TYPES)
+        notifications_ids = []
+        valid_ids = []
+        valid_types = []
+
+        for i in range(0, amount_of_notifications):
+            notification_type = Notification.NOTIFICATION_TYPES.__getitem__(i)[0]
+            notification = make_notification(owner=user, notification_type=notification_type)
+            notifications_ids.append(notification.pk)
+
+            if i < 3:
+                valid_types.append(notification_type)
+                valid_ids.append(notification.pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'types': ','.join(valid_types)
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(parsed_response['count'], len(valid_ids))
+
+    def test_should_not_be_able_to_get_unread_notifications_count_with_bad_type(self):
+        """
+        should return 400 if an invalid notification type is specified
+        """
+        user = make_user()
+
+        amount_of_notifications = len(Notification.NOTIFICATION_TYPES)
+        notifications_ids = []
+
+        for i in range(0, amount_of_notifications):
+            notification = make_notification(owner=user)
+            notifications_ids.append(notification.pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'types': 'AA'
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def _get_url(self):
+            return reverse('unread-notifications-count')
