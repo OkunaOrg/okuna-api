@@ -4,10 +4,10 @@ from django_rq.utils import get_statistics, FailedJobRegistry
 
 class RQStats():
 
-    def __init__(self):
+    def __init__(self, queue):
 
         self.stats = get_statistics()
-        self.queue_name = 'default'
+        self.queue_name = queue
 
     def get_active_worker_count(self):
 
@@ -43,9 +43,9 @@ class RQStats():
 
 class FailedRQJobs():
 
-    def __init__(self):
+    def __init__(self, queue):
 
-        self.queue = django_rq.get_queue('default')
+        self.queue = django_rq.get_queue(queue)
         self.connection = django_rq.get_connection()
         self.failed_job_registry = FailedJobRegistry(self.queue,
                                                      self.connection)
