@@ -167,6 +167,23 @@ Should be run every 5 minutes or so.
 
 
 
+#### RQ Monitoring
+
+There are several functions that provide monitoring for the RQ workers:
+
+- `openbook_common.jobs.verify_active_job_threshold`
+- `openbook_common.jobs.verify_failed_job_threshold`
+- `openbook_common.jobs.verify_active_worker_threshold`
+
+All these functions have a required configurable `treshold`. These are configured in the Django settings.
+The `FAILED_JOB_THRESHOLD` is the maximum amount of failed jobs that are allowed, before an alert is sent using the `openbook_common.jobs.send_alert_to_channel`, which sends an alert to a monitoring channel on i.e. Slack. Using the `ALERT_HOOK_URL` option in the Django settings file, it is possible to add the Slack hook URL.
+
+Other thresholds that are included are `ACTIVE_JOB_THRESHOLD` and `ACTIVE_WORKER_THRESHOLD`. Just as with the limit on failed jobs, there is an active job and worker limit too.
+
+In `openbook_common.utils.rq_helpers` there is also a `FailedRQJobs` class, which has a function for removing failed jobs from the queue.
+
+It is recommended to schedule the worker monitoring functions, to run at a 5 minute interval.
+
 <br>
 
 ## Django Translations

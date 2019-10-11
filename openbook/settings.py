@@ -170,7 +170,7 @@ REDIS_LOCATION = '%(protocol)s%(password)s@%(host)s:%(port)d' % {'protocol': red
                                                                  'host': REDIS_HOST,
                                                                  'port': REDIS_PORT}
 
-RQ_SHOW_ADMIN_LINK = True
+RQ_SHOW_ADMIN_LINK = False
 
 REDIS_DEFAULT_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 0}
 REDIS_RQ_DEFAULT_JOBS_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 1}
@@ -513,6 +513,12 @@ SUPPORTED_MEDIA_MIMETYPES = [
     'image/jpeg',
     'image/png'
 ]
+
+FAILED_JOB_THRESHOLD = 20
+ACTIVE_JOB_THRESHOLD = 50
+ACTIVE_WORKER_THRESHOLD = 5
+ALERT_HOOK_URL = os.environ.get('ALERT_HOOK_URL')
+
 MIN_UNIQUE_TOP_POST_REACTIONS_COUNT = int(os.environ.get('MIN_UNIQUE_TOP_POST_REACTIONS_COUNT', '5'))
 MIN_UNIQUE_TOP_POST_COMMENTS_COUNT = int(os.environ.get('MIN_UNIQUE_TOP_POST_COMMENTS_COUNT', '5'))
 
