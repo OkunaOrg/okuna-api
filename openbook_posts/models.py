@@ -540,6 +540,9 @@ class TopPostCommunityExclusion(models.Model):
     community = models.ForeignKey('openbook_communities.Community', on_delete=models.CASCADE, related_name='top_posts_community_exclusions')
     created = models.DateTimeField(editable=False, db_index=True)
 
+    class Meta:
+        unique_together = ('user', 'community',)
+
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
         if not self.id:
