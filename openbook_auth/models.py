@@ -1681,8 +1681,9 @@ class User(AbstractUser):
 
     def search_top_posts_excluded_communities_with_query(self, query):
 
-        excluded_communities_search_query = Q(community__name__icontains=query, user=self)
-        excluded_communities_search_query.add(Q(community__title__icontains=query, user=self), Q.OR)
+        excluded_communities_search_query = Q(user=self)
+        excluded_communities_search_query.add((Q(community__title__icontains=query) |
+                                               Q(community__name__icontains=query)), Q.AND)
 
         TopPostCommunityExclusion = get_top_post_community_exclusion_model()
 
