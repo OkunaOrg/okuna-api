@@ -47,6 +47,7 @@ class GetPostsSerializer(serializers.Serializer):
 
 
 class GetTopPostsSerializer(serializers.Serializer):
+    exclude_joined_communities = serializers.BooleanField(required=False)
     max_id = serializers.IntegerField(
         required=False,
     )

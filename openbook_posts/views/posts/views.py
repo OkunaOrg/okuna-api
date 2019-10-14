@@ -133,9 +133,11 @@ class TopPosts(APIView):
         max_id = data.get('max_id')
         min_id = data.get('min_id')
         count = data.get('count', 20)
+        exclude_joined_communities = data.get('exclude_joined_communities', False)
 
         user = request.user
 
-        top_posts = user.get_top_posts(max_id=max_id, min_id=min_id).order_by('-id')[:count]
+        top_posts = user.get_top_posts(max_id=max_id, min_id=min_id,
+                                       exclude_joined_communities=exclude_joined_communities).order_by('-id')[:count]
         posts_serializer = AuthenticatedUserTopPostSerializer(top_posts, many=True, context={"request": request})
         return Response(posts_serializer.data, status=status.HTTP_200_OK)
