@@ -1682,7 +1682,7 @@ class User(AbstractUser):
     def search_top_posts_excluded_communities_with_query(self, query):
 
         excluded_communities_search_query = Q(community__name__icontains=query, user=self)
-        excluded_communities_search_query.add(Q(community__title__icontains=query), Q.OR)
+        excluded_communities_search_query.add(Q(community__title__icontains=query, user=self), Q.OR)
 
         TopPostCommunityExclusion = get_top_post_community_exclusion_model()
 
@@ -2079,7 +2079,11 @@ class User(AbstractUser):
                       'post__community__color', 'post__community__title')
 
         reported_posts_exclusion_query = ~Q(post__moderated_object__reports__reporter_id=self.pk)
+        # exclude communities added to exclusions by user
         excluded_communities_query = ~Q(post__community__top_posts_community_exclusions__user=self.pk)
+        # exclude communities user is a member of
+        exclude_user_communities_query = ~Q(post__community__memberships__user__id=self.pk)
+
         top_community_posts_query = Q(post__is_closed=False,
                                       post__is_deleted=False,
                                       post__status=Post.STATUS_PUBLISHED)
@@ -2099,6 +2103,7 @@ class User(AbstractUser):
 
         top_community_posts_query.add(reported_posts_exclusion_query, Q.AND)
         top_community_posts_query.add(excluded_communities_query, Q.AND)
+        top_community_posts_query.add(exclude_user_communities_query, Q.AND)
 
         top_community_posts_queryset = TopPost.objects.select_related(*posts_select_related).prefetch_related(
             *posts_prefetch_related).only(*posts_only).filter(top_community_posts_query)
