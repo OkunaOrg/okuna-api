@@ -3567,16 +3567,17 @@ class TopPostsAPITests(OpenbookAPITestCase):
         should display community posts only in top posts and return 200
         """
         user = make_user()
-        community = make_community(creator=user)
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
         # clear all top posts
         TopPost.objects.all().delete()
 
-        public_post = user.create_public_post(text=make_fake_post_text())
-        community_post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        public_post = community_creator.create_public_post(text=make_fake_post_text())
+        community_post = community_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
 
         # comment on both posts to qualify for top
-        user.comment_post(community_post, text=make_fake_post_comment_text())
-        user.comment_post(public_post, text=make_fake_post_comment_text())
+        community_creator.comment_post(community_post, text=make_fake_post_comment_text())
+        community_creator.comment_post(public_post, text=make_fake_post_comment_text())
 
         # curate top posts
         curate_top_posts()
@@ -3597,6 +3598,45 @@ class TopPostsAPITests(OpenbookAPITestCase):
         top_posts = TopPost.objects.all()
         self.assertEqual(1, len(top_posts))
         self.assertTrue(TopPost.objects.filter(post__id=community_post.pk).exists())
+
+    def test_displays_community_posts_only_from_communties_not_a_member_of(self):
+        """
+        should display community posts only from those that the user is not a member of in top posts
+        """
+        user = make_user()
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+        user_community = make_community(creator=user)
+        # clear all top posts
+        TopPost.objects.all().delete()
+
+        community_post = community_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+        user_community_post = user.create_community_post(community_name=user_community.name, text=make_fake_post_text())
+
+        # comment on both posts to qualify for top
+        community_creator.comment_post(community_post, text=make_fake_post_comment_text())
+        user.comment_post(user_community_post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+        response_post = response_posts[0]
+        self.assertEqual(response_post['post']['id'], community_post.pk)
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(2, len(top_posts))
+        self.assertTrue(TopPost.objects.filter(post__id=community_post.pk).exists())
+        self.assertTrue(TopPost.objects.filter(post__id=user_community_post.pk).exists())
 
     def test_does_not_display_excluded_community_posts(self):
         """
@@ -3747,20 +3787,20 @@ class TopPostsAPITests(OpenbookAPITestCase):
         should not display community posts that are closed in top posts
         """
         user = make_user()
-        community = make_community(creator=user)
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
 
         # clear all top posts
         TopPost.objects.all().delete()
 
-        user.create_public_post(text=make_fake_post_text())
-        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
-        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post = community_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = community_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
         post_two.is_closed = True
         post_two.save()
 
         # comment on both posts to qualify for top
-        user.comment_post(post, text=make_fake_post_comment_text())
-        user.comment_post(post_two, text=make_fake_post_comment_text())
+        community_creator.comment_post(post, text=make_fake_post_comment_text())
+        community_creator.comment_post(post_two, text=make_fake_post_comment_text())
 
         # curate top posts
         curate_top_posts()
@@ -3786,18 +3826,18 @@ class TopPostsAPITests(OpenbookAPITestCase):
         should not display community posts that are closed after already curated in top posts
         """
         user = make_user()
-        community = make_community(creator=user)
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
 
         # clear all top posts
         TopPost.objects.all().delete()
 
-        user.create_public_post(text=make_fake_post_text())
-        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
-        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post = community_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = community_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
 
         # comment on both posts to qualify for top
-        user.comment_post(post, text=make_fake_post_comment_text())
-        user.comment_post(post_two, text=make_fake_post_comment_text())
+        community_creator.comment_post(post, text=make_fake_post_comment_text())
+        community_creator.comment_post(post_two, text=make_fake_post_comment_text())
 
         # curate top posts
         curate_top_posts()
@@ -3822,20 +3862,20 @@ class TopPostsAPITests(OpenbookAPITestCase):
         should not display community posts that are reported and approved by staff in top posts
         """
         user = make_user()
+        community_creator = make_user()
         post_reporter = make_user()
-        community = make_community(creator=user)
+        community = make_community(creator=community_creator)
         post_reporter.join_community_with_name(community_name=community.name)
 
         # clear all top posts
         TopPost.objects.all().delete()
 
-        user.create_public_post(text=make_fake_post_text())
-        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
-        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post = community_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = community_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
 
         # comment on both posts to qualify for top
-        user.comment_post(post, text=make_fake_post_comment_text())
-        user.comment_post(post_two, text=make_fake_post_comment_text())
+        community_creator.comment_post(post, text=make_fake_post_comment_text())
+        community_creator.comment_post(post_two, text=make_fake_post_comment_text())
 
         # report and approve the report for one post
         moderation_category = make_moderation_category()
@@ -3843,7 +3883,7 @@ class TopPostsAPITests(OpenbookAPITestCase):
 
         moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
                                                                                    category_id=moderation_category.pk)
-        user.approve_moderated_object(moderated_object=moderated_object)
+        community_creator.approve_moderated_object(moderated_object=moderated_object)
 
         # curate top posts
         curate_top_posts()
@@ -3869,20 +3909,20 @@ class TopPostsAPITests(OpenbookAPITestCase):
         should not display community posts that are reported and approved after already curated by staff in top posts
         """
         user = make_user()
+        community_creator = make_user()
         post_reporter = make_user()
-        community = make_community(creator=user)
+        community = make_community(creator=community_creator)
         post_reporter.join_community_with_name(community_name=community.name)
 
         # clear all top posts
         TopPost.objects.all().delete()
 
-        user.create_public_post(text=make_fake_post_text())
-        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
-        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post = community_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = community_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
 
         # comment on both posts to qualify for top
-        user.comment_post(post, text=make_fake_post_comment_text())
-        user.comment_post(post_two, text=make_fake_post_comment_text())
+        community_creator.comment_post(post, text=make_fake_post_comment_text())
+        community_creator.comment_post(post_two, text=make_fake_post_comment_text())
 
         # report and approve the report for one post
         moderation_category = make_moderation_category()
@@ -3894,7 +3934,7 @@ class TopPostsAPITests(OpenbookAPITestCase):
         # curate top posts
         curate_top_posts()
 
-        user.approve_moderated_object(moderated_object=moderated_object)
+        community_creator.approve_moderated_object(moderated_object=moderated_object)
 
         headers = make_authentication_headers_for_user(user)
 
@@ -4105,17 +4145,18 @@ class TopPostsAPITests(OpenbookAPITestCase):
         should take into account max_id in when returning top posts
         """
         user = make_user()
+        community_owner = make_user()
 
         # clear all top posts
         TopPost.objects.all().delete()
 
         total_posts = 10
 
-        community = make_community(creator=user)
+        community = make_community(creator=community_owner)
 
         for i in range(total_posts):
-            post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
-            user.comment_post(post, text=make_fake_post_comment_text())
+            post = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
+            community_owner.comment_post(post, text=make_fake_post_comment_text())
 
         # curate top posts
         curate_top_posts()
@@ -4136,17 +4177,18 @@ class TopPostsAPITests(OpenbookAPITestCase):
         should take into account min_id in when returning top posts
         """
         user = make_user()
+        community_owner = make_user()
 
         # clear all top posts
         TopPost.objects.all().delete()
 
         total_posts = 10
 
-        community = make_community(creator=user)
+        community = make_community(creator=community_owner)
 
         for i in range(total_posts):
-            post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
-            user.comment_post(post, text=make_fake_post_comment_text())
+            post = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
+            community_owner.comment_post(post, text=make_fake_post_comment_text())
 
         # curate top posts
         curate_top_posts()
@@ -4167,17 +4209,18 @@ class TopPostsAPITests(OpenbookAPITestCase):
         should take into account count when returning top posts
         """
         user = make_user()
+        community_owner = make_user()
 
         # clear all top posts
         TopPost.objects.all().delete()
 
         total_posts = 10
 
-        community = make_community(creator=user)
+        community = make_community(creator=community_owner)
 
         for i in range(total_posts):
-            post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
-            user.comment_post(post, text=make_fake_post_comment_text())
+            post = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
+            community_owner.comment_post(post, text=make_fake_post_comment_text())
 
         # curate top posts
         curate_top_posts()
