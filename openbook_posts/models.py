@@ -165,7 +165,7 @@ class Post(models.Model):
 
     @classmethod
     def _get_trending_posts_with_query(cls, query):
-        return cls.objects.annotate(Count('reactions')).filter(query).order_by(
+        return cls.objects.filter(query).annotate(Count('reactions')).order_by(
             '-reactions__count', '-created')
 
     @classmethod
