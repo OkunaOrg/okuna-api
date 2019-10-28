@@ -596,7 +596,7 @@ class PostsAPITests(OpenbookAPITestCase):
 
                 self.assertTrue(created_post.status, Post.STATUS_PROCESSING)
 
-                get_worker(worker_class=SimpleWorker).work(burst=True)
+                get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
                 created_post.refresh_from_db()
 
@@ -699,7 +699,7 @@ class PostsAPITests(OpenbookAPITestCase):
 
             self.assertEqual(created_post.text, post_text)
 
-            get_worker(worker_class=SimpleWorker).work(burst=True)
+            get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
             created_post.refresh_from_db()
 

@@ -6,6 +6,7 @@ from openbook_auth.models import UserProfile, User
 from openbook_moderation.models import ModeratedObjectLog, ModeratedObjectCategoryChangedLog, \
     ModeratedObjectDescriptionChangedLog, ModeratedObjectStatusChangedLog, ModeratedObjectVerifiedChangedLog, \
     ModerationCategory, ModerationReport
+from openbook_moderation.serializers import ModeratedObjectUserProfileBadgeSerializer
 from openbook_moderation.views.validators import moderated_object_id_exists, moderation_category_id_exists
 
 
@@ -77,11 +78,14 @@ class ModeratedObjectLogModerationCategorySerializer(serializers.ModelSerializer
 
 
 class ModeratedObjectLogActorProfileSerializer(serializers.ModelSerializer):
+    badges = ModeratedObjectUserProfileBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
             'id',
-            'avatar'
+            'avatar',
+            'badges'
         )
 
 
@@ -162,12 +166,15 @@ class ModeratedObjectLogSerializer(serializers.ModelSerializer):
 
 
 class ModeratedObjectReportReporterProfileSerializer(serializers.ModelSerializer):
+    badges = ModeratedObjectUserProfileBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
             'id',
             'avatar',
-            'name'
+            'name',
+            'badges'
         )
 
 
