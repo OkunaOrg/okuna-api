@@ -121,20 +121,25 @@ For app development you have to bind the server to your local network:
 python manage.py runserver 0.0.0.0:8000
 ```
 
-#### Spawn an rq-worker
+#### Spawn the rq-workers
 
 We use rq-workers to process media, deliver push notifications and more.
 
 ```bash
-python manage.py rqworker
+python manage.py rqworker low
+python manage.py rqworker high
+python manage.py rqworker default
 ```
 
-#### Spawn an rq-scheduler
+#### Spawn the rq-scheduler
 
 We use rq-schedulers to run one time or repetitive tasks like cleaning up failed to upload posts.
 
 ```bash
-python manage.py rqscheduler
+python manage.py rqscheduler --queue=low
+python manage.py rqscheduler --queue=high
+python manage.py rqscheduler --queue=default
+
 ```
 
 To schedule a job, go to the `/admin/scheduler` route.
