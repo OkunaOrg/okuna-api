@@ -165,7 +165,7 @@ class Post(models.Model):
 
     @classmethod
     def _get_trending_posts_with_query(cls, query):
-        return cls.objects.annotate(Count('reactions')).filter(query).order_by(
+        return cls.objects.filter(query).annotate(Count('reactions')).order_by(
             '-reactions__count', '-created')
 
     @classmethod
@@ -539,6 +539,9 @@ class TopPostCommunityExclusion(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='top_posts_community_exclusions')
     community = models.ForeignKey('openbook_communities.Community', on_delete=models.CASCADE, related_name='top_posts_community_exclusions')
     created = models.DateTimeField(editable=False, db_index=True)
+
+    class Meta:
+        unique_together = ('user', 'community',)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''

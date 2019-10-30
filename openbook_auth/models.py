@@ -1681,8 +1681,9 @@ class User(AbstractUser):
 
     def search_top_posts_excluded_communities_with_query(self, query):
 
-        excluded_communities_search_query = Q(community__name__icontains=query)
-        excluded_communities_search_query.add(Q(community__title__icontains=query), Q.OR)
+        excluded_communities_search_query = Q(user=self)
+        excluded_communities_search_query.add((Q(community__title__icontains=query) |
+                                               Q(community__name__icontains=query)), Q.AND)
 
         TopPostCommunityExclusion = get_top_post_community_exclusion_model()
 
@@ -1692,7 +1693,7 @@ class User(AbstractUser):
         TopPostCommunityExclusion = get_top_post_community_exclusion_model()
         top_posts_community_exclusions = TopPostCommunityExclusion.objects \
             .select_related('community') \
-            .all()
+            .filter(user=self)
 
         return top_posts_community_exclusions
 
@@ -2057,7 +2058,7 @@ class User(AbstractUser):
         community = Community.objects.get(name=community_name)
         self.remove_exclusion_for_community_from_top_posts(community)
 
-    def get_top_posts(self, max_id=None, min_id=None, count=10):
+    def get_top_posts(self, max_id=None, min_id=None, exclude_joined_communities=False):
         """
         Gets top posts (communities only) for authenticated user excluding reported, closed, blocked users posts
         """
@@ -2080,6 +2081,7 @@ class User(AbstractUser):
 
         reported_posts_exclusion_query = ~Q(post__moderated_object__reports__reporter_id=self.pk)
         excluded_communities_query = ~Q(post__community__top_posts_community_exclusions__user=self.pk)
+
         top_community_posts_query = Q(post__is_closed=False,
                                       post__is_deleted=False,
                                       post__status=Post.STATUS_PUBLISHED)
@@ -2096,6 +2098,11 @@ class User(AbstractUser):
 
         ModeratedObject = get_moderated_object_model()
         top_community_posts_query.add(~Q(post__moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
+        if exclude_joined_communities:
+            # exclude communities the user is a member of
+            exclude_joined_communities_query = ~Q(post__community__memberships__user__id=self.pk)
+            top_community_posts_query.add(exclude_joined_communities_query, Q.AND)
 
         top_community_posts_query.add(reported_posts_exclusion_query, Q.AND)
         top_community_posts_query.add(excluded_communities_query, Q.AND)
