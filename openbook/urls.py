@@ -36,7 +36,7 @@ from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups, ProxyDomainCheck
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
     FavoriteCommunities, SearchCommunities, JoinedCommunities, AdministratedCommunities, ModeratedCommunities, \
-    SearchJoinedCommunities, TopPostCommunityExclusions, TopPostCommunityExclusionsSearch
+    SearchJoinedCommunities, TopPostCommunityExclusions, TopPostCommunityExclusionsSearch, SuggestedCommunities
 from openbook_communities.views.community.administrators.views import CommunityAdministratorItem, \
     CommunityAdministrators, SearchCommunityAdministrators
 from openbook_communities.views.community.banned_users.views import BanUser, UnbanUser, CommunityBannedUsers, \
@@ -269,6 +269,7 @@ community_patterns = [
 
 communities_patterns = [
     path('', Communities.as_view(), name='communities'),
+    path('suggested/', SuggestedCommunities.as_view(), name='suggested-communities'),
     path('trending/', TrendingCommunities.as_view(), name='trending-communities'),
     path('joined/', JoinedCommunities.as_view(), name='joined-communities'),
     path('joined/search/', SearchJoinedCommunities.as_view(), name='search-joined-communities'),
