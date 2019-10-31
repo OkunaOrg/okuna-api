@@ -87,7 +87,7 @@ class UserInvite(models.Model):
 
         if UserInvite.objects.filter(token=token, created_user__isnull=False).exists():
             raise ValidationError(
-                _('The invite has been already used.')
+                _('This invite has already been used.')
             )
 
     def save(self, *args, **kwargs):
