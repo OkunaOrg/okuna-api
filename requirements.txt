@@ -78,3 +78,4 @@ uritools==2.2.0
 urlextract==0.13.0
 urllib3==1.25.6 ; python_version >= '3.4'
 webpreview==1.6.0
+Click==7.0
