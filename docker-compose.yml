@@ -13,7 +13,7 @@ services:
     volumes:
      - ./:/opt/okuna-api
     ports:
-      - 80
+      - 80:80
     working_dir: /opt/okuna-api
     networks:
       okuna:
