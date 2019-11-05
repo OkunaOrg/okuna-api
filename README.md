@@ -238,8 +238,9 @@ usage: manage.py send_invites [-h]
 Assign user invites to all or specific users. 
 
 ```bash
-usage: manage.py allocate_invites [-h] [--count INCREMENT_INVITES_BY_COUNT] [--total TOTAL_INVITE_COUNT_TO_SET] [--username USERNAME]
+usage: manage.py allocate_invites [-h] [--count INCREMENT_INVITES_BY_COUNT --limit [INVITE_COUNT_UPPER_LIMIT]] [--total TOTAL_INVITE_COUNT_TO_SET] [--username USERNAME]
 ```
+*`--limit` works only with `--count`
 
 ### `manage.py create_post_media_thumbnails`
 
