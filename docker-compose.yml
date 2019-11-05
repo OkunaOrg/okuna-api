@@ -12,6 +12,7 @@ services:
       - redis.okuna:172.16.16.5
     volumes:
      - ./:/opt/okuna-api
+     - ./.docker-cache/pip:/root/.cache/pip
     ports:
       - 80:80
     working_dir: /opt/okuna-api
@@ -32,6 +33,7 @@ services:
       - redis.okuna:172.16.16.5
     volumes:
       - ./:/opt/okuna-api
+      - ./.docker-cache/pip:/root/.cache/pip
     working_dir: /opt/okuna-api
     networks:
       okuna:
@@ -49,6 +51,7 @@ services:
       - redis.okuna:172.16.16.5
     volumes:
       - ./:/opt/okuna-api
+      - ./.docker-cache/pip:/root/.cache/pip
     working_dir: /opt/okuna-api
     networks:
       okuna:

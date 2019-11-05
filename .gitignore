@@ -17,3 +17,4 @@ docker-compose.override.yml
 /open-book-api
 /supervisord.pid
 /supervisord.log
+/.docker-cache
