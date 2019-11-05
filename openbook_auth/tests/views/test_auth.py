@@ -91,6 +91,28 @@ class RegistrationAPITests(OpenbookAPITestCase):
             self.assertIn('name', parsed_response)
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_invalid_username(self):
+        """
+        should return 400 if the username is not valid
+        """
+        url = self._get_url()
+        invalid_usernames = ('joel<;<', '<>', ' shantanu space ', 'greater_than_30_characters_username_is_not_valid',)
+        token = self._make_user_invite_token()
+        for username in invalid_usernames:
+            data = {
+                'username': username,
+                'name': 'Shantanu',
+                'email': 'user@mail.com',
+                'password': 'secretPassword123',
+                'is_of_legal_age': 'true',
+                'are_guidelines_accepted': True,
+                'token': token
+            }
+            response = self.client.post(url, data, format='multipart')
+            parsed_response = json.loads(response.content)
+            self.assertIn('username', parsed_response)
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_name_required(self):
         """
         should return 400 if the name is not present

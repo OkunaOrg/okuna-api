@@ -117,7 +117,6 @@ class Community(models.Model):
     @classmethod
     def get_new_user_suggested_communities(cls):
         community_ids = [int(community_id) for community_id in settings.NEW_USER_SUGGESTED_COMMUNITIES.split(',')]
-        print(community_ids)
         return cls.objects.filter(id__in=community_ids)
 
     @classmethod

@@ -34,6 +34,7 @@ class Register(APIView):
         is_of_legal_age = data.get('is_of_legal_age')
         are_guidelines_accepted = data.get('are_guidelines_accepted')
         name = data.get('name')
+        username = data.get('username')
         avatar = data.get('avatar')
         token = data.get('token')
         User = get_user_model()
@@ -41,9 +42,10 @@ class Register(APIView):
 
         user_invite = UserInvite.get_invite_for_token(token=token)
 
-        username = user_invite.username
+        if not username:
+            username = user_invite.username
 
-        if not user_invite.username:
+        if not username and not user_invite.username:
             username = User.get_temporary_username(email)
 
         with transaction.atomic():
