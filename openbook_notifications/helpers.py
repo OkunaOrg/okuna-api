@@ -227,6 +227,30 @@ def send_community_invite_push_notification(community_invite):
         _send_notification_to_user(notification=one_signal_notification, user=invited_user)
 
 
+def send_community_new_post_push_notification(community_post_subscription):
+    community_name = community_post_subscription.community.name
+    target_user = community_post_subscription.user
+
+    if target_user.has_community_new_post_notifications_enabled():
+        target_user_language_code = get_notification_language_code_for_target_user(target_user)
+        with translation.override(target_user_language_code):
+            one_signal_notification = onesignal_sdk.Notification(
+                post_body={"contents": {"en": _(
+                    'A new post was posted in /c/%(community_name).') % {
+                                     'community_name': community_name,
+                                 }}})
+
+        Notification = get_notification_model()
+
+        notification_data = {
+            'type': Notification.COMMUNITY_NEW_POST,
+        }
+
+        one_signal_notification.set_parameter('data', notification_data)
+
+        _send_notification_to_user(notification=one_signal_notification, user=target_user)
+
+
 def get_notification_language_code_for_target_user(target_user):
     if target_user.language and translation.check_for_language(target_user.language.code):
         return target_user.language.code

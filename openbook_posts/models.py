@@ -37,12 +37,13 @@ from openbook_common.utils.model_loaders import get_emoji_model, \
     get_circle_model, get_community_model, get_post_comment_notification_model, \
     get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model, \
     get_post_user_mention_notification_model, get_post_comment_user_mention_notification_model, get_user_model, \
-    get_post_user_mention_model, get_post_comment_user_mention_model
+    get_post_user_mention_model, get_post_comment_user_mention_model, get_community_post_subscription_model, \
+    get_community_new_post_subscription_notification_model
 from imagekit.models import ProcessedImageField
 
 from openbook_moderation.models import ModeratedObject
 from openbook_notifications.helpers import send_post_comment_user_mention_push_notification, \
-    send_post_user_mention_push_notification
+    send_post_user_mention_push_notification, send_community_new_post_push_notification
 from openbook_posts.checkers import check_can_be_updated, check_can_add_media, check_can_be_published, \
     check_mimetype_is_supported_media_mimetypes
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory, \
@@ -394,6 +395,7 @@ class Post(models.Model):
     def _publish(self):
         self.status = Post.STATUS_PUBLISHED
         self.created = timezone.now()
+        self._process_post_subscribers()
         self.save()
 
     def is_draft(self):
@@ -520,6 +522,17 @@ class Post(models.Model):
                                 existing_mention_usernames.append(username)
                         except User.DoesNotExist:
                             pass
+
+    def _process_post_subscribers(self):
+        if self.community:
+            CommunityPostSubscription = get_community_post_subscription_model()
+            CommunityNewPostNotification = get_community_new_post_subscription_notification_model()
+
+            community_subscriptions = CommunityPostSubscription.objects.filter(community=self.community)
+            for subscription in community_subscriptions:
+                CommunityNewPostNotification.create_community_new_post_notification(
+                    owner_id=subscription.user.pk, community_post_subscription_id=subscription.pk)
+                send_community_new_post_push_notification(community_post_subscription=subscription)
 
 
 class TopPost(models.Model):

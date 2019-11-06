@@ -309,7 +309,7 @@ def check_can_subscribe_to_posts_for_community(user, community):
     Community = get_community_model()
     CommunityPostSubscription = get_community_post_subscription_model()
     is_member = Community.is_user_with_username_member_of_community_with_name\
-        (username=user.username, community=community.name)
+        (username=user.username, community_name=community.name)
 
     if not is_member:
         raise ValidationError(
@@ -330,7 +330,7 @@ def check_can_unsubscribe_to_posts_for_community(user, community):
     Community = get_community_model()
     CommunityPostSubscription = get_community_post_subscription_model()
     is_member = Community.is_user_with_username_member_of_community_with_name\
-        (username=user.username, community=community.name)
+        (username=user.username, community_name=community.name)
 
     if not is_member:
         raise ValidationError(

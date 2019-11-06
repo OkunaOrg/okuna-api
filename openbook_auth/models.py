@@ -644,6 +644,9 @@ class User(AbstractUser):
     def has_community_invite_notifications_enabled(self):
         return self.notifications_settings.community_invite_notifications
 
+    def has_community_new_post_notifications_enabled(self):
+        return self.notifications_settings.community_new_post_notifications
+
     def has_connection_confirmed_notifications_enabled(self):
         return self.notifications_settings.connection_confirmed_notifications
 
@@ -3315,6 +3318,7 @@ class UserNotificationsSettings(models.Model):
     connection_request_notifications = models.BooleanField(_('connection request notifications'), default=True)
     connection_confirmed_notifications = models.BooleanField(_('connection confirmed notifications'), default=True)
     community_invite_notifications = models.BooleanField(_('community invite notifications'), default=True)
+    community_new_post_notifications = models.BooleanField(_('community new post notifications'), default=True)
     post_comment_reaction_notifications = models.BooleanField(_('post comment reaction notifications'), default=True)
     post_comment_user_mention_notifications = models.BooleanField(_('post comment user mention notifications'),
                                                                   default=True)
@@ -3331,6 +3335,7 @@ class UserNotificationsSettings(models.Model):
                connection_request_notifications=None,
                connection_confirmed_notifications=None,
                community_invite_notifications=None,
+               community_new_post_notifications=None,
                post_comment_user_mention_notifications=None,
                post_user_mention_notifications=None,
                post_comment_reaction_notifications=None, ):
@@ -3364,6 +3369,9 @@ class UserNotificationsSettings(models.Model):
 
         if community_invite_notifications is not None:
             self.community_invite_notifications = community_invite_notifications
+
+        if community_new_post_notifications is not None:
+            self.community_new_post_notifications = community_new_post_notifications
 
         self.save()
 

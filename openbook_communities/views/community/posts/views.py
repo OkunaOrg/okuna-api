@@ -10,6 +10,7 @@ from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_communities.views.community.posts.serializers import GetCommunityPostsSerializer, CommunityPostSerializer, \
     CreateCommunityPostSerializer, SubscribeCommunityPostsSerializer
+from django.utils.translation import ugettext_lazy as _
 
 
 class CommunityPosts(APIView):
@@ -105,7 +106,7 @@ class SubscribeCommunityPosts(APIView):
         with transaction.atomic():
             user.subscribe_to_community_with_name(community_name=community_name)
 
-        return ApiMessageResponse(_('Subscription successful'), status=status.HTTP_202_ACCEPTED)
+        return ApiMessageResponse(_('Subscribed successfully'), status=status.HTTP_202_ACCEPTED)
 
 
 class UnsubscribeCommunityPosts(APIView):

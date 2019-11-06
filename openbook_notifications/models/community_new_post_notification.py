@@ -10,7 +10,8 @@ class CommunityNewPostNotification(models.Model):
 
     @classmethod
     def create_community_new_post_notification(cls, community_post_subscription_id, owner_id):
-        community_post_subscription_notification = cls.objects.create(community_post_subscription=community_post_subscription_id)
+        community_post_subscription_notification = cls.objects.create(
+            community_post_subscription=community_post_subscription_id)
         Notification.create_notification(type=Notification.COMMUNITY_NEW_POST,
                                          content_object=community_post_subscription_notification,
                                          owner_id=owner_id)
