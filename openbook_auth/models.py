@@ -31,7 +31,8 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_mute_model, get_community_invite_notification_model, get_user_block_model, get_emoji_model, \
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
     get_moderation_penalty_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
-    get_post_comment_reaction_notification_model, get_top_post_model, get_top_post_community_exclusion_model
+    get_post_comment_reaction_notification_model, get_top_post_model, get_top_post_community_exclusion_model, \
+    get_community_post_subscription_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications import helpers
 from openbook_auth.checkers import *
@@ -1920,6 +1921,22 @@ class User(AbstractUser):
         profile_posts = Post.objects.filter(posts_query).distinct()
 
         return profile_posts
+
+    def subscribe_to_community_with_name(self, community_name):
+        Community = get_community_model()
+        CommunityPostSubscription = get_community_post_subscription_model()
+        community = Community.objects.get(name=community_name)
+        check_can_subscribe_to_posts_for_community(user=self, community=community)
+
+        CommunityPostSubscription.create_community_post_subscription(user=self, community=community)
+
+    def unsubscribe_from_community_with_name(self, community_name):
+        Community = get_community_model()
+        CommunityPostSubscription = get_community_post_subscription_model()
+        community = Community.objects.get(name=community_name)
+        check_can_unsubscribe_to_posts_for_community(user=self, community=community)
+
+        CommunityPostSubscription.remove_community_post_subscription(user=self, community=community)
 
     def get_post_with_id(self, post_id):
         Post = get_post_model()

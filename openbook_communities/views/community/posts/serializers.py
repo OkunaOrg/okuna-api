@@ -186,3 +186,9 @@ class CommunityPostSerializer(serializers.ModelSerializer):
             'media_width',
             'media_thumbnail',
         )
+
+
+class SubscribeCommunityPostsSerializer(serializers.Serializer):
+    community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
+                                           allow_blank=False,
+                                           validators=[community_name_characters_validator, community_name_exists])

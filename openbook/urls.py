@@ -45,7 +45,8 @@ from openbook_communities.views.community.members.views import CommunityMembers,
     LeaveCommunity, InviteCommunityMember, SearchCommunityMembers, UninviteCommunityMember
 from openbook_communities.views.community.moderators.views import CommunityModeratorItem, CommunityModerators, \
     SearchCommunityModerators
-from openbook_communities.views.community.posts.views import CommunityPosts, ClosedCommunityPosts
+from openbook_communities.views.community.posts.views import CommunityPosts, ClosedCommunityPosts, \
+    SubscribeCommunityPosts, UnsubscribeCommunityPosts
 from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, FavoriteCommunity, \
     TopPostCommunityExclusion
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
@@ -237,6 +238,8 @@ community_members_patterns = [
 
 community_posts_patterns = [
     path('', CommunityPosts.as_view(), name='community-posts'),
+    path('subscribe/', SubscribeCommunityPosts.as_view(), name='subscribe-community-posts'),
+    path('unsubscribe/', UnsubscribeCommunityPosts.as_view(), name='unsubscribe-community-posts'),
     path('closed/', ClosedCommunityPosts.as_view(), name='closed-community-posts'),
 ]
 
