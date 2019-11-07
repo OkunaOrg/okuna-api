@@ -584,23 +584,23 @@ class CommunityInvite(models.Model):
         return cls.objects.filter(community__name=community_name, invited_user__username=username).exists()
 
 
-class CommunityPostSubscription(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='community_post_subscriptions', null=False,
+class CommunityNotificationSubscription(models.Model):
+    subscriber = models.ForeignKey(User, on_delete=models.CASCADE, related_name='community_notification_subscriptions', null=False,
                              blank=False)
-    community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='post_subscriptions', null=False,
+    community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='notification_subscriptions', null=False,
                                   blank=False)
 
     class Meta:
-        unique_together = ('community', 'user',)
+        unique_together = ('community', 'subscriber',)
 
     @classmethod
-    def create_community_post_subscription(cls, user, community):
-        return cls.objects.create(user=user, community=community)
+    def create_community_notification_subscription(cls, subscriber, community):
+        return cls.objects.create(subscriber=subscriber, community=community)
 
     @classmethod
-    def remove_community_post_subscription(cls, user, community):
-        return cls.objects.filter(user=user, community=community).delete()
+    def remove_community_notification_subscription(cls, subscriber, community):
+        return cls.objects.filter(subscriber=subscriber, community=community).delete()
 
     @classmethod
     def is_user_with_username_subscribed_to_community_with_name(cls, username, community_name):
-        return cls.objects.filter(community__name=community_name, user__username=username).exists()
+        return cls.objects.filter(community__name=community_name, subscriber__username=username).exists()

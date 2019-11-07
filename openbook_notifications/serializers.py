@@ -76,7 +76,8 @@ class PostCommentCommenterProfileSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'avatar',
-            'name'
+            'name',
+            'badges'
         )
 
 
