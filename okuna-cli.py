@@ -24,12 +24,23 @@ current_dir = os.path.dirname(__file__)
 OKUNA_CLI_CONFIG_FILE = os.path.join(current_dir, '.okuna-cli.json')
 OKUNA_CLI_CONFIG_FILE_TEMPLATE = os.path.join(current_dir, 'templates/.okuna-cli.json')
 
+REQUIREMENTS_TXT_FILE = os.path.join(current_dir, 'requirements.txt')
+DOCKER_API_IMAGE_REQUIREMENTS_TXT_FILE = os.path.join(current_dir, '.docker', 'api', 'requirements.txt')
+DOCKER_WORKER_IMAGE_REQUIREMENTS_TXT_FILE = os.path.join(current_dir, '.docker', 'worker', 'requirements.txt')
+DOCKER_SCHEDULER_IMAGE_REQUIREMENTS_TXT_FILE = os.path.join(current_dir, '.docker', 'scheduler', 'requirements.txt')
+
 OKUNA_API_ADDRESS = '127.0.0.1'
 OKUNA_API_PORT = 80
 
 CONTEXT_SETTINGS = dict(
     default_map={}
 )
+
+
+def _copy_requirements_txt_to_docker_images_dir():
+    copyfile(REQUIREMENTS_TXT_FILE, DOCKER_API_IMAGE_REQUIREMENTS_TXT_FILE)
+    copyfile(REQUIREMENTS_TXT_FILE, DOCKER_WORKER_IMAGE_REQUIREMENTS_TXT_FILE)
+    copyfile(REQUIREMENTS_TXT_FILE, DOCKER_SCHEDULER_IMAGE_REQUIREMENTS_TXT_FILE)
 
 
 def _check_okuna_api_is_running():
@@ -98,6 +109,7 @@ def _down():
 def up():
     """Bring Okuna up"""
     _print_okuna_logo()
+    _copy_requirements_txt_to_docker_images_dir()
     logger.info('⬆️  Bringing Okuna up...')
 
     atexit.register(_down)
@@ -119,8 +131,15 @@ def up():
 
 
 @click.command()
+def build():
+    """Rebuild Okuna services"""
+    logger.info('👷‍♀️  Rebuilding Okuna services...')
+    subprocess.run(["docker-compose", "build"])
+
+
+@click.command()
 def status():
-    """Bring Okuna down"""
+    """Get Okuna status"""
     logger.info('🕵️‍♂️  Retrieving services status...')
     subprocess.run(["docker-compose", "ps"])
 
@@ -132,6 +151,7 @@ def bootstrap():
 
 
 cli.add_command(up)
+cli.add_command(build)
 cli.add_command(bootstrap)
 cli.add_command(status)
 
