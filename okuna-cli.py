@@ -1,3 +1,5 @@
+import time
+
 import click
 import subprocess
 import colorlog
@@ -9,6 +11,8 @@ import atexit
 import os
 import requests
 from halo import Halo
+from watchdog.observers import Observer
+from watchdog.events import LoggingEventHandler, FileSystemEventHandler
 
 handler = colorlog.StreamHandler()
 handler.setFormatter(colorlog.ColoredFormatter(
@@ -51,6 +55,21 @@ def _check_okuna_api_is_running():
         return response_status == 200
     except requests.ConnectionError as e:
         return False
+
+
+def _wait_until_api_is_running(message='Waiting for server to come up...', sleep=None):
+    spinner = Halo(text=message, spinner='dots')
+    spinner.start()
+
+    if sleep:
+        time.sleep(sleep)
+
+    is_running = _check_okuna_api_is_running()
+
+    while not is_running:
+        is_running = _check_okuna_api_is_running()
+
+    spinner.stop()
 
 
 def _print_okuna_logo():
@@ -102,7 +121,41 @@ def cli():
 def _down():
     """Bring Okuna down"""
     logger.error('⬇️  Bringing Okuna down...')
-    subprocess.run(["docker-compose", "down"])
+    subprocess.run(["docker-compose", "-f", "docker-compose.yml", "down"])
+
+
+class UpCommandFileChangedEventHandler(FileSystemEventHandler):
+    file_cache = {}
+    handling_change = False
+
+    def on_moved(self, event):
+        super(UpCommandFileChangedEventHandler, self).on_moved(event)
+        self._handle_change(event)
+
+    def on_created(self, event):
+        super(UpCommandFileChangedEventHandler, self).on_created(event)
+        self._handle_change(event)
+
+    def on_deleted(self, event):
+        super(UpCommandFileChangedEventHandler, self).on_deleted(event)
+        self._handle_change(event)
+
+    def on_modified(self, event):
+        super(UpCommandFileChangedEventHandler, self).on_modified(event)
+        self._handle_change(event)
+
+    def _handle_change(self, event):
+        seconds = int(time.time())
+        key = (seconds, event.src_path)
+        if key in self.file_cache or self.handling_change:
+            return
+        self.file_cache[key] = True
+        self.handling_change = True
+
+        if event.src_path.endswith('.py'):
+            # Let the manage.py watcher pick up the change with a 1 sec sleep
+            _wait_until_api_is_running(sleep=1, message='Detected file changes, waiting for server to come up...')
+        self.handling_change = False
 
 
 @click.command()
@@ -113,21 +166,18 @@ def up():
     logger.info('⬆️  Bringing Okuna up...')
 
     atexit.register(_down)
-    subprocess.run(["docker-compose", "up", "-d"])
-    spinner = Halo(text='Waiting for server to come up...', spinner='dots')
-    spinner.start()
+    subprocess.run(["docker-compose", "-f", "docker-compose.yml", "up", "-d"])
 
-    is_running = _check_okuna_api_is_running()
+    _wait_until_api_is_running()
 
-    while not is_running:
-        is_running = _check_okuna_api_is_running()
+    logger.info('🥳  Okuna is live at http://%s:%s' % (OKUNA_API_ADDRESS, OKUNA_API_PORT))
 
-    spinner.stop()
+    observer = Observer()
+    file_changed_handler = UpCommandFileChangedEventHandler()
+    observer.schedule(file_changed_handler, './', recursive=True)
+    observer.start()
 
-    logger.info('✅️  Okuna is live at http://%s:%s' % (OKUNA_API_ADDRESS, OKUNA_API_PORT))
-    input("⌨️  Press enter to exit")
-    # logger.info('Okuna docker service started successfully')
-    # subprocess.run(["docker", 'exec', '-it', 'okuna-api', '/bin/bash', '-c', 'echo hello'])
+    input()
 
 
 @click.command()
@@ -135,6 +185,13 @@ def build():
     """Rebuild Okuna services"""
     logger.info('👷‍♀️  Rebuilding Okuna services...')
     subprocess.run(["docker-compose", "build"])
+
+
+@click.command()
+def build_test():
+    """Rebuild Okuna services"""
+    logger.info('👷‍♀️  Rebuilding Okuna test services...')
+    subprocess.run(["docker-compose", "-f", "docker-compose.test.yml", "build"])
 
 
 @click.command()
@@ -152,6 +209,7 @@ def bootstrap():
 
 cli.add_command(up)
 cli.add_command(build)
+cli.add_command(build_test)
 cli.add_command(bootstrap)
 cli.add_command(status)
 

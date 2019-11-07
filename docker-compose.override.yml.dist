@@ -1,9 +1,0 @@
-version: '3'
-
-services:
-  webserver:
-    ports:
-      - 80:80
-  db:
-    ports:
-      - 3306:3306

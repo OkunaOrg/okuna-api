@@ -322,9 +322,6 @@ usage: docker-compose up (-d in background)
 ### Visit the static webserver IP
 http://172.16.16.1:80
 
-### Overrides
-Copy `docker-compose.override.yml.dist` to `docker-compose.override.yml` to override any settings. By default it will override the network information and fallback to localhost:80/443/3306. [Docker-Compose YML Reference](https://docs.docker.com/compose/compose-file)
-
 ## Troubleshooting
 
 ### macOS

@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  webserver:
+    container_name: okuna-api-test
+    build:
+      dockerfile: Dockerfile
+      context: ./.docker/api-test
+    privileged: true
+    volumes:
+      - ./:/opt/okuna-api
+      - ./.docker-cache/pip:/root/.cache/pip
+    working_dir: /opt/okuna-api
+    networks:
+      okuna:
+        ipv4_address: 172.16.16.1
+
+volumes:
+  mariadb:
+
+networks:
+  okuna:
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.16.16.0/16"
