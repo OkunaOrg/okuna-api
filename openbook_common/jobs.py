@@ -27,7 +27,7 @@ def verify_active_job_threshold():
     for queue in RQ_QUEUES.keys():
 
         rq_stats = RQStats(queue)
-        active_job_count = rq_stats.get_active_job_count(queue)
+        active_job_count = rq_stats.get_active_job_count()
 
         if active_job_count >= ACTIVE_JOB_THRESHOLD:
             send_alert_to_channel(
