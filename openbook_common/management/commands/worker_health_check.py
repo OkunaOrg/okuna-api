@@ -1,6 +1,7 @@
 from sys import exit
 from logging import getLogger
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from openbook_common.utils.rq_helpers import RQStats
@@ -18,15 +19,21 @@ class Command(BaseCommand):
 
     def verify_worker_health(self):
         # iterate through all configured queues
+
+        env = settings.ENVIRONMENT
+
         for queue in RQ_QUEUES.keys():
 
             rq_stats = RQStats(queue)
             failed_job_count = rq_stats.get_failed_job_count()
 
             if failed_job_count >= FAILED_JOB_THRESHOLD:
-                send_alert_to_channel(f"*OH NOES: we haz too many failed jobs "
-                                      f"in {queue}: ({failed_job_count})!!*")
-                print(f"{queue} has too many failed jobs {failed_job_count}")
+                send_alert_to_channel(
+                        f"*OH NOES: we haz too many failed jobs "
+                        f"in {env}:{queue}: ({failed_job_count})!!*")
+                print(
+                   f"{env}:{queue} has too many failed jobs {failed_job_count}"
+                     )
 
                 self.retval += 1
 
@@ -35,7 +42,7 @@ class Command(BaseCommand):
             if active_job_count >= ACTIVE_JOB_THRESHOLD:
                 send_alert_to_channel(
                         f"*UH-OH: we have way too many active jobs "
-                        f"in {queue} right now: {active_job_count}!!*"
+                        f"in {env}:{queue} right now: {active_job_count}!!*"
                                       )
                 print(f"{queue} has too many jobs {active_job_count}")
                 self.retval += 1
@@ -45,7 +52,7 @@ class Command(BaseCommand):
             if active_worker_count >= ACTIVE_WORKER_THRESHOLD:
                 send_alert_to_channel(f"*Hmm, we are not supposed to have "
                                       f"{active_worker_count} workers in "
-                                      f"{queue}*")
+                                      f"{env}:{queue}*")
                 print(f"{queue} has too many workers {active_worker_count}")
 
                 self.retval += 1
