@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('openbook_communities', '0030_auto_20191107_1236'),
+        ('openbook_communities', '0028_auto_20190606_0944'),
     ]
 
     operations = [

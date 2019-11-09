@@ -12,10 +12,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='communitynewpostnotification',
-            name='community_post_subscription',
-        ),
         migrations.AddField(
             model_name='communitynewpostnotification',
             name='community_notification_subscription',

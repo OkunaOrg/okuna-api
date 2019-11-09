@@ -7,7 +7,6 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('openbook_communities', '0029_communitypostsubscription'),
         ('openbook_notifications', '0016_auto_20191106_1445'),
     ]
 
@@ -16,7 +15,6 @@ class Migration(migrations.Migration):
             name='CommunityNewPostNotification',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('community_post_subscription', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='openbook_communities.CommunityPostSubscription')),
             ],
         ),
     ]
