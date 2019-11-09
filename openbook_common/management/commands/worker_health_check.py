@@ -53,8 +53,18 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
 
         self.retval = 1
-        self.verify_worker_health()
+
+        try:
+            self.verify_worker_health()
+
+        except Exception as e:
+            exception = str(e)
+            send_alert_to_channel(
+                               f"worker_health_check failed with {exception}"
+                            )
+
+            raise e
 
         # the return code will be equal to the amount of threshold
-        # violations
+        # violation
         exit(self.retval)
