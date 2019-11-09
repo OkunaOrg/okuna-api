@@ -8,7 +8,7 @@ import json
 
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, \
     make_community, make_fake_post_text, make_post_image, make_moderation_category
-from openbook_communities.models import Community
+from openbook_communities.models import Community, CommunityNotificationSubscription
 from openbook_moderation.models import ModeratedObject
 from openbook_posts.models import Post, PostUserMention
 
@@ -861,5 +861,170 @@ class CommunityClosedPostsAPITest(OpenbookAPITestCase):
 
     def _get_url(self, community_name):
         return reverse('closed-community-posts', kwargs={
+            'community_name': community_name
+        })
+
+
+class SubscribeCommunityPostsAPITests(OpenbookAPITestCase):
+
+    def test_should_be_able_to_subscribe_to_community_if_member(self):
+        """
+        should be able to subscribe to community posts for a community a member
+        """
+        admin = make_user()
+        community = make_community(creator=admin, type='P')
+
+        community_member = make_user()
+        community_member.join_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(community_member)
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        subscription = CommunityNotificationSubscription.objects.get(subscriber=community_member)
+        self.assertEqual(subscription.community.name, community.name)
+
+    def test_should_not_be_able_to_subscribe_to_community_if_not_member(self):
+        """
+        should not be able to subscribe to community posts for a community if not member
+        """
+        admin = make_user()
+        community = make_community(creator=admin, type='P')
+
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_should_not_be_able_to_subscribe_to_community_if_banned(self):
+        """
+        should not be able to subscribe to community posts for a community if banned
+        """
+        admin = make_user()
+        community = make_community(creator=admin, type='P')
+
+        user = make_user()
+        user.join_community_with_name(community_name=community.name)
+
+        admin.ban_user_with_username_from_community_with_name(username=user.username,
+                                                              community_name=community.name)
+
+        headers = make_authentication_headers_for_user(user)
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_should_not_be_able_to_subscribe_to_community_if_already_subscribed(self):
+        """
+        should not be able to subscribe to community posts for a community if already subscribed
+        """
+        admin = make_user()
+        community = make_community(creator=admin, type='P')
+
+        community_member = make_user()
+        community_member.join_community_with_name(community_name=community.name)
+        community_member.subscribe_to_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(community_member)
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, **headers)
+
+        headers = make_authentication_headers_for_user(community_member)
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, **headers)
+
+        subscriptions = CommunityNotificationSubscription.objects.filter(subscriber=community_member, community=community)
+        self.assertEqual(len(subscriptions), 1)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+    def _get_url(self, community_name):
+        return reverse('subscribe-community-posts', kwargs={
+            'community_name': community_name
+        })
+
+
+class UnsubscribeCommunityPostsAPITests(OpenbookAPITestCase):
+
+    def test_should_be_able_to_unsubscribe_to_community_if_member(self):
+        """
+        should be able to unsubscribe to community posts for a community a member
+        """
+        admin = make_user()
+        community = make_community(creator=admin, type='P')
+
+        community_member = make_user()
+        community_member.join_community_with_name(community_name=community.name)
+        community_member.subscribe_to_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(community_member)
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertFalse(CommunityNotificationSubscription.objects.filter(
+            subscriber=community_member, community=community).exists())
+
+    def test_should_not_be_able_to_unsubscribe_to_community_if_not_member(self):
+        """
+        should not be able to unsubscribe to community posts for a community if not member
+        """
+        admin = make_user()
+        community = make_community(creator=admin, type='P')
+
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_should_not_be_able_to_unsubscribe_to_community_if_banned(self):
+        """
+        should not be able to unsubscribe to community posts for a community if banned
+        """
+        admin = make_user()
+        community = make_community(creator=admin, type='P')
+
+        user = make_user()
+        user.join_community_with_name(community_name=community.name)
+        user.subscribe_to_community_with_name(community_name=community.name)
+
+        admin.ban_user_with_username_from_community_with_name(username=user.username,
+                                                              community_name=community.name)
+
+        headers = make_authentication_headers_for_user(user)
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_should_not_be_able_to_unsubscribe_to_community_if_already_subscribed(self):
+        """
+        should not be able to unsubscribe to community posts for a community if already unsubscribed
+        """
+        admin = make_user()
+        community = make_community(creator=admin, type='P')
+
+        community_member = make_user()
+        community_member.join_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(community_member)
+        url = self._get_url(community_name=community.name)
+        response = self.client.post(url, **headers)
+
+        subscriptions = CommunityNotificationSubscription.objects.filter(
+            subscriber=community_member, community=community)
+        self.assertEqual(len(subscriptions), 0)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def _get_url(self, community_name):
+        return reverse('unsubscribe-community-posts', kwargs={
             'community_name': community_name
         })

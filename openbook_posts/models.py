@@ -221,23 +221,37 @@ class Post(models.Model):
         return other_repliers.union(post_comment_creator, post_creator)
 
     @classmethod
-    def get_new_community_post_notification_target_subscriptions(cls, post):
+    def get_community_notification_target_subscriptions(cls, post):
         CommunityNotificationSubscription = get_community_notification_subscription_model()
-
-        community_subscriptions_query = Q(community=post.community)
-        exclude_blocked_users_query = ~Q(Q(subscriber__blocked_by_users__blocker_id=post.creator.pk) | Q(
+        exclude_blocked_users_query = Q(Q(subscriber__blocked_by_users__blocker_id=post.creator.pk) | Q(
             subscriber__user_blocks__blocked_user_id=post.creator.pk))
-        blocked_users_query_staff_members = Q(subscriber__communities_memberships__community_id=post.community.pk)
-        blocked_users_query_staff_members.add(
-            Q(subscriber__communities_memberships__is_administrator=True) | Q(
-                subscriber__communities_memberships__is_moderator=True), Q.AND)
-        exclude_blocked_users_query.add(~blocked_users_query_staff_members, Q.AND)
+        community_members_query = Q(subscriber__communities_memberships__community_id=post.community.pk)
         exclude_self_query = ~Q(subscriber=post.creator)
 
-        community_subscriptions_query.add(exclude_blocked_users_query, Q.AND)
+        community_subscriptions_query = Q(community=post.community)
+        community_subscriptions_query.add(community_members_query, Q.AND)
         community_subscriptions_query.add(exclude_self_query, Q.AND)
-        target_subscriptions = CommunityNotificationSubscription.objects.filter(community_subscriptions_query)
-        return target_subscriptions
+
+        # Exclude banned users
+        exclude_blocked_users_query.add(Q(subscriber__banned_of_communities__id=post.community.pk), Q.OR)
+
+        # Subscriptions after excluding blocked users
+        target_subscriptions_excluding_blocked = CommunityNotificationSubscription.objects.\
+            filter(community_subscriptions_query).\
+            exclude(exclude_blocked_users_query)
+
+        staff_members_query = Q(subscriber__communities_memberships__community_id=post.community.pk,
+                                subscriber__communities_memberships__is_administrator=True) | \
+                              Q(subscriber__communities_memberships__community_id=post.community.pk,
+                                subscriber__communities_memberships__is_moderator=True)
+
+        # Subscriptions from staff of community
+        community_subscriptions_with_staff_query = community_subscriptions_query.add(staff_members_query, Q.AND)
+        target_subscriptions_with_staff = CommunityNotificationSubscription.objects.filter(community_subscriptions_with_staff_query)
+
+        results = target_subscriptions_excluding_blocked.union(target_subscriptions_with_staff)
+
+        return results
 
     def count_comments(self):
         return PostComment.count_comments_for_post_with_id(self.pk)
@@ -545,7 +559,7 @@ class Post(models.Model):
     def _process_post_subscribers(self):
         if self.community:
             CommunityNewPostNotification = get_community_new_post_notification_model()
-            community_subscriptions = Post.get_new_community_post_notification_target_subscriptions(post=self)
+            community_subscriptions = Post.get_community_notification_target_subscriptions(post=self)
 
             for subscription in community_subscriptions:
                 CommunityNewPostNotification.create_community_new_post_notification(
