@@ -84,6 +84,3 @@ class ClosedCommunityPosts(APIView):
                                                       context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
-
-
-
