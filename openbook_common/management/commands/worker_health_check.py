@@ -25,17 +25,6 @@ class Command(BaseCommand):
         for queue in RQ_QUEUES.keys():
 
             rq_stats = RQStats(queue)
-            failed_job_count = rq_stats.get_failed_job_count()
-
-            if failed_job_count >= FAILED_JOB_THRESHOLD:
-                send_alert_to_channel(
-                        f"*OH NOES: we haz too many failed jobs "
-                        f"in {env}:{queue}: ({failed_job_count})!!*")
-                print(
-                   f"{env}:{queue} has too many failed jobs {failed_job_count}"
-                     )
-
-                self.retval += 1
 
             active_job_count = rq_stats.get_active_job_count()
 
