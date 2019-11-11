@@ -45,10 +45,10 @@ from openbook_communities.views.community.members.views import CommunityMembers,
     LeaveCommunity, InviteCommunityMember, SearchCommunityMembers, UninviteCommunityMember
 from openbook_communities.views.community.moderators.views import CommunityModeratorItem, CommunityModerators, \
     SearchCommunityModerators
-from openbook_communities.views.community.posts.views import CommunityPosts, ClosedCommunityPosts, \
-    SubscribeCommunityPosts, UnsubscribeCommunityPosts
-from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, FavoriteCommunity, \
-    TopPostCommunityExclusion
+from openbook_communities.views.community.posts.views import CommunityPosts, ClosedCommunityPosts
+from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, \
+    FavoriteCommunity, \
+    TopPostCommunityExclusion, SubscribeCommunity
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
 from openbook_invitations.views import UserInvite, UserInvites, SearchUserInvites, SendUserInviteEmail
@@ -238,8 +238,6 @@ community_members_patterns = [
 
 community_posts_patterns = [
     path('', CommunityPosts.as_view(), name='community-posts'),
-    path('subscribe/', SubscribeCommunityPosts.as_view(), name='subscribe-community-posts'),
-    path('unsubscribe/', UnsubscribeCommunityPosts.as_view(), name='unsubscribe-community-posts'),
     path('closed/', ClosedCommunityPosts.as_view(), name='closed-community-posts'),
 ]
 
@@ -259,6 +257,7 @@ community_patterns = [
     path('avatar/', CommunityAvatar.as_view(), name='community-avatar'),
     path('cover/', CommunityCover.as_view(), name='community-cover'),
     path('favorite/', FavoriteCommunity.as_view(), name='favorite-community'),
+    path('subscribe/', SubscribeCommunity.as_view(), name='subscribe-community'),
     path('members/', include(community_members_patterns)),
     path('posts/', include(community_posts_patterns)),
     path('banned-users/', include(community_banned_users_patterns)),

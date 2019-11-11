@@ -4,13 +4,10 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-from openbook_common.responses import ApiMessageResponse
 from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_communities.views.community.posts.serializers import GetCommunityPostsSerializer, CommunityPostSerializer, \
-    CreateCommunityPostSerializer, SubscribeCommunityPostsSerializer
-from django.utils.translation import ugettext_lazy as _
+    CreateCommunityPostSerializer
 
 
 class CommunityPosts(APIView):
@@ -89,41 +86,4 @@ class ClosedCommunityPosts(APIView):
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
-class SubscribeCommunityPosts(APIView):
-    permission_classes = (IsAuthenticated, IsNotSuspended)
 
-    def post(self, request, community_name):
-        request_data = normalise_request_data(request.data)
-        request_data['community_name'] = community_name
-
-        serializer = SubscribeCommunityPostsSerializer(data=request_data)
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-
-        community_name = data.get('community_name')
-        user = request.user
-
-        with transaction.atomic():
-            user.subscribe_to_community_with_name(community_name=community_name)
-
-        return ApiMessageResponse(_('Subscribed successfully'), status=status.HTTP_202_ACCEPTED)
-
-
-class UnsubscribeCommunityPosts(APIView):
-    permission_classes = (IsAuthenticated, IsNotSuspended)
-
-    def post(self, request, community_name):
-        request_data = normalise_request_data(request.data)
-        request_data['community_name'] = community_name
-
-        serializer = SubscribeCommunityPostsSerializer(data=request_data)
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-
-        community_name = data.get('community_name')
-        user = request.user
-
-        with transaction.atomic():
-            user.unsubscribe_from_community_with_name(community_name=community_name)
-
-        return ApiMessageResponse(_('Unsubscribed successfully'), status=status.HTTP_202_ACCEPTED)

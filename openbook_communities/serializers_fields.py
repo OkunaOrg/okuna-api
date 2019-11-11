@@ -19,6 +19,22 @@ class IsInvitedField(Field):
         return request_user.is_invited_to_community_with_name(community.name)
 
 
+class IsSubscribedField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(IsSubscribedField, self).__init__(**kwargs)
+
+    def to_representation(self, community):
+        request = self.context.get('request')
+        request_user = request.user
+
+        if request_user.is_anonymous:
+            return False
+
+        return request_user.is_subscribed_to_community_with_name(community.name)
+
+
 class IsCreatorField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'
