@@ -70,6 +70,10 @@ class UserInvite(models.Model):
         return user_invite
 
     @classmethod
+    def check_token_is_valid(cls, token):
+        cls._check_token_is_valid(token=token)
+
+    @classmethod
     def _check_token_is_valid(cls, token):
         if not UserInvite.is_token_valid(token=token):
             raise ValidationError(
@@ -83,7 +87,7 @@ class UserInvite(models.Model):
 
         if UserInvite.objects.filter(token=token, created_user__isnull=False).exists():
             raise ValidationError(
-                _('The invite has been already used.')
+                _('This invite has already been used.')
             )
 
     def save(self, *args, **kwargs):

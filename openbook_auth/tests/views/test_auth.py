@@ -91,6 +91,28 @@ class RegistrationAPITests(OpenbookAPITestCase):
             self.assertIn('name', parsed_response)
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_invalid_username(self):
+        """
+        should return 400 if the username is not valid
+        """
+        url = self._get_url()
+        invalid_usernames = ('joel<;<', '<>', ' shantanu space ', 'greater_than_30_characters_username_is_not_valid',)
+        token = self._make_user_invite_token()
+        for username in invalid_usernames:
+            data = {
+                'username': username,
+                'name': 'Shantanu',
+                'email': 'user@mail.com',
+                'password': 'secretPassword123',
+                'is_of_legal_age': 'true',
+                'are_guidelines_accepted': True,
+                'token': token
+            }
+            response = self.client.post(url, data, format='multipart')
+            parsed_response = json.loads(response.content)
+            self.assertIn('username', parsed_response)
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_name_required(self):
         """
         should return 400 if the name is not present
@@ -334,6 +356,64 @@ class RegistrationAPITests(OpenbookAPITestCase):
 
     def _make_user_invite_token_with_badge(self, badge):
         user_invite = UserInvite.create_invite(email=fake.email(), badge=badge)
+        return user_invite.token
+
+
+class VerifyRegistrationTokenAPITests(OpenbookAPITestCase):
+    """
+    VerifyRegistrationToken API
+    """
+    def test_should_reject_invalid_token(self):
+        """
+        should return 400 if token is invalid.
+        """
+        url = self._get_url()
+        token = uuid.uuid4()
+        request_data = {'token': token}
+        response = self.client.post(url, request_data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_should_accept_valid_token(self):
+        """
+        should return 202 if token is valid.
+        """
+        url = self._get_url()
+        token = self._make_user_invite_token()
+        request_data = {'token': token}
+        response = self.client.post(url, request_data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+
+    def test_should_reject_expired_token(self):
+        """
+        should return 400 if token already has been used to create an account.
+        """
+        url = self._get_url()
+        token = self._make_user_invite_token()
+        email = fake.email()
+        name = fake.user_name()
+        password = fake.password()
+        user_invite = UserInvite.get_invite_for_token(token=token)
+        username = user_invite.username
+        if not user_invite.username:
+            username = User.get_temporary_username(email)
+
+        # create a user
+        new_user = User.create_user(username=username, email=email, password=password, name=name, avatar=None,
+                         is_of_legal_age=True, badge=user_invite.badge, are_guidelines_accepted=True)
+        user_invite.created_user = new_user
+        user_invite.save()
+
+        request_data = {'token': token}
+        response = self.client.post(url, request_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def _get_url(self):
+        return reverse('verify-register-token')
+
+    def _make_user_invite_token(self):
+        user_invite = UserInvite.create_invite(email=fake.email())
         return user_invite.token
 
 
