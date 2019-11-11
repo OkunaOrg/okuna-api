@@ -568,6 +568,10 @@ class User(AbstractUser):
         return Community.is_user_with_username_invited_to_community_with_name(username=self.username,
                                                                               community_name=community_name)
 
+    def is_subscribed_to_community_with_name(self, community_name):
+        Community = get_community_model()
+        return Community.is_user_with_username_subscribed_to_community_with_name(username=self.username, community_name=community_name)
+
     def has_reported_moderated_object_with_id(self, moderated_object_id):
         ModeratedObject = get_moderated_object_model()
         ModerationReport = get_moderation_report_model()
@@ -1935,6 +1939,8 @@ class User(AbstractUser):
 
         CommunityNotificationSubscription.create_community_notification_subscription(subscriber=self, community=community)
 
+        return community
+
     def unsubscribe_from_community_with_name(self, community_name):
         Community = get_community_model()
         CommunityNotificationSubscription = get_community_notification_subscription_model()
@@ -1942,6 +1948,8 @@ class User(AbstractUser):
         check_can_unsubscribe_to_posts_for_community(subscriber=self, community=community)
 
         CommunityNotificationSubscription.remove_community_notification_subscription(subscriber=self, community=community)
+
+        return community
 
     def get_post_with_id(self, post_id):
         Post = get_post_model()
