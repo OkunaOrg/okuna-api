@@ -1037,7 +1037,7 @@ class TopPostCommunityExclusionAPITests(OpenbookAPITestCase):
         })
 
 
-class SubscribeCommunityPostsAPITests(OpenbookAPITestCase):
+class SubscribeCommunityAPITests(OpenbookAPITestCase):
 
     def test_should_be_able_to_subscribe_to_community_if_member(self):
         """
@@ -1053,7 +1053,7 @@ class SubscribeCommunityPostsAPITests(OpenbookAPITestCase):
         url = self._get_url(community_name=community.name)
         response = self.client.put(url, **headers)
 
-        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         subscription = CommunityNotificationSubscription.objects.get(subscriber=community_member)
         self.assertEqual(subscription.community.name, community.name)
 
@@ -1106,10 +1106,6 @@ class SubscribeCommunityPostsAPITests(OpenbookAPITestCase):
         url = self._get_url(community_name=community.name)
         response = self.client.put(url, **headers)
 
-        headers = make_authentication_headers_for_user(community_member)
-        url = self._get_url(community_name=community.name)
-        response = self.client.post(url, **headers)
-
         subscriptions = CommunityNotificationSubscription.objects.filter(subscriber=community_member, community=community)
         self.assertEqual(len(subscriptions), 1)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -1129,7 +1125,7 @@ class SubscribeCommunityPostsAPITests(OpenbookAPITestCase):
         url = self._get_url(community_name=community.name)
         response = self.client.delete(url, **headers)
 
-        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(CommunityNotificationSubscription.objects.filter(
             subscriber=community_member, community=community).exists())
 
