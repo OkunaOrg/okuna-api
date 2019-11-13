@@ -1764,6 +1764,18 @@ class User(AbstractUser):
         Community = get_community_model()
         return Community.objects.filter(memberships__user=self)
 
+    def get_subscribed_communities(self):
+        Community = get_community_model()
+        return Community.objects.filter(notification_subscriptions__subscriber=self)
+
+    def search_subscribed_communities_with_query(self, query):
+        subscribed_communities_query = Q(notification_subscriptions__subscriber=self)
+        subscribed_communities_name_query = Q(name__icontains=query)
+        subscribed_communities_name_query.add(Q(title__icontains=query), Q.OR)
+        subscribed_communities_query.add(subscribed_communities_name_query, Q.AND)
+        Community = get_community_model()
+        return Community.objects.filter(subscribed_communities_query)
+
     def search_joined_communities_with_query(self, query):
         joined_communities_query = Q(memberships__user=self)
         joined_communities_name_query = Q(name__icontains=query)
