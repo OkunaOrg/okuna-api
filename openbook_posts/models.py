@@ -563,6 +563,7 @@ class Post(models.Model):
 
             for subscription in community_subscriptions:
                 CommunityNewPostNotification.create_community_new_post_notification(
+                    post_id=self.pk,
                     owner_id=subscription.subscriber.pk, community_notification_subscription_id=subscription.pk)
                 send_community_new_post_push_notification(community_notification_subscription=subscription)
 

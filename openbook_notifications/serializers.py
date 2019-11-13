@@ -8,7 +8,8 @@ from openbook_common.serializers_fields.post_comment import PostCommentIsMutedFi
 from openbook_communities.models import Community, CommunityInvite
 from openbook_notifications.models import Notification, PostCommentNotification, ConnectionRequestNotification, \
     ConnectionConfirmedNotification, FollowNotification, CommunityInviteNotification, PostCommentReplyNotification, \
-    PostCommentReactionNotification, PostCommentUserMentionNotification, PostUserMentionNotification
+    PostCommentReactionNotification, PostCommentUserMentionNotification, PostUserMentionNotification, \
+    CommunityNewPostNotification
 from openbook_notifications.models.post_reaction_notification import PostReactionNotification
 from openbook_notifications.serializer_fields import ParentCommentField
 from openbook_posts.models import PostComment, PostReaction, Post, PostImage, PostCommentReaction, \
@@ -131,9 +132,22 @@ class PostImageSerializer(serializers.ModelSerializer):
         )
 
 
+class PostCommunitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Community
+        fields = (
+            'id',
+            'name',
+            'avatar',
+            'cover',
+            'color'
+        )
+
+
 class NotificationPostSerializer(serializers.ModelSerializer):
     creator = PostCommentCreatorSerializer()
     is_encircled = IsEncircledField()
+    community = PostCommunitySerializer()
     # Temp backwards compat
     image = PostImageSerializer(many=False)
 
@@ -145,6 +159,7 @@ class NotificationPostSerializer(serializers.ModelSerializer):
             'text',
             'creator',
             'created',
+            'community',
             'is_closed',
             'is_encircled',
             'media_height',
@@ -522,6 +537,17 @@ class CommunityInviteNotificationSerializer(serializers.ModelSerializer):
         )
 
 
+class CommunityNewPostNotificationSerializer(serializers.ModelSerializer):
+    post = NotificationPostSerializer()
+
+    class Meta:
+        model = CommunityNewPostNotification
+        fields = (
+            'id',
+            'post'
+        )
+
+
 class PostUserMentionSerializer(serializers.ModelSerializer):
     post = NotificationPostSerializer()
     user = PostCommentCreatorSerializer()
@@ -581,6 +607,7 @@ class GetNotificationsNotificationSerializer(serializers.ModelSerializer):
         FollowNotification: FollowNotificationSerializer(),
         PostCommentUserMentionNotification: PostCommentUserMentionNotificationSerializer(),
         PostUserMentionNotification: PostUserMentionNotificationSerializer(),
+        CommunityNewPostNotification: CommunityNewPostNotificationSerializer(),
         CommunityInviteNotification: CommunityInviteNotificationSerializer()
     })
 
