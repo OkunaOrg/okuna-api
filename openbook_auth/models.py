@@ -1787,13 +1787,37 @@ class User(AbstractUser):
     def get_favorite_communities(self):
         return self.favorite_communities.all()
 
+    def search_favorite_communities_with_query(self, query):
+        favorite_communities_query = Q(starrers__id=self.pk)
+        favorite_communities_name_query = Q(name__icontains=query)
+        favorite_communities_name_query.add(Q(title__icontains=query), Q.OR)
+        favorite_communities_query.add(favorite_communities_name_query, Q.AND)
+        Community = get_community_model()
+        return Community.objects.filter(favorite_communities_query)
+
     def get_administrated_communities(self):
         Community = get_community_model()
         return Community.objects.filter(memberships__user=self, memberships__is_administrator=True)
 
+    def search_administrated_communities_with_query(self, query):
+        administrated_communities_query = Q(memberships__user=self, memberships__is_administrator=True)
+        administrated_communities_name_query = Q(name__icontains=query)
+        administrated_communities_name_query.add(Q(title__icontains=query), Q.OR)
+        administrated_communities_query.add(administrated_communities_name_query, Q.AND)
+        Community = get_community_model()
+        return Community.objects.filter(administrated_communities_query)
+
     def get_moderated_communities(self):
         Community = get_community_model()
         return Community.objects.filter(memberships__user=self, memberships__is_moderator=True)
+
+    def search_moderated_communities_with_query(self, query):
+        moderated_communities_query = Q(memberships__user=self, memberships__is_moderator=True)
+        moderated_communities_name_query = Q(name__icontains=query)
+        moderated_communities_name_query.add(Q(title__icontains=query), Q.OR)
+        moderated_communities_query.add(moderated_communities_name_query, Q.AND)
+        Community = get_community_model()
+        return Community.objects.filter(moderated_communities_query)
 
     def create_public_post(self, text=None, image=None, video=None, created=None, is_draft=False):
         world_circle_id = self._get_world_circle_id()

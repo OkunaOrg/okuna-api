@@ -37,7 +37,7 @@ from openbook_common.views import Time, Health, EmojiGroups, ProxyDomainCheck
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
     FavoriteCommunities, SearchCommunities, JoinedCommunities, AdministratedCommunities, ModeratedCommunities, \
     SearchJoinedCommunities, TopPostCommunityExclusions, TopPostCommunityExclusionsSearch, SubscribedCommunities, \
-    SearchSubscribedCommunities
+    SearchSubscribedCommunities, SearchAdministratedCommunities, SearchModeratedCommunities, SearchFavoriteCommunities
 from openbook_communities.views.community.administrators.views import CommunityAdministratorItem, \
     CommunityAdministrators, SearchCommunityAdministrators
 from openbook_communities.views.community.banned_users.views import BanUser, UnbanUser, CommunityBannedUsers, \
@@ -277,8 +277,11 @@ communities_patterns = [
     path('subscribed/', SubscribedCommunities.as_view(), name='subscribed-communities'),
     path('subscribed/search/', SearchSubscribedCommunities.as_view(), name='search-subscribed-communities'),
     path('favorites/', FavoriteCommunities.as_view(), name='favorite-communities'),
+    path('favorites/search/', SearchFavoriteCommunities.as_view(), name='search-favorite-communities'),
     path('administrated/', AdministratedCommunities.as_view(), name='administrated-communities'),
+    path('administrated/search/', SearchAdministratedCommunities.as_view(), name='search-administrated-communities'),
     path('moderated/', ModeratedCommunities.as_view(), name='moderated-communities'),
+    path('moderated/search/', SearchModeratedCommunities.as_view(), name='search-moderated-communities'),
     path('name-check/', CommunityNameCheck.as_view(), name='community-name-check'),
     path('top-posts/exclusions/', TopPostCommunityExclusions.as_view(), name='top-posts-excluded-communities'),
     path('top-posts/exclusions/search/', TopPostCommunityExclusionsSearch.as_view(), name='search-top-posts-excluded-communities'),
