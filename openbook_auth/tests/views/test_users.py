@@ -6,6 +6,7 @@ from openbook_common.tests.models import OpenbookAPITestCase
 import logging
 import json
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user
+from openbook_common.utils.model_loaders import get_user_notification_subscription_model
 
 fake = Faker()
 
@@ -326,6 +327,40 @@ class BlockUserAPITests(OpenbookAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(user_to_block.is_following_user_with_id(user_id=user_to_block.pk))
 
+    def test_unsubscribe_from_user_if_already_subscribed(self):
+        """
+        should unsubscribe from a user if blocked and return 200
+        """
+        user = make_user()
+        user_to_block = make_user()
+        headers = make_authentication_headers_for_user(user)
+        # first subscribe to that user
+        user.subscribe_to_user_with_username(username=user_to_block.username)
+
+        url = self._get_url(user_to_block)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        UserNotificationSubscription = get_user_notification_subscription_model()
+        self.assertFalse(UserNotificationSubscription.objects.filter(subscriber=user, user=user_to_block).exists())
+
+    def test_unsubscribe_from_user_if_blocking_user_is_already_subscribed(self):
+        """
+        should unsubscribe from user if we are blocking a user subscribed to us and return 200
+        """
+        user = make_user()
+        user_to_block = make_user()
+        headers = make_authentication_headers_for_user(user)
+        # first blocking user will subscribe to us
+        user_to_block.subscribe_to_user_with_username(username=user.username)
+
+        url = self._get_url(user_to_block)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        UserNotificationSubscription = get_user_notification_subscription_model()
+        self.assertFalse(UserNotificationSubscription.objects.filter(subscriber=user_to_block, user=user).exists())
+
     def _get_url(self, user):
         return reverse('block-user', kwargs={
             'user_username': user.username
@@ -389,5 +424,151 @@ class UnblockUserAPITests(OpenbookAPITestCase):
 
     def _get_url(self, user):
         return reverse('unblock-user', kwargs={
+            'user_username': user.username
+        })
+
+
+class SubscribeUserAPITests(OpenbookAPITestCase):
+    """
+    SubscribeUserAPI
+    """
+    def test_can_subscribe_to_user(self):
+        """
+        should be able to subscribe to a user and return 201
+        """
+        user = make_user()
+        user_to_subscribe = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url(user_to_subscribe)
+        response = self.client.put(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        UserNotificationSubscription = get_user_notification_subscription_model()
+        self.assertTrue(UserNotificationSubscription.objects.filter(subscriber=user, user=user_to_subscribe).exists())
+
+    def test_cannot_subscribe_to_user_if_already_subscribed(self):
+        """
+        should not be able to subscribe to a user if already subscribed and return 400
+        """
+        user = make_user()
+        user_to_subscribe = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user.subscribe_to_user_with_username(username=user_to_subscribe.username)
+
+        url = self._get_url(user_to_subscribe)
+        response = self.client.put(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        UserNotificationSubscription = get_user_notification_subscription_model()
+        self.assertEqual(UserNotificationSubscription.objects.filter(subscriber=user, user=user_to_subscribe).count(), 1)
+
+    def test_cannot_subscribe_to_user_if_user_has_been_blocked(self):
+        """
+        should not be able to subscribe to a user if blocked and return 403
+        """
+        user = make_user()
+        user_to_subscribe = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user.block_user_with_id(user_id=user_to_subscribe.id)
+
+        url = self._get_url(user_to_subscribe)
+        response = self.client.put(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        UserNotificationSubscription = get_user_notification_subscription_model()
+        self.assertFalse(UserNotificationSubscription.objects.filter(subscriber=user, user=user_to_subscribe).exists())
+
+    def test_cannot_subscribe_to_user_if_user_has_blocked_us(self):
+        """
+        should not be able to subscribe to a user if they have blocked subscriber and return 403
+        """
+        user = make_user()
+        user_to_subscribe = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user_to_subscribe.block_user_with_id(user_id=user.id)
+
+        url = self._get_url(user_to_subscribe)
+        response = self.client.put(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        UserNotificationSubscription = get_user_notification_subscription_model()
+        self.assertFalse(UserNotificationSubscription.objects.filter(subscriber=user, user=user_to_subscribe).exists())
+
+    def test_can_unsubscribe_to_user(self):
+        """
+        should be able to unsubscribe to a user and return 200
+        """
+        user = make_user()
+        user_to_unsubscribe = make_user()
+        headers = make_authentication_headers_for_user(user)
+        # first subscribe to that user
+        user.subscribe_to_user_with_username(username=user_to_unsubscribe.username)
+
+        url = self._get_url(user_to_unsubscribe)
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        UserNotificationSubscription = get_user_notification_subscription_model()
+        self.assertFalse(UserNotificationSubscription.objects.filter(subscriber=user, user=user_to_unsubscribe).exists())
+
+    def test_cannot_unsubscribe_to_user_if_already_unsubscribed(self):
+        """
+        should not be able to unsubscribe to a user if already unsubscribed and return 400
+        """
+        user = make_user()
+        user_to_unsubscribe = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url(user_to_unsubscribe)
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        UserNotificationSubscription = get_user_notification_subscription_model()
+        self.assertFalse(UserNotificationSubscription.objects.filter(subscriber=user, user=user_to_unsubscribe).exists())
+
+    def test_cannot_unsubscribe_to_user_if_user_has_been_blocked(self):
+        """
+        should not be able to unsubscribe to a user if blocked and return 403
+        """
+        user = make_user()
+        user_to_unsubscribe = make_user()
+        headers = make_authentication_headers_for_user(user)
+        # first subscribe to that user
+        user.subscribe_to_user_with_username(username=user_to_unsubscribe.username)
+
+        user.block_user_with_id(user_id=user_to_unsubscribe.id)
+
+        url = self._get_url(user_to_unsubscribe)
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        UserNotificationSubscription = get_user_notification_subscription_model()
+        self.assertFalse(UserNotificationSubscription.objects.filter(subscriber=user, user=user_to_unsubscribe).exists())
+
+    def test_cannot_unsubscribe_to_user_if_user_has_blocked_us(self):
+        """
+        should not be able to unsubscribe to a user if they have blocked unsubscriber and return 403
+        """
+        user = make_user()
+        user_to_unsubscribe = make_user()
+        headers = make_authentication_headers_for_user(user)
+        # first subscribe to that user
+        user.subscribe_to_user_with_username(username=user_to_unsubscribe.username)
+
+        user_to_unsubscribe.block_user_with_id(user_id=user.id)
+
+        url = self._get_url(user_to_unsubscribe)
+        response = self.client.delete(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        UserNotificationSubscription = get_user_notification_subscription_model()
+        self.assertFalse(UserNotificationSubscription.objects.filter(subscriber=user, user=user_to_unsubscribe).exists())
+
+    def _get_url(self, user):
+        return reverse('subscribe-user', kwargs={
             'user_username': user.username
         })
