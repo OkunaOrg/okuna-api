@@ -7,7 +7,7 @@ from openbook_circles.models import Circle
 from openbook_common.models import Badge, Emoji
 from openbook_common.serializers_fields.user import FollowersCountField, FollowingCountField, PostsCountField, \
     IsFollowingField, IsConnectedField, IsFullyConnectedField, ConnectedCirclesField, FollowListsField, \
-    IsPendingConnectionConfirmation, IsBlockedField, IsUserReportedField
+    IsPendingConnectionConfirmation, IsBlockedField, IsUserReportedField, IsSubscribedField
 from openbook_lists.models import List
 
 
@@ -190,4 +190,15 @@ class SearchUsersUserSerializer(serializers.ModelSerializer):
             'username',
             'is_following',
             'is_connected'
+        )
+
+
+class SubscribeUserUserSerializer(serializers.ModelSerializer):
+    is_subscribed = IsSubscribedField()
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'is_subscribed',
         )

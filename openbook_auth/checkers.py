@@ -5,7 +5,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.utils.model_loaders import get_post_model, get_community_model, get_post_comment_model, \
     get_language_model, get_user_model, get_emoji_group_model, get_post_reaction_model, get_user_invite_model, \
-    get_community_notification_subscription_model
+    get_community_notification_subscription_model, get_user_notification_subscription_model
 
 from openbook_common import checkers as common_checkers
 
@@ -1356,4 +1356,32 @@ def check_can_get_preview_link_data_for_post(user, post):
     if not post.has_links():
         raise ValidationError(
             _('No link associated with post.'),
+        )
+
+
+def check_can_subscribe_to_user(subscriber, user):
+    UserNotificationSubscription = get_user_notification_subscription_model()
+    is_subscribed = UserNotificationSubscription.is_user_with_username_subscribed_to_user_with_username(
+        subscriber_username=subscriber.username, username=user.username)
+
+    if user.has_blocked_user_with_id(user_id=subscriber.pk) or subscriber.has_blocked_user_with_id(user_id=user.pk):
+        raise PermissionDenied(_('This account is blocked.'))
+
+    if is_subscribed:
+        raise ValidationError(
+            _('User is already subscribed to this user'),
+        )
+
+
+def check_can_unsubscribe_from_user(subscriber, user):
+    UserNotificationSubscription = get_user_notification_subscription_model()
+    is_subscribed = UserNotificationSubscription.is_user_with_username_subscribed_to_user_with_username(
+        subscriber_username=subscriber.username, username=user.username)
+
+    if user.has_blocked_user_with_id(user_id=subscriber.pk) or subscriber.has_blocked_user_with_id(user_id=user.pk):
+        raise PermissionDenied(_('This account is blocked.'))
+
+    if not is_subscribed:
+        raise ValidationError(
+            _('User is already unsubscribed from this user'),
         )
