@@ -30,7 +30,7 @@ from openbook_auth.views.followers.views import Followers, SearchFollowers
 from openbook_auth.views.following.views import Followings, SearchFollowings
 from openbook_auth.views.linked_users.views import LinkedUsers, SearchLinkedUsers
 from openbook_auth.views.proxy.views import ProxyAuth
-from openbook_auth.views.users.views import SearchUsers, GetUser, BlockUser, UnblockUser
+from openbook_auth.views.users.views import SearchUsers, GetUser, BlockUser, UnblockUser, SubscribeUser
 from openbook_categories.views import Categories
 from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups, ProxyDomainCheck
@@ -108,6 +108,7 @@ auth_users_user_patterns = [
     path('block/', BlockUser.as_view(), name='block-user'),
     path('unblock/', UnblockUser.as_view(), name='unblock-user'),
     path('report/', ReportUser.as_view(), name='report-user'),
+    path('subscribe/', SubscribeUser.as_view(), name='subscribe-user'),
 ]
 
 auth_users_patterns = [

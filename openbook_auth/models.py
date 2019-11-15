@@ -32,7 +32,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
     get_moderation_penalty_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
     get_post_comment_reaction_notification_model, get_top_post_model, get_top_post_community_exclusion_model, \
-    get_community_notification_subscription_model
+    get_community_notification_subscription_model, get_user_notification_subscription_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications import helpers
 from openbook_auth.checkers import *
@@ -489,6 +489,9 @@ class User(AbstractUser):
         return self.follows.filter(
             followed_user_id=user_id,
             lists__id=list_id).exists()
+
+    def is_subscribed_to_user_with_id(self, user_id):
+        return self.user_notification_subscriptions.filter(user__id=user_id).exists()
 
     def is_world_circle_id(self, id):
         world_circle_id = self._get_world_circle_id()
@@ -2687,12 +2690,33 @@ class User(AbstractUser):
         )
         return post_comment, result.get('translated_text')
 
+    def subscribe_to_user_with_username(self, username):
+        user_to_subscribe = User.objects.get(username=username)
+        UserNotificationSubscription = get_user_notification_subscription_model()
+
+        check_can_subscribe_to_user(subscriber=self, user=user_to_subscribe)
+
+        UserNotificationSubscription.create_user_notification_subscription(subscriber=self, user=user_to_subscribe)
+
+        return user_to_subscribe
+
+    def unsubscribe_from_user_with_username(self, username):
+        user_to_unsubscribe = User.objects.get(username=username)
+        UserNotificationSubscription = get_user_notification_subscription_model()
+
+        check_can_unsubscribe_from_user(subscriber=self, user=user_to_unsubscribe)
+
+        UserNotificationSubscription.remove_user_notification_subscription(subscriber=self, user=user_to_unsubscribe)
+
+        return user_to_unsubscribe
+
     def block_user_with_username(self, username):
         user = User.objects.get(username=username)
         return self.block_user_with_id(user_id=user.pk)
 
     def block_user_with_id(self, user_id):
         check_can_block_user_with_id(user=self, user_id=user_id)
+        user_to_block = User.objects.get(pk=user_id)
 
         if self.is_connected_with_user_with_id(user_id=user_id):
             # This does unfollow too
@@ -2700,9 +2724,14 @@ class User(AbstractUser):
         elif self.is_following_user_with_id(user_id=user_id):
             self.unfollow_user_with_id(user_id=user_id)
 
-        user_to_block = User.objects.get(pk=user_id)
         if user_to_block.is_following_user_with_id(user_id=self.pk):
             user_to_block.unfollow_user_with_id(self.pk)
+
+        if self.is_subscribed_to_user_with_id(user_id=user_to_block.pk):
+            self.unsubscribe_from_user_with_username(user_to_block.username)
+
+        if user_to_block.is_subscribed_to_user_with_id(user_id=self.pk):
+            user_to_block.unsubscribe_from_user_with_username(self.username)
 
         UserBlock = get_user_block_model()
         UserBlock.create_user_block(blocker_id=self.pk, blocked_user_id=user_id)
@@ -3466,3 +3495,25 @@ def bootstrap_user_auth_token(user):
 
 def bootstrap_user_profile(user, name, is_of_legal_age, avatar=None, ):
     return UserProfile.objects.create(name=name, user=user, avatar=avatar, is_of_legal_age=is_of_legal_age, )
+
+
+class UserNotificationSubscription(models.Model):
+    subscriber = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_notification_subscriptions', null=False,
+                                   blank=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notification_subscribers', null=False,
+                                  blank=False)
+
+    class Meta:
+        unique_together = ('user', 'subscriber',)
+
+    @classmethod
+    def create_user_notification_subscription(cls, subscriber, user):
+        return cls.objects.create(subscriber=subscriber, user=user)
+
+    @classmethod
+    def remove_user_notification_subscription(cls, subscriber, user):
+        return cls.objects.filter(subscriber=subscriber, user=user).delete()
+
+    @classmethod
+    def is_user_with_username_subscribed_to_user_with_username(cls, subscriber_username, username):
+        return cls.objects.filter(user__username=username, subscriber__username=subscriber_username).exists()

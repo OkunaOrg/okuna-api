@@ -173,6 +173,10 @@ def get_user_model():
     return apps.get_model('openbook_auth.User')
 
 
+def get_user_notification_subscription_model():
+    return apps.get_model('openbook_auth.UserNotificationSubscription')
+
+
 def get_moderated_object_model():
     return apps.get_model('openbook_moderation.ModeratedObject')
 
