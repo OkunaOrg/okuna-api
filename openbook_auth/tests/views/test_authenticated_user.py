@@ -596,6 +596,7 @@ class AuthenticatedUserNotificationsSettingsTests(OpenbookAPITestCase):
         notifications_settings.connection_confirmed_notifications = fake.boolean()
         notifications_settings.community_invite_notifications = fake.boolean()
         notifications_settings.community_new_post_notifications = fake.boolean()
+        notifications_settings.user_new_post_notifications = fake.boolean()
         notifications_settings.post_comment_reply_notifications = fake.boolean()
         notifications_settings.post_comment_reaction_notifications = fake.boolean()
         notifications_settings.post_comment_user_mention_notifications = fake.boolean()
@@ -612,6 +613,7 @@ class AuthenticatedUserNotificationsSettingsTests(OpenbookAPITestCase):
         new_connection_confirmed_notifications = not notifications_settings.connection_confirmed_notifications
         new_community_invite_notifications = not notifications_settings.community_invite_notifications
         new_community_new_post_notifications = not notifications_settings.community_new_post_notifications
+        new_user_new_post_notifications = not notifications_settings.user_new_post_notifications
         new_post_comment_reaction_notifications = not notifications_settings.post_comment_reaction_notifications
         new_post_comment_reply_notifications = not notifications_settings.post_comment_reply_notifications
         new_post_comment_user_mention_notifications = not notifications_settings.post_comment_user_mention_notifications
@@ -625,6 +627,7 @@ class AuthenticatedUserNotificationsSettingsTests(OpenbookAPITestCase):
             'connection_confirmed_notifications': new_connection_confirmed_notifications,
             'community_invite_notifications': new_community_invite_notifications,
             'community_new_post_notifications': new_community_new_post_notifications,
+            'user_new_post_notifications': new_user_new_post_notifications,
             'post_comment_reply_notifications': new_post_comment_reply_notifications,
             'post_comment_reaction_notifications': new_post_comment_reaction_notifications,
             'post_comment_user_mention_notifications': new_post_comment_user_mention_notifications,
@@ -645,6 +648,7 @@ class AuthenticatedUserNotificationsSettingsTests(OpenbookAPITestCase):
         self.assertEqual(notifications_settings.connection_request_notifications, new_connection_request_notifications)
         self.assertEqual(notifications_settings.community_invite_notifications, new_community_invite_notifications)
         self.assertEqual(notifications_settings.community_new_post_notifications, new_community_new_post_notifications)
+        self.assertEqual(notifications_settings.user_new_post_notifications, new_user_new_post_notifications)
         self.assertEqual(notifications_settings.connection_confirmed_notifications,
                          new_connection_confirmed_notifications)
         self.assertEqual(notifications_settings.post_comment_reply_notifications,

@@ -249,6 +249,37 @@ def send_community_new_post_push_notification(community_notification_subscriptio
         _send_notification_to_user(notification=one_signal_notification, user=target_user)
 
 
+def send_user_new_post_push_notification(user_notification_subscription, post):
+    post_creator_name = user_notification_subscription.user.profile.name
+    post_creator_username = user_notification_subscription.user.username
+    target_user = user_notification_subscription.subscriber
+
+    if target_user.has_user_new_post_notifications_enabled():
+        target_user_language_code = get_notification_language_code_for_target_user(target_user)
+        with translation.override(target_user_language_code):
+            if post.is_encircled_post():
+                one_signal_notification = onesignal_sdk.Notification(
+                    post_body={"contents": {"en": _('%(post_creator_name)s · @%(post_creator_username)s posted to a circle.') % {
+                        'post_creator_username': post_creator_username,
+                        'post_creator_name': post_creator_name,
+                    }}})
+            else:
+                one_signal_notification = onesignal_sdk.Notification(
+                    post_body={"contents": {"en": _('%(post_creator_name)s · @%(post_creator_username)s posted to World.') % {
+                        'post_creator_username': post_creator_username,
+                        'post_creator_name': post_creator_name,
+                    }}})
+
+        Notification = get_notification_model()
+
+        notification_data = {
+            'type': Notification.USER_NEW_POST,
+        }
+        one_signal_notification.set_parameter('data', notification_data)
+
+        _send_notification_to_user(notification=one_signal_notification, user=target_user)
+
+
 def get_notification_language_code_for_target_user(target_user):
     if target_user.language and translation.check_for_language(target_user.language.code):
         return target_user.language.code
