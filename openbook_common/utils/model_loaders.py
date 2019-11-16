@@ -161,6 +161,10 @@ def get_community_new_post_notification_model():
     return apps.get_model('openbook_notifications.CommunityNewPostNotification')
 
 
+def get_user_new_post_notification_model():
+    return apps.get_model('openbook_notifications.UserNewPostNotification')
+
+
 def get_notification_model():
     return apps.get_model('openbook_notifications.Notification')
 

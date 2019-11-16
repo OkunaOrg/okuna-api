@@ -397,6 +397,7 @@ class User(AbstractUser):
                                       connection_confirmed_notifications=None,
                                       community_invite_notifications=None,
                                       community_new_post_notifications=None,
+                                      user_new_post_notifications=None,
                                       post_comment_reaction_notifications=None,
                                       post_comment_reply_notifications=None,
                                       post_comment_user_mention_notifications=None,
@@ -413,6 +414,7 @@ class User(AbstractUser):
             connection_confirmed_notifications=connection_confirmed_notifications,
             community_invite_notifications=community_invite_notifications,
             community_new_post_notifications=community_new_post_notifications,
+            user_new_post_notifications=user_new_post_notifications,
             post_comment_reaction_notifications=post_comment_reaction_notifications,
             post_comment_reply_notifications=post_comment_reply_notifications,
             post_comment_user_mention_notifications=post_comment_user_mention_notifications,
@@ -655,6 +657,9 @@ class User(AbstractUser):
 
     def has_community_new_post_notifications_enabled(self):
         return self.notifications_settings.community_new_post_notifications
+
+    def has_user_new_post_notifications_enabled(self):
+        return self.notifications_settings.user_new_post_notifications
 
     def has_connection_confirmed_notifications_enabled(self):
         return self.notifications_settings.connection_confirmed_notifications
@@ -3394,6 +3399,7 @@ class UserNotificationsSettings(models.Model):
     connection_confirmed_notifications = models.BooleanField(_('connection confirmed notifications'), default=True)
     community_invite_notifications = models.BooleanField(_('community invite notifications'), default=True)
     community_new_post_notifications = models.BooleanField(_('community new post notifications'), default=True)
+    user_new_post_notifications = models.BooleanField(_('user new post notifications'), default=True)
     post_comment_reaction_notifications = models.BooleanField(_('post comment reaction notifications'), default=True)
     post_comment_user_mention_notifications = models.BooleanField(_('post comment user mention notifications'),
                                                                   default=True)
@@ -3411,6 +3417,7 @@ class UserNotificationsSettings(models.Model):
                connection_confirmed_notifications=None,
                community_invite_notifications=None,
                community_new_post_notifications=None,
+               user_new_post_notifications=None,
                post_comment_user_mention_notifications=None,
                post_user_mention_notifications=None,
                post_comment_reaction_notifications=None, ):
@@ -3447,6 +3454,9 @@ class UserNotificationsSettings(models.Model):
 
         if community_new_post_notifications is not None:
             self.community_new_post_notifications = community_new_post_notifications
+
+        if user_new_post_notifications is not None:
+            self.user_new_post_notifications = user_new_post_notifications
 
         self.save()
 
