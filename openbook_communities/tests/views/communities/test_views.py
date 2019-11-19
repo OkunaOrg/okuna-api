@@ -1779,3 +1779,31 @@ class SearchTopPostsExcludedCommunitiesAPITests(OpenbookAPITestCase):
 
     def _get_url(self):
         return reverse('search-top-posts-excluded-communities')
+
+
+class SuggestedCommunitiesAPITests(OpenbookAPITestCase):
+    """
+    SuggestedCommunitiesAPI Tests
+    """
+
+    def test_should_return_communities_with_correct_id(self):
+        """
+        should return communities with ids mentioned in the environment var
+        default id in settings is 1
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        # create a community with id 1 in case none exists in test db
+        community = make_community(creator=user)
+
+        url = self._get_url()
+        response = self.client.get(url, **headers)
+        parsed_response = json.loads(response.content)
+        retrieved_community = parsed_response[0]
+
+        self.assertEqual(len(parsed_response), 1)
+        self.assertEqual(retrieved_community['id'], 1)
+
+    def _get_url(self):
+        return reverse('suggested-communities')

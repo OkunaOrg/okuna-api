@@ -21,7 +21,7 @@ from django.conf.urls.static import static
 from proxy.views import proxy_view
 
 from openbook_auth.views.auth.views import Register, Login, UsernameCheck, EmailCheck, EmailVerify, \
-    PasswordResetRequest, PasswordResetVerify
+    PasswordResetRequest, PasswordResetVerify, VerifyRegistrationToken
 from openbook_auth.views.authenticated_user.views import AuthenticatedUser, AuthenticatedUserSettings, \
     DeleteAuthenticatedUser, AuthenticatedUserNotificationsSettings, AuthenticatedUserAcceptGuidelines, \
     AuthenticatedUserLanguage
@@ -36,8 +36,9 @@ from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups, ProxyDomainCheck
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
     FavoriteCommunities, SearchCommunities, JoinedCommunities, AdministratedCommunities, ModeratedCommunities, \
-    SearchJoinedCommunities, TopPostCommunityExclusions, TopPostCommunityExclusionsSearch, SubscribedCommunities, \
-    SearchSubscribedCommunities, SearchAdministratedCommunities, SearchModeratedCommunities, SearchFavoriteCommunities
+    SearchJoinedCommunities, TopPostCommunityExclusions, TopPostCommunityExclusionsSearch, SuggestedCommunities, \
+    SearchSubscribedCommunities, SearchAdministratedCommunities, SearchModeratedCommunities, SearchFavoriteCommunities, \
+    SubscribedCommunities
 from openbook_communities.views.community.administrators.views import CommunityAdministratorItem, \
     CommunityAdministrators, SearchCommunityAdministrators
 from openbook_communities.views.community.banned_users.views import BanUser, UnbanUser, CommunityBannedUsers, \
@@ -84,6 +85,7 @@ from openbook_importer.views import ImportItem
 
 auth_auth_patterns = [
     path('register/', Register.as_view(), name='register-user'),
+    path('register/verify-token/', VerifyRegistrationToken.as_view(), name='verify-register-token'),
     path('login/', Login.as_view(), name='login-user'),
     path('username-check/', UsernameCheck.as_view(), name='username-check'),
     path('email-check/', EmailCheck.as_view(), name='email-check'),
@@ -272,6 +274,7 @@ community_patterns = [
 
 communities_patterns = [
     path('', Communities.as_view(), name='communities'),
+    path('suggested/', SuggestedCommunities.as_view(), name='suggested-communities'),
     path('trending/', TrendingCommunities.as_view(), name='trending-communities'),
     path('joined/', JoinedCommunities.as_view(), name='joined-communities'),
     path('joined/search/', SearchJoinedCommunities.as_view(), name='search-joined-communities'),

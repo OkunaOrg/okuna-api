@@ -18,9 +18,17 @@ class RegisterSerializer(serializers.Serializer):
     are_guidelines_accepted = serializers.BooleanField()
     name = serializers.CharField(max_length=PROFILE_NAME_MAX_LENGTH,
                                  allow_blank=False, validators=[name_characters_validator])
+    username = serializers.CharField(max_length=USERNAME_MAX_LENGTH,
+                                     required=False,
+                                     allow_blank=True,
+                                     validators=[username_characters_validator, username_not_taken_validator])
     avatar = RestrictedImageFileSizeField(allow_empty_file=True, required=False,
                                           max_upload_size=settings.PROFILE_AVATAR_MAX_SIZE)
     email = serializers.EmailField(validators=[email_not_taken_validator])
+    token = serializers.CharField()
+
+
+class RegisterTokenSerializer(serializers.Serializer):
     token = serializers.CharField()
 
 

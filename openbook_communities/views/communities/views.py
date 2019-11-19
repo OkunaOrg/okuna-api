@@ -313,6 +313,18 @@ class FavoriteCommunities(APIView):
         return Response(posts_serializer.data, status=status.HTTP_200_OK)
 
 
+class SuggestedCommunities(APIView):
+    permission_classes = (IsAuthenticated, IsNotSuspended)
+
+    def get(self, request):
+        user = request.user
+
+        communities = user.get_suggested_communities()
+
+        communities_serializer = CommunitiesCommunitySerializer(communities, many=True, context={"request": request})
+        return Response(communities_serializer.data, status=status.HTTP_200_OK)
+
+
 class SearchFavoriteCommunities(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
 
