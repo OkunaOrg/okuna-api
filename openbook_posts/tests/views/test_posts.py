@@ -15,7 +15,7 @@ from openbook_common.tests.models import OpenbookAPITestCase
 from mixer.backend.django import mixer
 
 from openbook.settings import POST_MAX_LENGTH
-from openbook_auth.models import User
+from openbook_auth.models import User, UserNotificationSubscription
 import random
 
 import logging
@@ -30,7 +30,7 @@ from openbook_common.utils.helpers import sha256sum
 from openbook_communities.models import Community
 from openbook_lists.models import List
 from openbook_moderation.models import ModeratedObject
-from openbook_notifications.models import PostUserMentionNotification, Notification
+from openbook_notifications.models import PostUserMentionNotification, Notification, UserNewPostNotification
 from openbook_posts.jobs import curate_top_posts
 from openbook_posts.models import Post, PostUserMention, PostMedia, TopPost
 
@@ -3378,6 +3378,113 @@ class PostsAPITests(OpenbookAPITestCase):
         response_posts = json.loads(response.content)
 
         self.assertEqual(0, len(response_posts))
+
+    def test_create_post_notifies_subscribers(self):
+        """
+        should notify subscribers when a post is created
+        """
+        user = make_user()
+        subscriber = make_user()
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+
+        headers = make_authentication_headers_for_user(user)
+        data = {'text': post_text}
+
+        subscriber.subscribe_to_user_with_username(user.username)
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        user_notification_subscription = UserNotificationSubscription.objects.get(subscriber=subscriber, user=user)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(UserNewPostNotification.objects.filter(
+            user_notification_subscription=user_notification_subscription).count() == 1)
+
+    def test_create_post_does_not_notify_subscribers_if_post_creator_is_blocked(self):
+        """
+        should NOT notify subscribers if creator is blocked when a post is created
+        """
+        user = make_user()
+        subscriber = make_user()
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+
+        headers = make_authentication_headers_for_user(user)
+        data = {'text': post_text}
+
+        subscriber.subscribe_to_user_with_username(user.username)
+        subscriber.block_user_with_id(user_id=user.pk)
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+        response_post = json.loads(response.content)
+        post = Post.objects.get(id=response_post['id'])
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(UserNewPostNotification.objects.filter(
+            post=post).count() == 0)
+
+    def test_create_post_does_not_notify_subscribers_if_they_have_been_blocked(self):
+        """
+        should NOT notify subscribers if creator has blocked them
+        """
+        user = make_user()
+        subscriber = make_user()
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+
+        headers = make_authentication_headers_for_user(user)
+        data = {'text': post_text}
+
+        subscriber.subscribe_to_user_with_username(user.username)
+        user.block_user_with_id(user_id=subscriber.pk)
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+        response_post = json.loads(response.content)
+        post = Post.objects.get(id=response_post['id'])
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(UserNewPostNotification.objects.filter(
+            post=post).count() == 0)
+
+    def test_encircled_post_should_notify_only_subscribers_in_that_circle(self):
+        """
+        should only notify subscribers in a circle if encircled post
+        """
+        post_creator = make_user()
+        subscriber = make_user()
+        other_subscriber = make_user()
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+        headers = make_authentication_headers_for_user(post_creator)
+        circle = mixer.blend(Circle, creator=post_creator)
+
+        # connect with subscriber and add them to circle
+        subscriber.connect_with_user_with_id(post_creator.pk)
+        post_creator.confirm_connection_with_user_with_id(user_id=subscriber.pk, circles_ids=[circle.pk])
+
+        # both users subscribe
+        subscriber.subscribe_to_user_with_username(post_creator.username)
+        other_subscriber.subscribe_to_user_with_username(post_creator.username)
+
+        data = {
+            'text': post_text,
+            'circle_id': circle.pk
+        }
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        other_subscriber_notification_subscription = UserNotificationSubscription.objects.get(
+            subscriber=other_subscriber, user=post_creator)
+
+        subscriber_notification_subscription = UserNotificationSubscription.objects.get(
+            subscriber=subscriber, user=post_creator)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(UserNewPostNotification.objects.filter(
+            user_notification_subscription=other_subscriber_notification_subscription).count() == 0)
+        self.assertTrue(UserNewPostNotification.objects.filter(
+            user_notification_subscription=subscriber_notification_subscription).count() == 1)
 
     def _get_url(self):
         return reverse('posts')
