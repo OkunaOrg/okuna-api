@@ -225,6 +225,14 @@ Imports user invites from a kickstarter/indiegogo csv
 usage: manage.py import_invites [-h] [--indiegogo PATH_TO_CSV] [--kickstarter PATH_TO_CSV]
 ```
 
+### `manage.py reset_invite_email_boolean`
+
+Resets invite_email_sent boolean for un-used invites created in the last --days
+
+```bash
+usage: manage.py reset_invite_email_boolean [-h] [--days DAYS]
+```
+
 
 ### `manage.py send_invites`
 
