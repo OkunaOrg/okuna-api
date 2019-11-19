@@ -266,7 +266,7 @@ class Post(models.Model):
         exclude_self_query = ~Q(subscriber=post.creator)
 
         if post.is_encircled_post():
-            circle_ids = [circle.pk for circle in post.circles]
+            circle_ids = [circle.pk for circle in post.circles.all()]
             post_circles_query = Q(subscriber__connections__target_connection__circles__in=circle_ids)
             user_subscriptions_query.add(post_circles_query, Q.AND)
 
