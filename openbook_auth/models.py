@@ -1776,6 +1776,10 @@ class User(AbstractUser):
         Community = get_community_model()
         return Community.objects.filter(subscribed_communities_query)
 
+    def get_suggested_communities(self):
+        Community = get_community_model()
+        return Community.get_new_user_suggested_communities()
+
     def search_joined_communities_with_query(self, query):
         joined_communities_query = Q(memberships__user=self)
         joined_communities_name_query = Q(name__icontains=query)
