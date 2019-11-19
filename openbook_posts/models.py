@@ -265,6 +265,11 @@ class Post(models.Model):
             subscriber__user_blocks__blocked_user_id=post.creator.pk))
         exclude_self_query = ~Q(subscriber=post.creator)
 
+        if post.is_encircled_post():
+            circle_ids = [circle.pk for circle in post.circles]
+            post_circles_query = Q(subscriber__connections__target_connection__circles__in=circle_ids)
+            user_subscriptions_query.add(post_circles_query, Q.AND)
+
         user_subscriptions_query.add(exclude_self_query, Q.AND)
 
         # Subscriptions after excluding blocked users
