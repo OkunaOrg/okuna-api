@@ -11,6 +11,9 @@ The change log for the API server for Okuna.
  - Add suggested communities API
  - Add register token verify API
  - Add username field to registration API
+- Add subscribe to community, get subscribed communities APIs, 
+- Add search APIs to administrated, moderated, favorite, joined, subscribed
+communities
 
 
 #### Happy testing 🎉!
