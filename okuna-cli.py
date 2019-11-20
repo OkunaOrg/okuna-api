@@ -12,7 +12,7 @@ import os
 import requests
 from halo import Halo
 from watchdog.observers import Observer
-from watchdog.events import LoggingEventHandler, FileSystemEventHandler
+from watchdog.events import FileSystemEventHandler
 
 handler = colorlog.StreamHandler()
 handler.setFormatter(colorlog.ColoredFormatter(
@@ -32,6 +32,7 @@ REQUIREMENTS_TXT_FILE = os.path.join(current_dir, 'requirements.txt')
 DOCKER_API_IMAGE_REQUIREMENTS_TXT_FILE = os.path.join(current_dir, '.docker', 'api', 'requirements.txt')
 DOCKER_WORKER_IMAGE_REQUIREMENTS_TXT_FILE = os.path.join(current_dir, '.docker', 'worker', 'requirements.txt')
 DOCKER_SCHEDULER_IMAGE_REQUIREMENTS_TXT_FILE = os.path.join(current_dir, '.docker', 'scheduler', 'requirements.txt')
+DOCKER_API_TEST_IMAGE_REQUIREMENTS_TXT_FILE = os.path.join(current_dir, '.docker', 'api-test', 'requirements.txt')
 
 OKUNA_API_ADDRESS = '127.0.0.1'
 OKUNA_API_PORT = 80
@@ -45,6 +46,7 @@ def _copy_requirements_txt_to_docker_images_dir():
     copyfile(REQUIREMENTS_TXT_FILE, DOCKER_API_IMAGE_REQUIREMENTS_TXT_FILE)
     copyfile(REQUIREMENTS_TXT_FILE, DOCKER_WORKER_IMAGE_REQUIREMENTS_TXT_FILE)
     copyfile(REQUIREMENTS_TXT_FILE, DOCKER_SCHEDULER_IMAGE_REQUIREMENTS_TXT_FILE)
+    copyfile(REQUIREMENTS_TXT_FILE, DOCKER_API_TEST_IMAGE_REQUIREMENTS_TXT_FILE)
 
 
 def _check_okuna_api_is_running():
@@ -172,10 +174,7 @@ def up():
 
     logger.info('🥳  Okuna is live at http://%s:%s' % (OKUNA_API_ADDRESS, OKUNA_API_PORT))
 
-    observer = Observer()
-    file_changed_handler = UpCommandFileChangedEventHandler()
-    observer.schedule(file_changed_handler, './', recursive=True)
-    observer.start()
+    subprocess.run(["docker-compose", "-f", "docker-compose.yml", "logs", "--follow", "--tail=0",  "webserver"])
 
     input()
 
@@ -185,13 +184,6 @@ def build():
     """Rebuild Okuna services"""
     logger.info('👷‍♀️  Rebuilding Okuna services...')
     subprocess.run(["docker-compose", "build"])
-
-
-@click.command()
-def build_test():
-    """Rebuild Okuna services"""
-    logger.info('👷‍♀️  Rebuilding Okuna test services...')
-    subprocess.run(["docker-compose", "-f", "docker-compose.test.yml", "build"])
 
 
 @click.command()
@@ -209,7 +201,6 @@ def bootstrap():
 
 cli.add_command(up)
 cli.add_command(build)
-cli.add_command(build_test)
 cli.add_command(bootstrap)
 cli.add_command(status)
 
