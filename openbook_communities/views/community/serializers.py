@@ -124,6 +124,7 @@ class GetCommunityModeratorProfileSerializer(serializers.ModelSerializer):
 class GetCommunityStaffUserSerializer(serializers.ModelSerializer):
     profile = GetCommunityModeratorProfileSerializer(many=False)
     is_following = IsFollowingField()
+    is_subscribed = IsSubscribedField()
 
     class Meta:
         model = User
@@ -132,6 +133,7 @@ class GetCommunityStaffUserSerializer(serializers.ModelSerializer):
             'username',
             'profile',
             'is_following',
+            'is_subscribed',
         )
 
 

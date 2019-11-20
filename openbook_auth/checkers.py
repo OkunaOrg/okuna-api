@@ -320,7 +320,7 @@ def check_can_subscribe_to_posts_for_community(subscriber, community):
 
     if is_subscribed:
         raise ValidationError(
-            _('User is already subscribed to new posts for community'),
+            _('You are already subscribed to new posts for community'),
         )
 
     check_is_not_banned_from_community_with_name(user=subscriber, community_name=community.name)
@@ -341,7 +341,7 @@ def check_can_unsubscribe_to_posts_for_community(subscriber, community):
 
     if not is_subscribed:
         raise ValidationError(
-            _('User is already not subscribed to new posts for community'),
+            _('You are already not subscribed to new posts for community'),
         )
 
     check_is_not_banned_from_community_with_name(user=subscriber, community_name=community.name)
