@@ -1741,6 +1741,24 @@ class User(AbstractUser):
 
         return User.objects.filter(followers_query).distinct()
 
+    def get_user_subscriptions(self, max_id=None):
+        user_subscriptions_query = Q(notification_subscribers__subscriber=self, is_deleted=False)
+
+        if max_id:
+            user_subscriptions_query.add(Q(id__lt=max_id), Q.AND)
+
+        return User.objects.filter(user_subscriptions_query)
+
+    def search_user_subscriptions_with_query(self, query):
+        user_subscriptions_query = Q(notification_subscribers__subscriber=self, is_deleted=False)
+
+        names_query = Q(username__icontains=query)
+        names_query.add(Q(profile__name__icontains=query), Q.OR)
+
+        user_subscriptions_query.add(names_query, Q.AND)
+
+        return User.objects.filter(user_subscriptions_query)
+
     def search_followings_with_query(self, query):
         followings_query = Q(followers__user_id=self.pk, is_deleted=False)
 
