@@ -21,7 +21,7 @@ from django.conf.urls.static import static
 from proxy.views import proxy_view
 
 from openbook_auth.views.auth.views import Register, Login, UsernameCheck, EmailCheck, EmailVerify, \
-    PasswordResetRequest, PasswordResetVerify
+    PasswordResetRequest, PasswordResetVerify, VerifyRegistrationToken
 from openbook_auth.views.authenticated_user.views import AuthenticatedUser, AuthenticatedUserSettings, \
     DeleteAuthenticatedUser, AuthenticatedUserNotificationsSettings, AuthenticatedUserAcceptGuidelines, \
     AuthenticatedUserLanguage
@@ -36,7 +36,9 @@ from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups, ProxyDomainCheck
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
     FavoriteCommunities, SearchCommunities, JoinedCommunities, AdministratedCommunities, ModeratedCommunities, \
-    SearchJoinedCommunities, TopPostCommunityExclusions, TopPostCommunityExclusionsSearch
+    SearchJoinedCommunities, TopPostCommunityExclusions, TopPostCommunityExclusionsSearch, SuggestedCommunities, \
+    SearchSubscribedCommunities, SearchAdministratedCommunities, SearchModeratedCommunities, SearchFavoriteCommunities, \
+    SubscribedCommunities
 from openbook_communities.views.community.administrators.views import CommunityAdministratorItem, \
     CommunityAdministrators, SearchCommunityAdministrators
 from openbook_communities.views.community.banned_users.views import BanUser, UnbanUser, CommunityBannedUsers, \
@@ -46,8 +48,9 @@ from openbook_communities.views.community.members.views import CommunityMembers,
 from openbook_communities.views.community.moderators.views import CommunityModeratorItem, CommunityModerators, \
     SearchCommunityModerators
 from openbook_communities.views.community.posts.views import CommunityPosts, ClosedCommunityPosts
-from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, FavoriteCommunity, \
-    TopPostCommunityExclusion
+from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, \
+    FavoriteCommunity, \
+    TopPostCommunityExclusion, SubscribeCommunity
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
 from openbook_invitations.views import UserInvite, UserInvites, SearchUserInvites, SendUserInviteEmail
@@ -82,6 +85,7 @@ from openbook_importer.views import ImportItem
 
 auth_auth_patterns = [
     path('register/', Register.as_view(), name='register-user'),
+    path('register/verify-token/', VerifyRegistrationToken.as_view(), name='verify-register-token'),
     path('login/', Login.as_view(), name='login-user'),
     path('username-check/', UsernameCheck.as_view(), name='username-check'),
     path('email-check/', EmailCheck.as_view(), name='email-check'),
@@ -256,6 +260,7 @@ community_patterns = [
     path('avatar/', CommunityAvatar.as_view(), name='community-avatar'),
     path('cover/', CommunityCover.as_view(), name='community-cover'),
     path('favorite/', FavoriteCommunity.as_view(), name='favorite-community'),
+    path('subscribe/', SubscribeCommunity.as_view(), name='subscribe-community'),
     path('members/', include(community_members_patterns)),
     path('posts/', include(community_posts_patterns)),
     path('banned-users/', include(community_banned_users_patterns)),
@@ -268,12 +273,18 @@ community_patterns = [
 
 communities_patterns = [
     path('', Communities.as_view(), name='communities'),
+    path('suggested/', SuggestedCommunities.as_view(), name='suggested-communities'),
     path('trending/', TrendingCommunities.as_view(), name='trending-communities'),
     path('joined/', JoinedCommunities.as_view(), name='joined-communities'),
     path('joined/search/', SearchJoinedCommunities.as_view(), name='search-joined-communities'),
+    path('subscribed/', SubscribedCommunities.as_view(), name='subscribed-communities'),
+    path('subscribed/search/', SearchSubscribedCommunities.as_view(), name='search-subscribed-communities'),
     path('favorites/', FavoriteCommunities.as_view(), name='favorite-communities'),
+    path('favorites/search/', SearchFavoriteCommunities.as_view(), name='search-favorite-communities'),
     path('administrated/', AdministratedCommunities.as_view(), name='administrated-communities'),
+    path('administrated/search/', SearchAdministratedCommunities.as_view(), name='search-administrated-communities'),
     path('moderated/', ModeratedCommunities.as_view(), name='moderated-communities'),
+    path('moderated/search/', SearchModeratedCommunities.as_view(), name='search-moderated-communities'),
     path('name-check/', CommunityNameCheck.as_view(), name='community-name-check'),
     path('top-posts/exclusions/', TopPostCommunityExclusions.as_view(), name='top-posts-excluded-communities'),
     path('top-posts/exclusions/search/', TopPostCommunityExclusionsSearch.as_view(), name='search-top-posts-excluded-communities'),

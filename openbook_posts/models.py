@@ -37,12 +37,13 @@ from openbook_common.utils.model_loaders import get_emoji_model, \
     get_circle_model, get_community_model, get_post_comment_notification_model, \
     get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model, \
     get_post_user_mention_notification_model, get_post_comment_user_mention_notification_model, get_user_model, \
-    get_post_user_mention_model, get_post_comment_user_mention_model
+    get_post_user_mention_model, get_post_comment_user_mention_model, get_community_notification_subscription_model, \
+    get_community_new_post_notification_model
 from imagekit.models import ProcessedImageField
 
 from openbook_moderation.models import ModeratedObject
 from openbook_notifications.helpers import send_post_comment_user_mention_push_notification, \
-    send_post_user_mention_push_notification
+    send_post_user_mention_push_notification, send_community_new_post_push_notification
 from openbook_posts.checkers import check_can_be_updated, check_can_add_media, check_can_be_published, \
     check_mimetype_is_supported_media_mimetypes
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory, \
@@ -219,6 +220,39 @@ class Post(models.Model):
         post_creator = User.objects.filter(pk=post.creator.id)
         return other_repliers.union(post_comment_creator, post_creator)
 
+    @classmethod
+    def get_community_notification_target_subscriptions(cls, post):
+        CommunityNotificationSubscription = get_community_notification_subscription_model()
+        exclude_blocked_users_query = Q(Q(subscriber__blocked_by_users__blocker_id=post.creator.pk) | Q(
+            subscriber__user_blocks__blocked_user_id=post.creator.pk))
+        community_members_query = Q(subscriber__communities_memberships__community_id=post.community.pk)
+        exclude_self_query = ~Q(subscriber=post.creator)
+
+        community_subscriptions_query = Q(community=post.community)
+        community_subscriptions_query.add(community_members_query, Q.AND)
+        community_subscriptions_query.add(exclude_self_query, Q.AND)
+
+        # Exclude banned users
+        exclude_blocked_users_query.add(Q(subscriber__banned_of_communities__id=post.community.pk), Q.OR)
+
+        # Subscriptions after excluding blocked users
+        target_subscriptions_excluding_blocked = CommunityNotificationSubscription.objects.\
+            filter(community_subscriptions_query).\
+            exclude(exclude_blocked_users_query)
+
+        staff_members_query = Q(subscriber__communities_memberships__community_id=post.community.pk,
+                                subscriber__communities_memberships__is_administrator=True) | \
+                              Q(subscriber__communities_memberships__community_id=post.community.pk,
+                                subscriber__communities_memberships__is_moderator=True)
+
+        # Subscriptions from staff of community
+        community_subscriptions_with_staff_query = community_subscriptions_query.add(staff_members_query, Q.AND)
+        target_subscriptions_with_staff = CommunityNotificationSubscription.objects.filter(community_subscriptions_with_staff_query)
+
+        results = target_subscriptions_excluding_blocked.union(target_subscriptions_with_staff)
+
+        return results
+
     def count_comments(self):
         return PostComment.count_comments_for_post_with_id(self.pk)
 
@@ -394,6 +428,7 @@ class Post(models.Model):
     def _publish(self):
         self.status = Post.STATUS_PUBLISHED
         self.created = timezone.now()
+        self._process_post_subscribers()
         self.save()
 
     def is_draft(self):
@@ -520,6 +555,17 @@ class Post(models.Model):
                                 existing_mention_usernames.append(username)
                         except User.DoesNotExist:
                             pass
+
+    def _process_post_subscribers(self):
+        if self.community:
+            CommunityNewPostNotification = get_community_new_post_notification_model()
+            community_subscriptions = Post.get_community_notification_target_subscriptions(post=self)
+
+            for subscription in community_subscriptions:
+                CommunityNewPostNotification.create_community_new_post_notification(
+                    post_id=self.pk,
+                    owner_id=subscription.subscriber.pk, community_notification_subscription_id=subscription.pk)
+                send_community_new_post_push_notification(community_notification_subscription=subscription)
 
 
 class TopPost(models.Model):

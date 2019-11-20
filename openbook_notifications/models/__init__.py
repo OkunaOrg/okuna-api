@@ -9,3 +9,4 @@ from .community_invite_notification import CommunityInviteNotification
 from .post_comment_reaction_notification import PostCommentReactionNotification
 from .post_comment_user_mention_notification import PostCommentUserMentionNotification
 from .post_user_mention_notification import PostUserMentionNotification
+from .community_new_post_notification import CommunityNewPostNotification
