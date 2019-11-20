@@ -7,7 +7,7 @@ from openbook_circles.models import Circle
 from openbook_common.models import Badge, Emoji
 from openbook_common.serializers_fields.user import FollowersCountField, FollowingCountField, PostsCountField, \
     IsFollowingField, IsConnectedField, IsFullyConnectedField, ConnectedCirclesField, FollowListsField, \
-    IsPendingConnectionConfirmation, IsBlockedField, IsUserReportedField, IsSubscribedField
+    IsPendingConnectionConfirmation, IsBlockedField, IsUserReportedField, IsSubscribedToUserField
 from openbook_lists.models import List
 
 
@@ -104,7 +104,7 @@ class GetUserUserSerializer(serializers.ModelSerializer):
     following_count = FollowingCountField()
     posts_count = PostsCountField()
     is_following = IsFollowingField()
-    is_subscribed = IsSubscribedField()
+    is_subscribed = IsSubscribedToUserField()
     is_connected = IsConnectedField()
     is_fully_connected = IsFullyConnectedField()
     connected_circles = ConnectedCirclesField(circle_serializer=GetUserUserCircleSerializer)
@@ -135,7 +135,7 @@ class GetUserUserSerializer(serializers.ModelSerializer):
 class GetBlockedUserSerializer(serializers.ModelSerializer):
     is_blocked = IsBlockedField()
     is_following = IsFollowingField()
-    is_subscribed = IsSubscribedField()
+    is_subscribed = IsSubscribedToUserField()
     is_connected = IsConnectedField()
     is_fully_connected = IsFullyConnectedField()
 
@@ -184,7 +184,7 @@ class SearchUsersUserProfileSerializer(serializers.ModelSerializer):
 class SearchUsersUserSerializer(serializers.ModelSerializer):
     profile = SearchUsersUserProfileSerializer(many=False)
     is_following = IsFollowingField()
-    is_subscribed = IsSubscribedField()
+    is_subscribed = IsSubscribedToUserField()
     is_connected = IsConnectedField()
 
     class Meta:
@@ -200,7 +200,7 @@ class SearchUsersUserSerializer(serializers.ModelSerializer):
 
 
 class SubscribeUserUserSerializer(serializers.ModelSerializer):
-    is_subscribed = IsSubscribedField()
+    is_subscribed = IsSubscribedToUserField()
 
     class Meta:
         model = User

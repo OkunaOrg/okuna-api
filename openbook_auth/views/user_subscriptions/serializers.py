@@ -4,7 +4,7 @@ from rest_framework import serializers
 from openbook_auth.models import User, UserProfile
 from openbook_common.models import Badge
 from openbook_common.serializers_fields.user import \
-    IsConnectedField, IsSubscribedField
+    IsConnectedField, IsSubscribedToUserField
 
 
 class GetUserSubscriptionsSerializer(serializers.Serializer):
@@ -49,7 +49,7 @@ class UserSubscriptionsUserProfileSerializer(serializers.ModelSerializer):
 
 class UserSubscriptionsUserSerializer(serializers.ModelSerializer):
     profile = UserSubscriptionsUserProfileSerializer(many=False)
-    is_subscribed = IsSubscribedField()
+    is_subscribed = IsSubscribedToUserField()
     is_connected = IsConnectedField()
 
     class Meta:

@@ -4,7 +4,7 @@ from rest_framework import serializers
 from openbook_auth.models import User, UserProfile
 from openbook_common.models import Badge
 from openbook_common.serializers_fields.user import \
-    IsFollowingField, IsConnectedField, CommunitiesInvitesField, CommunitiesMembershipsField, IsSubscribedField
+    IsFollowingField, IsConnectedField, CommunitiesInvitesField, CommunitiesMembershipsField, IsSubscribedToUserField
 from openbook_communities.models import CommunityMembership, CommunityInvite
 from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_communities.validators import community_name_exists, community_name_characters_validator
@@ -84,7 +84,7 @@ class LinkedUsersUserProfileSerializer(serializers.ModelSerializer):
 class LinkedUsersUserSerializer(serializers.ModelSerializer):
     profile = LinkedUsersUserProfileSerializer(many=False)
     is_following = IsFollowingField()
-    is_subscribed = IsSubscribedField()
+    is_subscribed = IsSubscribedToUserField()
     is_connected = IsConnectedField()
     communities_memberships = CommunitiesMembershipsField(
         community_membership_serializer=GetLinkedUsersUserCommunityMembershipSerializer)
