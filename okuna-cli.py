@@ -9,9 +9,10 @@ from shutil import copyfile
 import json
 import atexit
 import os
+
+import inquirer as inquirer
 import requests
 from halo import Halo
-from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
 handler = colorlog.StreamHandler()
@@ -46,7 +47,6 @@ def _copy_requirements_txt_to_docker_images_dir():
     copyfile(REQUIREMENTS_TXT_FILE, DOCKER_API_IMAGE_REQUIREMENTS_TXT_FILE)
     copyfile(REQUIREMENTS_TXT_FILE, DOCKER_WORKER_IMAGE_REQUIREMENTS_TXT_FILE)
     copyfile(REQUIREMENTS_TXT_FILE, DOCKER_SCHEDULER_IMAGE_REQUIREMENTS_TXT_FILE)
-    copyfile(REQUIREMENTS_TXT_FILE, DOCKER_API_TEST_IMAGE_REQUIREMENTS_TXT_FILE)
 
 
 def _check_okuna_api_is_running():
@@ -102,8 +102,15 @@ def _ensure_has_okuna_config_file():
 
 
 def _bootstrap():
-    logger.info('Okuna was not bootstrapped. Will bootstrap...')
-    exit(0)
+    questions = [
+        inquirer.Confirm('test_data', message='Would you like to bootstrap Okuna with some test data?', default=False),
+    ]
+
+    answers = inquirer.prompt(questions)
+
+    if answers['test_data']:
+        subprocess.run(["docker-compose", "-f", "docker-compose.yml", "exec", "webserver",
+                        "/bootstrap_development_data.sh"])
 
 
 def _ensure_was_bootstrapped():
@@ -111,8 +118,17 @@ def _ensure_was_bootstrapped():
     with open(OKUNA_CLI_CONFIG_FILE, 'r+') as okuna_cli_config_file:
         okuna_cli_config = json.load(okuna_cli_config_file)
         if okuna_cli_config['bootstrapped']:
+            logger.info('Okuna was bootstrapped.')
             return
+        logger.info('Okuna was not bootstrapped.')
         _bootstrap()
+        okuna_cli_config['bootstrapped'] = True
+        okuna_cli_config_file.seek(0)
+        json.dump(okuna_cli_config, okuna_cli_config_file, indent=4)
+        okuna_cli_config_file.truncate()
+
+        logger.info('Bootstrap finished.')
+
 
 
 @click.group()
@@ -164,7 +180,6 @@ class UpCommandFileChangedEventHandler(FileSystemEventHandler):
 def up():
     """Bring Okuna up"""
     _print_okuna_logo()
-    _copy_requirements_txt_to_docker_images_dir()
     logger.info('⬆️  Bringing Okuna up...')
 
     atexit.register(_down)
@@ -174,7 +189,9 @@ def up():
 
     logger.info('🥳  Okuna is live at http://%s:%s' % (OKUNA_API_ADDRESS, OKUNA_API_PORT))
 
-    subprocess.run(["docker-compose", "-f", "docker-compose.yml", "logs", "--follow", "--tail=0",  "webserver"])
+    _ensure_was_bootstrapped()
+
+    subprocess.run(["docker-compose", "-f", "docker-compose.yml", "logs", "--follow", "--tail=0", "webserver"])
 
     input()
 
@@ -183,6 +200,7 @@ def up():
 def build():
     """Rebuild Okuna services"""
     logger.info('👷‍♀️  Rebuilding Okuna services...')
+    _copy_requirements_txt_to_docker_images_dir()
     subprocess.run(["docker-compose", "build"])
 
 
@@ -196,7 +214,7 @@ def status():
 @click.command()
 def bootstrap():
     """Bootstrap Okuna"""
-    logger.info('BOOTSTRAP')
+    _bootstrap()
 
 
 cli.add_command(up)

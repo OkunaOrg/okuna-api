@@ -54,6 +54,7 @@ django-cursor-pagination = "*"
 shutilwhich = "*"
 halo = "*"
 watchdog = "*"
+inquirer = "*"
 
 [pipenv]
 allow_prereleases = true

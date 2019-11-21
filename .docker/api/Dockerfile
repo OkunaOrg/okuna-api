@@ -5,8 +5,12 @@ RUN apt-get -y update && apt-get -y upgrade &&  apt-get install -y ffmpeg
 # Copy any files over
 COPY entrypoint.sh /entrypoint.sh
 
+# Copy any files over
+COPY bootstrap_development_data.sh /bootstrap_development_data.sh
+
 # Change permissions
 RUN chmod +x /entrypoint.sh
+RUN chmod +x /bootstrap_development_data.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
 
