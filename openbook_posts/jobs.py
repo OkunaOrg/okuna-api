@@ -121,7 +121,7 @@ def curate_top_posts():
 @job('low')
 def clean_top_posts():
     """
-    Cleans up top posts, that no longer meet the criteria.
+    Cleans up_full top posts, that no longer meet the criteria.
     """
     Post = get_post_model()
     Community = get_community_model()

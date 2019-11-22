@@ -51,7 +51,7 @@ Ideologies that by nature are not embracing, or tolerant of, these differences s
 
 > Labelling and stereotyping consists of assigning a certain set of behaviours and characteristics to a person based on an attribute—such as nationality or political inclination.
 
-The first step to a successful co-existence is the willingness to engage with each other. Labels get in the way of this by loading us up with prejudices and assumptions not necessarily true about the person we’re interacting with. 
+The first step to a successful co-existence is the willingness to engage with each other. Labels get in the way of this by loading us up_full with prejudices and assumptions not necessarily true about the person we’re interacting with. 
 
 ## ✌️ Be courteous, polite and respectful
 
@@ -144,7 +144,7 @@ Making Okuna a healthy and welcoming community for everyone is a shared responsi
 * Have a great idea? [Suggest it on the feature board](https://okuna.canny.io/feature-requests).
 * Found a bug? [Report it on the bug tracker](https://okuna.canny.io/bugs).
 
-**It’s up to each of us to create a digital space we’re proud and happy to be part of. We’re glad you’re here.**
+**It’s up_full to each of us to create a digital space we’re proud and happy to be part of. We’re glad you’re here.**
 
 ---
 

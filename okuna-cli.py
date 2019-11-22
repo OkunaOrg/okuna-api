@@ -1,3 +1,4 @@
+import random
 import time
 
 import click
@@ -8,12 +9,10 @@ import os.path
 from shutil import copyfile
 import json
 import atexit
-import os
+import os, errno
 
-import inquirer as inquirer
 import requests
 from halo import Halo
-from watchdog.events import FileSystemEventHandler
 
 handler = colorlog.StreamHandler()
 handler.setFormatter(colorlog.ColoredFormatter(
@@ -29,18 +28,59 @@ current_dir = os.path.dirname(__file__)
 OKUNA_CLI_CONFIG_FILE = os.path.join(current_dir, '.okuna-cli.json')
 OKUNA_CLI_CONFIG_FILE_TEMPLATE = os.path.join(current_dir, 'templates/.okuna-cli.json')
 
+LOCAL_API_ENV_FILE = os.path.join(current_dir, '.env')
+LOCAL_API_ENV_FILE_TEMPLATE = os.path.join(current_dir, 'templates/.env')
+
+DOCKER_COMPOSE_ENV_FILE = os.path.join(current_dir, '.docker-compose.env')
+DOCKER_COMPOSE_ENV_FILE_TEMPLATE = os.path.join(current_dir, 'templates/.docker-compose.env')
+
 REQUIREMENTS_TXT_FILE = os.path.join(current_dir, 'requirements.txt')
 DOCKER_API_IMAGE_REQUIREMENTS_TXT_FILE = os.path.join(current_dir, '.docker', 'api', 'requirements.txt')
 DOCKER_WORKER_IMAGE_REQUIREMENTS_TXT_FILE = os.path.join(current_dir, '.docker', 'worker', 'requirements.txt')
 DOCKER_SCHEDULER_IMAGE_REQUIREMENTS_TXT_FILE = os.path.join(current_dir, '.docker', 'scheduler', 'requirements.txt')
 DOCKER_API_TEST_IMAGE_REQUIREMENTS_TXT_FILE = os.path.join(current_dir, '.docker', 'api-test', 'requirements.txt')
 
-OKUNA_API_ADDRESS = '127.0.0.1'
-OKUNA_API_PORT = 80
-
 CONTEXT_SETTINGS = dict(
     default_map={}
 )
+
+random_generator = random.SystemRandom()
+
+
+def _remove_file_silently(filename):
+    try:
+        os.remove(filename)
+    except OSError as e:  # this would be "except OSError, e:" before Python 2.6
+        if e.errno != errno.ENOENT:  # errno.ENOENT = no such file or directory
+            raise  # re-raise exception if a different error occurred
+
+
+def _get_random_string(length=12,
+                       allowed_chars='abcdefghijklmnopqrstuvwxyz'
+                                     'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'):
+    """
+    Return a securely generated random string.
+
+    The default length of 12 with the a-z, A-Z, 0-9 character set returns
+    a 71-bit value. log_2((26+26+10)^12) =~ 71 bits
+    """
+    return ''.join(random.choice(allowed_chars) for i in range(length))
+
+
+def _get_django_secret_key():
+    """
+    Return a 50 character random string usable as a SECRET_KEY setting value.
+    """
+    chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
+    return _get_random_string(50, chars)
+
+
+def _get_mysql_password():
+    return _get_random_string(64)
+
+
+def _get_redis_password():
+    return _get_random_string(128)
 
 
 def _copy_requirements_txt_to_docker_images_dir():
@@ -49,29 +89,44 @@ def _copy_requirements_txt_to_docker_images_dir():
     copyfile(REQUIREMENTS_TXT_FILE, DOCKER_SCHEDULER_IMAGE_REQUIREMENTS_TXT_FILE)
 
 
-def _check_okuna_api_is_running():
+def _check_okuna_api_is_running(address, port):
     # Create a TCP socket
     try:
-        response = requests.get('http://%s:%s/health/' % (OKUNA_API_ADDRESS, OKUNA_API_PORT))
+        response = requests.get('http://%s:%s/health/' % (address, port))
         response_status = response.status_code
         return response_status == 200
     except requests.ConnectionError as e:
         return False
 
 
-def _wait_until_api_is_running(message='Waiting for server to come up...', sleep=None):
+def _wait_until_api_is_running(address, port, message='Waiting for server to come up...', sleep=None):
     spinner = Halo(text=message, spinner='dots')
     spinner.start()
 
     if sleep:
         time.sleep(sleep)
 
-    is_running = _check_okuna_api_is_running()
+    is_running = _check_okuna_api_is_running(address=address, port=port)
 
     while not is_running:
-        is_running = _check_okuna_api_is_running()
+        is_running = _check_okuna_api_is_running(address=address, port=port)
 
     spinner.stop()
+
+
+def _clean():
+    """
+    Cleans everything that the okuna-cli has created. Docker volumes, config files, everything.
+    :return:
+    """
+    logger.info('🧹 Cleaning up database')
+    subprocess.run(["docker", "volume", "rm", "okuna-api_mariadb"])
+
+    logger.info('🧹 Cleaning up config files')
+    _remove_file_silently(LOCAL_API_ENV_FILE)
+    _remove_file_silently(DOCKER_COMPOSE_ENV_FILE)
+    _remove_file_silently(OKUNA_CLI_CONFIG_FILE)
+    logger.info('✅ Clean up done!')
 
 
 def _print_okuna_logo():
@@ -90,9 +145,66 @@ def _file_exists(filename):
     return os.path.exists(filename) and os.path.isfile(filename)
 
 
+def _replace_in_file(filename, texts):
+    with open(filename, 'r') as file:
+        filedata = file.read()
+
+    # Replace the target string
+    for key in texts:
+        value = texts[key]
+        filedata = filedata.replace(key, value)
+
+    # Write the file out again
+    with open(filename, 'w') as file:
+        file.write(filedata)
+
+
+def _ensure_has_local_api_environment_file(okuna_cli_config):
+    if _file_exists(LOCAL_API_ENV_FILE):
+        return
+    logger.info('Local API .env file does not exist. Creating %s' % LOCAL_API_ENV_FILE)
+
+    if not _file_exists(LOCAL_API_ENV_FILE_TEMPLATE):
+        raise Exception('Local API .env file template did not exist')
+
+    copyfile(LOCAL_API_ENV_FILE_TEMPLATE, LOCAL_API_ENV_FILE)
+
+    _replace_in_file(LOCAL_API_ENV_FILE, {
+        "{{DJANGO_SECRET_KEY}}": okuna_cli_config['djangoSecretKey'],
+        "{{SQL_PASSWORD}}": okuna_cli_config['sqlPassword'],
+        "{{REDIS_PASSWORD}}": okuna_cli_config['redisPassword'],
+    })
+
+
+def _ensure_has_docker_compose_api_environment_file(okuna_cli_config):
+    if _file_exists(DOCKER_COMPOSE_ENV_FILE):
+        return
+    logger.info('Docker compose env file does not exist. Creating %s' % DOCKER_COMPOSE_ENV_FILE)
+
+    if not _file_exists(DOCKER_COMPOSE_ENV_FILE_TEMPLATE):
+        raise Exception('Docker compose env file template did not exist')
+
+    copyfile(DOCKER_COMPOSE_ENV_FILE_TEMPLATE, DOCKER_COMPOSE_ENV_FILE)
+
+    _replace_in_file(DOCKER_COMPOSE_ENV_FILE, {
+        "{{DJANGO_SECRET_KEY}}": okuna_cli_config['djangoSecretKey'],
+        "{{SQL_PASSWORD}}": okuna_cli_config['sqlPassword'],
+        "{{REDIS_PASSWORD}}": okuna_cli_config['redisPassword'],
+    })
+
+
 def _ensure_has_okuna_config_file():
     if _file_exists(OKUNA_CLI_CONFIG_FILE):
         return
+
+    django_secret_key = _get_django_secret_key()
+    mysql_password = _get_mysql_password()
+    redis_password = _get_redis_password()
+
+    logger.info('Generated DJANGO_SECRET_KEY=%s' % django_secret_key)
+    logger.info('Generated SQL_PASSWORD=%s' % mysql_password)
+    logger.info('Generated REDIS_PASSWORD=%s' % redis_password)
+
     logger.info('Config file does not exist. Creating %s' % OKUNA_CLI_CONFIG_FILE)
 
     if not _file_exists(OKUNA_CLI_CONFIG_FILE_TEMPLATE):
@@ -100,35 +212,47 @@ def _ensure_has_okuna_config_file():
 
     copyfile(OKUNA_CLI_CONFIG_FILE_TEMPLATE, OKUNA_CLI_CONFIG_FILE)
 
+    _replace_in_file(OKUNA_CLI_CONFIG_FILE, {
+        "{{DJANGO_SECRET_KEY}}": django_secret_key,
+        "{{SQL_PASSWORD}}": mysql_password,
+        "{{REDIS_PASSWORD}}": redis_password,
+    })
 
-def _bootstrap():
-    questions = [
-        inquirer.Confirm('test_data', message='Would you like to bootstrap Okuna with some test data?', default=False),
-    ]
 
-    answers = inquirer.prompt(questions)
+def _bootstrap(is_local_api):
+    logger.info('🚀 Bootstrapping Okuna with some data')
 
-    if answers['test_data']:
-        subprocess.run(["docker-compose", "-f", "docker-compose.yml", "exec", "webserver",
+    if is_local_api:
+        subprocess.run(["./utils/scripts/bootstrap_development_data.sh"])
+    else:
+        subprocess.run(["docker-compose", "-f", "docker-compose-full.yml", "exec", "webserver",
                         "/bootstrap_development_data.sh"])
 
 
-def _ensure_was_bootstrapped():
+def _ensure_has_required_cli_config_files():
     _ensure_has_okuna_config_file()
     with open(OKUNA_CLI_CONFIG_FILE, 'r+') as okuna_cli_config_file:
         okuna_cli_config = json.load(okuna_cli_config_file)
+        _ensure_has_docker_compose_api_environment_file(okuna_cli_config=okuna_cli_config)
+        _ensure_has_local_api_environment_file(okuna_cli_config=okuna_cli_config)
+
+
+def _ensure_was_bootstrapped(is_local_api):
+    with open(OKUNA_CLI_CONFIG_FILE, 'r+') as okuna_cli_config_file:
+        okuna_cli_config = json.load(okuna_cli_config_file)
         if okuna_cli_config['bootstrapped']:
-            logger.info('Okuna was bootstrapped.')
             return
+
         logger.info('Okuna was not bootstrapped.')
-        _bootstrap()
+
+        _bootstrap(is_local_api=is_local_api)
+
         okuna_cli_config['bootstrapped'] = True
         okuna_cli_config_file.seek(0)
         json.dump(okuna_cli_config, okuna_cli_config_file, indent=4)
         okuna_cli_config_file.truncate()
 
-        logger.info('Bootstrap finished.')
-
+        logger.info('Okuna was bootstrapped.')
 
 
 @click.group()
@@ -136,72 +260,79 @@ def cli():
     pass
 
 
-def _down():
+def _down_full():
     """Bring Okuna down"""
-    logger.error('⬇️  Bringing Okuna down...')
-    subprocess.run(["docker-compose", "-f", "docker-compose.yml", "down"])
+    logger.error('⬇️  Bringing the whole of Okuna down...')
+    subprocess.run(["docker-compose", "-f", "docker-compose-full.yml", "down"])
 
 
-class UpCommandFileChangedEventHandler(FileSystemEventHandler):
-    file_cache = {}
-    handling_change = False
-
-    def on_moved(self, event):
-        super(UpCommandFileChangedEventHandler, self).on_moved(event)
-        self._handle_change(event)
-
-    def on_created(self, event):
-        super(UpCommandFileChangedEventHandler, self).on_created(event)
-        self._handle_change(event)
-
-    def on_deleted(self, event):
-        super(UpCommandFileChangedEventHandler, self).on_deleted(event)
-        self._handle_change(event)
-
-    def on_modified(self, event):
-        super(UpCommandFileChangedEventHandler, self).on_modified(event)
-        self._handle_change(event)
-
-    def _handle_change(self, event):
-        seconds = int(time.time())
-        key = (seconds, event.src_path)
-        if key in self.file_cache or self.handling_change:
-            return
-        self.file_cache[key] = True
-        self.handling_change = True
-
-        if event.src_path.endswith('.py'):
-            # Let the manage.py watcher pick up the change with a 1 sec sleep
-            _wait_until_api_is_running(sleep=1, message='Detected file changes, waiting for server to come up...')
-        self.handling_change = False
+def _down_services_only():
+    """Bring Okuna down"""
+    logger.error('⬇️  Bringing the Okuna services down...')
+    subprocess.run(["docker-compose", "-f", "docker-compose-services-only.yml", "down"])
 
 
 @click.command()
-def up():
-    """Bring Okuna up"""
+def up_full():
+    """Bring the whole of Okuna up"""
     _print_okuna_logo()
-    logger.info('⬆️  Bringing Okuna up...')
+    _ensure_has_required_cli_config_files()
 
-    atexit.register(_down)
-    subprocess.run(["docker-compose", "-f", "docker-compose.yml", "up", "-d"])
+    logger.info('⬆️  Bringing the whole of Okuna up...')
 
-    _wait_until_api_is_running()
+    atexit.register(_down_full)
+    subprocess.run(["docker-compose", "-f", "docker-compose-full.yml", "up", "-d"])
 
-    logger.info('🥳  Okuna is live at http://%s:%s' % (OKUNA_API_ADDRESS, OKUNA_API_PORT))
+    okuna_api_address = '127.0.0.1'
+    okuna_api_port = 80
 
-    _ensure_was_bootstrapped()
+    _wait_until_api_is_running(address=okuna_api_address, port=okuna_api_port)
 
-    subprocess.run(["docker-compose", "-f", "docker-compose.yml", "logs", "--follow", "--tail=0", "webserver"])
+    _ensure_was_bootstrapped(is_local_api=False)
+
+    logger.info('🥳  Okuna is live at http://%s:%s' % (okuna_api_address, okuna_api_port))
+
+    subprocess.run(["docker-compose", "-f", "docker-compose-full.yml", "logs", "--follow", "--tail=0", "webserver"])
 
     input()
 
 
 @click.command()
-def build():
+def up_services_only():
+    """Bring only the Okuna services up. API is up to you."""
+    _print_okuna_logo()
+    _ensure_has_required_cli_config_files()
+
+    logger.info('⬆️  Bringing only the Okuna services up...')
+
+    atexit.register(_down_services_only)
+    subprocess.run(["docker-compose", "-f", "docker-compose-services-only.yml", "up", "-d"])
+
+    logger.info('🥳  Okuna services are up')
+
+    _ensure_was_bootstrapped(is_local_api=True)
+
+    subprocess.run(["docker-compose", "-f", "docker-compose-services-only.yml", "logs", "--follow", "--tail=0"])
+
+    input()
+
+
+@click.command()
+def build_full():
     """Rebuild Okuna services"""
-    logger.info('👷‍♀️  Rebuilding Okuna services...')
+    _ensure_has_required_cli_config_files()
+    logger.info('👷‍♀️  Rebuilding Okuna full services...')
     _copy_requirements_txt_to_docker_images_dir()
-    subprocess.run(["docker-compose", "build"])
+    subprocess.run(["docker-compose", "-f", "docker-compose-full.yml", "build"])
+
+
+@click.command()
+def build_services_only():
+    """Rebuild Okuna services"""
+    _ensure_has_required_cli_config_files()
+    logger.info('👷‍♀️  Rebuilding only Okuna services...')
+    _copy_requirements_txt_to_docker_images_dir()
+    subprocess.run(["docker-compose", "-f", "docker-compose-services-only.yml", "build"])
 
 
 @click.command()
@@ -212,14 +343,16 @@ def status():
 
 
 @click.command()
-def bootstrap():
+def clean():
     """Bootstrap Okuna"""
-    _bootstrap()
+    _clean()
 
 
-cli.add_command(up)
-cli.add_command(build)
-cli.add_command(bootstrap)
+cli.add_command(up_full)
+cli.add_command(up_services_only)
+cli.add_command(build_full)
+cli.add_command(build_services_only)
+cli.add_command(clean)
 cli.add_command(status)
 
 if __name__ == '__main__':

@@ -1,27 +1,6 @@
 version: '3'
 
 services:
-  webserver:
-    container_name: okuna-api
-    build:
-      dockerfile: Dockerfile
-      context: ./.docker/api
-    privileged: true
-    extra_hosts:
-      - db.okuna:172.16.16.4
-      - redis.okuna:172.16.16.5
-    volumes:
-     - ./:/opt/okuna-api
-     - ./.docker-cache/pip:/root/.cache/pip
-    ports:
-      - 80:80
-    working_dir: /opt/okuna-api
-    networks:
-      okuna:
-        ipv4_address: 172.16.16.1
-    depends_on:
-      - db
-      - redis
   worker:
     container_name: okuna-worker
     build:
@@ -39,7 +18,9 @@ services:
       okuna:
         ipv4_address: 172.16.16.2
     depends_on:
-      - webserver
+      - db
+    env_file:
+      - .docker-compose.env
   scheduler:
     container_name: okuna-scheduler
     build:
@@ -57,18 +38,17 @@ services:
       okuna:
         ipv4_address: 172.16.16.3
     depends_on:
-      - webserver
+      - db
+    env_file:
+      - .docker-compose.env
   db:
     image: mariadb:10.4.5
     hostname: db.okuna
     volumes:
      - mariadb:/var/lib/mysql
     ports:
-      - 3306
+      - 3306:3306
     privileged: false
-    environment:
-      - MYSQL_ROOT_PASSWORD=okuna
-      - MYSQL_DATABASE=okuna
     networks:
       okuna:
         ipv4_address: 172.16.16.4
@@ -77,8 +57,8 @@ services:
     image: redis:latest
     privileged: false
     ports:
-      - 6379
-    command: redis-server --appendonly yes
+      - 6379:6379
+    command: redis-server --appendonly yes --requirepass "$REDIS_PASSWORD"
     networks:
       okuna:
         ipv4_address: 172.16.16.5

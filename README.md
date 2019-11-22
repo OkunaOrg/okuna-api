@@ -133,7 +133,7 @@ python manage.py rqworker default
 
 #### Spawn the rq-scheduler
 
-We use rq-schedulers to run one time or repetitive tasks like cleaning up failed to upload posts.
+We use rq-schedulers to run one time or repetitive tasks like cleaning up_full failed to upload posts.
 
 ```bash
 python manage.py rqscheduler --queue=low
@@ -148,13 +148,13 @@ The available jobs are
 
 ##### openbook_posts.jobs.flush_draft_posts
 
-Cleans up all draft posts which have not being modified for a day.
+Cleans up_full all draft posts which have not being modified for a day.
 
 Should be run every hour or so.
 
 ##### openbook_posts.jobs.curate_top_posts
 
-Curates the top posts, which end up in the explore tab.
+Curates the top posts, which end up_full in the explore tab.
 
 Should be run every 5 minutes or so.
 
@@ -326,7 +326,7 @@ usage: docker-compose build
 
 ### Run the container
 ```bash
-usage: docker-compose up (-d in background)
+usage: docker-compose up_full (-d in background)
 ```
 
 ### Visit the static webserver IP

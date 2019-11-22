@@ -14,7 +14,7 @@ If you're on an Android device:
 You can download and install the Okuna App directly using this link: https://play.google.com/apps/testing/social.openbook.app
 
 Step 2.
-Once the app is installed, copy this link and paste it in the sign up form to setup up your account:
+Once the app is installed, copy this link and paste it in the sign up_full form to setup up_full your account:
 {{ invite_link }}
 
 
