@@ -1,7 +1,4 @@
-import os
-import shutil
 import tempfile
-import uuid
 
 from PIL import Image
 from faker import Faker
@@ -181,14 +178,17 @@ def make_community_invites_enabled():
     return fake.boolean()
 
 
-def make_community(creator=None, type=Community.COMMUNITY_TYPE_PUBLIC, name=None):
+def make_community(creator=None, type=Community.COMMUNITY_TYPE_PUBLIC, name=None, title=None):
     if not creator:
         creator = make_user()
 
     if not name:
         name = make_community_name()
 
-    community = creator.create_community(name=name, title=make_community_title(), type=type,
+    if not title:
+        title = make_community_title()
+
+    community = creator.create_community(name=name, title=title, type=type,
                                          color=fake.hex_color(), description=make_community_description(),
                                          rules=make_community_rules(), user_adjective=make_community_user_adjective(),
                                          users_adjective=make_community_users_adjective(),

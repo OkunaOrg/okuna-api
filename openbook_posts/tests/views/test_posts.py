@@ -596,7 +596,7 @@ class PostsAPITests(OpenbookAPITestCase):
 
                 self.assertTrue(created_post.status, Post.STATUS_PROCESSING)
 
-                get_worker(worker_class=SimpleWorker).work(burst=True)
+                get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
                 created_post.refresh_from_db()
 
@@ -699,7 +699,7 @@ class PostsAPITests(OpenbookAPITestCase):
 
             self.assertEqual(created_post.text, post_text)
 
-            get_worker(worker_class=SimpleWorker).work(burst=True)
+            get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
             created_post.refresh_from_db()
 
@@ -3597,6 +3597,43 @@ class TopPostsAPITests(OpenbookAPITestCase):
         top_posts = TopPost.objects.all()
         self.assertEqual(1, len(top_posts))
         self.assertTrue(TopPost.objects.filter(post__id=community_post.pk).exists())
+
+    def test_excludes_joined_communities_if_true(self):
+        """
+        should display posts only from communities not joined by user if exclude_joined_communities is true
+        """
+        user = make_user()
+        community_creator = make_user()
+        user_community = make_community(creator=user)
+        community = make_community(creator=community_creator)
+        # clear all top posts
+        TopPost.objects.all().delete()
+
+        user_community_post = user.create_community_post(community_name=user_community.name, text=make_fake_post_text())
+        community_post = community_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        # comment on both posts to qualify for top
+        user.comment_post(user_community_post, text=make_fake_post_comment_text())
+        community_creator.comment_post(community_post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {'exclude_joined_communities': True}, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+        response_post = response_posts[0]
+        self.assertEqual(response_post['post']['id'], community_post.pk)
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(2, len(top_posts))
 
     def test_does_not_display_excluded_community_posts(self):
         """

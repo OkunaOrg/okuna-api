@@ -4,13 +4,15 @@ from rest_framework import serializers
 from openbook_auth.models import User, UserProfile
 from openbook_categories.models import Category
 from openbook_categories.validators import category_name_exists
+from openbook_common.models import Badge
 from openbook_common.serializers_fields.community import IsCommunityReportedField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
 from openbook_common.serializers_fields.user import IsFollowingField
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import IsInvitedField, \
-    IsCreatorField, RulesField, ModeratorsField, CommunityMembershipsField, IsFavoriteField, AdministratorsField
+    IsCreatorField, RulesField, ModeratorsField, CommunityMembershipsField, IsFavoriteField, AdministratorsField, \
+    IsSubscribedField
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 
 
@@ -98,12 +100,24 @@ class GetCommunityCommunityCategorySerializer(serializers.ModelSerializer):
         )
 
 
+class GetCommunityStaffUserBadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Badge
+        fields = (
+            'keyword',
+            'keyword_description'
+        )
+
+
 class GetCommunityModeratorProfileSerializer(serializers.ModelSerializer):
+    badges = GetCommunityStaffUserBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
             'avatar',
-            'name'
+            'name',
+            'badges'
         )
 
 
@@ -117,7 +131,7 @@ class GetCommunityStaffUserSerializer(serializers.ModelSerializer):
             'id',
             'username',
             'profile',
-            'is_following'
+            'is_following',
         )
 
 
@@ -136,6 +150,7 @@ class GetCommunityCommunityMembershipSerializer(serializers.ModelSerializer):
 class GetCommunityCommunitySerializer(serializers.ModelSerializer):
     categories = GetCommunityCommunityCategorySerializer(many=True)
     is_invited = IsInvitedField()
+    is_subscribed = IsSubscribedField()
     is_creator = IsCreatorField()
     is_favorite = IsFavoriteField()
     is_reported = IsCommunityReportedField()
@@ -164,6 +179,7 @@ class GetCommunityCommunitySerializer(serializers.ModelSerializer):
             'type',
             'invites_enabled',
             'is_invited',
+            'is_subscribed',
             'is_creator',
             'is_favorite',
             'is_reported',
@@ -199,4 +215,21 @@ class FavoriteCommunityCommunitySerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'is_favorite',
+        )
+
+
+class SubscribeCommunitySerializer(serializers.Serializer):
+    community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
+                                           allow_blank=False,
+                                           validators=[community_name_characters_validator, community_name_exists])
+
+
+class SubscribeCommunityCommunitySerializer(serializers.ModelSerializer):
+    is_subscribed = IsSubscribedField()
+
+    class Meta:
+        model = Community
+        fields = (
+            'id',
+            'is_subscribed',
         )

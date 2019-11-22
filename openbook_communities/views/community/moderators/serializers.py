@@ -6,6 +6,7 @@ from openbook_auth.validators import username_characters_validator, user_usernam
 from openbook_common.serializers_fields.user import IsFollowingField
 from openbook_communities.serializers_fields import UserCommunitiesMembershipsField
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
+from openbook_communities.views.community.banned_users.serializers import CommunityBadgeSerializer
 
 
 class AddCommunityModeratorSerializer(serializers.Serializer):
@@ -37,11 +38,14 @@ class GetCommunityModeratorsSerializer(serializers.Serializer):
 
 
 class GetCommunityModeratorsUserSerializerUserProfileSerializer(serializers.ModelSerializer):
+    badges = CommunityBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
             'avatar',
-            'name'
+            'name',
+            'badges'
         )
 
 

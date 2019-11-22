@@ -316,7 +316,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = user.create_public_post(image=file)
 
-        get_worker(worker_class=SimpleWorker).work(burst=True)
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         url = self._get_url(post=post)
 
@@ -346,7 +346,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = user.create_public_post(video=file)
 
-        get_worker(worker_class=SimpleWorker).work(burst=True)
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         url = self._get_url(post=post)
 
@@ -379,7 +379,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = foreign_user.create_public_post(image=file)
 
-        get_worker(worker_class=SimpleWorker).work(burst=True)
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         url = self._get_url(post=post)
 
@@ -410,7 +410,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = foreign_user.create_public_post(video=file)
 
-        get_worker(worker_class=SimpleWorker).work(burst=True)
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         url = self._get_url(post=post)
 
@@ -443,7 +443,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = following_user.create_public_post(image=file)
 
-        get_worker(worker_class=SimpleWorker).work(burst=True)
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         url = self._get_url(post=post)
 
@@ -476,7 +476,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = following_user.create_public_post(video=file)
 
-        get_worker(worker_class=SimpleWorker).work(burst=True)
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         url = self._get_url(post=post)
 
@@ -509,7 +509,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = follower_user.create_public_post(image=file)
 
-        get_worker(worker_class=SimpleWorker).work(burst=True)
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         url = self._get_url(post=post)
 
@@ -542,7 +542,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = follower_user.create_public_post(video=file)
 
-        get_worker(worker_class=SimpleWorker).work(burst=True)
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         url = self._get_url(post=post)
 
@@ -577,7 +577,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = connected_user.create_encircled_post(image=file, circles_ids=[circle.pk])
 
-        get_worker(worker_class=SimpleWorker).work(burst=True)
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         url = self._get_url(post=post)
 
@@ -613,7 +613,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = connected_user.create_encircled_post(video=file, circles_ids=[circle.pk])
 
-        get_worker(worker_class=SimpleWorker).work(burst=True)
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         url = self._get_url(post=post)
 
@@ -647,7 +647,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
             circle = make_circle(creator=pending_connection_user_user)
             post = pending_connection_user_user.create_encircled_post(image=file, circles_ids=[circle.pk])
 
-        get_worker(worker_class=SimpleWorker).work(burst=True)
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         url = self._get_url(post=post)
 
@@ -673,7 +673,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
             circle = make_circle(creator=pending_connection_user_user)
             post = pending_connection_user_user.create_encircled_post(video=file, circles_ids=[circle.pk])
 
-        get_worker(worker_class=SimpleWorker).work(burst=True)
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         url = self._get_url(post=post)
 
@@ -699,7 +699,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = community_member.create_community_post(image=file, community_name=public_community.name)
 
-        get_worker(worker_class=SimpleWorker).work(burst=True)
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         url = self._get_url(post=post)
 
@@ -733,7 +733,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = community_member.create_community_post(video=file, community_name=public_community.name)
 
-        get_worker(worker_class=SimpleWorker).work(burst=True)
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         url = self._get_url(post=post)
 
@@ -769,7 +769,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = community_creator.create_community_post(image=file, community_name=private_community.name)
 
-        get_worker(worker_class=SimpleWorker).work(burst=True)
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         url = self._get_url(post=post)
 
@@ -805,7 +805,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = community_creator.create_community_post(video=file, community_name=private_community.name)
 
-        get_worker(worker_class=SimpleWorker).work(burst=True)
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         url = self._get_url(post=post)
 
@@ -837,7 +837,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = community_creator.create_community_post(image=file, community_name=private_community.name)
 
-        get_worker(worker_class=SimpleWorker).work(burst=True)
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         url = self._get_url(post=post)
 
@@ -861,7 +861,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = community_creator.create_community_post(video=file, community_name=private_community.name)
 
-        get_worker(worker_class=SimpleWorker).work(burst=True)
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         url = self._get_url(post=post)
 
