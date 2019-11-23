@@ -1,2 +1,2 @@
 [bandit]
-exclude: ./openbook_circles/tests,./openbook_connections/tests,./openbook_posts/tests,./openbook_follows/tests,./openbook_auth/tests,./openbook_common/tests,./openbook_lists/tests,./venv,./openbook_communities/tests,./openbook_moderation/tests,./video_encoding
+exclude: ./openbook_circles/tests,./openbook_connections/tests,./openbook_posts/tests,./openbook_follows/tests,./openbook_auth/tests,./openbook_common/tests,./openbook_lists/tests,./venv,./openbook_communities/tests,./openbook_moderation/tests,./video_encoding,./okunna-cli.py
