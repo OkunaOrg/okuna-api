@@ -451,13 +451,13 @@ The available jobs are
 
 ### openbook_posts.jobs.flush_draft_posts
 
-Cleans up_full all draft posts which have not being modified for a day.
+Cleans up all draft posts which have not being modified for a day.
 
 Should be run every hour or so.
 
 ### openbook_posts.jobs.curate_top_posts
 
-Curates the top posts, which end up_full in the explore tab.
+Curates the top posts, which end up in the explore tab.
 
 Should be run every 5 minutes or so.
 
