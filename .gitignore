@@ -2,7 +2,7 @@
 .DS_Store
 .idea
 *.pyc
-.env
+/.env
 reports
 .coverage
 coverage.xml
@@ -18,5 +18,5 @@ docker-compose.override.yml
 /supervisord.pid
 /supervisord.log
 /.docker-cache
-.okuna.json
 /.okuna-cli.json
+/.docker-compose.env

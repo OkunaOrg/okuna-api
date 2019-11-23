@@ -14,7 +14,7 @@ python manage.py migrate
 echo "👩‍💻 Loading development data"
 python manage.py loaddata utils/development_data/fixtures.json
 
-echo "🖼 Copying development media"
+echo "🖼  Copying development media"
 cp -a utils/development_data/media .
 
 echo "✅ All done"
