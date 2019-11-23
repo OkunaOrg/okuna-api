@@ -47,7 +47,7 @@ services:
     volumes:
      - mariadb:/var/lib/mysql
     ports:
-      - 3306:3306
+      - 3307:3306
     privileged: false
     networks:
       okuna:
@@ -57,7 +57,7 @@ services:
     image: redis:latest
     privileged: false
     ports:
-      - 6379:6379
+      - 6380:6379
     command: redis-server --appendonly yes --requirepass "$REDIS_PASSWORD"
     networks:
       okuna:

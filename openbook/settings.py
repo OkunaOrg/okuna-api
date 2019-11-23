@@ -287,6 +287,7 @@ else:
     RDS_PORT = os.environ.get('RDS_PORT')
     RDS_HOSTNAME = os.environ.get('RDS_HOSTNAME')
 
+
     RDS_HOSTNAME_WRITER = os.environ.get('RDS_HOSTNAME_WRITER', RDS_HOSTNAME)
     RDS_HOSTNAME_READER = os.environ.get('RDS_HOSTNAME_READER', RDS_HOSTNAME_WRITER)
 

@@ -1,6 +1,5 @@
 import random
 import time
-
 import click
 import subprocess
 import colorlog
@@ -260,13 +259,13 @@ def cli():
     pass
 
 
-def _down_full():
+def down_full():
     """Bring Okuna down"""
     logger.error('⬇️  Bringing the whole of Okuna down...')
     subprocess.run(["docker-compose", "-f", "docker-compose-full.yml", "down"])
 
 
-def _down_services_only():
+def down_services_only():
     """Bring Okuna down"""
     logger.error('⬇️  Bringing the Okuna services down...')
     subprocess.run(["docker-compose", "-f", "docker-compose-services-only.yml", "down"])
@@ -280,7 +279,7 @@ def up_full():
 
     logger.info('⬆️  Bringing the whole of Okuna up...')
 
-    atexit.register(_down_full)
+    atexit.register(down_full)
     subprocess.run(["docker-compose", "-f", "docker-compose-full.yml", "up", "-d"])
 
     okuna_api_address = '127.0.0.1'
@@ -290,7 +289,7 @@ def up_full():
 
     _ensure_was_bootstrapped(is_local_api=False)
 
-    logger.info('🥳  Okuna is live at http://%s:%s' % (okuna_api_address, okuna_api_port))
+    logger.info('🥳  Okuna is live at http://%s:%s.' % (okuna_api_address, okuna_api_port))
 
     subprocess.run(["docker-compose", "-f", "docker-compose-full.yml", "logs", "--follow", "--tail=0", "webserver"])
 
@@ -305,12 +304,12 @@ def up_services_only():
 
     logger.info('⬆️  Bringing only the Okuna services up...')
 
-    atexit.register(_down_services_only)
+    atexit.register(down_services_only)
     subprocess.run(["docker-compose", "-f", "docker-compose-services-only.yml", "up", "-d"])
 
-    logger.info('🥳  Okuna services are up')
-
     _ensure_was_bootstrapped(is_local_api=True)
+
+    logger.info('🥳  Okuna services are up')
 
     subprocess.run(["docker-compose", "-f", "docker-compose-services-only.yml", "logs", "--follow", "--tail=0"])
 
@@ -349,7 +348,9 @@ def clean():
 
 
 cli.add_command(up_full)
+cli.add_command(down_full)
 cli.add_command(up_services_only)
+cli.add_command(down_services_only)
 cli.add_command(build_full)
 cli.add_command(build_services_only)
 cli.add_command(clean)
