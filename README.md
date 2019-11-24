@@ -202,6 +202,12 @@ Install the Okuna python packages
 pip install -r requirements.txt
 ```
 
+Make the `bootstrap_development_data.sh` executable
+
+```bash
+chmod ./utils/scripts/bootstrap_development_data.sh +x
+```
+
 #### Available commands
 
 ##### up-services-only

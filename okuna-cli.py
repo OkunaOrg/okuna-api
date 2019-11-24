@@ -120,6 +120,7 @@ def _clean():
     """
     logger.info('🧹 Cleaning up database')
     subprocess.run(["docker", "volume", "rm", "okuna-api_mariadb"])
+    subprocess.run(["docker", "volume", "rm", "okuna-api_redisdb"])
 
     logger.info('🧹 Cleaning up config files')
     _remove_file_silently(LOCAL_API_ENV_FILE)
@@ -259,16 +260,26 @@ def cli():
     pass
 
 
-def down_full():
+def _down_full():
     """Bring Okuna down"""
     logger.error('⬇️  Bringing the whole of Okuna down...')
     subprocess.run(["docker-compose", "-f", "docker-compose-full.yml", "down"])
 
 
-def down_services_only():
+def _down_services_only():
     """Bring Okuna down"""
     logger.error('⬇️  Bringing the Okuna services down...')
     subprocess.run(["docker-compose", "-f", "docker-compose-services-only.yml", "down"])
+
+
+@click.command()
+def down_services_only():
+    _down_services_only()
+
+
+@click.command()
+def down_full():
+    _down_full()
 
 
 @click.command()
@@ -279,8 +290,8 @@ def up_full():
 
     logger.info('⬆️  Bringing the whole of Okuna up...')
 
-    atexit.register(down_full)
-    subprocess.run(["docker-compose", "-f", "docker-compose-full.yml", "up", "-d"])
+    atexit.register(_down_full)
+    subprocess.run(["docker-compose", "-f", "docker-compose-full.yml", "up", "-d","-V"])
 
     okuna_api_address = '127.0.0.1'
     okuna_api_port = 80
@@ -304,14 +315,14 @@ def up_services_only():
 
     logger.info('⬆️  Bringing only the Okuna services up...')
 
-    atexit.register(down_services_only)
-    subprocess.run(["docker-compose", "-f", "docker-compose-services-only.yml", "up", "-d"])
+    atexit.register(_down_services_only)
+    subprocess.run(["docker-compose", "-f", "docker-compose-services-only.yml", "up", "-d", "-V"])
 
     _ensure_was_bootstrapped(is_local_api=True)
 
     logger.info('🥳  Okuna services are up')
 
-    subprocess.run(["docker-compose", "-f", "docker-compose-services-only.yml", "logs", "--follow", "--tail=0"])
+    subprocess.run(["docker-compose", "-f", "docker-compose-services-only.yml", "logs", "--follow"])
 
     input()
 
