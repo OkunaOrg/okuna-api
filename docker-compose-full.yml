@@ -11,8 +11,8 @@ services:
       - db.okuna:172.16.16.4
       - redis.okuna:172.16.16.5
     volumes:
-     - ./:/opt/okuna-api
-     - ./.docker-cache/pip:/root/.cache/pip
+      - ./:/opt/okuna-api
+      - ./.docker-cache/pip:/root/.cache/pip
     ports:
       - 80:80
     working_dir: /opt/okuna-api
@@ -68,7 +68,7 @@ services:
     image: mariadb:10.4.5
     hostname: db.okuna
     volumes:
-     - mariadb:/var/lib/mysql
+      - mariadb:/var/lib/mysql
     ports:
       - 3306
     privileged: false
@@ -79,19 +79,21 @@ services:
     env_file:
       - .docker-compose.env
   redis:
-    image: redis:latest
+    image: bitnami/redis:latest
     privileged: false
     ports:
       - 6379
-    command: redis-server --appendonly yes --requirepass "$REDIS_PASSWORD"
     networks:
       okuna:
         ipv4_address: 172.16.16.5
     env_file:
-      - ./.docker-compose.env
+      - .docker-compose.env
+    volumes:
+      - redisdb:/bitnami/redis/data
 
 volumes:
   mariadb:
+  redisdb:
 
 networks:
   okuna:

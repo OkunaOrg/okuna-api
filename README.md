@@ -30,6 +30,7 @@ The API server for Okuna.
       - [up-services-only](#up-services-only)
       - [down-services-only](#down-services-only)
     + [Running the Okuna API server locally](#running-the-okuna-api-server-locally)
+  * [Available test data](#available-test-data)
   * [Other Okuna CLI commands](#other-okuna-cli-commands)
     + [clean](#clean)
   * [Okuna CLI behind the scenes](#okuna-cli-behind-the-scenes)
@@ -202,6 +203,12 @@ Install the Okuna python packages
 pip install -r requirements.txt
 ```
 
+Make the `bootstrap_development_data.sh` executable
+
+```bash
+chmod ./utils/scripts/bootstrap_development_data.sh +x
+```
+
 #### Available commands
 
 ##### up-services-only
@@ -244,6 +251,28 @@ python manage.py runserver 0.0.0.0:8000
 ```
 
 🥳 Congrats, you should now have both the Okuna services and the Okuna API running in sync.
+
+### Available test data
+
+Within the provisioned Okuna development instance, you will find some test accounts and respective posts/communities.
+
+The credentials for these accounts are the following.
+
+
+````bash
+username:martha
+password:changeme123!
+````
+
+````bash
+username:mike
+password:changeme123!
+````
+
+````bash
+username:miguel
+password:changeme123!
+````
 
 ### Other Okuna CLI commands
 
