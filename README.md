@@ -125,16 +125,16 @@ git clone git@github.com:OkunaOrg/okuna-api.git && cd okuna-api
 
 ### Meet the Okuna CLI
 
-The Okuna CLI built to run development instance of Okuna loaded with some test data, with a single command.
+The Okuna CLI is built to run a development instance of Okuna loaded with some test data, with a single command.
 
 ### Okuna CLI Operational Modes
 
-You can use the CLI on two modes.
+You can use the CLI in two modes.
 
-1. [Full mode](#full-mode) - **Best for doing Okuna mobile/web app development**
-2. [Services-only mode](#services-only-mode) - **Best for doing Okuna API development**
+1. [Full mode](#full-mode) - **Best for Okuna mobile/web app development**
+2. [Services-only mode](#services-only-mode) - **Best for Okuna API development**
 
-Depending on the kind of development you would like to do, follow the instructions below your chosen mode. 
+Depending on the kind of development you would like to do, follow the instructions below for your chosen mode. 
 
 ### Full mode
 
@@ -185,7 +185,7 @@ python okuna-cli.py down-full
 
 **Best for API development**
 
-The Okuna services are an SQL server, a Redis server, a job scheduler server and a job worker server.
+The Okuna services are a SQL server, a Redis server, a job scheduler server and a job worker server.
 
 This mode brings these services up but **not** the Okuna API itself, 
 you are to run the API locally instead for a better development experience.
