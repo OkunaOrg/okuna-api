@@ -3,6 +3,7 @@
 .idea
 *.pyc
 /.env
+/.old.env
 reports
 .coverage
 coverage.xml
