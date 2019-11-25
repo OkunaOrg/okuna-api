@@ -287,11 +287,12 @@ def up_full():
     """Bring the whole of Okuna up"""
     _print_okuna_logo()
     _ensure_has_required_cli_config_files()
+    _copy_requirements_txt_to_docker_images_dir()
 
     logger.info('⬆️  Bringing the whole of Okuna up...')
 
     atexit.register(_down_full)
-    subprocess.run(["docker-compose", "-f", "docker-compose-full.yml", "up", "-d","-V"])
+    subprocess.run(["docker-compose", "-f", "docker-compose-full.yml", "up", "-d", "-V"])
 
     okuna_api_address = '127.0.0.1'
     okuna_api_port = 80
@@ -312,6 +313,7 @@ def up_services_only():
     """Bring only the Okuna services up. API is up to you."""
     _print_okuna_logo()
     _ensure_has_required_cli_config_files()
+    _copy_requirements_txt_to_docker_images_dir()
 
     logger.info('⬆️  Bringing only the Okuna services up...')
 
