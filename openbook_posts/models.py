@@ -39,7 +39,7 @@ from openbook_common.utils.model_loaders import get_emoji_model, \
     get_post_user_mention_notification_model, get_post_comment_user_mention_notification_model, get_user_model, \
     get_post_user_mention_model, get_post_comment_user_mention_model, get_community_notification_subscription_model, \
     get_community_new_post_notification_model, get_user_new_post_notification_model, \
-    get_user_notification_subscription_model
+    get_user_notifications_subscription_model
 from imagekit.models import ProcessedImageField
 
 from openbook_moderation.models import ModeratedObject
@@ -257,7 +257,7 @@ class Post(models.Model):
 
     @classmethod
     def get_user_notification_target_subscriptions(cls, post):
-        UserNotificationSubscription = get_user_notification_subscription_model()
+        UserNotificationsSubscription = get_user_notifications_subscription_model()
 
         user_subscriptions_query = Q(user=post.creator)
 
@@ -273,7 +273,7 @@ class Post(models.Model):
         user_subscriptions_query.add(exclude_self_query, Q.AND)
 
         # Subscriptions after excluding blocked users
-        target_subscriptions = UserNotificationSubscription.objects.\
+        target_subscriptions = UserNotificationsSubscription.objects.\
             filter(user_subscriptions_query).\
             exclude(exclude_blocked_users_query)
 
@@ -599,8 +599,8 @@ class Post(models.Model):
             for subscription in user_subscriptions:
                 UserNewPostNotification.create_user_new_post_notification(
                     post_id=self.pk, owner_id=subscription.subscriber.pk,
-                    user_notification_subscription_id=subscription.pk)
-                send_user_new_post_push_notification(user_notification_subscription=subscription, post=self)
+                    user_notifications_subscription_id=subscription.pk)
+                send_user_new_post_push_notification(user_notifications_subscription=subscription, post=self)
 
 
 class TopPost(models.Model):

@@ -249,10 +249,10 @@ def send_community_new_post_push_notification(community_notification_subscriptio
         _send_notification_to_user(notification=one_signal_notification, user=target_user)
 
 
-def send_user_new_post_push_notification(user_notification_subscription, post):
-    post_creator_name = user_notification_subscription.user.profile.name
-    post_creator_username = user_notification_subscription.user.username
-    target_user = user_notification_subscription.subscriber
+def send_user_new_post_push_notification(user_notifications_subscription, post):
+    post_creator_name = user_notifications_subscription.user.profile.name
+    post_creator_username = user_notifications_subscription.user.username
+    target_user = user_notifications_subscription.subscriber
 
     if target_user.has_user_new_post_notifications_enabled():
         target_user_language_code = get_notification_language_code_for_target_user(target_user)

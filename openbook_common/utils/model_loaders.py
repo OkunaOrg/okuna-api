@@ -177,8 +177,8 @@ def get_user_model():
     return apps.get_model('openbook_auth.User')
 
 
-def get_user_notification_subscription_model():
-    return apps.get_model('openbook_auth.UserNotificationSubscription')
+def get_user_notifications_subscription_model():
+    return apps.get_model('openbook_auth.UserNotificationsSubscription')
 
 
 def get_moderated_object_model():

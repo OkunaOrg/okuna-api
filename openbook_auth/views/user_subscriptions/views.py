@@ -43,7 +43,7 @@ class SearchUserSubscriptions(APIView):
         query = data.get('query')
 
         user = request.user
-        users = user.search_user_subscriptions_with_query(query=query)[:count]
+        users = user.search_user_notifications_subscriptions_with_query(query=query)[:count]
 
         users_serializer = UserSubscriptionsUserSerializer(users, many=True, context={'request': request, })
 
