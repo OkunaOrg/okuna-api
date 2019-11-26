@@ -37,7 +37,7 @@ from openbook_common.utils.model_loaders import get_emoji_model, \
     get_circle_model, get_community_model, get_post_comment_notification_model, \
     get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model, \
     get_post_user_mention_notification_model, get_post_comment_user_mention_notification_model, get_user_model, \
-    get_post_user_mention_model, get_post_comment_user_mention_model, get_community_notification_subscription_model, \
+    get_post_user_mention_model, get_post_comment_user_mention_model, get_community_notifications_subscription_model, \
     get_community_new_post_notification_model, get_user_new_post_notification_model, \
     get_user_notifications_subscription_model
 from imagekit.models import ProcessedImageField
@@ -224,7 +224,7 @@ class Post(models.Model):
 
     @classmethod
     def get_community_notification_target_subscriptions(cls, post):
-        CommunityNotificationSubscription = get_community_notification_subscription_model()
+        CommunityNotificationsSubscription = get_community_notifications_subscription_model()
         exclude_blocked_users_query = Q(Q(subscriber__blocked_by_users__blocker_id=post.creator.pk) | Q(
             subscriber__user_blocks__blocked_user_id=post.creator.pk))
         community_members_query = Q(subscriber__communities_memberships__community_id=post.community.pk)
@@ -238,7 +238,7 @@ class Post(models.Model):
         exclude_blocked_users_query.add(Q(subscriber__banned_of_communities__id=post.community.pk), Q.OR)
 
         # Subscriptions after excluding blocked users
-        target_subscriptions_excluding_blocked = CommunityNotificationSubscription.objects.\
+        target_subscriptions_excluding_blocked = CommunityNotificationsSubscription.objects.\
             filter(community_subscriptions_query).\
             exclude(exclude_blocked_users_query)
 
@@ -249,7 +249,7 @@ class Post(models.Model):
 
         # Subscriptions from staff of community
         community_subscriptions_with_staff_query = community_subscriptions_query.add(staff_members_query, Q.AND)
-        target_subscriptions_with_staff = CommunityNotificationSubscription.objects.filter(community_subscriptions_with_staff_query)
+        target_subscriptions_with_staff = CommunityNotificationsSubscription.objects.filter(community_subscriptions_with_staff_query)
 
         results = target_subscriptions_excluding_blocked.union(target_subscriptions_with_staff)
 
@@ -590,8 +590,8 @@ class Post(models.Model):
             for subscription in community_subscriptions:
                 CommunityNewPostNotification.create_community_new_post_notification(
                     post_id=self.pk,
-                    owner_id=subscription.subscriber.pk, community_notification_subscription_id=subscription.pk)
-                send_community_new_post_push_notification(community_notification_subscription=subscription)
+                    owner_id=subscription.subscriber.pk, community_notifications_subscription_id=subscription.pk)
+                send_community_new_post_push_notification(community_notifications_subscription=subscription)
         else:
             UserNewPostNotification = get_user_new_post_notification_model()
             user_subscriptions = Post.get_user_notification_target_subscriptions(post=self)

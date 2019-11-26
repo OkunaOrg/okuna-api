@@ -227,9 +227,9 @@ def send_community_invite_push_notification(community_invite):
         _send_notification_to_user(notification=one_signal_notification, user=invited_user)
 
 
-def send_community_new_post_push_notification(community_notification_subscription):
-    community_name = community_notification_subscription.community.name
-    target_user = community_notification_subscription.subscriber
+def send_community_new_post_push_notification(community_notifications_subscription):
+    community_name = community_notifications_subscription.community.name
+    target_user = community_notifications_subscription.subscriber
 
     if target_user.has_community_new_post_notifications_enabled():
         target_user_language_code = get_notification_language_code_for_target_user(target_user)

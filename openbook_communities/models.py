@@ -14,7 +14,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.utils.model_loaders import get_community_invite_model, \
     get_community_log_model, get_category_model, get_user_model, get_moderated_object_model, \
-    get_community_notification_subscription_model
+    get_community_notifications_subscription_model
 from openbook_common.validators import hex_color_validator
 from openbook_communities.helpers import upload_to_community_avatar_directory, upload_to_community_cover_directory
 from openbook_communities.validators import community_name_characters_validator
@@ -74,9 +74,9 @@ class Community(models.Model):
                                                                                     community_name=community_name)
 
     @classmethod
-    def is_user_with_username_subscribed_to_community_with_name(cls, username, community_name):
-        CommunityNotificationSubscription = get_community_notification_subscription_model()
-        return CommunityNotificationSubscription.is_user_with_username_subscribed_to_community_with_name(username=username,
+    def is_user_with_username_subscribed_to_notifications_for_community_with_name(cls, username, community_name):
+        CommunityNotificationsSubscription = get_community_notifications_subscription_model()
+        return CommunityNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_community_with_name(username=username,
                                                                                                          community_name=community_name)
 
     @classmethod
@@ -596,23 +596,23 @@ class CommunityInvite(models.Model):
         return cls.objects.filter(community__name=community_name, invited_user__username=username).exists()
 
 
-class CommunityNotificationSubscription(models.Model):
-    subscriber = models.ForeignKey(User, on_delete=models.CASCADE, related_name='community_notification_subscriptions', null=False,
+class CommunityNotificationsSubscription(models.Model):
+    subscriber = models.ForeignKey(User, on_delete=models.CASCADE, related_name='community_notifications_subscriptions', null=False,
                              blank=False)
-    community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='notification_subscriptions', null=False,
+    community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='notifications_subscriptions', null=False,
                                   blank=False)
 
     class Meta:
         unique_together = ('community', 'subscriber',)
 
     @classmethod
-    def create_community_notification_subscription(cls, subscriber, community):
+    def create_community_notifications_subscription(cls, subscriber, community):
         return cls.objects.create(subscriber=subscriber, community=community)
 
     @classmethod
-    def remove_community_notification_subscription(cls, subscriber, community):
+    def remove_community_notifications_subscription(cls, subscriber, community):
         return cls.objects.filter(subscriber=subscriber, community=community).delete()
 
     @classmethod
-    def is_user_with_username_subscribed_to_community_with_name(cls, username, community_name):
+    def is_user_with_username_subscribed_to_notifications_for_community_with_name(cls, username, community_name):
         return cls.objects.filter(community__name=community_name, subscriber__username=username).exists()

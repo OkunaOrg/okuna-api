@@ -61,8 +61,8 @@ def get_community_model():
     return apps.get_model('openbook_communities.Community')
 
 
-def get_community_notification_subscription_model():
-    return apps.get_model('openbook_communities.CommunityNotificationSubscription')
+def get_community_notifications_subscription_model():
+    return apps.get_model('openbook_communities.CommunityNotificationsSubscription')
 
 
 def get_community_invite_model():

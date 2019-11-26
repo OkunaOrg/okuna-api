@@ -32,7 +32,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
     get_moderation_penalty_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
     get_post_comment_reaction_notification_model, get_top_post_model, get_top_post_community_exclusion_model, \
-    get_community_notification_subscription_model, get_user_notifications_subscription_model
+    get_community_notifications_subscription_model, get_user_notifications_subscription_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications import helpers
 from openbook_auth.checkers import *
@@ -575,7 +575,7 @@ class User(AbstractUser):
 
     def is_subscribed_to_community_with_name(self, community_name):
         Community = get_community_model()
-        return Community.is_user_with_username_subscribed_to_community_with_name(username=self.username, community_name=community_name)
+        return Community.is_user_with_username_subscribed_to_notifications_for_community_with_name(username=self.username, community_name=community_name)
 
     def has_reported_moderated_object_with_id(self, moderated_object_id):
         ModeratedObject = get_moderated_object_model()
@@ -1792,10 +1792,10 @@ class User(AbstractUser):
 
     def get_subscribed_communities(self):
         Community = get_community_model()
-        return Community.objects.filter(notification_subscriptions__subscriber=self)
+        return Community.objects.filter(notifications_subscriptions__subscriber=self)
 
     def search_subscribed_communities_with_query(self, query):
-        subscribed_communities_query = Q(notification_subscriptions__subscriber=self)
+        subscribed_communities_query = Q(notifications_subscriptions__subscriber=self)
         subscribed_communities_name_query = Q(name__icontains=query)
         subscribed_communities_name_query.add(Q(title__icontains=query), Q.OR)
         subscribed_communities_query.add(subscribed_communities_name_query, Q.AND)
@@ -1997,23 +1997,23 @@ class User(AbstractUser):
 
         return profile_posts
 
-    def subscribe_to_community_with_name(self, community_name):
+    def subscribe_to_notifications_for_community_with_name(self, community_name):
         Community = get_community_model()
-        CommunityNotificationSubscription = get_community_notification_subscription_model()
+        CommunityNotificationsSubscription = get_community_notifications_subscription_model()
         community = Community.objects.get(name=community_name)
         check_can_subscribe_to_posts_for_community(subscriber=self, community=community)
 
-        CommunityNotificationSubscription.create_community_notification_subscription(subscriber=self, community=community)
+        CommunityNotificationsSubscription.create_community_notifications_subscription(subscriber=self, community=community)
 
         return community
 
-    def unsubscribe_from_community_with_name(self, community_name):
+    def unsubscribe_from_notifications_for_community_with_name(self, community_name):
         Community = get_community_model()
-        CommunityNotificationSubscription = get_community_notification_subscription_model()
+        CommunityNotificationsSubscription = get_community_notifications_subscription_model()
         community = Community.objects.get(name=community_name)
         check_can_unsubscribe_to_posts_for_community(subscriber=self, community=community)
 
-        CommunityNotificationSubscription.remove_community_notification_subscription(subscriber=self, community=community)
+        CommunityNotificationsSubscription.remove_community_notifications_subscription(subscriber=self, community=community)
 
         return community
 

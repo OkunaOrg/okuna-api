@@ -5,7 +5,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.utils.model_loaders import get_post_model, get_community_model, get_post_comment_model, \
     get_language_model, get_user_model, get_emoji_group_model, get_post_reaction_model, get_user_invite_model, \
-    get_community_notification_subscription_model, get_user_notifications_subscription_model
+    get_community_notifications_subscription_model, get_user_notifications_subscription_model
 
 from openbook_common import checkers as common_checkers
 
@@ -307,7 +307,7 @@ def check_can_get_closed_posts_for_community_with_name(user, community_name):
 
 def check_can_subscribe_to_posts_for_community(subscriber, community):
     Community = get_community_model()
-    CommunityNotificationSubscription = get_community_notification_subscription_model()
+    CommunityNotificationsSubscription = get_community_notifications_subscription_model()
     is_member = Community.is_user_with_username_member_of_community_with_name\
         (username=subscriber.username, community_name=community.name)
 
@@ -315,7 +315,7 @@ def check_can_subscribe_to_posts_for_community(subscriber, community):
         raise ValidationError(
             _('Only members can subscribe to new posts'),
         )
-    is_subscribed = CommunityNotificationSubscription.is_user_with_username_subscribed_to_community_with_name(
+    is_subscribed = CommunityNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_community_with_name(
         username=subscriber.username, community_name=community.name)
 
     if is_subscribed:
@@ -328,7 +328,7 @@ def check_can_subscribe_to_posts_for_community(subscriber, community):
 
 def check_can_unsubscribe_to_posts_for_community(subscriber, community):
     Community = get_community_model()
-    CommunityNotificationSubscription = get_community_notification_subscription_model()
+    CommunityNotificationsSubscription = get_community_notifications_subscription_model()
     is_member = Community.is_user_with_username_member_of_community_with_name\
         (username=subscriber.username, community_name=community.name)
 
@@ -336,7 +336,7 @@ def check_can_unsubscribe_to_posts_for_community(subscriber, community):
         raise ValidationError(
             _('Only members can unsubscribe to new posts'),
         )
-    is_subscribed = CommunityNotificationSubscription.is_user_with_username_subscribed_to_community_with_name(
+    is_subscribed = CommunityNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_community_with_name(
         username=subscriber.username, community_name=community.name)
 
     if not is_subscribed:
