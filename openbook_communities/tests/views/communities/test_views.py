@@ -713,7 +713,7 @@ class SubscribedCommunitiesAPITests(OpenbookAPITestCase):
         communities_ids = [community.pk for community in communities]
         for community in communities:
             user.join_community_with_name(community_name=community.name)
-            user.subscribe_to_community_with_name(community_name=community.name)
+            user.subscribe_to_notifications_for_community_with_name(community_name=community.name)
 
         url = self._get_url()
         response = self.client.get(url, **headers)
@@ -750,7 +750,7 @@ class SubscribedCommunitiesAPITests(OpenbookAPITestCase):
 
         for community in communities:
             user.join_community_with_name(community_name=community.name)
-            user.subscribe_to_community_with_name(community_name=community.name)
+            user.subscribe_to_notifications_for_community_with_name(community_name=community.name)
 
         url = self._get_url()
         response = self.client.get(url, {
@@ -790,7 +790,7 @@ class SearchSubscribedCommunitiesAPITests(OpenbookAPITestCase):
             community = mixer.blend(Community, name=community_name, type=Community.COMMUNITY_TYPE_PUBLIC)
 
             user.join_community_with_name(community_name)
-            user.subscribe_to_community_with_name(community_name)
+            user.subscribe_to_notifications_for_community_with_name(community_name)
 
             amount_of_characters_to_query = random.randint(1, len(community_name))
             query = community_name[0:amount_of_characters_to_query]
@@ -828,7 +828,7 @@ class SearchSubscribedCommunitiesAPITests(OpenbookAPITestCase):
             community = mixer.blend(Community, title=community_title, type=Community.COMMUNITY_TYPE_PUBLIC)
 
             user.join_community_with_name(community.name)
-            user.subscribe_to_community_with_name(community.name)
+            user.subscribe_to_notifications_for_community_with_name(community.name)
 
             amount_of_characters_to_query = random.randint(1, len(community_title))
             query = community_title[0:amount_of_characters_to_query]
