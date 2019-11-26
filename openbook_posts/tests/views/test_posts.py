@@ -15,7 +15,7 @@ from openbook_common.tests.models import OpenbookAPITestCase
 from mixer.backend.django import mixer
 
 from openbook.settings import POST_MAX_LENGTH
-from openbook_auth.models import User, UserNotificationSubscription
+from openbook_auth.models import User, UserNotificationsSubscription
 import random
 
 import logging
@@ -3390,16 +3390,16 @@ class PostsAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(user)
         data = {'text': post_text}
 
-        subscriber.subscribe_to_user_with_username(user.username)
+        subscriber.subscribe_to_notifications_for_user_with_username(user.username)
 
         url = self._get_url()
         response = self.client.put(url, data, **headers, format='multipart')
 
-        user_notification_subscription = UserNotificationSubscription.objects.get(subscriber=subscriber, user=user)
+        user_notifications_subscription = UserNotificationsSubscription.objects.get(subscriber=subscriber, user=user)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(UserNewPostNotification.objects.filter(
-            user_notification_subscription=user_notification_subscription).count() == 1)
+            user_notifications_subscription=user_notifications_subscription).count() == 1)
 
     def test_create_post_does_not_notify_subscribers_if_post_creator_is_blocked(self):
         """
@@ -3412,7 +3412,7 @@ class PostsAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(user)
         data = {'text': post_text}
 
-        subscriber.subscribe_to_user_with_username(user.username)
+        subscriber.subscribe_to_notifications_for_user_with_username(user.username)
         subscriber.block_user_with_id(user_id=user.pk)
 
         url = self._get_url()
@@ -3435,7 +3435,7 @@ class PostsAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(user)
         data = {'text': post_text}
 
-        subscriber.subscribe_to_user_with_username(user.username)
+        subscriber.subscribe_to_notifications_for_user_with_username(user.username)
         user.block_user_with_id(user_id=subscriber.pk)
 
         url = self._get_url()
@@ -3463,8 +3463,8 @@ class PostsAPITests(OpenbookAPITestCase):
         post_creator.confirm_connection_with_user_with_id(user_id=subscriber.pk, circles_ids=[circle.pk])
 
         # both users subscribe
-        subscriber.subscribe_to_user_with_username(post_creator.username)
-        other_subscriber.subscribe_to_user_with_username(post_creator.username)
+        subscriber.subscribe_to_notifications_for_user_with_username(post_creator.username)
+        other_subscriber.subscribe_to_notifications_for_user_with_username(post_creator.username)
 
         data = {
             'text': post_text,
@@ -3474,17 +3474,17 @@ class PostsAPITests(OpenbookAPITestCase):
         url = self._get_url()
         response = self.client.put(url, data, **headers, format='multipart')
 
-        other_subscriber_notification_subscription = UserNotificationSubscription.objects.get(
+        other_subscriber_notifications_subscription = UserNotificationsSubscription.objects.get(
             subscriber=other_subscriber, user=post_creator)
 
-        subscriber_notification_subscription = UserNotificationSubscription.objects.get(
+        subscriber_notifications_subscription = UserNotificationsSubscription.objects.get(
             subscriber=subscriber, user=post_creator)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(UserNewPostNotification.objects.filter(
-            user_notification_subscription=other_subscriber_notification_subscription).count() == 0)
+            user_notifications_subscription=other_subscriber_notifications_subscription).count() == 0)
         self.assertTrue(UserNewPostNotification.objects.filter(
-            user_notification_subscription=subscriber_notification_subscription).count() == 1)
+            user_notifications_subscription=subscriber_notifications_subscription).count() == 1)
 
     def _get_url(self):
         return reverse('posts')

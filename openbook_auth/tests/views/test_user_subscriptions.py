@@ -31,7 +31,7 @@ class UserSubscriptionsAPITests(OpenbookAPITestCase):
 
         for i in range(0, amount_of_user_subscriptions):
             user_to_subscribe = make_user()
-            user.subscribe_to_user_with_username(user_to_subscribe.username)
+            user.subscribe_to_notifications_for_user_with_username(user_to_subscribe.username)
             user_subscriptions_ids.append(user_to_subscribe.pk)
 
         url = self._get_url()
@@ -60,7 +60,7 @@ class UserSubscriptionsAPITests(OpenbookAPITestCase):
 
         for i in range(0, amount_of_user_subscriptions):
             user_to_subscribe = make_user()
-            user.subscribe_to_user_with_username(user_to_subscribe.username)
+            user.subscribe_to_notifications_for_user_with_username(user_to_subscribe.username)
             user_subscriptions_ids.append(user_to_subscribe.pk)
             user_to_subscribe.soft_delete()
 
@@ -93,7 +93,7 @@ class SearchUserSubscriptionsAPITests(OpenbookAPITestCase):
 
         for i in range(0, amount_of_user_subscriptions_to_search_for):
             user_to_subscribe = make_user()
-            user.subscribe_to_user_with_username(user_to_subscribe.username)
+            user.subscribe_to_notifications_for_user_with_username(user_to_subscribe.username)
 
             subscription_name = user_to_subscribe.profile.name
             amount_of_characters_to_query = random.randint(1, len(subscription_name))
@@ -117,7 +117,7 @@ class SearchUserSubscriptionsAPITests(OpenbookAPITestCase):
             retrieved_user = response_user_subscriptions[0]
 
             self.assertEqual(retrieved_user['id'], user_to_subscribe.id)
-            user.unsubscribe_from_user_with_username(user_to_subscribe.username)
+            user.unsubscribe_from_notifications_for_user_with_username(user_to_subscribe.username)
 
     def test_can_search_user_subscriptions_by_username(self):
         """
@@ -130,7 +130,7 @@ class SearchUserSubscriptionsAPITests(OpenbookAPITestCase):
 
         for i in range(0, amount_of_user_subscriptions_to_search_for):
             user_to_subscribe = make_user()
-            user.subscribe_to_user_with_username(user_to_subscribe.username)
+            user.subscribe_to_notifications_for_user_with_username(user_to_subscribe.username)
 
             subscription_name = user_to_subscribe.username
             amount_of_characters_to_query = random.randint(1, len(subscription_name))
@@ -154,7 +154,7 @@ class SearchUserSubscriptionsAPITests(OpenbookAPITestCase):
             retrieved_user = response_user_subscriptions[0]
 
             self.assertEqual(retrieved_user['id'], user_to_subscribe.id)
-            user.unsubscribe_from_user_with_username(user_to_subscribe.username)
+            user.unsubscribe_from_notifications_for_user_with_username(user_to_subscribe.username)
 
     def test_cant_search_soft_deleted_user_subscriptions(self):
         """
@@ -167,7 +167,7 @@ class SearchUserSubscriptionsAPITests(OpenbookAPITestCase):
 
         for i in range(0, amount_of_user_subscriptions_to_search_for):
             user_to_subscribe = make_user()
-            user.subscribe_to_user_with_username(user_to_subscribe.username)
+            user.subscribe_to_notifications_for_user_with_username(user_to_subscribe.username)
             user_to_subscribe.soft_delete()
 
             subscription_name = user_to_subscribe.username
