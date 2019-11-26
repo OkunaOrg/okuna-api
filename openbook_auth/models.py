@@ -1372,7 +1372,7 @@ class User(AbstractUser):
         community_to_join = Community.objects.get(name=community_name)
         community_to_join.add_member(self)
 
-        # Clean up any invites
+        # Clean up_full any invites
         CommunityInvite = get_community_invite_model()
         CommunityInvite.objects.filter(community__name=community_name, invited_user__username=self.username).delete()
 
