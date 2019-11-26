@@ -28,7 +28,6 @@ from openbook_auth.views.authenticated_user.views import AuthenticatedUser, Auth
 from openbook_auth.views.blocked_users.views import BlockedUsers, SearchBlockedUsers
 from openbook_auth.views.followers.views import Followers, SearchFollowers
 from openbook_auth.views.following.views import Followings, SearchFollowings
-from openbook_auth.views.user_subscriptions.views import UserSubscriptions, SearchUserSubscriptions
 from openbook_auth.views.linked_users.views import LinkedUsers, SearchLinkedUsers
 from openbook_auth.views.proxy.views import ProxyAuth
 from openbook_auth.views.users.views import SearchUsers, GetUser, BlockUser, UnblockUser, SubscribeUserNotifications
@@ -139,14 +138,8 @@ auth_followings_patterns = [
     path('search/', SearchFollowings.as_view(), name='search-followings'),
 ]
 
-auth_user_subscriptions_patterns = [
-    path('', UserSubscriptions.as_view(), name='user-subscriptions'),
-    path('search/', SearchUserSubscriptions.as_view(), name='search-user-subscriptions'),
-]
-
 auth_patterns = [
     path('', include(auth_auth_patterns)),
-    path('user-subscriptions/', include(auth_user_subscriptions_patterns)),
     path('followings/', include(auth_followings_patterns)),
     path('followers/', include(auth_followers_patterns)),
     path('linked-users/', include(auth_linked_users_patterns)),
