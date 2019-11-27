@@ -202,7 +202,7 @@ class SearchUsersUserSerializer(serializers.ModelSerializer):
         )
 
 
-class SubscribeUserNotificationsUserSerializer(serializers.ModelSerializer):
+class SubscribeToUserNotificationsUserSerializer(serializers.ModelSerializer):
     is_subscribed = IsSubscribedToUserField()
 
     class Meta:

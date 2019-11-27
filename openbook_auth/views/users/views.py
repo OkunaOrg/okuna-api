@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 
 from openbook_auth.views.authenticated_user.serializers import GetAuthenticatedUserSerializer
 from openbook_auth.views.users.serializers import SearchUsersSerializer, SearchUsersUserSerializer, GetUserSerializer, \
-    GetUserUserSerializer, GetBlockedUserSerializer, SubscribeUserNotificationsUserSerializer
+    GetUserUserSerializer, GetBlockedUserSerializer, SubscribeToUserNotificationsUserSerializer
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.responses import ApiMessageResponse
@@ -102,7 +102,7 @@ class UnblockUser(APIView):
         return Response(user_serializer.data, status=status.HTTP_200_OK)
 
 
-class SubscribeUserNotifications(APIView):
+class SubscribeToUserNotifications(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def put(self, request, user_username):
@@ -119,7 +119,7 @@ class SubscribeUserNotifications(APIView):
         with transaction.atomic():
             user = user.subscribe_to_notifications_for_user_with_username(username=username)
 
-        response_serializer = SubscribeUserNotificationsUserSerializer(user, context={"request": request})
+        response_serializer = SubscribeToUserNotificationsUserSerializer(user, context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -137,6 +137,6 @@ class SubscribeUserNotifications(APIView):
         with transaction.atomic():
             unsubscribed_user = user.unsubscribe_from_notifications_for_user_with_username(username=username)
 
-        response_serializer = SubscribeUserNotificationsUserSerializer(unsubscribed_user, context={"request": request})
+        response_serializer = SubscribeToUserNotificationsUserSerializer(unsubscribed_user, context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)

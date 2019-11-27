@@ -1037,7 +1037,7 @@ class TopPostCommunityExclusionAPITests(OpenbookAPITestCase):
         })
 
 
-class SubscribeCommunityNotificationsAPITests(OpenbookAPITestCase):
+class SubscribeToCommunityNotificationsAPITests(OpenbookAPITestCase):
 
     def test_should_be_able_to_subscribe_to_notifications_for_community_if_member(self):
         """

@@ -428,9 +428,9 @@ class UnblockUserAPITests(OpenbookAPITestCase):
         })
 
 
-class SubscribeUserNotificationsAPITests(OpenbookAPITestCase):
+class SubscribeToUserNotificationsAPITests(OpenbookAPITestCase):
     """
-    SubscribeUserNotificationsAPI
+    SubscribeToUserNotificationsAPI
     """
     def test_can_subscribe_to_notifications_from_user(self):
         """

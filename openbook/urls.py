@@ -30,7 +30,7 @@ from openbook_auth.views.followers.views import Followers, SearchFollowers
 from openbook_auth.views.following.views import Followings, SearchFollowings
 from openbook_auth.views.linked_users.views import LinkedUsers, SearchLinkedUsers
 from openbook_auth.views.proxy.views import ProxyAuth
-from openbook_auth.views.users.views import SearchUsers, GetUser, BlockUser, UnblockUser, SubscribeUserNotifications
+from openbook_auth.views.users.views import SearchUsers, GetUser, BlockUser, UnblockUser, SubscribeToUserNotifications
 from openbook_categories.views import Categories
 from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups, ProxyDomainCheck
@@ -49,7 +49,7 @@ from openbook_communities.views.community.moderators.views import CommunityModer
 from openbook_communities.views.community.posts.views import CommunityPosts, ClosedCommunityPosts
 from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, \
     FavoriteCommunity, \
-    TopPostCommunityExclusion, SubscribeCommunityNotifications
+    TopPostCommunityExclusion, SubscribeToCommunityNotifications
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
 from openbook_invitations.views import UserInvite, UserInvites, SearchUserInvites, SendUserInviteEmail
@@ -109,7 +109,7 @@ auth_users_user_patterns = [
     path('block/', BlockUser.as_view(), name='block-user'),
     path('unblock/', UnblockUser.as_view(), name='unblock-user'),
     path('report/', ReportUser.as_view(), name='report-user'),
-    path('subscribe/notifications/', SubscribeUserNotifications.as_view(), name='subscribe-user-notifications'),
+    path('notifications/subscribe/', SubscribeToUserNotifications.as_view(), name='subscribe-user-notifications'),
 ]
 
 auth_users_patterns = [
@@ -260,7 +260,7 @@ community_patterns = [
     path('avatar/', CommunityAvatar.as_view(), name='community-avatar'),
     path('cover/', CommunityCover.as_view(), name='community-cover'),
     path('favorite/', FavoriteCommunity.as_view(), name='favorite-community'),
-    path('subscribe/notifications/', SubscribeCommunityNotifications.as_view(), name='subscribe-community-notifications'),
+    path('notifications/subscribe/', SubscribeToCommunityNotifications.as_view(), name='subscribe-community-notifications'),
     path('members/', include(community_members_patterns)),
     path('posts/', include(community_posts_patterns)),
     path('banned-users/', include(community_banned_users_patterns)),
