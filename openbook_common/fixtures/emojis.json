@@ -991,5 +991,45 @@
       "keyword_tr": "Hoot!",
       "keyword_pt_br": "Hoot!"
     }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 52,
+    "fields": {
+      "group_id": 2,
+      "order": 200,
+      "keyword": "Spooky",
+      "keyword_en": "Spooky",
+      "color": "#0089f2",
+      "image": "openbook_common/emojis/spooky.png",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "Spooky",
+      "keyword_de": "Spooky",
+      "keyword_sv": "Spooky",
+      "keyword_fr": "Spooky",
+      "keyword_it": "Spooky",
+      "keyword_tr": "Spooky",
+      "keyword_pt_br": "Spooky"
+    }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 53,
+    "fields": {
+      "group_id": 2,
+      "order": 200,
+      "keyword": "Yeah!",
+      "keyword_en": "Yeah!",
+      "color": "#0089f2",
+      "image": "openbook_common/emojis/yeah.png",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "Oh si!",
+      "keyword_de": "Yeah!",
+      "keyword_sv": "Yeah!",
+      "keyword_fr": "Yeah!",
+      "keyword_it": "Yeah!",
+      "keyword_tr": "Yeah!",
+      "keyword_pt_br": "Yeah!"
+    }
   }
 ]
