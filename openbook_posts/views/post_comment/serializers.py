@@ -3,7 +3,7 @@ from django.conf import settings
 
 from openbook_auth.models import UserProfile, User
 from openbook_common.models import Language, Emoji
-from openbook_common.serializers import UserProfileBadgeSerializer
+from openbook_common.serializers import CommonUserProfileBadgeSerializer
 from openbook_common.serializers_fields.post_comment import PostCommenterField, PostCommentReactionsEmojiCountField, \
     PostCommentReactionField, PostCommentIsMutedField, RepliesCountField
 from openbook_communities.models import CommunityMembership
@@ -91,7 +91,7 @@ class TranslatePostCommentSerializer(serializers.Serializer):
 
 
 class GetPostCommenterProfileSerializer(serializers.ModelSerializer):
-    badges = UserProfileBadgeSerializer(many=True)
+    badges = CommonUserProfileBadgeSerializer(many=True)
 
     class Meta:
         model = UserProfile

@@ -103,7 +103,7 @@ def extract_usernames_from_string(string):
     return [username[1:] for username in usernames]
 
 
-hashtags_matcher = re.compile('#[^\s]+')
+hashtags_matcher = re.compile('\B#\w*[a-zA-Z]+\w*')
 
 
 def extract_hashtags_from_string(string):

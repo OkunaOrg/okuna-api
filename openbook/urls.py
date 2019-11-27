@@ -53,6 +53,8 @@ from openbook_communities.views.community.views import CommunityItem, CommunityA
     TopPostCommunityExclusion, SubscribeCommunity
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
+from openbook_hashtags.views.hashtag.views import HashtagItem, HashtagPosts
+from openbook_hashtags.views.hashtags.views import SearchHashtags
 from openbook_invitations.views import UserInvite, UserInvites, SearchUserInvites, SendUserInviteEmail
 from openbook_devices.views import Devices, DeviceItem
 from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
@@ -287,7 +289,8 @@ communities_patterns = [
     path('moderated/search/', SearchModeratedCommunities.as_view(), name='search-moderated-communities'),
     path('name-check/', CommunityNameCheck.as_view(), name='community-name-check'),
     path('top-posts/exclusions/', TopPostCommunityExclusions.as_view(), name='top-posts-excluded-communities'),
-    path('top-posts/exclusions/search/', TopPostCommunityExclusionsSearch.as_view(), name='search-top-posts-excluded-communities'),
+    path('top-posts/exclusions/search/', TopPostCommunityExclusionsSearch.as_view(),
+         name='search-top-posts-excluded-communities'),
     path('search/', SearchCommunities.as_view(), name='search-communities'),
     path('<str:community_name>/', include(community_patterns)),
 ]
@@ -375,6 +378,16 @@ moderation_patterns = [
          name='user-pending-moderated-objects-communities'),
 ]
 
+hashtag_patterns = [
+    path('', HashtagItem.as_view(), name='hashtag'),
+    path('posts/', HashtagPosts.as_view(), name='hashtag-posts'),
+]
+
+hashtags_patterns = [
+    path('search/', SearchHashtags.as_view(), name='search-hashtags'),
+    path('<str:hashtag_name>/', include(hashtag_patterns)),
+]
+
 api_patterns = [
     path('auth/', include(auth_patterns)),
     path('posts/', include(posts_patterns)),
@@ -388,6 +401,7 @@ api_patterns = [
     path('devices/', include(devices_patterns)),
     path('invites/', include(invites_patterns)),
     path('moderation/', include(moderation_patterns)),
+    path('hashtags/', include(hashtags_patterns)),
     url('time/', Time.as_view(), name='time'),
     url('emojis/groups/', EmojiGroups.as_view(), name='emoji-groups'),
     url('proxy-domain-check/', ProxyDomainCheck.as_view(),

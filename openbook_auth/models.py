@@ -2188,7 +2188,7 @@ class User(AbstractUser):
         """
 
         if not circles_ids and not lists_ids:
-            return self._get_timeline_posts_with_no_filters(max_id=max_id, min_id=min_id, count=count)
+            return self._get_timeline_posts_with_no_filters(max_id=max_id)
 
         return self._get_timeline_posts_with_filters(max_id=max_id, circles_ids=circles_ids, lists_ids=lists_ids)
 
@@ -2239,7 +2239,7 @@ class User(AbstractUser):
 
         return Post.objects.filter(timeline_posts_query).distinct()
 
-    def _get_timeline_posts_with_no_filters(self, max_id=None, min_id=None, count=10):
+    def _get_timeline_posts_with_no_filters(self, max_id=None):
         """
         Being the main action of the network, an optimised call of the get timeline posts call with no filtering.
         """
