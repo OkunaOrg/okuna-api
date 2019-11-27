@@ -220,13 +220,13 @@ class FavoriteCommunityCommunitySerializer(serializers.ModelSerializer):
         )
 
 
-class SubscribeCommunitySerializer(serializers.Serializer):
+class SubscribeCommunityNotificationsSerializer(serializers.Serializer):
     community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
                                            allow_blank=False,
                                            validators=[community_name_characters_validator, community_name_exists])
 
 
-class SubscribeCommunityCommunitySerializer(serializers.ModelSerializer):
+class SubscribeCommunityNotificationsCommunitySerializer(serializers.ModelSerializer):
     is_subscribed = IsSubscribedField()
 
     class Meta:

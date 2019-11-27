@@ -1037,7 +1037,7 @@ class TopPostCommunityExclusionAPITests(OpenbookAPITestCase):
         })
 
 
-class SubscribeCommunityAPITests(OpenbookAPITestCase):
+class SubscribeCommunityNotificationsAPITests(OpenbookAPITestCase):
 
     def test_should_be_able_to_subscribe_to_notifications_for_community_if_member(self):
         """
@@ -1184,6 +1184,6 @@ class SubscribeCommunityAPITests(OpenbookAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def _get_url(self, community_name):
-        return reverse('subscribe-community', kwargs={
+        return reverse('subscribe-community-notifications', kwargs={
             'community_name': community_name
         })
