@@ -300,7 +300,7 @@ class User(AbstractUser):
         world_circle_posts_query = Q(creator__id=user.pk, circles__id=world_circle_id)
 
         world_circle_posts = Post.objects.prefetch_related(*posts_prefetch_related) \
-            .only(*posts_only) \
+            .only(posts_only) \
             .filter(
             user_query &
             world_circle_posts_query &
@@ -316,7 +316,7 @@ class User(AbstractUser):
         exclude_private_community_posts_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC)
 
         community_posts = Post.objects.prefetch_related(*posts_prefetch_related) \
-            .only(*posts_only).filter(
+            .only(posts_only).filter(
             user_query &
             community_posts_query &
             exclude_private_community_posts_query &
