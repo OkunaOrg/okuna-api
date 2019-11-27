@@ -11,6 +11,7 @@ from openbook_notifications.models import Notification, PostCommentNotification,
     PostCommentReactionNotification, PostCommentUserMentionNotification, PostUserMentionNotification, \
     CommunityNewPostNotification
 from openbook_notifications.models.post_reaction_notification import PostReactionNotification
+from openbook_notifications.models.user_new_post_notification import UserNewPostNotification
 from openbook_notifications.serializer_fields import ParentCommentField
 from openbook_posts.models import PostComment, PostReaction, Post, PostImage, PostCommentReaction, \
     PostUserMention, PostCommentUserMention
@@ -548,6 +549,17 @@ class CommunityNewPostNotificationSerializer(serializers.ModelSerializer):
         )
 
 
+class UserNewPostNotificationSerializer(serializers.ModelSerializer):
+    post = NotificationPostSerializer()
+
+    class Meta:
+        model = UserNewPostNotification
+        fields = (
+            'id',
+            'post'
+        )
+
+
 class PostUserMentionSerializer(serializers.ModelSerializer):
     post = NotificationPostSerializer()
     user = PostCommentCreatorSerializer()
@@ -608,6 +620,7 @@ class GetNotificationsNotificationSerializer(serializers.ModelSerializer):
         PostCommentUserMentionNotification: PostCommentUserMentionNotificationSerializer(),
         PostUserMentionNotification: PostUserMentionNotificationSerializer(),
         CommunityNewPostNotification: CommunityNewPostNotificationSerializer(),
+        UserNewPostNotification: UserNewPostNotificationSerializer(),
         CommunityInviteNotification: CommunityInviteNotificationSerializer()
     })
 

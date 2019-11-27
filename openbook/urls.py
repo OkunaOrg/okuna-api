@@ -30,15 +30,14 @@ from openbook_auth.views.followers.views import Followers, SearchFollowers
 from openbook_auth.views.following.views import Followings, SearchFollowings
 from openbook_auth.views.linked_users.views import LinkedUsers, SearchLinkedUsers
 from openbook_auth.views.proxy.views import ProxyAuth
-from openbook_auth.views.users.views import SearchUsers, GetUser, BlockUser, UnblockUser
+from openbook_auth.views.users.views import SearchUsers, GetUser, BlockUser, UnblockUser, SubscribeToUserNotifications
 from openbook_categories.views import Categories
 from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups, ProxyDomainCheck
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
     FavoriteCommunities, SearchCommunities, JoinedCommunities, AdministratedCommunities, ModeratedCommunities, \
     SearchJoinedCommunities, TopPostCommunityExclusions, TopPostCommunityExclusionsSearch, SuggestedCommunities, \
-    SearchSubscribedCommunities, SearchAdministratedCommunities, SearchModeratedCommunities, SearchFavoriteCommunities, \
-    SubscribedCommunities
+    SearchAdministratedCommunities, SearchModeratedCommunities, SearchFavoriteCommunities
 from openbook_communities.views.community.administrators.views import CommunityAdministratorItem, \
     CommunityAdministrators, SearchCommunityAdministrators
 from openbook_communities.views.community.banned_users.views import BanUser, UnbanUser, CommunityBannedUsers, \
@@ -50,7 +49,7 @@ from openbook_communities.views.community.moderators.views import CommunityModer
 from openbook_communities.views.community.posts.views import CommunityPosts, ClosedCommunityPosts
 from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, \
     FavoriteCommunity, \
-    TopPostCommunityExclusion, SubscribeCommunity
+    TopPostCommunityExclusion, SubscribeToCommunityNotifications
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
 from openbook_invitations.views import UserInvite, UserInvites, SearchUserInvites, SendUserInviteEmail
@@ -110,6 +109,7 @@ auth_users_user_patterns = [
     path('block/', BlockUser.as_view(), name='block-user'),
     path('unblock/', UnblockUser.as_view(), name='unblock-user'),
     path('report/', ReportUser.as_view(), name='report-user'),
+    path('notifications/subscribe/', SubscribeToUserNotifications.as_view(), name='subscribe-user-notifications'),
 ]
 
 auth_users_patterns = [
@@ -260,7 +260,7 @@ community_patterns = [
     path('avatar/', CommunityAvatar.as_view(), name='community-avatar'),
     path('cover/', CommunityCover.as_view(), name='community-cover'),
     path('favorite/', FavoriteCommunity.as_view(), name='favorite-community'),
-    path('subscribe/', SubscribeCommunity.as_view(), name='subscribe-community'),
+    path('notifications/subscribe/', SubscribeToCommunityNotifications.as_view(), name='subscribe-community-notifications'),
     path('members/', include(community_members_patterns)),
     path('posts/', include(community_posts_patterns)),
     path('banned-users/', include(community_banned_users_patterns)),
@@ -277,8 +277,6 @@ communities_patterns = [
     path('trending/', TrendingCommunities.as_view(), name='trending-communities'),
     path('joined/', JoinedCommunities.as_view(), name='joined-communities'),
     path('joined/search/', SearchJoinedCommunities.as_view(), name='search-joined-communities'),
-    path('subscribed/', SubscribedCommunities.as_view(), name='subscribed-communities'),
-    path('subscribed/search/', SearchSubscribedCommunities.as_view(), name='search-subscribed-communities'),
     path('favorites/', FavoriteCommunities.as_view(), name='favorite-communities'),
     path('favorites/search/', SearchFavoriteCommunities.as_view(), name='search-favorite-communities'),
     path('administrated/', AdministratedCommunities.as_view(), name='administrated-communities'),

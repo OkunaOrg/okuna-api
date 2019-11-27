@@ -227,9 +227,9 @@ def send_community_invite_push_notification(community_invite):
         _send_notification_to_user(notification=one_signal_notification, user=invited_user)
 
 
-def send_community_new_post_push_notification(community_notification_subscription):
-    community_name = community_notification_subscription.community.name
-    target_user = community_notification_subscription.subscriber
+def send_community_new_post_push_notification(community_notifications_subscription):
+    community_name = community_notifications_subscription.community.name
+    target_user = community_notifications_subscription.subscriber
 
     if target_user.has_community_new_post_notifications_enabled():
         target_user_language_code = get_notification_language_code_for_target_user(target_user)
@@ -243,6 +243,30 @@ def send_community_new_post_push_notification(community_notification_subscriptio
 
         notification_data = {
             'type': Notification.COMMUNITY_NEW_POST,
+        }
+        one_signal_notification.set_parameter('data', notification_data)
+
+        _send_notification_to_user(notification=one_signal_notification, user=target_user)
+
+
+def send_user_new_post_push_notification(user_notifications_subscription, post):
+    post_creator_name = user_notifications_subscription.user.profile.name
+    post_creator_username = user_notifications_subscription.user.username
+    target_user = user_notifications_subscription.subscriber
+
+    if target_user.has_user_new_post_notifications_enabled():
+        target_user_language_code = get_notification_language_code_for_target_user(target_user)
+        with translation.override(target_user_language_code):
+            one_signal_notification = onesignal_sdk.Notification(
+                post_body={"contents": {"en": _('%(post_creator_name)s · @%(post_creator_username)s posted something.') % {
+                    'post_creator_username': post_creator_username,
+                    'post_creator_name': post_creator_name,
+                }}})
+
+        Notification = get_notification_model()
+
+        notification_data = {
+            'type': Notification.USER_NEW_POST,
         }
         one_signal_notification.set_parameter('data', notification_data)
 
