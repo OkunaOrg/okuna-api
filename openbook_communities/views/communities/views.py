@@ -12,8 +12,7 @@ from openbook_common.utils.helpers import normalize_list_value_in_request_data, 
 from openbook_communities.views.communities.serializers import CreateCommunitySerializer, \
     CommunitiesCommunitySerializer, SearchCommunitiesSerializer, CommunityNameCheckSerializer, \
     GetFavoriteCommunitiesSerializer, GetJoinedCommunitiesSerializer, TrendingCommunitiesSerializer, \
-    GetModeratedCommunitiesSerializer, GetAdministratedCommunitiesSerializer, GetTopPostCommunityExclusionSerializer, \
-    GetSubscribedCommunitiesSerializer
+    GetModeratedCommunitiesSerializer, GetAdministratedCommunitiesSerializer, GetTopPostCommunityExclusionSerializer
 
 
 class Communities(APIView):
@@ -127,52 +126,6 @@ class SearchJoinedCommunities(APIView):
         user = request.user
 
         communities = user.search_joined_communities_with_query(query=query)[:count]
-
-        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
-                                                             context={"request": request})
-
-        return Response(response_serializer.data, status=status.HTTP_200_OK)
-
-
-class SubscribedCommunities(APIView):
-    permission_classes = (IsAuthenticated, IsNotSuspended)
-
-    def get(self, request):
-        query_params = request.query_params.dict()
-        serializer = GetSubscribedCommunitiesSerializer(data=query_params)
-        serializer.is_valid(raise_exception=True)
-
-        data = serializer.validated_data
-
-        count = data.get('count', 10)
-        offset = data.get('offset', 0)
-
-        user = request.user
-
-        communities = user.get_subscribed_communities()[offset:offset + count]
-
-        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
-                                                             context={"request": request})
-
-        return Response(response_serializer.data, status=status.HTTP_200_OK)
-
-
-class SearchSubscribedCommunities(APIView):
-    permission_classes = (IsAuthenticated, IsNotSuspended)
-
-    def get(self, request):
-        query_params = request.query_params.dict()
-        serializer = SearchCommunitiesSerializer(data=query_params)
-        serializer.is_valid(raise_exception=True)
-
-        data = serializer.validated_data
-
-        count = data.get('count', 10)
-        query = data.get('query')
-
-        user = request.user
-
-        communities = user.search_subscribed_communities_with_query(query=query)[:count]
 
         response_serializer = CommunitiesCommunitySerializer(communities, many=True,
                                                              context={"request": request})

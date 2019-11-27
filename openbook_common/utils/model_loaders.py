@@ -61,8 +61,8 @@ def get_community_model():
     return apps.get_model('openbook_communities.Community')
 
 
-def get_community_notification_subscription_model():
-    return apps.get_model('openbook_communities.CommunityNotificationSubscription')
+def get_community_notifications_subscription_model():
+    return apps.get_model('openbook_communities.CommunityNotificationsSubscription')
 
 
 def get_community_invite_model():
@@ -161,6 +161,10 @@ def get_community_new_post_notification_model():
     return apps.get_model('openbook_notifications.CommunityNewPostNotification')
 
 
+def get_user_new_post_notification_model():
+    return apps.get_model('openbook_notifications.UserNewPostNotification')
+
+
 def get_notification_model():
     return apps.get_model('openbook_notifications.Notification')
 
@@ -171,6 +175,10 @@ def get_device_model():
 
 def get_user_model():
     return apps.get_model('openbook_auth.User')
+
+
+def get_user_notifications_subscription_model():
+    return apps.get_model('openbook_auth.UserNotificationsSubscription')
 
 
 def get_moderated_object_model():
