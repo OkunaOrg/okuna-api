@@ -280,7 +280,7 @@ class User(AbstractUser):
         ModeratedObject = get_moderated_object_model()
         world_circle_id = Circle.get_world_circle_id()
 
-        posts_prefetch_related = ('circles', 'creator__profile__badges')
+        posts_prefetch_related = 'circles'
 
         posts_only = 'id'
 
@@ -299,7 +299,7 @@ class User(AbstractUser):
 
         world_circle_posts_query = Q(creator__id=user.pk, circles__id=world_circle_id)
 
-        world_circle_posts = Post.objects.prefetch_related(*posts_prefetch_related) \
+        world_circle_posts = Post.objects.prefetch_related(posts_prefetch_related) \
             .only(posts_only) \
             .filter(
             user_query &
@@ -315,7 +315,7 @@ class User(AbstractUser):
         community_posts_query = Q(creator__pk=user.pk, community__isnull=False, is_closed=False)
         exclude_private_community_posts_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC)
 
-        community_posts = Post.objects.prefetch_related(*posts_prefetch_related) \
+        community_posts = Post.objects.prefetch_related(posts_prefetch_related) \
             .only(posts_only).filter(
             user_query &
             community_posts_query &
