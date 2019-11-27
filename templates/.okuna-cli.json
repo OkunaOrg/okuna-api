@@ -1,0 +1,6 @@
+{
+  "bootstrapped": false,
+  "djangoSecretKey": "{{DJANGO_SECRET_KEY}}",
+  "sqlPassword": "{{SQL_PASSWORD}}",
+  "redisPassword": "{{REDIS_PASSWORD}}"
+}
