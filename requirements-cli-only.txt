@@ -1,0 +1,5 @@
+-i https://pypi.python.org/simple
+click==7.0
+requests==2.22.0
+halo==0.0.28
+colorlog==4.0.2
