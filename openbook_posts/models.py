@@ -406,6 +406,9 @@ class Post(models.Model):
     def get_first_media(self):
         return self.media.first()
 
+    def get_first_media_image(self):
+        return self.media.filter(type=PostMedia.MEDIA_TYPE_IMAGE).first()
+
     def _add_media_image(self, image, order):
         return PostImage.create_post_media_image(image=image, post_id=self.pk, order=order)
 
@@ -578,7 +581,7 @@ class Post(models.Model):
                 for hashtag in hashtags:
                     hashtag = hashtag.lower()
                     if hashtag not in existing_hashtags:
-                        hashtag_obj = Hashtag.get_or_create_hashtag_with_name(name=hashtag)
+                        hashtag_obj = Hashtag.get_or_create_hashtag_with_name_and_post(name=hashtag, post=self)
                         self.hashtags.add(hashtag_obj)
 
     def _process_post_subscribers(self):
