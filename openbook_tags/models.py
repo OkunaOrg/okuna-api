@@ -18,16 +18,26 @@ class Hashtag(models.Model):
     color = models.CharField(_('color'), max_length=settings.COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
                              validators=[hex_color_validator])
     created = models.DateTimeField(editable=False)
-    posts = models.ManyToManyField(Community, related_name='tags')
+    posts = models.ManyToManyField(Community, related_name='hashtags')
 
     @classmethod
-    def create_tag(cls, name, color=None):
+    def create_hashtag(cls, name, color=None):
         if not color:
             color = generate_random_hex_color()
 
+        name = name.lower()
         tag = cls.objects.create(name=name, color=color, description=None)
 
         return tag
+
+    @classmethod
+    def get_or_create_hashtag_with_name(cls, name):
+        try:
+            hashtag = cls.objects.get(name=name)
+        except cls.DoesNotExist:
+            hashtag = cls.create_hashtag(name=name)
+
+        return hashtag
 
     def save(self, *args, **kwargs):
         if not self.id:

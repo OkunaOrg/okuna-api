@@ -32,13 +32,13 @@ from openbook_auth.models import User
 
 from openbook_common.models import Emoji, Language
 from openbook_common.utils.helpers import delete_file_field, sha256sum, extract_usernames_from_string, get_magic, \
-    write_in_memory_file_to_disk
+    write_in_memory_file_to_disk, extract_hashtags_from_string
 from openbook_common.utils.model_loaders import get_emoji_model, \
     get_circle_model, get_community_model, get_post_comment_notification_model, \
     get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model, \
     get_post_user_mention_notification_model, get_post_comment_user_mention_notification_model, get_user_model, \
     get_post_user_mention_model, get_post_comment_user_mention_model, get_community_notification_subscription_model, \
-    get_community_new_post_notification_model
+    get_community_new_post_notification_model, get_hashtag_model
 from imagekit.models import ProcessedImageField
 
 from openbook_moderation.models import ModeratedObject
@@ -236,8 +236,8 @@ class Post(models.Model):
         exclude_blocked_users_query.add(Q(subscriber__banned_of_communities__id=post.community.pk), Q.OR)
 
         # Subscriptions after excluding blocked users
-        target_subscriptions_excluding_blocked = CommunityNotificationSubscription.objects.\
-            filter(community_subscriptions_query).\
+        target_subscriptions_excluding_blocked = CommunityNotificationSubscription.objects. \
+            filter(community_subscriptions_query). \
             exclude(exclude_blocked_users_query)
 
         staff_members_query = Q(subscriber__communities_memberships__community_id=post.community.pk,
@@ -247,7 +247,8 @@ class Post(models.Model):
 
         # Subscriptions from staff of community
         community_subscriptions_with_staff_query = community_subscriptions_query.add(staff_members_query, Q.AND)
-        target_subscriptions_with_staff = CommunityNotificationSubscription.objects.filter(community_subscriptions_with_staff_query)
+        target_subscriptions_with_staff = CommunityNotificationSubscription.objects.filter(
+            community_subscriptions_with_staff_query)
 
         results = target_subscriptions_excluding_blocked.union(target_subscriptions_with_staff)
 
@@ -450,6 +451,7 @@ class Post(models.Model):
         post = super(Post, self).save(*args, **kwargs)
 
         self._process_post_mentions()
+        self._process_post_hashtags()
 
         return post
 
@@ -556,6 +558,29 @@ class Post(models.Model):
                         except User.DoesNotExist:
                             pass
 
+    def _process_post_hashtags(self):
+        if not self.text:
+            self.hashtags.all().delete()
+        else:
+            hashtags = extract_hashtags_from_string(string=self.text)
+            if not hashtags:
+                self.hashtags.all().delete()
+            else:
+                existing_hashtags = []
+                for existing_hashtag in self.hashtags.only('id', 'name').all().iterator():
+                    if existing_hashtag.name not in hashtags:
+                        self.hashtags.remove(existing_hashtag)
+                    else:
+                        existing_hashtags.append(existing_hashtag.name)
+
+                Hashtag = get_hashtag_model()
+
+                for hashtag in hashtags:
+                    hashtag = hashtag.lower()
+                    if hashtag not in existing_hashtags:
+                        hashtag_obj = Hashtag.get_or_create_hashtag_with_name(name=hashtag)
+                        self.hashtags.add(hashtag_obj)
+
     def _process_post_subscribers(self):
         if self.community:
             CommunityNewPostNotification = get_community_new_post_notification_model()
@@ -583,7 +608,8 @@ class TopPost(models.Model):
 
 class TopPostCommunityExclusion(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='top_posts_community_exclusions')
-    community = models.ForeignKey('openbook_communities.Community', on_delete=models.CASCADE, related_name='top_posts_community_exclusions')
+    community = models.ForeignKey('openbook_communities.Community', on_delete=models.CASCADE,
+                                  related_name='top_posts_community_exclusions')
     created = models.DateTimeField(editable=False, db_index=True)
 
     class Meta:

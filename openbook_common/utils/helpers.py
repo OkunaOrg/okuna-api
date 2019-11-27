@@ -103,6 +103,14 @@ def extract_usernames_from_string(string):
     return [username[1:] for username in usernames]
 
 
+hashtags_matcher = re.compile('#[^\s]+')
+
+
+def extract_hashtags_from_string(string):
+    hashtags = hashtags_matcher.findall(string=string)
+    return [hashtag[1:] for hashtag in hashtags]
+
+
 magic = magic.Magic(magic_file='openbook_common/misc/magic.mgc', mime=True)
 
 
