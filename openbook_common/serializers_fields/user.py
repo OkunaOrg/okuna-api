@@ -37,6 +37,23 @@ class IsSubscribedToUserField(Field):
         return False
 
 
+class IsFollowedField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(IsFollowedField, self).__init__(**kwargs)
+
+    def to_representation(self, user):
+        request = self.context.get('request')
+
+        if not request.user.is_anonymous:
+            if request.user.pk == user.pk:
+                return False
+            return user.is_following_user_with_id(request.user.pk)
+
+        return False
+
+
 class IsUserReportedField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'
