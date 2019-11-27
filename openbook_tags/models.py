@@ -11,3 +11,25 @@ from openbook_common.utils.helpers import generate_random_hex_color
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community
 
+
+class Hashtag(models.Model):
+    name = models.CharField(_('name'), max_length=settings.HASHTAG_NAME_MAX_LENGTH, blank=False, null=False,
+                            unique=True)
+    color = models.CharField(_('color'), max_length=settings.COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
+                             validators=[hex_color_validator])
+    created = models.DateTimeField(editable=False)
+    posts = models.ManyToManyField(Community, related_name='tags')
+
+    @classmethod
+    def create_tag(cls, name, color=None):
+        if not color:
+            color = generate_random_hex_color()
+
+        tag = cls.objects.create(name=name, color=color, description=None)
+
+        return tag
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.created = timezone.now()
+        return super(Hashtag, self).save(*args, **kwargs)

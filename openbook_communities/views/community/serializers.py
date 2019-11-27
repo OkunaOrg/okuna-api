@@ -51,7 +51,7 @@ class UpdateCommunitySerializer(serializers.Serializer):
         required=False,
         min_length=settings.COMMUNITY_CATEGORIES_MIN_AMOUNT,
         max_length=settings.COMMUNITY_CATEGORIES_MAX_AMOUNT,
-        child=serializers.CharField(max_length=settings.TAG_NAME_MAX_LENGTH, validators=[category_name_exists]),
+        child=serializers.CharField(max_length=settings.HASHTAG_NAME_MAX_LENGTH, validators=[category_name_exists]),
     )
     color = serializers.CharField(max_length=settings.COLOR_ATTR_MAX_LENGTH, required=False,
                                   validators=[hex_color_validator])
