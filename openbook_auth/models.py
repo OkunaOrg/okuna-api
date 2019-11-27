@@ -189,7 +189,7 @@ class User(AbstractUser):
             )
 
     @classmethod
-    def count_public_posts_for_user_with_username(cls, username):
+    def count_unauthenticated_public_posts_for_user_with_username(cls, username):
         """
         Count public posts for unauthenticated user
         :return:

@@ -206,7 +206,7 @@ class PostsCountField(Field):
             return value.count_posts_for_user_with_id(request.user.pk)
 
         User = get_user_model()
-        return User.count_public_posts_for_user_with_username(username=value.username)
+        return User.count_unauthenticated_public_posts_for_user_with_username(username=value.username)
 
 
 class UnreadNotificationsCountField(Field):
