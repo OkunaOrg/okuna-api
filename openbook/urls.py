@@ -37,8 +37,7 @@ from openbook_common.views import Time, Health, EmojiGroups, ProxyDomainCheck
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
     FavoriteCommunities, SearchCommunities, JoinedCommunities, AdministratedCommunities, ModeratedCommunities, \
     SearchJoinedCommunities, TopPostCommunityExclusions, TopPostCommunityExclusionsSearch, SuggestedCommunities, \
-    SearchSubscribedCommunities, SearchAdministratedCommunities, SearchModeratedCommunities, SearchFavoriteCommunities, \
-    SubscribedCommunities
+    SearchAdministratedCommunities, SearchModeratedCommunities, SearchFavoriteCommunities
 from openbook_communities.views.community.administrators.views import CommunityAdministratorItem, \
     CommunityAdministrators, SearchCommunityAdministrators
 from openbook_communities.views.community.banned_users.views import BanUser, UnbanUser, CommunityBannedUsers, \
@@ -278,8 +277,6 @@ communities_patterns = [
     path('trending/', TrendingCommunities.as_view(), name='trending-communities'),
     path('joined/', JoinedCommunities.as_view(), name='joined-communities'),
     path('joined/search/', SearchJoinedCommunities.as_view(), name='search-joined-communities'),
-    path('subscribed/', SubscribedCommunities.as_view(), name='subscribed-communities'),
-    path('subscribed/search/', SearchSubscribedCommunities.as_view(), name='search-subscribed-communities'),
     path('favorites/', FavoriteCommunities.as_view(), name='favorite-communities'),
     path('favorites/search/', SearchFavoriteCommunities.as_view(), name='search-favorite-communities'),
     path('administrated/', AdministratedCommunities.as_view(), name='administrated-communities'),
