@@ -128,6 +128,7 @@ INSTALLED_APPS = [
     'openbook_communities',
     'openbook_invitations',
     'openbook_tags',
+    'openbook_hashtags',
     'openbook_categories',
     'openbook_notifications',
     'openbook_devices',
