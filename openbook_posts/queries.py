@@ -1,6 +1,7 @@
 from django.db.models import Q
 
-from openbook_common.utils.model_loaders import get_post_model, get_moderated_object_model, get_community_model
+from openbook_common.utils.model_loaders import get_post_model, get_moderated_object_model, get_community_model, \
+    get_circle_model
 
 
 def make_only_posts_with_hashtag_with_id(hashtag_id):
@@ -55,7 +56,21 @@ def make_exclude_blocked_community_posts_for_user_and_community_with_ids(user_id
 def make_only_visible_community_posts_for_user_with_id_query(user_id):
     # Ensure public/private visibility is respected
     community_posts_visibility_query = Q(community__memberships__user__id=user_id)
-    Community = get_community_model()
-    community_posts_visibility_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, ), Q.OR)
+    community_posts_visibility_query.add(make_only_public_community_posts_query(), Q.OR)
 
     return community_posts_visibility_query
+
+
+def make_only_public_community_posts_query():
+    Community = get_community_model()
+    return Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, )
+
+
+def make_only_world_circle_posts_query():
+    Circle = get_circle_model()
+    world_circle_id = Circle.get_world_circle().pk
+    return Q(circles__id=world_circle_id)
+
+
+def make_only_public_posts_query():
+    return make_only_public_community_posts_query() | make_only_world_circle_posts_query()
