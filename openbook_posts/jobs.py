@@ -1,12 +1,13 @@
 from django.utils import timezone
 from django_rq import job
 from video_encoding import tasks
+from datetime import timedelta
 from django.db.models import Q, Count
 from django.conf import settings
 from cursor_pagination import CursorPaginator
 
 from openbook_common.utils.model_loaders import get_post_model, get_post_media_model, get_community_model, \
-    get_top_post_model, get_post_comment_model, get_moderated_object_model
+    get_top_post_model, get_post_comment_model, get_moderated_object_model, get_trending_post_model
 import logging
 
 logger = logging.getLogger(__name__)
@@ -195,6 +196,85 @@ def _add_post_to_top_post(post):
     if not TopPost.objects.filter(post=post).exists():
         return TopPost(post=post, created=timezone.now())
     return None
+
+
+@job('low')
+def curate_trending_posts():
+    """
+    Curates the trending posts.
+    This job should be scheduled to be run every n hours.
+    """
+    Post = get_post_model()
+    Community = get_community_model()
+    ModeratedObject = get_moderated_object_model()
+    TrendingPost = get_trending_post_model()
+    logger.info('Processing trending posts at %s...' % timezone.now())
+
+    trending_posts_query = Q(created__gte=timezone.now() - timedelta(
+        hours=12))
+
+    trending_posts_community_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, status=Post.STATUS_PUBLISHED,
+                                       is_closed=False, is_deleted=False)
+    trending_posts_community_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
+    trending_posts_query.add(trending_posts_community_query, Q.AND)
+
+    posts_select_related = 'community'
+    posts_prefetch_related = 'reactions__reactor'
+    posts_only = ('id', 'status', 'is_deleted', 'is_closed', 'community__type')
+
+    posts = Post.objects. \
+        select_related(posts_select_related). \
+        prefetch_related(posts_prefetch_related). \
+        only(*posts_only). \
+        filter(trending_posts_query). \
+        annotate(reactions_count=Count('reactions__reactor_id')).\
+        order_by('-reactions_count', '-created')[:30]
+
+    trending_posts_objects = []
+
+    for post in posts.iterator():
+        if TrendingPost.objects.filter(post=post).exists():
+            TrendingPost.objects.filter(post=post).delete()
+
+        trending_post = TrendingPost(post=post, created=timezone.now())
+        trending_posts_objects.append(trending_post)
+
+    TrendingPost.objects.bulk_create(trending_posts_objects)
+
+    return 'Curated: %d posts' % posts.count()
+
+
+@job('low')
+def clean_trending_posts():
+    """
+    Cleans trending posts.
+    This job should be scheduled to be run every n hours.
+    """
+    Post = get_post_model()
+    Community = get_community_model()
+    TrendingPost = get_trending_post_model()
+    ModeratedObject = get_moderated_object_model()
+
+    # if any of these is true, we will remove the trending post
+    trending_posts_community_query = Q(post__community__type=Community.COMMUNITY_TYPE_PRIVATE)
+    trending_posts_community_query.add(Q(post__is_closed=True), Q.OR)
+    trending_posts_community_query.add(Q(post__is_deleted=True), Q.OR)
+    trending_posts_community_query.add(Q(post__status=Post.STATUS_DRAFT), Q.OR)
+    trending_posts_community_query.add(Q(post__status=Post.STATUS_PROCESSING), Q.OR)
+    trending_posts_community_query.add(Q(post__moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.OR)
+
+    posts_select_related = 'post__community'
+    posts_only = ('post__id', 'post__status', 'post__is_deleted', 'post__is_closed', 'post__community__type')
+
+    removable_trending_posts = TrendingPost.objects.select_related(posts_select_related). \
+        only(*posts_only). \
+        filter(trending_posts_community_query)
+
+    delete_ids = [trending_post.pk for trending_post in removable_trending_posts]
+
+    # delete posts
+    TrendingPost.objects.filter(id__in=delete_ids).delete()
 
 
 def _chunked_queryset_iterator(queryset, size, *, ordering=('id',)):
