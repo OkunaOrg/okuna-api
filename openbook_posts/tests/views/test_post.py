@@ -21,9 +21,10 @@ from rq import SimpleWorker
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_community, make_moderation_category, \
-    get_test_videos, get_test_image, make_proxy_blacklisted_domain
+    get_test_videos, get_test_image, make_proxy_blacklisted_domain, make_hashtag, make_hashtag_name
 from openbook_common.utils.model_loaders import get_language_model
 from openbook_communities.models import Community
+from openbook_hashtags.models import Hashtag
 from openbook_notifications.models import PostUserMentionNotification, Notification
 from openbook_posts.models import Post, PostUserMention, PostMedia
 from openbook_common.models import ProxyBlacklistedDomain
@@ -918,6 +919,98 @@ class PostItemAPITests(OpenbookAPITestCase):
         new_post_user_mention = PostUserMention.objects.get(user_id=mentioned_user.pk, post_id=post.pk,
                                                             id=post_user_mention.pk)
         self.assertEqual(new_post_user_mention.pk, post_user_mention.pk)
+
+    def test_editing_own_post_with_hashtag_creates_hashtag_if_not_exist(self):
+        """
+        when editing a post with a hashtag, should create  it if not exists
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        hashtag_name = make_hashtag_name()
+        post_text = 'One hashtag #' + hashtag_name
+
+        post = user.create_public_post(text=post_text)
+
+        new_hashtag_name = make_hashtag_name()
+
+        new_post_text = 'Another hashtag #' + new_hashtag_name
+
+        data = {
+            'text': new_post_text
+        }
+
+        url = self._get_url(post)
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        post = Post.objects.get(text=new_post_text, creator_id=user.pk)
+        created_hashtag = Hashtag.objects.get(name=new_hashtag_name)
+        self.assertTrue(post.hashtags.filter(pk=created_hashtag.pk).exists())
+        self.assertEqual(post.hashtags.all().count(), 1)
+
+    def test_editing_own_post_with_hashtag_updates_to_existing_hashtag_exists(self):
+        """
+        when editing a post with a hashtag, should update to it if exists
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        hashtag = make_hashtag()
+        post_text = 'One hashtag #' + hashtag.name
+
+        post = user.create_public_post(text=post_text)
+
+        new_hashtag = make_hashtag()
+
+        new_post_text = 'Another hashtag #' + new_hashtag.name
+
+        data = {
+            'text': new_post_text
+        }
+
+        url = self._get_url(post)
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        post = Post.objects.get(text=new_post_text, creator_id=user.pk)
+        self.assertTrue(post.hashtags.filter(pk=new_hashtag.pk).exists())
+        self.assertEqual(post.hashtags.all().count(), 1)
+
+    def test_editing_own_post_with_hashtag_does_not_create_double_hashtags(self):
+        """
+        when editing a post with a hashtag, should not create duplicate hashtags
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        hashtag = make_hashtag()
+        post_text = 'One hashtag #' + hashtag.name
+
+        post = user.create_public_post(text=post_text)
+
+        new_post_text = 'Same hashtag #' + hashtag.name
+
+        data = {
+            'text': new_post_text
+        }
+
+        url = self._get_url(post)
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        post = Post.objects.get(text=new_post_text, creator_id=user.pk)
+        self.assertEqual(post.hashtags.filter(name=hashtag.name).count(), 1)
+        self.assertEqual(post.hashtags.all().count(), 1)
 
     def test_canot_edit_to_remove_text_from_own_text_only_post(self):
         """

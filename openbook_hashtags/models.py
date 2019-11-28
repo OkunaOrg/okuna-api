@@ -41,7 +41,7 @@ class Hashtag(models.Model):
             color = generate_random_hex_color()
 
         name = name.lower()
-        tag = cls.objects.create(name=name, color=color, description=None, image=image)
+        tag = cls.objects.create(name=name, color=color, image=image)
 
         return tag
 
