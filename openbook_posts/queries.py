@@ -1,0 +1,61 @@
+from django.db.models import Q
+
+from openbook_common.utils.model_loaders import get_post_model, get_moderated_object_model, get_community_model
+
+
+def make_only_posts_with_hashtag_with_id(hashtag_id):
+    return Q(hashtags__id=hashtag_id)
+
+
+def make_only_published_posts_query():
+    # Only retrieve published posts
+    Post = get_post_model()
+    return Q(status=Post.STATUS_PUBLISHED)
+
+
+def make_exclude_soft_deleted_posts_query():
+    return Q(is_deleted=False)
+
+
+def make_exclude_reported_and_approved_posts_query():
+    ModeratedObject = get_moderated_object_model()
+    return ~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED)
+
+
+def make_exclude_reported_posts_by_user_with_id_query(user_id):
+    return ~Q(moderated_object__reports__reporter_id=user_id)
+
+
+def make_exclude_community_posts_banned_from_for_user_with_id_query(user_id):
+    return ~Q(community__banned_users__id=user_id)
+
+
+def make_exclude_closed_posts_in_community_for_user_with_id_query(user_id):
+    return make_exclude_closed_posts_query() | Q(creator_id=user_id)
+
+
+def make_exclude_closed_posts_query():
+    return Q(is_closed=False)
+
+
+def make_exclude_blocked_community_posts_for_user_and_community_with_ids(user_id, community_id):
+    # Don't retrieve posts of blocked users, except if they're staff members
+    blocked_users_query = ~Q(Q(creator__blocked_by_users__blocker_id=user_id) | Q(
+        creator__user_blocks__blocked_user_id=user_id))
+
+    blocked_users_query_staff_members = Q(creator__communities_memberships__community_id=community_id)
+    blocked_users_query_staff_members.add(Q(creator__communities_memberships__is_administrator=True) | Q(
+        creator__communities_memberships__is_moderator=True), Q.AND)
+
+    blocked_users_query.add(~blocked_users_query_staff_members, Q.AND)
+
+    return blocked_users_query
+
+
+def make_only_visible_community_posts_for_user_with_id_query(user_id):
+    # Ensure public/private visibility is respected
+    community_posts_visibility_query = Q(community__memberships__user__id=user_id)
+    Community = get_community_model()
+    community_posts_visibility_query.add(Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, ), Q.OR)
+
+    return community_posts_visibility_query
