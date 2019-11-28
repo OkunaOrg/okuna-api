@@ -616,6 +616,19 @@ class TopPost(models.Model):
         return super(TopPost, self).save(*args, **kwargs)
 
 
+class TrendingPost(models.Model):
+    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='trending_post')
+    created = models.DateTimeField(editable=False, db_index=True)
+
+    def save(self, *args, **kwargs):
+        ''' On save, update timestamps '''
+        if not self.id:
+            self.created = timezone.now()
+        self.modified = timezone.now()
+
+        return super(TrendingPost, self).save(*args, **kwargs)
+
+
 class TopPostCommunityExclusion(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='top_posts_community_exclusions')
     community = models.ForeignKey('openbook_communities.Community', on_delete=models.CASCADE, related_name='top_posts_community_exclusions')
