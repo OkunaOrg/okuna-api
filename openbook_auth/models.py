@@ -1960,7 +1960,7 @@ class User(AbstractUser):
             hashtag_posts_query.add(Q(id__lt=max_id), Q.AND)
 
         Post = get_post_model()
-        hashtag_posts = Post.objects.filter(hashtag_posts_query)
+        hashtag_posts = Post.objects.filter(hashtag_posts_query).distinct()
 
         return hashtag_posts
 

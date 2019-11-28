@@ -24,6 +24,7 @@ class Hashtag(models.Model):
     color = models.CharField(_('color'), max_length=settings.COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
                              validators=[hex_color_validator])
     created = models.DateTimeField(editable=False)
+    posts = models.ManyToManyField(Post, related_name='hashtags')
     width = models.PositiveIntegerField(editable=False, null=True, blank=False)
     height = models.PositiveIntegerField(editable=False, null=True, blank=False)
     image = ProcessedImageField(verbose_name=_('image'),

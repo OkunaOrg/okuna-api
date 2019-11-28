@@ -49,6 +49,6 @@ class HashtagPosts(APIView):
         hashtag_posts = user.get_posts_for_hashtag_with_name(hashtag_name=hashtag_name, max_id=max_id).order_by('-id')[
                         :count]
 
-        hashtag_posts_serializer = GetHashtagPostsPostSerializer(hashtag_posts, context={'request': request})
+        hashtag_posts_serializer = GetHashtagPostsPostSerializer(hashtag_posts, context={'request': request}, many=True)
 
         return Response(hashtag_posts_serializer.data, status=status.HTTP_200_OK)
