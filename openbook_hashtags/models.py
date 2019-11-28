@@ -13,6 +13,7 @@ from openbook_common.utils.helpers import generate_random_hex_color, delete_file
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community
 from openbook_hashtags.helpers import upload_to_hashtags_directory
+from openbook_posts.models import Post
 
 hashtag_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else default_storage
 
@@ -23,7 +24,6 @@ class Hashtag(models.Model):
     color = models.CharField(_('color'), max_length=settings.COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
                              validators=[hex_color_validator])
     created = models.DateTimeField(editable=False)
-    posts = models.ManyToManyField(Community, related_name='hashtags')
     width = models.PositiveIntegerField(editable=False, null=True, blank=False)
     height = models.PositiveIntegerField(editable=False, null=True, blank=False)
     image = ProcessedImageField(verbose_name=_('image'),
@@ -60,8 +60,8 @@ class Hashtag(models.Model):
         return hashtag
 
     @classmethod
-    def hashtag_with_name_exists(cls):
-        pass
+    def hashtag_with_name_exists(cls, hashtag_name):
+        return cls.objects.filter(name=hashtag_name).exists()
 
     def save(self, *args, **kwargs):
         if not self.id:
@@ -74,7 +74,7 @@ class Hashtag(models.Model):
 
     def delete_media(self):
         if self.has_image():
-            delete_file_field(self.image.image)
+            delete_file_field(self.image)
 
     def has_image(self):
         if hasattr(self, 'image'):

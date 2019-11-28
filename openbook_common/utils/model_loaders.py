@@ -106,7 +106,7 @@ def get_language_model():
 
 
 def get_hashtag_model():
-    return apps.get_model('openbook_tags.Hashtag')
+    return apps.get_model('openbook_hashtags.Hashtag')
 
 
 def get_category_model():
