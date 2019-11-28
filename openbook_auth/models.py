@@ -1769,9 +1769,9 @@ class User(AbstractUser):
 
         return User.objects.filter(followings_query).distinct()
 
-    def get_trending_posts(self):
+    def get_trending_posts(self, max_id=None, min_id=None):
         Post = get_post_model()
-        return Post.get_trending_posts_for_user_with_id(user_id=self.pk)
+        return Post.get_trending_posts_for_user_with_id(user_id=self.pk, max_id=max_id, min_id=min_id)
 
     def get_trending_communities(self, category_name=None):
         Community = get_community_model()

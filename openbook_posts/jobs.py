@@ -213,7 +213,8 @@ def curate_trending_posts():
     trending_posts_query = Q(created__gte=timezone.now() - timedelta(
         hours=12))
 
-    trending_posts_community_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, status=Post.STATUS_PUBLISHED,
+    trending_posts_community_query = Q(community__isnull=False, community__type=Community.COMMUNITY_TYPE_PUBLIC,
+                                       status=Post.STATUS_PUBLISHED,
                                        is_closed=False, is_deleted=False)
     trending_posts_community_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
 
