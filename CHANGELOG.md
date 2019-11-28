@@ -15,7 +15,7 @@ The change log for the API server for Okuna.
 - Add search APIs to administrated, moderated, favorite, joined, subscribed
 communities
 - Add subscribe to user APIs
-
+- Add trending posts curation and clean up jobs
 
 #### Happy testing 🎉!
 
