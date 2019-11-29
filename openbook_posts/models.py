@@ -23,6 +23,7 @@ from rest_framework.exceptions import ValidationError
 
 from django.conf import settings
 
+from openbook_posts.validators import post_text_validators
 from video_encoding.backends import get_backend
 from video_encoding.fields import VideoField
 from video_encoding.models import Format
@@ -51,7 +52,7 @@ from openbook_posts.helpers import upload_to_post_image_directory, upload_to_pos
 from openbook_posts.jobs import process_post_media
 
 magic = get_magic()
-from openbook_common.helpers import get_language_for_text, extract_urls_from_string
+from openbook_common.helpers import get_language_for_text
 
 post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else default_storage
 
@@ -59,7 +60,8 @@ post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else defa
 class Post(models.Model):
     moderated_object = GenericRelation(ModeratedObject, related_query_name='posts')
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
-    text = models.TextField(_('text'), max_length=settings.POST_MAX_LENGTH, blank=False, null=True)
+    text = models.TextField(_('text'), max_length=settings.POST_MAX_LENGTH, blank=False, null=True,
+                            validators=post_text_validators)
     created = models.DateTimeField(editable=False, db_index=True)
     modified = models.DateTimeField(db_index=True, default=timezone.now)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')

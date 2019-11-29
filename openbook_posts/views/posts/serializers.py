@@ -15,6 +15,7 @@ from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_lists.validators import list_id_exists
 from openbook_posts.models import PostImage, Post, PostReaction, TopPost
+from openbook_posts.validators import post_text_validators
 
 
 class GetPostsSerializer(serializers.Serializer):
@@ -62,7 +63,8 @@ class GetTopPostsSerializer(serializers.Serializer):
 
 
 class CreatePostSerializer(serializers.Serializer):
-    text = serializers.CharField(max_length=settings.POST_MAX_LENGTH, required=False, allow_blank=False)
+    text = serializers.CharField(max_length=settings.POST_MAX_LENGTH, required=False, allow_blank=False,
+                                 validators=post_text_validators)
     # Prefer adding images with post/uuid/images
     image = RestrictedImageFileSizeField(allow_empty_file=False, required=False,
                                          max_upload_size=settings.POST_MEDIA_MAX_SIZE)

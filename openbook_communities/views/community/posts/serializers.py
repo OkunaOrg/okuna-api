@@ -9,6 +9,7 @@ from openbook_common.serializers_fields.post import PostReactionsEmojiCountField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 from openbook_posts.models import Post
+from openbook_posts.validators import post_text_validators
 
 
 class GetCommunityPostsSerializer(serializers.Serializer):
@@ -25,7 +26,8 @@ class GetCommunityPostsSerializer(serializers.Serializer):
 
 
 class CreateCommunityPostSerializer(serializers.Serializer):
-    text = serializers.CharField(max_length=settings.POST_MAX_LENGTH, required=False, allow_blank=False)
+    text = serializers.CharField(max_length=settings.POST_MAX_LENGTH, required=False, allow_blank=False,
+                                 validators=post_text_validators)
     image = RestrictedImageFileSizeField(allow_empty_file=False, required=False,
                                          max_upload_size=settings.POST_MEDIA_MAX_SIZE)
     video = serializers.FileField(allow_empty_file=False, required=False)
