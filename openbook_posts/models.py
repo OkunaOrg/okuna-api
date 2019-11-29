@@ -814,9 +814,12 @@ class PostComment(models.Model):
 
         self.modified = timezone.now()
 
+        post_comment = super(PostComment, self).save(*args, **kwargs)
+
         self._process_post_comment_mentions()
         self._process_post_comment_hashtags()
-        return super(PostComment, self).save(*args, **kwargs)
+
+        return post_comment
 
     def _process_post_comment_mentions(self):
         usernames = extract_usernames_from_string(string=self.text)
