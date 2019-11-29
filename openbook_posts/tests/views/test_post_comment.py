@@ -987,7 +987,7 @@ class PostCommentItemAPITests(OpenbookAPITestCase):
                                                                            id=post_comment_user_mention.pk)
         self.assertEqual(new_post_comment_user_mention.pk, post_comment_user_mention.pk)
 
-    def test_editing_own_post_comment_commentwith_hashtag_creates_hashtag_if_not_exist(self):
+    def test_editing_own_post_comment_comment_with_hashtag_creates_hashtag_if_not_exist(self):
         """
         when editing a post comment with a hashtag, should create  it if not exists
         """
@@ -1019,7 +1019,7 @@ class PostCommentItemAPITests(OpenbookAPITestCase):
         self.assertTrue(post_comment.hashtags.filter(pk=created_hashtag.pk).exists())
         self.assertEqual(post_comment.hashtags.all().count(), 1)
 
-    def test_editing_own_post_comment_commentwith_hashtag_updates_to_existing_hashtag_exists(self):
+    def test_editing_own_post_comment_comment_with_hashtag_updates_to_existing_hashtag_exists(self):
         """
         when editing a post comment with a hashtag, should update to it if exists
         """
@@ -1050,7 +1050,7 @@ class PostCommentItemAPITests(OpenbookAPITestCase):
         self.assertTrue(post_comment.hashtags.filter(pk=new_hashtag.pk).exists())
         self.assertEqual(post_comment.hashtags.all().count(), 1)
 
-    def test_editing_own_post_comment_commentwith_hashtag_does_not_create_double_hashtags(self):
+    def test_editing_own_post_comment_comment_with_hashtag_does_not_create_double_hashtags(self):
         """
         when editing a post comment with a hashtag, should not create duplicate hashtags
         """

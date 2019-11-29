@@ -3,7 +3,7 @@ from django.conf import settings
 
 from openbook_auth.models import UserProfile, User
 from openbook_common.models import Emoji, Language
-from openbook_common.serializers import CommonUserProfileBadgeSerializer
+from openbook_common.serializers import CommonUserProfileBadgeSerializer, CommonHashtagSerializer
 from openbook_common.serializers_fields.post_comment import PostCommenterField, RepliesCountField, \
     PostCommentReactionsEmojiCountField, PostCommentReactionField, PostCommentIsMutedField
 from openbook_communities.models import CommunityMembership
@@ -132,6 +132,7 @@ class PostCommentSerializer(serializers.ModelSerializer):
     reaction = PostCommentReactionField(post_comment_reaction_serializer=PostCommentReactionSerializer)
     is_muted = PostCommentIsMutedField()
     language = PostCommentLanguageSerializer()
+    hashtags = CommonHashtagSerializer(many=True)
 
     class Meta:
         model = PostComment
@@ -146,6 +147,7 @@ class PostCommentSerializer(serializers.ModelSerializer):
             'reaction',
             'is_edited',
             'is_muted',
+            'hashtags',
             'id'
         )
 
