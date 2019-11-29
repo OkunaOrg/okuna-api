@@ -23,7 +23,7 @@ from rest_framework.exceptions import ValidationError
 
 from django.conf import settings
 
-from openbook_posts.validators import post_text_validators
+from openbook_posts.validators import post_text_validators, post_comment_text_validators
 from video_encoding.backends import get_backend
 from video_encoding.fields import VideoField
 from video_encoding.models import Format
@@ -740,7 +740,8 @@ class PostComment(models.Model):
     created = models.DateTimeField(editable=False, db_index=True)
     modified = models.DateTimeField(db_index=True, default=timezone.now)
     commenter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_comments')
-    text = models.TextField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False)
+    text = models.TextField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False,
+                            validators=post_comment_text_validators)
     language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, related_name='post_comments')
     is_edited = models.BooleanField(default=False, null=False, blank=False)
     # This only happens if the comment was reported and found with critical severity content
@@ -814,6 +815,7 @@ class PostComment(models.Model):
         self.modified = timezone.now()
 
         self._process_post_comment_mentions()
+        self._process_post_comment_hashtags()
         return super(PostComment, self).save(*args, **kwargs)
 
     def _process_post_comment_mentions(self):
@@ -863,6 +865,29 @@ class PostComment(models.Model):
                         existing_mention_usernames.append(username)
                     except User.DoesNotExist:
                         pass
+
+    def _process_post_comment_hashtags(self):
+        if not self.text:
+            self.hashtags.all().delete()
+        else:
+            hashtags = extract_hashtags_from_string(string=self.text)
+            if not hashtags:
+                self.hashtags.all().delete()
+            else:
+                existing_hashtags = []
+                for existing_hashtag in self.hashtags.only('id', 'name').all().iterator():
+                    if existing_hashtag.name not in hashtags:
+                        self.hashtags.remove(existing_hashtag)
+                    else:
+                        existing_hashtags.append(existing_hashtag.name)
+
+                Hashtag = get_hashtag_model()
+
+                for hashtag in hashtags:
+                    hashtag = hashtag.lower()
+                    if hashtag not in existing_hashtags:
+                        hashtag_obj = Hashtag.get_or_create_hashtag_with_name_and_post(name=hashtag, post=self)
+                        self.hashtags.add(hashtag_obj)
 
     def update_comment(self, text):
         self.text = text

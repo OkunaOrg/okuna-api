@@ -14,7 +14,7 @@ from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community
 from openbook_hashtags.helpers import upload_to_hashtags_directory
 from openbook_hashtags.validators import hashtag_name_validator
-from openbook_posts.models import Post
+from openbook_posts.models import Post, PostComment
 
 hashtag_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else default_storage
 
@@ -27,6 +27,7 @@ class Hashtag(models.Model):
                              validators=[hex_color_validator])
     created = models.DateTimeField(editable=False)
     posts = models.ManyToManyField(Post, related_name='hashtags')
+    comments = models.ManyToManyField(PostComment, related_name='hashtags')
     width = models.PositiveIntegerField(editable=False, null=True, blank=False)
     height = models.PositiveIntegerField(editable=False, null=True, blank=False)
     image = ProcessedImageField(verbose_name=_('image'),

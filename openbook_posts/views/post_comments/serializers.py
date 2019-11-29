@@ -8,7 +8,7 @@ from openbook_common.serializers_fields.post_comment import PostCommenterField, 
     PostCommentReactionsEmojiCountField, PostCommentReactionField, PostCommentIsMutedField
 from openbook_communities.models import CommunityMembership
 from openbook_posts.models import PostComment, Post, PostCommentReaction
-from openbook_posts.validators import post_uuid_exists
+from openbook_posts.validators import post_uuid_exists, post_comment_text_validators
 from openbook_posts.views.post_comments.serializer_fields import RepliesField
 
 
@@ -49,7 +49,6 @@ class PostCommenterCommunityMembershipSerializer(serializers.ModelSerializer):
 
 
 class PostCommentLanguageSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Language
         fields = (
@@ -156,7 +155,8 @@ class CommentPostSerializer(serializers.Serializer):
         validators=[post_uuid_exists],
         required=True,
     )
-    text = serializers.CharField(max_length=settings.POST_COMMENT_MAX_LENGTH, required=True, allow_blank=False)
+    text = serializers.CharField(max_length=settings.POST_COMMENT_MAX_LENGTH, required=True, allow_blank=False,
+                                 validators=post_comment_text_validators)
 
 
 class GetPostCommentsSerializer(serializers.Serializer):

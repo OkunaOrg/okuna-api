@@ -87,3 +87,18 @@ def post_text_hashtags_amount_validator(post_text):
 post_text_validators = [
     post_text_hashtags_amount_validator
 ]
+
+
+def post_comment_text_hashtags_amount_validator(post_text):
+    hashtags = extract_hashtags_from_string(post_text)
+    if len(hashtags) > settings.POST_COMMENT_MAX_HASHTAGS:
+        raise ValidationError(
+            _(
+                'A post comment can\'t have more than %(max_hashtags)d hashtags') % {
+                'max_hashtags': settings.POST_MAX_HASHTAGS,
+            })
+
+
+post_comment_text_validators = [
+    post_comment_text_hashtags_amount_validator
+]
