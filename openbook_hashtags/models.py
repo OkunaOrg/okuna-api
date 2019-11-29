@@ -9,6 +9,7 @@ from imagekit.models import ProcessedImageField
 from pilkit.processors import ResizeToFit
 
 from openbook.storage_backends import S3PrivateMediaStorage
+from openbook_common.models import Emoji
 from openbook_common.utils.helpers import delete_file_field, get_random_pastel_color
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community
@@ -37,6 +38,8 @@ class Hashtag(models.Model):
                                 height_field='height',
                                 blank=False, null=True, format='JPEG', options={'quality': 60},
                                 processors=[ResizeToFit(width=1024, upscale=False)])
+    emoji = models.ForeignKey(Emoji, on_delete=models.SET_NULL, related_name='hashtags', null=True)
+
 
     @classmethod
     def create_hashtag(cls, name, color=None, image=None):

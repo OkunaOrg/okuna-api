@@ -159,6 +159,7 @@ class CommonCommunityMembershipSerializer(serializers.ModelSerializer):
 
 class CommonHashtagSerializer(serializers.ModelSerializer):
     posts_count = HashtagPostsCountField()
+    emoji = CommonEmojiSerializer()
 
     class Meta:
         model = Hashtag
@@ -167,7 +168,8 @@ class CommonHashtagSerializer(serializers.ModelSerializer):
             'name',
             'color',
             'image',
-            'posts_count'
+            'posts_count',
+            'emoji'
         )
 
 
