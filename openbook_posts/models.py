@@ -889,7 +889,7 @@ class PostComment(models.Model):
                 for hashtag in hashtags:
                     hashtag = hashtag.lower()
                     if hashtag not in existing_hashtags:
-                        hashtag_obj = Hashtag.get_or_create_hashtag_with_name_and_post(name=hashtag, post=self)
+                        hashtag_obj = Hashtag.get_or_create_hashtag_with_name_and_post(name=hashtag, post=self.post)
                         self.hashtags.add(hashtag_obj)
 
     def update_comment(self, text):

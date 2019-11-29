@@ -12,11 +12,12 @@ import random
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_community, make_private_community, \
-    make_moderation_category, get_test_usernames
+    make_moderation_category, get_test_usernames, make_hashtag_name, make_hashtag
+from openbook_hashtags.models import Hashtag
 from openbook_moderation.models import ModeratedObject
 from openbook_notifications.models import PostCommentNotification, PostCommentReplyNotification, \
     PostCommentUserMentionNotification, Notification
-from openbook_posts.models import PostComment, PostCommentUserMention
+from openbook_posts.models import PostComment, PostCommentUserMention, Post
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -739,6 +740,93 @@ class PostCommentsAPITests(OpenbookAPITestCase):
                                                               notification__owner_id=test_user.pk,
                                                               notification__notification_type=Notification.POST_COMMENT_USER_MENTION).count(),
             1)
+
+    def test_create_text_post_comment_with_hashtag_creates_hashtag_if_not_exist(self):
+        """
+        when creating a post comment with a hashtag, should create it if not exists
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        hashtag = make_hashtag_name()
+
+        post_comment_text = 'A hashtag #' + hashtag
+
+        post = user.create_public_post(text=make_fake_post_text())
+
+        data = {
+            'text': post_comment_text
+        }
+
+        url = self._get_url(post)
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+        post_comment = PostComment.objects.get(text=post_comment_text, commenter_id=user.pk)
+        created_hashtag = Hashtag.objects.get(name=hashtag)
+        self.assertTrue(post_comment.hashtags.filter(pk=created_hashtag.pk).exists())
+        self.assertEqual(post_comment.hashtags.all().count(), 1)
+
+    def test_create_text_post_comment_with_existing_hashtag_adds_it(self):
+        """
+        when creating a post commentwith an existing hashtag, should add it
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        hashtag = make_hashtag()
+
+        new_post_comment_text = 'A hashtag #' + hashtag.name
+
+        data = {
+            'text': new_post_comment_text
+        }
+
+        post = user.create_public_post(text=make_fake_post_text())
+
+        url = self._get_url(post)
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+        post_comment = PostComment.objects.get(text=new_post_comment_text, commenter_id=user.pk)
+        self.assertTrue(post_comment.hashtags.filter(pk=hashtag.pk).exists())
+        self.assertEqual(Hashtag.objects.filter(pk=hashtag.pk).count(), 1)
+        self.assertEqual(post_comment.hashtags.all().count(), 1)
+
+    def test_create_text_post_comment_with_repeated_hashtag_does_not_create_double_hashtags(self):
+        """
+        when creating a post commentwith a repeated hashtag, doesnt create it twice
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        hashtag_name = make_hashtag_name()
+        post_comment_text = '#%s #%s' % (hashtag_name, hashtag_name)
+
+        data = {
+            'text': post_comment_text
+        }
+
+        post = user.create_public_post(text=make_fake_post_text())
+
+        url = self._get_url(post)
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+        post_comment = PostComment.objects.get(text=post_comment_text, commenter_id=user.pk)
+        hashtag = Hashtag.objects.get(name=hashtag_name)
+        self.assertEqual(post_comment.hashtags.all().count(), 1)
+        self.assertEqual(post_comment.hashtags.filter(name=hashtag.name).count(), 1)
+        self.assertEqual(Hashtag.objects.filter(name=hashtag.name).count(), 1)
 
     def test_commenting_in_a_post_sets_language_for_comment(self):
         """
