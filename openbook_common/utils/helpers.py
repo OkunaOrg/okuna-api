@@ -51,7 +51,8 @@ def generate_random_hex_color():
 
 
 def get_random_pastel_color():
-    h, s, l = random.random(), 0.5 + random.random() / 2.0, 0.4 + random.random() / 5.0
+    # Its a random color jeez, we dont need cryptographically secure randomness
+    h, s, l = random.random(), 0.5 + random.random() / 2.0, 0.4 + random.random() / 5.0 # nosec
     r, g, b = [int(256 * i) for i in colorsys.hls_to_rgb(h, l, s)]
     return '#%02x%02x%02x' % (r, g, b)
 
