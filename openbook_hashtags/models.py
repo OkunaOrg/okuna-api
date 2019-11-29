@@ -28,7 +28,7 @@ class Hashtag(models.Model):
                              validators=[hex_color_validator])
     created = models.DateTimeField(editable=False)
     posts = models.ManyToManyField(Post, related_name='hashtags')
-    comments = models.ManyToManyField(PostComment, related_name='hashtags')
+    post_comments = models.ManyToManyField(PostComment, related_name='hashtags')
     width = models.PositiveIntegerField(editable=False, null=True, blank=False)
     height = models.PositiveIntegerField(editable=False, null=True, blank=False)
     image = ProcessedImageField(verbose_name=_('image'),
@@ -36,9 +36,9 @@ class Hashtag(models.Model):
                                 upload_to=upload_to_hashtags_directory,
                                 width_field='width',
                                 height_field='height',
-                                blank=False, null=True, format='JPEG', options={'quality': 60},
+                                blank=True, null=True, format='JPEG', options={'quality': 60},
                                 processors=[ResizeToFit(width=1024, upscale=False)])
-    emoji = models.ForeignKey(Emoji, on_delete=models.SET_NULL, related_name='hashtags', null=True)
+    emoji = models.ForeignKey(Emoji, on_delete=models.SET_NULL, related_name='hashtags', null=True, blank=True  )
 
 
     @classmethod
