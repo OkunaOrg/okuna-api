@@ -12,7 +12,7 @@ from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import IsInvitedField, \
     IsCreatorField, RulesField, ModeratorsField, CommunityMembershipsField, IsFavoriteField, AdministratorsField, \
-    IsSubscribedField
+    IsSubscribedField, CommunityPostsCountField
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 
 
@@ -160,6 +160,7 @@ class GetCommunityCommunitySerializer(serializers.ModelSerializer):
     administrators = AdministratorsField(administrator_serializer=GetCommunityStaffUserSerializer)
     memberships = CommunityMembershipsField(community_membership_serializer=GetCommunityCommunityMembershipSerializer)
     rules = RulesField()
+    posts_count = CommunityPostsCountField()
 
     class Meta:
         model = Community
@@ -170,6 +171,7 @@ class GetCommunityCommunitySerializer(serializers.ModelSerializer):
             'avatar',
             'cover',
             'members_count',
+            'posts_count',
             'color',
             'description',
             'rules',

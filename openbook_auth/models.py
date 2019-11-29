@@ -750,6 +750,14 @@ class User(AbstractUser):
         PostReaction = get_post_reaction_model()
         return PostReaction.objects.filter(reactions_query)
 
+    def get_posts_count_for_community(self, community):
+        """
+        Returns 0 if ur not a member and community is private
+        """
+        Post = get_post_model()
+        community_posts_query = self._make_get_community_with_id_posts_query(community=community)
+        return len(set(Post.objects.values_list('id', flat=True).filter(community_posts_query)))
+
     def get_emoji_counts_for_post_with_id(self, post_id, emoji_id=None):
         Post = get_post_model()
         post = Post.objects.select_related('community').get(pk=post_id)
@@ -3313,6 +3321,9 @@ class User(AbstractUser):
         return comments_query
 
     def _make_get_community_with_id_posts_query(self, community, include_closed_posts_for_staff=True):
+        """
+        This query returns duplicates
+        """
 
         Post = get_post_model()
 

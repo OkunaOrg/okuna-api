@@ -8,7 +8,7 @@ from openbook_common.serializers_fields.request import RestrictedImageFileSizeFi
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import IsInvitedField, IsCreatorField, CommunityMembershipsField, \
-    IsFavoriteField, IsSubscribedField
+    IsFavoriteField, IsSubscribedField, CommunityPostsCountField
 from openbook_communities.validators import community_name_characters_validator, community_name_not_taken_validator
 
 
@@ -136,6 +136,7 @@ class CommunitiesCommunitySerializer(serializers.ModelSerializer):
     is_subscribed = IsSubscribedField()
     is_favorite = IsFavoriteField()
     is_creator = IsCreatorField()
+    posts_count = CommunityPostsCountField()
     memberships = CommunityMembershipsField(community_membership_serializer=CommunitiesCommunityMembershipSerializer)
 
     class Meta:
@@ -147,6 +148,7 @@ class CommunitiesCommunitySerializer(serializers.ModelSerializer):
             'avatar',
             'cover',
             'members_count',
+            'posts_count',
             'color',
             'user_adjective',
             'users_adjective',
