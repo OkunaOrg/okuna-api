@@ -13,6 +13,7 @@ from openbook_common.utils.helpers import generate_random_hex_color, delete_file
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community
 from openbook_hashtags.helpers import upload_to_hashtags_directory
+from openbook_hashtags.validators import hashtag_name_validator
 from openbook_posts.models import Post
 
 hashtag_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else default_storage
@@ -20,6 +21,7 @@ hashtag_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else d
 
 class Hashtag(models.Model):
     name = models.CharField(_('name'), max_length=settings.HASHTAG_NAME_MAX_LENGTH, blank=False, null=False,
+                            validators=[hashtag_name_validator],
                             unique=True)
     color = models.CharField(_('color'), max_length=settings.COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
                              validators=[hex_color_validator])
