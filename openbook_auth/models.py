@@ -755,7 +755,8 @@ class User(AbstractUser):
         Returns 0 if ur not a member and community is private
         """
         Post = get_post_model()
-        community_posts_query = self._make_get_community_with_id_posts_query(community=community)
+        community_posts_query = self._make_get_community_with_id_posts_query(community=community,
+                                                                             include_closed_posts_for_staff=False)
         return len(set(Post.objects.values_list('id', flat=True).filter(community_posts_query)))
 
     def get_emoji_counts_for_post_with_id(self, post_id, emoji_id=None):
