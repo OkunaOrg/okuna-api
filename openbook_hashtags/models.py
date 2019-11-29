@@ -75,6 +75,9 @@ class Hashtag(models.Model):
         self.delete_media()
         super(Hashtag, self).delete(*args, **kwargs)
 
+    def count_posts(self):
+        return self.posts.count()
+
     def delete_media(self):
         if self.has_image():
             delete_file_field(self.image)

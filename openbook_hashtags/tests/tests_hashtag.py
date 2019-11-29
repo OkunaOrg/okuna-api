@@ -39,6 +39,35 @@ class HashtagAPITests(OpenbookAPITestCase):
         response_name = parsed_response['name']
         self.assertEqual(response_name, hashtag_name)
 
+    def test_can_retrieve_hashtag_with_posts_count(self):
+        """
+        should be able to retrieve a hashtag with its posts count and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        hashtag = make_hashtag()
+        hashtag_name = hashtag.name
+
+        amount_of_posts = 3
+
+        for i in range(0, amount_of_posts):
+            user = make_user()
+            post_text = '#%s' % hashtag_name
+            user.create_public_post(text=post_text)
+
+        url = self._get_url(hashtag_name=hashtag_name)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertIn('posts_count', parsed_response)
+        posts_count = parsed_response['posts_count']
+        self.assertEqual(posts_count, amount_of_posts)
+
     def _get_url(self, hashtag_name):
         return reverse('hashtag', kwargs={
             'hashtag_name': hashtag_name

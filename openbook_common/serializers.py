@@ -2,7 +2,9 @@ from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
 from openbook_common.models import Emoji, EmojiGroup, Badge, Language
+from openbook_common.serializers_fields.hashtag import HashtagPostsCountField
 from openbook_communities.models import Community, CommunityMembership
+from openbook_hashtags.models import Hashtag
 from openbook_posts.models import PostReaction, PostImage
 
 
@@ -152,6 +154,20 @@ class CommonCommunityMembershipSerializer(serializers.ModelSerializer):
             'community_id',
             'is_administrator',
             'is_moderator',
+        )
+
+
+class CommonHashtagSerializer(serializers.ModelSerializer):
+    posts_count = HashtagPostsCountField()
+
+    class Meta:
+        model = Hashtag
+        fields = (
+            'id',
+            'name',
+            'color',
+            'image',
+            'posts_count'
         )
 
 

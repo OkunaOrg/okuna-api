@@ -1,12 +1,11 @@
 from django.conf import settings
 from rest_framework import serializers
 
-from openbook_common.serializers import CommonPostImageSerializer, CommonPostCreatorSerializer, \
+from openbook_common.serializers import CommonPostCreatorSerializer, \
     CommonCommunityMembershipSerializer, CommonPostEmojiCountSerializer, CommonPostCommunitySerializer, \
     CommonPostReactionSerializer, CommonPostLanguageSerializer
 from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, PostCreatorField, \
     PostReactionsEmojiCountField, PostIsMutedField
-from openbook_hashtags.models import Hashtag
 from openbook_hashtags.validators import hashtag_name_exists
 from openbook_posts.models import Post
 
@@ -15,17 +14,6 @@ class GetHashtagSerializer(serializers.Serializer):
     hashtag_name = serializers.CharField(max_length=settings.HASHTAG_NAME_MAX_LENGTH, required=True, validators=[
         hashtag_name_exists
     ])
-
-
-class GetHashtagsHashtagSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Hashtag
-        fields = (
-            'id',
-            'name',
-            'color',
-            'image'
-        )
 
 
 class GetHashtagPostsSerializer(serializers.Serializer):
