@@ -1,4 +1,6 @@
+import colorsys
 import os
+import random
 import re
 import secrets
 import tempfile
@@ -46,6 +48,12 @@ def normalize_list_value_in_request_data(list_name, request_data):
 
 def generate_random_hex_color():
     return '#%02X%02X%02X' % (r(), r(), r())
+
+
+def get_random_pastel_color():
+    h, s, l = random.random(), 0.5 + random.random() / 2.0, 0.4 + random.random() / 5.0
+    r, g, b = [int(256 * i) for i in colorsys.hls_to_rgb(h, l, s)]
+    return '#%02x%02x%02x' % (r, g, b)
 
 
 def delete_file_field(filefield):

@@ -6,6 +6,7 @@ from openbook_auth.validators import user_username_exists, username_characters_v
 from openbook_circles.models import Circle
 from openbook_circles.validators import circle_id_exists
 from openbook_common.models import Emoji, Badge
+from openbook_common.serializers import CommonHashtagSerializer
 from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, PostReactionsEmojiCountField, \
     CirclesField, PostCreatorField, PostIsMutedField, IsEncircledField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField, RestrictedFileSizeField
@@ -217,6 +218,7 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     is_muted = PostIsMutedField()
     language = PostLanguageSerializer()
     is_encircled = IsEncircledField()
+    hashtags = CommonHashtagSerializer(many=True)
 
     # Temp backwards compat
     image = PostImageSerializer(many=False)
@@ -246,6 +248,7 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'media_thumbnail',
             # Temp backwards compat
             'image',
+            'hashtags',
         )
 
 

@@ -9,7 +9,7 @@ from imagekit.models import ProcessedImageField
 from pilkit.processors import ResizeToFit
 
 from openbook.storage_backends import S3PrivateMediaStorage
-from openbook_common.utils.helpers import generate_random_hex_color, delete_file_field
+from openbook_common.utils.helpers import delete_file_field, get_random_pastel_color
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community
 from openbook_hashtags.helpers import upload_to_hashtags_directory
@@ -40,7 +40,7 @@ class Hashtag(models.Model):
     @classmethod
     def create_hashtag(cls, name, color=None, image=None):
         if not color:
-            color = generate_random_hex_color()
+            color = get_random_pastel_color()
 
         name = name.lower()
         tag = cls.objects.create(name=name, color=color, image=image)
