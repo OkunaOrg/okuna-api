@@ -131,6 +131,7 @@ class GetUserUserSerializer(serializers.ModelSerializer):
             'is_fully_connected',
             'connected_circles',
             'follow_lists',
+            'date_joined',
             'is_pending_connection_confirmation'
         )
 
