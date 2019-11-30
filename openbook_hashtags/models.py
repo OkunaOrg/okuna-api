@@ -26,6 +26,8 @@ class Hashtag(models.Model):
                             unique=True)
     color = models.CharField(_('color'), max_length=settings.COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
                              validators=[hex_color_validator])
+    text_color = models.CharField(_('text color'), max_length=settings.COLOR_ATTR_MAX_LENGTH, blank=False, null=False,
+                                  validators=[hex_color_validator], default='#ffffff')
     created = models.DateTimeField(editable=False)
     posts = models.ManyToManyField(Post, related_name='hashtags')
     post_comments = models.ManyToManyField(PostComment, related_name='hashtags')
@@ -38,8 +40,7 @@ class Hashtag(models.Model):
                                 height_field='height',
                                 blank=True, null=True, format='JPEG', options={'quality': 60},
                                 processors=[ResizeToFit(width=1024, upscale=False)])
-    emoji = models.ForeignKey(Emoji, on_delete=models.SET_NULL, related_name='hashtags', null=True, blank=True  )
-
+    emoji = models.ForeignKey(Emoji, on_delete=models.SET_NULL, related_name='hashtags', null=True, blank=True)
 
     @classmethod
     def create_hashtag(cls, name, color=None, image=None):

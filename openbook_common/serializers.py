@@ -167,6 +167,7 @@ class CommonHashtagSerializer(serializers.ModelSerializer):
             'id',
             'name',
             'color',
+            'text_color',
             'image',
             'posts_count',
             'emoji'
