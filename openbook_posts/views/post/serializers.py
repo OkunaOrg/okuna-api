@@ -150,6 +150,7 @@ class GetPostPostSerializer(serializers.ModelSerializer):
     is_muted = PostIsMutedField()
     language = PostLanguageSerializer()
     is_encircled = IsEncircledField()
+    hashtags = CommonHashtagSerializer(many=True)
 
     class Meta:
         model = Post
@@ -167,6 +168,7 @@ class GetPostPostSerializer(serializers.ModelSerializer):
             'public_reactions',
             'circles',
             'community',
+            'hashtags',
             'is_muted',
             'is_edited',
             'is_closed',
