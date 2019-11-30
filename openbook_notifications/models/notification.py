@@ -22,6 +22,7 @@ class Notification(models.Model):
     POST_USER_MENTION = 'PUM'
     POST_COMMENT_USER_MENTION = 'PCUM'
     COMMUNITY_NEW_POST = 'CNP'
+    USER_NEW_POST = 'UNP'
 
     NOTIFICATION_TYPES = (
         (POST_REACTION, 'Post Reaction'),
@@ -35,6 +36,7 @@ class Notification(models.Model):
         (POST_USER_MENTION, 'Post user mention'),
         (POST_COMMENT_USER_MENTION, 'Post comment user mention'),
         (COMMUNITY_NEW_POST, 'New post in community'),
+        (USER_NEW_POST, 'New post by user'),
     )
 
     notification_type = models.CharField(max_length=5, choices=NOTIFICATION_TYPES)

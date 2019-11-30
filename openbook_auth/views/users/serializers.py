@@ -7,7 +7,8 @@ from openbook_circles.models import Circle
 from openbook_common.models import Badge, Emoji
 from openbook_common.serializers_fields.user import FollowersCountField, FollowingCountField, PostsCountField, \
     IsFollowingField, IsConnectedField, IsFullyConnectedField, ConnectedCirclesField, FollowListsField, \
-    IsPendingConnectionConfirmation, IsBlockedField, IsUserReportedField, IsFollowedField
+    IsPendingConnectionConfirmation, IsBlockedField, IsUserReportedField, IsFollowedField, \
+    IsSubscribedToUserField
 from openbook_lists.models import List
 
 
@@ -105,6 +106,7 @@ class GetUserUserSerializer(serializers.ModelSerializer):
     posts_count = PostsCountField()
     is_following = IsFollowingField()
     is_followed = IsFollowedField()
+    is_subscribed = IsSubscribedToUserField()
     is_connected = IsConnectedField()
     is_fully_connected = IsFullyConnectedField()
     connected_circles = ConnectedCirclesField(circle_serializer=GetUserUserCircleSerializer)
@@ -123,6 +125,7 @@ class GetUserUserSerializer(serializers.ModelSerializer):
             'posts_count',
             'is_following',
             'is_followed',
+            'is_subscribed',
             'is_connected',
             'is_reported',
             'is_fully_connected',
@@ -135,6 +138,7 @@ class GetUserUserSerializer(serializers.ModelSerializer):
 class GetBlockedUserSerializer(serializers.ModelSerializer):
     is_blocked = IsBlockedField()
     is_following = IsFollowingField()
+    is_subscribed = IsSubscribedToUserField()
     is_connected = IsConnectedField()
     is_fully_connected = IsFullyConnectedField()
 
@@ -144,6 +148,7 @@ class GetBlockedUserSerializer(serializers.ModelSerializer):
             'id',
             'is_blocked',
             'is_following',
+            'is_subscribed',
             'is_connected',
             'is_fully_connected'
         )
@@ -182,6 +187,7 @@ class SearchUsersUserProfileSerializer(serializers.ModelSerializer):
 class SearchUsersUserSerializer(serializers.ModelSerializer):
     profile = SearchUsersUserProfileSerializer(many=False)
     is_following = IsFollowingField()
+    is_subscribed = IsSubscribedToUserField()
     is_connected = IsConnectedField()
 
     class Meta:
@@ -191,5 +197,17 @@ class SearchUsersUserSerializer(serializers.ModelSerializer):
             'profile',
             'username',
             'is_following',
+            'is_subscribed',
             'is_connected'
+        )
+
+
+class SubscribeToUserNotificationsUserSerializer(serializers.ModelSerializer):
+    is_subscribed = IsSubscribedToUserField()
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'is_subscribed',
         )

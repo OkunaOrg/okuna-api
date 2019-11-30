@@ -10,3 +10,4 @@ from .post_comment_reaction_notification import PostCommentReactionNotification
 from .post_comment_user_mention_notification import PostCommentUserMentionNotification
 from .post_user_mention_notification import PostUserMentionNotification
 from .community_new_post_notification import CommunityNewPostNotification
+from .user_new_post_notification import UserNewPostNotification

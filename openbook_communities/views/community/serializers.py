@@ -7,7 +7,7 @@ from openbook_categories.validators import category_name_exists
 from openbook_common.models import Badge
 from openbook_common.serializers_fields.community import IsCommunityReportedField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
-from openbook_common.serializers_fields.user import IsFollowingField
+from openbook_common.serializers_fields.user import IsFollowingField, IsSubscribedToUserField
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import IsInvitedField, \
@@ -124,6 +124,7 @@ class GetCommunityModeratorProfileSerializer(serializers.ModelSerializer):
 class GetCommunityStaffUserSerializer(serializers.ModelSerializer):
     profile = GetCommunityModeratorProfileSerializer(many=False)
     is_following = IsFollowingField()
+    is_subscribed = IsSubscribedToUserField()
 
     class Meta:
         model = User
@@ -132,6 +133,7 @@ class GetCommunityStaffUserSerializer(serializers.ModelSerializer):
             'username',
             'profile',
             'is_following',
+            'is_subscribed',
         )
 
 
@@ -218,13 +220,13 @@ class FavoriteCommunityCommunitySerializer(serializers.ModelSerializer):
         )
 
 
-class SubscribeCommunitySerializer(serializers.Serializer):
+class SubscribeToCommunityNotificationsSerializer(serializers.Serializer):
     community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
                                            allow_blank=False,
                                            validators=[community_name_characters_validator, community_name_exists])
 
 
-class SubscribeCommunityCommunitySerializer(serializers.ModelSerializer):
+class SubscribeToCommunityNotificationsCommunitySerializer(serializers.ModelSerializer):
     is_subscribed = IsSubscribedField()
 
     class Meta:
