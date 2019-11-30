@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db import models
 from django.utils import timezone
@@ -62,7 +63,9 @@ class Hashtag(models.Model):
         if not hashtag.has_image() and post.is_public_post():
             post_first_media_image = post.get_first_media_image()
             if post_first_media_image:
-                hashtag.image = post_first_media_image.image
+                image_copy = ContentFile(post_first_media_image.content_object.image.read())
+                image_copy.name = post_first_media_image.content_object.image.name
+                hashtag.image.save(image_copy.name, image_copy)
                 hashtag.save()
 
         return hashtag
