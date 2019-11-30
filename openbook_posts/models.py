@@ -848,6 +848,8 @@ class PostComment(models.Model):
 
         self.modified = timezone.now()
 
+        self.full_clean(exclude=['language'])
+
         post_comment = super(PostComment, self).save(*args, **kwargs)
 
         self._process_post_comment_mentions()

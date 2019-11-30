@@ -105,6 +105,7 @@ class PostCommentReplySerializer(serializers.ModelSerializer):
     reaction = PostCommentReactionField(post_comment_reaction_serializer=PostCommentReactionSerializer)
     is_muted = PostCommentIsMutedField()
     language = PostCommentLanguageSerializer()
+    hashtags = CommonHashtagSerializer(many=True)
 
     class Meta:
         model = PostComment
@@ -118,7 +119,8 @@ class PostCommentReplySerializer(serializers.ModelSerializer):
             'is_muted',
             'reactions_emoji_counts',
             'id',
-            'reaction'
+            'reaction',
+            'hashtags'
         )
 
 
