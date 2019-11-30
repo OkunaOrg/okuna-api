@@ -70,6 +70,9 @@ class Hashtag(models.Model):
     def hashtag_with_name_exists(cls, hashtag_name):
         return cls.objects.filter(name=hashtag_name).exists()
 
+    def __str__(self):
+        return '#%s' % self.name
+
     def save(self, *args, **kwargs):
         if not self.id:
             self.created = timezone.now()
