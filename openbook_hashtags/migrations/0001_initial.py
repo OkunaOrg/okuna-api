@@ -9,7 +9,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('openbook_communities', '0031_communitynotificationsubscription'),
+        ('openbook_communities', '0029_communitynotificationssubscription'),
     ]
 
     operations = [
