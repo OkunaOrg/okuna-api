@@ -74,7 +74,7 @@ def post_comment_reaction_id_exists(post_comment_reaction_id):
         )
 
 
-def post_text_hashtags_amount_validator(post_text):
+def post_text_hashtags_validator(post_text):
     hashtags = extract_hashtags_from_string(post_text)
     if len(hashtags) > settings.POST_MAX_HASHTAGS:
         raise ValidationError(
@@ -83,13 +83,21 @@ def post_text_hashtags_amount_validator(post_text):
                 'max_hashtags': settings.POST_MAX_HASHTAGS,
             })
 
+    for hashtag in hashtags:
+        if len(hashtag) > settings.HASHTAG_NAME_MAX_LENGTH:
+            raise ValidationError(
+                _(
+                    'Please keep hashtags under %(max_characters)d characters.') % {
+                    'max_characters': settings.HASHTAG_NAME_MAX_LENGTH,
+                })
+
 
 post_text_validators = [
-    post_text_hashtags_amount_validator
+    post_text_hashtags_validator
 ]
 
 
-def post_comment_text_hashtags_amount_validator(post_text):
+def post_comment_text_hashtags_validator(post_text):
     hashtags = extract_hashtags_from_string(post_text)
     if len(hashtags) > settings.POST_COMMENT_MAX_HASHTAGS:
         raise ValidationError(
@@ -98,7 +106,15 @@ def post_comment_text_hashtags_amount_validator(post_text):
                 'max_hashtags': settings.POST_MAX_HASHTAGS,
             })
 
+    for hashtag in hashtags:
+        if len(hashtag) > settings.HASHTAG_NAME_MAX_LENGTH:
+            raise ValidationError(
+                _(
+                    'Please keep hashtags under %(max_characters)d characters.') % {
+                    'max_characters': settings.HASHTAG_NAME_MAX_LENGTH,
+                })
+
 
 post_comment_text_validators = [
-    post_comment_text_hashtags_amount_validator
+    post_comment_text_hashtags_validator
 ]

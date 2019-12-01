@@ -14,8 +14,11 @@ def hashtag_name_exists(hashtag_name):
         )
 
 
-hashtag_name_regexp = re.compile('[a-zA-Z]+')
+hashtag_name_regexp = re.compile('[a-zA-Z]{1,32}')
 
 
 def hashtag_name_validator(hashtag_name):
-    return hashtag_name_regexp.match(hashtag_name)
+    if not hashtag_name_regexp.match(hashtag_name):
+        raise NotFound(
+            _('Hashtags must to be alphanumerical and up to 32 characters.'),
+        )

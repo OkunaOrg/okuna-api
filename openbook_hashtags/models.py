@@ -54,19 +54,14 @@ class Hashtag(models.Model):
         return tag
 
     @classmethod
-    def get_or_create_hashtag_with_name_and_post(cls, name, post):
+    def get_or_create_hashtag(cls, name, post):
         try:
             hashtag = cls.objects.get(name=name)
         except cls.DoesNotExist:
             hashtag = cls.create_hashtag(name=name)
 
-        if not hashtag.has_image() and post.is_public_post():
-            post_first_media_image = post.get_first_media_image()
-            if post_first_media_image:
-                image_copy = ContentFile(post_first_media_image.content_object.image.read())
-                image_copy.name = post_first_media_image.content_object.image.name
-                hashtag.image.save(image_copy.name, image_copy)
-                hashtag.save()
+        if post:
+            hashtag.attempt_update_media_with_post(post=post)
 
         return hashtag
 
@@ -80,11 +75,26 @@ class Hashtag(models.Model):
     def save(self, *args, **kwargs):
         if not self.id:
             self.created = timezone.now()
+
+        self.full_clean()
+
         return super(Hashtag, self).save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         self.delete_media()
         super(Hashtag, self).delete(*args, **kwargs)
+
+    def attempt_update_media_with_post(self, post):
+        if not self.has_image() and post and post.is_public_post():
+            post_first_media_image = post.get_first_media_image()
+            if post_first_media_image:
+                image_copy = ContentFile(post_first_media_image.content_object.image.read())
+                image_copy.name = post_first_media_image.content_object.image.name
+                self.image.save(image_copy.name, image_copy)
+                self.save()
+
+    def needs_image_update(self):
+        return False
 
     def count_posts(self):
         return self.posts.count()

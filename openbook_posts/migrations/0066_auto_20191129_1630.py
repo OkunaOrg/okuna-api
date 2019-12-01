@@ -14,11 +14,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='post',
             name='text',
-            field=models.TextField(max_length=5000, null=True, validators=[openbook_posts.validators.post_text_hashtags_amount_validator], verbose_name='text'),
+            field=models.TextField(max_length=5000, null=True, validators=[openbook_posts.validators.post_text_hashtags_validator], verbose_name='text'),
         ),
         migrations.AlterField(
             model_name='postcomment',
             name='text',
-            field=models.TextField(max_length=1500, validators=[openbook_posts.validators.post_comment_text_hashtags_amount_validator], verbose_name='text'),
+            field=models.TextField(max_length=1500, validators=[openbook_posts.validators.post_comment_text_hashtags_validator], verbose_name='text'),
         ),
     ]

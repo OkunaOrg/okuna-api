@@ -607,8 +607,8 @@ class Post(models.Model):
 
                 for hashtag in hashtags:
                     hashtag = hashtag.lower()
+                    hashtag_obj = Hashtag.get_or_create_hashtag(name=hashtag, post=self)
                     if hashtag not in existing_hashtags:
-                        hashtag_obj = Hashtag.get_or_create_hashtag_with_name_and_post(name=hashtag, post=self)
                         self.hashtags.add(hashtag_obj)
 
     def _process_post_subscribers(self):
@@ -925,7 +925,7 @@ class PostComment(models.Model):
                 for hashtag in hashtags:
                     hashtag = hashtag.lower()
                     if hashtag not in existing_hashtags:
-                        hashtag_obj = Hashtag.get_or_create_hashtag_with_name_and_post(name=hashtag, post=self.post)
+                        hashtag_obj = Hashtag.get_or_create_hashtag(name=hashtag)
                         self.hashtags.add(hashtag_obj)
 
     def update_comment(self, text):
