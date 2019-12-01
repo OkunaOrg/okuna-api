@@ -52,7 +52,7 @@ def generate_random_hex_color():
 
 def get_random_pastel_color():
     # Its a random color jeez, we dont need cryptographically secure randomness
-    h, s, l = random.random(), 0.5 + random.random() / 2.0, 0.4 + random.random() / 5.0 # nosec
+    h, s, l = random.random(), 0.5 + random.random() / 2.0, 0.4 + random.random() / 5.0  # nosec
     r, g, b = [int(256 * i) for i in colorsys.hls_to_rgb(h, l, s)]
     return '#%02x%02x%02x' % (r, g, b)
 
@@ -104,19 +104,19 @@ def get_post_id_for_post_uuid(post_uuid):
 
 
 # Same as flutter app
-usernames_matcher = re.compile('@[^\s]+')
+usernames_regexp = re.compile('@[^\s]+')
 
 
 def extract_usernames_from_string(string):
-    usernames = usernames_matcher.findall(string=string)
+    usernames = usernames_regexp.findall(string=string)
     return [username[1:] for username in usernames]
 
 
-hashtags_matcher = re.compile('\B#\w*[a-zA-Z]+\w*')
+hashtags_regexp = re.compile(r'\B#\w*[a-zA-Z]+\w*')
 
 
 def extract_hashtags_from_string(string):
-    hashtags = hashtags_matcher.findall(string=string)
+    hashtags = hashtags_regexp.findall(string=string)
     return [hashtag[1:] for hashtag in hashtags]
 
 
