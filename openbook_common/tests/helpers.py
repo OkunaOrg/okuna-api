@@ -28,6 +28,7 @@ def make_authentication_headers_for_user(user):
 def make_fake_post_text():
     return fake.text(max_nb_chars=settings.POST_MAX_LENGTH)
 
+
 def make_fake_post_comment_text():
     return fake.text(max_nb_chars=settings.POST_COMMENT_MAX_LENGTH)
 
@@ -272,6 +273,27 @@ def get_test_usernames():
         'j.o.e.l',
         'j03l',
         'j'
+    ]
+
+
+def get_test_valid_hashtags():
+    return [
+        '1337test',
+        'hello',
+        'thisisasomewhatmoderateword',
+        'thisisatest123',
+        'hello_123',
+        '_heythere',
+        'osmaodmoasmdoasodasdasdasdsassaa'
+    ]
+
+
+def get_test_invalid_hashtags():
+    return [
+        '1337',
+        '',
+        '!@#!@a',
+        '.',
     ]
 
 

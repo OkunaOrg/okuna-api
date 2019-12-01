@@ -117,7 +117,8 @@ hashtags_regexp = re.compile(r'\B#\w*[a-zA-Z]+\w*')
 
 def extract_hashtags_from_string(string):
     hashtags = hashtags_regexp.findall(string=string)
-    return [hashtag[1:] for hashtag in hashtags]
+    extracted_hashtags = [hashtag[1:] for hashtag in hashtags]
+    return extracted_hashtags
 
 
 magic = magic.Magic(magic_file='openbook_common/misc/magic.mgc', mime=True)

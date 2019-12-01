@@ -3,6 +3,7 @@ import tempfile
 from unittest import mock
 
 from PIL import Image
+from django.conf import settings
 from django.core.files import File
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
@@ -25,7 +26,8 @@ from openbook_circles.models import Circle
 from openbook_common.tests.helpers import make_user, make_users, make_fake_post_text, \
     make_authentication_headers_for_user, make_circle, make_community, make_list, make_moderation_category, \
     get_test_usernames, get_test_videos, get_test_image, make_global_moderator, \
-    make_fake_post_comment_text, make_reactions_emoji_group, make_emoji, make_hashtag_name, make_hashtag
+    make_fake_post_comment_text, make_reactions_emoji_group, make_emoji, make_hashtag_name, make_hashtag, \
+    get_test_valid_hashtags, get_test_invalid_hashtags
 from openbook_common.utils.helpers import sha256sum
 from openbook_communities.models import Community
 from openbook_hashtags.models import Hashtag
@@ -209,6 +211,85 @@ class PostsAPITests(OpenbookAPITestCase):
         self.assertEqual(post.hashtags.all().count(), 1)
         self.assertEqual(post.hashtags.filter(name=hashtag.name).count(), 1)
         self.assertEqual(Hashtag.objects.filter(name=hashtag.name).count(), 1)
+
+    def test_create_text_post_with_valid_hashtags_creates_them(self):
+        """
+        when creating a post with valid hashtags, should create them
+        """
+        user = make_user()
+
+        valid_hashtags = get_test_valid_hashtags()
+
+        for valid_hashtag in valid_hashtags:
+            headers = make_authentication_headers_for_user(user=user)
+
+            post_text = 'Valid hashtag #' + valid_hashtag
+
+            data = {
+                'text': post_text
+            }
+
+            url = self._get_url()
+
+            response = self.client.put(url, data, **headers, format='multipart')
+
+            self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+            post = Post.objects.get(text=post_text, creator_id=user.pk)
+            created_hashtag = Hashtag.objects.get(name=valid_hashtag)
+            self.assertTrue(post.hashtags.filter(pk=created_hashtag.pk).exists())
+            self.assertEqual(post.hashtags.all().count(), 1)
+
+    def test_create_text_post_with_invalid_hashtags_does_not_create_them(self):
+        """
+        when creating a post with invalid hashtags, should not create them
+        """
+        user = make_user()
+
+        invalid_hashtags = get_test_invalid_hashtags()
+
+        for invalid_hashtag in invalid_hashtags:
+            headers = make_authentication_headers_for_user(user=user)
+
+            post_text = 'Invalid hashtag #' + invalid_hashtag
+
+            data = {
+                'text': post_text
+            }
+
+            url = self._get_url()
+
+            response = self.client.put(url, data, **headers, format='multipart')
+
+            self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+            post = Post.objects.get(text=post_text, creator_id=user.pk)
+            self.assertFalse(Hashtag.objects.filter(name=invalid_hashtag).exists())
+            self.assertFalse(post.hashtags.all().exists())
+
+    def test_create_text_post_with_excedingly_long_hashtag_should_not_created_it(self):
+        """
+        when creating a post with an excedingly long hashtag, should not create it
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        long_hashtag = ''.join(['a' for item in range(0, settings.HASHTAG_NAME_MAX_LENGTH + 1)])
+        post_text = 'Long hashtag #' + long_hashtag
+
+        data = {
+            'text': post_text
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+        self.assertFalse(Post.objects.filter(text=post_text).exists())
+        self.assertFalse(Hashtag.objects.filter(name=long_hashtag).exists())
 
     def test_create_text_post_detects_mentions_once(self):
         """
