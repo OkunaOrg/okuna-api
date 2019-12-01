@@ -85,7 +85,7 @@ class Hashtag(models.Model):
         super(Hashtag, self).delete(*args, **kwargs)
 
     def attempt_update_media_with_post(self, post):
-        if not self.has_image() and post and post.is_public_post():
+        if not self.has_image() and post and post.is_publicly_visible():
             post_first_media_image = post.get_first_media_image()
             if post_first_media_image:
                 image_copy = ContentFile(post_first_media_image.content_object.image.read())

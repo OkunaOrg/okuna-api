@@ -240,8 +240,8 @@ class Post(models.Model):
         exclude_blocked_users_query.add(Q(subscriber__banned_of_communities__id=post.community.pk), Q.OR)
 
         # Subscriptions after excluding blocked users
-        target_subscriptions_excluding_blocked = CommunityNotificationsSubscription.objects.\
-            filter(community_subscriptions_query).\
+        target_subscriptions_excluding_blocked = CommunityNotificationsSubscription.objects. \
+            filter(community_subscriptions_query). \
             exclude(exclude_blocked_users_query)
 
         staff_members_query = Q(subscriber__communities_memberships__community_id=post.community.pk,
@@ -251,7 +251,8 @@ class Post(models.Model):
 
         # Subscriptions from staff of community
         community_subscriptions_with_staff_query = community_subscriptions_query.add(staff_members_query, Q.AND)
-        target_subscriptions_with_staff = CommunityNotificationsSubscription.objects.filter(community_subscriptions_with_staff_query)
+        target_subscriptions_with_staff = CommunityNotificationsSubscription.objects.filter(
+            community_subscriptions_with_staff_query)
 
         results = target_subscriptions_excluding_blocked.union(target_subscriptions_with_staff)
 
@@ -275,8 +276,8 @@ class Post(models.Model):
         user_subscriptions_query.add(exclude_self_query, Q.AND)
 
         # Subscriptions after excluding blocked users
-        target_subscriptions = UserNotificationsSubscription.objects.\
-            filter(user_subscriptions_query).\
+        target_subscriptions = UserNotificationsSubscription.objects. \
+            filter(user_subscriptions_query). \
             exclude(exclude_blocked_users_query)
 
         return target_subscriptions
@@ -353,6 +354,13 @@ class Post(models.Model):
         if self.circles.filter(id=world_circle_id).exists():
             return True
         return False
+
+    def is_public_community_post(self):
+        Community = get_community_model()
+        return Community.objects.filter(posts__id=self.pk, type=Community.COMMUNITY_TYPE_PUBLIC).exists()
+
+    def is_publicly_visible(self):
+        return self.is_public_post() or self.is_public_community_post()
 
     def is_encircled_post(self):
         return not self.is_public_post() and not self.community
