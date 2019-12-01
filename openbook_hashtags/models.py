@@ -54,7 +54,7 @@ class Hashtag(models.Model):
         return tag
 
     @classmethod
-    def get_or_create_hashtag(cls, name, post):
+    def get_or_create_hashtag(cls, name, post=None):
         try:
             hashtag = cls.objects.get(name=name)
         except cls.DoesNotExist:
