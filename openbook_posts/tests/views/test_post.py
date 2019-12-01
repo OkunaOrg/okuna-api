@@ -2672,6 +2672,45 @@ class PublishPostAPITests(OpenbookAPITestCase):
 
         self.assertTrue(Post.objects.filter(pk=post.pk, status=Post.STATUS_DRAFT))
 
+    def test_publishing_publicly_visible_image_post_with_new_hashtag_should_use_image(self):
+        """
+        when publishing a publicly visible post with a new hashtag, the hashtag should use the image
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        image = Image.new('RGB', (100, 100))
+        tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
+        image.save(tmp_file)
+        tmp_file.seek(0)
+
+        hashtag_name = make_hashtag_name()
+
+        post_text = '#%s' % hashtag_name
+
+        post = user.create_public_post(text=post_text, image=ImageFile(tmp_file), is_draft=True)
+
+        url = self._get_url(post=post)
+
+        response = self.client.post(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        post = Post.objects.get(pk=post.pk)
+
+        self.assertEqual(post.status, Post.STATUS_PROCESSING)
+
+        # Run the process handled by a worker
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
+
+        post.refresh_from_db()
+
+        self.assertEqual(post.status, Post.STATUS_PUBLISHED)
+
+        hashtag = Hashtag.objects.get(name=hashtag_name)
+        self.assertTrue(hashtag.has_image())
+
     def _get_url(self, post):
         return reverse('publish-post', kwargs={
             'post_uuid': post.uuid
