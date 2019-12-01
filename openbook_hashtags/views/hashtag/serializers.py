@@ -22,7 +22,8 @@ class GetHashtagPostsSerializer(serializers.Serializer):
     )
     count = serializers.IntegerField(
         required=False,
-        max_value=20
+        max_value=20,
+        default=10
     )
     hashtag_name = serializers.CharField(max_length=settings.HASHTAG_NAME_MAX_LENGTH,
                                          allow_blank=False,

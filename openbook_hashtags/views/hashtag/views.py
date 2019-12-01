@@ -35,10 +35,11 @@ class HashtagPosts(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request, hashtag_name):
-        request_data = request.data.copy()
-        request_data['hashtag_name'] = hashtag_name
 
-        serializer = GetHashtagPostsSerializer(data=request_data)
+        query_params = request.query_params.dict()
+        query_params['hashtag_name'] = hashtag_name
+
+        serializer = GetHashtagPostsSerializer(data=query_params)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         hashtag_name = data.get('hashtag_name')
