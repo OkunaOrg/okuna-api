@@ -250,6 +250,60 @@ def curate_trending_posts():
 
 
 @job('low')
+def bootstrap_trending_posts():
+    """
+    Bootstraps the trending posts.
+    This job should be run exactly ONCE
+    """
+    Post = get_post_model()
+    Community = get_community_model()
+    ModeratedObject = get_moderated_object_model()
+    TrendingPost = get_trending_post_model()
+    logger.info('Processing trending posts at %s...' % timezone.now())
+
+    trending_posts_community_query = Q(community__isnull=False, community__type=Community.COMMUNITY_TYPE_PUBLIC,
+                                       status=Post.STATUS_PUBLISHED,
+                                       is_closed=False, is_deleted=False)
+
+    trending_posts_community_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
+    posts_select_related = 'community'
+    posts_prefetch_related = 'reactions__reactor'
+    posts_only = ('id', 'status', 'is_deleted', 'is_closed', 'community__type')
+
+    trending_posts_criteria_query = Q(reactions_count__gte=settings.MIN_UNIQUE_TRENDING_POST_REACTIONS_COUNT)
+
+    posts = Post.objects. \
+        select_related(posts_select_related). \
+        prefetch_related(posts_prefetch_related). \
+        only(*posts_only). \
+        filter(trending_posts_community_query). \
+        annotate(reactions_count=Count('reactions__reactor_id')). \
+        filter(trending_posts_criteria_query). \
+        order_by('-created')
+
+    trending_posts_objects = []
+    total_curated_posts = 0
+    total_checked_posts = 0
+
+    for post in _chunked_queryset_iterator(posts, 1000):
+        total_checked_posts += 1
+        trending_post = TrendingPost(post=post, created=timezone.now())
+        trending_posts_objects.append(trending_post)
+
+        if len(trending_posts_objects) > 1000:
+            TrendingPost.objects.bulk_create(trending_posts_objects)
+            total_curated_posts += len(trending_posts_objects)
+            trending_posts_objects = []
+
+    if len(trending_posts_objects) > 0:
+        total_curated_posts += len(trending_posts_objects)
+        TrendingPost.objects.bulk_create(trending_posts_objects)
+
+    return 'Checked: %d. Curated: %d' % (total_checked_posts, total_curated_posts)
+
+
+@job('low')
 def clean_trending_posts():
     """
     Cleans trending posts.
