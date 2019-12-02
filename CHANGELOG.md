@@ -13,9 +13,11 @@ The change log for the API server for Okuna.
  - Add username field to registration API
 - Add subscribe to community, get subscribed communities APIs, 
 - Add search APIs to administrated, moderated, favorite, joined, subscribed
-communities
+  communities
 - Add subscribe to user APIs
 - Add trending posts curation and clean up jobs
+- Remove username from forgot password API
+- Fix bug in profile post counts
 
 #### Happy testing 🎉!
 
