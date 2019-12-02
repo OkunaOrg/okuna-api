@@ -177,11 +177,11 @@ Through creating an account and accepting the Terms of Use, you provide certain 
 
 **SUMMARY:** _Okuna is a company registered in the Netherlands but outsources its hosting services from a company that processes information in Germany._
 
-We use **Amazon Web Services** for the purposes of hosting our Service. We transfer the data to an AWS server in Frankfurt, Germany. We take appropriate safeguards for international data transfers, all the data is encrypted and sent through a secure DLS connection with AWS servers.
+We use **Amazon Web Services** for the purposes of hosting our Service. We transfer the data to an AWS server in Frankfurt, Germany. We take appropriate safeguards for international data transfers, all the data is encrypted and sent through a secure TLS connection with AWS servers.
 
 ## **10.** **Security**
 
-**SUMMARY:** _We utilize a variety of industry-standard safeguards to keep your Information safe, such as secure coding, privacy by design/default, two-step authentication, encryption, two step-authentication, DLS connections, and 3-layer access._
+**SUMMARY:** _We utilize a variety of industry-standard safeguards to keep your Information safe, such as secure coding, privacy by design/default, two-step authentication, encryption, two step-authentication, TLS connections, and 3-layer access._
 
 Okuna takes information security very seriously. Sustainability, privacy and security are paramount values in our organisation. We work hard to protect the Personal Information you give us from loss, misuse, or unauthorized access. We utilize a variety of safeguards to protect the Personal Information submitted to us, both during transmission and once it is received.
 
