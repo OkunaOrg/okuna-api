@@ -5,14 +5,14 @@ from openbook_auth.models import User, UserProfile
 from openbook_categories.models import Category
 from openbook_categories.validators import category_name_exists
 from openbook_common.models import Badge
-from openbook_common.serializers_fields.community import IsCommunityReportedField
+from openbook_common.serializers_fields.community import IsCommunityReportedField, CommunityPostsCountField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
 from openbook_common.serializers_fields.user import IsFollowingField, IsSubscribedToUserField
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import IsInvitedField, \
     IsCreatorField, RulesField, ModeratorsField, CommunityMembershipsField, IsFavoriteField, AdministratorsField, \
-    IsSubscribedField, CommunityPostsCountField
+    IsSubscribedField
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 
 
