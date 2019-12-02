@@ -11,7 +11,7 @@ from pilkit.processors import ResizeToFit
 
 from openbook.storage_backends import S3PrivateMediaStorage
 from openbook_common.models import Emoji
-from openbook_common.utils.helpers import delete_file_field, get_random_pastel_color, get_color_brightness_variant
+from openbook_common.utils.helpers import delete_file_field, get_random_pastel_color
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community
 from openbook_hashtags.helpers import upload_to_hashtags_directory
@@ -47,8 +47,6 @@ class Hashtag(models.Model):
     def create_hashtag(cls, name, color=None, image=None):
         if not color:
             color = get_random_pastel_color()
-            # Darken it a bit
-            color = get_color_brightness_variant(color, brightness_offset=-2)
 
         name = name.lower()
         tag = cls.objects.create(name=name, color=color, image=image)

@@ -6,6 +6,7 @@ from os import access, F_OK
 from PIL import Image
 from django.urls import reverse
 from django_rq import get_worker
+from django_rq.queues import get_queues
 from faker import Faker
 from rest_framework import status
 from openbook_common.tests.models import OpenbookAPITestCase
@@ -17,7 +18,7 @@ from unittest import mock
 
 import logging
 
-from rq import SimpleWorker
+from rq import SimpleWorker, Worker
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_community, make_moderation_category, \
