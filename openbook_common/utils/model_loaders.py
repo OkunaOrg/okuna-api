@@ -21,6 +21,10 @@ def get_top_post_model():
     return apps.get_model('openbook_posts.TopPost')
 
 
+def get_trending_post_model():
+    return apps.get_model('openbook_posts.TrendingPost')
+
+
 def get_top_post_community_exclusion_model():
     return apps.get_model('openbook_posts.TopPostCommunityExclusion')
 
