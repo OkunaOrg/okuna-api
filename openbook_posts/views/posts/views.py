@@ -113,6 +113,17 @@ class TrendingPosts(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request):
+        user = request.user
+
+        posts = user.get_trending_posts_old()[:30]
+        posts_serializer = AuthenticatedUserPostSerializer(posts, many=True, context={"request": request})
+        return Response(posts_serializer.data, status=status.HTTP_200_OK)
+
+
+class TrendingPostsNew(APIView):
+    permission_classes = (IsAuthenticated, IsNotSuspended)
+
+    def get(self, request):
         query_params = request.query_params.dict()
 
         serializer = GetTrendingPostsSerializer(data=query_params)

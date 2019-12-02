@@ -4168,7 +4168,7 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         self.assertEqual(response_post['post']['id'], post_two.pk)
 
     def _get_url(self):
-        return reverse('trending-posts')
+        return reverse('trending-posts-new')
 
 
 class TopPostsAPITests(OpenbookAPITestCase):

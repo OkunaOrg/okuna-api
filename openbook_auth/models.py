@@ -1903,6 +1903,10 @@ class User(AbstractUser):
         Post = get_post_model()
         return Post.get_trending_posts_for_user_with_id(user_id=self.pk, max_id=max_id, min_id=min_id)
 
+    def get_trending_posts_old(self):
+        Post = get_post_model()
+        return Post.get_trending_posts_old_for_user_with_id(user_id=self.pk)
+
     def get_trending_communities(self, category_name=None):
         Community = get_community_model()
         return Community.get_trending_communities_for_user_with_id(user_id=self.pk, category_name=category_name)

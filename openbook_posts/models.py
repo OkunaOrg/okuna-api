@@ -2,6 +2,7 @@
 import os
 import tempfile
 import uuid
+from datetime import timedelta
 
 from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -207,6 +208,43 @@ class Post(models.Model):
             filter(trending_posts_criteria_query)
 
         return trending_community_posts_queryset
+
+
+    @classmethod
+    def get_trending_posts_old_for_user_with_id(cls, user_id):
+        """
+        For backwards compatibility reasons
+        """
+        trending_posts_query = cls._get_trending_posts_old_query()
+        trending_posts_query.add(~Q(community__banned_users__id=user_id), Q.AND)
+
+        trending_posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=user_id) | Q(
+            creator__user_blocks__blocked_user_id=user_id)), Q.AND)
+
+        trending_posts_query.add(~Q(moderated_object__reports__reporter_id=user_id), Q.AND)
+
+        trending_posts_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
+        return cls._get_trending_posts_old_with_query(query=trending_posts_query)
+
+    @classmethod
+    def _get_trending_posts_old_with_query(cls, query):
+        return cls.objects.filter(query).annotate(Count('reactions')).order_by(
+            '-reactions__count', '-created')
+
+    @classmethod
+    def _get_trending_posts_old_query(cls):
+        trending_posts_query = Q(created__gte=timezone.now() - timedelta(
+            hours=12))
+
+        Community = get_community_model()
+
+        trending_posts_sources_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, status=cls.STATUS_PUBLISHED,
+                                         is_closed=False, is_deleted=False)
+
+        trending_posts_query.add(trending_posts_sources_query, Q.AND)
+
+        return trending_posts_query
 
     @classmethod
     def get_post_comment_notification_target_users(cls, post, post_commenter):
