@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from openbook_common.serializers import CommonPostCreatorSerializer, \
     CommonCommunityMembershipSerializer, CommonPostEmojiCountSerializer, CommonPostCommunitySerializer, \
-    CommonPostReactionSerializer, CommonPostLanguageSerializer
+    CommonPostReactionSerializer, CommonPostLanguageSerializer, CommonHashtagSerializer
 from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, PostCreatorField, \
     PostReactionsEmojiCountField, PostIsMutedField
 from openbook_hashtags.validators import hashtag_name_exists
@@ -40,6 +40,7 @@ class GetHashtagPostsPostSerializer(serializers.ModelSerializer):
     is_muted = PostIsMutedField()
     reaction = ReactionField(reaction_serializer=CommonPostReactionSerializer)
     language = CommonPostLanguageSerializer()
+    hashtags = CommonHashtagSerializer(many=True)
 
     class Meta:
         model = Post
@@ -61,4 +62,5 @@ class GetHashtagPostsPostSerializer(serializers.ModelSerializer):
             'media_height',
             'media_width',
             'media_thumbnail',
+            'hashtags'
         )
