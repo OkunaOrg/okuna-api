@@ -23,6 +23,7 @@ from rest_framework.exceptions import ValidationError
 
 from django.conf import settings
 
+from openbook_posts.validators import post_text_validators, post_comment_text_validators
 from video_encoding.backends import get_backend
 from video_encoding.fields import VideoField
 from video_encoding.models import Format
@@ -32,17 +33,20 @@ from openbook_auth.models import User
 
 from openbook_common.models import Emoji, Language
 from openbook_common.utils.helpers import delete_file_field, sha256sum, extract_usernames_from_string, get_magic, \
-    write_in_memory_file_to_disk
+    write_in_memory_file_to_disk, extract_hashtags_from_string
 from openbook_common.utils.model_loaders import get_emoji_model, \
     get_circle_model, get_community_model, get_post_comment_notification_model, \
     get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model, \
     get_post_user_mention_notification_model, get_post_comment_user_mention_notification_model, get_user_model, \
-    get_post_user_mention_model, get_post_comment_user_mention_model
+    get_post_user_mention_model, get_post_comment_user_mention_model, get_community_notifications_subscription_model, \
+    get_community_new_post_notification_model, get_user_new_post_notification_model, \
+    get_hashtag_model, get_user_notifications_subscription_model, get_trending_post_model
 from imagekit.models import ProcessedImageField
 
 from openbook_moderation.models import ModeratedObject
 from openbook_notifications.helpers import send_post_comment_user_mention_push_notification, \
-    send_post_user_mention_push_notification
+    send_post_user_mention_push_notification, send_community_new_post_push_notification, \
+    send_user_new_post_push_notification
 from openbook_posts.checkers import check_can_be_updated, check_can_add_media, check_can_be_published, \
     check_mimetype_is_supported_media_mimetypes
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory, \
@@ -50,7 +54,7 @@ from openbook_posts.helpers import upload_to_post_image_directory, upload_to_pos
 from openbook_posts.jobs import process_post_media
 
 magic = get_magic()
-from openbook_common.helpers import get_language_for_text, extract_urls_from_string
+from openbook_common.helpers import get_language_for_text
 
 post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else default_storage
 
@@ -58,7 +62,8 @@ post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else defa
 class Post(models.Model):
     moderated_object = GenericRelation(ModeratedObject, related_query_name='posts')
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
-    text = models.TextField(_('text'), max_length=settings.POST_MAX_LENGTH, blank=False, null=True)
+    text = models.TextField(_('text'), max_length=settings.POST_MAX_LENGTH, blank=False, null=True,
+                            validators=post_text_validators)
     created = models.DateTimeField(editable=False, db_index=True)
     modified = models.DateTimeField(db_index=True, default=timezone.now)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
@@ -150,8 +155,67 @@ class Post(models.Model):
         return Emoji.get_emoji_counts_for_post_with_id(post_id=post_id, emoji_id=emoji_id, reactor_id=reactor_id)
 
     @classmethod
-    def get_trending_posts_for_user_with_id(cls, user_id):
-        trending_posts_query = cls._get_trending_posts_query()
+    def get_trending_posts_for_user_with_id(cls, user_id, max_id=None, min_id=None):
+        """
+        Gets trending posts (communities only) for authenticated user excluding reported, closed, blocked users posts
+        """
+        Post = cls
+        TrendingPost = get_trending_post_model()
+        Community = get_community_model()
+
+        posts_select_related = ('post__creator', 'post__creator__profile', 'post__community', 'post__image')
+        posts_prefetch_related = ('post__circles', 'post__creator__profile__badges', 'post__reactions__reactor')
+
+        posts_only = ('id',
+                      'post__text', 'post__id', 'post__uuid', 'post__created', 'post__image__width',
+                      'post__image__height', 'post__image__image',
+                      'post__creator__username', 'post__creator__id', 'post__creator__profile__name',
+                      'post__creator__profile__avatar',
+                      'post__creator__profile__badges__id', 'post__creator__profile__badges__keyword',
+                      'post__creator__profile__id', 'post__community__id', 'post__community__name',
+                      'post__community__avatar',
+                      'post__community__color', 'post__community__title')
+
+        reported_posts_exclusion_query = ~Q(post__moderated_object__reports__reporter_id=user_id)
+
+        trending_community_posts_query = Q(post__is_closed=False,
+                                           post__is_deleted=False,
+                                           post__status=Post.STATUS_PUBLISHED)
+
+        trending_community_posts_query.add(~Q(Q(post__creator__blocked_by_users__blocker_id=user_id) | Q(
+            post__creator__user_blocks__blocked_user_id=user_id)), Q.AND)
+        trending_community_posts_query.add(Q(post__community__type=Community.COMMUNITY_TYPE_PUBLIC), Q.AND)
+        trending_community_posts_query.add(~Q(post__community__banned_users__id=user_id), Q.AND)
+
+        if max_id:
+            trending_community_posts_query.add(Q(id__lt=max_id), Q.AND)
+        elif min_id:
+            trending_community_posts_query.add(Q(id__gt=min_id), Q.AND)
+
+        ModeratedObject = get_moderated_object_model()
+        trending_community_posts_query.add(~Q(post__moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
+        trending_community_posts_query.add(reported_posts_exclusion_query, Q.AND)
+
+        trending_posts_criteria_query = Q(reactions_count__gte=settings.MIN_UNIQUE_TRENDING_POST_REACTIONS_COUNT)
+
+        trending_community_posts_queryset = TrendingPost.objects.\
+            select_related(*posts_select_related).\
+            prefetch_related(*posts_prefetch_related).\
+            only(*posts_only).\
+            filter(trending_community_posts_query).\
+            annotate(reactions_count=Count('post__reactions__reactor_id')). \
+            filter(trending_posts_criteria_query)
+
+        return trending_community_posts_queryset
+
+
+    @classmethod
+    def get_trending_posts_old_for_user_with_id(cls, user_id):
+        """
+        For backwards compatibility reasons
+        """
+        trending_posts_query = cls._get_trending_posts_old_query()
         trending_posts_query.add(~Q(community__banned_users__id=user_id), Q.AND)
 
         trending_posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=user_id) | Q(
@@ -161,15 +225,15 @@ class Post(models.Model):
 
         trending_posts_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
 
-        return cls._get_trending_posts_with_query(query=trending_posts_query)
+        return cls._get_trending_posts_old_with_query(query=trending_posts_query)
 
     @classmethod
-    def _get_trending_posts_with_query(cls, query):
+    def _get_trending_posts_old_with_query(cls, query):
         return cls.objects.filter(query).annotate(Count('reactions')).order_by(
             '-reactions__count', '-created')
 
     @classmethod
-    def _get_trending_posts_query(cls):
+    def _get_trending_posts_old_query(cls):
         trending_posts_query = Q(created__gte=timezone.now() - timedelta(
             hours=12))
 
@@ -218,6 +282,64 @@ class Post(models.Model):
         post = parent_post_comment.post
         post_creator = User.objects.filter(pk=post.creator.id)
         return other_repliers.union(post_comment_creator, post_creator)
+
+    @classmethod
+    def get_community_notification_target_subscriptions(cls, post):
+        CommunityNotificationsSubscription = get_community_notifications_subscription_model()
+        exclude_blocked_users_query = Q(Q(subscriber__blocked_by_users__blocker_id=post.creator.pk) | Q(
+            subscriber__user_blocks__blocked_user_id=post.creator.pk))
+        community_members_query = Q(subscriber__communities_memberships__community_id=post.community.pk)
+        exclude_self_query = ~Q(subscriber=post.creator)
+
+        community_subscriptions_query = Q(community=post.community)
+        community_subscriptions_query.add(community_members_query, Q.AND)
+        community_subscriptions_query.add(exclude_self_query, Q.AND)
+
+        # Exclude banned users
+        exclude_blocked_users_query.add(Q(subscriber__banned_of_communities__id=post.community.pk), Q.OR)
+
+        # Subscriptions after excluding blocked users
+        target_subscriptions_excluding_blocked = CommunityNotificationsSubscription.objects. \
+            filter(community_subscriptions_query). \
+            exclude(exclude_blocked_users_query)
+
+        staff_members_query = Q(subscriber__communities_memberships__community_id=post.community.pk,
+                                subscriber__communities_memberships__is_administrator=True) | \
+                              Q(subscriber__communities_memberships__community_id=post.community.pk,
+                                subscriber__communities_memberships__is_moderator=True)
+
+        # Subscriptions from staff of community
+        community_subscriptions_with_staff_query = community_subscriptions_query.add(staff_members_query, Q.AND)
+        target_subscriptions_with_staff = CommunityNotificationsSubscription.objects.filter(
+            community_subscriptions_with_staff_query)
+
+        results = target_subscriptions_excluding_blocked.union(target_subscriptions_with_staff)
+
+        return results
+
+    @classmethod
+    def get_user_notification_target_subscriptions(cls, post):
+        UserNotificationsSubscription = get_user_notifications_subscription_model()
+
+        user_subscriptions_query = Q(user=post.creator)
+
+        exclude_blocked_users_query = Q(Q(subscriber__blocked_by_users__blocker_id=post.creator.pk) | Q(
+            subscriber__user_blocks__blocked_user_id=post.creator.pk))
+        exclude_self_query = ~Q(subscriber=post.creator)
+
+        if post.is_encircled_post():
+            circle_ids = [circle.pk for circle in post.circles.all()]
+            post_circles_query = Q(subscriber__connections__target_connection__circles__in=circle_ids)
+            user_subscriptions_query.add(post_circles_query, Q.AND)
+
+        user_subscriptions_query.add(exclude_self_query, Q.AND)
+
+        # Subscriptions after excluding blocked users
+        target_subscriptions = UserNotificationsSubscription.objects. \
+            filter(user_subscriptions_query). \
+            exclude(exclude_blocked_users_query)
+
+        return target_subscriptions
 
     def count_comments(self):
         return PostComment.count_comments_for_post_with_id(self.pk)
@@ -291,6 +413,13 @@ class Post(models.Model):
         if self.circles.filter(id=world_circle_id).exists():
             return True
         return False
+
+    def is_public_community_post(self):
+        Community = get_community_model()
+        return Community.objects.filter(posts__id=self.pk, type=Community.COMMUNITY_TYPE_PUBLIC).exists()
+
+    def is_publicly_visible(self):
+        return self.is_public_post() or self.is_public_community_post()
 
     def is_encircled_post(self):
         return not self.is_public_post() and not self.community
@@ -371,6 +500,9 @@ class Post(models.Model):
     def get_first_media(self):
         return self.media.first()
 
+    def get_first_media_image(self):
+        return self.media.filter(type=PostMedia.MEDIA_TYPE_IMAGE).first()
+
     def _add_media_image(self, image, order):
         return PostImage.create_post_media_image(image=image, post_id=self.pk, order=order)
 
@@ -394,6 +526,7 @@ class Post(models.Model):
     def _publish(self):
         self.status = Post.STATUS_PUBLISHED
         self.created = timezone.now()
+        self._process_post_subscribers()
         self.save()
 
     def is_draft(self):
@@ -415,6 +548,7 @@ class Post(models.Model):
         post = super(Post, self).save(*args, **kwargs)
 
         self._process_post_mentions()
+        self._process_post_hashtags()
 
         return post
 
@@ -521,6 +655,49 @@ class Post(models.Model):
                         except User.DoesNotExist:
                             pass
 
+    def _process_post_hashtags(self):
+        if not self.text:
+            self.hashtags.all().delete()
+        else:
+            hashtags = extract_hashtags_from_string(string=self.text)
+            if not hashtags:
+                self.hashtags.all().delete()
+            else:
+                existing_hashtags = []
+                for existing_hashtag in self.hashtags.only('id', 'name').all().iterator():
+                    if existing_hashtag.name not in hashtags:
+                        self.hashtags.remove(existing_hashtag)
+                    else:
+                        existing_hashtags.append(existing_hashtag.name)
+
+                Hashtag = get_hashtag_model()
+
+                for hashtag in hashtags:
+                    hashtag = hashtag.lower()
+                    hashtag_obj = Hashtag.get_or_create_hashtag(name=hashtag, post=self)
+                    if hashtag not in existing_hashtags:
+                        self.hashtags.add(hashtag_obj)
+
+    def _process_post_subscribers(self):
+        if self.community:
+            CommunityNewPostNotification = get_community_new_post_notification_model()
+            community_subscriptions = Post.get_community_notification_target_subscriptions(post=self)
+
+            for subscription in community_subscriptions:
+                CommunityNewPostNotification.create_community_new_post_notification(
+                    post_id=self.pk,
+                    owner_id=subscription.subscriber.pk, community_notifications_subscription_id=subscription.pk)
+                send_community_new_post_push_notification(community_notifications_subscription=subscription)
+        else:
+            UserNewPostNotification = get_user_new_post_notification_model()
+            user_subscriptions = Post.get_user_notification_target_subscriptions(post=self)
+
+            for subscription in user_subscriptions:
+                UserNewPostNotification.create_user_new_post_notification(
+                    post_id=self.pk, owner_id=subscription.subscriber.pk,
+                    user_notifications_subscription_id=subscription.pk)
+                send_user_new_post_push_notification(user_notifications_subscription=subscription, post=self)
+
 
 class TopPost(models.Model):
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='top_post')
@@ -535,9 +712,23 @@ class TopPost(models.Model):
         return super(TopPost, self).save(*args, **kwargs)
 
 
+class TrendingPost(models.Model):
+    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='trending_post')
+    created = models.DateTimeField(editable=False, db_index=True)
+
+    def save(self, *args, **kwargs):
+        ''' On save, update timestamps '''
+        if not self.id:
+            self.created = timezone.now()
+        self.modified = timezone.now()
+
+        return super(TrendingPost, self).save(*args, **kwargs)
+
+
 class TopPostCommunityExclusion(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='top_posts_community_exclusions')
-    community = models.ForeignKey('openbook_communities.Community', on_delete=models.CASCADE, related_name='top_posts_community_exclusions')
+    community = models.ForeignKey('openbook_communities.Community', on_delete=models.CASCADE,
+                                  related_name='top_posts_community_exclusions')
     created = models.DateTimeField(editable=False, db_index=True)
 
     class Meta:
@@ -663,7 +854,8 @@ class PostComment(models.Model):
     created = models.DateTimeField(editable=False, db_index=True)
     modified = models.DateTimeField(db_index=True, default=timezone.now)
     commenter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_comments')
-    text = models.TextField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False)
+    text = models.TextField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False,
+                            validators=post_comment_text_validators)
     language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, related_name='post_comments')
     is_edited = models.BooleanField(default=False, null=False, blank=False)
     # This only happens if the comment was reported and found with critical severity content
@@ -736,8 +928,14 @@ class PostComment(models.Model):
 
         self.modified = timezone.now()
 
+        self.full_clean(exclude=['language'])
+
+        post_comment = super(PostComment, self).save(*args, **kwargs)
+
         self._process_post_comment_mentions()
-        return super(PostComment, self).save(*args, **kwargs)
+        self._process_post_comment_hashtags()
+
+        return post_comment
 
     def _process_post_comment_mentions(self):
         usernames = extract_usernames_from_string(string=self.text)
@@ -786,6 +984,29 @@ class PostComment(models.Model):
                         existing_mention_usernames.append(username)
                     except User.DoesNotExist:
                         pass
+
+    def _process_post_comment_hashtags(self):
+        if not self.text:
+            self.hashtags.all().delete()
+        else:
+            hashtags = extract_hashtags_from_string(string=self.text)
+            if not hashtags:
+                self.hashtags.all().delete()
+            else:
+                existing_hashtags = []
+                for existing_hashtag in self.hashtags.only('id', 'name').all().iterator():
+                    if existing_hashtag.name not in hashtags:
+                        self.hashtags.remove(existing_hashtag)
+                    else:
+                        existing_hashtags.append(existing_hashtag.name)
+
+                Hashtag = get_hashtag_model()
+
+                for hashtag in hashtags:
+                    hashtag = hashtag.lower()
+                    if hashtag not in existing_hashtags:
+                        hashtag_obj = Hashtag.get_or_create_hashtag(name=hashtag)
+                        self.hashtags.add(hashtag_obj)
 
     def update_comment(self, text):
         self.text = text

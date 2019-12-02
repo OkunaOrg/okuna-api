@@ -1,17 +1,14 @@
-import os
 import tempfile
+from json import dumps
 
-from django.core.files import File
+import requests
 from langdetect import DetectorFactory
 from langdetect.lang_detect_exception import LangDetectException
 from django.conf import settings
-import urllib
 from urllib.parse import urlparse
-from bs4 import BeautifulSoup
 from urlextract import URLExtract
-from webpreview import web_preview
-from django.utils.translation import ugettext_lazy as _
 
+from openbook.settings import ALERT_HOOK_URL
 from openbook_common.utils.model_loaders import get_language_model
 from openbook_translation import translation_strategy
 
@@ -75,3 +72,16 @@ def write_in_memory_file_to_disk(in_memory_file):
     tmp_file.seek(0)
     tmp_file.close()
     return tmp_file
+
+
+def send_alert_to_channel(alert):
+
+    post = {"text": alert}
+
+    json_data = dumps(post)
+    response = requests.post(ALERT_HOOK_URL,
+                             data=json_data.encode('utf-8'),
+                             headers={'Content-Type': 'application/json'})
+
+    if response.status_code != requests.status_codes.codes.ok:
+        raise ValueError(f"{response.status_code} != 200")

@@ -128,6 +128,7 @@ INSTALLED_APPS = [
     'openbook_communities',
     'openbook_invitations',
     'openbook_tags',
+    'openbook_hashtags',
     'openbook_categories',
     'openbook_notifications',
     'openbook_devices',
@@ -170,7 +171,7 @@ REDIS_LOCATION = '%(protocol)s%(password)s@%(host)s:%(port)d' % {'protocol': red
                                                                  'host': REDIS_HOST,
                                                                  'port': REDIS_PORT}
 
-RQ_SHOW_ADMIN_LINK = True
+RQ_SHOW_ADMIN_LINK = False
 
 REDIS_DEFAULT_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 0}
 REDIS_RQ_DEFAULT_JOBS_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 1}
@@ -466,6 +467,8 @@ USER_MAX_FOLLOWS = int(os.environ.get('USER_MAX_FOLLOWS', '1500'))
 USER_MAX_CONNECTIONS = int(os.environ.get('USER_MAX_CONNECTIONS', '1500'))
 USER_MAX_COMMUNITIES = 200
 POST_MAX_LENGTH = int(os.environ.get('POST_MAX_LENGTH', '5000'))
+POST_MAX_HASHTAGS = int(os.environ.get('POST_MAX_HASHTAGS', '3'))
+POST_COMMENT_MAX_HASHTAGS = int(os.environ.get('POST_COMMENT_MAX_HASHTAGS', '3'))
 POST_COMMENT_MAX_LENGTH = int(os.environ.get('POST_MAX_LENGTH', '1500'))
 POST_MEDIA_MAX_SIZE = int(os.environ.get('POST_MEDIA_MAX_SIZE', '10485760'))
 POST_LINK_MAX_DOMAIN_LENGTH = int(os.environ.get('POST_LINK_MAX_DOMAIN_LENGTH', '126'))
@@ -492,7 +495,7 @@ COMMUNITY_CATEGORIES_MAX_AMOUNT = 3
 COMMUNITY_CATEGORIES_MIN_AMOUNT = 1
 COMMUNITY_AVATAR_MAX_SIZE = int(os.environ.get('COMMUNITY_AVATAR_MAX_SIZE', '10485760'))
 COMMUNITY_COVER_MAX_SIZE = int(os.environ.get('COMMUNITY_COVER_MAX_SIZE', '10485760'))
-TAG_NAME_MAX_LENGTH = 32
+HASHTAG_NAME_MAX_LENGTH = 32
 CATEGORY_NAME_MAX_LENGTH = 32
 CATEGORY_TITLE_MAX_LENGTH = 64
 CATEGORY_DESCRIPTION_MAX_LENGTH = 64
@@ -505,6 +508,7 @@ MODERATED_OBJECT_DESCRIPTION_MAX_LENGTH = 1000
 GLOBAL_HIDE_CONTENT_AFTER_REPORTS_AMOUNT = int(os.environ.get('GLOBAL_HIDE_CONTENT_AFTER_REPORTS_AMOUNT', '20'))
 MODERATORS_COMMUNITY_NAME = os.environ.get('MODERATORS_COMMUNITY_NAME', 'mods')
 PROXY_BLACKLIST_DOMAIN_MAX_LENGTH = 150
+
 SUPPORTED_MEDIA_MIMETYPES = [
     'video/mp4',
     'video/quicktime',
@@ -513,8 +517,16 @@ SUPPORTED_MEDIA_MIMETYPES = [
     'image/jpeg',
     'image/png'
 ]
+NEW_USER_SUGGESTED_COMMUNITIES = os.environ.get('NEW_USER_SUGGESTED_COMMUNITIES', '1')
+
+FAILED_JOB_THRESHOLD = 20
+ACTIVE_JOB_THRESHOLD = 50
+ACTIVE_WORKER_THRESHOLD = 5
+ALERT_HOOK_URL = os.environ.get('ALERT_HOOK_URL')
+
 MIN_UNIQUE_TOP_POST_REACTIONS_COUNT = int(os.environ.get('MIN_UNIQUE_TOP_POST_REACTIONS_COUNT', '5'))
 MIN_UNIQUE_TOP_POST_COMMENTS_COUNT = int(os.environ.get('MIN_UNIQUE_TOP_POST_COMMENTS_COUNT', '5'))
+MIN_UNIQUE_TRENDING_POST_REACTIONS_COUNT = int(os.environ.get('MIN_UNIQUE_TRENDING_POST_REACTIONS_COUNT', '5'))
 
 # Email Config
 
@@ -537,6 +549,7 @@ if TESTING:
     OS_TRANSLATION_STRATEGY_NAME = 'testing'
     MIN_UNIQUE_TOP_POST_REACTIONS_COUNT = 1
     MIN_UNIQUE_TOP_POST_COMMENTS_COUNT = 1
+    MIN_UNIQUE_TRENDING_POST_REACTIONS_COUNT = 1
 
 if IS_PRODUCTION:
     AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')

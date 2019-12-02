@@ -4,7 +4,8 @@ from rest_framework.exceptions import ValidationError, PermissionDenied, NotFoun
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.utils.model_loaders import get_post_model, get_community_model, get_post_comment_model, \
-    get_language_model, get_user_model, get_emoji_group_model, get_post_reaction_model, get_user_invite_model
+    get_language_model, get_user_model, get_emoji_group_model, get_post_reaction_model, get_user_invite_model, \
+    get_community_notifications_subscription_model, get_user_notifications_subscription_model
 
 from openbook_common import checkers as common_checkers
 
@@ -302,6 +303,48 @@ def check_can_get_closed_posts_for_community_with_name(user, community_name):
         raise ValidationError(
             _('Only administrators/moderators can view closed posts'),
         )
+
+
+def check_can_subscribe_to_posts_for_community(subscriber, community):
+    Community = get_community_model()
+    CommunityNotificationsSubscription = get_community_notifications_subscription_model()
+    is_member = Community.is_user_with_username_member_of_community_with_name\
+        (username=subscriber.username, community_name=community.name)
+
+    if not is_member:
+        raise ValidationError(
+            _('Only members can subscribe to new posts'),
+        )
+    is_subscribed = CommunityNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_community_with_name(
+        username=subscriber.username, community_name=community.name)
+
+    if is_subscribed:
+        raise ValidationError(
+            _('You are already subscribed to new posts for community'),
+        )
+
+    check_is_not_banned_from_community_with_name(user=subscriber, community_name=community.name)
+
+
+def check_can_unsubscribe_to_posts_for_community(subscriber, community):
+    Community = get_community_model()
+    CommunityNotificationsSubscription = get_community_notifications_subscription_model()
+    is_member = Community.is_user_with_username_member_of_community_with_name\
+        (username=subscriber.username, community_name=community.name)
+
+    if not is_member:
+        raise ValidationError(
+            _('Only members can unsubscribe to new posts'),
+        )
+    is_subscribed = CommunityNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_community_with_name(
+        username=subscriber.username, community_name=community.name)
+
+    if not is_subscribed:
+        raise ValidationError(
+            _('You are already not subscribed to new posts for community'),
+        )
+
+    check_is_not_banned_from_community_with_name(user=subscriber, community_name=community.name)
 
 
 def check_can_get_community_with_name_members(user, community_name):
@@ -1313,4 +1356,32 @@ def check_can_get_preview_link_data_for_post(user, post):
     if not post.has_links():
         raise ValidationError(
             _('No link associated with post.'),
+        )
+
+
+def check_can_subscribe_to_notifications_for_user(subscriber, user):
+    UserNotificationsSubscription = get_user_notifications_subscription_model()
+    is_subscribed = UserNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_user_with_username(
+        subscriber_username=subscriber.username, username=user.username)
+
+    if user.has_blocked_user_with_id(user_id=subscriber.pk) or subscriber.has_blocked_user_with_id(user_id=user.pk):
+        raise PermissionDenied(_('This account is blocked.'))
+
+    if is_subscribed:
+        raise ValidationError(
+            _('User is already subscribed to this user'),
+        )
+
+
+def check_can_unsubscribe_from_notifications_for_user(subscriber, user):
+    UserNotificationsSubscription = get_user_notifications_subscription_model()
+    is_subscribed = UserNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_user_with_username(
+        subscriber_username=subscriber.username, username=user.username)
+
+    if user.has_blocked_user_with_id(user_id=subscriber.pk) or subscriber.has_blocked_user_with_id(user_id=user.pk):
+        raise PermissionDenied(_('This account is blocked.'))
+
+    if not is_subscribed:
+        raise ValidationError(
+            _('User is already unsubscribed from this user'),
         )

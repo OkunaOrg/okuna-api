@@ -83,6 +83,7 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
             'language',
             'posts_count',
             'invite_count',
+            'date_joined',
             'are_guidelines_accepted',
             'followers_count',
             'following_count',

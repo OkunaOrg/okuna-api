@@ -1,7 +1,4 @@
-import os
-import shutil
 import tempfile
-import uuid
 
 from PIL import Image
 from faker import Faker
@@ -11,8 +8,10 @@ from openbook_auth.models import User, UserProfile
 from openbook_categories.models import Category
 from openbook_circles.models import Circle
 from openbook_common.models import Emoji, EmojiGroup, Badge, Language
+from openbook_common.utils.helpers import get_random_pastel_color
 from openbook_communities.models import Community
 from openbook_devices.models import Device
+from openbook_hashtags.models import Hashtag
 from openbook_lists.models import List
 from openbook_moderation.models import ModerationCategory, ModeratedObjectLog, ModeratedObject, ModerationReport, \
     ModerationPenalty
@@ -75,6 +74,15 @@ def make_profile(user=None, name=None):
 
 def make_emoji(group=None):
     return mixer.blend(Emoji, group=group)
+
+
+def make_hashtag(name=None):
+    hashtag_name = name if name else make_hashtag_name()
+    return mixer.blend(Hashtag, name=hashtag_name, color=get_random_pastel_color())
+
+
+def make_hashtag_name():
+    return fake.word().lower()
 
 
 def make_emoji_group(is_reaction_group=False):
@@ -181,14 +189,17 @@ def make_community_invites_enabled():
     return fake.boolean()
 
 
-def make_community(creator=None, type=Community.COMMUNITY_TYPE_PUBLIC, name=None):
+def make_community(creator=None, type=Community.COMMUNITY_TYPE_PUBLIC, name=None, title=None):
     if not creator:
         creator = make_user()
 
     if not name:
         name = make_community_name()
 
-    community = creator.create_community(name=name, title=make_community_title(), type=type,
+    if not title:
+        title = make_community_title()
+
+    community = creator.create_community(name=name, title=title, type=type,
                                          color=fake.hex_color(), description=make_community_description(),
                                          rules=make_community_rules(), user_adjective=make_community_user_adjective(),
                                          users_adjective=make_community_users_adjective(),
@@ -263,6 +274,27 @@ def get_test_usernames():
         'j.o.e.l',
         'j03l',
         'j'
+    ]
+
+
+def get_test_valid_hashtags():
+    return [
+        '1337test',
+        'hello',
+        'thisisasomewhatmoderateword',
+        'thisisatest123',
+        'hello_123',
+        '_heythere',
+        'osmaodmoasmdoasodasdasdasdsassaa'
+    ]
+
+
+def get_test_invalid_hashtags():
+    return [
+        '1337',
+        '',
+        '!@#!@a',
+        '.',
     ]
 
 

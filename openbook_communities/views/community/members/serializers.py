@@ -3,7 +3,8 @@ from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import username_characters_validator, user_username_exists
-from openbook_common.serializers_fields.user import CommunitiesInvitesField, IsFollowingField, IsConnectedField
+from openbook_common.models import Badge
+from openbook_common.serializers_fields.user import CommunitiesInvitesField, IsFollowingField, IsConnectedField, IsSubscribedToUserField
 from openbook_communities.models import Community, CommunityMembership, CommunityInvite
 from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
@@ -52,18 +53,31 @@ class GetCommunityMembersSerializer(serializers.Serializer):
                                            validators=[community_name_characters_validator, community_name_exists])
 
 
+class GetCommunityMembersMemberProfileBadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Badge
+        fields = (
+            'keyword',
+            'keyword_description'
+        )
+
+
 class GetCommunityMembersMemberProfileSerializer(serializers.ModelSerializer):
+    badges = GetCommunityMembersMemberProfileBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
             'avatar',
-            'name'
+            'name',
+            'badges'
         )
 
 
 class GetCommunityMembersMemberSerializer(serializers.ModelSerializer):
     profile = GetCommunityMembersMemberProfileSerializer(many=False)
     is_following = IsFollowingField()
+    is_subscribed = IsSubscribedToUserField()
     is_connected = IsConnectedField()
 
     class Meta:
@@ -71,6 +85,7 @@ class GetCommunityMembersMemberSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'is_following',
+            'is_subscribed',
             'is_connected',
             'username',
             'profile'

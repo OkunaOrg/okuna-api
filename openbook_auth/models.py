@@ -19,6 +19,7 @@ from django.core.mail import EmailMultiAlternatives
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
+from openbook_auth.queries import make_get_hashtag_posts_query_for_user
 from openbook_notifications.helpers import get_notification_language_code_for_target_user
 from openbook_translation import translation_strategy
 from openbook_common.helpers import get_supported_translation_language
@@ -31,7 +32,8 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_mute_model, get_community_invite_notification_model, get_user_block_model, get_emoji_model, \
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
     get_moderation_penalty_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
-    get_post_comment_reaction_notification_model, get_top_post_model, get_top_post_community_exclusion_model
+    get_post_comment_reaction_notification_model, get_top_post_model, get_top_post_community_exclusion_model, \
+    get_community_notifications_subscription_model, get_user_notifications_subscription_model, get_hashtag_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications import helpers
 from openbook_auth.checkers import *
@@ -188,21 +190,77 @@ class User(AbstractUser):
             )
 
     @classmethod
+    def count_unauthenticated_public_posts_for_user_with_username(cls, username):
+        """
+        Count public posts for unauthenticated user
+        :return:
+        """
+        public_posts = cls.get_unauthenticated_public_posts_for_user_with_username(username=username)
+
+        return public_posts.count()
+
+    @classmethod
     def get_unauthenticated_public_posts_for_user_with_username(cls, username, max_id=None, min_id=None):
-        Circle = get_circle_model()
-        world_circle_id = Circle.get_world_circle_id()
-
-        final_query = Q(creator__username=username, circles__id=world_circle_id)
-
-        if max_id:
-            final_query.add(Q(id__lt=max_id), Q.AND)
-        elif min_id:
-            final_query.add(Q(id__gt=min_id), Q.AND)
 
         Post = get_post_model()
-        result = Post.objects.filter(final_query)
+        Circle = get_circle_model()
+        ModeratedObject = get_moderated_object_model()
+        world_circle_id = Circle.get_world_circle_id()
 
-        return result
+        user_query = Q(creator__username=username)
+
+        if max_id:
+            user_query.add(Q(id__lt=max_id), Q.AND)
+        elif min_id:
+            user_query.add(Q(id__gt=min_id), Q.AND)
+
+        posts_prefetch_related = ('circles', 'creator__profile__badges')
+
+        posts_only = ('id', 'uuid', 'created', 'image__width', 'image__height', 'image__image',
+                      'creator__username', 'creator__id', 'creator__profile__name',
+                      'creator__profile__avatar', 'creator__profile__badges__id',
+                      'creator__profile__badges__keyword', 'creator__profile__id', 'community__id',
+                      'community__name', 'community__avatar', 'community__color', 'community__title')
+
+        exclude_reported_and_approved_posts_query = ~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED)
+
+        exclude_deleted_posts_query = Q(is_deleted=False, status=Post.STATUS_PUBLISHED)
+
+        # Get user world circle posts
+
+        world_circle_posts_query = Q(circles__id=world_circle_id)
+
+        world_circle_posts = Post.objects.prefetch_related(*posts_prefetch_related) \
+            .only(*posts_only) \
+            .filter(
+            user_query &
+            world_circle_posts_query &
+            exclude_deleted_posts_query &
+            exclude_reported_and_approved_posts_query
+        )
+
+        # Get user community posts
+        Community = get_community_model()
+        community_posts_query = Q(community__isnull=False, is_closed=False)
+        exclude_private_community_posts_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC)
+
+        community_posts = Post.objects.prefetch_related(*posts_prefetch_related) \
+            .only(*posts_only).filter(
+            user_query &
+            community_posts_query &
+            exclude_private_community_posts_query &
+            exclude_deleted_posts_query &
+            exclude_reported_and_approved_posts_query
+        )
+
+        user = cls.objects.get(username=username)
+
+        if user.has_profile_community_posts_visible():
+            results = world_circle_posts.union(community_posts)
+        else:
+            results = world_circle_posts
+
+        return results
 
     def count_posts(self):
         return self.posts.count()
@@ -214,14 +272,67 @@ class User(AbstractUser):
     def count_unread_notifications(self):
         return self.notifications.filter(read=False).count()
 
-    def count_public_posts(self):
+    def count_public_posts_for_user(self, user):
         """
-        Count how many public posts has the user created
-        :return:
+        Returns count of public posts for not connected users
         """
-        world_circle_id = self._get_world_circle_id()
+        Post = get_post_model()
+        Circle = get_circle_model()
+        ModeratedObject = get_moderated_object_model()
+        world_circle_id = Circle.get_world_circle_id()
 
-        return self.posts.filter(circles__id=world_circle_id).count()
+        posts_prefetch_related = 'circles'
+
+        posts_only = 'id'
+
+        user_query = Q(creator_id=user.pk)
+
+        exclude_reported_and_approved_posts_query = ~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED)
+
+        exclude_reported_posts_query = ~Q(moderated_object__reports__reporter_id=self.pk)
+
+        exclude_blocked_posts_query = ~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
+            creator__user_blocks__blocked_user_id=self.pk))
+
+        exclude_deleted_posts_query = Q(is_deleted=False, status=Post.STATUS_PUBLISHED)
+
+        # Get user world circle posts
+
+        world_circle_posts_query = Q(creator__id=user.pk, circles__id=world_circle_id)
+
+        world_circle_posts = Post.objects.prefetch_related(posts_prefetch_related) \
+            .only(posts_only) \
+            .filter(
+            user_query &
+            world_circle_posts_query &
+            exclude_deleted_posts_query &
+            exclude_blocked_posts_query &
+            exclude_reported_posts_query &
+            exclude_reported_and_approved_posts_query
+        )
+
+        # Get user community posts
+        Community = get_community_model()
+        community_posts_query = Q(creator__pk=user.pk, community__isnull=False, is_closed=False)
+        exclude_private_community_posts_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC)
+
+        community_posts = Post.objects.prefetch_related(posts_prefetch_related) \
+            .only(posts_only).filter(
+            user_query &
+            community_posts_query &
+            exclude_private_community_posts_query &
+            exclude_deleted_posts_query &
+            exclude_blocked_posts_query &
+            exclude_reported_posts_query &
+            exclude_reported_and_approved_posts_query
+        )
+
+        if user.has_profile_community_posts_visible():
+            results = world_circle_posts.union(community_posts)
+        else:
+            results = world_circle_posts
+
+        return results.count()
 
     def count_posts_for_user_with_id(self, id):
         """
@@ -233,7 +344,7 @@ class User(AbstractUser):
         if user.is_connected_with_user_with_id(self.pk):
             count = user.get_posts_for_user_with_username(username=self.username).count()
         else:
-            count = self.count_public_posts()
+            count = user.count_public_posts_for_user(user=self)
         return count
 
     def count_followers(self):
@@ -395,6 +506,8 @@ class User(AbstractUser):
                                       follow_notifications=None, connection_request_notifications=None,
                                       connection_confirmed_notifications=None,
                                       community_invite_notifications=None,
+                                      community_new_post_notifications=None,
+                                      user_new_post_notifications=None,
                                       post_comment_reaction_notifications=None,
                                       post_comment_reply_notifications=None,
                                       post_comment_user_mention_notifications=None,
@@ -410,6 +523,8 @@ class User(AbstractUser):
             connection_request_notifications=connection_request_notifications,
             connection_confirmed_notifications=connection_confirmed_notifications,
             community_invite_notifications=community_invite_notifications,
+            community_new_post_notifications=community_new_post_notifications,
+            user_new_post_notifications=user_new_post_notifications,
             post_comment_reaction_notifications=post_comment_reaction_notifications,
             post_comment_reply_notifications=post_comment_reply_notifications,
             post_comment_user_mention_notifications=post_comment_user_mention_notifications,
@@ -486,6 +601,9 @@ class User(AbstractUser):
         return self.follows.filter(
             followed_user_id=user_id,
             lists__id=list_id).exists()
+
+    def is_subscribed_to_user_with_id(self, user_id):
+        return self.user_notifications_subscriptions.filter(user__id=user_id).exists()
 
     def is_world_circle_id(self, id):
         world_circle_id = self._get_world_circle_id()
@@ -565,6 +683,10 @@ class User(AbstractUser):
         return Community.is_user_with_username_invited_to_community_with_name(username=self.username,
                                                                               community_name=community_name)
 
+    def is_subscribed_to_community_with_name(self, community_name):
+        Community = get_community_model()
+        return Community.is_user_with_username_subscribed_to_notifications_for_community_with_name(username=self.username, community_name=community_name)
+
     def has_reported_moderated_object_with_id(self, moderated_object_id):
         ModeratedObject = get_moderated_object_model()
         ModerationReport = get_moderation_report_model()
@@ -642,6 +764,12 @@ class User(AbstractUser):
 
     def has_community_invite_notifications_enabled(self):
         return self.notifications_settings.community_invite_notifications
+
+    def has_community_new_post_notifications_enabled(self):
+        return self.notifications_settings.community_new_post_notifications
+
+    def has_user_new_post_notifications_enabled(self):
+        return self.notifications_settings.user_new_post_notifications
 
     def has_connection_confirmed_notifications_enabled(self):
         return self.notifications_settings.connection_confirmed_notifications
@@ -731,6 +859,15 @@ class User(AbstractUser):
 
         PostReaction = get_post_reaction_model()
         return PostReaction.objects.filter(reactions_query)
+
+    def get_posts_count_for_community(self, community):
+        """
+        Returns 0 if ur not a member and community is private
+        """
+        Post = get_post_model()
+        community_posts_query = self._make_get_community_with_id_posts_query(community=community,
+                                                                             include_closed_posts_for_staff=False)
+        return len(set(Post.objects.values_list('id', flat=True).filter(community_posts_query)))
 
     def get_emoji_counts_for_post_with_id(self, post_id, emoji_id=None):
         Post = get_post_model()
@@ -1354,7 +1491,7 @@ class User(AbstractUser):
         community_to_join = Community.objects.get(name=community_name)
         community_to_join.add_member(self)
 
-        # Clean up any invites
+        # Clean up_full any invites
         CommunityInvite = get_community_invite_model()
         CommunityInvite.objects.filter(community__name=community_name, invited_user__username=self.username).delete()
 
@@ -1624,6 +1761,17 @@ class User(AbstractUser):
         check_can_get_list_with_id(user=self, list_id=list_id)
         return self.lists.get(id=list_id)
 
+    def search_hashtags_with_query(self, query):
+        hashtags_query = self._make_search_hashtags_query(query=query)
+        Hashtag = get_hashtag_model()
+
+        return Hashtag.objects.filter(hashtags_query)
+
+    def _make_search_hashtags_query(self, query):
+        search_hashtags_query = Q(name__icontains=query)
+
+        return search_hashtags_query
+
     def search_users_with_query(self, query):
         users_query = self._make_search_users_query(query=query)
 
@@ -1723,6 +1871,24 @@ class User(AbstractUser):
 
         return User.objects.filter(followers_query).distinct()
 
+    def get_user_subscriptions(self, max_id=None):
+        user_subscriptions_query = Q(notifications_subscribers__subscriber=self, is_deleted=False)
+
+        if max_id:
+            user_subscriptions_query.add(Q(id__lt=max_id), Q.AND)
+
+        return User.objects.filter(user_subscriptions_query)
+
+    def search_user_notifications_subscriptions_with_query(self, query):
+        user_subscriptions_query = Q(notifications_subscribers__subscriber=self, is_deleted=False)
+
+        names_query = Q(username__icontains=query)
+        names_query.add(Q(profile__name__icontains=query), Q.OR)
+
+        user_subscriptions_query.add(names_query, Q.AND)
+
+        return User.objects.filter(user_subscriptions_query)
+
     def search_followings_with_query(self, query):
         followings_query = Q(followers__user_id=self.pk, is_deleted=False)
 
@@ -1733,9 +1899,13 @@ class User(AbstractUser):
 
         return User.objects.filter(followings_query).distinct()
 
-    def get_trending_posts(self):
+    def get_trending_posts(self, max_id=None, min_id=None):
         Post = get_post_model()
-        return Post.get_trending_posts_for_user_with_id(user_id=self.pk)
+        return Post.get_trending_posts_for_user_with_id(user_id=self.pk, max_id=max_id, min_id=min_id)
+
+    def get_trending_posts_old(self):
+        Post = get_post_model()
+        return Post.get_trending_posts_old_for_user_with_id(user_id=self.pk)
 
     def get_trending_communities(self, category_name=None):
         Community = get_community_model()
@@ -1754,6 +1924,22 @@ class User(AbstractUser):
         Community = get_community_model()
         return Community.objects.filter(memberships__user=self)
 
+    def get_subscribed_communities(self):
+        Community = get_community_model()
+        return Community.objects.filter(notifications_subscriptions__subscriber=self)
+
+    def search_subscribed_communities_with_query(self, query):
+        subscribed_communities_query = Q(notifications_subscriptions__subscriber=self)
+        subscribed_communities_name_query = Q(name__icontains=query)
+        subscribed_communities_name_query.add(Q(title__icontains=query), Q.OR)
+        subscribed_communities_query.add(subscribed_communities_name_query, Q.AND)
+        Community = get_community_model()
+        return Community.objects.filter(subscribed_communities_query)
+
+    def get_suggested_communities(self):
+        Community = get_community_model()
+        return Community.get_new_user_suggested_communities()
+
     def search_joined_communities_with_query(self, query):
         joined_communities_query = Q(memberships__user=self)
         joined_communities_name_query = Q(name__icontains=query)
@@ -1765,13 +1951,37 @@ class User(AbstractUser):
     def get_favorite_communities(self):
         return self.favorite_communities.all()
 
+    def search_favorite_communities_with_query(self, query):
+        favorite_communities_query = Q(starrers__id=self.pk)
+        favorite_communities_name_query = Q(name__icontains=query)
+        favorite_communities_name_query.add(Q(title__icontains=query), Q.OR)
+        favorite_communities_query.add(favorite_communities_name_query, Q.AND)
+        Community = get_community_model()
+        return Community.objects.filter(favorite_communities_query)
+
     def get_administrated_communities(self):
         Community = get_community_model()
         return Community.objects.filter(memberships__user=self, memberships__is_administrator=True)
 
+    def search_administrated_communities_with_query(self, query):
+        administrated_communities_query = Q(memberships__user=self, memberships__is_administrator=True)
+        administrated_communities_name_query = Q(name__icontains=query)
+        administrated_communities_name_query.add(Q(title__icontains=query), Q.OR)
+        administrated_communities_query.add(administrated_communities_name_query, Q.AND)
+        Community = get_community_model()
+        return Community.objects.filter(administrated_communities_query)
+
     def get_moderated_communities(self):
         Community = get_community_model()
         return Community.objects.filter(memberships__user=self, memberships__is_moderator=True)
+
+    def search_moderated_communities_with_query(self, query):
+        moderated_communities_query = Q(memberships__user=self, memberships__is_moderator=True)
+        moderated_communities_name_query = Q(name__icontains=query)
+        moderated_communities_name_query.add(Q(title__icontains=query), Q.OR)
+        moderated_communities_query.add(moderated_communities_name_query, Q.AND)
+        Community = get_community_model()
+        return Community.objects.filter(moderated_communities_query)
 
     def create_public_post(self, text=None, image=None, video=None, created=None, is_draft=False):
         world_circle_id = self._get_world_circle_id()
@@ -1883,6 +2093,24 @@ class User(AbstractUser):
 
         return post
 
+    def get_hashtag_with_name(self, hashtag_name):
+        Hashtag = get_hashtag_model()
+        return Hashtag.objects.get(name=hashtag_name)
+
+    def get_posts_for_hashtag_with_name(self, hashtag_name, max_id=None):
+        Hashtag = get_hashtag_model()
+        hashtag = Hashtag.objects.get(name=hashtag_name)
+
+        hashtag_posts_query = make_get_hashtag_posts_query_for_user(user=self, hashtag=hashtag)
+
+        if max_id:
+            hashtag_posts_query.add(Q(id__lt=max_id), Q.AND)
+
+        Post = get_post_model()
+        hashtag_posts = Post.objects.filter(hashtag_posts_query).distinct()
+
+        return hashtag_posts
+
     def get_posts_for_community_with_name(self, community_name, max_id=None):
         """
         :param community_name:
@@ -1920,6 +2148,26 @@ class User(AbstractUser):
         profile_posts = Post.objects.filter(posts_query).distinct()
 
         return profile_posts
+
+    def subscribe_to_notifications_for_community_with_name(self, community_name):
+        Community = get_community_model()
+        CommunityNotificationsSubscription = get_community_notifications_subscription_model()
+        community = Community.objects.get(name=community_name)
+        check_can_subscribe_to_posts_for_community(subscriber=self, community=community)
+
+        CommunityNotificationsSubscription.create_community_notifications_subscription(subscriber=self, community=community)
+
+        return community
+
+    def unsubscribe_from_notifications_for_community_with_name(self, community_name):
+        Community = get_community_model()
+        CommunityNotificationsSubscription = get_community_notifications_subscription_model()
+        community = Community.objects.get(name=community_name)
+        check_can_unsubscribe_to_posts_for_community(subscriber=self, community=community)
+
+        CommunityNotificationsSubscription.remove_community_notifications_subscription(subscriber=self, community=community)
+
+        return community
 
     def get_post_with_id(self, post_id):
         Post = get_post_model()
@@ -1962,6 +2210,14 @@ class User(AbstractUser):
         ModeratedObject = get_moderated_object_model()
         world_circle_id = Circle.get_world_circle_id()
 
+        posts_prefetch_related = ('circles', 'creator__profile__badges')
+
+        posts_only = ('text', 'id', 'uuid', 'created', 'image__width', 'image__height', 'image__image',
+                      'creator__username', 'creator__id', 'creator__profile__name',
+                      'creator__profile__avatar', 'creator__profile__badges__id',
+                      'creator__profile__badges__keyword', 'creator__profile__id', 'community__id',
+                      'community__name', 'community__avatar', 'community__color', 'community__title')
+    
         user_query = Q(creator_id=user.pk)
 
         exclude_reported_and_approved_posts_query = ~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED)
@@ -1984,9 +2240,26 @@ class User(AbstractUser):
 
         world_circle_posts_query = Q(creator__id=user.pk, circles__id=world_circle_id)
 
-        world_circle_posts = Post.objects.filter(
+        world_circle_posts = Post.objects.prefetch_related(*posts_prefetch_related)\
+            .only(*posts_only)\
+            .filter(
             user_query &
             world_circle_posts_query &
+            exclude_deleted_posts_query &
+            exclude_blocked_posts_query &
+            exclude_reported_posts_query &
+            exclude_reported_and_approved_posts_query &
+            cursor_scrolling_query
+        )
+
+        # Get user connection circles posts
+        connection_circles_query = Q(circles__connections__target_user_id=self.pk,
+                                     circles__connections__target_connection__circles__isnull=False)
+
+        connection_circles_posts = Post.objects.prefetch_related(*posts_prefetch_related) \
+            .only(*posts_only).filter(
+            user_query &
+            connection_circles_query &
             exclude_deleted_posts_query &
             exclude_blocked_posts_query &
             exclude_reported_posts_query &
@@ -2000,24 +2273,11 @@ class User(AbstractUser):
         exclude_private_community_posts_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC) | Q(
             community__memberships__user__id=self.pk)
 
-        community_posts = Post.objects.filter(
+        community_posts = Post.objects.prefetch_related(*posts_prefetch_related) \
+            .only(*posts_only).filter(
             user_query &
             community_posts_query &
             exclude_private_community_posts_query &
-            exclude_deleted_posts_query &
-            exclude_blocked_posts_query &
-            exclude_reported_posts_query &
-            exclude_reported_and_approved_posts_query &
-            cursor_scrolling_query
-        )
-
-        # Get user connection circles posts
-        connection_circles_query = Q(circles__connections__target_user_id=self.pk,
-                                     circles__connections__target_connection__circles__isnull=False)
-
-        connection_circles_posts = Post.objects.filter(
-            user_query &
-            connection_circles_query &
             exclude_deleted_posts_query &
             exclude_blocked_posts_query &
             exclude_reported_posts_query &
@@ -2118,7 +2378,7 @@ class User(AbstractUser):
         """
 
         if not circles_ids and not lists_ids:
-            return self._get_timeline_posts_with_no_filters(max_id=max_id, min_id=min_id, count=count)
+            return self._get_timeline_posts_with_no_filters(max_id=max_id)
 
         return self._get_timeline_posts_with_filters(max_id=max_id, circles_ids=circles_ids, lists_ids=lists_ids)
 
@@ -2169,7 +2429,7 @@ class User(AbstractUser):
 
         return Post.objects.filter(timeline_posts_query).distinct()
 
-    def _get_timeline_posts_with_no_filters(self, max_id=None, min_id=None, count=10):
+    def _get_timeline_posts_with_no_filters(self, max_id=None):
         """
         Being the main action of the network, an optimised call of the get timeline posts call with no filtering.
         """
@@ -2621,12 +2881,33 @@ class User(AbstractUser):
         )
         return post_comment, result.get('translated_text')
 
+    def subscribe_to_notifications_for_user_with_username(self, username):
+        user_to_subscribe = User.objects.get(username=username)
+        UserNotificationsSubscription = get_user_notifications_subscription_model()
+
+        check_can_subscribe_to_notifications_for_user(subscriber=self, user=user_to_subscribe)
+
+        UserNotificationsSubscription.create_user_notifications_subscription(subscriber=self, user=user_to_subscribe)
+
+        return user_to_subscribe
+
+    def unsubscribe_from_notifications_for_user_with_username(self, username):
+        user_to_unsubscribe = User.objects.get(username=username)
+        UserNotificationsSubscription = get_user_notifications_subscription_model()
+
+        check_can_unsubscribe_from_notifications_for_user(subscriber=self, user=user_to_unsubscribe)
+
+        UserNotificationsSubscription.remove_user_notifications_subscription(subscriber=self, user=user_to_unsubscribe)
+
+        return user_to_unsubscribe
+
     def block_user_with_username(self, username):
         user = User.objects.get(username=username)
         return self.block_user_with_id(user_id=user.pk)
 
     def block_user_with_id(self, user_id):
         check_can_block_user_with_id(user=self, user_id=user_id)
+        user_to_block = User.objects.get(pk=user_id)
 
         if self.is_connected_with_user_with_id(user_id=user_id):
             # This does unfollow too
@@ -2634,9 +2915,14 @@ class User(AbstractUser):
         elif self.is_following_user_with_id(user_id=user_id):
             self.unfollow_user_with_id(user_id=user_id)
 
-        user_to_block = User.objects.get(pk=user_id)
         if user_to_block.is_following_user_with_id(user_id=self.pk):
             user_to_block.unfollow_user_with_id(self.pk)
+
+        if self.is_subscribed_to_user_with_id(user_id=user_to_block.pk):
+            self.unsubscribe_from_notifications_for_user_with_username(user_to_block.username)
+
+        if user_to_block.is_subscribed_to_user_with_id(user_id=self.pk):
+            user_to_block.unsubscribe_from_notifications_for_user_with_username(self.username)
 
         UserBlock = get_user_block_model()
         UserBlock.create_user_block(blocker_id=self.pk, blocked_user_id=user_id)
@@ -3191,6 +3477,9 @@ class User(AbstractUser):
         return comments_query
 
     def _make_get_community_with_id_posts_query(self, community, include_closed_posts_for_staff=True):
+        """
+        This query returns duplicates
+        """
 
         Post = get_post_model()
 
@@ -3298,6 +3587,8 @@ class UserNotificationsSettings(models.Model):
     connection_request_notifications = models.BooleanField(_('connection request notifications'), default=True)
     connection_confirmed_notifications = models.BooleanField(_('connection confirmed notifications'), default=True)
     community_invite_notifications = models.BooleanField(_('community invite notifications'), default=True)
+    community_new_post_notifications = models.BooleanField(_('community new post notifications'), default=True)
+    user_new_post_notifications = models.BooleanField(_('user new post notifications'), default=True)
     post_comment_reaction_notifications = models.BooleanField(_('post comment reaction notifications'), default=True)
     post_comment_user_mention_notifications = models.BooleanField(_('post comment user mention notifications'),
                                                                   default=True)
@@ -3314,6 +3605,8 @@ class UserNotificationsSettings(models.Model):
                connection_request_notifications=None,
                connection_confirmed_notifications=None,
                community_invite_notifications=None,
+               community_new_post_notifications=None,
+               user_new_post_notifications=None,
                post_comment_user_mention_notifications=None,
                post_user_mention_notifications=None,
                post_comment_reaction_notifications=None, ):
@@ -3347,6 +3640,12 @@ class UserNotificationsSettings(models.Model):
 
         if community_invite_notifications is not None:
             self.community_invite_notifications = community_invite_notifications
+
+        if community_new_post_notifications is not None:
+            self.community_new_post_notifications = community_new_post_notifications
+
+        if user_new_post_notifications is not None:
+            self.user_new_post_notifications = user_new_post_notifications
 
         self.save()
 
@@ -3395,3 +3694,25 @@ def bootstrap_user_auth_token(user):
 
 def bootstrap_user_profile(user, name, is_of_legal_age, avatar=None, ):
     return UserProfile.objects.create(name=name, user=user, avatar=avatar, is_of_legal_age=is_of_legal_age, )
+
+
+class UserNotificationsSubscription(models.Model):
+    subscriber = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_notifications_subscriptions', null=False,
+                                   blank=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications_subscribers', null=False,
+                             blank=False)
+
+    class Meta:
+        unique_together = ('user', 'subscriber',)
+
+    @classmethod
+    def create_user_notifications_subscription(cls, subscriber, user):
+        return cls.objects.create(subscriber=subscriber, user=user)
+
+    @classmethod
+    def remove_user_notifications_subscription(cls, subscriber, user):
+        return cls.objects.filter(subscriber=subscriber, user=user).delete()
+
+    @classmethod
+    def is_user_with_username_subscribed_to_notifications_for_user_with_username(cls, subscriber_username, username):
+        return cls.objects.filter(user__username=username, subscriber__username=subscriber_username).exists()

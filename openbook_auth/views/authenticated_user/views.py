@@ -106,6 +106,8 @@ class AuthenticatedUserNotificationsSettings(APIView):
         connection_request_notifications = data.get('connection_request_notifications')
         connection_confirmed_notifications = data.get('connection_confirmed_notifications')
         community_invite_notifications = data.get('community_invite_notifications')
+        community_new_post_notifications = data.get('community_new_post_notifications')
+        user_new_post_notifications = data.get('user_new_post_notifications')
         post_comment_reaction_notifications = data.get('post_comment_reaction_notifications')
         post_comment_reply_notifications = data.get('post_comment_reply_notifications')
         post_comment_user_mention_notifications = data.get('post_comment_user_mention_notifications')
@@ -121,6 +123,8 @@ class AuthenticatedUserNotificationsSettings(APIView):
                 connection_request_notifications=connection_request_notifications,
                 connection_confirmed_notifications=connection_confirmed_notifications,
                 community_invite_notifications=community_invite_notifications,
+                community_new_post_notifications=community_new_post_notifications,
+                user_new_post_notifications=user_new_post_notifications,
                 post_comment_reaction_notifications=post_comment_reaction_notifications,
                 post_comment_reply_notifications=post_comment_reply_notifications,
                 post_comment_user_mention_notifications=post_comment_user_mention_notifications,

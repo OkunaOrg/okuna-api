@@ -4,6 +4,7 @@ from django.conf import settings
 from openbook_auth.models import UserProfile, User
 from openbook_circles.models import Circle
 from openbook_common.models import Badge, Language
+from openbook_common.serializers import CommonHashtagSerializer
 from openbook_common.serializers_fields.post import PostCreatorField, PostReactionsEmojiCountField, ReactionField, \
     CommentsCountField, CirclesField, PostIsMutedField, IsEncircledField
 from openbook_communities.models import CommunityMembership, Community
@@ -149,6 +150,7 @@ class GetPostPostSerializer(serializers.ModelSerializer):
     is_muted = PostIsMutedField()
     language = PostLanguageSerializer()
     is_encircled = IsEncircledField()
+    hashtags = CommonHashtagSerializer(many=True)
 
     class Meta:
         model = Post
@@ -166,6 +168,7 @@ class GetPostPostSerializer(serializers.ModelSerializer):
             'public_reactions',
             'circles',
             'community',
+            'hashtags',
             'is_muted',
             'is_edited',
             'is_closed',
@@ -186,6 +189,7 @@ class EditPostSerializer(serializers.Serializer):
 
 class AuthenticatedUserEditPostSerializer(serializers.ModelSerializer):
     language = PostLanguageSerializer()
+    hashtags = CommonHashtagSerializer(many=True)
 
     class Meta:
         model = Post
@@ -195,6 +199,7 @@ class AuthenticatedUserEditPostSerializer(serializers.ModelSerializer):
             'text',
             'language',
             'is_edited',
+            'hashtags'
         )
 
 

@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.checkers import check_url_can_be_proxied
-from openbook_common.serializers import EmojiGroupSerializer, \
+from openbook_common.serializers import CommonEmojiGroupSerializer, \
     ProxyDomainCheckSerializer
 from openbook_common.utils.model_loaders import get_emoji_group_model
 
@@ -44,7 +44,7 @@ class EmojiGroups(APIView):
     def get(self, request):
         EmojiGroup = get_emoji_group_model()
         emoji_groups = EmojiGroup.objects.filter(is_reaction_group=False).all().order_by('order')
-        serializer = EmojiGroupSerializer(emoji_groups, many=True, context={'request': request})
+        serializer = CommonEmojiGroupSerializer(emoji_groups, many=True, context={'request': request})
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
