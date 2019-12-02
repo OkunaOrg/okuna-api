@@ -17,6 +17,26 @@ def get_post_model():
     return apps.get_model('openbook_posts.Post')
 
 
+def get_top_post_model():
+    return apps.get_model('openbook_posts.TopPost')
+
+
+def get_trending_post_model():
+    return apps.get_model('openbook_posts.TrendingPost')
+
+
+def get_top_post_community_exclusion_model():
+    return apps.get_model('openbook_posts.TopPostCommunityExclusion')
+
+
+def get_post_media_model():
+    return apps.get_model('openbook_posts.PostMedia')
+
+
+def get_proxy_blacklist_domain_model():
+    return apps.get_model('openbook_common.ProxyBlacklistedDomain')
+
+
 def get_post_user_mention_model():
     return apps.get_model('openbook_posts.PostUserMention')
 
@@ -43,6 +63,10 @@ def get_list_model():
 
 def get_community_model():
     return apps.get_model('openbook_communities.Community')
+
+
+def get_community_notifications_subscription_model():
+    return apps.get_model('openbook_communities.CommunityNotificationsSubscription')
 
 
 def get_community_invite_model():
@@ -137,6 +161,14 @@ def get_community_invite_notification_model():
     return apps.get_model('openbook_notifications.CommunityInviteNotification')
 
 
+def get_community_new_post_notification_model():
+    return apps.get_model('openbook_notifications.CommunityNewPostNotification')
+
+
+def get_user_new_post_notification_model():
+    return apps.get_model('openbook_notifications.UserNewPostNotification')
+
+
 def get_notification_model():
     return apps.get_model('openbook_notifications.Notification')
 
@@ -147,6 +179,10 @@ def get_device_model():
 
 def get_user_model():
     return apps.get_model('openbook_auth.User')
+
+
+def get_user_notifications_subscription_model():
+    return apps.get_model('openbook_auth.UserNotificationsSubscription')
 
 
 def get_moderated_object_model():

@@ -2,16 +2,18 @@ from generic_relations.relations import GenericRelatedField
 from rest_framework import serializers
 
 from openbook_auth.models import UserProfile, User
+from openbook_common.serializers_fields.community import CommunityPostsCountField
 from openbook_communities.models import Community
 from openbook_moderation.models import ModerationPenalty, ModeratedObject, \
     ModerationCategory
-from openbook_moderation.serializers import LanguageSerializer
+from openbook_moderation.serializers import LanguageSerializer, ModeratedObjectUserProfileBadgeSerializer
 from openbook_moderation.serializers_fields.community import CommunityPendingModeratedObjectsCountField
 from openbook_posts.models import Post, PostComment, PostImage
 
 
 class PendingModeratedObjectsCommunitySerializer(serializers.ModelSerializer):
     pending_moderated_objects_count = CommunityPendingModeratedObjectsCountField()
+    posts_count = CommunityPostsCountField()
 
     class Meta:
         model = Community
@@ -22,6 +24,7 @@ class PendingModeratedObjectsCommunitySerializer(serializers.ModelSerializer):
             'avatar',
             'cover',
             'members_count',
+            'posts_count',
             'color',
             'user_adjective',
             'users_adjective',
@@ -50,12 +53,15 @@ class GetUserModerationPenaltiesSerializer(serializers.Serializer):
 
 
 class ModerationPenaltyUserProfileSerializer(serializers.ModelSerializer):
+    badges = ModeratedObjectUserProfileBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
             'id',
             'avatar',
-            'name'
+            'name',
+            'badges'
         )
 
 
@@ -72,12 +78,15 @@ class ModerationPenaltyUserSerializer(serializers.ModelSerializer):
 
 
 class ModerationPenaltyModeratedObjectUserProfileSerializer(serializers.ModelSerializer):
+    badges = ModeratedObjectUserProfileBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
             'id',
             'avatar',
-            'name'
+            'name',
+            'badges'
         )
 
 
@@ -112,6 +121,7 @@ class ModerationPenaltyModeratedObjectPostImageSerializer(serializers.ModelSeria
         fields = (
             'id',
             'image',
+            'thumbnail',
             'width',
             'height'
         )

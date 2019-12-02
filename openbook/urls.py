@@ -18,9 +18,10 @@ from django.urls import path, include
 from django.contrib import admin
 from django.conf import settings
 from django.conf.urls.static import static
+from proxy.views import proxy_view
 
 from openbook_auth.views.auth.views import Register, Login, UsernameCheck, EmailCheck, EmailVerify, \
-    PasswordResetRequest, PasswordResetVerify
+    PasswordResetRequest, PasswordResetVerify, VerifyRegistrationToken
 from openbook_auth.views.authenticated_user.views import AuthenticatedUser, AuthenticatedUserSettings, \
     DeleteAuthenticatedUser, AuthenticatedUserNotificationsSettings, AuthenticatedUserAcceptGuidelines, \
     AuthenticatedUserLanguage
@@ -28,13 +29,15 @@ from openbook_auth.views.blocked_users.views import BlockedUsers, SearchBlockedU
 from openbook_auth.views.followers.views import Followers, SearchFollowers
 from openbook_auth.views.following.views import Followings, SearchFollowings
 from openbook_auth.views.linked_users.views import LinkedUsers, SearchLinkedUsers
-from openbook_auth.views.users.views import SearchUsers, GetUser, BlockUser, UnblockUser
+from openbook_auth.views.proxy.views import ProxyAuth
+from openbook_auth.views.users.views import SearchUsers, GetUser, BlockUser, UnblockUser, SubscribeToUserNotifications
 from openbook_categories.views import Categories
 from openbook_circles.views import Circles, CircleItem, CircleNameCheck
-from openbook_common.views import Time, Health, EmojiGroups
+from openbook_common.views import Time, Health, EmojiGroups, ProxyDomainCheck
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
     FavoriteCommunities, SearchCommunities, JoinedCommunities, AdministratedCommunities, ModeratedCommunities, \
-    SearchJoinedCommunities
+    SearchJoinedCommunities, TopPostCommunityExclusions, TopPostCommunityExclusionsSearch, SuggestedCommunities, \
+    SearchAdministratedCommunities, SearchModeratedCommunities, SearchFavoriteCommunities
 from openbook_communities.views.community.administrators.views import CommunityAdministratorItem, \
     CommunityAdministrators, SearchCommunityAdministrators
 from openbook_communities.views.community.banned_users.views import BanUser, UnbanUser, CommunityBannedUsers, \
@@ -44,7 +47,9 @@ from openbook_communities.views.community.members.views import CommunityMembers,
 from openbook_communities.views.community.moderators.views import CommunityModeratorItem, CommunityModerators, \
     SearchCommunityModerators
 from openbook_communities.views.community.posts.views import CommunityPosts, ClosedCommunityPosts
-from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, FavoriteCommunity
+from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, \
+    FavoriteCommunity, \
+    TopPostCommunityExclusion, SubscribeToCommunityNotifications
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
 from openbook_invitations.views import UserInvite, UserInvites, SearchUserInvites, SendUserInviteEmail
@@ -60,9 +65,10 @@ from openbook_moderation.views.moderation_categories.views import ModerationCate
 from openbook_moderation.views.report.views import ReportUser, ReportPost, ReportCommunity, \
     ReportPostComment
 from openbook_moderation.views.user.views import UserModerationPenalties, UserPendingModeratedObjectsCommunities
-from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification
+from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification, \
+    UnreadNotificationsCount
 from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost, TranslatePost, \
-    SearchPostParticipants, GetPostParticipants
+    PostPreviewLinkData, SearchPostParticipants, GetPostParticipants, PublishPost, PostStatus
 from openbook_posts.views.post_comment.post_comment_reaction.views import PostCommentReactionItem
 from openbook_posts.views.post_comment.post_comment_reactions.views import PostCommentReactions, \
     PostCommentReactionsEmojiCount
@@ -70,13 +76,15 @@ from openbook_posts.views.post_comment.post_comment_replies.views import PostCom
 from openbook_posts.views.post_comment.views import PostCommentItem, MutePostComment, UnmutePostComment, \
     TranslatePostComment
 from openbook_posts.views.post_comments.views import PostComments, PostCommentsDisable, PostCommentsEnable
+from openbook_posts.views.post_media.views import PostMedia
 from openbook_posts.views.post_reaction.views import PostReactionItem
 from openbook_posts.views.post_reactions.views import PostReactions, PostReactionsEmojiCount, PostReactionEmojiGroups
-from openbook_posts.views.posts.views import Posts, TrendingPosts
+from openbook_posts.views.posts.views import Posts, TrendingPosts, TopPosts
 from openbook_importer.views import ImportItem
 
 auth_auth_patterns = [
     path('register/', Register.as_view(), name='register-user'),
+    path('register/verify-token/', VerifyRegistrationToken.as_view(), name='verify-register-token'),
     path('login/', Login.as_view(), name='login-user'),
     path('username-check/', UsernameCheck.as_view(), name='username-check'),
     path('email-check/', EmailCheck.as_view(), name='email-check'),
@@ -101,6 +109,7 @@ auth_users_user_patterns = [
     path('block/', BlockUser.as_view(), name='block-user'),
     path('unblock/', UnblockUser.as_view(), name='unblock-user'),
     path('report/', ReportUser.as_view(), name='report-user'),
+    path('notifications/subscribe/', SubscribeToUserNotifications.as_view(), name='subscribe-user-notifications'),
 ]
 
 auth_users_patterns = [
@@ -136,6 +145,7 @@ auth_patterns = [
     path('blocked-users/', include(auth_blocked_users_patterns)),
     path('users/', include(auth_users_patterns)),
     path('user/', include(auth_user_patterns)),
+    path('proxy/', ProxyAuth.as_view(), name='proxy-auth'),
 ]
 
 post_notifications_patterns = [
@@ -167,6 +177,10 @@ post_participants_patterns = [
     path('search/', SearchPostParticipants.as_view(), name='search-post-participants'),
 ]
 
+post_media_patterns = [
+    path('', PostMedia.as_view(), name='post-media'),
+]
+
 post_patterns = [
     path('', PostItem.as_view(), name='post'),
     path('notifications/', include(post_notifications_patterns)),
@@ -181,13 +195,18 @@ post_patterns = [
     path('open/', PostOpen.as_view(), name='open-post'),
     path('report/', ReportPost.as_view(), name='report-post'),
     path('translate/', TranslatePost.as_view(), name='translate-post'),
+    path('publish/', PublishPost.as_view(), name='publish-post'),
+    path('status/', PostStatus.as_view(), name='post-status'),
+    path('link-preview/', PostPreviewLinkData.as_view(), name='preview-post-link'),
     path('participants/', include(post_participants_patterns)),
+    path('media/', include(post_media_patterns)),
 ]
 
 posts_patterns = [
     path('<uuid:post_uuid>/', include(post_patterns)),
     path('', Posts.as_view(), name='posts'),
     path('trending/', TrendingPosts.as_view(), name='trending-posts'),
+    path('top/', TopPosts.as_view(), name='top-posts'),
     path('emojis/groups/', PostReactionEmojiGroups.as_view(), name='posts-emoji-groups'),
 ]
 
@@ -241,6 +260,7 @@ community_patterns = [
     path('avatar/', CommunityAvatar.as_view(), name='community-avatar'),
     path('cover/', CommunityCover.as_view(), name='community-cover'),
     path('favorite/', FavoriteCommunity.as_view(), name='favorite-community'),
+    path('notifications/subscribe/', SubscribeToCommunityNotifications.as_view(), name='subscribe-community-notifications'),
     path('members/', include(community_members_patterns)),
     path('posts/', include(community_posts_patterns)),
     path('banned-users/', include(community_banned_users_patterns)),
@@ -248,17 +268,24 @@ community_patterns = [
     path('moderators/', include(community_moderators_patterns)),
     path('moderated-objects/', include(community_moderated_objects_patterns)),
     path('report/', ReportCommunity.as_view(), name='report-community'),
+    path('top-posts/exclude/', TopPostCommunityExclusion.as_view(), name='exclude-community-from-top-posts'),
 ]
 
 communities_patterns = [
     path('', Communities.as_view(), name='communities'),
+    path('suggested/', SuggestedCommunities.as_view(), name='suggested-communities'),
     path('trending/', TrendingCommunities.as_view(), name='trending-communities'),
     path('joined/', JoinedCommunities.as_view(), name='joined-communities'),
     path('joined/search/', SearchJoinedCommunities.as_view(), name='search-joined-communities'),
     path('favorites/', FavoriteCommunities.as_view(), name='favorite-communities'),
+    path('favorites/search/', SearchFavoriteCommunities.as_view(), name='search-favorite-communities'),
     path('administrated/', AdministratedCommunities.as_view(), name='administrated-communities'),
+    path('administrated/search/', SearchAdministratedCommunities.as_view(), name='search-administrated-communities'),
     path('moderated/', ModeratedCommunities.as_view(), name='moderated-communities'),
+    path('moderated/search/', SearchModeratedCommunities.as_view(), name='search-moderated-communities'),
     path('name-check/', CommunityNameCheck.as_view(), name='community-name-check'),
+    path('top-posts/exclusions/', TopPostCommunityExclusions.as_view(), name='top-posts-excluded-communities'),
+    path('top-posts/exclusions/search/', TopPostCommunityExclusionsSearch.as_view(), name='search-top-posts-excluded-communities'),
     path('search/', SearchCommunities.as_view(), name='search-communities'),
     path('<str:community_name>/', include(community_patterns)),
 ]
@@ -306,6 +333,7 @@ notification_patterns = [
 notifications_patterns = [
     path('', Notifications.as_view(), name='notifications'),
     path('read/', ReadNotifications.as_view(), name='read-notifications'),
+    path('unread/count/', UnreadNotificationsCount.as_view(), name='unread-notifications-count'),
     path('<int:notification_id>/', include(notification_patterns)),
 ]
 
@@ -360,6 +388,8 @@ api_patterns = [
     path('moderation/', include(moderation_patterns)),
     url('time/', Time.as_view(), name='time'),
     url('emojis/groups/', EmojiGroups.as_view(), name='emoji-groups'),
+    url('proxy-domain-check/', ProxyDomainCheck.as_view(),
+        name='proxy-domain-check'),
 ]
 
 if settings.FEATURE_IMPORTER_ENABLED:
@@ -368,9 +398,14 @@ if settings.FEATURE_IMPORTER_ENABLED:
 urlpatterns = [
     path('api/', include(api_patterns)),
     url('admin/', admin.site.urls),
+    path('django-rq/', include('django_rq.urls')),
     url('health/', Health.as_view(), name='health'),
 ]
 
 # The static helper works only in debug mode
 # https://docs.djangoproject.com/en/2.1/howto/static-files/#serving-files-uploaded-by-a-user-during-development
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# Link previews proxy their urls, use local proxy API on debug/test
+if settings.DEBUG or settings.TESTING:
+    urlpatterns.append(url('proxy/(?P<url>.*)', proxy_view, name='proxy'), )

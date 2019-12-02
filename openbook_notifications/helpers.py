@@ -11,12 +11,15 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+NOTIFICATION_GROUP_LOW_PRIORITY = 'low'
+NOTIFICATION_GROUP_MEDIUM_PRIORITY = 'medium'
+NOTIFICATION_GROUP_HIGH_PRIORITY = 'high'
+
 
 def send_post_reaction_push_notification(post_reaction):
     post_creator = post_reaction.post.creator
 
-    post_id = post_reaction.post_id
-    notification_group = 'post_%s' % post_id
+    notification_group = NOTIFICATION_GROUP_LOW_PRIORITY
 
     if post_creator.has_reaction_notifications_enabled_for_post_with_id(post_id=post_reaction.post_id):
         post_reactor = post_reaction.reactor
@@ -46,9 +49,7 @@ def send_post_reaction_push_notification(post_reaction):
 def send_post_comment_push_notification_with_message(post_comment, message, target_user):
     Notification = get_notification_model()
 
-    post = post_comment.post
-
-    notification_group = 'post_%s' % post.id
+    notification_group = NOTIFICATION_GROUP_LOW_PRIORITY
 
     one_signal_notification = onesignal_sdk.Notification(post_body={
         "contents": message
@@ -82,7 +83,11 @@ def send_follow_push_notification(followed_user, following_user):
             'type': Notification.FOLLOW,
         }
 
+        notification_group = NOTIFICATION_GROUP_MEDIUM_PRIORITY
+
         one_signal_notification.set_parameter('data', notification_data)
+        one_signal_notification.set_parameter('!thread_id', notification_group)
+        one_signal_notification.set_parameter('android_group', notification_group)
 
         _send_notification_to_user(notification=one_signal_notification, user=followed_user)
 
@@ -92,11 +97,11 @@ def send_connection_request_push_notification(connection_requester, connection_r
         target_user_language_code = get_notification_language_code_for_target_user(connection_requested_for)
         with translation.override(target_user_language_code):
             one_signal_notification = onesignal_sdk.Notification(
-                post_body={"en": _(
+                post_body={"contents": {"en": _(
                     '%(connection_requester_name)s · @%(connection_requester_username)s wants to connect with you.') % {
-                                     'connection_requester_username': connection_requester.username,
-                                     'connection_requester_name': connection_requester.profile.name,
-                                 }})
+                                                  'connection_requester_username': connection_requester.username,
+                                                  'connection_requester_name': connection_requester.profile.name,
+                                              }}})
 
         Notification = get_notification_model()
 
@@ -104,16 +109,19 @@ def send_connection_request_push_notification(connection_requester, connection_r
             'type': Notification.CONNECTION_REQUEST,
         }
 
-        one_signal_notification.set_parameter('data', notification_data)
+        notification_group = NOTIFICATION_GROUP_MEDIUM_PRIORITY
 
-        _send_notification_to_user(user=connection_requested_for, notification=one_signal_notification, )
+        one_signal_notification.set_parameter('data', notification_data)
+        one_signal_notification.set_parameter('!thread_id', notification_group)
+        one_signal_notification.set_parameter('android_group', notification_group)
+
+        _send_notification_to_user(user=connection_requested_for, notification=one_signal_notification)
 
 
 def send_post_comment_reaction_push_notification(post_comment_reaction):
     post_comment_commenter = post_comment_reaction.post_comment.commenter
 
-    post_comment_id = post_comment_reaction.post_comment_id
-    notification_group = 'post_comment_%s' % post_comment_id
+    notification_group = NOTIFICATION_GROUP_LOW_PRIORITY
 
     post_comment_reactor = post_comment_reaction.reactor
     target_user_language_code = get_notification_language_code_for_target_user(post_comment_commenter)
@@ -142,8 +150,7 @@ def send_post_comment_user_mention_push_notification(post_comment_user_mention):
     if not mentioned_user.has_post_comment_mention_notifications_enabled():
         return
 
-    post_comment_id = post_comment_user_mention.post_comment_id
-    notification_group = 'post_comment_%s' % post_comment_id
+    notification_group = NOTIFICATION_GROUP_MEDIUM_PRIORITY
 
     mentioner = post_comment_user_mention.post_comment.commenter
 
@@ -174,8 +181,7 @@ def send_post_user_mention_push_notification(post_user_mention):
     if not mentioned_user.has_post_mention_notifications_enabled():
         return
 
-    post_id = post_user_mention.post_id
-    notification_group = 'post_%s' % post_id
+    notification_group = NOTIFICATION_GROUP_MEDIUM_PRIORITY
 
     mentioner = post_user_mention.post.creator
 
@@ -209,12 +215,12 @@ def send_community_invite_push_notification(community_invite):
         target_user_language_code = get_notification_language_code_for_target_user(invited_user)
         with translation.override(target_user_language_code):
             one_signal_notification = onesignal_sdk.Notification(
-                post_body={"en": _(
+                post_body={"contents": {"en": _(
                     '%(invite_creator_name)s · @%(invite_creator_username)s has invited you to join /c/%(community_name)s.') % {
-                                     'invite_creator_username': invite_creator.username,
-                                     'invite_creator_name': invite_creator.profile.name,
-                                     'community_name': community.name,
-                                 }})
+                                                  'invite_creator_username': invite_creator.username,
+                                                  'invite_creator_name': invite_creator.profile.name,
+                                                  'community_name': community.name,
+                                              }}})
 
         Notification = get_notification_model()
 
@@ -222,9 +228,64 @@ def send_community_invite_push_notification(community_invite):
             'type': Notification.COMMUNITY_INVITE,
         }
 
+        notification_group = NOTIFICATION_GROUP_MEDIUM_PRIORITY
+
         one_signal_notification.set_parameter('data', notification_data)
+        one_signal_notification.set_parameter('!thread_id', notification_group)
+        one_signal_notification.set_parameter('android_group', notification_group)
 
         _send_notification_to_user(notification=one_signal_notification, user=invited_user)
+
+
+def send_community_new_post_push_notification(community_notifications_subscription):
+    community_name = community_notifications_subscription.community.name
+    target_user = community_notifications_subscription.subscriber
+
+    if target_user.has_community_new_post_notifications_enabled():
+        target_user_language_code = get_notification_language_code_for_target_user(target_user)
+        with translation.override(target_user_language_code):
+            one_signal_notification = onesignal_sdk.Notification(
+                post_body={"contents": {"en": _('A new post was posted in /c/%(community_name)s.') % {
+                    'community_name': community_name,
+                }}})
+
+        Notification = get_notification_model()
+
+        notification_data = {
+            'type': Notification.COMMUNITY_NEW_POST,
+        }
+
+        notification_group = NOTIFICATION_GROUP_HIGH_PRIORITY
+
+        one_signal_notification.set_parameter('data', notification_data)
+        one_signal_notification.set_parameter('!thread_id', notification_group)
+        one_signal_notification.set_parameter('android_group', notification_group)
+
+        _send_notification_to_user(notification=one_signal_notification, user=target_user)
+
+
+def send_user_new_post_push_notification(user_notifications_subscription, post):
+    post_creator_name = user_notifications_subscription.user.profile.name
+    post_creator_username = user_notifications_subscription.user.username
+    target_user = user_notifications_subscription.subscriber
+
+    if target_user.has_user_new_post_notifications_enabled():
+        target_user_language_code = get_notification_language_code_for_target_user(target_user)
+        with translation.override(target_user_language_code):
+            one_signal_notification = onesignal_sdk.Notification(
+                post_body={"contents": {"en": _('%(post_creator_name)s · @%(post_creator_username)s posted something.') % {
+                    'post_creator_username': post_creator_username,
+                    'post_creator_name': post_creator_name,
+                }}})
+
+        Notification = get_notification_model()
+
+        notification_data = {
+            'type': Notification.USER_NEW_POST,
+        }
+        one_signal_notification.set_parameter('data', notification_data)
+
+        _send_notification_to_user(notification=one_signal_notification, user=target_user)
 
 
 def get_notification_language_code_for_target_user(target_user):
@@ -235,4 +296,4 @@ def get_notification_language_code_for_target_user(target_user):
 
 
 def _send_notification_to_user(user, notification):
-    django_rq.enqueue(send_notification_to_user_with_id, user_id=user.pk, notification=notification)
+    send_notification_to_user_with_id.delay(user_id=user.pk, notification=notification)

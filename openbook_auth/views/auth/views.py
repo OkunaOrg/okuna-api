@@ -10,7 +10,8 @@ from django.utils.translation import gettext as _
 from rest_framework.authtoken.models import Token
 
 from openbook_auth.views.auth.serializers import RegisterSerializer, UsernameCheckSerializer, EmailCheckSerializer, \
-    EmailVerifySerializer, LoginSerializer, VerifyPasswordResetSerializer, RequestPasswordResetSerializer
+    EmailVerifySerializer, LoginSerializer, VerifyPasswordResetSerializer, RequestPasswordResetSerializer, \
+    RegisterTokenSerializer
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.model_loaders import get_user_invite_model
 
@@ -33,6 +34,7 @@ class Register(APIView):
         is_of_legal_age = data.get('is_of_legal_age')
         are_guidelines_accepted = data.get('are_guidelines_accepted')
         name = data.get('name')
+        username = data.get('username')
         avatar = data.get('avatar')
         token = data.get('token')
         User = get_user_model()
@@ -40,9 +42,10 @@ class Register(APIView):
 
         user_invite = UserInvite.get_invite_for_token(token=token)
 
-        username = user_invite.username
+        if not username:
+            username = user_invite.username
 
-        if not user_invite.username:
+        if not username and not user_invite.username:
             username = User.get_temporary_username(email)
 
         with transaction.atomic():
@@ -58,6 +61,25 @@ class Register(APIView):
             'token': user_auth_token.key,
             'username': new_user.username
         }, status=status.HTTP_201_CREATED)
+
+
+class VerifyRegistrationToken(APIView):
+    """
+    The API to verify a registration token
+    """
+
+    def post(self, request):
+        serializer = RegisterTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
+        token = validated_data.get('token')
+
+        UserInvite = get_user_invite_model()
+
+        # raises error if invalid
+        UserInvite.check_token_is_valid(token=token)
+
+        return ApiMessageResponse(_('Token valid'), status=status.HTTP_202_ACCEPTED)
 
 
 class UsernameCheck(APIView):
@@ -149,21 +171,10 @@ class PasswordResetRequest(APIView):
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
-        has_username = 'username' in data
-        has_email = 'email' in data
-
-        if not has_email and not has_username:
-            return Response('At least one of email or username is required', status=status.HTTP_400_BAD_REQUEST)
 
         User = get_user_model()
-        user = None
-        if has_username:
-            username = data.get('username')
-            user = User.objects.get(username=username)
-
-        if has_email:
-            email = data.get('email')
-            user = User.get_user_with_email(email)
+        email = data.get('email')
+        user = User.get_user_with_email(email)
 
         with transaction.atomic():
             user.request_password_reset()

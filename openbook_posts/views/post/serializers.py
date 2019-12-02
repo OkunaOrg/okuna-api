@@ -8,7 +8,7 @@ from openbook_common.serializers_fields.post import PostCreatorField, PostReacti
     CommentsCountField, CirclesField, PostIsMutedField, IsEncircledField
 from openbook_communities.models import CommunityMembership, Community
 from openbook_communities.serializers_fields import CommunityMembershipsField
-from openbook_posts.models import PostVideo, PostImage, Post
+from openbook_posts.models import PostImage, Post
 from openbook_posts.validators import post_uuid_exists
 
 from openbook_posts.views.post_reaction.serializers import PostReactionSerializer
@@ -94,18 +94,10 @@ class PostImageSerializer(serializers.ModelSerializer):
         model = PostImage
         fields = (
             'image',
+            'thumbnail',
             'width',
             'height'
         )
-
-
-class PostVideoSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PostVideo
-        fields = (
-            'video',
-        )
-
 
 class CommunityMembershipSerializer(serializers.ModelSerializer):
     class Meta:
@@ -146,10 +138,7 @@ class PostCircleSerializer(serializers.ModelSerializer):
             'color',
         )
 
-
 class GetPostPostSerializer(serializers.ModelSerializer):
-    image = PostImageSerializer(many=False)
-    video = PostVideoSerializer(many=False)
     creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
@@ -170,8 +159,6 @@ class GetPostPostSerializer(serializers.ModelSerializer):
             'reactions_emoji_counts',
             'created',
             'text',
-            'image',
-            'video',
             'creator',
             'reaction',
             'language',
@@ -182,7 +169,10 @@ class GetPostPostSerializer(serializers.ModelSerializer):
             'is_muted',
             'is_edited',
             'is_closed',
-            'is_encircled'
+            'is_encircled',
+            'media_height',
+            'media_width',
+            'media_thumbnail',
         )
 
 
@@ -290,3 +280,17 @@ class OpenClosePostSerializer(serializers.ModelSerializer):
             'uuid',
             'is_closed',
         )
+
+
+class PublishPostSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+
+
+class GetPostStatusSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )

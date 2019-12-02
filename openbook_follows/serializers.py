@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import username_characters_validator, user_username_exists
+from openbook_common.models import Badge
 from openbook_common.serializers_fields.user import IsFollowingField, FollowListsField
 
 from openbook_follows.models import Follow
@@ -26,12 +27,24 @@ class FollowUserRequestSerializer(serializers.Serializer):
     )
 
 
+class UserProfileBadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Badge
+        fields = (
+            'keyword',
+            'keyword_description'
+        )
+
+
 class UserProfileSerializer(serializers.ModelSerializer):
+    badges = UserProfileBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
             'name',
-            'avatar'
+            'avatar',
+            'badges'
         )
 
 

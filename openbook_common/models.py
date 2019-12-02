@@ -1,5 +1,8 @@
 # Create your models here.
 # Create your models here.
+from urllib.parse import urlparse
+
+from django.conf import settings
 from django.db import models
 from django.db.models import QuerySet, Q, Count
 from django.utils import timezone
@@ -8,6 +11,7 @@ from django.utils.translation import ugettext_lazy as _
 # Create your views here.
 from openbook.settings import COLOR_ATTR_MAX_LENGTH
 from openbook_common.validators import hex_color_validator
+import tldextract
 
 
 class EmojiGroup(models.Model):
@@ -104,3 +108,27 @@ class Language(models.Model):
         if not self.id:
             self.created = timezone.now()
         return super(Language, self).save(*args, **kwargs)
+
+
+class ProxyBlacklistedDomain(models.Model):
+    domain = models.CharField(max_length=settings.PROXY_BLACKLIST_DOMAIN_MAX_LENGTH, unique=True)
+
+    @classmethod
+    def is_url_domain_blacklisted(cls, url):
+        url = url.lower()
+
+        if not urlparse(url).scheme:
+            url = 'http://' + url
+
+        # This uses a list of public suffixes
+        tld_extract_result = tldextract.extract(url)
+
+        # given test.blogspot.com
+
+        # blogspot.com
+        url_root_domain = '.'.join([tld_extract_result.domain, tld_extract_result.suffix])
+
+        # test.blogspot.com
+        url_full_domain = '.'.join([tld_extract_result.subdomain, tld_extract_result.domain, tld_extract_result.suffix])
+
+        return cls.objects.filter(Q(domain=url_root_domain) | Q(domain=url_full_domain)).exists()

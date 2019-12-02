@@ -5,9 +5,10 @@ name = "pypi"
 
 [dev-packages]
 polib = "*"
+pytz = "*"
 
 [packages]
-django = ">=2.2.2"
+django = "==2.2.5"
 python-dotenv = "*"
 djangorestframework = "<3.10.0"
 sentry-sdk = "==0.10.2"
@@ -24,14 +25,14 @@ faker = "*"
 django-storages = "*"
 django-amazon-ses = "*"
 django-media-fixtures = "==0.0.3"
-django-modeltranslation = {editable = true,git = "https://github.com/lifenautjoe/django-modeltranslation.git"}
+django-modeltranslation = {git = "https://github.com/lifenautjoe/django-modeltranslation.git",ref = "551af9905961038badad9d9a16b2f47996f7685b"}
 bandit = "==1.5.1"
 pyyaml = ">=4.2b1"
 python-magic = "*"
 safety = "*"
 pyjwt = "*"
 django-imagekit = "*"
-rest-framework-generic-relations = {git = "https://github.com/Ian-Foote/rest-framework-generic-relations.git",ref = "28592a7e5c4c2f05a5576cd143721f58f061eaf2"}
+rest-framework-generic-relations = {git = "https://github.com/Ian-Foote/rest-framework-generic-relations.git",ref = "8a354d1d728dab16532ffb708af3f55a7c0414ec"}
 onesignal-sdk = "*"
 django-replicated = "*"
 django-cacheops = "*"
@@ -40,6 +41,19 @@ django-extensions = "*"
 langdetect = "*"
 django-rq = "*"
 redis = "*"
+django-rq-scheduler = "*"
+ffmpy = "*"
+django-positions = "*"
+django-ordered-model = "*"
+webpreview = "*"
+beautifulsoup4 = "*"
+urlextract = "*"
+django-proxy = "*"
+tldextract = "*"
+django-cursor-pagination = "*"
+shutilwhich = "*"
+halo = "*"
+watchdog = "*"
 
 [pipenv]
 allow_prereleases = true

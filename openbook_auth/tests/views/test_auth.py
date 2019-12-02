@@ -6,7 +6,7 @@ from faker import Faker
 from unittest import mock
 from django.core import mail
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 from django.contrib.auth import authenticate
 from openbook_auth.models import User, UserProfile
 from rest_framework.authtoken.models import Token
@@ -23,7 +23,7 @@ fake = Faker()
 logger = logging.getLogger(__name__)
 
 
-class RegistrationAPITests(APITestCase):
+class RegistrationAPITests(OpenbookAPITestCase):
     """
     RegistrationAPI
     """
@@ -89,6 +89,28 @@ class RegistrationAPITests(APITestCase):
             response = self.client.post(url, data, format='multipart')
             parsed_response = json.loads(response.content)
             self.assertIn('name', parsed_response)
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_invalid_username(self):
+        """
+        should return 400 if the username is not valid
+        """
+        url = self._get_url()
+        invalid_usernames = ('joel<;<', '<>', ' shantanu space ', 'greater_than_30_characters_username_is_not_valid',)
+        token = self._make_user_invite_token()
+        for username in invalid_usernames:
+            data = {
+                'username': username,
+                'name': 'Shantanu',
+                'email': 'user@mail.com',
+                'password': 'secretPassword123',
+                'is_of_legal_age': 'true',
+                'are_guidelines_accepted': True,
+                'token': token
+            }
+            response = self.client.post(url, data, format='multipart')
+            parsed_response = json.loads(response.content)
+            self.assertIn('username', parsed_response)
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_name_required(self):
@@ -337,20 +359,65 @@ class RegistrationAPITests(APITestCase):
         return user_invite.token
 
 
-class RequestPasswordResetAPITests(APITestCase):
-
-    def test_cannot_request_password_reset_with_invalid_username(self):
+class VerifyRegistrationTokenAPITests(OpenbookAPITestCase):
+    """
+    VerifyRegistrationToken API
+    """
+    def test_should_reject_invalid_token(self):
         """
-        Should not be able to request password reset if no valid username exists
+        should return 400 if token is invalid.
         """
-        username = fake.user_name()
-        request_data = {
-            'username': username
-        }
         url = self._get_url()
+        token = uuid.uuid4()
+        request_data = {'token': token}
+        response = self.client.post(url, request_data, format='json')
 
-        response = self.client.post(url, request_data, format='multipart')
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_should_accept_valid_token(self):
+        """
+        should return 202 if token is valid.
+        """
+        url = self._get_url()
+        token = self._make_user_invite_token()
+        request_data = {'token': token}
+        response = self.client.post(url, request_data, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+
+    def test_should_reject_expired_token(self):
+        """
+        should return 400 if token already has been used to create an account.
+        """
+        url = self._get_url()
+        token = self._make_user_invite_token()
+        email = fake.email()
+        name = fake.user_name()
+        password = fake.password()
+        user_invite = UserInvite.get_invite_for_token(token=token)
+        username = user_invite.username
+        if not user_invite.username:
+            username = User.get_temporary_username(email)
+
+        # create a user
+        new_user = User.create_user(username=username, email=email, password=password, name=name, avatar=None,
+                         is_of_legal_age=True, badge=user_invite.badge, are_guidelines_accepted=True)
+        user_invite.created_user = new_user
+        user_invite.save()
+
+        request_data = {'token': token}
+        response = self.client.post(url, request_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def _get_url(self):
+        return reverse('verify-register-token')
+
+    def _make_user_invite_token(self):
+        user_invite = UserInvite.create_invite(email=fake.email())
+        return user_invite.token
+
+
+class RequestPasswordResetAPITests(OpenbookAPITestCase):
 
     def test_cannot_request_password_reset_with_invalid_email(self):
         """
@@ -365,23 +432,6 @@ class RequestPasswordResetAPITests(APITestCase):
             response = self.client.post(url, request_data, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-    def test_request_password_reset_successfully_with_valid_username(self):
-        """
-        Should generate request password reset token for username and send mail
-        """
-        user = make_user()
-        request_data = {
-            'username': user.username
-        }
-
-        url = self._get_url()
-        response = self.client.post(url, request_data, format='multipart')
-        email_message = mail.outbox[0]
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(email_message.to[0], user.email)
-        self.assertEqual(email_message.subject, 'Reset your password for Okuna')
 
     def test_request_password_reset_successfully_with_valid_email(self):
         """
@@ -404,7 +454,7 @@ class RequestPasswordResetAPITests(APITestCase):
         return reverse('request-password-reset')
 
 
-class VerifyResetPasswordAPITests(APITestCase):
+class VerifyResetPasswordAPITests(OpenbookAPITestCase):
 
     def test_can_update_password_with_valid_token(self):
         """
@@ -523,7 +573,7 @@ class VerifyResetPasswordAPITests(APITestCase):
         return reverse('verify-reset-password')
 
 
-class UsernameCheckAPITests(APITestCase):
+class UsernameCheckAPITests(OpenbookAPITestCase):
     """
     UsernameCheckAPI
     """
@@ -585,7 +635,7 @@ class UsernameCheckAPITests(APITestCase):
         return reverse('username-check')
 
 
-class EmailCheckAPITests(APITestCase):
+class EmailCheckAPITests(OpenbookAPITestCase):
     """
     EmailCheckAPI
     """
@@ -647,7 +697,7 @@ class EmailCheckAPITests(APITestCase):
         return reverse('email-check')
 
 
-class LoginAPITests(APITestCase):
+class LoginAPITests(OpenbookAPITestCase):
     """
     LoginAPI
     """
@@ -704,7 +754,7 @@ class LoginAPITests(APITestCase):
         return reverse('login-user')
 
 
-class VerifyChangeEmailAPITests(APITestCase):
+class VerifyChangeEmailAPITests(OpenbookAPITestCase):
 
     def test_can_verify_email_token_successfully(self):
         """

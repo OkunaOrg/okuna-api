@@ -2,20 +2,32 @@ from generic_relations.relations import GenericRelatedField
 from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
-from openbook_common.models import Language
+from openbook_common.models import Language, Badge
 from openbook_common.serializers_fields.post import IsEncircledField
 from openbook_communities.models import Community
 from openbook_moderation.models import ModeratedObject, ModerationCategory
 from openbook_posts.models import Post, PostComment, PostImage
 
 
+class ModeratedObjectUserProfileBadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Badge
+        fields = (
+            'keyword',
+            'keyword_description'
+        )
+
+
 class ModeratedObjectUserProfileSerializer(serializers.ModelSerializer):
+    badges = ModeratedObjectUserProfileBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
             'id',
             'avatar',
-            'name'
+            'name',
+            'badges'
         )
 
 
@@ -50,6 +62,7 @@ class ModeratedObjectPostImageSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'image',
+            'thumbnail',
             'width',
             'height'
         )

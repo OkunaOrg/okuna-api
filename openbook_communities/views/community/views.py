@@ -4,12 +4,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from openbook_common.responses import ApiMessageResponse
 from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.utils.helpers import normalise_request_data, normalize_list_value_in_request_data
 from openbook_communities.views.community.serializers import GetCommunityCommunitySerializer, DeleteCommunitySerializer, \
     UpdateCommunitySerializer, UpdateCommunityAvatarSerializer, UpdateCommunityCoverSerializer, GetCommunitySerializer, \
     FavoriteCommunitySerializer, CommunityAvatarCommunitySerializer, CommunityCoverCommunitySerializer, \
-    FavoriteCommunityCommunitySerializer
+    FavoriteCommunityCommunitySerializer, TopPostCommunityExclusionSerializer, SubscribeToCommunityNotificationsSerializer, \
+    SubscribeToCommunityNotificationsCommunitySerializer
+from django.utils.translation import ugettext_lazy as _
 
 
 class CommunityItem(APIView):
@@ -170,5 +173,77 @@ class FavoriteCommunity(APIView):
             community = user.unfavorite_community_with_name(community_name)
 
         response_serializer = FavoriteCommunityCommunitySerializer(community, context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class TopPostCommunityExclusion(APIView):
+    permission_classes = (IsAuthenticated, IsNotSuspended)
+
+    def put(self, request, community_name):
+        request_data = normalise_request_data(request.data)
+        request_data['community_name'] = community_name
+
+        serializer = TopPostCommunityExclusionSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+
+        with transaction.atomic():
+            user.exclude_community_with_name_from_top_posts(community_name)
+
+        return ApiMessageResponse(_('Community excluded from this feed'), status=status.HTTP_202_ACCEPTED)
+
+    def delete(self, request, community_name):
+        request_data = normalise_request_data(request.data)
+        request_data['community_name'] = community_name
+
+        serializer = TopPostCommunityExclusionSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+
+        with transaction.atomic():
+            user.remove_exclusion_for_community_with_name_from_top_posts(community_name)
+
+        return ApiMessageResponse(_('Community exclusion removed'), status=status.HTTP_202_ACCEPTED)
+
+
+class SubscribeToCommunityNotifications(APIView):
+    permission_classes = (IsAuthenticated, IsNotSuspended)
+
+    def put(self, request, community_name):
+        request_data = normalise_request_data(request.data)
+        request_data['community_name'] = community_name
+
+        serializer = SubscribeToCommunityNotificationsSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        community_name = data.get('community_name')
+        user = request.user
+
+        with transaction.atomic():
+            community = user.subscribe_to_notifications_for_community_with_name(community_name=community_name)
+
+        response_serializer = SubscribeToCommunityNotificationsCommunitySerializer(community, context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, community_name):
+        request_data = normalise_request_data(request.data)
+        request_data['community_name'] = community_name
+
+        serializer = SubscribeToCommunityNotificationsSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        community_name = data.get('community_name')
+        user = request.user
+
+        with transaction.atomic():
+            community = user.unsubscribe_from_notifications_for_community_with_name(community_name=community_name)
+
+        response_serializer = SubscribeToCommunityNotificationsCommunitySerializer(community, context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)

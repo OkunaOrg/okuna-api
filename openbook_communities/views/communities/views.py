@@ -9,11 +9,10 @@ from django.utils.translation import gettext as _
 from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import normalize_list_value_in_request_data, normalise_request_data
-from openbook_common.utils.model_loaders import get_community_model
 from openbook_communities.views.communities.serializers import CreateCommunitySerializer, \
     CommunitiesCommunitySerializer, SearchCommunitiesSerializer, CommunityNameCheckSerializer, \
     GetFavoriteCommunitiesSerializer, GetJoinedCommunitiesSerializer, TrendingCommunitiesSerializer, \
-    GetModeratedCommunitiesSerializer, GetAdministratedCommunitiesSerializer
+    GetModeratedCommunitiesSerializer, GetAdministratedCommunitiesSerializer, GetTopPostCommunityExclusionSerializer
 
 
 class Communities(APIView):
@@ -157,6 +156,29 @@ class ModeratedCommunities(APIView):
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
+class SearchModeratedCommunities(APIView):
+    permission_classes = (IsAuthenticated, IsNotSuspended)
+
+    def get(self, request):
+        query_params = request.query_params.dict()
+        serializer = SearchCommunitiesSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 10)
+        query = data.get('query')
+
+        user = request.user
+
+        communities = user.search_moderated_communities_with_query(query=query)[:count]
+
+        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
+                                                             context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
 class AdministratedCommunities(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
 
@@ -173,6 +195,29 @@ class AdministratedCommunities(APIView):
         user = request.user
 
         communities = user.get_administrated_communities()[offset:offset + count]
+
+        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
+                                                             context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class SearchAdministratedCommunities(APIView):
+    permission_classes = (IsAuthenticated, IsNotSuspended)
+
+    def get(self, request):
+        query_params = request.query_params.dict()
+        serializer = SearchCommunitiesSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 10)
+        query = data.get('query')
+
+        user = request.user
+
+        communities = user.search_administrated_communities_with_query(query=query)[:count]
 
         response_serializer = CommunitiesCommunitySerializer(communities, many=True,
                                                              context={"request": request})
@@ -221,6 +266,41 @@ class FavoriteCommunities(APIView):
         return Response(posts_serializer.data, status=status.HTTP_200_OK)
 
 
+class SuggestedCommunities(APIView):
+    permission_classes = (IsAuthenticated, IsNotSuspended)
+
+    def get(self, request):
+        user = request.user
+
+        communities = user.get_suggested_communities()
+
+        communities_serializer = CommunitiesCommunitySerializer(communities, many=True, context={"request": request})
+        return Response(communities_serializer.data, status=status.HTTP_200_OK)
+
+
+class SearchFavoriteCommunities(APIView):
+    permission_classes = (IsAuthenticated, IsNotSuspended)
+
+    def get(self, request):
+        query_params = request.query_params.dict()
+        serializer = SearchCommunitiesSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 10)
+        query = data.get('query')
+
+        user = request.user
+
+        communities = user.search_favorite_communities_with_query(query=query)[:count]
+
+        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
+                                                             context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
 class SearchCommunities(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
 
@@ -240,5 +320,53 @@ class SearchCommunities(APIView):
 
         response_serializer = CommunitiesCommunitySerializer(communities, many=True,
                                                              context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class TopPostCommunityExclusions(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        query_params = request.query_params.dict()
+        serializer = GetTopPostCommunityExclusionSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 10)
+        offset = data.get('offset', 0)
+
+        user = request.user
+        exclusions = user.get_top_posts_community_exclusions()[offset:offset + count]
+
+        communities = [exclusion.community for exclusion in exclusions]
+
+        users_serializer = CommunitiesCommunitySerializer(communities, many=True, context={'request': request})
+
+        return Response(users_serializer.data, status=status.HTTP_200_OK)
+
+
+class TopPostCommunityExclusionsSearch(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        query_params = request.query_params.dict()
+        serializer = SearchCommunitiesSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 20)
+        query = data.get('query')
+
+        user = request.user
+
+        exclusions = user.search_top_posts_excluded_communities_with_query(query=query)[:count]
+
+        communities = [exclusion.community for exclusion in exclusions]
+
+        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
+                                                         context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)

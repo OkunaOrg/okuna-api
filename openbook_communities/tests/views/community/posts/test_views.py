@@ -1,6 +1,6 @@
 from django.urls import reverse
 from faker import Faker
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 from rest_framework import status
 
 import logging
@@ -8,15 +8,17 @@ import json
 
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, \
     make_community, make_fake_post_text, make_post_image, make_moderation_category
-from openbook_communities.models import Community
+from openbook_communities.models import Community, CommunityNotificationsSubscription
 from openbook_moderation.models import ModeratedObject
+from openbook_notifications.models import CommunityNewPostNotification
 from openbook_posts.models import Post, PostUserMention
+from openbook_notifications.models import Notification
 
 logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class CommunityPostsAPITest(APITestCase):
+class CommunityPostsAPITest(OpenbookAPITestCase):
     def test_can_retrieve_posts_from_public_community(self):
         """
         should be able to retrieve the posts for a public community and 200
@@ -575,6 +577,29 @@ class CommunityPostsAPITest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(Post.objects.filter(image__isnull=False).exists())
 
+    def test_can_create_community_post_draft(self):
+        """
+        should be able to create an post draft for a community part of and return 201
+        """
+        user = make_user()
+        community_creator = make_user()
+        community = make_community(creator=community_creator, type='P')
+
+        user.join_community_with_name(community_name=community.name)
+
+        url = self._get_url(community_name=community.name)
+
+        post_text = make_fake_post_text()
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.put(url, {
+            'text': post_text,
+            'is_draft': True
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(user.posts.filter(text=post_text, status=Post.STATUS_DRAFT).count(), 1)
+
     def test_cant_create_community_post_not_part_of(self):
         """
         should not be able to create a post for a community part of and return 400
@@ -684,13 +709,143 @@ class CommunityPostsAPITest(APITestCase):
 
         self.assertTrue(PostUserMention.objects.filter(post_id=post.pk, user_id=mentioned_user.pk).exists())
 
+    def test_create_community_post_notifies_subscribers(self):
+        """
+        should notify subscribers when creating a community post
+        """
+        user = make_user()
+
+        community_admin = make_user()
+        community = make_community(creator=community_admin, type='P')
+
+        user.join_community_with_name(community_name=community.name)
+        user.subscribe_to_notifications_for_community_with_name(community_name=community.name)
+
+        headers = make_authentication_headers_for_user(community_admin)
+        url = self._get_url(community_name=community.name)
+        data = {
+            'text': make_fake_post_text()
+        }
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        community_notifications_subscription = CommunityNotificationsSubscription.objects.get(subscriber=user,
+                                                                                            community=community)
+
+        self.assertEqual(CommunityNewPostNotification.objects.filter(
+            community_notifications_subscription_id=community_notifications_subscription.pk,
+            notification__owner_id=user.pk,
+            notification__notification_type=Notification.COMMUNITY_NEW_POST).count(),
+                     1)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_create_community_post_does_not_notify_blocked_subscribers(self):
+        """
+        should NOT notify subscribers who are blocked by creator/have blocked creator when creating a community post
+        """
+        user = make_user()
+        blocking_user = make_user()
+
+        community_admin = make_user()
+        community = make_community(creator=community_admin, type='P')
+
+        user.join_community_with_name(community_name=community.name)
+        blocking_user.join_community_with_name(community_name=community.name)
+
+        user.subscribe_to_notifications_for_community_with_name(community_name=community.name)
+        blocking_user.subscribe_to_notifications_for_community_with_name(community_name=community.name)
+
+        blocking_user.block_user_with_id(user_id=user.pk)
+
+        headers = make_authentication_headers_for_user(user)
+        url = self._get_url(community_name=community.name)
+        data = {
+            'text': make_fake_post_text()
+        }
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        community_notifications_subscription = CommunityNotificationsSubscription.objects.get(subscriber=blocking_user,
+                                                                                            community=community)
+        self.assertFalse(CommunityNewPostNotification.objects.filter(
+            community_notifications_subscription_id=community_notifications_subscription.pk,
+            notification__owner_id=blocking_user.pk,
+            notification__notification_type=Notification.COMMUNITY_NEW_POST).exists())
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_create_community_post_does_not_notify_banned_subscribers(self):
+        """
+        should NOT notify subscribers who are banned from community when creating a community post
+        """
+        user = make_user()
+        banned_user = make_user()
+
+        community_admin = make_user()
+        community = make_community(creator=community_admin, type='P')
+
+        user.join_community_with_name(community_name=community.name)
+        banned_user.join_community_with_name(community_name=community.name)
+
+        banned_user.subscribe_to_notifications_for_community_with_name(community_name=community.name)
+
+        community_admin.ban_user_with_username_from_community_with_name(username=banned_user.username,
+                                                                        community_name=community.name)
+
+        headers = make_authentication_headers_for_user(user)
+        url = self._get_url(community_name=community.name)
+        data = {
+            'text': make_fake_post_text()
+        }
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        community_notifications_subscription = CommunityNotificationsSubscription.objects.get(subscriber=banned_user,
+                                                                                            community=community)
+        self.assertFalse(CommunityNewPostNotification.objects.filter(
+            community_notifications_subscription_id=community_notifications_subscription.pk,
+            notification__owner_id=banned_user.pk,
+            notification__notification_type=Notification.COMMUNITY_NEW_POST).exists())
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_create_community_post_does_notify_blocked_subscribers_if_admin(self):
+        """
+        should notify subscribers who are blocked by admin/have blocked admin when creating a community post
+        """
+        user = make_user()
+
+        community_admin = make_user()
+        community = make_community(creator=community_admin, type='P')
+
+        user.join_community_with_name(community_name=community.name)
+
+        user.subscribe_to_notifications_for_community_with_name(community_name=community.name)
+        community_admin.subscribe_to_notifications_for_community_with_name(community_name=community.name)
+
+        community_admin.block_user_with_id(user_id=user.pk)
+
+        headers = make_authentication_headers_for_user(user)
+        url = self._get_url(community_name=community.name)
+        data = {
+            'text': make_fake_post_text()
+        }
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        community_notifications_subscription = CommunityNotificationsSubscription.objects.get(subscriber=community_admin,
+                                                                                            community=community)
+        self.assertTrue(CommunityNewPostNotification.objects.filter(
+            community_notifications_subscription_id=community_notifications_subscription.pk,
+            notification__owner_id=community_admin.pk,
+            notification__notification_type=Notification.COMMUNITY_NEW_POST).exists())
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
     def _get_url(self, community_name):
         return reverse('community-posts', kwargs={
             'community_name': community_name
         })
 
 
-class CommunityClosedPostsAPITest(APITestCase):
+class CommunityClosedPostsAPITest(OpenbookAPITestCase):
 
     def test_can_retrieve_closed_posts_from_community_if_administrator(self):
         """

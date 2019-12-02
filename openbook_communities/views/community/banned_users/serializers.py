@@ -3,7 +3,17 @@ from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import username_characters_validator, user_username_exists
+from openbook_common.models import Badge
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
+
+
+class CommunityBadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Badge
+        fields = (
+            'keyword',
+            'keyword_description'
+        )
 
 
 class BanUserSerializer(serializers.Serializer):
@@ -38,11 +48,14 @@ class GetCommunityBannedUsersSerializer(serializers.Serializer):
 
 
 class GetCommunityBannedUsersUserProfileSerializer(serializers.ModelSerializer):
+    badges = CommunityBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
             'avatar',
-            'name'
+            'name',
+            'badges'
         )
 
 

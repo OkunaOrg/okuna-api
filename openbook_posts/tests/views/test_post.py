@@ -5,22 +5,28 @@ from os import access, F_OK
 
 from PIL import Image
 from django.urls import reverse
+from django_rq import get_worker
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 from django.core.files.images import ImageFile
 from django.core.files import File
+from django.core.cache import cache
+from django.conf import settings
 from unittest import mock
 
 import logging
 
+from rq import SimpleWorker
+
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
-    make_fake_post_comment_text, make_user, make_circle, make_community, make_list, make_moderation_category, \
-    get_test_usernames
+    make_fake_post_comment_text, make_user, make_circle, make_community, make_moderation_category, \
+    get_test_videos, get_test_image, make_proxy_blacklisted_domain
 from openbook_common.utils.model_loaders import get_language_model
 from openbook_communities.models import Community
 from openbook_notifications.models import PostUserMentionNotification, Notification
-from openbook_posts.models import Post, PostUserMention
+from openbook_posts.models import Post, PostUserMention, PostMedia
+from openbook_common.models import ProxyBlacklistedDomain
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -30,7 +36,7 @@ def get_language_for_text_mock(text):
     return text
 
 
-class PostItemAPITests(APITestCase):
+class PostItemAPITests(OpenbookAPITestCase):
     """
     PostItemAPI
     """
@@ -369,6 +375,246 @@ class PostItemAPITests(APITestCase):
         response_post = json.loads(response.content)
         self.assertEqual(response_post['id'], post.pk)
 
+    def test_can_retrieve_draft_own_post(self):
+        """
+        should be able to retrieve a draft own post
+        """
+        user = make_user()
+
+        post = user.create_public_post(text=make_fake_post_text(), is_draft=True)
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_post = json.loads(response.content)
+
+        self.assertEqual(response_post['id'], post.pk)
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_can_retrieve_processing_own_post(self, mock):
+        """
+        should be able to retrieve an own processing post
+        """
+        user = make_user()
+
+        test_image = get_test_image()
+
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            post = user.create_public_post(text=make_fake_post_text(), image=file)
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_post = json.loads(response.content)
+
+        self.assertEqual(response_post['id'], post.pk)
+
+    def test_cant_retrieve_draft_foreign_user_post(self):
+        """
+        should not be able to retrieve a foreign user draft post
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        post = foreign_user.create_public_post(text=make_fake_post_text(), is_draft=True)
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_processing_foreign_user_post(self, mock):
+        """
+        should not be able to retrieve a foreign user processing post
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        test_image = get_test_image()
+
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            post = foreign_user.create_public_post(text=make_fake_post_text(), image=file)
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cant_retrieve_draft_following_user_post(self):
+        """
+        should not be able to retrieve a following user draft post
+        """
+        user = make_user()
+        following_user = make_user()
+
+        user.follow_user(user=following_user)
+
+        post = following_user.create_public_post(text=make_fake_post_text(), is_draft=True)
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_processing_following_user_post(self, mock):
+        """
+        should not be able to retrieve a following user processing post
+        """
+        user = make_user()
+        following_user = make_user()
+
+        user.follow_user(user=following_user)
+
+        test_image = get_test_image()
+
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            post = following_user.create_public_post(text=make_fake_post_text(), image=file)
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cant_retrieve_draft_follower_user_post(self):
+        """
+        should not be able to retrieve a follower user draft post
+        """
+        user = make_user()
+        follower_user = make_user()
+
+        follower_user.follow_user(user=user)
+
+        post = follower_user.create_public_post(text=make_fake_post_text(), is_draft=True)
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_processing_follower_user_post(self, mock):
+        """
+        should not be able to retrieve a follower user processing post
+        """
+        user = make_user()
+        follower_user = make_user()
+
+        follower_user.follow_user(user=user)
+
+        test_image = get_test_image()
+
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            post = follower_user.create_public_post(text=make_fake_post_text(), image=file)
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cant_retrieve_draft_connected_user_post(self):
+        """
+        should not be able to retrieve a follower user draft post
+        """
+        user = make_user()
+        connected_user = make_user()
+
+        user.connect_with_user_with_id(user_id=connected_user.pk)
+        connected_user.confirm_connection_with_user_with_id(user_id=user.pk)
+
+        circle = make_circle(creator=connected_user)
+        post = connected_user.create_encircled_post(text=make_fake_post_text(), is_draft=True, circles_ids=[circle.pk])
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_processing_connected_user_post(self, mock):
+        """
+        should not be able to retrieve a follower user processing post
+        """
+        user = make_user()
+        connected_user = make_user()
+
+        user.connect_with_user_with_id(user_id=connected_user.pk)
+        connected_user.confirm_connection_with_user_with_id(user_id=user.pk)
+
+        test_image = get_test_image()
+
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            circle = make_circle(creator=connected_user)
+            post = connected_user.create_encircled_post(text=make_fake_post_text(), image=file, circles_ids=[circle.pk])
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cant_retrieve_draft_pending_connection_user_post(self):
+        """
+        should not be able to retrieve a follower user draft post
+        """
+        user = make_user()
+        pending_connection_user = make_user()
+
+        user.connect_with_user_with_id(user_id=pending_connection_user.pk)
+
+        circle = make_circle(creator=pending_connection_user)
+        post = pending_connection_user.create_encircled_post(text=make_fake_post_text(), is_draft=True,
+                                                             circles_ids=[circle.pk])
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_processing_pending_connection_user_post(self, mock):
+        """
+        should not be able to retrieve a follower user processing post
+        """
+        user = make_user()
+        pending_connection_user = make_user()
+
+        user.connect_with_user_with_id(user_id=pending_connection_user.pk)
+
+        test_image = get_test_image()
+
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            circle = make_circle(creator=pending_connection_user)
+            post = pending_connection_user.create_encircled_post(text=make_fake_post_text(), image=file,
+                                                                 circles_ids=[circle.pk])
+
+        url = self._get_url(post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_can_delete_own_post(self):
         """
         should be able to delete own post and return 200
@@ -386,7 +632,7 @@ class PostItemAPITests(APITestCase):
 
     def test_delete_image_post(self):
         """
-        should be able to delete image post and file return True
+        should be able to delete image post and file
         """
         user = make_user()
 
@@ -399,28 +645,42 @@ class PostItemAPITests(APITestCase):
         post = user.create_public_post(text=make_fake_post_text(), image=image)
         file = post.image.image.file
 
-        user.delete_post_with_id(post.id)
+        user.delete_post(post=post)
 
         self.assertFalse(access(file.name, F_OK))
 
     def test_delete_video_post(self):
         """
-        should be able to delete video post and file return True
+        should be able to delete video post and file
         """
         user = make_user()
 
-        video = b"video_file_content"
-        tmp_file = tempfile.NamedTemporaryFile(suffix='.mp4')
-        tmp_file.write(video)
-        tmp_file.seek(0)
-        video = File(tmp_file)
+        test_video = get_test_videos()[0]
 
-        post = user.create_public_post(text=make_fake_post_text(), video=video)
-        file = post.video.video.file
+        with open(test_video['path'], 'rb') as file:
+            video = File(file)
 
-        user.delete_post_with_id(post.id)
+            post = user.create_public_post(text=make_fake_post_text(), video=video)
 
-        self.assertFalse(access(file.name, F_OK))
+            # Process videos
+            get_worker('high', worker_class=SimpleWorker).work(burst=True)
+
+            post_media_video = post.get_first_media()
+            post_video = post_media_video.content_object
+
+            video_files = [
+                post_video.file.name
+            ]
+
+            for format in post_video.format_set.all():
+                video_files.append(format.file.name)
+
+            user.delete_post(post=post)
+
+            for video_file in video_files:
+                self.assertFalse(access(video_file, F_OK))
+
+            self.assertFalse(Post.objects.filter(pk=post.pk).exists())
 
     def test_can_delete_post_of_community_if_mod(self):
         """
@@ -891,7 +1151,7 @@ class PostItemAPITests(APITestCase):
         })
 
 
-class MutePostAPITests(APITestCase):
+class MutePostAPITests(OpenbookAPITestCase):
     """
     MutePostAPI
     """
@@ -1142,7 +1402,7 @@ class MutePostAPITests(APITestCase):
         })
 
 
-class UnmutePostAPITests(APITestCase):
+class UnmutePostAPITests(OpenbookAPITestCase):
     """
     UnmutePostAPI
     """
@@ -1287,7 +1547,7 @@ class UnmutePostAPITests(APITestCase):
         })
 
 
-class PostCloseAPITests(APITestCase):
+class PostCloseAPITests(OpenbookAPITestCase):
     """
     PostCloseAPITests APITests
     """
@@ -1385,7 +1645,7 @@ class PostCloseAPITests(APITestCase):
         })
 
 
-class PostOpenAPITests(APITestCase):
+class PostOpenAPITests(OpenbookAPITestCase):
     """
     PostOpenAPITests APITests
     """
@@ -1489,7 +1749,7 @@ class PostOpenAPITests(APITestCase):
         })
 
 
-class TranslatePostAPITests(APITestCase):
+class TranslatePostAPITests(OpenbookAPITestCase):
     """
     TranslatePostAPI
     """
@@ -1604,7 +1864,7 @@ class TranslatePostAPITests(APITestCase):
         })
 
 
-class SearchPostParticipantsAPITests(APITestCase):
+class SearchPostParticipantsAPITests(OpenbookAPITestCase):
     """
     SearchPostParticipantsAPI
     """
@@ -1635,7 +1895,13 @@ class SearchPostParticipantsAPITests(APITestCase):
 
         response_participants = json.loads(response.content)
 
-        self.assertEqual(response_participants[0]['id'], post_creator.pk)
+        found = False
+
+        for response_participant in response_participants:
+            if response_participant['id'] == post_creator.pk:
+                found = True
+
+        self.assertTrue(found)
 
     def test_retrieves_post_creator_by_name(self):
         """
@@ -2010,7 +2276,7 @@ class SearchPostParticipantsAPITests(APITestCase):
         })
 
 
-class GetPostParticipantsAPITests(APITestCase):
+class GetPostParticipantsAPITests(OpenbookAPITestCase):
     """
     SearchPostParticipantsAPI
     """
@@ -2104,5 +2370,272 @@ class GetPostParticipantsAPITests(APITestCase):
 
     def _get_url(self, post):
         return reverse('get-post-participants', kwargs={
+            'post_uuid': post.uuid
+        })
+
+
+class PublishPostAPITests(OpenbookAPITestCase):
+    """
+    PublishPostAPI
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
+    def test_publishing_draft_image_post_should_process_media(self):
+        """
+        should process draft image post when publishing
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        image = Image.new('RGB', (100, 100))
+        tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
+        image.save(tmp_file)
+        tmp_file.seek(0)
+
+        post = user.create_public_post(image=ImageFile(tmp_file), is_draft=True)
+
+        url = self._get_url(post=post)
+
+        response = self.client.post(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        post = Post.objects.get(pk=post.pk)
+
+        self.assertEqual(post.status, Post.STATUS_PROCESSING)
+
+        # Run the process handled by a worker
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
+
+        post.refresh_from_db()
+
+        self.assertEqual(post.status, Post.STATUS_PUBLISHED)
+
+    def test_publishing_draft_video_post_should_process_media(self):
+        """
+        should process draft video post mp4|3gp|gif media when publishing
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        test_files = get_test_videos()
+
+        for test_file in test_files:
+            with open(test_file['path'], 'rb') as file:
+                post = user.create_public_post(video=File(file), is_draft=True)
+
+                url = self._get_url(post=post)
+
+                response = self.client.post(url, **headers, format='multipart')
+
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+                post = Post.objects.get(pk=post.pk)
+
+                self.assertEqual(post.status, Post.STATUS_PROCESSING)
+
+                # Run the process handled by a worker
+                get_worker('high', worker_class=SimpleWorker).work(burst=True)
+
+                post.refresh_from_db()
+
+                self.assertEqual(post.status, Post.STATUS_PUBLISHED)
+
+                post_media = post.media.get(type=PostMedia.MEDIA_TYPE_VIDEO)
+
+                post_media_video = post_media.content_object
+                self.assertEqual(post_media_video.duration, test_file['duration'])
+                self.assertEqual(post_media_video.width, test_file['width'])
+                self.assertEqual(post_media_video.height, test_file['height'])
+                self.assertTrue(post_media_video.format_set.exists())
+
+    def test_can_publish_draft_text_post(self):
+        """
+        should be able to publish a draft text post and return 200
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        post_text = make_fake_post_text()
+
+        post = user.create_public_post(text=post_text, is_draft=True)
+
+        url = self._get_url(post=post)
+
+        response = self.client.post(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(Post.objects.filter(pk=post.pk, status=Post.STATUS_PUBLISHED).exists())
+
+    def test_cant_publish_draft_post_with_no_image_nor_text(self):
+        """
+        should not be able to publish a draft post with no image nor text and return 200
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        post = user.create_public_post(is_draft=True)
+
+        url = self._get_url(post=post)
+
+        response = self.client.post(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(Post.objects.filter(pk=post.pk, status=Post.STATUS_PUBLISHED).exists())
+
+    def test_cant_publish_an_already_published_post(self):
+        """
+        should not be able to publish an already published post and return 200
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        post_text = make_fake_post_text()
+
+        post = user.create_public_post(text=post_text, is_draft=False)
+
+        url = self._get_url(post=post)
+
+        response = self.client.post(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(Post.objects.filter(pk=post.pk, status=Post.STATUS_PUBLISHED).exists())
+
+    def test_cant_publish_foreign_user_draft_public_post(self):
+        """
+        should not be able to publish a foreign user draft public post
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        post_text = make_fake_post_text()
+
+        post = foreign_user.create_public_post(text=post_text, is_draft=True)
+
+        url = self._get_url(post=post)
+
+        response = self.client.post(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertTrue(Post.objects.filter(pk=post.pk, status=Post.STATUS_DRAFT).exists())
+
+    def test_cant_publish_foreign_user_draft_community_post(self):
+        """
+        should not be able to publish a foreign user draft community post
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        post_text = make_fake_post_text()
+
+        community = make_community()
+        foreign_user.join_community_with_name(community_name=community.name)
+
+        post = foreign_user.create_community_post(text=post_text, is_draft=True, community_name=community.name)
+
+        url = self._get_url(post=post)
+
+        response = self.client.post(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertTrue(Post.objects.filter(pk=post.pk, status=Post.STATUS_DRAFT).exists())
+
+    def test_cant_publish_foreign_user_draft_encircled_post(self):
+        """
+        should not be able to publish a foreign user draft encircled post
+        """
+        user = make_user()
+        foreign_user = make_user()
+        circle = make_circle(creator=foreign_user)
+
+        headers = make_authentication_headers_for_user(user)
+
+        post_text = make_fake_post_text()
+
+        post = foreign_user.create_encircled_post(text=post_text, is_draft=True, circles_ids=[circle.pk])
+
+        url = self._get_url(post=post)
+
+        response = self.client.post(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.assertTrue(Post.objects.filter(pk=post.pk, status=Post.STATUS_DRAFT))
+
+    def _get_url(self, post):
+        return reverse('publish-post', kwargs={
+            'post_uuid': post.uuid
+        })
+
+
+class PostStatusAPITests(OpenbookAPITestCase):
+    """
+    PostStatusAPI
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json',
+    ]
+
+    def test_can_retrieve_own_post_status(self):
+        """
+        should be able to retrieve own post status
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        post_text = make_fake_post_text()
+
+        post = user.create_public_post(text=post_text, is_draft=True)
+
+        url = self._get_url(post=post)
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(parsed_response['status'], post.status)
+
+    def test_cant_retrieve_foreign_post_status(self):
+        """
+        should not be able to retrieve a foreign post status
+        """
+        user = make_user()
+        foreign_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        post_text = make_fake_post_text()
+
+        post = foreign_user.create_public_post(text=post_text, is_draft=True)
+
+        url = self._get_url(post=post)
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def _get_url(self, post):
+        return reverse('post-status', kwargs={
             'post_uuid': post.uuid
         })

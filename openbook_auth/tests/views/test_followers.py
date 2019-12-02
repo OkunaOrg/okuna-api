@@ -2,7 +2,7 @@ import random
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 import logging
 import json
@@ -14,7 +14,7 @@ fake = Faker()
 logger = logging.getLogger(__name__)
 
 
-class FollowersAPITests(APITestCase):
+class FollowersAPITests(OpenbookAPITestCase):
     fixtures = [
         'openbook_circles/fixtures/circles.json'
     ]
@@ -75,7 +75,7 @@ class FollowersAPITests(APITestCase):
         return reverse('followers')
 
 
-class SearchFollowersAPITests(APITestCase):
+class SearchFollowersAPITests(OpenbookAPITestCase):
     """
     SearchFollowersAPI
     """

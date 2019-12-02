@@ -1,7 +1,7 @@
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 from unittest import mock
 import json
 
@@ -10,6 +10,7 @@ import logging
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_community
 from openbook_common.utils.model_loaders import get_language_model
+from openbook_communities.models import Community
 from openbook_notifications.models import PostCommentNotification, Notification, PostCommentReplyNotification, \
     PostCommentUserMentionNotification
 from openbook_posts.models import PostComment, PostCommentUserMention
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class PostCommentItemAPITests(APITestCase):
+class PostCommentItemAPITests(OpenbookAPITestCase):
     """
     PostCommentItemAPI
     """
@@ -27,6 +28,197 @@ class PostCommentItemAPITests(APITestCase):
         'openbook_circles/fixtures/circles.json',
         'openbook_common/fixtures/languages.json'
     ]
+
+    def test_can_get_own_post_comment(self):
+        """
+          should be able to get an own comment in own post and return 200
+        """
+        user = make_user()
+
+        post = user.create_public_post(text=make_fake_post_text())
+
+        post_comment_text = make_fake_post_comment_text()
+
+        post_comment = user.comment_post_with_id(post.pk, text=post_comment_text)
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_can_get_foreign_public_post_comment(self):
+        """
+          should be able to get an own comment in a foreign public post and return 200
+        """
+        user = make_user()
+
+        post_creator = make_user()
+
+        commenter = make_user()
+
+        foreign_post = post_creator.create_public_post(text=make_fake_post_text())
+
+        post_comment_text = make_fake_post_comment_text()
+
+        post_comment = commenter.comment_post_with_id(foreign_post.pk, text=post_comment_text)
+
+        url = self._get_url(post_comment=post_comment, post=foreign_post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_can_get_foreign_encircled_post_comment_part_of(self):
+        """
+          should be able to get a foreign encircled post comment part of and return 200
+        """
+        user = make_user()
+
+        post_creator = make_user()
+        circle = make_user()
+
+        post_creator.connect_with_user_with_id(user.pk)
+        user.confirm_connection_with_user_with_id(post_creator.pk)
+
+        commenter = make_user()
+
+        post_creator.connect_with_user_with_id(commenter.pk)
+        commenter.confirm_connection_with_user_with_id(post_creator.pk)
+
+        foreign_post = post_creator.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+
+        post_comment_text = make_fake_post_comment_text()
+
+        post_comment = commenter.comment_post_with_id(foreign_post.pk, text=post_comment_text)
+
+        url = self._get_url(post_comment=post_comment, post=foreign_post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_cant_get_foreign_encircled_post_comment_part_of(self):
+        """
+          should NOT be able to get a foreign encircled post comment NOT part of and return 400
+        """
+        user = make_user()
+
+        post_creator = make_user()
+        circle = make_user()
+
+        commenter = make_user()
+
+        post_creator.connect_with_user_with_id(commenter.pk)
+        commenter.confirm_connection_with_user_with_id(post_creator.pk)
+
+        foreign_post = post_creator.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
+
+        post_comment_text = make_fake_post_comment_text()
+
+        post_comment = commenter.comment_post_with_id(foreign_post.pk, text=post_comment_text)
+
+        url = self._get_url(post_comment=post_comment, post=foreign_post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_can_get_public_community_post_comment(self):
+        """
+          should be able to get a comment in a public community post and return 200
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        community_post_creator = make_user()
+        community_post_creator.join_community_with_name(community_name=community.name)
+
+        community_post_commentator = make_user()
+        community_post_commentator.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post_comment = community_post_commentator.comment_post_with_id(text=make_fake_post_comment_text(),
+                                                                       post_id=post.pk)
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_can_get_private_community_post_comment_part_of(self):
+        """
+          should be able to get a comment in a private community part of post and return 200
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        community_creator.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                           community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        community_post_creator = make_user()
+        community_creator.invite_user_with_username_to_community_with_name(username=community_post_creator.username,
+                                                                           community_name=community.name)
+        community_post_creator.join_community_with_name(community_name=community.name)
+
+        community_post_commentator = make_user()
+        community_creator.invite_user_with_username_to_community_with_name(
+            username=community_post_commentator.username,
+            community_name=community.name)
+        community_post_commentator.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post_comment = community_post_commentator.comment_post_with_id(text=make_fake_post_comment_text(),
+                                                                       post_id=post.pk)
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_cant_get_private_community_post_comment_not_part_of(self):
+        """
+          should NOT be able to get a comment in a private community NOT part of post and return 200
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        community_post_creator = make_user()
+        community_creator.invite_user_with_username_to_community_with_name(username=community_post_creator.username,
+                                                                           community_name=community.name)
+        community_post_creator.join_community_with_name(community_name=community.name)
+
+        community_post_commentator = make_user()
+        community_creator.invite_user_with_username_to_community_with_name(
+            username=community_post_commentator.username,
+            community_name=community.name)
+        community_post_commentator.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post_comment = community_post_commentator.comment_post_with_id(text=make_fake_post_comment_text(),
+                                                                       post_id=post.pk)
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_can_delete_foreign_comment_in_own_post(self):
         """
@@ -1852,7 +2044,7 @@ class PostCommentItemAPITests(APITestCase):
         })
 
 
-class MutePostCommentAPITests(APITestCase):
+class MutePostCommentAPITests(OpenbookAPITestCase):
     """
     MutePostCommentAPI
     """
@@ -2129,7 +2321,7 @@ class MutePostCommentAPITests(APITestCase):
         })
 
 
-class UnmutePostCommentAPITests(APITestCase):
+class UnmutePostCommentAPITests(OpenbookAPITestCase):
     """
     UnmutePostCommentAPI
     """
@@ -2285,7 +2477,7 @@ class UnmutePostCommentAPITests(APITestCase):
         })
 
 
-class TranslatePostCommentAPITests(APITestCase):
+class TranslatePostCommentAPITests(OpenbookAPITestCase):
     """
     TranslatePostCommentAPI
     """

@@ -1,7 +1,9 @@
+import os
 import re
 import secrets
+import tempfile
 
-from django.core.files.uploadedfile import InMemoryUploadedFile
+import magic
 from django.http import QueryDict
 from imagekit.utils import get_cache
 from imagekit.models import ProcessedImageField
@@ -99,3 +101,23 @@ usernames_matcher = re.compile('@[^\s]+')
 def extract_usernames_from_string(string):
     usernames = usernames_matcher.findall(string=string)
     return [username[1:] for username in usernames]
+
+
+magic = magic.Magic(magic_file='openbook_common/misc/magic.mgc', mime=True)
+
+
+def get_magic():
+    return magic
+
+
+def write_in_memory_file_to_disk(in_memory_file):
+    extension = os.path.splitext(in_memory_file.name)[1]
+
+    tmp_file = tempfile.mkstemp(suffix=extension)
+    tmp_file_path = tmp_file[1]
+    tmp_file = open(tmp_file_path, 'wb')
+    # Was read for the magic headers thing
+    tmp_file.write(in_memory_file.read())
+    tmp_file.seek(0)
+    tmp_file.close()
+    return tmp_file

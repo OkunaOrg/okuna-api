@@ -1,16 +1,21 @@
 # Create your tests here.
 import tempfile
+from unittest import mock
 
 from PIL import Image
+from django.core.files import File
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from django_rq import get_worker
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rq import SimpleWorker
+
+from openbook_common.tests.models import OpenbookAPITestCase
 from mixer.backend.django import mixer
 
 from openbook.settings import POST_MAX_LENGTH
-from openbook_auth.models import User
+from openbook_auth.models import User, UserNotificationsSubscription
 import random
 
 import logging
@@ -19,12 +24,15 @@ import json
 from openbook_circles.models import Circle
 from openbook_common.tests.helpers import make_user, make_users, make_fake_post_text, \
     make_authentication_headers_for_user, make_circle, make_community, make_list, make_moderation_category, \
-    get_test_usernames
+    get_test_usernames, get_test_videos, get_test_image, make_global_moderator, \
+    make_fake_post_comment_text, make_reactions_emoji_group, make_emoji
 from openbook_common.utils.helpers import sha256sum
+from openbook_communities.models import Community
 from openbook_lists.models import List
 from openbook_moderation.models import ModeratedObject
-from openbook_notifications.models import PostUserMentionNotification, Notification
-from openbook_posts.models import Post, PostUserMention
+from openbook_notifications.models import PostUserMentionNotification, Notification, UserNewPostNotification
+from openbook_posts.jobs import curate_top_posts, curate_trending_posts
+from openbook_posts.models import Post, PostUserMention, PostMedia, TopPost, TrendingPost
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -33,7 +41,7 @@ fake = Faker()
 # TODO A lot of setup duplication. Perhaps its a good idea to create a single factory on top of mixer or Factory boy
 
 
-class PostsAPITests(APITestCase):
+class PostsAPITests(OpenbookAPITestCase):
     """
     PostsAPI
     """
@@ -462,7 +470,16 @@ class PostsAPITests(APITestCase):
 
         created_post = user.posts.filter(pk=response_post_id).get()
 
+        # To be removed
         self.assertTrue(hasattr(created_post, 'image'))
+
+        self.assertTrue(created_post.status, Post.STATUS_PUBLISHED)
+
+        post_media_image = created_post.media.get(post_id=response_post_id, type=PostMedia.MEDIA_TYPE_IMAGE)
+
+        post_image = post_media_image.content_object
+
+        self.assertTrue(hasattr(post_image, 'image'))
 
     def test_create_image_and_text_post(self):
         """
@@ -502,7 +519,16 @@ class PostsAPITests(APITestCase):
 
         self.assertEqual(created_post.text, post_text)
 
+        # To be removed
         self.assertTrue(hasattr(created_post, 'image'))
+
+        self.assertTrue(created_post.status, Post.STATUS_PUBLISHED)
+
+        post_media_image = created_post.media.get(post_id=response_post_id, type=PostMedia.MEDIA_TYPE_IMAGE)
+
+        post_image = post_media_image.content_object
+
+        self.assertTrue(hasattr(post_image, 'image'))
 
     def test_create_image_post_creates_hash(self):
         """
@@ -535,36 +561,50 @@ class PostsAPITests(APITestCase):
 
         self.assertTrue(user.posts.count() == 1)
 
-        self.assertTrue(user.posts.filter(pk=response_post_id, image__hash=filehash).exists())
+        media = PostMedia.objects.get(post_id=response_post_id, type=PostMedia.MEDIA_TYPE_IMAGE)
+        self.assertEqual(media.content_object.hash, filehash)
 
     def test_create_video_post(self):
         """
         should be able to create a video post and return 201
         """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
 
-        video = SimpleUploadedFile("file.mp4", b"video_file_content", content_type="video/mp4")
+        test_videos = get_test_videos()
 
-        data = {
-            'video': video
-        }
+        for test_video in test_videos:
+            with open(test_video['path'], 'rb') as file:
+                user = make_user()
+                headers = make_authentication_headers_for_user(user)
 
-        url = self._get_url()
+                data = {
+                    'video': file
+                }
 
-        response = self.client.put(url, data, **headers, format='multipart')
+                url = self._get_url()
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+                response = self.client.put(url, data, **headers, format='multipart')
 
-        response_post = json.loads(response.content)
+                self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        response_post_id = response_post.get('id')
+                response_post = json.loads(response.content)
 
-        self.assertTrue(user.posts.count() == 1)
+                response_post_id = response_post.get('id')
 
-        created_post = user.posts.filter(pk=response_post_id).get()
+                self.assertTrue(user.posts.count() == 1)
 
-        self.assertTrue(hasattr(created_post, 'video'))
+                created_post = user.posts.filter(pk=response_post_id).get()
+
+                self.assertTrue(created_post.status, Post.STATUS_PROCESSING)
+
+                get_worker('high', worker_class=SimpleWorker).work(burst=True)
+
+                created_post.refresh_from_db()
+
+                self.assertTrue(created_post.status, Post.STATUS_PUBLISHED)
+
+                post_media_video = created_post.media.get(post_id=response_post_id, type=PostMedia.MEDIA_TYPE_VIDEO)
+
+                self.assertTrue(post_media_video.content_object.format_set.exists())
 
     def test_create_video_post_creates_hash(self):
         """
@@ -573,25 +613,55 @@ class PostsAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        video = SimpleUploadedFile("file.mp4", b"video_file_content", content_type="video/mp4")
+        test_video = get_test_videos()[0]
 
-        filehash = sha256sum(file=video.file)
+        with open(test_video['path'], 'rb') as file:
+            filehash = sha256sum(file=file)
 
-        data = {
-            'video': video
-        }
+            data = {
+                'video': file
+            }
 
-        url = self._get_url()
+            url = self._get_url()
 
-        response = self.client.put(url, data, **headers, format='multipart')
+            response = self.client.put(url, data, **headers, format='multipart')
 
-        response_post = json.loads(response.content)
+            response_post = json.loads(response.content)
 
-        response_post_id = response_post.get('id')
+            response_post_id = response_post.get('id')
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        self.assertTrue(user.posts.filter(pk=response_post_id, video__hash=filehash))
+            media = PostMedia.objects.get(post_id=response_post_id, type=PostMedia.MEDIA_TYPE_VIDEO)
+            self.assertEqual(media.content_object.hash, filehash)
+
+    def test_create_video_post_creates_thumbnail(self):
+        """
+        creating a video post creates a thumbnail and return 201
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        for test_video in get_test_videos():
+            with open(test_video['path'], 'rb') as file:
+                data = {
+                    'video': file
+                }
+
+                url = self._get_url()
+
+                response = self.client.put(url, data, **headers, format='multipart')
+
+                self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+                response_post = json.loads(response.content)
+
+                response_post_id = response_post.get('id')
+
+                media = PostMedia.objects.get(post_id=response_post_id, type=PostMedia.MEDIA_TYPE_VIDEO)
+                self.assertIsNotNone(media.content_object.thumbnail)
+                self.assertIsNotNone(media.content_object.thumbnail_width)
+                self.assertIsNotNone(media.content_object.thumbnail_height)
 
     def test_create_video_and_text_post(self):
         """
@@ -601,32 +671,43 @@ class PostsAPITests(APITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+        test_video = get_test_videos()[0]
 
-        video = SimpleUploadedFile("file.mp4", b"video_file_content", content_type="video/mp4")
+        with open(test_video['path'], 'rb') as file:
+            post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
 
-        data = {
-            'text': post_text,
-            'video': video
-        }
+            data = {
+                'text': post_text,
+                'video': file
+            }
 
-        url = self._get_url()
+            url = self._get_url()
 
-        response = self.client.put(url, data, **headers, format='multipart')
+            response = self.client.put(url, data, **headers, format='multipart')
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        response_post = json.loads(response.content)
+            response_post = json.loads(response.content)
 
-        response_post_id = response_post.get('id')
+            response_post_id = response_post.get('id')
 
-        self.assertTrue(user.posts.count() == 1)
+            self.assertTrue(user.posts.count() == 1)
 
-        created_post = user.posts.filter(pk=response_post_id).get()
+            created_post = user.posts.filter(pk=response_post_id).get()
 
-        self.assertEqual(created_post.text, post_text)
+            self.assertTrue(created_post.status, Post.STATUS_PROCESSING)
 
-        self.assertTrue(hasattr(created_post, 'video'))
+            self.assertEqual(created_post.text, post_text)
+
+            get_worker('high', worker_class=SimpleWorker).work(burst=True)
+
+            created_post.refresh_from_db()
+
+            self.assertTrue(created_post.status, Post.STATUS_PUBLISHED)
+
+            post_media_video = created_post.media.get(post_id=response_post_id, type=PostMedia.MEDIA_TYPE_VIDEO)
+
+            self.assertTrue(post_media_video.content_object.format_set.exists())
 
     def test_cannot_create_both_video_and_image_post(self):
         """
@@ -652,6 +733,132 @@ class PostsAPITests(APITestCase):
         response = self.client.put(url, data, **headers, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_create_post_publishes_post_by_default(self):
+        """
+        should be able to create a post and have it automatically published
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        post_text = make_fake_post_text()
+
+        data = {
+            'text': post_text
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        response_post = json.loads(response.content)
+
+        response_post_id = response_post.get('id')
+
+        self.assertEqual(1, user.posts.filter(pk=response_post_id, status=Post.STATUS_PUBLISHED).count())
+
+    def test_can_create_draft_post_with_no_text_image_nor_video(self):
+        """
+        should be able to create a draft post with no text, image nor video and return 201
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'is_draft': True
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        response_post = json.loads(response.content)
+
+        response_post_id = response_post.get('id')
+
+        self.assertEqual(1, user.posts.filter(pk=response_post_id, status=Post.STATUS_DRAFT).count())
+
+    def test_cant_create_non_draft_post_with_no_text_image_nor_video(self):
+        """
+        should be able to create a draft post with no text, image nor video and return 201
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        post_text = make_fake_post_text()
+
+        data = {
+            # Its default
+            # 'is_draft': False
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(user.posts.filter(text=post_text).exists())
+
+    def test_create_public_draft_post(self):
+        """
+        should be able to create a public draft post and return 201
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        post_text = make_fake_post_text()
+
+        data = {
+            'text': post_text,
+            'is_draft': True
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        response_post = json.loads(response.content)
+
+        response_post_id = response_post.get('id')
+
+        self.assertEqual(user.posts.filter(text=post_text, pk=response_post_id, status=Post.STATUS_DRAFT).count(), 1)
+
+    def test_create_draft_post_in_circle(self):
+        """
+        should be able to create a draft post in an specified circle and return 201
+        """
+        user = make_user()
+
+        circle = mixer.blend(Circle, creator=user)
+
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'text': post_text,
+            'circle_id': circle.pk,
+            'is_draft': True
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertEqual(user.posts.filter(text=post_text, status=Post.STATUS_DRAFT, circles__id=circle.pk).count(), 1)
 
     def test_get_all_posts(self):
         """
@@ -1134,11 +1341,131 @@ class PostsAPITests(APITestCase):
         for post_id in created_posts_ids:
             self.assertIn(post_id, response_posts_ids)
 
-    def test_filter_community_post_from_own_posts(self):
+    def test_filter_public_community_post_from_own_posts_when_not_community_posts_visible(self):
         """
-        should filter out the community posts when retrieving all own posts and return 200
+        should filter public community posts when community_posts_visible is false and return 200
         """
         user = make_user()
+        user.update(community_posts_visible=False)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PUBLIC)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                         community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        amount_of_community_posts = random.randint(1, 5)
+
+        created_posts_ids = []
+
+        for i in range(amount_of_community_posts):
+            post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            created_posts_ids.append(post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), 0)
+
+    def test_filter_private_community_post_from_own_posts_when_not_community_posts_visible(self):
+        """
+        should filter public community posts when community_posts_visible is false and return 200
+        """
+        user = make_user()
+        user.update(community_posts_visible=False)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                         community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        amount_of_community_posts = random.randint(1, 5)
+
+        created_posts_ids = []
+
+        for i in range(amount_of_community_posts):
+            post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            created_posts_ids.append(post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), 0)
+
+    def test_retrieve_own_public_community_post_from_own_posts_when_community_posts_visible(self):
+        """
+        should retrieve our own public community posts when community_posts_visible is true and return 200
+        """
+        user = make_user()
+        user.update(community_posts_visible=True)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PUBLIC)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                         community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        amount_of_community_posts = random.randint(1, 5)
+
+        created_posts_ids = []
+
+        for i in range(amount_of_community_posts):
+            post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            created_posts_ids.append(post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        response_posts_ids = [post['id'] for post in response_posts]
+
+        for post_id in created_posts_ids:
+            self.assertIn(post_id, response_posts_ids)
+
+    def test_retrieve_private_community_post_from_own_posts_when_community_posts_visible(self):
+        """
+        should retrieve the private community posts when community_posts_visible is true and return 200
+        """
+        user = make_user()
+        user.update(community_posts_visible=True)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                         community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
         community = make_community(creator=user)
 
         amount_of_community_posts = random.randint(1, 5)
@@ -1155,6 +1482,247 @@ class PostsAPITests(APITestCase):
 
         response = self.client.get(url, {
             'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        response_posts_ids = [post['id'] for post in response_posts]
+
+        for post_id in created_posts_ids:
+            self.assertIn(post_id, response_posts_ids)
+
+    def test_filter_public_community_post_from_foreign_user_posts_when_not_community_posts_visible(self):
+        """
+        should filter public community posts from foreign user when community_posts_visible is false and return 200
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        foreign_user.update(community_posts_visible=False)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PUBLIC)
+
+        foreign_user.join_community_with_name(community_name=community.name)
+
+        amount_of_community_posts = random.randint(1, 5)
+
+        created_posts_ids = []
+
+        for i in range(amount_of_community_posts):
+            post = foreign_user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            created_posts_ids.append(post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': foreign_user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), 0)
+
+    def test_filter_private_community_post_from_foreign_user_posts_when_not_community_posts_visible(self):
+        """
+        should filter private community posts from foreign user when community_posts_visible is false and return 200
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        foreign_user.update(community_posts_visible=False)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=foreign_user.username,
+                                                                         community_name=community.name)
+        foreign_user.join_community_with_name(community_name=community.name)
+
+        amount_of_community_posts = random.randint(1, 5)
+
+        created_posts_ids = []
+
+        for i in range(amount_of_community_posts):
+            post = foreign_user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            created_posts_ids.append(post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': foreign_user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), 0)
+
+    def test_filter_private_joined_community_post_from_foreign_user_posts_when_not_community_posts_visible(self):
+        """
+        should filter private joined community posts from foreign user when community_posts_visible is false and return 200
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        foreign_user.update(community_posts_visible=False)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=foreign_user.username,
+                                                                         community_name=community.name)
+        foreign_user.join_community_with_name(community_name=community.name)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                         community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        amount_of_community_posts = random.randint(1, 5)
+
+        created_posts_ids = []
+
+        for i in range(amount_of_community_posts):
+            post = foreign_user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            created_posts_ids.append(post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': foreign_user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), 0)
+
+    def test_retrieve_public_community_post_from_foreign_user_posts_when_community_posts_visible(self):
+        """
+        should retrieve public community posts from foreign user when community_posts_visible is true and return 200
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        foreign_user.update(community_posts_visible=True)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PUBLIC)
+
+        foreign_user.join_community_with_name(community_name=community.name)
+
+        amount_of_community_posts = random.randint(1, 5)
+
+        created_posts_ids = []
+
+        for i in range(amount_of_community_posts):
+            post = foreign_user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            created_posts_ids.append(post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': foreign_user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        response_posts_ids = [post['id'] for post in response_posts]
+
+        for post_id in created_posts_ids:
+            self.assertIn(post_id, response_posts_ids)
+
+    def test_retrieve_joined_private_community_post_from_foreign_user_posts_when_community_posts_visible(self):
+        """
+        should retrieve joined private community posts from foreign user when community_posts_visible is true and return 200
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        foreign_user.update(community_posts_visible=True)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=foreign_user.username,
+                                                                         community_name=community.name)
+        foreign_user.join_community_with_name(community_name=community.name)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                         community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        amount_of_community_posts = random.randint(1, 5)
+
+        created_posts_ids = []
+
+        for i in range(amount_of_community_posts):
+            post = foreign_user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            created_posts_ids.append(post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': foreign_user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        response_posts_ids = [post['id'] for post in response_posts]
+
+        for post_id in created_posts_ids:
+            self.assertIn(post_id, response_posts_ids)
+
+    def test_filter_private_community_post_from_foreign_user_posts_when_community_posts_visible(self):
+        """
+        should filter private community posts from foreign user when community_posts_visible is true and return 200
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        foreign_user.update(community_posts_visible=True)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=foreign_user.username,
+                                                                         community_name=community.name)
+        foreign_user.join_community_with_name(community_name=community.name)
+
+        amount_of_community_posts = random.randint(1, 5)
+
+        created_posts_ids = []
+
+        for i in range(amount_of_community_posts):
+            post = foreign_user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            created_posts_ids.append(post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': foreign_user.username
         }, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -1816,11 +2384,1113 @@ class PostsAPITests(APITestCase):
 
         self.assertEqual(0, len(response_posts))
 
+    def test_cant_retrieve_reported_community_posts_by_username(self):
+        """
+        should not be able to retrieve reported community posts by username
+        """
+        user = make_user()
+
+        community = make_community()
+
+        post_creator = make_user()
+
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+
+        report_category = make_moderation_category()
+
+        post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+        user.report_post(post=post, category_id=report_category.pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': post_creator.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_reported_and_approved_community_posts_by_username(self):
+        """
+        should not be able to retrieve and reported and approved community posts by username
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        post_creator = make_user()
+
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+        post_reporter = make_user()
+
+        report_category = make_moderation_category()
+
+        post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_reporter.report_post(post=post, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=report_category.pk)
+        community_creator.approve_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': post_creator.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_soft_deleted_community_posts_by_username(self):
+        """
+        should not be able to retrieve soft deleted community posts by username
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        post_creator = make_user()
+
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+
+        post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post.soft_delete()
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': post_creator.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_closed_community_posts_by_username(self):
+        """
+        should not be able to retrieve closed community posts by username
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        post_creator = make_user()
+
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+
+        post = post_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        community_creator.close_post(post=post)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': post_creator.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_draft_public_community_posts(self):
+        """
+        should not be able to retrieve draft public community posts
+        """
+        user = make_user()
+
+        community_creator = make_user()
+
+        community = make_community(creator=community_creator)
+
+        post_creator = make_user()
+
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+
+        number_of_posts = 5
+
+        for i in range(0, number_of_posts):
+            post_creator.create_community_post(community_name=community.name, text=make_fake_post_text(),
+                                               is_draft=True)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_draft_private_community_part_of_posts(self):
+        """
+        should not be able to retrieve draft private community posts
+        """
+        user = make_user()
+
+        community_creator = make_user()
+
+        community = make_community(creator=community_creator, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        post_creator = make_user()
+
+        community_creator.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                           community_name=community.name)
+        community_creator.invite_user_with_username_to_community_with_name(username=post_creator.username,
+                                                                           community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+
+        number_of_posts = 5
+
+        for i in range(0, number_of_posts):
+            post_creator.create_community_post(community_name=community.name, text=make_fake_post_text(),
+                                               is_draft=True)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_following_user_draft_posts(self):
+        """
+        should not be able to retrieve following user draft posts
+        """
+        user = make_user()
+
+        following_user = make_user()
+        user.follow_user_with_id(user_id=following_user.pk)
+
+        following_user.create_public_post(text=make_fake_post_text(), is_draft=True)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_following_user_draft_posts_when_filtering(self):
+        """
+        should not be able to retrieve following user draft posts when filtering
+        """
+        user = make_user()
+
+        following_user = make_user()
+        follow_list = make_list(creator=user)
+        user.follow_user_with_id(user_id=following_user.pk, lists_ids=[follow_list.pk])
+
+        following_user.create_public_post(text=make_fake_post_text(), is_draft=True)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'list_id': follow_list.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_connected_user_draft_posts(self):
+        """
+        should not be able to retrieve connected user draft posts
+        """
+        user = make_user()
+
+        connected_user = make_user()
+        user.connect_with_user_with_id(user_id=connected_user.pk)
+        connected_user_post_circle = make_circle(creator=connected_user)
+        connected_user.confirm_connection_with_user_with_id(user_id=user.pk,
+                                                            circles_ids=[connected_user_post_circle.pk])
+        connected_user.create_encircled_post(text=make_fake_post_text(),
+                                             circles_ids=[connected_user_post_circle.pk],
+                                             is_draft=True)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_connected_user_draft_posts_when_filtering(self):
+        """
+        should not be able to retrieve connected user draft posts when filtering
+        """
+        user = make_user()
+
+        connected_user = make_user()
+        user.connect_with_user_with_id(user_id=connected_user.pk)
+        connected_user_post_circle = make_circle(creator=connected_user)
+        connected_user.confirm_connection_with_user_with_id(user_id=user.pk,
+                                                            circles_ids=[connected_user_post_circle.pk])
+        connected_user.create_encircled_post(text=make_fake_post_text(),
+                                             circles_ids=[connected_user_post_circle.pk], is_draft=True)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'circle_id': connected_user_post_circle.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_public_community_draft_posts(self):
+        """
+        should not be able to retrieve public community draft posts
+        """
+        user = make_user()
+        community = make_community()
+        community_member = make_user()
+        user.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+
+        community_member.create_community_post(text=make_fake_post_text(), is_draft=True, community_name=community.name)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_private_community_part_of_draft_posts(self):
+        """
+        should not be able to retrieve private community part of draft posts
+        """
+        user = make_user()
+        community_creator = make_user()
+        community = make_community(type=Community.COMMUNITY_TYPE_PRIVATE, creator=community_creator)
+        community_member = make_user()
+
+        community_creator.invite_user_with_username_to_community_with_name(username=community_member.username,
+                                                                           community_name=community.name)
+        community_creator.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                           community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+
+        community_member.create_community_post(text=make_fake_post_text(), is_draft=True, community_name=community.name)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_public_community_processing_posts(self):
+        """
+        should not be able to retrieve public community processing posts
+        """
+        user = make_user()
+        community = make_community()
+        community_member = make_user()
+        user.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+
+        test_image = get_test_image()
+
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            community_member.create_community_post(text=make_fake_post_text(), image=file,
+                                                   community_name=community.name)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_private_community_part_of_processing_posts(self):
+        """
+        should not be able to retrieve private community part of processing posts
+        """
+        user = make_user()
+        community_creator = make_user()
+        community = make_community(type=Community.COMMUNITY_TYPE_PRIVATE, creator=community_creator)
+        community_member = make_user()
+
+        community_creator.invite_user_with_username_to_community_with_name(username=community_member.username,
+                                                                           community_name=community.name)
+        community_creator.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                           community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+
+        test_image = get_test_image()
+
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            community_member.create_community_post(text=make_fake_post_text(), image=file,
+                                                   community_name=community.name)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_connected_user_draft_posts_by_username(self):
+        """
+        should not be able to retrieve connected user draft posts by username
+        """
+        user = make_user()
+
+        connected_user = make_user()
+        user.connect_with_user_with_id(user_id=connected_user.pk)
+        connected_user_post_circle = make_circle(creator=connected_user)
+        connected_user.confirm_connection_with_user_with_id(user_id=user.pk,
+                                                            circles_ids=[connected_user_post_circle.pk])
+        connected_user.create_encircled_post(text=make_fake_post_text(),
+                                             circles_ids=[connected_user_post_circle.pk], is_draft=True)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': connected_user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_following_user_draft_posts_by_username(self):
+        """
+        should not be able to retrieve following user draft posts by username
+        """
+        user = make_user()
+
+        following_user = make_user()
+        follow_list = make_list(creator=user)
+        user.follow_user_with_id(user_id=following_user.pk, lists_ids=[follow_list.pk])
+
+        following_user.create_public_post(text=make_fake_post_text(), is_draft=True)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': following_user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_own_reported_and_approved_community_posts_by_username(self):
+        """
+        should not be able to retrieve own approved and reported posts by username
+        """
+        user = make_user()
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+        post_reporter = make_user()
+
+        report_category = make_moderation_category()
+
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_reporter.report_post(post=post, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=report_category.pk)
+        community_creator.approve_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_own_reported_and_approved_posts_by_username(self):
+        """
+        should not be able to retrieve own approved and reported posts by username
+        """
+        user = make_user()
+
+        global_moderator = make_global_moderator()
+
+        post_reporter = make_user()
+
+        report_category = make_moderation_category()
+
+        post = user.create_public_post(text=make_fake_post_text())
+        post_reporter.report_post(post=post, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=report_category.pk)
+        global_moderator.approve_moderated_object(moderated_object=moderated_object)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_comment_counts_on_community_post_should_exclude_blocked_users(self):
+        """
+        should not count blocked users that are not admins in the comment counts on a community post
+        """
+        user = make_user()
+        blocked_user = make_user()
+
+        community_creator = make_user()
+
+        community = make_community(creator=community_creator)
+
+        user.join_community_with_name(community_name=community.name)
+
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        blocked_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+        user.block_user_with_id(user_id=blocked_user.pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(1, len(response_posts))
+
+        response_post = response_posts[0]
+        comments_count = response_post['comments_count']
+        self.assertEqual(comments_count, 0)
+
+    def test_comment_counts_on_community_post_should_include_blocked_users_if_they_are_admins(self):
+        """
+        should count blocked users that ARE admins of that community in the comment counts on a community post
+        """
+        user = make_user()
+        blocked_user = make_user()
+
+        community = make_community(creator=blocked_user)
+
+        user.join_community_with_name(community_name=community.name)
+
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        blocked_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+        user.block_user_with_id(user_id=blocked_user.pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(1, len(response_posts))
+
+        response_post = response_posts[0]
+        comments_count = response_post['comments_count']
+        self.assertEqual(comments_count, 1)
+
+    def test_comment_counts_on_posts_should_include_replies(self):
+        """
+        should count replies in the comment counts on posts
+        """
+        user = make_user()
+        replier = make_user()
+
+        post = user.create_public_post(text=make_fake_post_text())
+
+        post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+        replier.reply_to_comment_with_id_for_post_with_uuid(post_comment_id=post_comment.pk,
+                                                            post_uuid=post.uuid,
+                                                            text=make_fake_post_comment_text())
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(1, len(response_posts))
+
+        response_post = response_posts[0]
+        comments_count = response_post['comments_count']
+        self.assertTrue(comments_count, 2)
+
+    def test_cant_retrieve_own_draft_posts_by_username(self):
+        """
+        should not be able to retrieve own draft posts by username
+        """
+        user = make_user()
+
+        user.create_public_post(text=make_fake_post_text(), is_draft=True)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_own_public_community_draft_posts_by_username(self):
+        """
+        should not be able to retrieve own public community draft posts by username
+        """
+        user = make_user()
+        community = make_community()
+        user.join_community_with_name(community_name=community.name)
+
+        user.create_community_post(text=make_fake_post_text(), is_draft=True, community_name=community.name)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_own_private_community_part_of_draft_posts_by_username(self):
+        """
+        should not be able to retrieve own private community part of draft posts by username
+        """
+        user = make_user()
+        community_creator = make_user()
+        community = make_community(type=Community.COMMUNITY_TYPE_PRIVATE, creator=community_creator)
+
+        community_creator.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                           community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        user.create_community_post(text=make_fake_post_text(), is_draft=True, community_name=community.name)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_processing_public_community_posts(self, process_post_media_mock):
+        """
+        should not be able to retrieve processing public community posts
+        """
+        user = make_user()
+
+        community_creator = make_user()
+
+        community = make_community(creator=community_creator)
+
+        post_creator = make_user()
+
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+
+        test_image = get_test_image()
+
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            post_creator.create_community_post(community_name=community.name, text=make_fake_post_text(),
+                                               image=file)
+
+            url = self._get_url()
+            headers = make_authentication_headers_for_user(user)
+            response = self.client.get(url, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            response_posts = json.loads(response.content)
+
+            self.assertEqual(0, len(response_posts))
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_processing_private_community_part_of_posts(self, mock):
+        """
+        should not be able to retrieve processing private community posts
+        """
+        user = make_user()
+
+        community_creator = make_user()
+
+        community = make_community(creator=community_creator, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        post_creator = make_user()
+
+        community_creator.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                           community_name=community.name)
+        community_creator.invite_user_with_username_to_community_with_name(username=post_creator.username,
+                                                                           community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+        post_creator.join_community_with_name(community_name=community.name)
+
+        test_image = get_test_image()
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            post_creator.create_community_post(community_name=community.name, text=make_fake_post_text(),
+                                               image=file)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_following_user_processing_posts(self, mock):
+        """
+        should not be able to retrieve following user processing posts
+        """
+        user = make_user()
+
+        following_user = make_user()
+        user.follow_user_with_id(user_id=following_user.pk)
+
+        test_image = get_test_image()
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            following_user.create_public_post(text=make_fake_post_text(), image=file)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_following_user_processing_posts_when_filtering(self, mock):
+        """
+        should not be able to retrieve following user processing posts when filtering
+        """
+        user = make_user()
+
+        following_user = make_user()
+        follow_list = make_list(creator=user)
+        user.follow_user_with_id(user_id=following_user.pk, lists_ids=[follow_list.pk])
+
+        test_image = get_test_image()
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            following_user.create_public_post(text=make_fake_post_text(), image=file)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'list_id': follow_list.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_connected_user_processing_posts(self, mock):
+        """
+        should not be able to retrieve connected user processing posts
+        """
+        user = make_user()
+
+        connected_user = make_user()
+        user.connect_with_user_with_id(user_id=connected_user.pk)
+        connected_user_post_circle = make_circle(creator=connected_user)
+        connected_user.confirm_connection_with_user_with_id(user_id=user.pk,
+                                                            circles_ids=[connected_user_post_circle.pk])
+
+        test_image = get_test_image()
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            connected_user.create_encircled_post(text=make_fake_post_text(),
+                                                 circles_ids=[connected_user_post_circle.pk],
+                                                 image=file)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_connected_user_processing_posts_when_filtering(self, mock):
+        """
+        should not be able to retrieve connected user processing posts when filtering
+        """
+        user = make_user()
+
+        connected_user = make_user()
+        user.connect_with_user_with_id(user_id=connected_user.pk)
+        connected_user_post_circle = make_circle(creator=connected_user)
+        connected_user.confirm_connection_with_user_with_id(user_id=user.pk,
+                                                            circles_ids=[connected_user_post_circle.pk])
+
+        test_image = get_test_image()
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            connected_user.create_encircled_post(text=make_fake_post_text(),
+                                                 circles_ids=[connected_user_post_circle.pk], image=file)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'circle_id': connected_user_post_circle.pk
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_connected_user_processing_posts_by_username(self, file):
+        """
+        should not be able to retrieve connected user processing posts by username
+        """
+        user = make_user()
+
+        connected_user = make_user()
+        user.connect_with_user_with_id(user_id=connected_user.pk)
+        connected_user_post_circle = make_circle(creator=connected_user)
+        connected_user.confirm_connection_with_user_with_id(user_id=user.pk,
+                                                            circles_ids=[connected_user_post_circle.pk])
+
+        test_image = get_test_image()
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            connected_user.create_encircled_post(text=make_fake_post_text(),
+                                                 circles_ids=[connected_user_post_circle.pk], image=file)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': connected_user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_following_user_processing_posts_by_username(self, mock):
+        """
+        should not be able to retrieve following user processing posts by username
+        """
+        user = make_user()
+
+        following_user = make_user()
+        follow_list = make_list(creator=user)
+        user.follow_user_with_id(user_id=following_user.pk, lists_ids=[follow_list.pk])
+
+        test_image = get_test_image()
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            following_user.create_public_post(text=make_fake_post_text(), image=file)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': following_user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_own_processing_posts_by_username(self, mock):
+        """
+        should not be able to retrieve own processing posts by username
+        """
+        user = make_user()
+
+        test_image = get_test_image()
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            user.create_public_post(text=make_fake_post_text(), image=file)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_own_public_community_processing_posts_by_username(self, mock):
+        """
+        should not be able to retrieve own public community processing posts by username
+        """
+        user = make_user()
+        community = make_community()
+        user.join_community_with_name(community_name=community.name)
+
+        test_image = get_test_image()
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            user.create_community_post(text=make_fake_post_text(), image=file, community_name=community.name)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    @mock.patch('openbook_posts.jobs.process_post_media')
+    def test_cant_retrieve_own_private_community_part_of_processing_posts_by_username(self, mock):
+        """
+        should not be able to retrieve own private community part of processing posts by username
+        """
+        user = make_user()
+        community_creator = make_user()
+        community = make_community(type=Community.COMMUNITY_TYPE_PRIVATE, creator=community_creator)
+
+        community_creator.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                           community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        test_image = get_test_image()
+        with open(test_image['path'], 'rb') as file:
+            file = File(file)
+            user.create_community_post(text=make_fake_post_text(), image=file, community_name=community.name)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.get(url, {
+            'username': user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_create_post_notifies_subscribers(self):
+        """
+        should notify subscribers when a post is created
+        """
+        user = make_user()
+        subscriber = make_user()
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+
+        headers = make_authentication_headers_for_user(user)
+        data = {'text': post_text}
+
+        subscriber.subscribe_to_notifications_for_user_with_username(user.username)
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        user_notifications_subscription = UserNotificationsSubscription.objects.get(subscriber=subscriber, user=user)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(UserNewPostNotification.objects.filter(
+            user_notifications_subscription=user_notifications_subscription).count() == 1)
+
+    def test_create_post_does_not_notify_subscribers_if_post_creator_is_blocked(self):
+        """
+        should NOT notify subscribers if creator is blocked when a post is created
+        """
+        user = make_user()
+        subscriber = make_user()
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+
+        headers = make_authentication_headers_for_user(user)
+        data = {'text': post_text}
+
+        subscriber.subscribe_to_notifications_for_user_with_username(user.username)
+        subscriber.block_user_with_id(user_id=user.pk)
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+        response_post = json.loads(response.content)
+        post = Post.objects.get(id=response_post['id'])
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(UserNewPostNotification.objects.filter(
+            post=post).count() == 0)
+
+    def test_create_post_does_not_notify_subscribers_if_they_have_been_blocked(self):
+        """
+        should NOT notify subscribers if creator has blocked them
+        """
+        user = make_user()
+        subscriber = make_user()
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+
+        headers = make_authentication_headers_for_user(user)
+        data = {'text': post_text}
+
+        subscriber.subscribe_to_notifications_for_user_with_username(user.username)
+        user.block_user_with_id(user_id=subscriber.pk)
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+        response_post = json.loads(response.content)
+        post = Post.objects.get(id=response_post['id'])
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(UserNewPostNotification.objects.filter(
+            post=post).count() == 0)
+
+    def test_encircled_post_should_notify_only_subscribers_in_that_circle(self):
+        """
+        should only notify subscribers in a circle if encircled post
+        """
+        post_creator = make_user()
+        subscriber = make_user()
+        other_subscriber = make_user()
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+        headers = make_authentication_headers_for_user(post_creator)
+        circle = mixer.blend(Circle, creator=post_creator)
+
+        # connect with subscriber and add them to circle
+        subscriber.connect_with_user_with_id(post_creator.pk)
+        post_creator.confirm_connection_with_user_with_id(user_id=subscriber.pk, circles_ids=[circle.pk])
+
+        # both users subscribe
+        subscriber.subscribe_to_notifications_for_user_with_username(post_creator.username)
+        other_subscriber.subscribe_to_notifications_for_user_with_username(post_creator.username)
+
+        data = {
+            'text': post_text,
+            'circle_id': circle.pk
+        }
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        other_subscriber_notifications_subscription = UserNotificationsSubscription.objects.get(
+            subscriber=other_subscriber, user=post_creator)
+
+        subscriber_notifications_subscription = UserNotificationsSubscription.objects.get(
+            subscriber=subscriber, user=post_creator)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(UserNewPostNotification.objects.filter(
+            user_notifications_subscription=other_subscriber_notifications_subscription).count() == 0)
+        self.assertTrue(UserNewPostNotification.objects.filter(
+            user_notifications_subscription=subscriber_notifications_subscription).count() == 1)
+
     def _get_url(self):
         return reverse('posts')
 
 
-class TrendingPostsAPITests(APITestCase):
+class TrendingPostsAPITests(OpenbookAPITestCase):
     """
     TrendingPostsAPITests
     """
@@ -1841,6 +3511,14 @@ class TrendingPostsAPITests(APITestCase):
 
         headers = make_authentication_headers_for_user(user)
 
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+
+        curate_trending_posts()
+
         url = self._get_url()
 
         response = self.client.get(url, **headers, format='multipart')
@@ -1853,7 +3531,33 @@ class TrendingPostsAPITests(APITestCase):
 
         response_post = response_posts[0]
 
-        self.assertEqual(response_post['id'], post.pk)
+        self.assertEqual(response_post['post']['id'], post.pk)
+        self.assertTrue(TrendingPost.objects.filter(post__id=post.pk).exists())
+
+    def test_does_not_curate_community_posts_with_less_than_min_reactions(self):
+        """
+        should not curate community posts with less than minimum reactions and return 200
+        """
+        user = make_user()
+        community = make_community(creator=user)
+
+        user.create_public_post(text=make_fake_post_text())
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        headers = make_authentication_headers_for_user(user)
+
+        curate_trending_posts()
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+        self.assertFalse(TrendingPost.objects.filter(post__id=post.pk).exists())
 
     def test_does_not_display_closed_community_posts(self):
         """
@@ -1870,6 +3574,15 @@ class TrendingPostsAPITests(APITestCase):
 
         headers = make_authentication_headers_for_user(user)
 
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+        user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
+
+        curate_trending_posts()
+
         url = self._get_url()
 
         response = self.client.get(url, **headers, format='multipart')
@@ -1882,7 +3595,9 @@ class TrendingPostsAPITests(APITestCase):
 
         response_post = response_posts[0]
 
-        self.assertEqual(response_post['id'], post.pk)
+        self.assertEqual(response_post['post']['id'], post.pk)
+        self.assertFalse(TrendingPost.objects.filter(post__id=post_two.pk).exists())
+        self.assertTrue(TrendingPost.objects.filter(post__id=post.pk).exists())
 
     def test_does_not_display_post_from_community_banned_from(self):
         """
@@ -1895,12 +3610,19 @@ class TrendingPostsAPITests(APITestCase):
 
         user.join_community_with_name(community_name=community.name)
 
+        post = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+
         community_owner.ban_user_with_username_from_community_with_name(username=user.username,
                                                                         community_name=community.name)
 
-        community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
-
         headers = make_authentication_headers_for_user(user)
+
+        curate_trending_posts()
 
         url = self._get_url()
 
@@ -1917,13 +3639,21 @@ class TrendingPostsAPITests(APITestCase):
         should not be able to retrieve posts of a blocked user
         """
         user = make_user()
-
+        community = make_community(creator=user)
         user_to_retrieve_posts_from = make_user()
-        user_to_retrieve_posts_from.create_public_post(text=make_fake_post_text())
+        user_to_retrieve_posts_from.join_community_with_name(community_name=community.name)
 
-        user.follow_user_with_id(user_id=user_to_retrieve_posts_from.pk)
+        post = user_to_retrieve_posts_from.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        # react once, min required while testing
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
 
         user.block_user_with_id(user_id=user_to_retrieve_posts_from.pk)
+
+        curate_trending_posts()
 
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
@@ -1941,13 +3671,21 @@ class TrendingPostsAPITests(APITestCase):
         should not be able to retrieve posts of a blocking user
         """
         user = make_user()
-
+        community = make_community(creator=user)
         user_to_retrieve_posts_from = make_user()
-        user_to_retrieve_posts_from.create_public_post(text=make_fake_post_text())
+        user_to_retrieve_posts_from.join_community_with_name(community_name=community.name)
 
-        user.follow_user_with_id(user_id=user_to_retrieve_posts_from.pk)
+        post = user_to_retrieve_posts_from.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
 
         user_to_retrieve_posts_from.block_user_with_id(user_id=user.pk)
+
+        curate_trending_posts()
 
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
@@ -1971,9 +3709,17 @@ class TrendingPostsAPITests(APITestCase):
 
         user.join_community_with_name(community_name=community.name)
 
-        community_owner.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post = community_owner.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
 
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+
+        # block user
         user.block_user_with_id(user_id=community_owner.pk)
+
+        curate_trending_posts()
 
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
@@ -1986,5 +3732,898 @@ class TrendingPostsAPITests(APITestCase):
 
         self.assertEqual(0, len(response_posts))
 
+    def test_does_not_curate_encircled_posts(self):
+        """
+        should not curate encircled posts in trending posts
+        """
+        post_creator = make_user()
+        user = make_user()
+
+        circle = make_circle(creator=post_creator)
+
+        post_creator.connect_with_user_with_id(user_id=user.pk, circles_ids=[circle.pk])
+        user.confirm_connection_with_user_with_id(user_id=post_creator.pk)
+
+        post_text = make_fake_post_text()
+        post = post_creator.create_encircled_post(text=post_text, circles_ids=[circle.pk])
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+
+        # curate trending posts
+        curate_trending_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(0, len(response_posts))
+
+        trending_posts = TrendingPost.objects.all()
+        self.assertEqual(0, len(trending_posts))
+        self.assertFalse(TrendingPost.objects.filter(post__id=post.pk).exists())
+
+    def test_does_not_curate_private_community_posts(self):
+        """
+        should not curate private community posts in trending posts
+        """
+        user = make_user()
+
+        community = make_community(creator=user, type=Community.COMMUNITY_TYPE_PRIVATE)
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+
+        # curate trending posts
+        curate_trending_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(0, len(response_posts))
+
+        trending_posts = TrendingPost.objects.all()
+        self.assertEqual(0, len(trending_posts))
+        self.assertFalse(TrendingPost.objects.filter(post__id=post.pk).exists())
+
+    def test_does_not_return_recently_turned_private_community_posts(self):
+        """
+        should not return recently turned private community posts in trending posts
+        """
+        user = make_user()
+
+        community = make_community(creator=user, type=Community.COMMUNITY_TYPE_PUBLIC)
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+
+        # curate trending posts
+        curate_trending_posts()
+
+        community.type = Community.COMMUNITY_TYPE_PRIVATE
+        community.save()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(0, len(response_posts))
+
+        trending_posts = TrendingPost.objects.all()
+        self.assertEqual(1, len(trending_posts))
+        self.assertTrue(TrendingPost.objects.filter(post__id=post.pk).exists())
+
+    def test_does_not_display_curated_closed_community_posts(self):
+        """
+        should not display community posts that are closed after already curated in trending posts
+        """
+        user = make_user()
+        community = make_community(creator=user)
+
+        user.create_public_post(text=make_fake_post_text())
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+        user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
+
+        # curate trending posts
+        curate_trending_posts()
+
+        post_two.is_closed = True
+        post_two.save()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+        response_post = response_posts[0]
+        self.assertEqual(response_post['post']['id'], post.pk)
+
+    def test_does_not_display_reported_community_posts_that_are_approved(self):
+        """
+        should not display community posts that are reported and approved by staff in trending posts
+        """
+        user = make_user()
+        post_reporter = make_user()
+        community = make_community(creator=user)
+        post_reporter.join_community_with_name(community_name=community.name)
+
+        user.create_public_post(text=make_fake_post_text())
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        # report and approve the report for one post
+        moderation_category = make_moderation_category()
+        post_reporter.report_post(post=post, category_id=moderation_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=moderation_category.pk)
+        user.approve_moderated_object(moderated_object=moderated_object)
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+        user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
+
+        # curate trending posts
+        curate_trending_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+        response_post = response_posts[0]
+        self.assertEqual(response_post['post']['id'], post_two.pk)
+
+        trending_posts = TrendingPost.objects.all()
+        self.assertEqual(1, len(trending_posts))
+        self.assertTrue(TrendingPost.objects.filter(post__id=post_two.pk).exists())
+
+    def test_does_not_display_reported_community_posts_that_are_approved_after_curation(self):
+        """
+        should not display community posts that are reported and approved after already curated by staff in trending posts
+        """
+        user = make_user()
+        post_reporter = make_user()
+        community = make_community(creator=user)
+        post_reporter.join_community_with_name(community_name=community.name)
+
+        user.create_public_post(text=make_fake_post_text())
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        # report and approve the report for one post
+        moderation_category = make_moderation_category()
+        post_reporter.report_post(post=post, category_id=moderation_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=moderation_category.pk)
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+        user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
+
+        # curate trending posts
+        curate_trending_posts()
+
+        user.approve_moderated_object(moderated_object=moderated_object)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+        response_post = response_posts[0]
+        self.assertEqual(response_post['post']['id'], post_two.pk)
+
+    def test_does_not_display_posts_that_have_less_than_min_reactions_after_curation(self):
+        """
+        should not display community posts that have less than minimum reactions but are already curated in trending posts
+        """
+        user = make_user()
+        post_reporter = make_user()
+        community = make_community(creator=user)
+        post_reporter.join_community_with_name(community_name=community.name)
+
+        user.create_public_post(text=make_fake_post_text())
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        post_reaction = user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+        post_reaction_two = user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
+
+        # curate trending posts
+        curate_trending_posts()
+
+        user.delete_reaction_with_id_for_post_with_id(post_reaction_id=post_reaction.pk, post_id=post.pk)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+        response_post = response_posts[0]
+        self.assertEqual(response_post['post']['id'], post_two.pk)
+
     def _get_url(self):
         return reverse('trending-posts')
+
+
+class TopPostsAPITests(OpenbookAPITestCase):
+    """
+    TopPostsAPITests
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json',
+    ]
+
+    def test_displays_community_posts_only(self):
+        """
+        should display community posts only in top posts and return 200
+        """
+        user = make_user()
+        community = make_community(creator=user)
+
+        public_post = user.create_public_post(text=make_fake_post_text())
+        community_post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        # comment on both posts to qualify for top
+        user.comment_post(community_post, text=make_fake_post_comment_text())
+        user.comment_post(public_post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+        response_post = response_posts[0]
+        self.assertEqual(response_post['post']['id'], community_post.pk)
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(1, len(top_posts))
+        self.assertTrue(TopPost.objects.filter(post__id=community_post.pk).exists())
+
+    def test_excludes_joined_communities_if_true(self):
+        """
+        should display posts only from communities not joined by user if exclude_joined_communities is true
+        """
+        user = make_user()
+        community_creator = make_user()
+        user_community = make_community(creator=user)
+        community = make_community(creator=community_creator)
+
+        user_community_post = user.create_community_post(community_name=user_community.name, text=make_fake_post_text())
+        community_post = community_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        # comment on both posts to qualify for top
+        user.comment_post(user_community_post, text=make_fake_post_comment_text())
+        community_creator.comment_post(community_post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {'exclude_joined_communities': True}, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+        response_post = response_posts[0]
+        self.assertEqual(response_post['post']['id'], community_post.pk)
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(2, len(top_posts))
+
+    def test_does_not_display_excluded_community_posts(self):
+        """
+        should not display excluded community posts in top posts
+        """
+        user = make_user()
+        community = make_community(creator=user)
+
+        public_post = user.create_public_post(text=make_fake_post_text())
+        community_post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        # comment on both posts to qualify for top
+        user.comment_post(community_post, text=make_fake_post_comment_text())
+        user.comment_post(public_post, text=make_fake_post_comment_text())
+
+        user.exclude_community_with_name_from_top_posts(community.name)
+
+        # curate top posts
+        curate_top_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(0, len(response_posts))
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(1, len(top_posts))
+        self.assertTrue(TopPost.objects.filter(post__id=community_post.pk).exists())
+
+    def test_does_not_curate_encircled_posts(self):
+        """
+        should not curate encircled posts in top posts
+        """
+        post_creator = make_user()
+        user = make_user()
+
+        circle = make_circle(creator=post_creator)
+
+        post_creator.connect_with_user_with_id(user_id=user.pk, circles_ids=[circle.pk])
+        user.confirm_connection_with_user_with_id(user_id=post_creator.pk)
+
+        post_text = make_fake_post_text()
+        post = post_creator.create_encircled_post(text=post_text, circles_ids=[circle.pk])
+
+        # comment on post to qualify for top
+        user.comment_post(post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(0, len(response_posts))
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(0, len(top_posts))
+        self.assertFalse(TopPost.objects.filter(post__id=post.pk).exists())
+
+    def test_does_not_curate_private_community_posts(self):
+        """
+        should not curate private community posts in top posts
+        """
+        user = make_user()
+
+        community = make_community(creator=user, type=Community.COMMUNITY_TYPE_PRIVATE)
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        # comment on post to qualify for top
+        user.comment_post(post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(0, len(response_posts))
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(0, len(top_posts))
+        self.assertFalse(TopPost.objects.filter(post__id=post.pk).exists())
+
+    def test_does_not_return_recently_turned_private_community_posts(self):
+        """
+        should not return recently turned private community posts in top posts
+        """
+        user = make_user()
+
+        community = make_community(creator=user, type=Community.COMMUNITY_TYPE_PUBLIC)
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        # comment on post to qualify for top
+        user.comment_post(post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        community.type = Community.COMMUNITY_TYPE_PRIVATE
+        community.save()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(0, len(response_posts))
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(1, len(top_posts))
+        self.assertTrue(TopPost.objects.filter(post__id=post.pk).exists())
+
+    def test_does_not_display_closed_community_posts(self):
+        """
+        should not display community posts that are closed in top posts
+        """
+        user = make_user()
+        community = make_community(creator=user)
+
+        user.create_public_post(text=make_fake_post_text())
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two.is_closed = True
+        post_two.save()
+
+        # comment on both posts to qualify for top
+        user.comment_post(post, text=make_fake_post_comment_text())
+        user.comment_post(post_two, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+        response_post = response_posts[0]
+        self.assertEqual(response_post['post']['id'], post.pk)
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(1, len(top_posts))
+        self.assertTrue(TopPost.objects.filter(post__id=post.pk).exists())
+
+    def test_does_not_display_curated_closed_community_posts(self):
+        """
+        should not display community posts that are closed after already curated in top posts
+        """
+        user = make_user()
+        community = make_community(creator=user)
+
+        user.create_public_post(text=make_fake_post_text())
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        # comment on both posts to qualify for top
+        user.comment_post(post, text=make_fake_post_comment_text())
+        user.comment_post(post_two, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        post_two.is_closed = True
+        post_two.save()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+        response_post = response_posts[0]
+        self.assertEqual(response_post['post']['id'], post.pk)
+
+    def test_does_not_display_reported_community_posts_that_are_approved(self):
+        """
+        should not display community posts that are reported and approved by staff in top posts
+        """
+        user = make_user()
+        post_reporter = make_user()
+        community = make_community(creator=user)
+        post_reporter.join_community_with_name(community_name=community.name)
+
+        user.create_public_post(text=make_fake_post_text())
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        # comment on both posts to qualify for top
+        user.comment_post(post, text=make_fake_post_comment_text())
+        user.comment_post(post_two, text=make_fake_post_comment_text())
+
+        # report and approve the report for one post
+        moderation_category = make_moderation_category()
+        post_reporter.report_post(post=post, category_id=moderation_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=moderation_category.pk)
+        user.approve_moderated_object(moderated_object=moderated_object)
+
+        # curate top posts
+        curate_top_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+        response_post = response_posts[0]
+        self.assertEqual(response_post['post']['id'], post_two.pk)
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(1, len(top_posts))
+        self.assertTrue(TopPost.objects.filter(post__id=post_two.pk).exists())
+
+    def test_does_not_display_reported_community_posts_that_are_approved_after_curation(self):
+        """
+        should not display community posts that are reported and approved after already curated by staff in top posts
+        """
+        user = make_user()
+        post_reporter = make_user()
+        community = make_community(creator=user)
+        post_reporter.join_community_with_name(community_name=community.name)
+
+        user.create_public_post(text=make_fake_post_text())
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        # comment on both posts to qualify for top
+        user.comment_post(post, text=make_fake_post_comment_text())
+        user.comment_post(post_two, text=make_fake_post_comment_text())
+
+        # report and approve the report for one post
+        moderation_category = make_moderation_category()
+        post_reporter.report_post(post=post, category_id=moderation_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=moderation_category.pk)
+
+        # curate top posts
+        curate_top_posts()
+
+        user.approve_moderated_object(moderated_object=moderated_object)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+        response_post = response_posts[0]
+        self.assertEqual(response_post['post']['id'], post_two.pk)
+
+    def test_does_not_display_post_from_community_banned_from(self):
+        """
+        should not display posts from a community banned from and return 200 in top posts
+        """
+        user = make_user()
+        community_owner = make_user()
+
+        community = make_community(creator=community_owner)
+        user.join_community_with_name(community_name=community.name)
+        community_owner.ban_user_with_username_from_community_with_name(username=user.username,
+                                                                        community_name=community.name)
+
+        post = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
+        # comment on post to qualify for top
+        community_owner.comment_post(post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_post_of_blocked_user(self):
+        """
+        should not be able to retrieve posts of a blocked user in top posts
+        """
+        user = make_user()
+
+        user_to_retrieve_posts_from = make_user()
+        community = make_community(creator=user_to_retrieve_posts_from)
+        post = user_to_retrieve_posts_from.create_community_post(community_name=community.name, text=make_fake_post_text())
+        user_to_retrieve_posts_from.comment_post(post, text=make_fake_post_comment_text())
+
+        user.follow_user_with_id(user_id=user_to_retrieve_posts_from.pk)
+        user.block_user_with_id(user_id=user_to_retrieve_posts_from.pk)
+
+        # curate top posts
+        curate_top_posts()
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_post_of_blocking_user(self):
+        """
+        should not be able to retrieve posts of a blocking user in top posts
+        """
+        user = make_user()
+
+        user_to_retrieve_posts_from = make_user()
+        community = make_community(creator=user_to_retrieve_posts_from)
+        post = user_to_retrieve_posts_from.create_community_post(community_name=community.name, text=make_fake_post_text())
+        user_to_retrieve_posts_from.comment_post(post, text=make_fake_post_comment_text())
+
+        user_to_retrieve_posts_from.block_user_with_id(user_id=user.pk)
+
+        # curate top posts
+        curate_top_posts()
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_cant_retrieve_post_of_blocked_community_staff_member(self):
+        """
+        should not be able to retrieve posts of a blocked community staff member
+        """
+        user = make_user()
+        community_owner = make_user()
+
+        community = make_community(creator=community_owner)
+        post = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
+        community_owner.comment_post(post, text=make_fake_post_comment_text())
+
+        user.block_user_with_id(user_id=community_owner.pk)
+
+        # curate top posts
+        curate_top_posts()
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+
+    def test_should_have_minimum_comments_to_curate_as_top_post(self):
+        """
+        should not curate a post as top post unless it has minimum no of comments
+        """
+        user = make_user()
+        community_owner = make_user()
+
+        community = make_community(creator=community_owner)
+        post = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        # comment once, min comments required while testing
+        community_owner.comment_post(post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        top_posts = TopPost.objects.all()
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(1, len(top_posts))
+        self.assertTrue(TopPost.objects.filter(post__id=post.pk).exists())
+
+    def test_should_have_minimum_reactions_to_curate_as_top_post(self):
+        """
+        should not curate a post as top post unless it has minimum no of reactions
+        """
+        user = make_user()
+        community_owner = make_user()
+
+        community = make_community(creator=community_owner)
+        post = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        community_owner.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk, )
+
+        # curate top posts
+        curate_top_posts()
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, **headers)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+
+        top_posts = TopPost.objects.all()
+        self.assertEqual(1, len(top_posts))
+        self.assertTrue(TopPost.objects.filter(post__id=post.pk).exists())
+
+    def test_should_respect_max_id_param_for_top_posts(self):
+        """
+        should take into account max_id in when returning top posts
+        """
+        user = make_user()
+        total_posts = 10
+
+        community = make_community(creator=user)
+
+        for i in range(total_posts):
+            post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            user.comment_post(post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, {'max_id': 5}, **headers)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(4, len(response_posts))
+
+        for top_post in response_posts:
+            self.assertTrue(top_post['id'] < 5)
+
+    def test_should_respect_min_id_param_for_top_posts(self):
+        """
+        should take into account min_id in when returning top posts
+        """
+        user = make_user()
+        total_posts = 10
+
+        community = make_community(creator=user)
+
+        for i in range(total_posts):
+            post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            user.comment_post(post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, {'min_id': 5}, **headers)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(5, len(response_posts))
+
+        for top_post in response_posts:
+            self.assertTrue(top_post['id'] > 5)
+
+    def test_should_respect_count_param_for_top_posts(self):
+        """
+        should take into account count when returning top posts
+        """
+        user = make_user()
+        total_posts = 10
+
+        community = make_community(creator=user)
+
+        for i in range(total_posts):
+            post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+            user.comment_post(post, text=make_fake_post_comment_text())
+
+        # curate top posts
+        curate_top_posts()
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(user)
+
+        response = self.client.get(url, {'count': 5}, **headers)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(5, len(response_posts))
+
+    def _get_url(self):
+        return reverse('top-posts')

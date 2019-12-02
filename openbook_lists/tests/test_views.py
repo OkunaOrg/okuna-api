@@ -2,7 +2,7 @@
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 from mixer.backend.django import mixer
 
 from openbook_auth.models import User
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class ListsAPITests(APITestCase):
+class ListsAPITests(OpenbookAPITestCase):
     """
     ListsAPI
     """
@@ -80,7 +80,7 @@ class ListsAPITests(APITestCase):
         return reverse('lists')
 
 
-class ListItemAPITests(APITestCase):
+class ListItemAPITests(OpenbookAPITestCase):
     """
     ListItemAPI
     """
@@ -265,7 +265,7 @@ class ListItemAPITests(APITestCase):
         })
 
 
-class ListNameCheckAPITests(APITestCase):
+class ListNameCheckAPITests(OpenbookAPITestCase):
     """
     ListNameCheckAPI
     """

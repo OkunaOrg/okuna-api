@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.utils.translation import ugettext_lazy as _
+from webpreview import URLUnreachable, URLNotFound
 
 from openbook_common.responses import ApiMessageResponse
 from openbook_common.utils.helpers import get_post_id_for_post_uuid
@@ -12,7 +13,8 @@ from openbook_posts.views.post.serializers import DeletePostSerializer, GetPostS
     UnmutePostSerializer, MutePostSerializer, EditPostSerializer, AuthenticatedUserEditPostSerializer, \
     OpenClosePostSerializer, \
     OpenPostSerializer, ClosePostSerializer, TranslatePostSerializer, \
-    SearchPostParticipantsSerializer, PostParticipantSerializer, GetPostParticipantsSerializer
+    SearchPostParticipantsSerializer, PostParticipantSerializer, GetPostParticipantsSerializer, PublishPostSerializer, \
+    GetPostStatusSerializer
 from openbook_translation.strategies.base import TranslationClientError, UnsupportedLanguagePairException, \
     MaxTextLengthExceededError
 
@@ -50,10 +52,8 @@ class PostItem(APIView):
         post_uuid = data.get('post_uuid')
         user = request.user
 
-        post_id = get_post_id_for_post_uuid(post_uuid)
-
         with transaction.atomic():
-            post = user.update_post(post_id=post_id, text=text)
+            post = user.update_post_with_uuid(post_uuid=post_uuid, text=text)
 
         post_serializer = AuthenticatedUserEditPostSerializer(post, context={"request": request})
 
@@ -68,10 +68,9 @@ class PostItem(APIView):
         post_uuid = data.get('post_uuid')
 
         user = request.user
-        post_id = get_post_id_for_post_uuid(post_uuid)
 
         with transaction.atomic():
-            user.delete_post_with_id(post_id)
+            user.delete_post_with_uuid(post_uuid=post_uuid)
 
         return Response({
             'message': _('Post deleted')
@@ -251,3 +250,74 @@ class SearchPostParticipants(APIView):
         serialized_participants = PostParticipantSerializer(post_participants, many=True, context={'request': request})
 
         return Response(serialized_participants.data, status=status.HTTP_200_OK)
+
+
+class PublishPost(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, post_uuid):
+        serializer = PublishPostSerializer(data={
+            'post_uuid': post_uuid
+        })
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        post_uuid = data.get('post_uuid')
+
+        user = request.user
+
+        with transaction.atomic():
+            published_post = user.publish_post_with_uuid(post_uuid=post_uuid)
+
+        post_comments_serializer = GetPostPostSerializer(published_post, context={"request": request})
+
+        return Response(post_comments_serializer.data, status=status.HTTP_200_OK)
+
+
+class PostStatus(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, post_uuid):
+        serializer = GetPostStatusSerializer(data={
+            'post_uuid': post_uuid
+        })
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        post_uuid = data.get('post_uuid')
+
+        user = request.user
+
+        post_status = user.get_status_for_post_with_uuid(post_uuid=post_uuid)
+
+        return Response({
+            'status': post_status
+        }, status=status.HTTP_200_OK)
+
+
+class PostPreviewLinkData(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, post_uuid):
+        request_data = request.data.copy()
+        request_data['post_uuid'] = post_uuid
+
+        serializer = GetPostSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        post_uuid = data.get('post_uuid')
+
+        user = request.user
+        post_id = get_post_id_for_post_uuid(post_uuid)
+        try:
+            preview_link_data = user.get_preview_link_data_for_post_with_id(post_id)
+        except URLNotFound:
+            return ApiMessageResponse(_('The linked url associated for preview was not found.'),
+                                      status=status.HTTP_400_BAD_REQUEST)
+        except URLUnreachable:
+            return ApiMessageResponse(_('The linked url associated for preview was not reachable.'),
+                                      status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(preview_link_data, status=status.HTTP_200_OK)
+

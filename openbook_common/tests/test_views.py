@@ -1,16 +1,18 @@
 from django.urls import reverse
+from django.conf import settings
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 import logging
 import json
 
-from openbook_common.tests.helpers import make_emoji_group, make_emoji, make_user, make_authentication_headers_for_user
+from openbook_common.tests.helpers import make_emoji_group, make_user, make_authentication_headers_for_user, \
+    make_fake_post_text, make_proxy_blacklisted_domain
 
 logger = logging.getLogger(__name__)
 
 
-class TimeAPITests(APITestCase):
+class TimeAPITests(OpenbookAPITestCase):
     """
     TimeAPITests
     """
@@ -31,7 +33,7 @@ class TimeAPITests(APITestCase):
         return reverse('time')
 
 
-class TestHealth(APITestCase):
+class TestHealth(OpenbookAPITestCase):
     """
     Health API
     """
@@ -43,7 +45,7 @@ class TestHealth(APITestCase):
         self.assertTrue(response.status_code, status.HTTP_200_OK)
 
 
-class TestEmojiGroups(APITestCase):
+class TestEmojiGroups(OpenbookAPITestCase):
     """
     EmojiGroups API
     """
@@ -98,3 +100,94 @@ class TestEmojiGroups(APITestCase):
 
     def _get_url(self):
         return reverse('emoji-groups')
+
+
+class ProxyDomainCheckAPITests(OpenbookAPITestCase):
+    """
+    ProxyDomainCheckAPI
+    """
+
+    def test_fails_on_blacklisted_domain(self):
+        """
+        should fail when calling with a blacklisted domain and return 403
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        request_url = 'www.okuna.io'
+        url = self._get_url()
+        make_proxy_blacklisted_domain(domain='okuna.io')
+
+        response = self.client.get(url, {'url': request_url}, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_fails_on_blacklisted_root_domain(self):
+        """
+        should fail when calling with a blacklisted root domain and return 403
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        request_url = 'test.blogspot.com'
+        url = self._get_url()
+        make_proxy_blacklisted_domain(domain='blogspot.com')
+
+        response = self.client.get(url, {'url': request_url}, **headers)
+
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def test_fails_on_blacklisted_subdomain_domain(self):
+        """
+        should fail when calling with a blacklisted subdomain domain and return 403
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        request_url = 'test.blogspot.com'
+        url = self._get_url()
+        make_proxy_blacklisted_domain(domain='test.blogspot.com')
+
+        response = self.client.get(url, {'url': request_url}, **headers)
+
+        self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
+
+    def test_succeeds_on_non_blacklisted_root_domain_with_blacklisted_subdomain(self):
+        """
+        should succeed when calling with a non blacklisted root domain that also has a blacklisted subdomain and return 403
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        request_url = 'blogspot.com'
+        url = self._get_url()
+        make_proxy_blacklisted_domain(domain='test.blogspot.com')
+
+        response = self.client.get(url, {'url': request_url}, **headers)
+
+        self.assertEqual(status.HTTP_202_ACCEPTED, response.status_code)
+
+    def test_succeeds_with_non_blacklisted_domain(self):
+        """
+        should succeed with a non blacklisted domain and return 202
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        preview_url = 'https://www.techcrunch.com'
+        url = self._get_url()
+
+        response = self.client.get(url, {'url': preview_url}, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+
+    def test_fails_on_invalid_domain(self):
+        """
+        should fail when calling with an invalid domain and return 403
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        request_url = 'invalid.potato'
+        url = self._get_url()
+
+        response = self.client.get(url, {'url': request_url}, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def _get_url(self):
+        return reverse('proxy-domain-check')

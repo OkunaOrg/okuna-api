@@ -1,7 +1,5 @@
 from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
-from django.db.models.signals import pre_delete
-from django.dispatch import receiver
 
 from openbook_auth.models import User
 from openbook_notifications.models.notification import Notification

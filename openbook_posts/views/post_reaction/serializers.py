@@ -4,6 +4,7 @@ from openbook_auth.models import UserProfile, User
 from openbook_common.models import Emoji
 from openbook_posts.models import PostReaction
 from openbook_posts.validators import post_uuid_exists, post_reaction_id_exists
+from openbook_posts.views.post_comment.post_comment_reaction.serializers import PostReactorProfileBadgeSerializer
 
 
 class DeletePostReactionSerializer(serializers.Serializer):
@@ -18,10 +19,13 @@ class DeletePostReactionSerializer(serializers.Serializer):
 
 
 class PostReactorProfileSerializer(serializers.ModelSerializer):
+    badges = PostReactorProfileBadgeSerializer(many=True)
+
     class Meta:
         model = UserProfile
         fields = (
             'avatar',
+            'badges'
         )
 
 

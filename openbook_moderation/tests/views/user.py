@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.utils import timezone
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 from openbook_common.tests.helpers import make_global_moderator, make_user, make_moderation_category, \
     make_authentication_headers_for_user, make_moderation_penalty, make_community, make_fake_post_text
@@ -14,7 +14,7 @@ from openbook_moderation.models import ModeratedObject, \
 fake = Faker()
 
 
-class UserModerationPenaltiesAPITests(APITestCase):
+class UserModerationPenaltiesAPITests(OpenbookAPITestCase):
     """
     UserModerationPenaltiesAPI
     """
@@ -78,7 +78,7 @@ class UserModerationPenaltiesAPITests(APITestCase):
         return reverse('user-moderation-penalties')
 
 
-class UserPendingModeratedObjectsCommunitiesAPITests(APITestCase):
+class UserPendingModeratedObjectsCommunitiesAPITests(OpenbookAPITestCase):
     """
     UserPendingModeratedObjectsCommunitiesAPI
     """

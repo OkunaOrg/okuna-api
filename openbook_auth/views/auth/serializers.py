@@ -18,9 +18,17 @@ class RegisterSerializer(serializers.Serializer):
     are_guidelines_accepted = serializers.BooleanField()
     name = serializers.CharField(max_length=PROFILE_NAME_MAX_LENGTH,
                                  allow_blank=False, validators=[name_characters_validator])
+    username = serializers.CharField(max_length=USERNAME_MAX_LENGTH,
+                                     required=False,
+                                     allow_blank=True,
+                                     validators=[username_characters_validator, username_not_taken_validator])
     avatar = RestrictedImageFileSizeField(allow_empty_file=True, required=False,
                                           max_upload_size=settings.PROFILE_AVATAR_MAX_SIZE)
     email = serializers.EmailField(validators=[email_not_taken_validator])
+    token = serializers.CharField()
+
+
+class RegisterTokenSerializer(serializers.Serializer):
     token = serializers.CharField()
 
 
@@ -56,6 +64,8 @@ class AuthenticatedUserNotificationsSettingsSerializer(serializers.ModelSerializ
             'connection_request_notifications',
             'connection_confirmed_notifications',
             'community_invite_notifications',
+            'community_new_post_notifications',
+            'user_new_post_notifications',
             'post_comment_reaction_notifications',
             'post_comment_reply_notifications',
             'post_comment_user_mention_notifications',
@@ -70,6 +80,8 @@ class UpdateAuthenticatedUserNotificationsSettingsSerializer(serializers.Seriali
     connection_request_notifications = serializers.BooleanField(required=False)
     connection_confirmed_notifications = serializers.BooleanField(required=False)
     community_invite_notifications = serializers.BooleanField(required=False)
+    community_new_post_notifications = serializers.BooleanField(required=False)
+    user_new_post_notifications = serializers.BooleanField(required=False)
     post_comment_reaction_notifications = serializers.BooleanField(required=False)
     post_comment_reply_notifications = serializers.BooleanField(required=False)
     post_comment_user_mention_notifications = serializers.BooleanField(required=False)
@@ -77,8 +89,7 @@ class UpdateAuthenticatedUserNotificationsSettingsSerializer(serializers.Seriali
 
 
 class RequestPasswordResetSerializer(serializers.Serializer):
-    email = serializers.EmailField(required=False, validators=[user_email_exists])
-    username = serializers.CharField(max_length=USERNAME_MAX_LENGTH, required=False, validators=[user_username_exists])
+    email = serializers.EmailField(required=True, validators=[user_email_exists])
 
 
 class VerifyPasswordResetSerializer(serializers.Serializer):

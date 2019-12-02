@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 
 from openbook_auth.models import User
 from openbook_common.tests.helpers import make_global_moderator, make_user, make_moderation_category, \
@@ -23,7 +23,7 @@ from openbook_posts.models import Post, PostComment
 fake = Faker()
 
 
-class ModeratedObjectAPITests(APITestCase):
+class ModeratedObjectAPITests(OpenbookAPITestCase):
     """
     ModeratedObjectAPI
     """
@@ -955,7 +955,7 @@ class ModeratedObjectAPITests(APITestCase):
         })
 
 
-class ApproveModeratedObjectApiTests(APITestCase):
+class ApproveModeratedObjectApiTests(OpenbookAPITestCase):
     """
     ModeratedObjectAPI
     """
@@ -1402,7 +1402,7 @@ class ApproveModeratedObjectApiTests(APITestCase):
         })
 
 
-class RejectModeratedObjectApiTests(APITestCase):
+class RejectModeratedObjectApiTests(OpenbookAPITestCase):
     """
     ModeratedObjectAPI
     """
@@ -1849,7 +1849,7 @@ class RejectModeratedObjectApiTests(APITestCase):
         })
 
 
-class VerifyModeratedObjectApiTests(APITestCase):
+class VerifyModeratedObjectApiTests(OpenbookAPITestCase):
     """
     VerifyModeratedObjectApi
     """
@@ -3076,7 +3076,7 @@ class VerifyModeratedObjectApiTests(APITestCase):
         )
 
 
-class UnverifyModeratedObjectApiTests(APITestCase):
+class UnverifyModeratedObjectApiTests(OpenbookAPITestCase):
     """
     UnverifyModeratedObjectApi
     """
@@ -3601,7 +3601,7 @@ class UnverifyModeratedObjectApiTests(APITestCase):
         })
 
 
-class ModeratedObjectLogs(APITestCase):
+class ModeratedObjectLogs(OpenbookAPITestCase):
     def test_can_retrieve_community_moderation_object_logs_if_staff(self):
         """
         should be able to retrieve community moderation object logs if staff and return 200
@@ -3719,7 +3719,7 @@ class ModeratedObjectLogs(APITestCase):
         })
 
 
-class ModeratedObjectReports(APITestCase):
+class ModeratedObjectReports(OpenbookAPITestCase):
     def test_can_retrieve_community_moderation_object_reports_if_staff(self):
         """
         should be able to retrieve community moderation object reports if staff and return 200

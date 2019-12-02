@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.conf import settings
 from faker import Faker
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 from mixer.backend.django import mixer
 
 import logging
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class CommunitiesAPITests(APITestCase):
+class CommunitiesAPITests(OpenbookAPITestCase):
     """
     CommunitiesAPI
     """
@@ -546,7 +546,7 @@ class CommunitiesAPITests(APITestCase):
         return reverse('communities')
 
 
-class JoinedCommunities(APITestCase):
+class JoinedCommunities(OpenbookAPITestCase):
     def test_retrieve_joined_communities(self):
         """
         should be able to retrieve all own communities return 200
@@ -614,7 +614,7 @@ class JoinedCommunities(APITestCase):
         return reverse('joined-communities')
 
 
-class SearchJoinedCommunitiesAPITests(APITestCase):
+class SearchJoinedCommunitiesAPITests(OpenbookAPITestCase):
     """
     SearchJoinedCommunitiesAPI
     """
@@ -697,7 +697,7 @@ class SearchJoinedCommunitiesAPITests(APITestCase):
         return reverse('search-joined-communities')
 
 
-class AdministratedCommunities(APITestCase):
+class AdministratedCommunities(OpenbookAPITestCase):
     def test_retrieve_administrated_communities(self):
         """
         should be able to retrieve all administrated communities return 200
@@ -769,7 +769,86 @@ class AdministratedCommunities(APITestCase):
         return reverse('administrated-communities')
 
 
-class ModeratedCommunities(APITestCase):
+class SearchAdministratedCommunitiesAPITests(OpenbookAPITestCase):
+    """
+    SearchAdministratedCommunitiesAPI
+    """
+
+    def test_can_search_administrated_communities_by_name(self):
+        """
+        should be able to search for administrated communities by their name and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_administrated_communities_to_search_for = 5
+
+        for i in range(0, amount_of_administrated_communities_to_search_for):
+            community_name = fake.user_name().lower()
+            community = make_community(creator=user, name=community_name)
+
+            amount_of_characters_to_query = random.randint(1, len(community_name))
+            query = community_name[0:amount_of_characters_to_query]
+
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url()
+
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            parsed_response = json.loads(response.content)
+            self.assertEqual(len(parsed_response), 1)
+
+            retrieved_community = parsed_response[0]
+            self.assertEqual(retrieved_community['name'], community_name.lower())
+            community.delete()
+
+    def test_can_search_administrated_communities_by_title(self):
+        """
+        should be able to search for administrated communities by their title and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_administrated_communities_to_search_for = 5
+
+        for i in range(0, amount_of_administrated_communities_to_search_for):
+            community_title = fake.user_name().lower()
+            community = make_community(creator=user, title=community_title)
+
+            amount_of_characters_to_query = random.randint(1, len(community_title))
+            query = community_title[0:amount_of_characters_to_query]
+
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url()
+
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            parsed_response = json.loads(response.content)
+            self.assertEqual(len(parsed_response), 1)
+
+            retrieved_community = parsed_response[0]
+            self.assertEqual(retrieved_community['title'], community_title.lower())
+            community.delete()
+
+    def _get_url(self):
+        return reverse('search-administrated-communities')
+
+
+class ModeratedCommunities(OpenbookAPITestCase):
     def test_retrieve_moderated_communities(self):
         """
         should be able to retrieve all moderated communities return 200
@@ -845,7 +924,94 @@ class ModeratedCommunities(APITestCase):
         return reverse('moderated-communities')
 
 
-class FavoriteCommunities(APITestCase):
+class SearchModeratedCommunitiesAPITests(OpenbookAPITestCase):
+    """
+    SearchModeratedCommunitiesAPITests
+    """
+
+    def test_can_search_moderated_communities_by_name(self):
+        """
+        should be able to search for moderated communities by their name and return 200
+        """
+        user = make_user()
+        community_creator = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_moderated_communities_to_search_for = 5
+
+        for i in range(0, amount_of_moderated_communities_to_search_for):
+            community_name = fake.user_name().lower()
+            community = make_community(creator=community_creator, name=community_name)
+            user.join_community_with_name(community_name=community.name)
+            community_creator.add_moderator_with_username_to_community_with_name(username=user.username,
+                                                                                 community_name=community.name)
+
+            amount_of_characters_to_query = random.randint(1, len(community_name))
+            query = community_name[0:amount_of_characters_to_query]
+
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url()
+
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            parsed_response = json.loads(response.content)
+            self.assertEqual(len(parsed_response), 1)
+
+            retrieved_community = parsed_response[0]
+            self.assertEqual(retrieved_community['name'], community_name.lower())
+            community.delete()
+
+    def test_can_search_moderated_communities_by_title(self):
+        """
+        should be able to search for moderated communities by their title and return 200
+        """
+        user = make_user()
+        community_creator = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_moderated_communities_to_search_for = 5
+
+        for i in range(0, amount_of_moderated_communities_to_search_for):
+            community_title = fake.user_name().lower()
+            community = make_community(creator=community_creator, title=community_title)
+            user.join_community_with_name(community_name=community.name)
+            community_creator.add_moderator_with_username_to_community_with_name(username=user.username,
+                                                                                 community_name=community.name)
+
+            amount_of_characters_to_query = random.randint(1, len(community_title))
+            query = community_title[0:amount_of_characters_to_query]
+
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url()
+
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            parsed_response = json.loads(response.content)
+            self.assertEqual(len(parsed_response), 1)
+
+            retrieved_community = parsed_response[0]
+            self.assertEqual(retrieved_community['title'], community_title.lower())
+            community.delete()
+
+    def _get_url(self):
+        return reverse('search-moderated-communities')
+
+
+class FavoriteCommunities(OpenbookAPITestCase):
     def test_retrieve_favorite_communities(self):
         """
         should be able to retrieve all favorite communities and return 200
@@ -930,7 +1096,92 @@ class FavoriteCommunities(APITestCase):
         return reverse('favorite-communities')
 
 
-class CommunityNameCheckAPITests(APITestCase):
+class SearchFavoriteCommunitiesAPITests(OpenbookAPITestCase):
+    """
+    SearchFavoriteCommunitiesAPI
+    """
+
+    def test_can_search_favorite_communities_by_name(self):
+        """
+        should be able to search for favorite communities by their name and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_subscribed_communities_to_search_for = 5
+
+        for i in range(0, amount_of_subscribed_communities_to_search_for):
+            community_name = fake.user_name().lower()
+            community = mixer.blend(Community, name=community_name, type=Community.COMMUNITY_TYPE_PUBLIC)
+
+            user.join_community_with_name(community_name)
+            user.favorite_community_with_name(community_name=community.name)
+
+            amount_of_characters_to_query = random.randint(1, len(community_name))
+            query = community_name[0:amount_of_characters_to_query]
+
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url()
+
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            parsed_response = json.loads(response.content)
+            self.assertEqual(len(parsed_response), 1)
+
+            retrieved_community = parsed_response[0]
+            self.assertEqual(retrieved_community['name'], community_name.lower())
+            community.delete()
+
+    def test_can_search_favorite_communities_by_title(self):
+        """
+        should be able to search for favorite communities by their title and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_subscribed_communities_to_search_for = 5
+
+        for i in range(0, amount_of_subscribed_communities_to_search_for):
+            community_title = fake.user_name().lower()
+            community = mixer.blend(Community, title=community_title, type=Community.COMMUNITY_TYPE_PUBLIC)
+
+            user.join_community_with_name(community.name)
+            user.favorite_community_with_name(community_name=community.name)
+
+            amount_of_characters_to_query = random.randint(1, len(community_title))
+            query = community_title[0:amount_of_characters_to_query]
+
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url()
+
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            parsed_response = json.loads(response.content)
+            self.assertEqual(len(parsed_response), 1)
+
+            retrieved_community = parsed_response[0]
+            self.assertEqual(retrieved_community['title'], community_title.lower())
+            community.delete()
+
+    def _get_url(self):
+        return reverse('search-favorite-communities')
+
+
+class CommunityNameCheckAPITests(OpenbookAPITestCase):
     """
     CommunityNameCheckAPI
     """
@@ -1007,7 +1258,7 @@ class CommunityNameCheckAPITests(APITestCase):
         return reverse('community-name-check')
 
 
-class SearchCommunitiesAPITests(APITestCase):
+class SearchCommunitiesAPITests(OpenbookAPITestCase):
     """
     SearchCommunitiesAPITests
     """
@@ -1104,7 +1355,7 @@ class SearchCommunitiesAPITests(APITestCase):
         return reverse('search-communities')
 
 
-class TrendingCommunitiesAPITests(APITestCase):
+class TrendingCommunitiesAPITests(OpenbookAPITestCase):
     """
     TrendingCommunitiesAPITests
     """
@@ -1197,3 +1448,203 @@ class TrendingCommunitiesAPITests(APITestCase):
 
     def _get_url(self):
         return reverse('trending-communities')
+
+
+class TopPostsExcludedCommunitiesAPITests(OpenbookAPITestCase):
+    """
+    TopPostsExcludedCommunitiesAPI
+    """
+
+    def test_retrieve_excluded_communities(self):
+        """
+        should be able to retrieve all excluded communities and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        communities = mixer.cycle(5).blend(Community, creator=user)
+        communities_ids = [community.pk for community in communities]
+        for community in communities:
+            user.join_community_with_name(community_name=community.name)
+            user.exclude_community_with_name_from_top_posts(community_name=community.name)
+
+        url = self._get_url()
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), len(communities_ids))
+
+        for response_community in response_communities:
+            response_community_id = response_community.get('id')
+            self.assertIn(response_community_id, communities_ids)
+
+    def test_should_not_retrieve_non_excluded_communities(self):
+        """
+        should NOT retrieve non-excluded communities and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        communities = mixer.cycle(5).blend(Community, creator=user)
+        for community in communities:
+            user.join_community_with_name(community_name=community.name)
+
+        url = self._get_url()
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), 0)
+
+    def test_retrieve_excluded_communities_offset(self):
+        """
+        should be able to retrieve all excluded communities with an offset return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        total_amount_of_communities = 10
+        offset = 5
+
+        communities = mixer.cycle(total_amount_of_communities).blend(Community, creator=user)
+
+        offsetted_communities = communities[offset: total_amount_of_communities]
+        offsetted_communities_ids = [community.pk for community in offsetted_communities]
+
+        for community in communities:
+            user.join_community_with_name(community_name=community.name)
+            user.exclude_community_with_name_from_top_posts(community_name=community.name)
+
+        url = self._get_url()
+        response = self.client.get(url, {
+            'offset': offset
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), total_amount_of_communities - offset)
+
+        for response_community in response_communities:
+            response_community_id = response_community.get('id')
+            self.assertIn(response_community_id, offsetted_communities_ids)
+
+    def _get_url(self):
+        return reverse('top-posts-excluded-communities')
+
+
+class SearchTopPostsExcludedCommunitiesAPITests(OpenbookAPITestCase):
+    """
+    SearchTopPostsExcludedCommunitiesAPI
+    """
+
+    def test_can_search_excluded_communities_by_name(self):
+        """
+        should be able to search for excluded communities by their name and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_joined_communities_to_search_for = 5
+
+        for i in range(0, amount_of_joined_communities_to_search_for):
+            community_name = fake.user_name().lower()
+            community = mixer.blend(Community, name=community_name, type=Community.COMMUNITY_TYPE_PUBLIC)
+
+            user.exclude_community_with_name_from_top_posts(community_name)
+
+            amount_of_characters_to_query = random.randint(1, len(community_name))
+            query = community_name[0:amount_of_characters_to_query]
+
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url()
+
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            parsed_response = json.loads(response.content)
+            self.assertEqual(len(parsed_response), 1)
+
+            retrieved_community = parsed_response[0]
+            self.assertEqual(retrieved_community['name'], community_name.lower())
+            community.delete()
+
+    def test_can_search_excluded_communities_by_title(self):
+        """
+        should be able to search for excluded communities by their title and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_joined_communities_to_search_for = 5
+
+        for i in range(0, amount_of_joined_communities_to_search_for):
+            community_title = fake.user_name().lower()
+            community = mixer.blend(Community, title=community_title, type=Community.COMMUNITY_TYPE_PUBLIC)
+
+            user.exclude_community_with_name_from_top_posts(community.name)
+
+            amount_of_characters_to_query = random.randint(1, len(community_title))
+            query = community_title[0:amount_of_characters_to_query]
+
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url()
+
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            parsed_response = json.loads(response.content)
+            self.assertEqual(len(parsed_response), 1)
+
+            retrieved_community = parsed_response[0]
+            self.assertEqual(retrieved_community['title'], community_title.lower())
+            community.delete()
+
+    def _get_url(self):
+        return reverse('search-top-posts-excluded-communities')
+
+
+class SuggestedCommunitiesAPITests(OpenbookAPITestCase):
+    """
+    SuggestedCommunitiesAPI Tests
+    """
+
+    def test_should_return_communities_with_correct_id(self):
+        """
+        should return communities with ids mentioned in the environment var
+        default id in settings is 1
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        # create a community with id 1 in case none exists in test db
+        community = make_community(creator=user)
+
+        url = self._get_url()
+        response = self.client.get(url, **headers)
+        parsed_response = json.loads(response.content)
+        retrieved_community = parsed_response[0]
+
+        self.assertEqual(len(parsed_response), 1)
+        self.assertEqual(retrieved_community['id'], 1)
+
+    def _get_url(self):
+        return reverse('suggested-communities')

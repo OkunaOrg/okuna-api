@@ -3,7 +3,7 @@ from unittest import mock
 
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase
+from openbook_common.tests.models import OpenbookAPITestCase
 from unittest.mock import patch
 
 from faker import Faker
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class UserInvitesAPITests(APITestCase):
+class UserInvitesAPITests(OpenbookAPITestCase):
     """
     UserInvitesAPI
     """
@@ -205,7 +205,7 @@ class UserInvitesAPITests(APITestCase):
         return reverse('invites')
 
 
-class UserInviteSearchAPITests(APITestCase):
+class UserInviteSearchAPITests(OpenbookAPITestCase):
 
     def test_get_search_invites(self):
         """
@@ -238,7 +238,7 @@ class UserInviteSearchAPITests(APITestCase):
     def _get_url(self):
         return reverse('search-invites')
 
-class UserInviteItemAPITests(APITestCase):
+class UserInviteItemAPITests(OpenbookAPITestCase):
     """
     UserInvitesItemAPI
     """
@@ -321,7 +321,7 @@ class MockEmailMultiAlternatives:
         pass
 
 
-class UserInviteItemEmailAPI(APITestCase):
+class UserInviteItemEmailAPI(OpenbookAPITestCase):
     """
     UserInviteItemEmail API
     """
