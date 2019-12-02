@@ -7,7 +7,7 @@ from openbook_communities.models import Community
 from openbook_moderation.models import ModerationPenalty, ModeratedObject, \
     ModerationCategory
 from openbook_moderation.serializers import LanguageSerializer, ModeratedObjectUserProfileBadgeSerializer
-from openbook_moderation.serializers_fields.community import CommunityPendingModeratedObjectsCountField,
+from openbook_moderation.serializers_fields.community import CommunityPendingModeratedObjectsCountField
 from openbook_posts.models import Post, PostComment, PostImage
 
 
