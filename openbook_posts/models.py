@@ -162,7 +162,7 @@ class Post(models.Model):
         Community = get_community_model()
 
         posts_select_related = ('post__creator', 'post__creator__profile', 'post__community', 'post__image')
-        posts_prefetch_related = ('post__circles', 'post__creator__profile__badges')
+        posts_prefetch_related = ('post__circles', 'post__creator__profile__badges', 'post__reactions__reactor')
 
         posts_only = ('id',
                       'post__text', 'post__id', 'post__uuid', 'post__created', 'post__image__width',
@@ -195,8 +195,15 @@ class Post(models.Model):
 
         trending_community_posts_query.add(reported_posts_exclusion_query, Q.AND)
 
-        trending_community_posts_queryset = TrendingPost.objects.select_related(*posts_select_related).prefetch_related(
-            *posts_prefetch_related).only(*posts_only).filter(trending_community_posts_query)
+        trending_posts_criteria_query = Q(reactions_count__gte=settings.MIN_UNIQUE_TRENDING_POST_REACTIONS_COUNT)
+
+        trending_community_posts_queryset = TrendingPost.objects.\
+            select_related(*posts_select_related).\
+            prefetch_related(*posts_prefetch_related).\
+            only(*posts_only).\
+            filter(trending_community_posts_query).\
+            annotate(reactions_count=Count('post__reactions__reactor_id')). \
+            filter(trending_posts_criteria_query)
 
         return trending_community_posts_queryset
 

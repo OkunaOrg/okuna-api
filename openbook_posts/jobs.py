@@ -224,12 +224,15 @@ def curate_trending_posts():
     posts_prefetch_related = 'reactions__reactor'
     posts_only = ('id', 'status', 'is_deleted', 'is_closed', 'community__type')
 
+    trending_posts_criteria_query = Q(reactions_count__gte=settings.MIN_UNIQUE_TRENDING_POST_REACTIONS_COUNT)
+
     posts = Post.objects. \
         select_related(posts_select_related). \
         prefetch_related(posts_prefetch_related). \
         only(*posts_only). \
         filter(trending_posts_query). \
         annotate(reactions_count=Count('reactions__reactor_id')).\
+        filter(trending_posts_criteria_query).\
         order_by('-reactions_count', '-created')[:30]
 
     trending_posts_objects = []
@@ -272,9 +275,21 @@ def clean_trending_posts():
         only(*posts_only). \
         filter(trending_posts_community_query)
 
-    delete_ids = [trending_post.pk for trending_post in removable_trending_posts]
+    direct_removable_delete_ids = [trending_post.pk for trending_post in removable_trending_posts]
 
     # delete posts
+    TrendingPost.objects.filter(id__in=direct_removable_delete_ids).delete()
+
+    # Now we filter trending posts that do not meet criteria anymore
+    trending_posts_criteria_query = Q(reactions_count__lt=settings.MIN_UNIQUE_TRENDING_POST_REACTIONS_COUNT)
+
+    less_than_min_reactions_trending_posts = TrendingPost.objects.\
+        prefetch_related('post__reactions__reactor'). \
+        only('id'). \
+        annotate(reactions_count=Count('post__reactions__reactor_id')). \
+        filter(trending_posts_criteria_query)
+
+    delete_ids = [trending_post.pk for trending_post in less_than_min_reactions_trending_posts]
     TrendingPost.objects.filter(id__in=delete_ids).delete()
 
 
