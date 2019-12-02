@@ -3505,8 +3505,6 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         """
         user = make_user()
         community = make_community(creator=user)
-        # clear all trending posts
-        TrendingPost.objects.all().delete()
 
         user.create_public_post(text=make_fake_post_text())
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -3535,8 +3533,6 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         """
         user = make_user()
         community = make_community(creator=user)
-        # clear all trending posts
-        TrendingPost.objects.all().delete()
 
         user.create_public_post(text=make_fake_post_text())
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -3568,8 +3564,6 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         """
         user = make_user()
         community_owner = make_user()
-        # clear all trending posts
-        TrendingPost.objects.all().delete()
 
         community = make_community(creator=community_owner)
 
@@ -3599,8 +3593,6 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         should not be able to retrieve posts of a blocked user
         """
         user = make_user()
-        # clear all trending posts
-        TrendingPost.objects.all().delete()
 
         user_to_retrieve_posts_from = make_user()
         user_to_retrieve_posts_from.create_public_post(text=make_fake_post_text())
@@ -3627,8 +3619,6 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         should not be able to retrieve posts of a blocking user
         """
         user = make_user()
-        # clear all trending posts
-        TrendingPost.objects.all().delete()
 
         user_to_retrieve_posts_from = make_user()
         user_to_retrieve_posts_from.create_public_post(text=make_fake_post_text())
@@ -3655,8 +3645,6 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         should not be able to retrieve posts of a blocked community staff member
         """
         user = make_user()
-        # clear all trending posts
-        TrendingPost.objects.all().delete()
 
         community_owner = make_user()
         community = make_community(creator=community_owner)
@@ -3686,9 +3674,6 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         """
         post_creator = make_user()
         user = make_user()
-
-        # clear all trending posts
-        TrendingPost.objects.all().delete()
 
         circle = make_circle(creator=post_creator)
 
@@ -3722,9 +3707,6 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         """
         user = make_user()
 
-        # clear all trending posts
-        TrendingPost.objects.all().delete()
-
         community = make_community(creator=user, type=Community.COMMUNITY_TYPE_PRIVATE)
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
 
@@ -3751,9 +3733,6 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         should not return recently turned private community posts in trending posts
         """
         user = make_user()
-
-        # clear all trending posts
-        TrendingPost.objects.all().delete()
 
         community = make_community(creator=user, type=Community.COMMUNITY_TYPE_PUBLIC)
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -3786,9 +3765,6 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         user = make_user()
         community = make_community(creator=user)
 
-        # clear all trending posts
-        TrendingPost.objects.all().delete()
-
         user.create_public_post(text=make_fake_post_text())
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
         post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -3819,9 +3795,6 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         post_reporter = make_user()
         community = make_community(creator=user)
         post_reporter.join_community_with_name(community_name=community.name)
-
-        # clear all trending posts
-        TrendingPost.objects.all().delete()
 
         user.create_public_post(text=make_fake_post_text())
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -3862,9 +3835,6 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         post_reporter = make_user()
         community = make_community(creator=user)
         post_reporter.join_community_with_name(community_name=community.name)
-
-        # clear all trending posts
-        TrendingPost.objects.all().delete()
 
         user.create_public_post(text=make_fake_post_text())
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -3913,8 +3883,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         """
         user = make_user()
         community = make_community(creator=user)
-        # clear all top posts
-        TopPost.objects.all().delete()
 
         public_post = user.create_public_post(text=make_fake_post_text())
         community_post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -3951,8 +3919,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         community_creator = make_user()
         user_community = make_community(creator=user)
         community = make_community(creator=community_creator)
-        # clear all top posts
-        TopPost.objects.all().delete()
 
         user_community_post = user.create_community_post(community_name=user_community.name, text=make_fake_post_text())
         community_post = community_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -3986,8 +3952,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         """
         user = make_user()
         community = make_community(creator=user)
-        # clear all top posts
-        TopPost.objects.all().delete()
 
         public_post = user.create_public_post(text=make_fake_post_text())
         community_post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -4022,9 +3986,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         """
         post_creator = make_user()
         user = make_user()
-
-        # clear all top posts
-        TopPost.objects.all().delete()
 
         circle = make_circle(creator=post_creator)
 
@@ -4061,9 +4022,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         """
         user = make_user()
 
-        # clear all top posts
-        TopPost.objects.all().delete()
-
         community = make_community(creator=user, type=Community.COMMUNITY_TYPE_PRIVATE)
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
 
@@ -4093,9 +4051,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         should not return recently turned private community posts in top posts
         """
         user = make_user()
-
-        # clear all top posts
-        TopPost.objects.all().delete()
 
         community = make_community(creator=user, type=Community.COMMUNITY_TYPE_PUBLIC)
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -4130,9 +4085,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         """
         user = make_user()
         community = make_community(creator=user)
-
-        # clear all top posts
-        TopPost.objects.all().delete()
 
         user.create_public_post(text=make_fake_post_text())
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -4170,9 +4122,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         user = make_user()
         community = make_community(creator=user)
 
-        # clear all top posts
-        TopPost.objects.all().delete()
-
         user.create_public_post(text=make_fake_post_text())
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
         post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -4207,9 +4156,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         post_reporter = make_user()
         community = make_community(creator=user)
         post_reporter.join_community_with_name(community_name=community.name)
-
-        # clear all top posts
-        TopPost.objects.all().delete()
 
         user.create_public_post(text=make_fake_post_text())
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -4255,9 +4201,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         community = make_community(creator=user)
         post_reporter.join_community_with_name(community_name=community.name)
 
-        # clear all top posts
-        TopPost.objects.all().delete()
-
         user.create_public_post(text=make_fake_post_text())
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
         post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -4297,9 +4240,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         user = make_user()
         community_owner = make_user()
 
-        # clear all top posts
-        TopPost.objects.all().delete()
-
         community = make_community(creator=community_owner)
         user.join_community_with_name(community_name=community.name)
         community_owner.ban_user_with_username_from_community_with_name(username=user.username,
@@ -4327,9 +4267,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         should not be able to retrieve posts of a blocked user in top posts
         """
         user = make_user()
-
-        # clear all top posts
-        TopPost.objects.all().delete()
 
         user_to_retrieve_posts_from = make_user()
         community = make_community(creator=user_to_retrieve_posts_from)
@@ -4359,9 +4296,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         """
         user = make_user()
 
-        # clear all top posts
-        TopPost.objects.all().delete()
-
         user_to_retrieve_posts_from = make_user()
         community = make_community(creator=user_to_retrieve_posts_from)
         post = user_to_retrieve_posts_from.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -4390,9 +4324,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         user = make_user()
         community_owner = make_user()
 
-        # clear all top posts
-        TopPost.objects.all().delete()
-
         community = make_community(creator=community_owner)
         post = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
         community_owner.comment_post(post, text=make_fake_post_comment_text())
@@ -4419,9 +4350,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         """
         user = make_user()
         community_owner = make_user()
-
-        # clear all top posts
-        TopPost.objects.all().delete()
 
         community = make_community(creator=community_owner)
         post = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -4454,9 +4382,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         user = make_user()
         community_owner = make_user()
 
-        # clear all top posts
-        TopPost.objects.all().delete()
-
         community = make_community(creator=community_owner)
         post = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
         post_two = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -4487,10 +4412,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         should take into account max_id in when returning top posts
         """
         user = make_user()
-
-        # clear all top posts
-        TopPost.objects.all().delete()
-
         total_posts = 10
 
         community = make_community(creator=user)
@@ -4518,10 +4439,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         should take into account min_id in when returning top posts
         """
         user = make_user()
-
-        # clear all top posts
-        TopPost.objects.all().delete()
-
         total_posts = 10
 
         community = make_community(creator=user)
@@ -4549,10 +4466,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         should take into account count when returning top posts
         """
         user = make_user()
-
-        # clear all top posts
-        TopPost.objects.all().delete()
-
         total_posts = 10
 
         community = make_community(creator=user)
