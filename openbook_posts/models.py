@@ -2,7 +2,6 @@
 import os
 import tempfile
 import uuid
-from datetime import timedelta
 
 from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -23,6 +22,7 @@ from rest_framework.exceptions import ValidationError
 
 from django.conf import settings
 
+from openbook_posts.validators import post_text_validators, post_comment_text_validators
 from video_encoding.backends import get_backend
 from video_encoding.fields import VideoField
 from video_encoding.models import Format
@@ -32,14 +32,14 @@ from openbook_auth.models import User
 
 from openbook_common.models import Emoji, Language
 from openbook_common.utils.helpers import delete_file_field, sha256sum, extract_usernames_from_string, get_magic, \
-    write_in_memory_file_to_disk
+    write_in_memory_file_to_disk, extract_hashtags_from_string
 from openbook_common.utils.model_loaders import get_emoji_model, \
     get_circle_model, get_community_model, get_post_comment_notification_model, \
     get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model, \
     get_post_user_mention_notification_model, get_post_comment_user_mention_notification_model, get_user_model, \
     get_post_user_mention_model, get_post_comment_user_mention_model, get_community_notifications_subscription_model, \
     get_community_new_post_notification_model, get_user_new_post_notification_model, \
-    get_user_notifications_subscription_model, get_trending_post_model, get_post_model
+    get_hashtag_model, get_user_notifications_subscription_model, get_trending_post_model
 from imagekit.models import ProcessedImageField
 
 from openbook_moderation.models import ModeratedObject
@@ -53,7 +53,7 @@ from openbook_posts.helpers import upload_to_post_image_directory, upload_to_pos
 from openbook_posts.jobs import process_post_media
 
 magic = get_magic()
-from openbook_common.helpers import get_language_for_text, extract_urls_from_string
+from openbook_common.helpers import get_language_for_text
 
 post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else default_storage
 
@@ -61,7 +61,8 @@ post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else defa
 class Post(models.Model):
     moderated_object = GenericRelation(ModeratedObject, related_query_name='posts')
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
-    text = models.TextField(_('text'), max_length=settings.POST_MAX_LENGTH, blank=False, null=True)
+    text = models.TextField(_('text'), max_length=settings.POST_MAX_LENGTH, blank=False, null=True,
+                            validators=post_text_validators)
     created = models.DateTimeField(editable=False, db_index=True)
     modified = models.DateTimeField(db_index=True, default=timezone.now)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts')
@@ -157,7 +158,7 @@ class Post(models.Model):
         """
         Gets trending posts (communities only) for authenticated user excluding reported, closed, blocked users posts
         """
-        Post = get_post_model()
+        Post = cls
         TrendingPost = get_trending_post_model()
         Community = get_community_model()
 
@@ -260,8 +261,8 @@ class Post(models.Model):
         exclude_blocked_users_query.add(Q(subscriber__banned_of_communities__id=post.community.pk), Q.OR)
 
         # Subscriptions after excluding blocked users
-        target_subscriptions_excluding_blocked = CommunityNotificationsSubscription.objects.\
-            filter(community_subscriptions_query).\
+        target_subscriptions_excluding_blocked = CommunityNotificationsSubscription.objects. \
+            filter(community_subscriptions_query). \
             exclude(exclude_blocked_users_query)
 
         staff_members_query = Q(subscriber__communities_memberships__community_id=post.community.pk,
@@ -271,7 +272,8 @@ class Post(models.Model):
 
         # Subscriptions from staff of community
         community_subscriptions_with_staff_query = community_subscriptions_query.add(staff_members_query, Q.AND)
-        target_subscriptions_with_staff = CommunityNotificationsSubscription.objects.filter(community_subscriptions_with_staff_query)
+        target_subscriptions_with_staff = CommunityNotificationsSubscription.objects.filter(
+            community_subscriptions_with_staff_query)
 
         results = target_subscriptions_excluding_blocked.union(target_subscriptions_with_staff)
 
@@ -295,8 +297,8 @@ class Post(models.Model):
         user_subscriptions_query.add(exclude_self_query, Q.AND)
 
         # Subscriptions after excluding blocked users
-        target_subscriptions = UserNotificationsSubscription.objects.\
-            filter(user_subscriptions_query).\
+        target_subscriptions = UserNotificationsSubscription.objects. \
+            filter(user_subscriptions_query). \
             exclude(exclude_blocked_users_query)
 
         return target_subscriptions
@@ -373,6 +375,13 @@ class Post(models.Model):
         if self.circles.filter(id=world_circle_id).exists():
             return True
         return False
+
+    def is_public_community_post(self):
+        Community = get_community_model()
+        return Community.objects.filter(posts__id=self.pk, type=Community.COMMUNITY_TYPE_PUBLIC).exists()
+
+    def is_publicly_visible(self):
+        return self.is_public_post() or self.is_public_community_post()
 
     def is_encircled_post(self):
         return not self.is_public_post() and not self.community
@@ -453,6 +462,9 @@ class Post(models.Model):
     def get_first_media(self):
         return self.media.first()
 
+    def get_first_media_image(self):
+        return self.media.filter(type=PostMedia.MEDIA_TYPE_IMAGE).first()
+
     def _add_media_image(self, image, order):
         return PostImage.create_post_media_image(image=image, post_id=self.pk, order=order)
 
@@ -498,6 +510,7 @@ class Post(models.Model):
         post = super(Post, self).save(*args, **kwargs)
 
         self._process_post_mentions()
+        self._process_post_hashtags()
 
         return post
 
@@ -604,6 +617,29 @@ class Post(models.Model):
                         except User.DoesNotExist:
                             pass
 
+    def _process_post_hashtags(self):
+        if not self.text:
+            self.hashtags.all().delete()
+        else:
+            hashtags = extract_hashtags_from_string(string=self.text)
+            if not hashtags:
+                self.hashtags.all().delete()
+            else:
+                existing_hashtags = []
+                for existing_hashtag in self.hashtags.only('id', 'name').all().iterator():
+                    if existing_hashtag.name not in hashtags:
+                        self.hashtags.remove(existing_hashtag)
+                    else:
+                        existing_hashtags.append(existing_hashtag.name)
+
+                Hashtag = get_hashtag_model()
+
+                for hashtag in hashtags:
+                    hashtag = hashtag.lower()
+                    hashtag_obj = Hashtag.get_or_create_hashtag(name=hashtag, post=self)
+                    if hashtag not in existing_hashtags:
+                        self.hashtags.add(hashtag_obj)
+
     def _process_post_subscribers(self):
         if self.community:
             CommunityNewPostNotification = get_community_new_post_notification_model()
@@ -653,7 +689,8 @@ class TrendingPost(models.Model):
 
 class TopPostCommunityExclusion(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='top_posts_community_exclusions')
-    community = models.ForeignKey('openbook_communities.Community', on_delete=models.CASCADE, related_name='top_posts_community_exclusions')
+    community = models.ForeignKey('openbook_communities.Community', on_delete=models.CASCADE,
+                                  related_name='top_posts_community_exclusions')
     created = models.DateTimeField(editable=False, db_index=True)
 
     class Meta:
@@ -779,7 +816,8 @@ class PostComment(models.Model):
     created = models.DateTimeField(editable=False, db_index=True)
     modified = models.DateTimeField(db_index=True, default=timezone.now)
     commenter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts_comments')
-    text = models.TextField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False)
+    text = models.TextField(_('text'), max_length=settings.POST_COMMENT_MAX_LENGTH, blank=False, null=False,
+                            validators=post_comment_text_validators)
     language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, related_name='post_comments')
     is_edited = models.BooleanField(default=False, null=False, blank=False)
     # This only happens if the comment was reported and found with critical severity content
@@ -852,8 +890,14 @@ class PostComment(models.Model):
 
         self.modified = timezone.now()
 
+        self.full_clean(exclude=['language'])
+
+        post_comment = super(PostComment, self).save(*args, **kwargs)
+
         self._process_post_comment_mentions()
-        return super(PostComment, self).save(*args, **kwargs)
+        self._process_post_comment_hashtags()
+
+        return post_comment
 
     def _process_post_comment_mentions(self):
         usernames = extract_usernames_from_string(string=self.text)
@@ -902,6 +946,29 @@ class PostComment(models.Model):
                         existing_mention_usernames.append(username)
                     except User.DoesNotExist:
                         pass
+
+    def _process_post_comment_hashtags(self):
+        if not self.text:
+            self.hashtags.all().delete()
+        else:
+            hashtags = extract_hashtags_from_string(string=self.text)
+            if not hashtags:
+                self.hashtags.all().delete()
+            else:
+                existing_hashtags = []
+                for existing_hashtag in self.hashtags.only('id', 'name').all().iterator():
+                    if existing_hashtag.name not in hashtags:
+                        self.hashtags.remove(existing_hashtag)
+                    else:
+                        existing_hashtags.append(existing_hashtag.name)
+
+                Hashtag = get_hashtag_model()
+
+                for hashtag in hashtags:
+                    hashtag = hashtag.lower()
+                    if hashtag not in existing_hashtags:
+                        hashtag_obj = Hashtag.get_or_create_hashtag(name=hashtag)
+                        self.hashtags.add(hashtag_obj)
 
     def update_comment(self, text):
         self.text = text

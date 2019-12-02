@@ -128,6 +128,7 @@ INSTALLED_APPS = [
     'openbook_communities',
     'openbook_invitations',
     'openbook_tags',
+    'openbook_hashtags',
     'openbook_categories',
     'openbook_notifications',
     'openbook_devices',
@@ -466,6 +467,8 @@ USER_MAX_FOLLOWS = int(os.environ.get('USER_MAX_FOLLOWS', '1500'))
 USER_MAX_CONNECTIONS = int(os.environ.get('USER_MAX_CONNECTIONS', '1500'))
 USER_MAX_COMMUNITIES = 200
 POST_MAX_LENGTH = int(os.environ.get('POST_MAX_LENGTH', '5000'))
+POST_MAX_HASHTAGS = int(os.environ.get('POST_MAX_HASHTAGS', '3'))
+POST_COMMENT_MAX_HASHTAGS = int(os.environ.get('POST_COMMENT_MAX_HASHTAGS', '3'))
 POST_COMMENT_MAX_LENGTH = int(os.environ.get('POST_MAX_LENGTH', '1500'))
 POST_MEDIA_MAX_SIZE = int(os.environ.get('POST_MEDIA_MAX_SIZE', '10485760'))
 POST_LINK_MAX_DOMAIN_LENGTH = int(os.environ.get('POST_LINK_MAX_DOMAIN_LENGTH', '126'))
@@ -492,7 +495,7 @@ COMMUNITY_CATEGORIES_MAX_AMOUNT = 3
 COMMUNITY_CATEGORIES_MIN_AMOUNT = 1
 COMMUNITY_AVATAR_MAX_SIZE = int(os.environ.get('COMMUNITY_AVATAR_MAX_SIZE', '10485760'))
 COMMUNITY_COVER_MAX_SIZE = int(os.environ.get('COMMUNITY_COVER_MAX_SIZE', '10485760'))
-TAG_NAME_MAX_LENGTH = 32
+HASHTAG_NAME_MAX_LENGTH = 32
 CATEGORY_NAME_MAX_LENGTH = 32
 CATEGORY_TITLE_MAX_LENGTH = 64
 CATEGORY_DESCRIPTION_MAX_LENGTH = 64

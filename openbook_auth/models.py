@@ -19,6 +19,7 @@ from django.core.mail import EmailMultiAlternatives
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
+from openbook_auth.queries import make_get_hashtag_posts_query_for_user
 from openbook_notifications.helpers import get_notification_language_code_for_target_user
 from openbook_translation import translation_strategy
 from openbook_common.helpers import get_supported_translation_language
@@ -32,7 +33,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
     get_moderation_penalty_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
     get_post_comment_reaction_notification_model, get_top_post_model, get_top_post_community_exclusion_model, \
-    get_community_notifications_subscription_model, get_user_notifications_subscription_model
+    get_community_notifications_subscription_model, get_user_notifications_subscription_model, get_hashtag_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications import helpers
 from openbook_auth.checkers import *
@@ -1760,6 +1761,17 @@ class User(AbstractUser):
         check_can_get_list_with_id(user=self, list_id=list_id)
         return self.lists.get(id=list_id)
 
+    def search_hashtags_with_query(self, query):
+        hashtags_query = self._make_search_hashtags_query(query=query)
+        Hashtag = get_hashtag_model()
+
+        return Hashtag.objects.filter(hashtags_query)
+
+    def _make_search_hashtags_query(self, query):
+        search_hashtags_query = Q(name__icontains=query)
+
+        return search_hashtags_query
+
     def search_users_with_query(self, query):
         users_query = self._make_search_users_query(query=query)
 
@@ -2077,6 +2089,24 @@ class User(AbstractUser):
 
         return post
 
+    def get_hashtag_with_name(self, hashtag_name):
+        Hashtag = get_hashtag_model()
+        return Hashtag.objects.get(name=hashtag_name)
+
+    def get_posts_for_hashtag_with_name(self, hashtag_name, max_id=None):
+        Hashtag = get_hashtag_model()
+        hashtag = Hashtag.objects.get(name=hashtag_name)
+
+        hashtag_posts_query = make_get_hashtag_posts_query_for_user(user=self, hashtag=hashtag)
+
+        if max_id:
+            hashtag_posts_query.add(Q(id__lt=max_id), Q.AND)
+
+        Post = get_post_model()
+        hashtag_posts = Post.objects.filter(hashtag_posts_query).distinct()
+
+        return hashtag_posts
+
     def get_posts_for_community_with_name(self, community_name, max_id=None):
         """
         :param community_name:
@@ -2344,7 +2374,7 @@ class User(AbstractUser):
         """
 
         if not circles_ids and not lists_ids:
-            return self._get_timeline_posts_with_no_filters(max_id=max_id, min_id=min_id, count=count)
+            return self._get_timeline_posts_with_no_filters(max_id=max_id)
 
         return self._get_timeline_posts_with_filters(max_id=max_id, circles_ids=circles_ids, lists_ids=lists_ids)
 
@@ -2395,7 +2425,7 @@ class User(AbstractUser):
 
         return Post.objects.filter(timeline_posts_query).distinct()
 
-    def _get_timeline_posts_with_no_filters(self, max_id=None, min_id=None, count=10):
+    def _get_timeline_posts_with_no_filters(self, max_id=None):
         """
         Being the main action of the network, an optimised call of the get timeline posts call with no filtering.
         """

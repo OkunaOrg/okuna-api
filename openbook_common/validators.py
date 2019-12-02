@@ -6,8 +6,12 @@ from django.utils.translation import ugettext_lazy as _
 from openbook_common.utils.model_loaders import get_emoji_model, get_emoji_group_model, get_language_model
 
 
+def is_valid_hex_color(hex_color):
+    return re.search(r'^#(?:[0-9a-fA-F]{3}){1,2}$', hex_color)
+
+
 def hex_color_validator(hex_color):
-    if not re.search(r'^#(?:[0-9a-fA-F]{3}){1,2}$', hex_color):
+    if not is_valid_hex_color(hex_color):
         raise ValidationError(
             _('The provided value is not a valid hex color.'),
         )

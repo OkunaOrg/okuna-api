@@ -1031,5 +1031,25 @@
       "keyword_tr": "Yeah!",
       "keyword_pt_br": "Yeah!"
     }
+  },
+  {
+    "model": "openbook_common.Emoji",
+    "pk": 54,
+    "fields": {
+      "group_id": 3,
+      "order": 200,
+      "keyword": "Christmas",
+      "keyword_en": "Christmas",
+      "color": "#0089f2",
+      "image": "openbook_common/emojis/christmas_tree.png",
+      "created": "2018-10-22 12:23:30.382913+00:00",
+      "keyword_es": "Christmas",
+      "keyword_de": "Christmas",
+      "keyword_sv": "Christmas",
+      "keyword_fr": "Christmas",
+      "keyword_it": "Christmas",
+      "keyword_tr": "Christmas",
+      "keyword_pt_br": "Christmas"
+    }
   }
 ]

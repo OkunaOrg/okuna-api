@@ -8,9 +8,10 @@ import json
 import logging
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
-    make_fake_post_comment_text, make_user, make_circle, make_community
+    make_fake_post_comment_text, make_user, make_circle, make_community, make_hashtag_name, make_hashtag
 from openbook_common.utils.model_loaders import get_language_model
 from openbook_communities.models import Community
+from openbook_hashtags.models import Hashtag
 from openbook_notifications.models import PostCommentNotification, Notification, PostCommentReplyNotification, \
     PostCommentUserMentionNotification
 from openbook_posts.models import PostComment, PostCommentUserMention
@@ -985,6 +986,98 @@ class PostCommentItemAPITests(OpenbookAPITestCase):
                                                                            post_comment_id=post_comment.pk,
                                                                            id=post_comment_user_mention.pk)
         self.assertEqual(new_post_comment_user_mention.pk, post_comment_user_mention.pk)
+
+    def test_editing_own_post_comment_comment_with_hashtag_creates_hashtag_if_not_exist(self):
+        """
+        when editing a post comment with a hashtag, should create  it if not exists
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        hashtag_name = make_hashtag_name()
+        post_comment_text = 'One hashtag #' + hashtag_name
+
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post(post=post, text=post_comment_text)
+
+        new_hashtag_name = make_hashtag_name()
+
+        new_post_comment_commenttext = 'Another hashtag #' + new_hashtag_name
+
+        data = {
+            'text': new_post_comment_commenttext
+        }
+
+        url = self._get_url(post=post, post_comment=post_comment)
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        created_hashtag = Hashtag.objects.get(name=new_hashtag_name)
+        self.assertTrue(post_comment.hashtags.filter(pk=created_hashtag.pk).exists())
+        self.assertEqual(post_comment.hashtags.all().count(), 1)
+
+    def test_editing_own_post_comment_comment_with_hashtag_updates_to_existing_hashtag_exists(self):
+        """
+        when editing a post comment with a hashtag, should update to it if exists
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        hashtag = make_hashtag()
+        post_comment_text = 'One hashtag #' + hashtag.name
+
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post(post=post, text=post_comment_text)
+
+        new_hashtag = make_hashtag()
+
+        new_post_comment_commenttext = 'Another hashtag #' + new_hashtag.name
+
+        data = {
+            'text': new_post_comment_commenttext
+        }
+
+        url = self._get_url(post=post, post_comment=post_comment)
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        self.assertTrue(post_comment.hashtags.filter(pk=new_hashtag.pk).exists())
+        self.assertEqual(post_comment.hashtags.all().count(), 1)
+
+    def test_editing_own_post_comment_comment_with_hashtag_does_not_create_double_hashtags(self):
+        """
+        when editing a post comment with a hashtag, should not create duplicate hashtags
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        hashtag = make_hashtag()
+        post_comment_text = 'One hashtag #' + hashtag.name
+
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post(post=post, text=post_comment_text)
+
+        new_post_comment_commenttext = 'Same hashtag #' + hashtag.name
+
+        data = {
+            'text': new_post_comment_commenttext
+        }
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        self.assertEqual(post_comment.hashtags.filter(name=hashtag.name).count(), 1)
+        self.assertEqual(post_comment.hashtags.all().count(), 1)
 
     @mock.patch('openbook_posts.models.get_language_for_text')
     def test_editing_own_post_comment_updates_language_of_comment(self, get_language_for_text_call):

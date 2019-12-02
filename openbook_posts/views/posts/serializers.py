@@ -6,6 +6,7 @@ from openbook_auth.validators import user_username_exists, username_characters_v
 from openbook_circles.models import Circle
 from openbook_circles.validators import circle_id_exists
 from openbook_common.models import Emoji, Badge
+from openbook_common.serializers import CommonHashtagSerializer
 from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, PostReactionsEmojiCountField, \
     CirclesField, PostCreatorField, PostIsMutedField, IsEncircledField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField, RestrictedFileSizeField
@@ -14,6 +15,7 @@ from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_lists.validators import list_id_exists
 from openbook_posts.models import PostImage, Post, PostReaction, TopPost, TrendingPost
+from openbook_posts.validators import post_text_validators
 
 
 class GetPostsSerializer(serializers.Serializer):
@@ -74,7 +76,8 @@ class GetTrendingPostsSerializer(serializers.Serializer):
 
 
 class CreatePostSerializer(serializers.Serializer):
-    text = serializers.CharField(max_length=settings.POST_MAX_LENGTH, required=False, allow_blank=False)
+    text = serializers.CharField(max_length=settings.POST_MAX_LENGTH, required=False, allow_blank=False,
+                                 validators=post_text_validators)
     # Prefer adding images with post/uuid/images
     image = RestrictedImageFileSizeField(allow_empty_file=False, required=False,
                                          max_upload_size=settings.POST_MEDIA_MAX_SIZE)
@@ -230,6 +233,7 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     is_muted = PostIsMutedField()
     language = PostLanguageSerializer()
     is_encircled = IsEncircledField()
+    hashtags = CommonHashtagSerializer(many=True)
 
     # Temp backwards compat
     image = PostImageSerializer(many=False)
@@ -259,6 +263,7 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'media_thumbnail',
             # Temp backwards compat
             'image',
+            'hashtags',
         )
 
 
