@@ -14,7 +14,7 @@ from openbook_common.models import Language
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_lists.validators import list_id_exists
-from openbook_posts.models import PostImage, Post, PostReaction, TopPost
+from openbook_posts.models import PostImage, Post, PostReaction, TopPost, TrendingPost
 from openbook_posts.validators import post_text_validators
 
 
@@ -50,6 +50,19 @@ class GetPostsSerializer(serializers.Serializer):
 
 class GetTopPostsSerializer(serializers.Serializer):
     exclude_joined_communities = serializers.BooleanField(required=False)
+    max_id = serializers.IntegerField(
+        required=False,
+    )
+    min_id = serializers.IntegerField(
+        required=False,
+    )
+    count = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
+
+
+class GetTrendingPostsSerializer(serializers.Serializer):
     max_id = serializers.IntegerField(
         required=False,
     )
@@ -259,6 +272,18 @@ class AuthenticatedUserTopPostSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TopPost
+        fields = (
+            'id',
+            'post',
+            'created'
+        )
+
+
+class AuthenticatedUserTrendingPostSerializer(serializers.ModelSerializer):
+    post = AuthenticatedUserPostSerializer()
+
+    class Meta:
+        model = TrendingPost
         fields = (
             'id',
             'post',

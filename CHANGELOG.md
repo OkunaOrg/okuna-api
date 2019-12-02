@@ -17,6 +17,7 @@ The change log for the API server for Okuna.
 - Add search APIs to administrated, moderated, favorite, joined, subscribed
   communities
 - Add subscribe to user notifications APIs
+- Add trending posts curation and clean up jobs
 - Remove username from forgot password API
 - Add "Yeah!" and "Spooky" emojis fixtures
 - Add "IsFollower" field to user serializers

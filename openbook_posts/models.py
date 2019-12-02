@@ -2,7 +2,6 @@
 import os
 import tempfile
 import uuid
-from datetime import timedelta
 
 from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -40,7 +39,7 @@ from openbook_common.utils.model_loaders import get_emoji_model, \
     get_post_user_mention_notification_model, get_post_comment_user_mention_notification_model, get_user_model, \
     get_post_user_mention_model, get_post_comment_user_mention_model, get_community_notifications_subscription_model, \
     get_community_new_post_notification_model, get_user_new_post_notification_model, \
-    get_user_notifications_subscription_model, get_hashtag_model
+    get_hashtag_model, get_user_notifications_subscription_model, get_trending_post_model
 from imagekit.models import ProcessedImageField
 
 from openbook_moderation.models import ModeratedObject
@@ -155,37 +154,59 @@ class Post(models.Model):
         return Emoji.get_emoji_counts_for_post_with_id(post_id=post_id, emoji_id=emoji_id, reactor_id=reactor_id)
 
     @classmethod
-    def get_trending_posts_for_user_with_id(cls, user_id):
-        trending_posts_query = cls._get_trending_posts_query()
-        trending_posts_query.add(~Q(community__banned_users__id=user_id), Q.AND)
-
-        trending_posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=user_id) | Q(
-            creator__user_blocks__blocked_user_id=user_id)), Q.AND)
-
-        trending_posts_query.add(~Q(moderated_object__reports__reporter_id=user_id), Q.AND)
-
-        trending_posts_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
-
-        return cls._get_trending_posts_with_query(query=trending_posts_query)
-
-    @classmethod
-    def _get_trending_posts_with_query(cls, query):
-        return cls.objects.filter(query).annotate(Count('reactions')).order_by(
-            '-reactions__count', '-created')
-
-    @classmethod
-    def _get_trending_posts_query(cls):
-        trending_posts_query = Q(created__gte=timezone.now() - timedelta(
-            hours=12))
-
+    def get_trending_posts_for_user_with_id(cls, user_id, max_id=None, min_id=None):
+        """
+        Gets trending posts (communities only) for authenticated user excluding reported, closed, blocked users posts
+        """
+        Post = cls
+        TrendingPost = get_trending_post_model()
         Community = get_community_model()
 
-        trending_posts_sources_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, status=cls.STATUS_PUBLISHED,
-                                         is_closed=False, is_deleted=False)
+        posts_select_related = ('post__creator', 'post__creator__profile', 'post__community', 'post__image')
+        posts_prefetch_related = ('post__circles', 'post__creator__profile__badges', 'post__reactions__reactor')
 
-        trending_posts_query.add(trending_posts_sources_query, Q.AND)
+        posts_only = ('id',
+                      'post__text', 'post__id', 'post__uuid', 'post__created', 'post__image__width',
+                      'post__image__height', 'post__image__image',
+                      'post__creator__username', 'post__creator__id', 'post__creator__profile__name',
+                      'post__creator__profile__avatar',
+                      'post__creator__profile__badges__id', 'post__creator__profile__badges__keyword',
+                      'post__creator__profile__id', 'post__community__id', 'post__community__name',
+                      'post__community__avatar',
+                      'post__community__color', 'post__community__title')
 
-        return trending_posts_query
+        reported_posts_exclusion_query = ~Q(post__moderated_object__reports__reporter_id=user_id)
+
+        trending_community_posts_query = Q(post__is_closed=False,
+                                           post__is_deleted=False,
+                                           post__status=Post.STATUS_PUBLISHED)
+
+        trending_community_posts_query.add(~Q(Q(post__creator__blocked_by_users__blocker_id=user_id) | Q(
+            post__creator__user_blocks__blocked_user_id=user_id)), Q.AND)
+        trending_community_posts_query.add(Q(post__community__type=Community.COMMUNITY_TYPE_PUBLIC), Q.AND)
+        trending_community_posts_query.add(~Q(post__community__banned_users__id=user_id), Q.AND)
+
+        if max_id:
+            trending_community_posts_query.add(Q(id__lt=max_id), Q.AND)
+        elif min_id:
+            trending_community_posts_query.add(Q(id__gt=min_id), Q.AND)
+
+        ModeratedObject = get_moderated_object_model()
+        trending_community_posts_query.add(~Q(post__moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
+        trending_community_posts_query.add(reported_posts_exclusion_query, Q.AND)
+
+        trending_posts_criteria_query = Q(reactions_count__gte=settings.MIN_UNIQUE_TRENDING_POST_REACTIONS_COUNT)
+
+        trending_community_posts_queryset = TrendingPost.objects.\
+            select_related(*posts_select_related).\
+            prefetch_related(*posts_prefetch_related).\
+            only(*posts_only).\
+            filter(trending_community_posts_query).\
+            annotate(reactions_count=Count('post__reactions__reactor_id')). \
+            filter(trending_posts_criteria_query)
+
+        return trending_community_posts_queryset
 
     @classmethod
     def get_post_comment_notification_target_users(cls, post, post_commenter):
@@ -651,6 +672,19 @@ class TopPost(models.Model):
         self.modified = timezone.now()
 
         return super(TopPost, self).save(*args, **kwargs)
+
+
+class TrendingPost(models.Model):
+    post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='trending_post')
+    created = models.DateTimeField(editable=False, db_index=True)
+
+    def save(self, *args, **kwargs):
+        ''' On save, update timestamps '''
+        if not self.id:
+            self.created = timezone.now()
+        self.modified = timezone.now()
+
+        return super(TrendingPost, self).save(*args, **kwargs)
 
 
 class TopPostCommunityExclusion(models.Model):
