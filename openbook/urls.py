@@ -81,7 +81,7 @@ from openbook_posts.views.post_comments.views import PostComments, PostCommentsD
 from openbook_posts.views.post_media.views import PostMedia
 from openbook_posts.views.post_reaction.views import PostReactionItem
 from openbook_posts.views.post_reactions.views import PostReactions, PostReactionsEmojiCount, PostReactionEmojiGroups
-from openbook_posts.views.posts.views import Posts, TrendingPosts, TopPosts
+from openbook_posts.views.posts.views import Posts, TrendingPosts, TopPosts, TrendingPostsNew
 from openbook_importer.views import ImportItem
 
 auth_auth_patterns = [
@@ -208,6 +208,7 @@ posts_patterns = [
     path('<uuid:post_uuid>/', include(post_patterns)),
     path('', Posts.as_view(), name='posts'),
     path('trending/', TrendingPosts.as_view(), name='trending-posts'),
+    path('trending/new/', TrendingPostsNew.as_view(), name='trending-posts-new'),
     path('top/', TopPosts.as_view(), name='top-posts'),
     path('emojis/groups/', PostReactionEmojiGroups.as_view(), name='posts-emoji-groups'),
 ]
