@@ -419,19 +419,6 @@ class VerifyRegistrationTokenAPITests(OpenbookAPITestCase):
 
 class RequestPasswordResetAPITests(OpenbookAPITestCase):
 
-    def test_cannot_request_password_reset_with_invalid_username(self):
-        """
-        Should not be able to request password reset if no valid username exists
-        """
-        username = fake.user_name()
-        request_data = {
-            'username': username
-        }
-        url = self._get_url()
-
-        response = self.client.post(url, request_data, format='multipart')
-        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
     def test_cannot_request_password_reset_with_invalid_email(self):
         """
         Should not be able to request password reset if no valid email exists
@@ -445,23 +432,6 @@ class RequestPasswordResetAPITests(OpenbookAPITestCase):
             response = self.client.post(url, request_data, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-
-    def test_request_password_reset_successfully_with_valid_username(self):
-        """
-        Should generate request password reset token for username and send mail
-        """
-        user = make_user()
-        request_data = {
-            'username': user.username
-        }
-
-        url = self._get_url()
-        response = self.client.post(url, request_data, format='multipart')
-        email_message = mail.outbox[0]
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(email_message.to[0], user.email)
-        self.assertEqual(email_message.subject, 'Reset your password for Okuna')
 
     def test_request_password_reset_successfully_with_valid_email(self):
         """
