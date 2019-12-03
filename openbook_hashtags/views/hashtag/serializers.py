@@ -3,9 +3,9 @@ from rest_framework import serializers
 
 from openbook_common.serializers import CommonPostCreatorSerializer, \
     CommonCommunityMembershipSerializer, CommonPostEmojiCountSerializer, CommonPostCommunitySerializer, \
-    CommonPostReactionSerializer, CommonPostLanguageSerializer, CommonHashtagSerializer
+    CommonPostReactionSerializer, CommonPostLanguageSerializer, CommonHashtagSerializer, CommonCircleSerializer
 from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, PostCreatorField, \
-    PostReactionsEmojiCountField, PostIsMutedField
+    PostReactionsEmojiCountField, PostIsMutedField, IsEncircledField, CirclesField
 from openbook_hashtags.validators import hashtag_name_exists
 from openbook_posts.models import Post
 
@@ -41,6 +41,8 @@ class GetHashtagPostsPostSerializer(serializers.ModelSerializer):
     reaction = ReactionField(reaction_serializer=CommonPostReactionSerializer)
     language = CommonPostLanguageSerializer()
     hashtags = CommonHashtagSerializer(many=True)
+    is_encircled = IsEncircledField()
+    circles = CirclesField(circle_serializer=CommonCircleSerializer)
 
     class Meta:
         model = Post
@@ -59,8 +61,10 @@ class GetHashtagPostsPostSerializer(serializers.ModelSerializer):
             'reaction',
             'is_edited',
             'is_closed',
+            'is_encircled',
             'media_height',
             'media_width',
             'media_thumbnail',
-            'hashtags'
+            'hashtags',
+            'circles'
         )
