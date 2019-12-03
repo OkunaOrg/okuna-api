@@ -21,11 +21,11 @@ class IsFollowingField(Field):
         return False
 
 
-class IsSubscribedToUserField(Field):
+class IsSubscribedToUserNotificationsField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'
         kwargs['read_only'] = True
-        super(IsSubscribedToUserField, self).__init__(**kwargs)
+        super(IsSubscribedToUserNotificationsField, self).__init__(**kwargs)
 
     def to_representation(self, value):
         request = self.context.get('request')

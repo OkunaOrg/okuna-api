@@ -7,12 +7,12 @@ from openbook_categories.validators import category_name_exists
 from openbook_common.models import Badge
 from openbook_common.serializers_fields.community import IsCommunityReportedField, CommunityPostsCountField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
-from openbook_common.serializers_fields.user import IsFollowingField, IsSubscribedToUserField
+from openbook_common.serializers_fields.user import IsFollowingField, IsSubscribedToUserNotificationsField
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import IsInvitedField, \
     IsCreatorField, RulesField, ModeratorsField, CommunityMembershipsField, IsFavoriteField, AdministratorsField, \
-    IsSubscribedField
+    IsSubscribedToNotifications
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 
 
@@ -124,7 +124,7 @@ class GetCommunityModeratorProfileSerializer(serializers.ModelSerializer):
 class GetCommunityStaffUserSerializer(serializers.ModelSerializer):
     profile = GetCommunityModeratorProfileSerializer(many=False)
     is_following = IsFollowingField()
-    is_subscribed = IsSubscribedToUserField()
+    is_subscribed_to_notifications = IsSubscribedToUserNotificationsField()
 
     class Meta:
         model = User
@@ -133,7 +133,7 @@ class GetCommunityStaffUserSerializer(serializers.ModelSerializer):
             'username',
             'profile',
             'is_following',
-            'is_subscribed',
+            'is_subscribed_to_notifications',
         )
 
 
@@ -152,7 +152,7 @@ class GetCommunityCommunityMembershipSerializer(serializers.ModelSerializer):
 class GetCommunityCommunitySerializer(serializers.ModelSerializer):
     categories = GetCommunityCommunityCategorySerializer(many=True)
     is_invited = IsInvitedField()
-    is_subscribed = IsSubscribedField()
+    is_subscribed_to_notifications = IsSubscribedToNotifications()
     is_creator = IsCreatorField()
     is_favorite = IsFavoriteField()
     is_reported = IsCommunityReportedField()
@@ -183,7 +183,7 @@ class GetCommunityCommunitySerializer(serializers.ModelSerializer):
             'type',
             'invites_enabled',
             'is_invited',
-            'is_subscribed',
+            'is_subscribed_to_notifications',
             'is_creator',
             'is_favorite',
             'is_reported',
@@ -229,11 +229,11 @@ class SubscribeToCommunityNotificationsSerializer(serializers.Serializer):
 
 
 class SubscribeToCommunityNotificationsCommunitySerializer(serializers.ModelSerializer):
-    is_subscribed = IsSubscribedField()
+    is_subscribed_to_notifications = IsSubscribedToNotifications()
 
     class Meta:
         model = Community
         fields = (
             'id',
-            'is_subscribed',
+            'is_subscribed_to_notifications',
         )
