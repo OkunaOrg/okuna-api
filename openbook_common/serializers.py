@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
+from openbook_circles.models import Circle
 from openbook_common.models import Emoji, EmojiGroup, Badge, Language
 from openbook_common.serializers_fields.hashtag import HashtagPostsCountField
 from openbook_communities.models import Community, CommunityMembership
@@ -173,6 +174,16 @@ class CommonHashtagSerializer(serializers.ModelSerializer):
             'emoji'
         )
 
+
+class CommonCircleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Circle
+        fields = (
+            'id',
+            'name',
+            'color',
+            'users_count'
+        )
 
 class ProxyDomainCheckSerializer(serializers.Serializer):
     url = serializers.CharField(
