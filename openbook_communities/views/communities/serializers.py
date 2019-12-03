@@ -164,6 +164,9 @@ class CommunitiesCommunitySerializer(serializers.ModelSerializer):
 
 
 class SearchCommunitiesCommunitySerializer(serializers.ModelSerializer):
+    is_favorite = IsFavoriteField()
+    memberships = CommunityMembershipsField(community_membership_serializer=CommunitiesCommunityMembershipSerializer)
+
     class Meta:
         model = Community
         fields = (
@@ -176,6 +179,8 @@ class SearchCommunitiesCommunitySerializer(serializers.ModelSerializer):
             'color',
             'user_adjective',
             'users_adjective',
+            'is_favorite',
+            'memberships'
         )
 
 
