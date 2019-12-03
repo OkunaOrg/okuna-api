@@ -164,12 +164,6 @@ class CommunitiesCommunitySerializer(serializers.ModelSerializer):
 
 
 class SearchCommunitiesCommunitySerializer(serializers.ModelSerializer):
-    is_subscribed_to_notifications = IsSubscribedToCommunityNotificationsField()
-    is_favorite = IsFavoriteField()
-    is_creator = IsCreatorField()
-    posts_count = CommunityPostsCountField()
-    memberships = CommunityMembershipsField(community_membership_serializer=CommunitiesCommunityMembershipSerializer)
-
     class Meta:
         model = Community
         fields = (
@@ -179,18 +173,9 @@ class SearchCommunitiesCommunitySerializer(serializers.ModelSerializer):
             'avatar',
             'cover',
             'members_count',
-            'posts_count',
             'color',
             'user_adjective',
             'users_adjective',
-            'categories',
-            'type',
-            'is_invited',
-            'is_subscribed_to_notifications',
-            'is_favorite',
-            'is_creator',
-            'invites_enabled',
-            'memberships'
         )
 
 
