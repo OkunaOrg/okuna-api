@@ -15,7 +15,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         Post = get_post_model()
 
-        posts_to_process = Post.objects.filter(hashtags__isnull=True, text__isnull=False).all()
+        posts_to_process = Post.objects.filter(hashtags__isnull=True,
+                                               text__isnull=False,
+                                               text__icontains='#'
+                                               ).all()
         migrated_posts = 0
 
         for post in _chunked_queryset_iterator(posts_to_process, 1000):

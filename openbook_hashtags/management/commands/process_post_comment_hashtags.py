@@ -15,7 +15,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         PostComment = get_post_comment_model()
 
-        comments_to_process = PostComment.objects.filter(hashtags__isnull=True).all()
+        comments_to_process = PostComment.objects.filter(hashtags__isnull=True,
+                                                         text__icontains='#').all()
         migrated_postComments = 0
 
         for comment in _chunked_queryset_iterator(comments_to_process, 1000):
