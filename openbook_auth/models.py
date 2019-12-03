@@ -602,7 +602,7 @@ class User(AbstractUser):
             followed_user_id=user_id,
             lists__id=list_id).exists()
 
-    def is_subscribed_to_user_with_id(self, user_id):
+    def is_subscribed_to_user_with_id_notifications(self, user_id):
         return self.user_notifications_subscriptions.filter(user__id=user_id).exists()
 
     def is_world_circle_id(self, id):
@@ -683,7 +683,7 @@ class User(AbstractUser):
         return Community.is_user_with_username_invited_to_community_with_name(username=self.username,
                                                                               community_name=community_name)
 
-    def is_subscribed_to_community_with_name(self, community_name):
+    def is_subscribed_to_community_with_name_notifications(self, community_name):
         Community = get_community_model()
         return Community.is_user_with_username_subscribed_to_notifications_for_community_with_name(username=self.username, community_name=community_name)
 
@@ -2217,7 +2217,7 @@ class User(AbstractUser):
                       'creator__profile__avatar', 'creator__profile__badges__id',
                       'creator__profile__badges__keyword', 'creator__profile__id', 'community__id',
                       'community__name', 'community__avatar', 'community__color', 'community__title')
-    
+
         user_query = Q(creator_id=user.pk)
 
         exclude_reported_and_approved_posts_query = ~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED)
@@ -2918,10 +2918,10 @@ class User(AbstractUser):
         if user_to_block.is_following_user_with_id(user_id=self.pk):
             user_to_block.unfollow_user_with_id(self.pk)
 
-        if self.is_subscribed_to_user_with_id(user_id=user_to_block.pk):
+        if self.is_subscribed_to_user_with_id_notifications(user_id=user_to_block.pk):
             self.unsubscribe_from_notifications_for_user_with_username(user_to_block.username)
 
-        if user_to_block.is_subscribed_to_user_with_id(user_id=self.pk):
+        if user_to_block.is_subscribed_to_user_with_id_notifications(user_id=self.pk):
             user_to_block.unsubscribe_from_notifications_for_user_with_username(self.username)
 
         UserBlock = get_user_block_model()

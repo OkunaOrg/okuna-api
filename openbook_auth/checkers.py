@@ -315,10 +315,10 @@ def check_can_subscribe_to_posts_for_community(subscriber, community):
         raise ValidationError(
             _('Only members can subscribe to new posts'),
         )
-    is_subscribed = CommunityNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_community_with_name(
+    is_subscribed_to_notifications = CommunityNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_community_with_name(
         username=subscriber.username, community_name=community.name)
 
-    if is_subscribed:
+    if is_subscribed_to_notifications:
         raise ValidationError(
             _('You are already subscribed to new posts for community'),
         )
@@ -336,10 +336,10 @@ def check_can_unsubscribe_to_posts_for_community(subscriber, community):
         raise ValidationError(
             _('Only members can unsubscribe to new posts'),
         )
-    is_subscribed = CommunityNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_community_with_name(
+    is_subscribed_to_notifications = CommunityNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_community_with_name(
         username=subscriber.username, community_name=community.name)
 
-    if not is_subscribed:
+    if not is_subscribed_to_notifications:
         raise ValidationError(
             _('You are already not subscribed to new posts for community'),
         )
@@ -1361,13 +1361,13 @@ def check_can_get_preview_link_data_for_post(user, post):
 
 def check_can_subscribe_to_notifications_for_user(subscriber, user):
     UserNotificationsSubscription = get_user_notifications_subscription_model()
-    is_subscribed = UserNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_user_with_username(
+    is_subscribed_to_notifications = UserNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_user_with_username(
         subscriber_username=subscriber.username, username=user.username)
 
     if user.has_blocked_user_with_id(user_id=subscriber.pk) or subscriber.has_blocked_user_with_id(user_id=user.pk):
         raise PermissionDenied(_('This account is blocked.'))
 
-    if is_subscribed:
+    if is_subscribed_to_notifications:
         raise ValidationError(
             _('User is already subscribed to this user'),
         )
@@ -1375,13 +1375,13 @@ def check_can_subscribe_to_notifications_for_user(subscriber, user):
 
 def check_can_unsubscribe_from_notifications_for_user(subscriber, user):
     UserNotificationsSubscription = get_user_notifications_subscription_model()
-    is_subscribed = UserNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_user_with_username(
+    is_subscribed_to_notifications = UserNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_user_with_username(
         subscriber_username=subscriber.username, username=user.username)
 
     if user.has_blocked_user_with_id(user_id=subscriber.pk) or subscriber.has_blocked_user_with_id(user_id=user.pk):
         raise PermissionDenied(_('This account is blocked.'))
 
-    if not is_subscribed:
+    if not is_subscribed_to_notifications:
         raise ValidationError(
             _('User is already unsubscribed from this user'),
         )
