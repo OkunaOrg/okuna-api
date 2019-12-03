@@ -12,7 +12,8 @@ from openbook_common.utils.helpers import normalize_list_value_in_request_data, 
 from openbook_communities.views.communities.serializers import CreateCommunitySerializer, \
     CommunitiesCommunitySerializer, SearchCommunitiesSerializer, CommunityNameCheckSerializer, \
     GetFavoriteCommunitiesSerializer, GetJoinedCommunitiesSerializer, TrendingCommunitiesSerializer, \
-    GetModeratedCommunitiesSerializer, GetAdministratedCommunitiesSerializer, GetTopPostCommunityExclusionSerializer
+    GetModeratedCommunitiesSerializer, GetAdministratedCommunitiesSerializer, GetTopPostCommunityExclusionSerializer, \
+    SearchCommunitiesCommunitySerializer
 
 
 class Communities(APIView):
@@ -66,7 +67,7 @@ class Communities(APIView):
 
         communities = user.get_joined_communities()[offset:offset + count]
 
-        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
+        response_serializer = SearchCommunitiesCommunitySerializer(communities, many=True,
                                                              context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
@@ -104,7 +105,7 @@ class JoinedCommunities(APIView):
 
         communities = user.get_joined_communities()[offset:offset + count]
 
-        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
+        response_serializer = SearchCommunitiesCommunitySerializer(communities, many=True,
                                                              context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
@@ -127,7 +128,7 @@ class SearchJoinedCommunities(APIView):
 
         communities = user.search_joined_communities_with_query(query=query)[:count]
 
-        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
+        response_serializer = SearchCommunitiesCommunitySerializer(communities, many=True,
                                                              context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
@@ -150,7 +151,7 @@ class ModeratedCommunities(APIView):
 
         communities = user.get_moderated_communities()[offset:offset + count]
 
-        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
+        response_serializer = SearchCommunitiesCommunitySerializer(communities, many=True,
                                                              context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
@@ -173,7 +174,7 @@ class SearchModeratedCommunities(APIView):
 
         communities = user.search_moderated_communities_with_query(query=query)[:count]
 
-        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
+        response_serializer = SearchCommunitiesCommunitySerializer(communities, many=True,
                                                              context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
@@ -196,7 +197,7 @@ class AdministratedCommunities(APIView):
 
         communities = user.get_administrated_communities()[offset:offset + count]
 
-        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
+        response_serializer = SearchCommunitiesCommunitySerializer(communities, many=True,
                                                              context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
@@ -219,7 +220,7 @@ class SearchAdministratedCommunities(APIView):
 
         communities = user.search_administrated_communities_with_query(query=query)[:count]
 
-        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
+        response_serializer = SearchCommunitiesCommunitySerializer(communities, many=True,
                                                              context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
@@ -241,7 +242,7 @@ class TrendingCommunities(APIView):
 
         communities = user.get_trending_communities(category_name=category_name)[:30]
 
-        posts_serializer = CommunitiesCommunitySerializer(communities, many=True, context={"request": request})
+        posts_serializer = SearchCommunitiesCommunitySerializer(communities, many=True, context={"request": request})
         return Response(posts_serializer.data, status=status.HTTP_200_OK)
 
 
@@ -262,7 +263,7 @@ class FavoriteCommunities(APIView):
 
         communities = user.get_favorite_communities()[offset:offset + count]
 
-        posts_serializer = CommunitiesCommunitySerializer(communities, many=True, context={"request": request})
+        posts_serializer = SearchCommunitiesCommunitySerializer(communities, many=True, context={"request": request})
         return Response(posts_serializer.data, status=status.HTTP_200_OK)
 
 
@@ -274,7 +275,7 @@ class SuggestedCommunities(APIView):
 
         communities = user.get_suggested_communities()
 
-        communities_serializer = CommunitiesCommunitySerializer(communities, many=True, context={"request": request})
+        communities_serializer = SearchCommunitiesCommunitySerializer(communities, many=True, context={"request": request})
         return Response(communities_serializer.data, status=status.HTTP_200_OK)
 
 
@@ -295,7 +296,7 @@ class SearchFavoriteCommunities(APIView):
 
         communities = user.search_favorite_communities_with_query(query=query)[:count]
 
-        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
+        response_serializer = SearchCommunitiesCommunitySerializer(communities, many=True,
                                                              context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
@@ -318,7 +319,7 @@ class SearchCommunities(APIView):
 
         communities = user.search_communities_with_query(query=query)[:count]
 
-        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
+        response_serializer = SearchCommunitiesCommunitySerializer(communities, many=True,
                                                              context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
@@ -342,7 +343,7 @@ class TopPostCommunityExclusions(APIView):
 
         communities = [exclusion.community for exclusion in exclusions]
 
-        users_serializer = CommunitiesCommunitySerializer(communities, many=True, context={'request': request})
+        users_serializer = SearchCommunitiesCommunitySerializer(communities, many=True, context={'request': request})
 
         return Response(users_serializer.data, status=status.HTTP_200_OK)
 
@@ -366,7 +367,7 @@ class TopPostCommunityExclusionsSearch(APIView):
 
         communities = [exclusion.community for exclusion in exclusions]
 
-        response_serializer = CommunitiesCommunitySerializer(communities, many=True,
+        response_serializer = SearchCommunitiesCommunitySerializer(communities, many=True,
                                                          context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
