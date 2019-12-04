@@ -4130,43 +4130,6 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         response_post = response_posts[0]
         self.assertEqual(response_post['post']['id'], post_two.pk)
 
-    def test_does_not_display_posts_that_have_less_than_min_reactions_after_curation(self):
-        """
-        should not display community posts that have less than minimum reactions but are already curated in trending posts
-        """
-        user = make_user()
-        post_reporter = make_user()
-        community = make_community(creator=user)
-        post_reporter.join_community_with_name(community_name=community.name)
-
-        user.create_public_post(text=make_fake_post_text())
-        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
-        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
-
-        emoji_group = make_reactions_emoji_group()
-        emoji = make_emoji(group=emoji_group)
-
-        # react once, min required while testing
-        post_reaction = user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
-        post_reaction_two = user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
-
-        # curate trending posts
-        curate_trending_posts()
-
-        user.delete_reaction_with_id_for_post_with_id(post_reaction_id=post_reaction.pk, post_id=post.pk)
-
-        headers = make_authentication_headers_for_user(user)
-
-        url = self._get_url()
-
-        response = self.client.get(url, **headers, format='multipart')
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response_posts = json.loads(response.content)
-        self.assertEqual(1, len(response_posts))
-        response_post = response_posts[0]
-        self.assertEqual(response_post['post']['id'], post_two.pk)
-
     def _get_url(self):
         return reverse('trending-posts-new')
 
