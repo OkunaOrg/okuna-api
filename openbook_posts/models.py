@@ -197,15 +197,11 @@ class Post(models.Model):
 
         trending_community_posts_query.add(reported_posts_exclusion_query, Q.AND)
 
-        trending_posts_criteria_query = Q(reactions_count__gte=settings.MIN_UNIQUE_TRENDING_POST_REACTIONS_COUNT)
-
         trending_community_posts_queryset = TrendingPost.objects.\
             select_related(*posts_select_related).\
             prefetch_related(*posts_prefetch_related).\
             only(*posts_only).\
-            filter(trending_community_posts_query).\
-            annotate(reactions_count=Count('post__reactions__reactor_id')). \
-            filter(trending_posts_criteria_query)
+            filter(trending_community_posts_query)
 
         return trending_community_posts_queryset
 
@@ -286,21 +282,23 @@ class Post(models.Model):
     @classmethod
     def get_community_notification_target_subscriptions(cls, post):
         CommunityNotificationsSubscription = get_community_notifications_subscription_model()
+
+        community_subscriptions_query = Q(community=post.community)
+
         exclude_blocked_users_query = Q(Q(subscriber__blocked_by_users__blocker_id=post.creator.pk) | Q(
             subscriber__user_blocks__blocked_user_id=post.creator.pk))
         community_members_query = Q(subscriber__communities_memberships__community_id=post.community.pk)
         exclude_self_query = ~Q(subscriber=post.creator)
-
-        community_subscriptions_query = Q(community=post.community)
-        community_subscriptions_query.add(community_members_query, Q.AND)
-        community_subscriptions_query.add(exclude_self_query, Q.AND)
 
         # Exclude banned users
         exclude_blocked_users_query.add(Q(subscriber__banned_of_communities__id=post.community.pk), Q.OR)
 
         # Subscriptions after excluding blocked users
         target_subscriptions_excluding_blocked = CommunityNotificationsSubscription.objects. \
-            filter(community_subscriptions_query). \
+            filter(community_subscriptions_query &
+                   community_members_query &
+                   exclude_self_query
+                   ). \
             exclude(exclude_blocked_users_query)
 
         staff_members_query = Q(subscriber__communities_memberships__community_id=post.community.pk,
@@ -309,9 +307,12 @@ class Post(models.Model):
                                 subscriber__communities_memberships__is_moderator=True)
 
         # Subscriptions from staff of community
-        community_subscriptions_with_staff_query = community_subscriptions_query.add(staff_members_query, Q.AND)
-        target_subscriptions_with_staff = CommunityNotificationsSubscription.objects.filter(
-            community_subscriptions_with_staff_query)
+        target_subscriptions_with_staff = CommunityNotificationsSubscription.objects. \
+            filter(community_subscriptions_query &
+                   community_members_query &
+                   staff_members_query &
+                   exclude_self_query
+                   )
 
         results = target_subscriptions_excluding_blocked.union(target_subscriptions_with_staff)
 
