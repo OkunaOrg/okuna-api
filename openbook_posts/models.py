@@ -197,15 +197,11 @@ class Post(models.Model):
 
         trending_community_posts_query.add(reported_posts_exclusion_query, Q.AND)
 
-        trending_posts_criteria_query = Q(reactions_count__gte=settings.MIN_UNIQUE_TRENDING_POST_REACTIONS_COUNT)
-
         trending_community_posts_queryset = TrendingPost.objects.\
             select_related(*posts_select_related).\
             prefetch_related(*posts_prefetch_related).\
             only(*posts_only).\
-            filter(trending_community_posts_query).\
-            annotate(reactions_count=Count('post__reactions__reactor_id')). \
-            filter(trending_posts_criteria_query)
+            filter(trending_community_posts_query)
 
         return trending_community_posts_queryset
 
