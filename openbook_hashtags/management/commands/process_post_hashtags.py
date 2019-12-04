@@ -4,6 +4,7 @@ import logging
 from django.db import transaction
 
 from openbook_common.utils.model_loaders import get_post_model
+from openbook_posts.jobs import _chunked_queryset_iterator
 
 logger = logging.getLogger(__name__)
 
@@ -14,10 +15,13 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         Post = get_post_model()
 
-        posts_to_process = Post.objects.filter(hashtags__isnull=True, text__isnull=False)
+        posts_to_process = Post.objects.filter(hashtags__isnull=True,
+                                               text__isnull=False,
+                                               text__icontains='#'
+                                               ).all()
         migrated_posts = 0
 
-        for post in posts_to_process.iterator():
+        for post in _chunked_queryset_iterator(posts_to_process, 1000):
             with transaction.atomic():
                 post._process_post_hashtags()
             logger.info('Processed hashtags for post with id:' + str(post.pk))

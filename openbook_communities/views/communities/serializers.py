@@ -9,7 +9,7 @@ from openbook_common.serializers_fields.request import RestrictedImageFileSizeFi
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import IsInvitedField, IsCreatorField, CommunityMembershipsField, \
-    IsFavoriteField, IsSubscribedToNotifications
+    IsFavoriteField, IsSubscribedToCommunityNotificationsField
 from openbook_communities.validators import community_name_characters_validator, community_name_not_taken_validator
 
 
@@ -56,7 +56,6 @@ class GetJoinedCommunitiesSerializer(serializers.Serializer):
     offset = serializers.IntegerField(
         required=False,
     )
-
 
 
 class GetModeratedCommunitiesSerializer(serializers.Serializer):
@@ -134,7 +133,7 @@ class CommunitiesCommunityMembershipSerializer(serializers.ModelSerializer):
 class CommunitiesCommunitySerializer(serializers.ModelSerializer):
     categories = GetCommunitiesCommunityCategorySerializer(many=True)
     is_invited = IsInvitedField()
-    is_subscribed_to_notifications = IsSubscribedToNotifications()
+    is_subscribed_to_notifications = IsSubscribedToCommunityNotificationsField()
     is_favorite = IsFavoriteField()
     is_creator = IsCreatorField()
     posts_count = CommunityPostsCountField()
@@ -164,6 +163,27 @@ class CommunitiesCommunitySerializer(serializers.ModelSerializer):
         )
 
 
+class SearchCommunitiesCommunitySerializer(serializers.ModelSerializer):
+    is_favorite = IsFavoriteField()
+    memberships = CommunityMembershipsField(community_membership_serializer=CommunitiesCommunityMembershipSerializer)
+
+    class Meta:
+        model = Community
+        fields = (
+            'id',
+            'name',
+            'title',
+            'avatar',
+            'cover',
+            'members_count',
+            'color',
+            'user_adjective',
+            'users_adjective',
+            'is_favorite',
+            'memberships'
+        )
+
+
 class GetTopPostCommunityExclusionSerializer(serializers.Serializer):
     offset = serializers.IntegerField(
         required=False,
@@ -172,4 +192,3 @@ class GetTopPostCommunityExclusionSerializer(serializers.Serializer):
         required=False,
         max_value=20
     )
-

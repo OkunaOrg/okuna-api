@@ -12,7 +12,7 @@ from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import IsInvitedField, \
     IsCreatorField, RulesField, ModeratorsField, CommunityMembershipsField, IsFavoriteField, AdministratorsField, \
-    IsSubscribedToNotifications
+    IsSubscribedToCommunityNotificationsField
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 
 
@@ -152,7 +152,7 @@ class GetCommunityCommunityMembershipSerializer(serializers.ModelSerializer):
 class GetCommunityCommunitySerializer(serializers.ModelSerializer):
     categories = GetCommunityCommunityCategorySerializer(many=True)
     is_invited = IsInvitedField()
-    is_subscribed_to_notifications = IsSubscribedToNotifications()
+    is_subscribed_to_notifications = IsSubscribedToCommunityNotificationsField()
     is_creator = IsCreatorField()
     is_favorite = IsFavoriteField()
     is_reported = IsCommunityReportedField()
@@ -229,7 +229,7 @@ class SubscribeToCommunityNotificationsSerializer(serializers.Serializer):
 
 
 class SubscribeToCommunityNotificationsCommunitySerializer(serializers.ModelSerializer):
-    is_subscribed_to_notifications = IsSubscribedToNotifications()
+    is_subscribed_to_notifications = IsSubscribedToCommunityNotificationsField()
 
     class Meta:
         model = Community

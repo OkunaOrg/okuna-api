@@ -33,7 +33,7 @@ class IsSubscribedToUserNotificationsField(Field):
         if not request.user.is_anonymous:
             if request.user.pk == value.pk:
                 return False
-            return request.user.is_subscribed_to_user_with_id(value.pk)
+            return request.user.is_subscribed_to_user_with_id_notifications(value.pk)
 
         return False
 

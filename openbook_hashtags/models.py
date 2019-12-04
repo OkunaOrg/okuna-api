@@ -17,6 +17,7 @@ from openbook_communities.models import Community
 from openbook_hashtags.helpers import upload_to_hashtags_directory
 from openbook_hashtags.validators import hashtag_name_validator
 from openbook_posts.models import Post, PostComment
+from openbook_posts.queries import make_only_public_posts_query
 
 hashtag_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else default_storage
 
@@ -97,7 +98,8 @@ class Hashtag(models.Model):
         return False
 
     def count_posts(self):
-        return self.posts.count()
+        public_posts_query = make_only_public_posts_query()
+        return self.posts.filter(public_posts_query).count()
 
     def delete_media(self):
         if self.has_image():
