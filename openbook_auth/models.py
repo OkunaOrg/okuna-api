@@ -346,7 +346,7 @@ class User(AbstractUser):
         Post = get_post_model()
         hashtag_posts_query = make_get_hashtag_posts_query_for_user(user=self, hashtag=hashtag)
 
-        return Post.objects.filter(hashtag_posts_query).distinct().count()
+        return Post.objects.filter(hashtag_posts_query).distinct().cache().count()
 
     def count_posts_for_user_with_id(self, id):
         """
