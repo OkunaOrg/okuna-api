@@ -18,12 +18,14 @@ class Command(BaseCommand):
         posts_to_process = Post.objects.filter(hashtags__isnull=True,
                                                text__isnull=False,
                                                text__icontains='#'
-                                               ).all()
+                                               ).only('id', 'text').all()
         migrated_posts = 0
 
-        for post in _chunked_queryset_iterator(posts_to_process, 1000):
-            with transaction.atomic():
+        for post in _chunked_queryset_iterator(posts_to_process, 100):
+            try:
                 post._process_post_hashtags()
+            except Exception as e:
+                logger.info('Error processing with error %s' % str(e))
             logger.info('Processed hashtags for post with id:' + str(post.pk))
             migrated_posts = migrated_posts + 1
 
