@@ -16,12 +16,14 @@ class Command(BaseCommand):
         PostComment = get_post_comment_model()
 
         comments_to_process = PostComment.objects.filter(hashtags__isnull=True,
-                                                         text__icontains='#').all()
+                                                         text__icontains='#').only('id', 'text').all()
         migrated_postComments = 0
 
-        for comment in _chunked_queryset_iterator(comments_to_process, 1000):
-            with transaction.atomic():
+        for comment in _chunked_queryset_iterator(comments_to_process, 100):
+            try:
                 comment._process_post_comment_hashtags()
+            except Exception as e:
+                logger.info('Failed to process hashtags with error %s' % str(e))
             logger.info('Processed hashtags for post comment with id:' + str(comment.pk))
             migrated_postComments = migrated_postComments + 1
 
