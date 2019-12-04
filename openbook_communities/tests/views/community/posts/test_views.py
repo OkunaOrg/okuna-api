@@ -839,6 +839,48 @@ class CommunityPostsAPITest(OpenbookAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
+    def test_create_community_post_for_one_community_does_not_notify_admin_for_all_communities_they_are_subscribed_to(self):
+        """
+        should notify admins who are susbcribers only once for the community in which the post was created
+        """
+        user = make_user()
+
+        post_creator = make_user()
+        user_community = make_community(creator=user, type='P')
+        community_1 = make_community(creator=post_creator, type='P')
+        community_2 = make_community(creator=make_user(), type='P')
+
+        user.join_community_with_name(community_name=community_1.name)
+        user.join_community_with_name(community_name=community_2.name)
+
+        # susbcribe to all three communities
+        user.subscribe_to_notifications_for_community_with_name(community_name=community_1.name)
+        user.subscribe_to_notifications_for_community_with_name(community_name=community_2.name)
+        user.subscribe_to_notifications_for_community_with_name(community_name=user_community.name)
+
+        headers = make_authentication_headers_for_user(post_creator)
+
+        # post is created in community_1
+        url = self._get_url(community_name=community_1.name)
+        data = {
+            'text': make_fake_post_text()
+        }
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        # notification should only be for community susbcribed to
+        self.assertEqual(CommunityNewPostNotification.objects.filter(
+            notification__owner_id=user.pk,
+            notification__notification_type=Notification.COMMUNITY_NEW_POST).count(), 1)
+
+        community_notifications_subscription = CommunityNotificationsSubscription.objects.get(subscriber=user,
+                                                                                              community=community_1)
+        retrieved_notifications_subscription = CommunityNewPostNotification.objects.get(
+            notification__owner_id=user.pk,
+            notification__notification_type=Notification.COMMUNITY_NEW_POST)
+
+        self.assertEqual(retrieved_notifications_subscription.pk, community_notifications_subscription.pk)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
     def _get_url(self, community_name):
         return reverse('community-posts', kwargs={
             'community_name': community_name
