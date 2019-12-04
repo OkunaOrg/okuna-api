@@ -61,6 +61,7 @@ class GetHashtagPostsPostSerializer(serializers.ModelSerializer):
             'reaction',
             'is_edited',
             'is_closed',
+            'is_encircled',
             'media_height',
             'media_width',
             'media_thumbnail',
