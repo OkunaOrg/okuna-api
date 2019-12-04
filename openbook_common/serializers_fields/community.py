@@ -35,4 +35,4 @@ class CommunityPostsCountField(Field):
                 not request_user.is_member_of_community_with_name(community_name=community.name):
             return None
 
-        return request_user.get_posts_count_for_community(community)
+        return request_user.count_posts_for_community(community)

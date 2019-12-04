@@ -94,9 +94,6 @@ class Hashtag(models.Model):
                 self.image.save(image_copy.name, image_copy)
                 self.save()
 
-    def needs_image_update(self):
-        return False
-
     def count_posts(self):
         public_posts_query = make_only_public_posts_query()
         return self.posts.filter(public_posts_query).count()

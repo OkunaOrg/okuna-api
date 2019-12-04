@@ -334,6 +334,20 @@ class User(AbstractUser):
 
         return results.count()
 
+    def count_posts_for_hashtag_with_name(self, hashtag_name):
+        Hashtag = get_hashtag_model()
+        hashtag = Hashtag.objects.get(name=hashtag_name)
+        return self.count_posts_for_hashtag(hashtag=hashtag)
+
+    def count_posts_for_hashtag(self, hashtag):
+        """
+        Count how many posts are with the given hashtag name relative to the user
+        """
+        Post = get_post_model()
+        hashtag_posts_query = make_get_hashtag_posts_query_for_user(user=self, hashtag=hashtag)
+
+        return Post.objects.filter(hashtag_posts_query).distinct().count()
+
     def count_posts_for_user_with_id(self, id):
         """
         Count how many posts has the user created relative to another user
@@ -685,7 +699,8 @@ class User(AbstractUser):
 
     def is_subscribed_to_community_with_name_notifications(self, community_name):
         Community = get_community_model()
-        return Community.is_user_with_username_subscribed_to_notifications_for_community_with_name(username=self.username, community_name=community_name)
+        return Community.is_user_with_username_subscribed_to_notifications_for_community_with_name(
+            username=self.username, community_name=community_name)
 
     def has_reported_moderated_object_with_id(self, moderated_object_id):
         ModeratedObject = get_moderated_object_model()
@@ -860,10 +875,7 @@ class User(AbstractUser):
         PostReaction = get_post_reaction_model()
         return PostReaction.objects.filter(reactions_query)
 
-    def get_posts_count_for_community(self, community):
-        """
-        Returns 0 if ur not a member and community is private
-        """
+    def count_posts_for_community(self, community):
         Post = get_post_model()
         community_posts_query = self._make_get_community_with_id_posts_query(community=community,
                                                                              include_closed_posts_for_staff=False)
@@ -2155,7 +2167,8 @@ class User(AbstractUser):
         community = Community.objects.get(name=community_name)
         check_can_subscribe_to_posts_for_community(subscriber=self, community=community)
 
-        CommunityNotificationsSubscription.create_community_notifications_subscription(subscriber=self, community=community)
+        CommunityNotificationsSubscription.create_community_notifications_subscription(subscriber=self,
+                                                                                       community=community)
 
         return community
 
@@ -2165,7 +2178,8 @@ class User(AbstractUser):
         community = Community.objects.get(name=community_name)
         check_can_unsubscribe_to_posts_for_community(subscriber=self, community=community)
 
-        CommunityNotificationsSubscription.remove_community_notifications_subscription(subscriber=self, community=community)
+        CommunityNotificationsSubscription.remove_community_notifications_subscription(subscriber=self,
+                                                                                       community=community)
 
         return community
 
@@ -2240,8 +2254,8 @@ class User(AbstractUser):
 
         world_circle_posts_query = Q(creator__id=user.pk, circles__id=world_circle_id)
 
-        world_circle_posts = Post.objects.prefetch_related(*posts_prefetch_related)\
-            .only(*posts_only)\
+        world_circle_posts = Post.objects.prefetch_related(*posts_prefetch_related) \
+            .only(*posts_only) \
             .filter(
             user_query &
             world_circle_posts_query &
@@ -3697,7 +3711,8 @@ def bootstrap_user_profile(user, name, is_of_legal_age, avatar=None, ):
 
 
 class UserNotificationsSubscription(models.Model):
-    subscriber = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_notifications_subscriptions', null=False,
+    subscriber = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_notifications_subscriptions',
+                                   null=False,
                                    blank=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications_subscribers', null=False,
                              blank=False)

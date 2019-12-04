@@ -8,4 +8,10 @@ class HashtagPostsCountField(Field):
         super(HashtagPostsCountField, self).__init__(**kwargs)
 
     def to_representation(self, hashtag):
-        return hashtag.count_posts()
+        request = self.context.get('request')
+        request_user = request.user
+
+        if request_user.is_anonymous:
+            return hashtag.count_posts()
+
+        return request_user.count_posts_for_hashtag(hashtag=hashtag)

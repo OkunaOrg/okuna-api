@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 
 from openbook_common.serializers import CommonHashtagSerializer
 from openbook_hashtags.views.hashtag.serializers import GetHashtagSerializer, \
-    GetHashtagPostsSerializer, GetHashtagPostsPostSerializer
+    GetHashtagPostsSerializer, GetHashtagPostsPostSerializer, GetHashtagHashtagSerializer
 from openbook_moderation.permissions import IsNotSuspended
 
 
@@ -26,7 +26,7 @@ class HashtagItem(APIView):
 
         hashtag = user.get_hashtag_with_name(hashtag_name=hashtag_name)
 
-        hashtag_serializer = CommonHashtagSerializer(hashtag, context={'request': request})
+        hashtag_serializer = GetHashtagHashtagSerializer(hashtag, context={'request': request})
 
         return Response(hashtag_serializer.data, status=status.HTTP_200_OK)
 
@@ -35,7 +35,6 @@ class HashtagPosts(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request, hashtag_name):
-
         query_params = request.query_params.dict()
         query_params['hashtag_name'] = hashtag_name
 
