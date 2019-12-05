@@ -308,7 +308,7 @@ def check_can_get_closed_posts_for_community_with_name(user, community_name):
 def check_can_subscribe_to_posts_for_community(subscriber, community):
     Community = get_community_model()
     CommunityNotificationsSubscription = get_community_notifications_subscription_model()
-    is_member = Community.is_user_with_username_member_of_community_with_name\
+    is_member = Community.is_user_with_username_member_of_community_with_name \
         (username=subscriber.username, community_name=community.name)
 
     if not is_member:
@@ -329,7 +329,7 @@ def check_can_subscribe_to_posts_for_community(subscriber, community):
 def check_can_unsubscribe_to_posts_for_community(subscriber, community):
     Community = get_community_model()
     CommunityNotificationsSubscription = get_community_notifications_subscription_model()
-    is_member = Community.is_user_with_username_member_of_community_with_name\
+    is_member = Community.is_user_with_username_member_of_community_with_name \
         (username=subscriber.username, community_name=community.name)
 
     if not is_member:
@@ -893,6 +893,17 @@ def check_has_not_reported_community_with_id(user, community_id):
         )
 
 
+def check_can_report_hashtag(user, hashtag):
+    check_has_not_reported_hashtag_with_id(user=user, hashtag_id=hashtag.pk)
+
+
+def check_has_not_reported_hashtag_with_id(user, hashtag_id):
+    if user.has_reported_hashtag_with_id(hashtag_id=hashtag_id):
+        raise ValidationError(
+            _('You have already reported the hashtag.'),
+        )
+
+
 def check_password_reset_verification_token_is_valid(user, password_verification_token):
     try:
         token_contents = jwt.decode(password_verification_token, settings.SECRET_KEY,
@@ -1150,6 +1161,13 @@ def check_can_see_post(user, post):
     if not user.can_see_post(post):
         raise ValidationError(
             _('This post is private.'),
+        )
+
+
+def check_can_see_hashtag(user, hashtag):
+    if not user.can_see_hashtag(hashtag):
+        raise PermissionDenied(
+            _('This hashtag is not  available.'),
         )
 
 
