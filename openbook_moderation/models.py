@@ -9,7 +9,7 @@ from django.utils import timezone
 
 from openbook_auth.models import User
 from openbook_common.utils.model_loaders import get_post_model, get_post_comment_model, get_community_model, \
-    get_user_model, get_moderation_penalty_model
+    get_user_model, get_moderation_penalty_model, get_hashtag_model
 
 
 class ModerationCategory(models.Model):
@@ -182,6 +182,7 @@ class ModeratedObject(models.Model):
             changed_from=current_verified, changed_to=self.verified, moderated_object_id=self.pk, actor_id=actor_id)
 
         Post = get_post_model()
+        Hashtag = get_hashtag_model()
         PostComment = get_post_comment_model()
         Community = get_community_model()
         User = get_user_model()
@@ -202,6 +203,8 @@ class ModeratedObject(models.Model):
                 penalty_targets = content_object.get_staff_members()
             elif isinstance(content_object, ModeratedObject):
                 penalty_targets = content_object.get_reporters()
+            elif isinstance(content_object, Hashtag):
+                penalty_targets = []
 
             for penalty_target in penalty_targets:
                 duration_of_penalty = None
