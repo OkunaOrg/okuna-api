@@ -21,6 +21,7 @@ from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
 from openbook_auth.queries import make_get_hashtag_posts_for_user_with_id_query, \
     make_get_hashtag_with_name_for_user_with_id_query
+from openbook_hashtags.queries import make_search_hashtag_query_for_user_with_id
 from openbook_notifications.helpers import get_notification_language_code_for_target_user
 from openbook_translation import translation_strategy
 from openbook_common.helpers import get_supported_translation_language
@@ -846,6 +847,12 @@ class User(AbstractUser):
                 return True
 
         return False
+
+    def can_see_hashtag(self, hashtag):
+        query = make_get_hashtag_with_name_for_user_with_id_query(hashtag_name=hashtag.name,
+                                                                  user_id=self.pk)
+        Hashtag = get_hashtag_model()
+        return Hashtag.objects.filter(query).exists()
 
     def can_see_post_comment(self, post_comment):
         post = post_comment.post
@@ -1783,7 +1790,7 @@ class User(AbstractUser):
         return self.lists.get(id=list_id)
 
     def search_hashtags_with_query(self, query):
-        hashtags_query = make_get_hashtag_with_name_for_user_with_id_query(search_query=query)
+        hashtags_query = make_search_hashtag_query_for_user_with_id(search_query=query)
         Hashtag = get_hashtag_model()
 
         return Hashtag.objects.filter(hashtags_query)
@@ -2111,9 +2118,9 @@ class User(AbstractUser):
 
     def get_hashtag_with_name(self, hashtag_name):
         Hashtag = get_hashtag_model()
-        query = make_get_hashtag_with_name_for_user_with_id_query(hashtag_name=hashtag_name,
-                                                                  user_id=self.pk)
-        return Hashtag.objects.get(query)
+        hashtag = Hashtag.objects.get(name=hashtag_name)
+        check_can_see_hashtag(user=self, hashtag=hashtag)
+        return hashtag
 
     def get_posts_for_hashtag_with_name(self, hashtag_name, max_id=None):
         Hashtag = get_hashtag_model()

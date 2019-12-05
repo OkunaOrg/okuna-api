@@ -1164,6 +1164,13 @@ def check_can_see_post(user, post):
         )
 
 
+def check_can_see_hashtag(user, hashtag):
+    if not user.can_see_hashtag(hashtag):
+        raise PermissionDenied(
+            _('This hashtag is not  available.'),
+        )
+
+
 def check_can_react_to_post_comment(user, post_comment, emoji_id):
     check_can_react_with_emoji_id(user=user, emoji_id=emoji_id)
     check_can_see_post_comment(user=user, post_comment=post_comment)
