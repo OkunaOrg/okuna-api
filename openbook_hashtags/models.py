@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericRelation
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db import models
@@ -23,6 +24,9 @@ hashtag_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else d
 
 
 class Hashtag(models.Model):
+
+    moderated_object = GenericRelation('openbook_moderation.ModeratedObject', related_query_name='hashtags')
+
     name = models.CharField(_('name'), max_length=settings.HASHTAG_NAME_MAX_LENGTH, blank=False, null=False,
                             validators=[hashtag_name_validator],
                             unique=True)

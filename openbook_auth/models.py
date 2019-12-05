@@ -1790,7 +1790,7 @@ class User(AbstractUser):
         return self.lists.get(id=list_id)
 
     def search_hashtags_with_query(self, query):
-        hashtags_query = make_search_hashtag_query_for_user_with_id(search_query=query)
+        hashtags_query = make_search_hashtag_query_for_user_with_id(search_query=query, user_id=self.pk)
         Hashtag = get_hashtag_model()
 
         return Hashtag.objects.filter(hashtags_query)
