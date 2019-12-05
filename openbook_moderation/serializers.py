@@ -46,6 +46,16 @@ class ModeratedObjectUserSerializer(serializers.ModelSerializer):
         )
 
 
+class ModeratedObjectHashtagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Hashtag
+        fields = (
+            'id',
+            'name',
+            'posts_count'
+        )
+
+
 class ModeratedObjectCommunitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Community
@@ -160,7 +170,7 @@ class ModeratedObjectSerializer(serializers.ModelSerializer):
         PostComment: ModeratedObjectPostCommentSerializer(),
         Community: ModeratedObjectCommunitySerializer(),
         User: ModeratedObjectUserSerializer(),
-        Hashtag: ModeratedObjectHashtagSerializer()
+        Hashtag: ModeratedObjectHashtagSerializer(),
     })
 
     class Meta:

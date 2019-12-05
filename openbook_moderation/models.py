@@ -68,11 +68,14 @@ class ModeratedObject(models.Model):
     OBJECT_TYPE_POST_COMMENT = 'PC'
     OBJECT_TYPE_COMMUNITY = 'C'
     OBJECT_TYPE_USER = 'U'
+    OBJECT_TYPE_HASHTAG = 'H'
+
     OBJECT_TYPES = (
         (OBJECT_TYPE_POST, 'Post'),
         (OBJECT_TYPE_POST_COMMENT, 'Post Comment'),
         (OBJECT_TYPE_COMMUNITY, 'Community'),
         (OBJECT_TYPE_USER, 'User'),
+        (OBJECT_TYPE_HASHTAG, 'Hashtag'),
     )
 
     object_type = models.CharField(max_length=5, choices=OBJECT_TYPES)
@@ -135,6 +138,11 @@ class ModeratedObject(models.Model):
     @classmethod
     def get_or_create_moderated_object_for_user(cls, user, category_id):
         return cls._get_or_create_moderated_object(object_type=cls.OBJECT_TYPE_USER, content_object=user,
+                                                   category_id=category_id)
+
+    @classmethod
+    def get_or_create_moderated_object_for_hashtag(cls, hashtag, category_id):
+        return cls._get_or_create_moderated_object(object_type=cls.OBJECT_TYPE_HASHTAG, content_object=hashtag,
                                                    category_id=category_id)
 
     @property
@@ -309,6 +317,16 @@ class ModerationReport(models.Model):
         user_moderation_report = cls.objects.create(reporter_id=reporter_id, category_id=category_id,
                                                     description=description, moderated_object=moderated_object)
         return user_moderation_report
+
+    @classmethod
+    def create_hashtag_moderation_report(cls, reporter_id, hashtag, category_id, description):
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_hashtag(
+            hashtag=hashtag,
+            category_id=category_id
+        )
+        hashtag_moderation_report = cls.objects.create(reporter_id=reporter_id, category_id=category_id,
+                                                       description=description, moderated_object=moderated_object)
+        return hashtag_moderation_report
 
     @classmethod
     def create_community_moderation_report(cls, reporter_id, community, category_id, description):
