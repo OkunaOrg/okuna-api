@@ -16,6 +16,8 @@ class HashtagPostsCountField(Field):
         if request_user.is_anonymous or self.show_all:
             return hashtag.count_posts()
 
+        return request_user.count_posts_for_hashtag(hashtag=hashtag)
+
 
 class IsHashtagReportedField(Field):
     def __init__(self, **kwargs):

@@ -226,6 +226,58 @@ class HashtagPostsAPITests(OpenbookAPITestCase):
 
         self.assertEqual(len(parsed_response), 0)
 
+    def test_does_not_retrieve_post_from_blocked_person_with_hashtag(self):
+        """
+        should not retrieve a post from a blocked person with a given hashtag and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+
+        hashtag = make_hashtag()
+
+        fake_post_text = make_fake_post_text() + ' and a little hashtag #%s' % hashtag.name
+        post_creator.create_public_post(text=fake_post_text)
+
+        user.block_user_with_username(username=post_creator.username)
+
+        url = self._get_url(hashtag_name=hashtag.name)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(len(parsed_response), 0)
+
+    def test_does_not_retrieve_post_from_blocking_person_with_hashtag(self):
+        """
+        should not retrieve a post from a blocking person with a given hashtag and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        post_creator = make_user()
+
+        hashtag = make_hashtag()
+
+        fake_post_text = make_fake_post_text() + ' and a little hashtag #%s' % hashtag.name
+        post_creator.create_public_post(text=fake_post_text)
+
+        post_creator.block_user_with_username(username=user.username)
+
+        url = self._get_url(hashtag_name=hashtag.name)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertEqual(len(parsed_response), 0)
+
     def _get_url(self, hashtag_name):
         return reverse('hashtag-posts', kwargs={
             'hashtag_name': hashtag_name

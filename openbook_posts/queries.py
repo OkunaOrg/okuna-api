@@ -61,6 +61,11 @@ def make_only_visible_community_posts_for_user_with_id_query(user_id):
     return community_posts_visibility_query
 
 
+def make_exclude_blocked_posts_for_user_with_id_query(user_id):
+    return ~Q(Q(creator__blocked_by_users__blocker_id=user_id) | Q(
+        creator__user_blocks__blocked_user_id=user_id))
+
+
 def make_only_public_community_posts_query():
     Community = get_community_model()
     return Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, )
