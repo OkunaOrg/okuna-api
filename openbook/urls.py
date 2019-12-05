@@ -65,7 +65,7 @@ from openbook_moderation.views.moderated_object.views import ModeratedObjectItem
 from openbook_moderation.views.moderated_objects.views import CommunityModeratedObjects, GlobalModeratedObjects
 from openbook_moderation.views.moderation_categories.views import ModerationCategories
 from openbook_moderation.views.report.views import ReportUser, ReportPost, ReportCommunity, \
-    ReportPostComment
+    ReportPostComment, ReportHashtag
 from openbook_moderation.views.user.views import UserModerationPenalties, UserPendingModeratedObjectsCommunities
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification, \
     UnreadNotificationsCount
@@ -263,7 +263,8 @@ community_patterns = [
     path('avatar/', CommunityAvatar.as_view(), name='community-avatar'),
     path('cover/', CommunityCover.as_view(), name='community-cover'),
     path('favorite/', FavoriteCommunity.as_view(), name='favorite-community'),
-    path('notifications/subscribe/', SubscribeToCommunityNotifications.as_view(), name='subscribe-community-notifications'),
+    path('notifications/subscribe/', SubscribeToCommunityNotifications.as_view(),
+         name='subscribe-community-notifications'),
     path('members/', include(community_members_patterns)),
     path('posts/', include(community_posts_patterns)),
     path('banned-users/', include(community_banned_users_patterns)),
@@ -380,6 +381,7 @@ moderation_patterns = [
 hashtag_patterns = [
     path('', HashtagItem.as_view(), name='hashtag'),
     path('posts/', HashtagPosts.as_view(), name='hashtag-posts'),
+    path('report/', ReportHashtag.as_view(), name='report-hashtag'),
 ]
 
 hashtags_patterns = [

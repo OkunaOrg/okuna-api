@@ -6,6 +6,7 @@ class HashtagPostsCountField(Field):
         kwargs['source'] = '*'
         kwargs['read_only'] = True
         self.show_all = kwargs.get('show_all', False)
+        kwargs.pop('show_all', None)
         super(HashtagPostsCountField, self).__init__(**kwargs)
 
     def to_representation(self, hashtag):

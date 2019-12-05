@@ -53,7 +53,7 @@ class ReportUserSerializer(serializers.Serializer):
 
 
 class ReportHashtagSerializer(serializers.Serializer):
-    hashtag_name = serializers.CharField(max_length=settings.HASHTAGNAME_MAX_LENGTH,
+    hashtag_name = serializers.CharField(max_length=settings.HASHTAG_NAME_MAX_LENGTH,
                                          allow_blank=False,
                                          required=True,
                                          validators=[hashtag_name_validator, hashtag_name_exists])

@@ -7,7 +7,7 @@ from openbook_common.tests.models import OpenbookAPITestCase
 
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_notification, \
     make_fake_post_text, make_moderation_category, make_moderation_report_description, make_circle, make_community, \
-    make_fake_post_comment_text
+    make_fake_post_comment_text, make_hashtag
 from openbook_communities.models import Community
 from openbook_moderation.models import ModerationReport, ModeratedObject
 
@@ -1174,4 +1174,156 @@ class ReportCommunityAPITests(OpenbookAPITestCase):
     def _get_url(self, community):
         return reverse('report-community', kwargs={
             'community_name': community.name
+        })
+
+
+class ReportHashtagAPITests(OpenbookAPITestCase):
+    """
+    ReportHashtagAPI
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json',
+    ]
+
+    def test_can_report_hashtag(self):
+        """
+        should be able to report a hashtag with a description and return 201
+        """
+        hashtag = make_hashtag()
+
+        hashtag_reporter = make_user()
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(hashtag)
+        headers = make_authentication_headers_for_user(hashtag_reporter)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(hashtag_reporter.has_reported_hashtag_with_id(hashtag_id=hashtag.pk))
+        self.assertTrue(ModerationReport.objects.filter(reporter_id=hashtag_reporter.pk,
+                                                        moderated_object__object_id=hashtag.pk,
+                                                        moderated_object__object_type=ModeratedObject.OBJECT_TYPE_HASHTAG,
+                                                        description=report_description,
+                                                        category_id=report_category.pk
+                                                        ).exists())
+
+    def test_reporting_hashtag_should_not_add_hashtag_to_moderated(self):
+        """
+        reporting a hashtag should not add a hashtag to it
+        """
+
+        hashtag = make_hashtag()
+
+        hashtag_reporter = make_user()
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(hashtag)
+        headers = make_authentication_headers_for_user(hashtag_reporter)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(ModeratedObject.objects.filter(object_id=hashtag.pk,
+                                                       object_type=ModeratedObject.OBJECT_TYPE_HASHTAG,
+                                                       hashtag__isnull=True
+                                                       ).exists())
+
+    def test_cant_report_hashtag_without_category(self):
+        """
+        should not be able to report a hashtag without a category and return 400
+        """
+        hashtag = make_hashtag()
+
+        hashtag_reporter = make_user()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(hashtag)
+        headers = make_authentication_headers_for_user(hashtag_reporter)
+
+        response = self.client.post(url, data={
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(hashtag_reporter.has_reported_hashtag_with_id(hashtag_id=hashtag.pk))
+        self.assertFalse(ModerationReport.objects.filter(reporter_id=hashtag_reporter.pk,
+                                                         moderated_object__object_id=hashtag.pk,
+                                                         moderated_object__object_type=ModeratedObject.OBJECT_TYPE_HASHTAG,
+                                                         description=report_description,
+                                                         ).exists())
+
+    def test_cant_report_hashtag_twice(self):
+        """
+        should not be able to report a hashtag twice and return 400
+        """
+        hashtag = make_hashtag()
+
+        hashtag_reporter = make_user()
+        report_category = make_moderation_category()
+        report_description = make_moderation_report_description()
+
+        url = self._get_url(hashtag)
+        headers = make_authentication_headers_for_user(hashtag_reporter)
+
+        self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+            'description': report_description
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(hashtag_reporter.has_reported_hashtag_with_id(hashtag_id=hashtag.pk))
+        self.assertEqual(1, ModerationReport.objects.filter(reporter_id=hashtag_reporter.pk,
+                                                            moderated_object__object_id=hashtag.pk,
+                                                            moderated_object__object_type=ModeratedObject.OBJECT_TYPE_HASHTAG,
+                                                            description=report_description,
+                                                            category_id=report_category.pk
+                                                            ).count())
+
+    def test_can_report_hashtag_without_description(self):
+        """
+        should be able to report a hashtag without a description and return 201
+        """
+        hashtag = make_hashtag()
+
+        hashtag_reporter = make_user()
+        report_category = make_moderation_category()
+
+        url = self._get_url(hashtag)
+        headers = make_authentication_headers_for_user(hashtag_reporter)
+
+        response = self.client.post(url, data={
+            'category_id': report_category.pk,
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(hashtag_reporter.has_reported_hashtag_with_id(hashtag_id=hashtag.pk))
+        self.assertTrue(ModerationReport.objects.filter(reporter_id=hashtag_reporter.pk,
+                                                        moderated_object__object_id=hashtag.pk,
+                                                        moderated_object__object_type=ModeratedObject.OBJECT_TYPE_HASHTAG,
+                                                        category_id=report_category.pk
+                                                        ).exists())
+
+    def _get_url(self, hashtag):
+        return reverse('report-hashtag', kwargs={
+            'hashtag_name': hashtag.name
         })
