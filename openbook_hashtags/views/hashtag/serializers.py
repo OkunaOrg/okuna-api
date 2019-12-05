@@ -5,7 +5,7 @@ from openbook_common.serializers import CommonPostCreatorSerializer, \
     CommonCommunityMembershipSerializer, CommonPostEmojiCountSerializer, CommonPostCommunitySerializer, \
     CommonPostReactionSerializer, CommonPostLanguageSerializer, CommonHashtagSerializer, CommonCircleSerializer, \
     CommonEmojiSerializer
-from openbook_common.serializers_fields.hashtag import HashtagPostsCountField
+from openbook_common.serializers_fields.hashtag import HashtagPostsCountField, IsHashtagReportedField
 from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, PostCreatorField, \
     PostReactionsEmojiCountField, PostIsMutedField, IsEncircledField, CirclesField
 from openbook_hashtags.models import Hashtag
@@ -36,6 +36,7 @@ class GetHashtagPostsSerializer(serializers.Serializer):
 class GetHashtagHashtagSerializer(serializers.ModelSerializer):
     posts_count = HashtagPostsCountField()
     emoji = CommonEmojiSerializer()
+    is_reported = IsHashtagReportedField()
 
     class Meta:
         model = Hashtag
@@ -46,7 +47,8 @@ class GetHashtagHashtagSerializer(serializers.ModelSerializer):
             'text_color',
             'image',
             'posts_count',
-            'emoji'
+            'emoji',
+            'is_reported',
         )
 
 
