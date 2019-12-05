@@ -1214,32 +1214,6 @@ class ReportHashtagAPITests(OpenbookAPITestCase):
                                                         category_id=report_category.pk
                                                         ).exists())
 
-    def test_reporting_hashtag_should_not_add_hashtag_to_moderated(self):
-        """
-        reporting a hashtag should not add a hashtag to it
-        """
-
-        hashtag = make_hashtag()
-
-        hashtag_reporter = make_user()
-        report_category = make_moderation_category()
-        report_description = make_moderation_report_description()
-
-        url = self._get_url(hashtag)
-        headers = make_authentication_headers_for_user(hashtag_reporter)
-
-        response = self.client.post(url, data={
-            'category_id': report_category.pk,
-            'description': report_description
-        }, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-        self.assertTrue(ModeratedObject.objects.filter(object_id=hashtag.pk,
-                                                       object_type=ModeratedObject.OBJECT_TYPE_HASHTAG,
-                                                       hashtag__isnull=True
-                                                       ).exists())
-
     def test_cant_report_hashtag_without_category(self):
         """
         should not be able to report a hashtag without a category and return 400
