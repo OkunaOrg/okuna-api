@@ -15,3 +15,20 @@ class HashtagPostsCountField(Field):
 
         if request_user.is_anonymous or self.show_all:
             return hashtag.count_posts()
+
+
+class IsHashtagReportedField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(IsHashtagReportedField, self).__init__(**kwargs)
+
+    def to_representation(self, value):
+        request = self.context.get('request')
+
+        if not request.user.is_anonymous:
+            if request.user.pk == value.pk:
+                return False
+            return request.user.has_reported_hashtag_with_id(value.pk)
+
+        return False
