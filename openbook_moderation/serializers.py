@@ -3,8 +3,11 @@ from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
 from openbook_common.models import Language, Badge
+from openbook_common.serializers import CommonEmojiSerializer
+from openbook_common.serializers_fields.hashtag import HashtagPostsCountField
 from openbook_common.serializers_fields.post import IsEncircledField
 from openbook_communities.models import Community
+from openbook_hashtags.models import Hashtag
 from openbook_moderation.models import ModeratedObject, ModerationCategory
 from openbook_posts.models import Post, PostComment, PostImage
 
@@ -56,6 +59,23 @@ class ModeratedObjectCommunitySerializer(serializers.ModelSerializer):
         )
 
 
+class ModeratedObjectHashtagSerializer(serializers.ModelSerializer):
+    emoji = CommonEmojiSerializer()
+    posts_count = HashtagPostsCountField(show_all=True)
+
+    class Meta:
+        model = Hashtag
+        fields = (
+            'id',
+            'name',
+            'color',
+            'text_color',
+            'image',
+            'emoji',
+            'posts_count'
+        )
+
+
 class ModeratedObjectPostImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostImage
@@ -69,7 +89,6 @@ class ModeratedObjectPostImageSerializer(serializers.ModelSerializer):
 
 
 class LanguageSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Language
         fields = (
@@ -141,6 +160,7 @@ class ModeratedObjectSerializer(serializers.ModelSerializer):
         PostComment: ModeratedObjectPostCommentSerializer(),
         Community: ModeratedObjectCommunitySerializer(),
         User: ModeratedObjectUserSerializer(),
+        Hashtag: ModeratedObjectHashtagSerializer()
     })
 
     class Meta:

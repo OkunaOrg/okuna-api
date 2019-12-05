@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.responses import ApiMessageResponse
 from openbook_moderation.views.report.serializers import ReportPostSerializer, ReportPostCommentSerializer, \
-    ReportUserSerializer, ReportCommunitySerializer, ReportModeratedObjectSerializer
+    ReportUserSerializer, ReportCommunitySerializer, ReportModeratedObjectSerializer, ReportHashtagSerializer
 from django.utils.translation import ugettext_lazy as _
 
 
@@ -85,6 +85,31 @@ class ReportUser(APIView):
                                            description=description)
 
         return ApiMessageResponse(_('User reported, thanks!'), status=status.HTTP_201_CREATED)
+
+
+class ReportHashtag(APIView):
+    permission_classes = (IsAuthenticated, IsNotSuspended)
+
+    def post(self, request, hashtag_name):
+        request_data = request.data.copy()
+        request_data['hashtag_name'] = hashtag_name
+
+        serializer = ReportHashtagSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        hashtag_name = data.get('hashtag_name')
+        description = data.get('description')
+        category_id = data.get('category_id')
+
+        user = request.user
+
+        with transaction.atomic():
+            user.report_hashtag_with_name(hashtag_name=hashtag_name, category_id=category_id,
+                                          description=description)
+
+        return ApiMessageResponse(_('Hashtag reported, thanks!'), status=status.HTTP_201_CREATED)
 
 
 class ReportCommunity(APIView):

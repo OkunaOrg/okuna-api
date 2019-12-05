@@ -308,7 +308,7 @@ def check_can_get_closed_posts_for_community_with_name(user, community_name):
 def check_can_subscribe_to_posts_for_community(subscriber, community):
     Community = get_community_model()
     CommunityNotificationsSubscription = get_community_notifications_subscription_model()
-    is_member = Community.is_user_with_username_member_of_community_with_name\
+    is_member = Community.is_user_with_username_member_of_community_with_name \
         (username=subscriber.username, community_name=community.name)
 
     if not is_member:
@@ -329,7 +329,7 @@ def check_can_subscribe_to_posts_for_community(subscriber, community):
 def check_can_unsubscribe_to_posts_for_community(subscriber, community):
     Community = get_community_model()
     CommunityNotificationsSubscription = get_community_notifications_subscription_model()
-    is_member = Community.is_user_with_username_member_of_community_with_name\
+    is_member = Community.is_user_with_username_member_of_community_with_name \
         (username=subscriber.username, community_name=community.name)
 
     if not is_member:
@@ -890,6 +890,17 @@ def check_has_not_reported_community_with_id(user, community_id):
     if user.has_reported_community_with_id(community_id=community_id):
         raise ValidationError(
             _('You have already reported the community.'),
+        )
+
+
+def check_can_report_hashtag(user, hashtag):
+    check_has_not_reported_hashtag_with_id(user=user, hashtag_id=hashtag.pk)
+
+
+def check_has_not_reported_hashtag_with_id(user, hashtag_id):
+    if user.has_reported_hashtag_with_id(hashtag_id=hashtag_id):
+        raise ValidationError(
+            _('You have already reported the hashtag.'),
         )
 
 

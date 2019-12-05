@@ -806,6 +806,14 @@ class User(AbstractUser):
                                                moderated_object__object_type=ModeratedObject.OBJECT_TYPE_COMMUNITY
                                                ).exists()
 
+    def has_reported_hashtag_with_id(self, hashtag_id):
+        ModeratedObject = get_moderated_object_model()
+        ModerationReport = get_moderation_report_model()
+        return ModerationReport.objects.filter(reporter_id=self.pk,
+                                               moderated_object__object_id=hashtag_id,
+                                               moderated_object__object_type=ModeratedObject.OBJECT_TYPE_HASHTAG
+                                               ).exists()
+
     def has_profile_community_posts_visible(self):
         return self.profile.community_posts_visible
 
@@ -2982,6 +2990,19 @@ class User(AbstractUser):
                                                        category_id=category_id,
                                                        reporter_id=self.pk,
                                                        description=description)
+
+    def report_hashtag_with_name(self, hashtag_name, category_id, description=None):
+        Hashtag = get_hashtag_model()
+        hashtag = Hashtag.objects.get(name=hashtag_name)
+        return self.report_hashtag(hashtag=hashtag, category_id=category_id, description=description)
+
+    def report_hashtag(self, hashtag, category_id, description=None):
+        check_can_report_hashtag(user=self, hashtag=hashtag)
+        ModerationReport = get_moderation_report_model()
+        ModerationReport.create_hashtag_moderation_report(hashtag=hashtag,
+                                                          category_id=category_id,
+                                                          reporter_id=self.pk,
+                                                          description=description)
 
     def report_community_with_name(self, community_name, category_id, description=None):
         Community = get_community_model()
