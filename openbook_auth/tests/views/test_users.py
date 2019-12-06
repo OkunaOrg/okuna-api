@@ -531,8 +531,7 @@ class SubscribeToUserNotificationsAPITests(OpenbookAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         UserNotificationsSubscription = get_user_notifications_subscription_model()
-        self.assertFalse(UserNotificationsSubscription.objects.get(subscriber=user, user=user_to_unsubscribe).
-                         new_posts_notifications_enabled)
+        self.assertFalse(UserNotificationsSubscription.objects.filter(subscriber=user, user=user_to_unsubscribe).exists())
 
     def test_cannot_unsubscribe_to_notifications_from_user_if_user_has_been_blocked(self):
         """
