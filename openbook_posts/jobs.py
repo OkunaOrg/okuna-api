@@ -233,7 +233,7 @@ def curate_trending_posts():
         filter(trending_posts_query). \
         annotate(reactions_count=Count('reactions__reactor_id')).\
         filter(trending_posts_criteria_query).\
-        order_by('reactions_count', 'created')[:30]
+        order_by('-reactions_count', '-created')[:30]
 
     trending_posts_objects = []
 
@@ -242,7 +242,7 @@ def curate_trending_posts():
             TrendingPost.objects.filter(post=post).delete()
 
         trending_post = TrendingPost(post=post, created=timezone.now())
-        trending_posts_objects.append(trending_post)
+        trending_posts_objects.insert(0, trending_post)
 
     TrendingPost.objects.bulk_create(trending_posts_objects)
 
