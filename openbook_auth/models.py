@@ -2195,7 +2195,7 @@ class User(AbstractUser):
         community = Community.objects.get(name=community_name)
         check_can_unsubscribe_to_posts_for_community(subscriber=self, community=community)
 
-        CommunityNotificationsSubscription.remove_community_notifications_subscription(subscriber=self,
+        CommunityNotificationsSubscription.disable_community_notifications_subscription(subscriber=self,
                                                                                        community=community)
 
         return community
@@ -2928,7 +2928,7 @@ class User(AbstractUser):
 
         check_can_unsubscribe_from_notifications_for_user(subscriber=self, user=user_to_unsubscribe)
 
-        UserNotificationsSubscription.remove_user_notifications_subscription(subscriber=self, user=user_to_unsubscribe)
+        UserNotificationsSubscription.disable_user_notifications_subscription(subscriber=self, user=user_to_unsubscribe)
 
         return user_to_unsubscribe
 
@@ -3763,7 +3763,7 @@ class UserNotificationsSubscription(models.Model):
         return user_notifications_subscription
 
     @classmethod
-    def remove_user_notifications_subscription(cls, subscriber, user):
+    def disable_user_notifications_subscription(cls, subscriber, user):
         user_notifications_subscription = cls.objects.get(subscriber=subscriber, user=user)
         user_notifications_subscription.new_posts_notifications_enabled = False
         user_notifications_subscription.save()

@@ -618,7 +618,7 @@ class CommunityNotificationsSubscription(models.Model):
         return community_notifications_subscription
 
     @classmethod
-    def remove_community_notifications_subscription(cls, subscriber, community):
+    def disable_community_notifications_subscription(cls, subscriber, community):
         community_notifications_subscription = cls.objects.get(subscriber=subscriber, community=community)
         community_notifications_subscription.new_posts_notifications_enabled = False
         community_notifications_subscription.save()
