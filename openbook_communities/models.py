@@ -608,13 +608,22 @@ class CommunityNotificationsSubscription(models.Model):
 
     @classmethod
     def create_community_notifications_subscription(cls, subscriber, community):
-        return cls.objects.create(subscriber=subscriber, community=community)
+        if not cls.objects.filter(community=community, subscriber=subscriber).exists():
+            return cls.objects.create(subscriber=subscriber, community=community)
+
+        community_notifications_subscription = cls.objects.get(subscriber=subscriber, community=community)
+        community_notifications_subscription.new_posts_notifications = True
+        community_notifications_subscription.save()
+
+        return community_notifications_subscription
 
     @classmethod
     def remove_community_notifications_subscription(cls, subscriber, community):
         community_notifications_subscription = cls.objects.get(subscriber=subscriber, community=community)
         community_notifications_subscription.new_posts_notifications = False
         community_notifications_subscription.save()
+
+        return community_notifications_subscription
 
     @classmethod
     def is_user_with_username_subscribed_to_notifications_for_community_with_name(cls, username, community_name):
