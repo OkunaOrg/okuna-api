@@ -601,6 +601,7 @@ class CommunityNotificationsSubscription(models.Model):
                              blank=False)
     community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='notifications_subscriptions', null=False,
                                   blank=False)
+    new_posts_notifications = models.BooleanField(default=True, blank=False)
 
     class Meta:
         unique_together = ('community', 'subscriber',)
@@ -611,8 +612,12 @@ class CommunityNotificationsSubscription(models.Model):
 
     @classmethod
     def remove_community_notifications_subscription(cls, subscriber, community):
-        return cls.objects.filter(subscriber=subscriber, community=community).delete()
+        community_notifications_subscription = cls.objects.get(subscriber=subscriber, community=community)
+        community_notifications_subscription.new_posts_notifications = False
+        community_notifications_subscription.save()
 
     @classmethod
     def is_user_with_username_subscribed_to_notifications_for_community_with_name(cls, username, community_name):
-        return cls.objects.filter(community__name=community_name, subscriber__username=username).exists()
+        return cls.objects.filter(community__name=community_name,
+                                  subscriber__username=username,
+                                  new_posts_notifications=True).exists()
