@@ -601,7 +601,7 @@ class CommunityNotificationsSubscription(models.Model):
                              blank=False)
     community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='notifications_subscriptions', null=False,
                                   blank=False)
-    new_posts_notifications = models.BooleanField(default=True, blank=False)
+    new_posts_notifications_enabled = models.BooleanField(default=True, blank=False)
 
     class Meta:
         unique_together = ('community', 'subscriber',)
@@ -612,7 +612,7 @@ class CommunityNotificationsSubscription(models.Model):
             return cls.objects.create(subscriber=subscriber, community=community)
 
         community_notifications_subscription = cls.objects.get(subscriber=subscriber, community=community)
-        community_notifications_subscription.new_posts_notifications = True
+        community_notifications_subscription.new_posts_notifications_enabled = True
         community_notifications_subscription.save()
 
         return community_notifications_subscription
@@ -620,7 +620,7 @@ class CommunityNotificationsSubscription(models.Model):
     @classmethod
     def remove_community_notifications_subscription(cls, subscriber, community):
         community_notifications_subscription = cls.objects.get(subscriber=subscriber, community=community)
-        community_notifications_subscription.new_posts_notifications = False
+        community_notifications_subscription.new_posts_notifications_enabled = False
         community_notifications_subscription.save()
 
         return community_notifications_subscription
@@ -629,4 +629,4 @@ class CommunityNotificationsSubscription(models.Model):
     def is_user_with_username_subscribed_to_notifications_for_community_with_name(cls, username, community_name):
         return cls.objects.filter(community__name=community_name,
                                   subscriber__username=username,
-                                  new_posts_notifications=True).exists()
+                                  new_posts_notifications_enabled=True).exists()

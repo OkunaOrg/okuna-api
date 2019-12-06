@@ -623,7 +623,7 @@ class User(AbstractUser):
             return False
 
         user_notification_subscription = self.user_notifications_subscriptions.get(user__id=user_id)
-        return user_notification_subscription.new_posts_notifications
+        return user_notification_subscription.new_posts_notifications_enabled
 
     def is_world_circle_id(self, id):
         world_circle_id = self._get_world_circle_id()
@@ -3746,7 +3746,7 @@ class UserNotificationsSubscription(models.Model):
                                    blank=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications_subscribers', null=False,
                              blank=False)
-    new_posts_notifications = models.BooleanField(default=True, blank=False)
+    new_posts_notifications_enabled = models.BooleanField(default=True, blank=False)
 
     class Meta:
         unique_together = ('user', 'subscriber',)
@@ -3757,7 +3757,7 @@ class UserNotificationsSubscription(models.Model):
             return cls.objects.create(subscriber=subscriber, user=user)
 
         user_notifications_subscription = cls.objects.get(subscriber=subscriber, user=user)
-        user_notifications_subscription.new_posts_notifications = True
+        user_notifications_subscription.new_posts_notifications_enabled = True
         user_notifications_subscription.save()
 
         return user_notifications_subscription
@@ -3765,7 +3765,7 @@ class UserNotificationsSubscription(models.Model):
     @classmethod
     def remove_user_notifications_subscription(cls, subscriber, user):
         user_notifications_subscription = cls.objects.get(subscriber=subscriber, user=user)
-        user_notifications_subscription.new_posts_notifications = False
+        user_notifications_subscription.new_posts_notifications_enabled = False
         user_notifications_subscription.save()
 
         return user_notifications_subscription
@@ -3774,4 +3774,4 @@ class UserNotificationsSubscription(models.Model):
     def is_user_with_username_subscribed_to_notifications_for_user_with_username(cls, subscriber_username, username):
         return cls.objects.filter(user__username=username,
                                   subscriber__username=subscriber_username,
-                                  new_posts_notifications=True).exists()
+                                  new_posts_notifications_enabled=True).exists()
