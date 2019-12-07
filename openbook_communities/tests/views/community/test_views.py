@@ -1056,6 +1056,7 @@ class SubscribeToCommunityNotificationsAPITests(OpenbookAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         subscription = CommunityNotificationsSubscription.objects.get(subscriber=community_member)
         self.assertEqual(subscription.community.name, community.name)
+        self.assertTrue(subscription.new_posts_notifications_enabled)
 
     def test_should_not_be_able_to_subscribe_to_notifications_for_community_if_not_member(self):
         """
@@ -1126,8 +1127,8 @@ class SubscribeToCommunityNotificationsAPITests(OpenbookAPITestCase):
         response = self.client.delete(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(CommunityNotificationsSubscription.objects.filter(
-            subscriber=community_member, community=community).exists())
+        self.assertFalse(CommunityNotificationsSubscription.objects.get(
+            subscriber=community_member, community=community).new_posts_notifications_enabled)
 
     def test_should_not_be_able_to_unsubscribe_to_notifications_for_community_if_not_member(self):
         """
