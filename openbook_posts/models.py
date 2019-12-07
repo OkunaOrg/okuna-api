@@ -283,7 +283,7 @@ class Post(models.Model):
     def get_community_notification_target_subscriptions(cls, post):
         CommunityNotificationsSubscription = get_community_notifications_subscription_model()
 
-        community_subscriptions_query = Q(community=post.community)
+        community_subscriptions_query = Q(community=post.community, new_posts_notifications_enabled=True)
 
         exclude_blocked_users_query = Q(Q(subscriber__blocked_by_users__blocker_id=post.creator.pk) | Q(
             subscriber__user_blocks__blocked_user_id=post.creator.pk))
@@ -322,7 +322,7 @@ class Post(models.Model):
     def get_user_notification_target_subscriptions(cls, post):
         UserNotificationsSubscription = get_user_notifications_subscription_model()
 
-        user_subscriptions_query = Q(user=post.creator)
+        user_subscriptions_query = Q(user=post.creator, new_posts_notifications_enabled=True)
 
         exclude_blocked_users_query = Q(Q(subscriber__blocked_by_users__blocker_id=post.creator.pk) | Q(
             subscriber__user_blocks__blocked_user_id=post.creator.pk))
