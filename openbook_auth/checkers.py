@@ -1387,7 +1387,7 @@ def check_can_subscribe_to_notifications_for_user(subscriber, user):
 
     if is_subscribed_to_notifications:
         raise ValidationError(
-            _('User is already subscribed to this user'),
+            _('You are already subscribed to this user notifications'),
         )
 
 
@@ -1401,5 +1401,5 @@ def check_can_unsubscribe_from_notifications_for_user(subscriber, user):
 
     if not is_subscribed_to_notifications:
         raise ValidationError(
-            _('User is already unsubscribed from this user'),
+            _('You are not subscribed to this user notifications'),
         )
