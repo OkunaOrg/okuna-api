@@ -1540,8 +1540,8 @@ msgstr "%(mentioner_name)s · @%(mentioner_username)s vous a mentionné.e dans u
 
 #: openbook_notifications/helpers.py:213
 #, python-format
-msgid "%(invite_creator_name)s · @%(invite_creator_username)s has invited you to join /c/%(community_name)s."
-msgstr "%(invite_creator_name)s · %(invite_creator_username)s vous a invité.e à rejoindre la communauté /c/%(community_name)s."
+msgid "%(invite_creator_name)s · @%(invite_creator_username)s has invited you to join c/%(community_name)s."
+msgstr "%(invite_creator_name)s · %(invite_creator_username)s vous a invité.e à rejoindre la communauté c/%(community_name)s."
 
 #: openbook_notifications/validators.py:10
 msgid "No notification with the provided id exists."
