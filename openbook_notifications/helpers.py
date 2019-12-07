@@ -216,7 +216,7 @@ def send_community_invite_push_notification(community_invite):
         with translation.override(target_user_language_code):
             one_signal_notification = onesignal_sdk.Notification(
                 post_body={"contents": {"en": _(
-                    '%(invite_creator_name)s · @%(invite_creator_username)s has invited you to join /c/%(community_name)s.') % {
+                    '%(invite_creator_name)s · @%(invite_creator_username)s has invited you to join c/%(community_name)s.') % {
                                                   'invite_creator_username': invite_creator.username,
                                                   'invite_creator_name': invite_creator.profile.name,
                                                   'community_name': community.name,
@@ -245,7 +245,7 @@ def send_community_new_post_push_notification(community_notifications_subscripti
         target_user_language_code = get_notification_language_code_for_target_user(target_user)
         with translation.override(target_user_language_code):
             one_signal_notification = onesignal_sdk.Notification(
-                post_body={"contents": {"en": _('A new post was posted in /c/%(community_name)s.') % {
+                post_body={"contents": {"en": _('A new post was posted in c/%(community_name)s.') % {
                     'community_name': community_name,
                 }}})
 
