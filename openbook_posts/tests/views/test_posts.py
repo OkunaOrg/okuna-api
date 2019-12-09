@@ -3584,7 +3584,7 @@ class PostsAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(user)
         data = {'text': post_text}
 
-        subscriber.subscribe_to_notifications_for_user_with_username(user.username)
+        subscriber.enable_new_post_notifications_for_user_with_username(user.username)
 
         url = self._get_url()
         response = self.client.put(url, data, **headers, format='multipart')
@@ -3606,7 +3606,7 @@ class PostsAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(user)
         data = {'text': post_text}
 
-        subscriber.subscribe_to_notifications_for_user_with_username(user.username)
+        subscriber.enable_new_post_notifications_for_user_with_username(user.username)
         subscriber.block_user_with_id(user_id=user.pk)
 
         url = self._get_url()
@@ -3629,7 +3629,7 @@ class PostsAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(user)
         data = {'text': post_text}
 
-        subscriber.subscribe_to_notifications_for_user_with_username(user.username)
+        subscriber.enable_new_post_notifications_for_user_with_username(user.username)
         user.block_user_with_id(user_id=subscriber.pk)
 
         url = self._get_url()
@@ -3657,8 +3657,8 @@ class PostsAPITests(OpenbookAPITestCase):
         post_creator.confirm_connection_with_user_with_id(user_id=subscriber.pk, circles_ids=[circle.pk])
 
         # both users subscribe
-        subscriber.subscribe_to_notifications_for_user_with_username(post_creator.username)
-        other_subscriber.subscribe_to_notifications_for_user_with_username(post_creator.username)
+        subscriber.enable_new_post_notifications_for_user_with_username(post_creator.username)
+        other_subscriber.enable_new_post_notifications_for_user_with_username(post_creator.username)
 
         data = {
             'text': post_text,

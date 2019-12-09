@@ -32,7 +32,7 @@ class IsSubscribedToCommunityNotificationsField(Field):
         if request_user.is_anonymous:
             return False
 
-        return request_user.is_subscribed_to_community_with_name_notifications(community.name)
+        return request_user.is_subscribed_to_community_notifications(community)
 
 
 class IsCreatorField(Field):
