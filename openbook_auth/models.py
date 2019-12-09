@@ -625,6 +625,24 @@ class User(AbstractUser):
             subscriber=self
         )
 
+    def are_new_post_notifications_enabled_for_user(self, user):
+        UserNotificationsSubscription = get_user_notifications_subscription_model()
+
+        return UserNotificationsSubscription. \
+            are_new_post_notifications_enabled_for_user_with_username_and_user_with_name(
+                username=self.username,
+                user_name=user.name
+            )
+
+    def are_new_post_notifications_enabled_for_community(self, community):
+        CommunityNotificationsSubscription = get_community_notifications_subscription_model()
+
+        return CommunityNotificationsSubscription. \
+            are_new_post_notifications_enabled_for_user_with_username_and_community_with_name(
+                username=self.username,
+                community_name=community.name
+            )
+
     def is_world_circle_id(self, id):
         world_circle_id = self._get_world_circle_id()
         return world_circle_id == id
@@ -2192,13 +2210,13 @@ class User(AbstractUser):
         Community = get_community_model()
         CommunityNotificationsSubscription = get_community_notifications_subscription_model()
         community = Community.objects.get(name=community_name)
-        check_can_enable_new_post_notifications_for_community(subscriber=self, community=community)
+        check_can_enable_new_post_notifications_for_community(user=self, community=community)
 
         community_notifications_subscription = CommunityNotificationsSubscription. \
             get_or_create_community_notifications_subscription(
-                community=community,
-                subscriber=self
-            )
+            community=community,
+            subscriber=self
+        )
 
         community_notifications_subscription.new_post_notifications = True
         community_notifications_subscription.save()
@@ -2209,13 +2227,13 @@ class User(AbstractUser):
         Community = get_community_model()
         CommunityNotificationsSubscription = get_community_notifications_subscription_model()
         community = Community.objects.get(name=community_name)
-        check_can_disable_new_post_notifications_for_community(subscriber=self, community=community)
+        check_can_disable_new_post_notifications_for_community(user=self, community=community)
 
         community_notifications_subscription = CommunityNotificationsSubscription. \
             get_or_create_community_notifications_subscription(
-                community=community,
-                subscriber=self
-            )
+            community=community,
+            subscriber=self
+        )
 
         community_notifications_subscription.new_post_notifications = False
         community_notifications_subscription.save()
@@ -2945,13 +2963,13 @@ class User(AbstractUser):
         target_user = User.objects.get(username=username)
         UserNotificationsSubscription = get_user_notifications_subscription_model()
 
-        check_can_enable_new_post_notifications_for_user(subscriber=self, user=target_user)
+        check_can_enable_new_post_notifications_for_user(user=self, target_user=target_user)
 
         user_notifications_subscription = UserNotificationsSubscription. \
             get_or_create_user_notifications_subscription(
-                user=target_user,
-                subscriber=self
-            )
+            user=target_user,
+            subscriber=self
+        )
 
         user_notifications_subscription.new_post_notifications = True
         user_notifications_subscription.save()
@@ -2962,13 +2980,13 @@ class User(AbstractUser):
         target_user = User.objects.get(username=username)
         UserNotificationsSubscription = get_user_notifications_subscription_model()
 
-        check_can_disable_new_post_notifications_for_user(subscriber=self, user=target_user)
+        check_can_disable_new_post_notifications_for_user(user=self, target_user=target_user)
 
         user_notifications_subscription = UserNotificationsSubscription. \
             get_or_create_user_notifications_subscription(
-                user=target_user,
-                subscriber=self
-            )
+            user=target_user,
+            subscriber=self
+        )
 
         user_notifications_subscription.new_post_notifications = False
         user_notifications_subscription.save()

@@ -5,7 +5,7 @@ from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import username_characters_validator, user_username_exists
 from openbook_common.models import Badge
 from openbook_common.serializers_fields.user import CommunitiesInvitesField, IsFollowingField, IsConnectedField, \
-    IsSubscribedToUserNotificationsField, IsFollowedField
+    AreNewPostNotificationsEnabledForUserField, IsFollowedField
 from openbook_communities.models import Community, CommunityMembership, CommunityInvite
 from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
@@ -78,7 +78,7 @@ class GetCommunityMembersMemberProfileSerializer(serializers.ModelSerializer):
 class GetCommunityMembersMemberSerializer(serializers.ModelSerializer):
     profile = GetCommunityMembersMemberProfileSerializer(many=False)
     is_following = IsFollowingField()
-    is_subscribed_to_notifications = IsSubscribedToUserNotificationsField()
+    are_new_post_notifications_enabled = AreNewPostNotificationsEnabledForUserField()
     is_connected = IsConnectedField()
     is_followed = IsFollowedField()
 
@@ -88,7 +88,7 @@ class GetCommunityMembersMemberSerializer(serializers.ModelSerializer):
             'id',
             'is_following',
             'is_followed',
-            'is_subscribed_to_notifications',
+            'are_new_post_notifications_enabled',
             'is_connected',
             'username',
             'profile'
