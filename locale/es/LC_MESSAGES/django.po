@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: okuna\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-12-07 19:48+0100\n"
+"POT-Creation-Date: 2019-12-09 12:42+0100\n"
 "PO-Revision-Date: 2019-09-20 08:47\n"
 "Last-Translator: Jozsef Sallai (joexyz)\n"
 "Language-Team: Spanish\n"
@@ -1847,7 +1847,7 @@ msgstr "La reacción de la publicación no existe."
 
 #: openbook_posts/validators.py:82 openbook_posts/validators.py:105
 #, python-format
-msgid "Please add up to %(max_hashtags)d hashtags."
+msgid "Please add a maximum of %(max_hashtags)d hashtags."
 msgstr ""
 
 #: openbook_posts/validators.py:90 openbook_posts/validators.py:113
