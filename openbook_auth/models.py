@@ -706,7 +706,7 @@ class User(AbstractUser):
     def is_subscribed_to_community_notifications(self, community):
         CommunityNotificationsSubscription = get_community_notifications_subscription_model()
         return CommunityNotificationsSubscription.community_notifications_subscription_exists(
-            username=self.username, community=community)
+            subscriber=self, community=community)
 
     def has_reported_moderated_object_with_id(self, moderated_object_id):
         ModeratedObject = get_moderated_object_model()
