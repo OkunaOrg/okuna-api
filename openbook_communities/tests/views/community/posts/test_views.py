@@ -719,7 +719,7 @@ class CommunityPostsAPITest(OpenbookAPITestCase):
         community = make_community(creator=community_admin, type='P')
 
         user.join_community_with_name(community_name=community.name)
-        user.subscribe_to_notifications_for_community_with_name(community_name=community.name)
+        user.enable_new_post_notifications_for_community_with_name(community_name=community.name)
 
         headers = make_authentication_headers_for_user(community_admin)
         url = self._get_url(community_name=community.name)
@@ -752,8 +752,8 @@ class CommunityPostsAPITest(OpenbookAPITestCase):
         user.join_community_with_name(community_name=community.name)
         blocking_user.join_community_with_name(community_name=community.name)
 
-        user.subscribe_to_notifications_for_community_with_name(community_name=community.name)
-        blocking_user.subscribe_to_notifications_for_community_with_name(community_name=community.name)
+        user.enable_new_post_notifications_for_community_with_name(community_name=community.name)
+        blocking_user.enable_new_post_notifications_for_community_with_name(community_name=community.name)
 
         blocking_user.block_user_with_id(user_id=user.pk)
 
@@ -773,40 +773,6 @@ class CommunityPostsAPITest(OpenbookAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_create_community_post_does_not_notify_banned_subscribers(self):
-        """
-        should NOT notify subscribers who are banned from community when creating a community post
-        """
-        user = make_user()
-        banned_user = make_user()
-
-        community_admin = make_user()
-        community = make_community(creator=community_admin, type='P')
-
-        user.join_community_with_name(community_name=community.name)
-        banned_user.join_community_with_name(community_name=community.name)
-
-        banned_user.subscribe_to_notifications_for_community_with_name(community_name=community.name)
-
-        community_admin.ban_user_with_username_from_community_with_name(username=banned_user.username,
-                                                                        community_name=community.name)
-
-        headers = make_authentication_headers_for_user(user)
-        url = self._get_url(community_name=community.name)
-        data = {
-            'text': make_fake_post_text()
-        }
-        response = self.client.put(url, data, **headers, format='multipart')
-
-        community_notifications_subscription = CommunityNotificationsSubscription.objects.get(subscriber=banned_user,
-                                                                                            community=community)
-        self.assertFalse(CommunityNewPostNotification.objects.filter(
-            community_notifications_subscription_id=community_notifications_subscription.pk,
-            notification__owner_id=banned_user.pk,
-            notification__notification_type=Notification.COMMUNITY_NEW_POST).exists())
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
     def test_create_community_post_does_notify_blocked_subscribers_if_admin(self):
         """
         should notify subscribers who are blocked by admin/have blocked admin when creating a community post
@@ -818,8 +784,8 @@ class CommunityPostsAPITest(OpenbookAPITestCase):
 
         user.join_community_with_name(community_name=community.name)
 
-        user.subscribe_to_notifications_for_community_with_name(community_name=community.name)
-        community_admin.subscribe_to_notifications_for_community_with_name(community_name=community.name)
+        user.enable_new_post_notifications_for_community_with_name(community_name=community.name)
+        community_admin.enable_new_post_notifications_for_community_with_name(community_name=community.name)
 
         community_admin.block_user_with_id(user_id=user.pk)
 
@@ -854,9 +820,9 @@ class CommunityPostsAPITest(OpenbookAPITestCase):
         user.join_community_with_name(community_name=community_2.name)
 
         # susbcribe to all three communities
-        user.subscribe_to_notifications_for_community_with_name(community_name=community_1.name)
-        user.subscribe_to_notifications_for_community_with_name(community_name=community_2.name)
-        user.subscribe_to_notifications_for_community_with_name(community_name=user_community.name)
+        user.enable_new_post_notifications_for_community_with_name(community_name=community_1.name)
+        user.enable_new_post_notifications_for_community_with_name(community_name=community_2.name)
+        user.enable_new_post_notifications_for_community_with_name(community_name=user_community.name)
 
         headers = make_authentication_headers_for_user(post_creator)
 

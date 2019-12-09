@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: okuna\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-12-09 13:06+0100\n"
+"POT-Creation-Date: 2019-12-09 13:34+0100\n"
 "PO-Revision-Date: 2019-09-20 08:47\n"
 "Last-Translator: Jozsef Sallai (joexyz)\n"
 "Language-Team: Spanish\n"
@@ -791,23 +791,23 @@ msgstr ""
 "%(post_commenter_name)s · @%(post_commenter_username)s respondió a un "
 "comentario que tú también contestaste."
 
-#: openbook_auth/models.py:2645
+#: openbook_auth/models.py:2653
 msgid "A user cannot follow itself."
 msgstr "Un usuario no puede seguirse a sí mismo."
 
-#: openbook_auth/models.py:2714
+#: openbook_auth/models.py:2722
 msgid "A user cannot connect with itself."
 msgstr "Un usuario no puede conectarse con sí mismo."
 
-#: openbook_auth/models.py:2753
+#: openbook_auth/models.py:2761
 msgid "No data to update the connection with."
 msgstr "No hay datos para actualizar la conexión."
 
-#: openbook_auth/models.py:3170
+#: openbook_auth/models.py:3178
 msgid "Reset your password for Okuna"
 msgstr "Restablece contraseña para Okuna"
 
-#: openbook_auth/models.py:3591 openbook_categories/models.py:15
+#: openbook_auth/models.py:3599 openbook_categories/models.py:15
 #: openbook_circles/models.py:29 openbook_common/models.py:101
 #: openbook_communities/models.py:30 openbook_devices/models.py:16
 #: openbook_hashtags/models.py:30 openbook_lists/models.py:17
@@ -815,88 +815,88 @@ msgstr "Restablece contraseña para Okuna"
 msgid "name"
 msgstr "nombre"
 
-#: openbook_auth/models.py:3594
+#: openbook_auth/models.py:3602
 msgid "location"
 msgstr "ubicación"
 
-#: openbook_auth/models.py:3597 openbook_categories/models.py:22
+#: openbook_auth/models.py:3605 openbook_categories/models.py:22
 #: openbook_communities/models.py:37
 msgid "avatar"
 msgstr "avatar"
 
-#: openbook_auth/models.py:3600 openbook_communities/models.py:40
+#: openbook_auth/models.py:3608 openbook_communities/models.py:40
 msgid "cover"
 msgstr "foto de portada"
 
-#: openbook_auth/models.py:3603
+#: openbook_auth/models.py:3611
 msgid "bio"
 msgstr "bio"
 
-#: openbook_auth/models.py:3604
+#: openbook_auth/models.py:3612
 msgid "url"
 msgstr "url"
 
-#: openbook_auth/models.py:3605
+#: openbook_auth/models.py:3613
 msgid "followers count visible"
 msgstr "conteo de seguidores visible"
 
-#: openbook_auth/models.py:3606
+#: openbook_auth/models.py:3614
 msgid "community posts visible"
 msgstr "posts de comunidad visibles"
 
-#: openbook_auth/models.py:3610
+#: openbook_auth/models.py:3618
 msgid "user profile"
 msgstr "perfil de usuario"
 
-#: openbook_auth/models.py:3611
+#: openbook_auth/models.py:3619
 msgid "users profiles"
 msgstr "perfiles de usuarios"
 
-#: openbook_auth/models.py:3627
+#: openbook_auth/models.py:3635
 msgid "post comment notifications"
 msgstr "notificaciones de comentarios en posts"
 
-#: openbook_auth/models.py:3628
+#: openbook_auth/models.py:3636
 msgid "post comment reply notifications"
 msgstr "notificaciones de respuestas en comentarios"
 
-#: openbook_auth/models.py:3629
+#: openbook_auth/models.py:3637
 msgid "post reaction notifications"
 msgstr "notificaciones de reacción de post"
 
-#: openbook_auth/models.py:3630
+#: openbook_auth/models.py:3638
 msgid "follow notifications"
 msgstr "seguir notificaciones"
 
-#: openbook_auth/models.py:3631
+#: openbook_auth/models.py:3639
 msgid "connection request notifications"
 msgstr "notificaciones de solicitud de conexión"
 
-#: openbook_auth/models.py:3632
+#: openbook_auth/models.py:3640
 msgid "connection confirmed notifications"
 msgstr "notificaciones de conexión confirmadas"
 
-#: openbook_auth/models.py:3633
+#: openbook_auth/models.py:3641
 msgid "community invite notifications"
 msgstr "notificaciones de invitación de la comunidad"
 
-#: openbook_auth/models.py:3634
+#: openbook_auth/models.py:3642
 msgid "community new post notifications"
 msgstr ""
 
-#: openbook_auth/models.py:3635
+#: openbook_auth/models.py:3643
 msgid "user new post notifications"
 msgstr ""
 
-#: openbook_auth/models.py:3636
+#: openbook_auth/models.py:3644
 msgid "post comment reaction notifications"
 msgstr "notificaciones de comentarios de post"
 
-#: openbook_auth/models.py:3637
+#: openbook_auth/models.py:3645
 msgid "post comment user mention notifications"
 msgstr "notificaciones de menciones en comentarios"
 
-#: openbook_auth/models.py:3639
+#: openbook_auth/models.py:3647
 msgid "post user mention notifications"
 msgstr "notificaciones de menciones en posts"
 
@@ -1378,11 +1378,11 @@ msgstr "adjetivo de usuarios"
 msgid "invites enabled"
 msgstr "invitaciones habilitadas"
 
-#: openbook_communities/models.py:511
+#: openbook_communities/models.py:512
 msgid "is administrator"
 msgstr "es administrador"
 
-#: openbook_communities/models.py:512
+#: openbook_communities/models.py:513
 msgid "is moderator"
 msgstr "es moderador"
 
