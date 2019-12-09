@@ -627,21 +627,20 @@ class User(AbstractUser):
 
     def are_new_post_notifications_enabled_for_user(self, user):
         UserNotificationsSubscription = get_user_notifications_subscription_model()
-
         return UserNotificationsSubscription. \
-            are_new_post_notifications_enabled_for_user_with_username_and_user_with_name(
-                username=self.username,
-                user_name=user.name
-            )
+            are_new_post_notifications_enabled_for_user_with_username_and_target_with_username(
+            username=self.username,
+            target_username=user.name
+        )
 
     def are_new_post_notifications_enabled_for_community(self, community):
         CommunityNotificationsSubscription = get_community_notifications_subscription_model()
 
         return CommunityNotificationsSubscription. \
             are_new_post_notifications_enabled_for_user_with_username_and_community_with_name(
-                username=self.username,
-                community_name=community.name
-            )
+            username=self.username,
+            community_name=community.name
+        )
 
     def is_world_circle_id(self, id):
         world_circle_id = self._get_world_circle_id()
@@ -3847,4 +3846,11 @@ class UserNotificationsSubscription(models.Model):
     def is_user_with_username_subscribed_to_notifications_for_user_with_username(cls, subscriber_username, username):
         return cls.objects.filter(user__username=username,
                                   subscriber__username=subscriber_username,
+                                  new_post_notifications=True).exists()
+
+    @classmethod
+    def are_new_post_notifications_enabled_for_user_with_username_and_target_with_username(cls, username,
+                                                                                           target_username):
+        return cls.objects.filter(user__username=target_username,
+                                  subscriber__username=username,
                                   new_post_notifications=True).exists()
