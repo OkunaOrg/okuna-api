@@ -117,7 +117,7 @@ class SubscribeToUserNotifications(APIView):
         user = request.user
 
         with transaction.atomic():
-            user = user.subscribe_to_notifications_for_user_with_username(username=username)
+            user = user.enable_new_post_notifications_for_user_with_username(username=username)
 
         response_serializer = SubscribeToUserNotificationsUserSerializer(user, context={"request": request})
 
@@ -135,7 +135,7 @@ class SubscribeToUserNotifications(APIView):
         user = request.user
 
         with transaction.atomic():
-            unsubscribed_user = user.unsubscribe_from_notifications_for_user_with_username(username=username)
+            unsubscribed_user = user.disable_new_post_notifications_for_user_with_username(username=username)
 
         response_serializer = SubscribeToUserNotificationsUserSerializer(unsubscribed_user, context={"request": request})
 

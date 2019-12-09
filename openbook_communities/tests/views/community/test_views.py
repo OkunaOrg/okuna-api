@@ -1056,7 +1056,7 @@ class SubscribeToCommunityNotificationsAPITests(OpenbookAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         subscription = CommunityNotificationsSubscription.objects.get(subscriber=community_member)
         self.assertEqual(subscription.community.name, community.name)
-        self.assertTrue(subscription.new_posts_notifications_enabled)
+        self.assertTrue(subscription.new_post_notifications)
 
     def test_should_not_be_able_to_subscribe_to_notifications_for_community_if_not_member(self):
         """
@@ -1101,7 +1101,7 @@ class SubscribeToCommunityNotificationsAPITests(OpenbookAPITestCase):
 
         community_member = make_user()
         community_member.join_community_with_name(community_name=community.name)
-        community_member.subscribe_to_notifications_for_community_with_name(community_name=community.name)
+        community_member.enable_new_post_notifications_for_community_with_name(community_name=community.name)
 
         headers = make_authentication_headers_for_user(community_member)
         url = self._get_url(community_name=community.name)
@@ -1120,7 +1120,7 @@ class SubscribeToCommunityNotificationsAPITests(OpenbookAPITestCase):
 
         community_member = make_user()
         community_member.join_community_with_name(community_name=community.name)
-        community_member.subscribe_to_notifications_for_community_with_name(community_name=community.name)
+        community_member.enable_new_post_notifications_for_community_with_name(community_name=community.name)
 
         headers = make_authentication_headers_for_user(community_member)
         url = self._get_url(community_name=community.name)
@@ -1128,7 +1128,7 @@ class SubscribeToCommunityNotificationsAPITests(OpenbookAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(CommunityNotificationsSubscription.objects.get(
-            subscriber=community_member, community=community).new_posts_notifications_enabled)
+            subscriber=community_member, community=community).new_post_notifications)
 
     def test_should_not_be_able_to_unsubscribe_to_notifications_for_community_if_not_member(self):
         """
@@ -1154,7 +1154,7 @@ class SubscribeToCommunityNotificationsAPITests(OpenbookAPITestCase):
 
         user = make_user()
         user.join_community_with_name(community_name=community.name)
-        user.subscribe_to_notifications_for_community_with_name(community_name=community.name)
+        user.enable_new_post_notifications_for_community_with_name(community_name=community.name)
 
         admin.ban_user_with_username_from_community_with_name(username=user.username,
                                                               community_name=community.name)

@@ -224,7 +224,7 @@ class SubscribeToCommunityNotifications(APIView):
         user = request.user
 
         with transaction.atomic():
-            community = user.subscribe_to_notifications_for_community_with_name(community_name=community_name)
+            community = user.enable_new_post_notifications_for_community_with_name(community_name=community_name)
 
         response_serializer = SubscribeToCommunityNotificationsCommunitySerializer(community, context={"request": request})
 
@@ -242,7 +242,7 @@ class SubscribeToCommunityNotifications(APIView):
         user = request.user
 
         with transaction.atomic():
-            community = user.unsubscribe_from_notifications_for_community_with_name(community_name=community_name)
+            community = user.disable_new_post_notifications_for_community_with_name(community_name=community_name)
 
         response_serializer = SubscribeToCommunityNotificationsCommunitySerializer(community, context={"request": request})
 
