@@ -8,7 +8,7 @@ from openbook_common.models import Badge, Emoji
 from openbook_common.serializers_fields.user import FollowersCountField, FollowingCountField, PostsCountField, \
     IsFollowingField, IsConnectedField, IsFullyConnectedField, ConnectedCirclesField, FollowListsField, \
     IsPendingConnectionConfirmation, IsBlockedField, IsUserReportedField, IsFollowedField, \
-    IsSubscribedToUserNotificationsField
+    AreNewPostNotificationsEnabledForUserField
 from openbook_lists.models import List
 
 
@@ -106,7 +106,7 @@ class GetUserUserSerializer(serializers.ModelSerializer):
     posts_count = PostsCountField()
     is_following = IsFollowingField()
     is_followed = IsFollowedField()
-    is_subscribed_to_notifications = IsSubscribedToUserNotificationsField()
+    are_new_post_notifications_enabled = AreNewPostNotificationsEnabledForUserField()
     is_connected = IsConnectedField()
     is_fully_connected = IsFullyConnectedField()
     connected_circles = ConnectedCirclesField(circle_serializer=GetUserUserCircleSerializer)
@@ -125,7 +125,7 @@ class GetUserUserSerializer(serializers.ModelSerializer):
             'posts_count',
             'is_following',
             'is_followed',
-            'is_subscribed_to_notifications',
+            'are_new_post_notifications_enabled',
             'is_connected',
             'is_reported',
             'is_fully_connected',
@@ -139,7 +139,7 @@ class GetUserUserSerializer(serializers.ModelSerializer):
 class GetBlockedUserSerializer(serializers.ModelSerializer):
     is_blocked = IsBlockedField()
     is_following = IsFollowingField()
-    is_subscribed_to_notifications = IsSubscribedToUserNotificationsField()
+    are_new_post_notifications_enabled = AreNewPostNotificationsEnabledForUserField()
     is_connected = IsConnectedField()
     is_fully_connected = IsFullyConnectedField()
 
@@ -149,7 +149,7 @@ class GetBlockedUserSerializer(serializers.ModelSerializer):
             'id',
             'is_blocked',
             'is_following',
-            'is_subscribed_to_notifications',
+            'are_new_post_notifications_enabled',
             'is_connected',
             'is_fully_connected'
         )
@@ -188,7 +188,7 @@ class SearchUsersUserProfileSerializer(serializers.ModelSerializer):
 class SearchUsersUserSerializer(serializers.ModelSerializer):
     profile = SearchUsersUserProfileSerializer(many=False)
     is_following = IsFollowingField()
-    is_subscribed_to_notifications = IsSubscribedToUserNotificationsField()
+    are_new_post_notifications_enabled = AreNewPostNotificationsEnabledForUserField()
     is_connected = IsConnectedField()
 
     class Meta:
@@ -198,17 +198,17 @@ class SearchUsersUserSerializer(serializers.ModelSerializer):
             'profile',
             'username',
             'is_following',
-            'is_subscribed_to_notifications',
+            'are_new_post_notifications_enabled',
             'is_connected'
         )
 
 
 class SubscribeToUserNewPostNotificationsUserSerializer(serializers.ModelSerializer):
-    is_subscribed_to_notifications = IsSubscribedToUserNotificationsField()
+    are_new_post_notifications_enabled = AreNewPostNotificationsEnabledForUserField()
 
     class Meta:
         model = User
         fields = (
             'id',
-            'is_subscribed_to_notifications',
+            'are_new_post_notifications_enabled',
         )
