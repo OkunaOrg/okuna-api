@@ -291,6 +291,33 @@ class PostsAPITests(OpenbookAPITestCase):
         self.assertFalse(Post.objects.filter(text=post_text).exists())
         self.assertFalse(Hashtag.objects.filter(name=long_hashtag).exists())
 
+    def test_create_text_post_with_more_hashtags_than_allowed_should_not_create_it(self):
+        """
+        when creating a post with exceeding hashtags, should not create it
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+        post_hashtags = []
+
+        for i in range(0, settings.POST_MAX_HASHTAGS + 1):
+            hashtag = '#%s' % make_hashtag_name()
+            post_hashtags.append(hashtag)
+
+        post_text = ' '.join(post_hashtags)
+
+        data = {
+            'text': post_text
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+        self.assertFalse(Post.objects.filter(text=post_text).exists())
+
     def test_create_text_post_detects_mentions_once(self):
         """
         should be able to create a text post with a mention and detect it once
@@ -3806,7 +3833,8 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         user_to_retrieve_posts_from = make_user()
         user_to_retrieve_posts_from.join_community_with_name(community_name=community.name)
 
-        post = user_to_retrieve_posts_from.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post = user_to_retrieve_posts_from.create_community_post(text=make_fake_post_text(),
+                                                                 community_name=community.name)
 
         # react once, min required while testing
         emoji_group = make_reactions_emoji_group()
@@ -3838,7 +3866,8 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         user_to_retrieve_posts_from = make_user()
         user_to_retrieve_posts_from.join_community_with_name(community_name=community.name)
 
-        post = user_to_retrieve_posts_from.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post = user_to_retrieve_posts_from.create_community_post(text=make_fake_post_text(),
+                                                                 community_name=community.name)
 
         emoji_group = make_reactions_emoji_group()
         emoji = make_emoji(group=emoji_group)

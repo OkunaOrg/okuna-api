@@ -10,7 +10,7 @@ from openbook_common.serializers_fields.post import PostCreatorField, PostReacti
 from openbook_communities.models import CommunityMembership, Community
 from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_posts.models import PostImage, Post
-from openbook_posts.validators import post_uuid_exists
+from openbook_posts.validators import post_uuid_exists, post_text_validators
 
 from openbook_posts.views.post_reaction.serializers import PostReactionSerializer
 from openbook_posts.views.post_reactions.serializers import PostEmojiCountSerializer
@@ -100,6 +100,7 @@ class PostImageSerializer(serializers.ModelSerializer):
             'height'
         )
 
+
 class CommunityMembershipSerializer(serializers.ModelSerializer):
     class Meta:
         model = CommunityMembership
@@ -138,6 +139,7 @@ class PostCircleSerializer(serializers.ModelSerializer):
             'name',
             'color',
         )
+
 
 class GetPostPostSerializer(serializers.ModelSerializer):
     creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
@@ -180,7 +182,8 @@ class GetPostPostSerializer(serializers.ModelSerializer):
 
 
 class EditPostSerializer(serializers.Serializer):
-    text = serializers.CharField(max_length=settings.POST_MAX_LENGTH, required=False, allow_blank=True)
+    text = serializers.CharField(max_length=settings.POST_MAX_LENGTH, required=False, allow_blank=True,
+                                 validators=post_text_validators)
     post_uuid = serializers.UUIDField(
         validators=[post_uuid_exists],
         required=True,
