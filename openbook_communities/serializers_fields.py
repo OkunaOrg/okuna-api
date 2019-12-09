@@ -19,11 +19,11 @@ class IsInvitedField(Field):
         return request_user.is_invited_to_community_with_name(community.name)
 
 
-class IsSubscribedToCommunityNotificationsField(Field):
+class AreNewPostNotificationsEnabledForCommunityField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'
         kwargs['read_only'] = True
-        super(IsSubscribedToCommunityNotificationsField, self).__init__(**kwargs)
+        super(AreNewPostNotificationsEnabledForCommunityField, self).__init__(**kwargs)
 
     def to_representation(self, community):
         request = self.context.get('request')
@@ -32,7 +32,7 @@ class IsSubscribedToCommunityNotificationsField(Field):
         if request_user.is_anonymous:
             return False
 
-        return request_user.is_subscribed_to_community_with_name_notifications(community.name)
+        return request_user.are_new_post_notifications_enabled_for_community(community=community)
 
 
 class IsCreatorField(Field):

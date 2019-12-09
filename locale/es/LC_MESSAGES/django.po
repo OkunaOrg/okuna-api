@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: okuna\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-09-09 12:40+0200\n"
-"PO-Revision-Date: 2019-09-20 08:47\n"
+"POT-Creation-Date: 2019-12-09 17:02+0100\n"
+"PO-Revision-Date: 2019-12-09 16:20\n"
 "Last-Translator: Jozsef Sallai (joexyz)\n"
 "Language-Team: Spanish\n"
 "Language: es_ES\n"
@@ -16,775 +16,825 @@ msgstr ""
 "X-Crowdin-Language: es-ES\n"
 "X-Crowdin-File: /okuna-api/django.po\n"
 
-#: openbook/settings.py:394
+#: openbook/settings.py:415
 msgid "Spanish"
 msgstr "Español"
 
-#: openbook/settings.py:395
+#: openbook/settings.py:416
 msgid "English"
 msgstr "Inglés"
 
-#: openbook/settings.py:396
+#: openbook/settings.py:417
 msgid "German"
 msgstr "Alemán"
 
-#: openbook/settings.py:397
+#: openbook/settings.py:418
 msgid "Dutch"
 msgstr "Holandés"
 
-#: openbook/settings.py:398
+#: openbook/settings.py:419
 msgid "Danish"
 msgstr "Danés"
 
-#: openbook/settings.py:399
+#: openbook/settings.py:420
 msgid "Hungarian"
 msgstr "Húngaro"
 
-#: openbook/settings.py:400
+#: openbook/settings.py:421
 msgid "Swedish"
 msgstr "Sueco"
 
-#: openbook/settings.py:401
+#: openbook/settings.py:422
 msgid "French"
 msgstr "Francés"
 
-#: openbook/settings.py:402
+#: openbook/settings.py:423
 msgid "Italian"
 msgstr "Italiano"
 
-#: openbook/settings.py:403
+#: openbook/settings.py:424
 msgid "Turkish"
 msgstr "Turco"
 
-#: openbook/settings.py:404
+#: openbook/settings.py:425
 msgid "Portuguese, Brazilian"
 msgstr "Portugués, brasileño"
 
-#: openbook_auth/checkers.py:26
+#: openbook_auth/checkers.py:27
 msgid "You cannot edit a closed post"
 msgstr "No puedes editar una publicación cerrada"
 
-#: openbook_auth/checkers.py:34
+#: openbook_auth/checkers.py:35
 #, python-format
 msgid "You cannot post to circle with id %(id)s"
 msgstr "No puedes publicar al círculo con la identificación %(id)s"
 
-#: openbook_auth/checkers.py:41
+#: openbook_auth/checkers.py:42
 msgid "You cannot post to a community you're not member of "
 msgstr "No puedes publicar en una comunidad de la que no eres miembro "
 
-#: openbook_auth/checkers.py:49
+#: openbook_auth/checkers.py:50
 msgid "Only moderators/administrators can enable/disable comments"
 msgstr "Sólo los moderadores/administradores pueden activar/desactivar comentarios"
 
-#: openbook_auth/checkers.py:59
+#: openbook_auth/checkers.py:60
 msgid "Comments are disabled for this post"
 msgstr "Los comentarios están deshabilitados para esta publicación"
 
-#: openbook_auth/checkers.py:68
+#: openbook_auth/checkers.py:69
 msgid "Only public posts can be translated"
 msgstr "Sólo los mensajes públicos pueden ser traducidos"
 
-#: openbook_auth/checkers.py:72
+#: openbook_auth/checkers.py:73
 msgid "Post has no text to be translated"
 msgstr "La publicación no tiene texto para traducir"
 
-#: openbook_auth/checkers.py:76
+#: openbook_auth/checkers.py:77
 msgid "Post has no assigned language to be able to translate"
 msgstr "La publicación no tiene un idioma asignado para poder traducir"
 
-#: openbook_auth/checkers.py:80 openbook_auth/checkers.py:714
+#: openbook_auth/checkers.py:81 openbook_auth/checkers.py:771
 msgid "User's preferred translation language not set"
 msgstr "El idioma de traducción preferido del usuario no está establecido"
 
-#: openbook_auth/checkers.py:89 openbook_auth/checkers.py:101
+#: openbook_auth/checkers.py:90 openbook_auth/checkers.py:102
 msgid "Only community posts can be opened/closed"
 msgstr "Sólo las publicaciones de la comunidad pueden ser abiertos/cerrados"
 
-#: openbook_auth/checkers.py:94
+#: openbook_auth/checkers.py:95
 msgid "Only administrators/moderators can open this post"
 msgstr "Sólo los administradores/moderadores pueden abrir esta publicación"
 
-#: openbook_auth/checkers.py:106
+#: openbook_auth/checkers.py:107
 msgid "Only administrators/moderators can close this post"
 msgstr "Sólo los administradores/moderadores pueden cerrar esta publicación"
 
-#: openbook_auth/checkers.py:134
+#: openbook_auth/checkers.py:135
 msgid "Already following user."
 msgstr "Ya siguiendo usuario."
 
-#: openbook_auth/checkers.py:141
+#: openbook_auth/checkers.py:142
 msgid "Maximum number of follows reached."
 msgstr "Número máximo de seguidores alcanzados."
 
-#: openbook_auth/checkers.py:150
+#: openbook_auth/checkers.py:151
 msgid "Already following user in list."
 msgstr "Ya sigues al usuario de la lista."
 
-#: openbook_auth/checkers.py:159
+#: openbook_auth/checkers.py:160
 msgid "Not following user in list."
 msgstr "No siguiendo al usuario de la lista."
 
-#: openbook_auth/checkers.py:166
+#: openbook_auth/checkers.py:167
 msgid "Not following user."
 msgstr "No siguiendo usuario."
 
-#: openbook_auth/checkers.py:173
+#: openbook_auth/checkers.py:174
 msgid "Maximum number of connections reached."
 msgstr "Número máximo de conexiones alcanzadas."
 
-#: openbook_auth/checkers.py:186
+#: openbook_auth/checkers.py:187
 msgid "Already connected with user."
 msgstr "Ya conectado con el usuario."
 
-#: openbook_auth/checkers.py:193
+#: openbook_auth/checkers.py:194
 msgid "Already fully connected with user."
 msgstr "Ya totalmente conectado con el usuario."
 
-#: openbook_auth/checkers.py:200
+#: openbook_auth/checkers.py:201
 msgid "Not connected with user."
 msgstr "No conectado con el usuario."
 
-#: openbook_auth/checkers.py:207
+#: openbook_auth/checkers.py:208
 msgid "Not connected with user in given circle."
 msgstr "No conectado con el usuario en círculo dado."
 
-#: openbook_auth/checkers.py:214
+#: openbook_auth/checkers.py:215
 msgid "Already connected with user in given circle."
 msgstr "Ya conectado con usuario en círculo dado."
 
-#: openbook_auth/checkers.py:221
+#: openbook_auth/checkers.py:222
 msgid "List does not exist."
 msgstr "La lista no existe."
 
-#: openbook_auth/checkers.py:228
+#: openbook_auth/checkers.py:229
 msgid "Circle does not exist."
 msgstr "El círculo no existe."
 
-#: openbook_auth/checkers.py:235
+#: openbook_auth/checkers.py:236
 msgid "One or more of the circles do not exist."
 msgstr "Uno o más de los círculos no existen."
 
-#: openbook_auth/checkers.py:248
+#: openbook_auth/checkers.py:249
 msgid "Only moderators/administrators can remove community posts."
 msgstr "Sólo los moderadores/administradores pueden eliminar publicaciones de la comunidad."
 
-#: openbook_auth/checkers.py:256
+#: openbook_auth/checkers.py:257
 msgid "You cannot remove a post that does not belong to you"
 msgstr "No puedes eliminar una publicación que no te pertenece"
 
-#: openbook_auth/checkers.py:263
+#: openbook_auth/checkers.py:264
 msgid "Can't delete a list that does not belong to you."
 msgstr "No se puede eliminar una lista que no te pertenece."
 
-#: openbook_auth/checkers.py:270
+#: openbook_auth/checkers.py:271
 msgid "Can't update a list that does not belong to you."
 msgstr "No se puede actualizar una lista que no te pertenece."
 
-#: openbook_auth/checkers.py:277
+#: openbook_auth/checkers.py:278
 msgid "Can't delete a community that you do not administrate."
 msgstr "No se puede eliminar una comunidad que no administras."
 
-#: openbook_auth/checkers.py:284
+#: openbook_auth/checkers.py:285
 msgid "Can't update a community that you do not administrate."
 msgstr "No se puede actualizar una comunidad que no administras."
 
-#: openbook_auth/checkers.py:295
+#: openbook_auth/checkers.py:296
 msgid "The community is private. You must become a member to retrieve its posts."
 msgstr "La comunidad es privada. Debes ser miembro para recuperar sus mensajes."
 
-#: openbook_auth/checkers.py:303
+#: openbook_auth/checkers.py:304
 msgid "Only administrators/moderators can view closed posts"
 msgstr "Sólo los administradores/moderadores pueden ver las publicaciones cerradas"
 
-#: openbook_auth/checkers.py:315
+#: openbook_auth/checkers.py:316
+msgid "Only members can enable new post notifications"
+msgstr "Solo miembros pueden activar nuevas notificaciones de publicaciones"
+
+#: openbook_auth/checkers.py:325 openbook_auth/checkers.py:1390
+msgid "New post notifications are already enabled"
+msgstr "Las notificationes de nuevos posts ya están activadas"
+
+#: openbook_auth/checkers.py:341 openbook_auth/checkers.py:1404
+msgid "You are not subscribed to new post notifications"
+msgstr "No estás suscrito a las notificaciones de nuevos posts"
+
+#: openbook_auth/checkers.py:353
 msgid "Can't see the members of a private community."
 msgstr "No se puede ver a los miembros de una comunidad privada."
 
-#: openbook_auth/checkers.py:325
+#: openbook_auth/checkers.py:363
 msgid "You are already a member of the community."
 msgstr "Ya eres miembro de la comunidad."
 
-#: openbook_auth/checkers.py:332
+#: openbook_auth/checkers.py:370
 msgid "You are not invited to join this community."
 msgstr "No estás invitado a unirte a esta comunidad."
 
-#: openbook_auth/checkers.py:339
+#: openbook_auth/checkers.py:377
 msgid "You cannot leave a community you're not part of."
 msgstr "No puedes abandonar una comunidad de la que no eres parte."
 
-#: openbook_auth/checkers.py:344
+#: openbook_auth/checkers.py:382
 msgid "You cannot leave a community you created."
 msgstr "No puedes salir de una comunidad que creaste."
 
-#: openbook_auth/checkers.py:351
+#: openbook_auth/checkers.py:389
 msgid "You can only invite people to a community you are member of."
 msgstr "Sólo puedes invitar personas a una comunidad dónde eres miembro."
 
-#: openbook_auth/checkers.py:356
+#: openbook_auth/checkers.py:394
 msgid "You have already invited this user to join the community."
 msgstr "Ya invitaste éste usuario a unirse a la comunidad."
 
-#: openbook_auth/checkers.py:364
+#: openbook_auth/checkers.py:402
 msgid "The user is already part of the community."
 msgstr "El usuario ya es parte de la comunidad."
 
-#: openbook_auth/checkers.py:372
+#: openbook_auth/checkers.py:410
 msgid "Invites for this community are not enabled. Only administrators & moderators can invite."
 msgstr "Invitaciones para ésta comunidad fueron desactivadas. Sólo administradores y moderadores pueden invitar."
 
-#: openbook_auth/checkers.py:380
+#: openbook_auth/checkers.py:418
 msgid "No invite to withdraw."
 msgstr "No invitación para retirar."
 
-#: openbook_auth/checkers.py:389
+#: openbook_auth/checkers.py:427
 msgid "Only community administrators & moderators can get banned users."
 msgstr "Sólo los administradores y moderadores de la comunidad pueden obtener a los usuarios baneados."
 
-#: openbook_auth/checkers.py:398 openbook_auth/checkers.py:421
+#: openbook_auth/checkers.py:436 openbook_auth/checkers.py:459
 msgid "Only community administrators & moderators can ban community members."
 msgstr "Sólo los administradores y moderadores de la comunidad pueden prohibir a los miembros de la comunidad."
 
-#: openbook_auth/checkers.py:405
+#: openbook_auth/checkers.py:443
 msgid "User is already banned"
 msgstr "El usuario ya ha sido baneado"
 
-#: openbook_auth/checkers.py:412
+#: openbook_auth/checkers.py:450
 msgid "You can't ban moderators or administrators of the community"
 msgstr "No puedes banear moderadores o administradores de la comunidad"
 
-#: openbook_auth/checkers.py:428
+#: openbook_auth/checkers.py:466
 msgid "Can't unban a not-banned user."
 msgstr "No se puede desbanear un usuario no baneado."
 
-#: openbook_auth/checkers.py:435
+#: openbook_auth/checkers.py:473
 msgid "Only the creator of the community can add other administrators."
 msgstr "Sólo el administrador de la comunidad puede añadir otros administradores."
 
-#: openbook_auth/checkers.py:443
+#: openbook_auth/checkers.py:481
 msgid "User is already an administrator."
 msgstr "El usuario ya es administrador."
 
-#: openbook_auth/checkers.py:449
+#: openbook_auth/checkers.py:487
 msgid "Can't make administrator a user that is not part of the community."
 msgstr "Un usuario que no es miembro de la comunidad no puede ser administrador."
 
-#: openbook_auth/checkers.py:456
+#: openbook_auth/checkers.py:494
 msgid "Only the creator of the community can remove other administrators."
 msgstr "Sólo el creador de la comunidad puede eliminar otros administradores."
 
-#: openbook_auth/checkers.py:464
+#: openbook_auth/checkers.py:502
 msgid "User to remove is not an administrator."
 msgstr "El usuario a eliminar no es un administrador."
 
-#: openbook_auth/checkers.py:475
+#: openbook_auth/checkers.py:513
 msgid "Only administrators of the community can add other moderators."
 msgstr "Sólo administradores de la comunidad pueden añadir otros moderadores."
 
-#: openbook_auth/checkers.py:483
+#: openbook_auth/checkers.py:521
 msgid "User is an administrator."
 msgstr "El usuario es un administrador."
 
-#: openbook_auth/checkers.py:489
+#: openbook_auth/checkers.py:527
 msgid "User is already a moderator."
 msgstr "El usuario ya es un moderador."
 
-#: openbook_auth/checkers.py:495
+#: openbook_auth/checkers.py:533
 msgid "Can't make moderator a user that is not part of the community."
 msgstr "Un usuario que no es miembro de la comunidad no puede ser moderador."
 
-#: openbook_auth/checkers.py:502
+#: openbook_auth/checkers.py:540
 msgid "Only administrators of the community can remove other moderators."
 msgstr "Sólo administradores de la comunidad pueden eliminar a otros moderadores."
 
-#: openbook_auth/checkers.py:509
+#: openbook_auth/checkers.py:547
 msgid "User to remove is not an moderator."
 msgstr "El usuario a eliminar no es un moderador."
 
-#: openbook_auth/checkers.py:529
+#: openbook_auth/checkers.py:567
 msgid "Can't update a circle that does not belong to you."
 msgstr "No puedes actualizar un círculo que no te pertenece."
 
-#: openbook_auth/checkers.py:534
+#: openbook_auth/checkers.py:572
 msgid "Can't update the world circle."
 msgstr "No se puede actualizar el círculo mundo."
 
-#: openbook_auth/checkers.py:539
+#: openbook_auth/checkers.py:577
 msgid "Can't update the connections circle."
 msgstr "No se puede actualizar el círculo conexiones."
 
-#: openbook_auth/checkers.py:546
+#: openbook_auth/checkers.py:584
 msgid "Can't delete a circle that does not belong to you."
 msgstr "No puedes eliminar un círculo que no te pertenece."
 
-#: openbook_auth/checkers.py:551
+#: openbook_auth/checkers.py:589
 msgid "Can't delete the world circle."
 msgstr "No se puede eliminar el círculo mundo."
 
-#: openbook_auth/checkers.py:556
+#: openbook_auth/checkers.py:594
 msgid "Can't delete the connections circle."
 msgstr "No se puede eliminar el círculo conexiones."
 
-#: openbook_auth/checkers.py:563
+#: openbook_auth/checkers.py:601
 msgid "Can't view a circle that does not belong to you."
 msgstr "No puedes ver un círculo que no te pertenece."
 
-#: openbook_auth/checkers.py:570
+#: openbook_auth/checkers.py:608
 msgid "Can't view a list that does not belong to you."
 msgstr "No puedes ver una lista que no te pertenece."
 
-#: openbook_auth/checkers.py:577
+#: openbook_auth/checkers.py:615
 msgid "You already have a circle with that name."
 msgstr "Ya tienes un círculo con éste nombre."
 
-#: openbook_auth/checkers.py:584
+#: openbook_auth/checkers.py:622
 msgid "You already have a list with that name."
 msgstr "Ya tienes una lista con ese nombre."
 
-#: openbook_auth/checkers.py:596
+#: openbook_auth/checkers.py:634
 msgid "A community with that name already exists."
 msgstr "Ya existe una comunidad con éste nombre."
 
-#: openbook_auth/checkers.py:603
+#: openbook_auth/checkers.py:641
 msgid "You must be member of a community before making it a favorite."
 msgstr "Tienes que ser miembro de una comunidad antes de marcarla como favorito."
 
-#: openbook_auth/checkers.py:608
+#: openbook_auth/checkers.py:646
 msgid "You have already marked this community as favorite."
 msgstr "Ya marcaste ésta comunidad como favorito."
 
-#: openbook_auth/checkers.py:615
+#: openbook_auth/checkers.py:653
+msgid "You have already marked this community as excluded."
+msgstr "Ya marcaste ésta comunidad como excluida."
+
+#: openbook_auth/checkers.py:658
+msgid "Private communities are always excluded from top posts."
+msgstr "Las comunidades privadas siempre están excluidas de los top posts."
+
+#: openbook_auth/checkers.py:665
+msgid "You have not marked this community as excluded."
+msgstr "No has marcado esta comunidad como excluida."
+
+#: openbook_auth/checkers.py:672
 msgid "You have not favorited the community."
 msgstr "No marcaste la comunidad como favorito."
 
-#: openbook_auth/checkers.py:622
+#: openbook_auth/checkers.py:679
 msgid "You cannot mark as read a notification that doesn't belong to you."
 msgstr "No puedes marcar como leída una notificación que no te pertenece."
 
-#: openbook_auth/checkers.py:633
+#: openbook_auth/checkers.py:690
 msgid "This notification does not belong to you."
 msgstr "Esta notificación no te pertenece."
 
-#: openbook_auth/checkers.py:652
+#: openbook_auth/checkers.py:709
 msgid "Device not found"
 msgstr "Dispositivo no encontrado"
 
-#: openbook_auth/checkers.py:659
+#: openbook_auth/checkers.py:716
 msgid "Post already muted"
 msgstr "Publicación ya silenciada"
 
-#: openbook_auth/checkers.py:672
+#: openbook_auth/checkers.py:729
 msgid "Post is not muted"
 msgstr "La publicación no está silenciada"
 
-#: openbook_auth/checkers.py:679
+#: openbook_auth/checkers.py:736
 msgid "Post comment already muted"
 msgstr "Publicar comentario silenciado"
 
-#: openbook_auth/checkers.py:693
+#: openbook_auth/checkers.py:750
 msgid "Post_comment is not muted"
 msgstr "Post_comment no está silenciado"
 
-#: openbook_auth/checkers.py:702
+#: openbook_auth/checkers.py:759
 msgid "Only public post comments can be translated"
 msgstr "Sólo los mensajes públicos pueden ser traducidos"
 
-#: openbook_auth/checkers.py:706
+#: openbook_auth/checkers.py:763
 msgid "Post comment has no text to be translated"
 msgstr "El comentario de la publicación no tiene texto que traducir"
 
-#: openbook_auth/checkers.py:710
+#: openbook_auth/checkers.py:767
 msgid "Post comment has no assigned language to be able to translate"
 msgstr "El comentario de la publicación no tiene idioma asignado para poder traducir"
 
-#: openbook_auth/checkers.py:721
+#: openbook_auth/checkers.py:778
 msgid "This post does not belong to you."
 msgstr "Esta publicación no te pertenece."
 
-#: openbook_auth/checkers.py:728
+#: openbook_auth/checkers.py:785
 msgid "Wrong password."
 msgstr "Contraseña incorrecta."
 
-#: openbook_auth/checkers.py:754
+#: openbook_auth/checkers.py:811
 msgid "You cannot block yourself."
 msgstr "No puedes bloquearte a ti mismo."
 
-#: openbook_auth/checkers.py:760
+#: openbook_auth/checkers.py:817
 msgid "You cannot unblock an account you have not blocked."
 msgstr "No puedes desbloquear una cuenta que no has bloqueado."
 
-#: openbook_auth/checkers.py:768
+#: openbook_auth/checkers.py:825 openbook_auth/checkers.py:1386
+#: openbook_auth/checkers.py:1400
 msgid "This account is blocked."
 msgstr "Esta cuenta está bloqueada."
 
-#: openbook_auth/checkers.py:777
+#: openbook_auth/checkers.py:834
 msgid "You cannot report your own comment."
 msgstr "No puedes reportar tu propio comentario."
 
-#: openbook_auth/checkers.py:784
+#: openbook_auth/checkers.py:841
 msgid "You have already reported the comment."
 msgstr "Ya has reportado el comentario."
 
-#: openbook_auth/checkers.py:793
+#: openbook_auth/checkers.py:850
 msgid "You cannot report your own post."
 msgstr "No puedes reportar tu propio comentario."
 
-#: openbook_auth/checkers.py:800
+#: openbook_auth/checkers.py:857
 msgid "You have already reported the post."
 msgstr "Ya has reportado la publicación."
 
-#: openbook_auth/checkers.py:808
+#: openbook_auth/checkers.py:865
 msgid "You cannot report yourself..."
 msgstr "No puedes reportarte a ti mismo..."
 
-#: openbook_auth/checkers.py:815
+#: openbook_auth/checkers.py:872
 msgid "You have already reported the user."
 msgstr "Ya has reportado al usuario."
 
-#: openbook_auth/checkers.py:823
+#: openbook_auth/checkers.py:880
 msgid "You cannot report your own community."
 msgstr "No puedes reportar a tu propia comunidad."
 
-#: openbook_auth/checkers.py:830
+#: openbook_auth/checkers.py:887
 msgid "You have already reported the community."
 msgstr "Ya has reportado la comunidad."
 
-#: openbook_auth/checkers.py:844 openbook_auth/checkers.py:881
-#: openbook_auth/models.py:164
+#: openbook_auth/checkers.py:898
+msgid "You have already reported the hashtag."
+msgstr "Ya has reportado este hashtag."
+
+#: openbook_auth/checkers.py:912 openbook_auth/checkers.py:949
+#: openbook_auth/models.py:168
 msgid "Token type does not match"
 msgstr "El tipo de servicio no coincide"
 
-#: openbook_auth/checkers.py:849 openbook_auth/checkers.py:891
+#: openbook_auth/checkers.py:917 openbook_auth/checkers.py:959
 msgid "Token user id does not match"
 msgstr "El identificador de usuario del token no coincide"
 
-#: openbook_auth/checkers.py:854 openbook_auth/checkers.py:896
-#: openbook_auth/models.py:171
+#: openbook_auth/checkers.py:922 openbook_auth/checkers.py:964
+#: openbook_auth/models.py:175
 msgid "Invalid token signature"
 msgstr "Firma de token inválida"
 
-#: openbook_auth/checkers.py:858 openbook_auth/checkers.py:900
-#: openbook_auth/models.py:175
+#: openbook_auth/checkers.py:926 openbook_auth/checkers.py:968
+#: openbook_auth/models.py:179
 msgid "Token expired"
 msgstr "Token expirado"
 
-#: openbook_auth/checkers.py:862 openbook_auth/checkers.py:904
-#: openbook_auth/models.py:179
+#: openbook_auth/checkers.py:930 openbook_auth/checkers.py:972
+#: openbook_auth/models.py:183
 msgid "Failed to decode token"
 msgstr "Error al decodificar el token"
 
-#: openbook_auth/checkers.py:866 openbook_auth/checkers.py:908
-#: openbook_auth/models.py:187
+#: openbook_auth/checkers.py:934 openbook_auth/checkers.py:976
+#: openbook_auth/models.py:191
 msgid "Invalid token"
 msgstr "Token inválido"
 
-#: openbook_auth/checkers.py:886
+#: openbook_auth/checkers.py:954
 msgid "Token email does not match"
 msgstr "El email del token no coincide"
 
-#: openbook_auth/checkers.py:922
+#: openbook_auth/checkers.py:990
 msgid "Can't connect in the world circle."
 msgstr "No se puede conectar en el círculo mundo."
 
-#: openbook_auth/checkers.py:934
+#: openbook_auth/checkers.py:1002
 msgid "The email is already taken."
 msgstr "Este email ya está registrado."
 
-#: openbook_auth/checkers.py:946 openbook_auth/validators.py:18
+#: openbook_auth/checkers.py:1014 openbook_auth/validators.py:18
 msgid "The username is already taken."
 msgstr "Este nombre de usuario ya está en uso."
 
-#: openbook_auth/checkers.py:957 openbook_auth/checkers.py:986
+#: openbook_auth/checkers.py:1025 openbook_auth/checkers.py:1054
 msgid "The comment does not belong to the specified post."
 msgstr "El comentario no pertenece a la publicación especificada."
 
-#: openbook_auth/checkers.py:965
+#: openbook_auth/checkers.py:1033
 msgid "Only administrators/moderators can edit a closed post."
 msgstr "Sólo los administradores/moderadores pueden editar una publicación cerrada."
 
-#: openbook_auth/checkers.py:973
+#: openbook_auth/checkers.py:1041
 msgid "You cannot edit a comment that does not belong to you"
 msgstr "No puedes editar un comentario que no te pertenece"
 
-#: openbook_auth/checkers.py:996
+#: openbook_auth/checkers.py:1064
 msgid "Only moderators/administrators can remove closed community posts."
 msgstr "Sólo los moderadores/administradores pueden eliminar publicaciones cerradas de la comunidad."
 
-#: openbook_auth/checkers.py:1000 openbook_auth/checkers.py:1014
+#: openbook_auth/checkers.py:1068 openbook_auth/checkers.py:1082
 msgid "You cannot remove a comment that does not belong to you"
 msgstr "No puedes eliminar un comentario que no te pertenece"
 
-#: openbook_auth/checkers.py:1025 openbook_auth/checkers.py:1038
+#: openbook_auth/checkers.py:1093 openbook_auth/checkers.py:1106
 msgid "No comment found with given id for post with given uuid"
 msgstr "No se encontró ningún comentario con la identificación dada para la publicación con UUID dado"
 
-#: openbook_auth/checkers.py:1044
+#: openbook_auth/checkers.py:1112
 msgid "You can post a reply to a comment, not to an existing reply"
 msgstr "Puedes publicar una respuesta a un comentario, no a una respuesta existente"
 
-#: openbook_auth/checkers.py:1056
+#: openbook_auth/checkers.py:1124
 msgid "That reaction does not belong to the specified post."
 msgstr "Esa reacción no pertenece a la publicación especificada."
 
-#: openbook_auth/checkers.py:1062
+#: openbook_auth/checkers.py:1130
 msgid "Can't delete a reaction that does not belong to you."
 msgstr "No se puede eliminar una reacción que no te pertenece."
 
-#: openbook_auth/checkers.py:1079
+#: openbook_auth/checkers.py:1147
 msgid "Not a valid emoji to react with"
 msgstr "No es un emoji válido para reaccionar"
 
-#: openbook_auth/checkers.py:1090
+#: openbook_auth/checkers.py:1158
 msgid "This post is private."
 msgstr "Esta publicación es privada."
 
-#: openbook_auth/checkers.py:1100
+#: openbook_auth/checkers.py:1165
+msgid "This hashtag is not  available."
+msgstr "Este hashtag no está disponible."
+
+#: openbook_auth/checkers.py:1175
 msgid "Cant react to comments on a closed post."
 msgstr "No se puede reaccionar a los comentarios en una publicación cerrada."
 
-#: openbook_auth/checkers.py:1109
+#: openbook_auth/checkers.py:1184
 msgid "Can't delete a comment reaction that does not belong to you."
 msgstr "No se puede eliminar una reacción de comentario que no te pertenece."
 
-#: openbook_auth/checkers.py:1118
+#: openbook_auth/checkers.py:1193
 msgid "This comment is private."
 msgstr "Este comentario es privado."
 
-#: openbook_auth/checkers.py:1140
+#: openbook_auth/checkers.py:1219
 msgid "You have already reported the moderated_object."
 msgstr "Ya has reportado el objeto moderado."
 
-#: openbook_auth/checkers.py:1149
+#: openbook_auth/checkers.py:1228
 msgid "The moderated object has been verified and can no longer be edited."
 msgstr "El objeto moderado se ha verificado y ya no puede ser editado."
 
-#: openbook_auth/checkers.py:1154
+#: openbook_auth/checkers.py:1233
 msgid "The moderated object has already been approved/rejected."
 msgstr "El objeto moderado ya ha sido aprobado/rechazado."
 
-#: openbook_auth/checkers.py:1163 openbook_auth/checkers.py:1171
+#: openbook_auth/checkers.py:1242 openbook_auth/checkers.py:1250
 msgid "The moderated object has already been verified."
 msgstr "El objeto moderado ya ha sido verificado."
 
-#: openbook_auth/checkers.py:1179
+#: openbook_auth/checkers.py:1258
 msgid "The moderated object has not been verified."
 msgstr "El objeto moderado no ha sido verificado."
 
-#: openbook_auth/checkers.py:1187
+#: openbook_auth/checkers.py:1266
 msgid "The moderated object is already verified."
 msgstr "El objeto moderado ya está verificado."
 
-#: openbook_auth/checkers.py:1192
+#: openbook_auth/checkers.py:1271
 msgid "You cannot verify a moderated object with status pending. Please approve or reject it."
 msgstr "No puedes verificar un objeto moderado con estado pendiente. Por favor apruebe o rechace."
 
-#: openbook_auth/checkers.py:1210
+#: openbook_auth/checkers.py:1289
 msgid "Only community staff can moderate community posts"
 msgstr "Sólo el equipo de la comunidad puede moderar los posts de la comunidad"
 
-#: openbook_auth/checkers.py:1212
+#: openbook_auth/checkers.py:1291
 msgid "Only global moderators can moderate non-community posts"
 msgstr "Sólo los moderadores globales pueden moderar los mensajes no comunitarios"
 
-#: openbook_auth/checkers.py:1216
+#: openbook_auth/checkers.py:1295
 msgid "Only community staff can moderate community post comments"
 msgstr "Sólo el equipo de la comunidad puede moderar los comentarios de la comunidad"
 
-#: openbook_auth/checkers.py:1218
+#: openbook_auth/checkers.py:1297
 msgid "Only global moderators can moderate non-community post comments"
 msgstr "Sólo los moderadores globales pueden moderar los mensajes no comunitarios"
 
-#: openbook_auth/checkers.py:1220
+#: openbook_auth/checkers.py:1299
 msgid "Non global moderators can only moderate posts and post comments."
 msgstr "Sólo los moderadores no globales pueden moderar posts y comentarios."
 
-#: openbook_auth/checkers.py:1225
+#: openbook_auth/checkers.py:1304
 msgid "Not a global moderator."
 msgstr "No es un moderador global."
 
-#: openbook_auth/checkers.py:1230
+#: openbook_auth/checkers.py:1309
 msgid "Not a community staff."
 msgstr "No es parte del equipo de la comunidad."
 
-#: openbook_auth/checkers.py:1235
+#: openbook_auth/checkers.py:1314
 msgid "You have no invites left"
 msgstr "No te quedan invitaciones"
 
-#: openbook_auth/checkers.py:1251
+#: openbook_auth/checkers.py:1330
 msgid "Invite email already sent to this address"
 msgstr "Email de invitación ya enviado a esta dirección"
 
-#: openbook_auth/checkers.py:1263
+#: openbook_auth/checkers.py:1342
 msgid "Invite is already used and cannot be deleted"
 msgstr "La invitación ya está en uso y no se puede eliminar"
 
-#: openbook_auth/checkers.py:1269
+#: openbook_auth/checkers.py:1348
 msgid "Invite was not created by you"
 msgstr "La invitación no fue creada por ti"
 
-#: openbook_auth/checkers.py:1292
+#: openbook_auth/checkers.py:1371
 msgid "No link associated with post."
 msgstr "No hay enlace asociado con el post."
 
-#: openbook_auth/models.py:52 openbook_invitations/models.py:23
+#: openbook_auth/checkers.py:1378
+msgid "You cannot enable notifications for yourself"
+msgstr "No puedes activar notificaciones para ti mismo"
+
+#: openbook_auth/models.py:56 openbook_invitations/models.py:23
 msgid "email address"
 msgstr "email"
 
-#: openbook_auth/models.py:61 openbook_communities/models.py:62
+#: openbook_auth/models.py:65 openbook_communities/models.py:63
 msgid "is deleted"
 msgstr "se ha eliminado"
 
-#: openbook_auth/models.py:66 openbook_invitations/models.py:26
+#: openbook_auth/models.py:70 openbook_invitations/models.py:26
 msgid "username"
 msgstr "nombre de usuario"
 
-#: openbook_auth/models.py:71 openbook_invitations/models.py:31
+#: openbook_auth/models.py:75 openbook_invitations/models.py:31
 #, python-format
 msgid "Required. %(username_max_length)d characters or fewer. Letters, digits and _ only."
 msgstr "Requerido. %(username_max_length)d caracteres o menos. Letras, dígitos y _ sólo."
 
-#: openbook_auth/models.py:75 openbook_invitations/models.py:35
+#: openbook_auth/models.py:79 openbook_invitations/models.py:35
 msgid "A user with that username already exists."
 msgstr "Un usuario con este nombre de usuario ya existe."
 
-#: openbook_auth/models.py:86
+#: openbook_auth/models.py:90
 msgid "user"
 msgstr "usuario"
 
-#: openbook_auth/models.py:87
+#: openbook_auth/models.py:91
 msgid "users"
 msgstr "usuarios"
 
-#: openbook_auth/models.py:96
+#: openbook_auth/models.py:100
 msgid "You must confirm you are over 16 years old to make an account"
 msgstr "Debes confirmar que tienes más de 16 años para crear una cuenta"
 
-#: openbook_auth/models.py:101
+#: openbook_auth/models.py:105
 msgid "You must accept the guidelines to make an account"
 msgstr "Debes aceptar las directrices para crear una cuenta"
 
-#: openbook_auth/models.py:183
+#: openbook_auth/models.py:187
 msgid "No user found for token"
 msgstr "No se ha encontrado usuario para el token"
 
-#: openbook_auth/models.py:1003
+#: openbook_auth/models.py:1178
 #, python-format
 msgid "%(post_commenter_name)s · %(post_commenter_username)s commented on your post."
 msgstr "%(post_commenter_name)s %(post_commenter_username)s ha comentado en tu post."
 
-#: openbook_auth/models.py:1010
+#: openbook_auth/models.py:1185
 #, python-format
 msgid "%(post_commenter_name)s · @%(post_commenter_username)s commented on a post you also commented on."
 msgstr "%(post_commenter_name)s · @%(post_commenter_username)s ha comentado en un post en el que también comentaste."
 
-#: openbook_auth/models.py:1065
+#: openbook_auth/models.py:1242
 #, python-format
 msgid "%(post_commenter_name)s · @%(post_commenter_username)s replied to your comment on a post."
 msgstr "%(post_commenter_name)s @%(post_commenter_username)s ha respondido a tu comentario en un post."
 
-#: openbook_auth/models.py:1072
+#: openbook_auth/models.py:1249
+#, python-format
+msgid "%(post_commenter_name)s · %(post_commenter_username)s replied to a comment on your post."
+msgstr "%(post_commenter_name)s · %(post_commenter_username)s respondió a un comentario en tu publicación."
+
+#: openbook_auth/models.py:1256
 #, python-format
 msgid "%(post_commenter_name)s · @%(post_commenter_username)s replied on a comment you also replied on."
 msgstr "%(post_commenter_name)s · @%(post_commenter_username)s respondió a un comentario que tú también contestaste."
 
-#: openbook_auth/models.py:2243
+#: openbook_auth/models.py:2667
 msgid "A user cannot follow itself."
 msgstr "Un usuario no puede seguirse a sí mismo."
 
-#: openbook_auth/models.py:2312
+#: openbook_auth/models.py:2736
 msgid "A user cannot connect with itself."
 msgstr "Un usuario no puede conectarse con sí mismo."
 
-#: openbook_auth/models.py:2351
+#: openbook_auth/models.py:2775
 msgid "No data to update the connection with."
 msgstr "No hay datos para actualizar la conexión."
 
-#: openbook_auth/models.py:2719
+#: openbook_auth/models.py:3213
 msgid "Reset your password for Okuna"
 msgstr "Restablece contraseña para Okuna"
 
-#: openbook_auth/models.py:3137 openbook_categories/models.py:15
-#: openbook_circles/models.py:29 openbook_common/models.py:99
-#: openbook_communities/models.py:29 openbook_devices/models.py:17
-#: openbook_lists/models.py:17 openbook_moderation/models.py:16
-#: openbook_tags/models.py:17
+#: openbook_auth/models.py:3634 openbook_categories/models.py:15
+#: openbook_circles/models.py:29 openbook_common/models.py:101
+#: openbook_communities/models.py:30 openbook_devices/models.py:16
+#: openbook_hashtags/models.py:30 openbook_lists/models.py:17
+#: openbook_moderation/models.py:16
 msgid "name"
 msgstr "nombre"
 
-#: openbook_auth/models.py:3140
+#: openbook_auth/models.py:3637
 msgid "location"
 msgstr "ubicación"
 
-#: openbook_auth/models.py:3143 openbook_categories/models.py:22
-#: openbook_communities/models.py:36
+#: openbook_auth/models.py:3640 openbook_categories/models.py:22
+#: openbook_communities/models.py:37
 msgid "avatar"
 msgstr "avatar"
 
-#: openbook_auth/models.py:3146 openbook_communities/models.py:39
+#: openbook_auth/models.py:3643 openbook_communities/models.py:40
 msgid "cover"
 msgstr "foto de portada"
 
-#: openbook_auth/models.py:3149
+#: openbook_auth/models.py:3646
 msgid "bio"
 msgstr "bio"
 
-#: openbook_auth/models.py:3150
+#: openbook_auth/models.py:3647
 msgid "url"
 msgstr "url"
 
-#: openbook_auth/models.py:3151
+#: openbook_auth/models.py:3648
 msgid "followers count visible"
 msgstr "conteo de seguidores visible"
 
-#: openbook_auth/models.py:3152
+#: openbook_auth/models.py:3649
 msgid "community posts visible"
 msgstr "posts de comunidad visibles"
 
-#: openbook_auth/models.py:3156
+#: openbook_auth/models.py:3653
 msgid "user profile"
 msgstr "perfil de usuario"
 
-#: openbook_auth/models.py:3157
+#: openbook_auth/models.py:3654
 msgid "users profiles"
 msgstr "perfiles de usuarios"
 
-#: openbook_auth/models.py:3173
+#: openbook_auth/models.py:3670
 msgid "post comment notifications"
 msgstr "notificaciones de comentarios en posts"
 
-#: openbook_auth/models.py:3174
+#: openbook_auth/models.py:3671
 msgid "post comment reply notifications"
 msgstr "notificaciones de respuestas en comentarios"
 
-#: openbook_auth/models.py:3175
+#: openbook_auth/models.py:3672
 msgid "post reaction notifications"
 msgstr "notificaciones de reacción de post"
 
-#: openbook_auth/models.py:3176
+#: openbook_auth/models.py:3673
 msgid "follow notifications"
 msgstr "seguir notificaciones"
 
-#: openbook_auth/models.py:3177
+#: openbook_auth/models.py:3674
 msgid "connection request notifications"
 msgstr "notificaciones de solicitud de conexión"
 
-#: openbook_auth/models.py:3178
+#: openbook_auth/models.py:3675
 msgid "connection confirmed notifications"
 msgstr "notificaciones de conexión confirmadas"
 
-#: openbook_auth/models.py:3179
+#: openbook_auth/models.py:3676
 msgid "community invite notifications"
 msgstr "notificaciones de invitación de la comunidad"
 
-#: openbook_auth/models.py:3180
+#: openbook_auth/models.py:3677
+msgid "community new post notifications"
+msgstr "nuevas notificaciones de publicaciones de la comunidad"
+
+#: openbook_auth/models.py:3678
+msgid "user new post notifications"
+msgstr ""
+
+#: openbook_auth/models.py:3679
 msgid "post comment reaction notifications"
 msgstr "notificaciones de comentarios de post"
 
-#: openbook_auth/models.py:3181
+#: openbook_auth/models.py:3680
 msgid "post comment user mention notifications"
 msgstr "notificaciones de menciones en comentarios"
 
-#: openbook_auth/models.py:3183
+#: openbook_auth/models.py:3682
 msgid "post user mention notifications"
 msgstr "notificaciones de menciones en posts"
 
@@ -804,31 +854,35 @@ msgstr "No existe ningún usuario asociado con el nombre de usuario proporcionad
 msgid "No user with the provided email exists."
 msgstr "No existe ningún usuario con el email proporcionado."
 
-#: openbook_auth/views/auth/views.py:73
+#: openbook_auth/views/auth/views.py:82
+msgid "Token valid"
+msgstr "Token válido"
+
+#: openbook_auth/views/auth/views.py:95
 msgid "Username available"
 msgstr "Nombre de usuario disponible"
 
-#: openbook_auth/views/auth/views.py:86
+#: openbook_auth/views/auth/views.py:108
 msgid "Email available"
 msgstr "Email disponible"
 
-#: openbook_auth/views/auth/views.py:104
+#: openbook_auth/views/auth/views.py:126
 msgid "Email verified"
 msgstr "Email verificado"
 
-#: openbook_auth/views/auth/views.py:142 openbook_auth/views/auth/views.py:190
+#: openbook_auth/views/auth/views.py:164 openbook_auth/views/auth/views.py:201
 msgid "Password set successfully"
 msgstr "Contraseña establecida correctamente"
 
-#: openbook_auth/views/auth/views.py:171
+#: openbook_auth/views/auth/views.py:182
 msgid "A password reset link was sent to the email"
 msgstr "Se envió un enlace para restablecer contraseña al correo electrónico"
 
-#: openbook_auth/views/authenticated_user/serializers.py:136
+#: openbook_auth/views/authenticated_user/serializers.py:137
 msgid "New password must be supplied together with the current password"
 msgstr "La nueva contraseña debe ser proporcionada junto con la contraseña actual"
 
-#: openbook_auth/views/authenticated_user/serializers.py:139
+#: openbook_auth/views/authenticated_user/serializers.py:140
 msgid "Current password must be supplied together with the new password"
 msgstr "La contraseña actual debe ser proporcionada junto con la nueva contraseña"
 
@@ -836,19 +890,19 @@ msgstr "La contraseña actual debe ser proporcionada junto con la nueva contrase
 msgid "Goodbye 😔"
 msgstr "Adiós 😔"
 
-#: openbook_auth/views/authenticated_user/views.py:162
+#: openbook_auth/views/authenticated_user/views.py:166
 msgid "Please specify email or password to update"
 msgstr "Por favor, especifique el correo electrónico o contraseña para actualizar"
 
-#: openbook_auth/views/authenticated_user/views.py:168
+#: openbook_auth/views/authenticated_user/views.py:172
 msgid "Confirm your email for Openbook"
 msgstr "Confirma tu correo electrónico para Okuna"
 
-#: openbook_auth/views/authenticated_user/views.py:200
+#: openbook_auth/views/authenticated_user/views.py:204
 msgid "Guidelines successfully accepted"
 msgstr "Reglas aceptadas exitosamente"
 
-#: openbook_auth/views/authenticated_user/views.py:224
+#: openbook_auth/views/authenticated_user/views.py:228
 msgid "Language successfully set"
 msgstr "Idioma configurado correctamente"
 
@@ -944,20 +998,20 @@ msgstr "Comida"
 msgid "For everything related to food."
 msgstr "Para todo lo relacionado con la comida."
 
-#: openbook_categories/models.py:17 openbook_communities/models.py:31
+#: openbook_categories/models.py:17 openbook_communities/models.py:32
 #: openbook_moderation/models.py:17
 msgid "title"
 msgstr "título"
 
-#: openbook_categories/models.py:18 openbook_communities/models.py:32
+#: openbook_categories/models.py:18 openbook_communities/models.py:33
 #: openbook_moderation/models.py:18 openbook_moderation/models.py:48
-#: openbook_moderation/models.py:274
+#: openbook_moderation/models.py:285
 msgid "description"
 msgstr "descripción"
 
 #: openbook_categories/models.py:23 openbook_circles/models.py:30
-#: openbook_common/models.py:17 openbook_common/models.py:40
-#: openbook_communities/models.py:53 openbook_tags/models.py:18
+#: openbook_common/models.py:19 openbook_common/models.py:42
+#: openbook_communities/models.py:54 openbook_hashtags/models.py:33
 msgid "color"
 msgstr "color"
 
@@ -986,12 +1040,8 @@ msgid "No valid URL given"
 msgstr "No se ha dado una URL válida"
 
 #: openbook_common/checkers.py:20
-msgid "Url domain is not proxy whitelisted"
-msgstr "El dominio de la url no esta permitido"
-
-#: openbook_common/helpers.py:90
-msgid "You can only retrieve favicon urls from protocol http and https."
-msgstr "Sólo puedes obtener los favicons de las urls con protocolos http y https."
+msgid "Url is blacklisted"
+msgstr "La url está en lista negra"
 
 #: openbook_common/i18n/i18n.py:3
 msgid "Primary"
@@ -1181,87 +1231,85 @@ msgstr "Me gusta"
 msgid "Hehe"
 msgstr "Hehe"
 
-#: openbook_common/models.py:16 openbook_common/models.py:38
+#: openbook_common/models.py:18 openbook_common/models.py:40
 msgid "keyword"
 msgstr "palabra clave"
 
-#: openbook_common/models.py:21
+#: openbook_common/models.py:23
 msgid "is reaction group"
 msgstr "es grupo de reacción"
 
-#: openbook_common/models.py:42 openbook_posts/models.py:550
+#: openbook_common/models.py:44 openbook_hashtags/models.py:42
+#: openbook_posts/models.py:773
 msgid "image"
 msgstr "imagen"
 
-#: openbook_common/models.py:88
+#: openbook_common/models.py:90
 msgid "keyword_description"
 msgstr "keyword_description"
 
-#: openbook_common/models.py:98
+#: openbook_common/models.py:100
 msgid "code"
 msgstr "código"
 
 #: openbook_common/serializers_fields/request.py:40
-msgid "Please keep filesize under %maxfilesize. Current filesize %currentfilesize"
-msgstr "Por favor, mantén el tamaño del archivo bajo %maxfilesize. Tamaño actual de archivo %currentfilesize"
+#, python-format
+msgid "Please keep filesize under %s. Current filesize %s"
+msgstr "Por favor, mantenga el tamaño de archivo bajo %s. Tamaño actual de archivo %s"
 
-#: openbook_common/serializers_fields/request.py:51
+#: openbook_common/serializers_fields/request.py:50
 msgid "Upload a valid image. The file you uploaded was either not an image or a corrupted image."
 msgstr "Subir una imagen válida. El archivo que cargaste no era una imagen o era una imagen dañada."
 
-#: openbook_common/validators.py:12
+#: openbook_common/validators.py:16
 msgid "The provided value is not a valid hex color."
 msgstr "El valor proporcionado no es un color hexadecimal válido."
 
-#: openbook_common/validators.py:20
+#: openbook_common/validators.py:24
 msgid "No emoji with the provided id exists."
 msgstr "No existe ningún emoji con la identificación proporcionada."
 
-#: openbook_common/validators.py:28
+#: openbook_common/validators.py:32
 msgid "No emoji group with the provided id exists."
 msgstr "No existe un grupo de emoji con la identificación proporcionada."
 
-#: openbook_common/validators.py:35
+#: openbook_common/validators.py:39
 msgid "Names can't contain < or >."
 msgstr "Los nombres no pueden contener < o >."
 
-#: openbook_common/validators.py:43
+#: openbook_common/validators.py:47
 msgid "No supported language with the provided id exists."
 msgstr "No existe un idioma compatible con el ID proporcionado."
 
-#: openbook_common/validators.py:51
+#: openbook_common/validators.py:55
 msgid "No supported language with the provided code exists."
 msgstr "No existe un idioma compatible con el código proporcionado."
 
-#: openbook_common/views.py:66
-msgid "The specified url was not found."
-msgstr "La url especificada no se encontró."
+#: openbook_common/views.py:65
+msgid "Domain is okay to be proxied"
+msgstr "El dominio esta permitido de pasar por el proxy"
 
-#: openbook_common/views.py:68
-msgid "The specified url was not reachable."
-msgstr "La url especificada no fue accesible."
-
-#: openbook_communities/models.py:34
+#: openbook_communities/models.py:35
 msgid "rules"
 msgstr "reglas"
 
-#: openbook_communities/models.py:55
+#: openbook_communities/models.py:56
 msgid "user adjective"
 msgstr "adjetivo de usuario"
 
-#: openbook_communities/models.py:57
+#: openbook_communities/models.py:58
 msgid "users adjective"
 msgstr "adjetivo de usuarios"
 
-#: openbook_communities/models.py:59
+#: openbook_communities/models.py:60
 msgid "invites enabled"
 msgstr "invitaciones habilitadas"
 
-#: openbook_communities/models.py:499
+#: openbook_communities/models.py:512
 msgid "is administrator"
 msgstr "es administrador"
 
-#: openbook_communities/models.py:500
+#: openbook_communities/models.py:513
 msgid "is moderator"
 msgstr "es moderador"
 
@@ -1297,9 +1345,29 @@ msgstr "¡Usuario desbaneado!"
 msgid "Removed moderator"
 msgstr "Moderador eliminado"
 
-#: openbook_devices/models.py:15
+#: openbook_communities/views/community/views.py:195
+msgid "Community excluded from this feed"
+msgstr "Comunidad excluida de este feed"
+
+#: openbook_communities/views/community/views.py:209
+msgid "Community exclusion removed"
+msgstr "Exclusión de la comunidad removida"
+
+#: openbook_devices/models.py:14
 msgid "uuid"
 msgstr "UUID"
+
+#: openbook_hashtags/models.py:35
+msgid "text color"
+msgstr "color de texto"
+
+#: openbook_hashtags/validators.py:12
+msgid "No hashtag with the provided name exists."
+msgstr "No existe ningún hashtag con el nombre proporcionado."
+
+#: openbook_hashtags/validators.py:19
+msgid "Hashtags must to be alphanumerical and up to 32 characters."
+msgstr "Los Hashtags deben ser alfanuméricos y de un máximo de 32 caracteres."
 
 #: openbook_importer/views.py:45
 msgid "done"
@@ -1313,23 +1381,23 @@ msgstr "archivo inválido"
 msgid "invited datetime"
 msgstr "tiempo de invitación"
 
-#: openbook_invitations/models.py:76
+#: openbook_invitations/models.py:80
 msgid "The token is invalid."
 msgstr "El token no es válido."
 
-#: openbook_invitations/models.py:81
+#: openbook_invitations/models.py:85
 msgid "No invite exists for given token."
 msgstr "No existe invitación para el token dado."
 
-#: openbook_invitations/models.py:86
-msgid "The invite has been already used."
-msgstr "La invitación ya ha sido utilizada."
+#: openbook_invitations/models.py:90
+msgid "This invite has already been used."
+msgstr "Esta invitación ya ha sido utilizada."
 
-#: openbook_invitations/models.py:96 openbook_invitations/models.py:108
+#: openbook_invitations/models.py:100 openbook_invitations/models.py:112
 msgid "You've been invited to join Okuna (formerly Openbook)"
 msgstr "Has sido invitado a unirte a Okuna (antes Openbook)"
 
-#: openbook_invitations/models.py:128
+#: openbook_invitations/models.py:132
 msgid "Action Required: Choose an alternate username for Okuna"
 msgstr "Acción requerida: Elija un nombre de usuario alternativo para Okuna"
 
@@ -1465,13 +1533,13 @@ msgstr "Otras razones no incluidas en otras categorías."
 msgid "verified"
 msgstr "verificado"
 
-#: openbook_moderation/models.py:399 openbook_moderation/models.py:416
-#: openbook_moderation/models.py:433
+#: openbook_moderation/models.py:420 openbook_moderation/models.py:437
+#: openbook_moderation/models.py:454
 msgid "changed from"
 msgstr "cambiado de"
 
-#: openbook_moderation/models.py:401 openbook_moderation/models.py:419
-#: openbook_moderation/models.py:435
+#: openbook_moderation/models.py:422 openbook_moderation/models.py:440
+#: openbook_moderation/models.py:456
 msgid "changed to"
 msgstr "cambiado a"
 
@@ -1497,6 +1565,10 @@ msgid "User reported, thanks!"
 msgstr "Usuario reportado, gracias!"
 
 #: openbook_moderation/views/report/views.py:112
+msgid "Hashtag reported, thanks!"
+msgstr "Hashtag reportado, gracias!"
+
+#: openbook_moderation/views/report/views.py:137
 msgid "Community reported, thanks!"
 msgstr "Comunidad reportada, gracias!"
 
@@ -1508,40 +1580,50 @@ msgstr "Ésta categoría no existe."
 msgid "The moderated object does not exist."
 msgstr "El objeto moderado no existe."
 
-#: openbook_notifications/helpers.py:26
+#: openbook_notifications/helpers.py:29
 #, python-format
 msgid "%(post_reactor_name)s · @%(post_reactor_username)s reacted to your post."
 msgstr "%(post_reactor_name)s · @%(post_reactor_username)s reaccionó a tu post."
 
-#: openbook_notifications/helpers.py:73
+#: openbook_notifications/helpers.py:74
 #, python-format
 msgid "%(following_user_name)s · @%(following_user_username)s started following you"
 msgstr "%(following_user_name)s · @%(following_user_username)s comenzó a seguirte"
 
-#: openbook_notifications/helpers.py:96
+#: openbook_notifications/helpers.py:101
 #, python-format
 msgid "%(connection_requester_name)s · @%(connection_requester_username)s wants to connect with you."
 msgstr "%(connection_requester_name)s · @%(connection_requester_username)s desea conectarse contigo."
 
-#: openbook_notifications/helpers.py:124
+#: openbook_notifications/helpers.py:132
 #, python-format
 msgid "%(post_comment_reactor_name)s · @%(post_comment_reactor_username)s reacted to your comment."
 msgstr "%(post_comment_reactor_name)s · @%(post_comment_reactor_username)s reaccionó a tu comentario."
 
-#: openbook_notifications/helpers.py:155
+#: openbook_notifications/helpers.py:162
 #, python-format
 msgid "%(mentioner_name)s · @%(mentioner_username)s mentioned you in a comment."
 msgstr "%(mentioner_name)s · @%(mentioner_username)s te mencionó en un comentario."
 
-#: openbook_notifications/helpers.py:187
+#: openbook_notifications/helpers.py:193
 #, python-format
 msgid "%(mentioner_name)s · @%(mentioner_username)s mentioned you in a post."
 msgstr "%(mentioner_name)s · @%(mentioner_username)s te mencionó en un post."
 
-#: openbook_notifications/helpers.py:213
+#: openbook_notifications/helpers.py:219
 #, python-format
 msgid "%(invite_creator_name)s · @%(invite_creator_username)s has invited you to join c/%(community_name)s."
 msgstr "%(invite_creator_name)s · @%(invite_creator_username)s te ha invitado a unirte a c/%(community_name)s."
+
+#: openbook_notifications/helpers.py:248
+#, python-format
+msgid "A new post was posted in c/%(community_name)s."
+msgstr "Una nueva publicación fue publicada en c/%(community_name)s."
+
+#: openbook_notifications/helpers.py:276
+#, python-format
+msgid "%(post_creator_name)s · @%(post_creator_username)s posted something."
+msgstr "%(post_creator_name)s · @%(post_creator_username)s publicó algo."
 
 #: openbook_notifications/validators.py:10
 msgid "No notification with the provided id exists."
@@ -1576,83 +1658,93 @@ msgstr "El post está vacío. Intente añadir texto o media."
 msgid "%s is not a supported mimetype"
 msgstr "%s no es un mimetype soportado"
 
-#: openbook_posts/models.py:60 openbook_posts/models.py:635
+#: openbook_posts/models.py:65 openbook_posts/models.py:858
 msgid "text"
 msgstr "texto"
 
-#: openbook_posts/models.py:64
+#: openbook_posts/models.py:70
 msgid "comments enabled"
 msgstr "comentarios habilitados"
 
-#: openbook_posts/models.py:65
+#: openbook_posts/models.py:71
 msgid "public reactions"
 msgstr "reacciones públicas"
 
-#: openbook_posts/models.py:82
+#: openbook_posts/models.py:88
 msgid "media height"
 msgstr "altura de la media"
 
-#: openbook_posts/models.py:83
+#: openbook_posts/models.py:89
 msgid "media width"
 msgstr "ancho de la media"
 
-#: openbook_posts/models.py:84 openbook_posts/models.py:559
-#: openbook_posts/models.py:598
+#: openbook_posts/models.py:90 openbook_posts/models.py:782
+#: openbook_posts/models.py:821
 msgid "thumbnail"
 msgstr "miniatura"
 
-#: openbook_posts/models.py:112
+#: openbook_posts/models.py:118
 msgid "A post requires circles or a community to be posted to."
 msgstr "Un post requiere círculos o una comunidad a la que ser publicado."
 
-#: openbook_posts/models.py:115
+#: openbook_posts/models.py:121
 msgid "A post cannot be posted both to a community and to circles."
 msgstr "No se puede publicar una publicación tanto a una comunidad como a círculos."
 
-#: openbook_posts/models.py:120
+#: openbook_posts/models.py:126
 msgid "A post must have an image or a video, not both."
 msgstr "Un post debe tener una imagen o un video, no ambos."
 
-#: openbook_posts/models.py:355
+#: openbook_posts/models.py:493
 msgid "Unsupported media file type"
 msgstr "Tipo de archivo multimedia no soportado"
 
-#: openbook_posts/models.py:558 openbook_posts/models.py:584
+#: openbook_posts/models.py:781 openbook_posts/models.py:807
 msgid "hash"
 msgstr "hash"
 
-#: openbook_posts/validators.py:12 openbook_posts/validators.py:19
+#: openbook_posts/validators.py:17 openbook_posts/validators.py:26
 msgid "The post does not exist."
 msgstr "El post no existe."
 
-#: openbook_posts/validators.py:26 openbook_posts/validators.py:33
+#: openbook_posts/validators.py:35 openbook_posts/validators.py:44
 msgid "The post comment does not exist."
 msgstr "El comentario no existe."
 
-#: openbook_posts/validators.py:42 openbook_posts/validators.py:56
+#: openbook_posts/validators.py:55 openbook_posts/validators.py:73
 msgid "The post comment reaction does not exist."
 msgstr "La reacción de comentario de la publicación no existe."
 
-#: openbook_posts/validators.py:49
+#: openbook_posts/validators.py:64
 msgid "The post reaction does not exist."
 msgstr "La reacción de la publicación no existe."
+
+#: openbook_posts/validators.py:82 openbook_posts/validators.py:105
+#, python-format
+msgid "Please add a maximum of %(max_hashtags)d hashtags."
+msgstr "Por favor, añade un máximo de %(max_hashtags)d hashtags."
+
+#: openbook_posts/validators.py:90 openbook_posts/validators.py:113
+#, python-format
+msgid "Please keep hashtags under %(max_characters)d characters."
+msgstr ""
 
 #: openbook_posts/views/post/views.py:76
 msgid "Post deleted"
 msgstr "Post eliminado"
 
 #: openbook_posts/views/post/views.py:195
-#: openbook_posts/views/post_comment/views.py:122
+#: openbook_posts/views/post_comment/views.py:142
 msgid "Translation between these languages is not supported."
 msgstr "La traducción entre estos idiomas no es soportada."
 
 #: openbook_posts/views/post/views.py:198
-#: openbook_posts/views/post_comment/views.py:124
+#: openbook_posts/views/post_comment/views.py:145
 msgid "Translation service returned an error"
 msgstr "El servicio de traducción ha devuelto un error"
 
 #: openbook_posts/views/post/views.py:201
-#: openbook_posts/views/post_comment/views.py:127
+#: openbook_posts/views/post_comment/views.py:148
 msgid "Max length of translation text exceeded."
 msgstr "Se ha superado la longitud máxima del texto de traducción."
 
@@ -1668,15 +1760,15 @@ msgstr "La url enlazada asociada a la vista previa no fue accesible."
 msgid "Post comment reaction deleted"
 msgstr "Reacción de comentario de publicación eliminada"
 
-#: openbook_posts/views/post_comment/views.py:37
+#: openbook_posts/views/post_comment/views.py:57
 msgid "Comment deleted"
 msgstr "Comentario eliminado"
 
-#: openbook_posts/views/post_comment/views.py:83
+#: openbook_posts/views/post_comment/views.py:103
 msgid "Post comment muted."
 msgstr "Comentario de publicación silenciado."
 
-#: openbook_posts/views/post_comment/views.py:101
+#: openbook_posts/views/post_comment/views.py:121
 msgid "Post comment unmuted."
 msgstr "Comentario de publicación no silenciado."
 
@@ -1688,13 +1780,55 @@ msgstr "Media añadida correctamente al post"
 msgid "Reaction deleted"
 msgstr "Reacción eliminada"
 
-#: openbook_tags/validators.py:13
-msgid "No tag with the provided name exists."
-msgstr "No existe una etiqueta con el nombre proporcionado."
+#: video_encoding/backends/__init__.py:13
+msgid "Cannot retrieve backend '{}'. Error: '{}'."
+msgstr ""
+
+#: video_encoding/fields.py:24
+msgid "Video"
+msgstr "Video"
+
+#: video_encoding/models.py:36
+msgid "Progress"
+msgstr "Progreso"
+
+#: video_encoding/models.py:41 video_encoding/models.py:70
+msgid "Format"
+msgstr "Formato"
+
+#: video_encoding/models.py:48
+msgid "File"
+msgstr "Archivo"
+
+#: video_encoding/models.py:54
+msgid "Width"
+msgstr "Anchura"
+
+#: video_encoding/models.py:59
+msgid "Height"
+msgstr "Altura"
+
+#: video_encoding/models.py:64
+msgid "Duration (s)"
+msgstr "Duración (s)"
+
+#: video_encoding/models.py:71
+msgid "Formats"
+msgstr "Formatos"
+
+#~ msgid "You can only retrieve favicon urls from protocol http and https."
+#~ msgstr ""
+#~ "Sólo puedes obtener los favicons de las urls con protocolos http y https."
+
+#~ msgid "The specified url was not found."
+#~ msgstr "La url especificada no se encontró."
+
+#~ msgid "The specified url was not reachable."
+#~ msgstr "La url especificada no fue accesible."
+
+#~ msgid "The invite has been already used."
+#~ msgstr "La invitación ya ha sido utilizada."
 
 #~ msgid "A post requires text or an image/video."
 #~ msgstr "Un post requiere texto o una imagen/vídeo."
-
-#~ msgid "video"
-#~ msgstr "video"
 

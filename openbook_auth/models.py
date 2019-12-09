@@ -618,12 +618,29 @@ class User(AbstractUser):
             followed_user_id=user_id,
             lists__id=list_id).exists()
 
-    def is_subscribed_to_user_with_id_notifications(self, user_id):
-        if not self.user_notifications_subscriptions.filter(user__id=user_id).exists():
-            return False
+    def is_subscribed_to_user_notifications(self, user):
+        UserNotificationsSubscription = get_user_notifications_subscription_model()
+        return UserNotificationsSubscription.user_notifications_subscription_exists(
+            user=user,
+            subscriber=self
+        )
 
-        user_notification_subscription = self.user_notifications_subscriptions.get(user__id=user_id)
-        return user_notification_subscription.new_posts_notifications_enabled
+    def are_new_post_notifications_enabled_for_user(self, user):
+        UserNotificationsSubscription = get_user_notifications_subscription_model()
+        return UserNotificationsSubscription. \
+            are_new_post_notifications_enabled_for_user_with_username_and_target_with_username(
+            username=self.username,
+            target_username=user.username
+        )
+
+    def are_new_post_notifications_enabled_for_community(self, community):
+        CommunityNotificationsSubscription = get_community_notifications_subscription_model()
+
+        return CommunityNotificationsSubscription. \
+            are_new_post_notifications_enabled_for_user_with_username_and_community_with_name(
+            username=self.username,
+            community_name=community.name
+        )
 
     def is_world_circle_id(self, id):
         world_circle_id = self._get_world_circle_id()
@@ -703,10 +720,10 @@ class User(AbstractUser):
         return Community.is_user_with_username_invited_to_community_with_name(username=self.username,
                                                                               community_name=community_name)
 
-    def is_subscribed_to_community_with_name_notifications(self, community_name):
-        Community = get_community_model()
-        return Community.is_user_with_username_subscribed_to_notifications_for_community_with_name(
-            username=self.username, community_name=community_name)
+    def is_subscribed_to_community_notifications(self, community):
+        CommunityNotificationsSubscription = get_community_notifications_subscription_model()
+        return CommunityNotificationsSubscription.community_notifications_subscription_exists(
+            subscriber=self, community=community)
 
     def has_reported_moderated_object_with_id(self, moderated_object_id):
         ModeratedObject = get_moderated_object_model()
@@ -1542,6 +1559,9 @@ class User(AbstractUser):
         if self.has_favorite_community_with_name(community_name):
             self.unfavorite_community_with_name(community_name=community_name)
 
+        if self.is_subscribed_to_community_notifications(community=community_to_leave):
+            self.unsubscribe_from_community_notifications(community=community_to_leave)
+
         community_to_leave.remove_member(self)
 
         return community_to_leave
@@ -2178,25 +2198,44 @@ class User(AbstractUser):
 
         return profile_posts
 
-    def subscribe_to_notifications_for_community_with_name(self, community_name):
+    def unsubscribe_from_community_notifications(self, community):
+        CommunityNotificationsSubscription = get_community_notifications_subscription_model()
+        CommunityNotificationsSubscription.delete_community_notifications_subscription(
+            community=community,
+            subscriber=self
+        )
+
+    def enable_new_post_notifications_for_community_with_name(self, community_name):
         Community = get_community_model()
         CommunityNotificationsSubscription = get_community_notifications_subscription_model()
         community = Community.objects.get(name=community_name)
-        check_can_subscribe_to_posts_for_community(subscriber=self, community=community)
+        check_can_enable_new_post_notifications_for_community(user=self, community=community)
 
-        CommunityNotificationsSubscription.create_community_notifications_subscription(subscriber=self,
-                                                                                       community=community)
+        community_notifications_subscription = CommunityNotificationsSubscription. \
+            get_or_create_community_notifications_subscription(
+            community=community,
+            subscriber=self
+        )
+
+        community_notifications_subscription.new_post_notifications = True
+        community_notifications_subscription.save()
 
         return community
 
-    def unsubscribe_from_notifications_for_community_with_name(self, community_name):
+    def disable_new_post_notifications_for_community_with_name(self, community_name):
         Community = get_community_model()
         CommunityNotificationsSubscription = get_community_notifications_subscription_model()
         community = Community.objects.get(name=community_name)
-        check_can_unsubscribe_to_posts_for_community(subscriber=self, community=community)
+        check_can_disable_new_post_notifications_for_community(user=self, community=community)
 
-        CommunityNotificationsSubscription.disable_community_notifications_subscription(subscriber=self,
-                                                                                       community=community)
+        community_notifications_subscription = CommunityNotificationsSubscription. \
+            get_or_create_community_notifications_subscription(
+            community=community,
+            subscriber=self
+        )
+
+        community_notifications_subscription.new_post_notifications = False
+        community_notifications_subscription.save()
 
         return community
 
@@ -2912,25 +2951,46 @@ class User(AbstractUser):
         )
         return post_comment, result.get('translated_text')
 
-    def subscribe_to_notifications_for_user_with_username(self, username):
-        user_to_subscribe = User.objects.get(username=username)
+    def unsubscribe_from_user_notifications(self, user):
+        UserNotificationsSubscription = get_user_notifications_subscription_model()
+        UserNotificationsSubscription.delete_user_notifications_subscription(
+            user=user,
+            subscriber=self
+        )
+
+    def enable_new_post_notifications_for_user_with_username(self, username):
+        target_user = User.objects.get(username=username)
         UserNotificationsSubscription = get_user_notifications_subscription_model()
 
-        check_can_subscribe_to_notifications_for_user(subscriber=self, user=user_to_subscribe)
+        check_can_enable_new_post_notifications_for_user(user=self, target_user=target_user)
 
-        UserNotificationsSubscription.create_user_notifications_subscription(subscriber=self, user=user_to_subscribe)
+        user_notifications_subscription = UserNotificationsSubscription. \
+            get_or_create_user_notifications_subscription(
+            user=target_user,
+            subscriber=self
+        )
 
-        return user_to_subscribe
+        user_notifications_subscription.new_post_notifications = True
+        user_notifications_subscription.save()
 
-    def unsubscribe_from_notifications_for_user_with_username(self, username):
-        user_to_unsubscribe = User.objects.get(username=username)
+        return target_user
+
+    def disable_new_post_notifications_for_user_with_username(self, username):
+        target_user = User.objects.get(username=username)
         UserNotificationsSubscription = get_user_notifications_subscription_model()
 
-        check_can_unsubscribe_from_notifications_for_user(subscriber=self, user=user_to_unsubscribe)
+        check_can_disable_new_post_notifications_for_user(user=self, target_user=target_user)
 
-        UserNotificationsSubscription.disable_user_notifications_subscription(subscriber=self, user=user_to_unsubscribe)
+        user_notifications_subscription = UserNotificationsSubscription. \
+            get_or_create_user_notifications_subscription(
+            user=target_user,
+            subscriber=self
+        )
 
-        return user_to_unsubscribe
+        user_notifications_subscription.new_post_notifications = False
+        user_notifications_subscription.save()
+
+        return target_user
 
     def block_user_with_username(self, username):
         user = User.objects.get(username=username)
@@ -2949,11 +3009,11 @@ class User(AbstractUser):
         if user_to_block.is_following_user_with_id(user_id=self.pk):
             user_to_block.unfollow_user_with_id(self.pk)
 
-        if self.is_subscribed_to_user_with_id_notifications(user_id=user_to_block.pk):
-            self.unsubscribe_from_notifications_for_user_with_username(user_to_block.username)
+        if self.is_subscribed_to_user_notifications(user=user_to_block.pk):
+            self.unsubscribe_from_user_notifications(user_to_block)
 
-        if user_to_block.is_subscribed_to_user_with_id_notifications(user_id=self.pk):
-            user_to_block.unsubscribe_from_notifications_for_user_with_username(self.username)
+        if user_to_block.is_subscribed_to_user_notifications(user=self.pk):
+            user_to_block.unsubscribe_from_user_notifications(self)
 
         UserBlock = get_user_block_model()
         UserBlock.create_user_block(blocker_id=self.pk, blocked_user_id=user_id)
@@ -3746,7 +3806,7 @@ class UserNotificationsSubscription(models.Model):
                                    blank=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications_subscribers', null=False,
                              blank=False)
-    new_posts_notifications_enabled = models.BooleanField(default=True, blank=False)
+    new_post_notifications = models.BooleanField(default=False, blank=False)
 
     class Meta:
         unique_together = ('user', 'subscriber',)
@@ -3757,21 +3817,40 @@ class UserNotificationsSubscription(models.Model):
             return cls.objects.create(subscriber=subscriber, user=user)
 
         user_notifications_subscription = cls.objects.get(subscriber=subscriber, user=user)
-        user_notifications_subscription.new_posts_notifications_enabled = True
         user_notifications_subscription.save()
 
         return user_notifications_subscription
 
     @classmethod
-    def disable_user_notifications_subscription(cls, subscriber, user):
-        user_notifications_subscription = cls.objects.get(subscriber=subscriber, user=user)
-        user_notifications_subscription.new_posts_notifications_enabled = False
-        user_notifications_subscription.save()
+    def get_or_create_user_notifications_subscription(cls, subscriber, user):
+        try:
+            user_notifications_subscription = cls.objects.get(subscriber_id=subscriber.pk,
+                                                              user_id=user.pk)
+        except cls.DoesNotExist:
+            user_notifications_subscription = cls.create_user_notifications_subscription(
+                subscriber=subscriber,
+                user=user
+            )
 
         return user_notifications_subscription
+
+    @classmethod
+    def delete_user_notifications_subscription(cls, subscriber, user):
+        return cls.objects.filter(subscriber=subscriber, user=user).delete()
+
+    @classmethod
+    def user_notifications_subscription_exists(cls, subscriber, user):
+        return cls.objects.filter(subscriber=subscriber, user=user).exists()
 
     @classmethod
     def is_user_with_username_subscribed_to_notifications_for_user_with_username(cls, subscriber_username, username):
         return cls.objects.filter(user__username=username,
                                   subscriber__username=subscriber_username,
-                                  new_posts_notifications_enabled=True).exists()
+                                  new_post_notifications=True).exists()
+
+    @classmethod
+    def are_new_post_notifications_enabled_for_user_with_username_and_target_with_username(cls, username,
+                                                                                           target_username):
+        return cls.objects.filter(user__username=target_username,
+                                  subscriber__username=username,
+                                  new_post_notifications=True).exists()
