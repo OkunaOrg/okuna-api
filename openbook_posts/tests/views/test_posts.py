@@ -302,7 +302,6 @@ class PostsAPITests(OpenbookAPITestCase):
 
         for i in range(0, settings.POST_MAX_HASHTAGS + 1):
             hashtag = '#%s' % make_hashtag_name()
-            hashtag = hashtag.upper()
             post_hashtags.append(hashtag)
 
         post_text = ' '.join(post_hashtags)
@@ -314,9 +313,6 @@ class PostsAPITests(OpenbookAPITestCase):
         url = self._get_url()
 
         response = self.client.put(url, data, **headers, format='multipart')
-
-        print(post_text)
-        print(response.status_code)
 
         self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
 

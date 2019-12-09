@@ -1013,6 +1013,37 @@ class PostItemAPITests(OpenbookAPITestCase):
         self.assertEqual(post.hashtags.filter(name=hashtag.name).count(), 1)
         self.assertEqual(post.hashtags.all().count(), 1)
 
+    def test_edit_text_post_with_more_hashtags_than_allowed_should_not_edit_it(self):
+        """
+        when editing a post with more than allowed hashtags, should not create it
+        """
+        user = make_user()
+
+        post_text = make_fake_post_text()
+
+        post = user.create_public_post(text=post_text)
+
+        headers = make_authentication_headers_for_user(user=user)
+        post_hashtags = []
+
+        for i in range(0, settings.POST_MAX_HASHTAGS + 1):
+            hashtag = '#%s' % make_hashtag_name()
+            post_hashtags.append(hashtag)
+
+        new_post_text = ' '.join(post_hashtags)
+
+        data = {
+            'text': new_post_text
+        }
+
+        url = self._get_url(post=post)
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+        self.assertTrue(Post.objects.filter(text=post_text).exists())
+
     def test_canot_edit_to_remove_text_from_own_text_only_post(self):
         """
         should not be able to edit to remove the text of an own post and return 400
