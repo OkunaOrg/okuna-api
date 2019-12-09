@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: okuna\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-12-09 12:42+0100\n"
+"POT-Creation-Date: 2019-12-09 13:06+0100\n"
 "PO-Revision-Date: 2019-09-20 08:47\n"
 "Last-Translator: Jozsef Sallai (joexyz)\n"
 "Language-Team: Spanish\n"
@@ -204,19 +204,19 @@ msgstr ""
 "Sólo los administradores/moderadores pueden ver las publicaciones cerradas"
 
 #: openbook_auth/checkers.py:316
-msgid "Only members can subscribe to new posts"
+msgid "Only members can subscribe to new post notifications"
 msgstr ""
 
 #: openbook_auth/checkers.py:323
-msgid "You are already subscribed to new posts for community"
-msgstr "."
+msgid "You are already subscribed to new post notifications for community"
+msgstr ""
 
 #: openbook_auth/checkers.py:337
-msgid "Only members can unsubscribe to new posts"
+msgid "Only members can unsubscribe to new post notifications"
 msgstr ""
 
 #: openbook_auth/checkers.py:344
-msgid "You are already not subscribed to new posts for community"
+msgid "You are not subscribed to new post notifications for community"
 msgstr ""
 
 #: openbook_auth/checkers.py:358
@@ -696,12 +696,12 @@ msgid "No link associated with post."
 msgstr "No hay enlace asociado con el post."
 
 #: openbook_auth/checkers.py:1390
-msgid "You are already subscribed to this user notifications"
+msgid "You are already subscribed to this user new post notifications"
 msgstr ""
 
 #: openbook_auth/checkers.py:1404
-msgid "You are not subscribed to this user notifications"
-msgstr ""
+msgid "You are not subscribed to this user new post notifications"
+msgstr "."
 
 #: openbook_auth/models.py:56 openbook_invitations/models.py:23
 msgid "email address"
