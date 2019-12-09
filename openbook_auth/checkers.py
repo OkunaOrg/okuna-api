@@ -1369,7 +1369,7 @@ def check_can_enable_new_post_notifications_for_user(user, target_user):
 
     new_post_notifications_enabled = user.are_new_post_notifications_enabled_for_user(user=target_user)
 
-    if target_user.has_blocked_user_with_id(user_id=user.pk) or user.has_blocked_user_with_id(user_id=user.pk):
+    if target_user.has_blocked_user_with_id(user_id=user.pk) or user.has_blocked_user_with_id(user_id=target_user.pk):
         raise PermissionDenied(_('This account is blocked.'))
 
     if new_post_notifications_enabled:
