@@ -302,6 +302,8 @@ class PostsAPITests(OpenbookAPITestCase):
 
         for i in range(0, settings.POST_MAX_HASHTAGS + 1):
             hashtag = '#%s' % make_hashtag_name()
+            hashtag = hashtag.upper()
+            post_hashtags.append(hashtag)
 
         post_text = ' '.join(post_hashtags)
 
