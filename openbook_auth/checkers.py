@@ -1373,6 +1373,11 @@ def check_can_get_preview_link_data_for_post(user, post):
 
 
 def check_can_enable_new_post_notifications_for_user(subscriber, user):
+    if subscriber.username == user.username:
+        raise ValidationError(
+            _('You cannot enable notifications for yourself'),
+        )
+
     UserNotificationsSubscription = get_user_notifications_subscription_model()
     new_post_notifications_enabled = UserNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_user_with_username(
         subscriber_username=subscriber.username, username=user.username)
