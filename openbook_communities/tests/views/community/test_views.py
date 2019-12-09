@@ -1185,6 +1185,6 @@ class SubscribeToCommunityNotificationsAPITests(OpenbookAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def _get_url(self, community_name):
-        return reverse('subscribe-community-notifications', kwargs={
+        return reverse('subscribe-community-new-post-notifications', kwargs={
             'community_name': community_name
         })

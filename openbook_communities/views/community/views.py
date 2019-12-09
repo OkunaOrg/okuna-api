@@ -209,7 +209,7 @@ class TopPostCommunityExclusion(APIView):
         return ApiMessageResponse(_('Community exclusion removed'), status=status.HTTP_202_ACCEPTED)
 
 
-class SubscribeToCommunityNotifications(APIView):
+class SubscribeToCommunityNewPostNotifications(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def put(self, request, community_name):
