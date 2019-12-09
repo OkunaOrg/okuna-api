@@ -630,7 +630,7 @@ class User(AbstractUser):
         return UserNotificationsSubscription. \
             are_new_post_notifications_enabled_for_user_with_username_and_target_with_username(
             username=self.username,
-            target_username=user.name
+            target_username=user.username
         )
 
     def are_new_post_notifications_enabled_for_community(self, community):
