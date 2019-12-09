@@ -620,7 +620,10 @@ class User(AbstractUser):
 
     def is_subscribed_to_user_notifications(self, user):
         UserNotificationsSubscription = get_user_notifications_subscription_model()
-        return UserNotificationsSubscription.user_notifications_subscription_exists()
+        return UserNotificationsSubscription.user_notifications_subscription_exists(
+            user=user,
+            subscriber=self
+        )
 
     def is_world_circle_id(self, id):
         world_circle_id = self._get_world_circle_id()
@@ -701,8 +704,8 @@ class User(AbstractUser):
                                                                               community_name=community_name)
 
     def is_subscribed_to_community_notifications(self, community):
-        Community = get_community_model()
-        return Community.community_notifications_subscription_exists(
+        CommunityNotificationsSubscription = get_community_notifications_subscription_model()
+        return CommunityNotificationsSubscription.community_notifications_subscription_exists(
             username=self.username, community=community)
 
     def has_reported_moderated_object_with_id(self, moderated_object_id):
