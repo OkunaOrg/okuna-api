@@ -13,7 +13,7 @@ from openbook_communities.views.communities.serializers import CreateCommunitySe
     CommunitiesCommunitySerializer, SearchCommunitiesSerializer, CommunityNameCheckSerializer, \
     GetFavoriteCommunitiesSerializer, GetJoinedCommunitiesSerializer, TrendingCommunitiesSerializer, \
     GetModeratedCommunitiesSerializer, GetAdministratedCommunitiesSerializer, GetTopPostCommunityExclusionSerializer, \
-    SearchCommunitiesCommunitySerializer
+    SearchCommunitiesCommunitySerializer, SuggestedCommunitiesCommunitySerializer
 
 
 class Communities(APIView):
@@ -275,7 +275,7 @@ class SuggestedCommunities(APIView):
 
         communities = user.get_suggested_communities()
 
-        communities_serializer = SearchCommunitiesCommunitySerializer(communities, many=True, context={"request": request})
+        communities_serializer = SuggestedCommunitiesCommunitySerializer(communities, many=True, context={"request": request})
         return Response(communities_serializer.data, status=status.HTTP_200_OK)
 
 

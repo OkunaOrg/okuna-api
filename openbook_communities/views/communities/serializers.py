@@ -184,6 +184,27 @@ class SearchCommunitiesCommunitySerializer(serializers.ModelSerializer):
         )
 
 
+class SuggestedCommunitiesCommunitySerializer(serializers.ModelSerializer):
+    is_creator = IsCreatorField()
+    memberships = CommunityMembershipsField(community_membership_serializer=CommunitiesCommunityMembershipSerializer)
+
+    class Meta:
+        model = Community
+        fields = (
+            'id',
+            'name',
+            'title',
+            'avatar',
+            'cover',
+            'members_count',
+            'color',
+            'user_adjective',
+            'users_adjective',
+            'is_creator',
+            'memberships'
+        )
+
+
 class GetTopPostCommunityExclusionSerializer(serializers.Serializer):
     offset = serializers.IntegerField(
         required=False,
