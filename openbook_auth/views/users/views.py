@@ -147,9 +147,12 @@ class SubscribeToUserNewPostNotifications(APIView):
 class GetUserPostsCount(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
 
-    def get(self, request, username):
-        serializer = GetUserSerializer(data={'username': username})
+    def get(self, request, user_username):
+        serializer = GetUserSerializer(data={'username': user_username})
         serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        username = data.get('username')
 
         user = request.user
 
