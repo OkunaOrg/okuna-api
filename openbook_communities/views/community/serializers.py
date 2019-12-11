@@ -160,7 +160,47 @@ class GetCommunityCommunitySerializer(serializers.ModelSerializer):
     administrators = AdministratorsField(administrator_serializer=GetCommunityStaffUserSerializer)
     memberships = CommunityMembershipsField(community_membership_serializer=GetCommunityCommunityMembershipSerializer)
     rules = RulesField()
+
+    class Meta:
+        model = Community
+        fields = (
+            'id',
+            'title',
+            'name',
+            'avatar',
+            'cover',
+            'members_count',
+            'color',
+            'description',
+            'rules',
+            'user_adjective',
+            'users_adjective',
+            'categories',
+            'moderators',
+            'administrators',
+            'type',
+            'invites_enabled',
+            'is_invited',
+            'are_new_post_notifications_enabled',
+            'is_creator',
+            'is_favorite',
+            'is_reported',
+            'memberships',
+        )
+
+
+class LegacyGetCommunityCommunitySerializer(serializers.ModelSerializer):
+    categories = GetCommunityCommunityCategorySerializer(many=True)
+    is_invited = IsInvitedField()
+    are_new_post_notifications_enabled = AreNewPostNotificationsEnabledForCommunityField()
+    is_creator = IsCreatorField()
+    is_favorite = IsFavoriteField()
+    is_reported = IsCommunityReportedField()
     posts_count = CommunityPostsCountField()
+    moderators = ModeratorsField(moderator_serializer=GetCommunityStaffUserSerializer)
+    administrators = AdministratorsField(administrator_serializer=GetCommunityStaffUserSerializer)
+    memberships = CommunityMembershipsField(community_membership_serializer=GetCommunityCommunityMembershipSerializer)
+    rules = RulesField()
 
     class Meta:
         model = Community

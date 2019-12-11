@@ -30,7 +30,8 @@ from openbook_auth.views.followers.views import Followers, SearchFollowers
 from openbook_auth.views.following.views import Followings, SearchFollowings
 from openbook_auth.views.linked_users.views import LinkedUsers, SearchLinkedUsers
 from openbook_auth.views.proxy.views import ProxyAuth
-from openbook_auth.views.users.views import SearchUsers, GetUser, BlockUser, UnblockUser, SubscribeToUserNewPostNotifications
+from openbook_auth.views.users.views import SearchUsers, GetUser, BlockUser, UnblockUser, \
+    SubscribeToUserNewPostNotifications, GetUserPostsCount
 from openbook_categories.views import Categories
 from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups, ProxyDomainCheck
@@ -46,7 +47,8 @@ from openbook_communities.views.community.members.views import CommunityMembers,
     LeaveCommunity, InviteCommunityMember, SearchCommunityMembers, UninviteCommunityMember
 from openbook_communities.views.community.moderators.views import CommunityModeratorItem, CommunityModerators, \
     SearchCommunityModerators
-from openbook_communities.views.community.posts.views import CommunityPosts, ClosedCommunityPosts
+from openbook_communities.views.community.posts.views import CommunityPosts, ClosedCommunityPosts, \
+    GetCommunityPostsCount
 from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, \
     FavoriteCommunity, \
     TopPostCommunityExclusion, SubscribeToCommunityNewPostNotifications
@@ -111,7 +113,9 @@ auth_users_user_patterns = [
     path('block/', BlockUser.as_view(), name='block-user'),
     path('unblock/', UnblockUser.as_view(), name='unblock-user'),
     path('report/', ReportUser.as_view(), name='report-user'),
-    path('notifications/subscribe/new-post/', SubscribeToUserNewPostNotifications.as_view(), name='subscribe-user-new-post-notifications'),
+    path('notifications/subscribe/new-post/', SubscribeToUserNewPostNotifications.as_view(),
+         name='subscribe-user-new-post-notifications'),
+    path('posts/count/', GetUserPostsCount.as_view(), name='user-posts-count'),
 ]
 
 auth_users_patterns = [
@@ -245,6 +249,7 @@ community_members_patterns = [
 community_posts_patterns = [
     path('', CommunityPosts.as_view(), name='community-posts'),
     path('closed/', ClosedCommunityPosts.as_view(), name='closed-community-posts'),
+    path('count/', GetCommunityPostsCount.as_view(), name='community-posts-count'),
 ]
 
 community_banned_users_patterns = [

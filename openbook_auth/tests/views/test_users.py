@@ -5,7 +5,7 @@ from openbook_common.tests.models import OpenbookAPITestCase
 
 import logging
 import json
-from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user
+from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, make_fake_post_text
 from openbook_common.utils.model_loaders import get_user_notifications_subscription_model
 
 fake = Faker()
@@ -558,4 +558,40 @@ class SubscribeToUserNotificationsAPITests(OpenbookAPITestCase):
     def _get_url(self, user):
         return reverse('subscribe-user-new-post-notifications', kwargs={
             'user_username': user.username
+        })
+
+
+class GetUserPostsCountAPITests(OpenbookAPITestCase):
+    def test_can_retrieve_posts_count(self):
+        """
+        should be able to retrieve the posts count and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        target_user = make_user()
+
+        amount_of_posts = 5
+
+        for i in range(0, amount_of_posts):
+            target_user.create_public_post(
+                text=make_fake_post_text()
+            )
+
+        url = self._get_url(user_username=target_user.username)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertIn('posts_count', parsed_response)
+        response_posts_count = parsed_response['posts_count']
+
+        self.assertEqual(response_posts_count, amount_of_posts)
+
+    def _get_url(self, user_username):
+        return reverse('user-posts-count', kwargs={
+            'user_username': user_username
         })

@@ -191,11 +191,11 @@ class FollowingCountField(Field):
         return value.count_following()
 
 
-class PostsCountField(Field):
+class UserPostsCountField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'
         kwargs['read_only'] = True
-        super(PostsCountField, self).__init__(**kwargs)
+        super(UserPostsCountField, self).__init__(**kwargs)
 
     def to_representation(self, value):
         request = self.context.get('request')

@@ -729,13 +729,13 @@ class CommunityPostsAPITest(OpenbookAPITestCase):
         response = self.client.put(url, data, **headers, format='multipart')
 
         community_notifications_subscription = CommunityNotificationsSubscription.objects.get(subscriber=user,
-                                                                                            community=community)
+                                                                                              community=community)
 
         self.assertEqual(CommunityNewPostNotification.objects.filter(
             community_notifications_subscription_id=community_notifications_subscription.pk,
             notification__owner_id=user.pk,
             notification__notification_type=Notification.COMMUNITY_NEW_POST).count(),
-                     1)
+                         1)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -765,7 +765,7 @@ class CommunityPostsAPITest(OpenbookAPITestCase):
         response = self.client.put(url, data, **headers, format='multipart')
 
         community_notifications_subscription = CommunityNotificationsSubscription.objects.get(subscriber=blocking_user,
-                                                                                            community=community)
+                                                                                              community=community)
         self.assertFalse(CommunityNewPostNotification.objects.filter(
             community_notifications_subscription_id=community_notifications_subscription.pk,
             notification__owner_id=blocking_user.pk,
@@ -796,8 +796,9 @@ class CommunityPostsAPITest(OpenbookAPITestCase):
         }
         response = self.client.put(url, data, **headers, format='multipart')
 
-        community_notifications_subscription = CommunityNotificationsSubscription.objects.get(subscriber=community_admin,
-                                                                                            community=community)
+        community_notifications_subscription = CommunityNotificationsSubscription.objects.get(
+            subscriber=community_admin,
+            community=community)
         self.assertTrue(CommunityNewPostNotification.objects.filter(
             community_notifications_subscription_id=community_notifications_subscription.pk,
             notification__owner_id=community_admin.pk,
@@ -805,7 +806,8 @@ class CommunityPostsAPITest(OpenbookAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_create_community_post_for_one_community_does_not_notify_admin_for_all_communities_they_are_subscribed_to(self):
+    def test_create_community_post_for_one_community_does_not_notify_admin_for_all_communities_they_are_subscribed_to(
+            self):
         """
         should notify admins who are susbcribers only once for the community in which the post was created
         """
@@ -1001,5 +1003,43 @@ class CommunityClosedPostsAPITest(OpenbookAPITestCase):
 
     def _get_url(self, community_name):
         return reverse('closed-community-posts', kwargs={
+            'community_name': community_name
+        })
+
+
+class GetCommunityPostsCountAPITests(OpenbookAPITestCase):
+    def test_can_retrieve_posts_count(self):
+        """
+        should be able to retrieve the posts count and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+        community_name = community.name
+
+        amount_of_posts = 5
+
+        for i in range(0, amount_of_posts):
+            community_creator.create_community_post(
+                text=make_fake_post_text(), community_name=community_name
+            )
+
+        url = self._get_url(community_name=community_name)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertIn('posts_count', parsed_response)
+        response_posts_count = parsed_response['posts_count']
+
+        self.assertEqual(response_posts_count, amount_of_posts)
+
+    def _get_url(self, community_name):
+        return reverse('community-posts-count', kwargs={
             'community_name': community_name
         })
