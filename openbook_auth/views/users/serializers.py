@@ -5,7 +5,7 @@ from openbook_auth.models import UserProfile, User
 from openbook_auth.validators import username_characters_validator, user_username_exists
 from openbook_circles.models import Circle
 from openbook_common.models import Badge, Emoji
-from openbook_common.serializers_fields.user import FollowersCountField, FollowingCountField, PostsCountField, \
+from openbook_common.serializers_fields.user import FollowersCountField, FollowingCountField, UserPostsCountField, \
     IsFollowingField, IsConnectedField, IsFullyConnectedField, ConnectedCirclesField, FollowListsField, \
     IsPendingConnectionConfirmation, IsBlockedField, IsUserReportedField, IsFollowedField, \
     AreNewPostNotificationsEnabledForUserField
@@ -103,7 +103,6 @@ class GetUserUserSerializer(serializers.ModelSerializer):
     profile = GetUserUserProfileSerializer(many=False)
     followers_count = FollowersCountField()
     following_count = FollowingCountField()
-    posts_count = PostsCountField()
     is_following = IsFollowingField()
     is_followed = IsFollowedField()
     are_new_post_notifications_enabled = AreNewPostNotificationsEnabledForUserField()
@@ -122,7 +121,6 @@ class GetUserUserSerializer(serializers.ModelSerializer):
             'profile',
             'followers_count',
             'following_count',
-            'posts_count',
             'is_following',
             'is_followed',
             'are_new_post_notifications_enabled',
@@ -211,4 +209,15 @@ class SubscribeToUserNewPostNotificationsUserSerializer(serializers.ModelSeriali
         fields = (
             'id',
             'are_new_post_notifications_enabled',
+        )
+
+
+class GetUserPostsCountUserSerializer(serializers.ModelSerializer):
+    posts_count = UserPostsCountField()
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'posts_count',
         )

@@ -5,7 +5,7 @@ from openbook_auth.models import User, UserProfile
 from openbook_categories.models import Category
 from openbook_categories.validators import category_name_exists
 from openbook_common.models import Badge
-from openbook_common.serializers_fields.community import IsCommunityReportedField, CommunityPostsCountField
+from openbook_common.serializers_fields.community import IsCommunityReportedField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
 from openbook_common.serializers_fields.user import IsFollowingField, AreNewPostNotificationsEnabledForUserField
 from openbook_common.validators import hex_color_validator
@@ -160,7 +160,6 @@ class GetCommunityCommunitySerializer(serializers.ModelSerializer):
     administrators = AdministratorsField(administrator_serializer=GetCommunityStaffUserSerializer)
     memberships = CommunityMembershipsField(community_membership_serializer=GetCommunityCommunityMembershipSerializer)
     rules = RulesField()
-    posts_count = CommunityPostsCountField()
 
     class Meta:
         model = Community
@@ -171,7 +170,6 @@ class GetCommunityCommunitySerializer(serializers.ModelSerializer):
             'avatar',
             'cover',
             'members_count',
-            'posts_count',
             'color',
             'description',
             'rules',

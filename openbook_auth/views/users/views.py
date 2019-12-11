@@ -6,7 +6,8 @@ from rest_framework.views import APIView
 
 from openbook_auth.views.authenticated_user.serializers import GetAuthenticatedUserSerializer
 from openbook_auth.views.users.serializers import SearchUsersSerializer, SearchUsersUserSerializer, GetUserSerializer, \
-    GetUserUserSerializer, GetBlockedUserSerializer, SubscribeToUserNewPostNotificationsUserSerializer
+    GetUserUserSerializer, GetBlockedUserSerializer, SubscribeToUserNewPostNotificationsUserSerializer, \
+    GetUserPostsCountUserSerializer
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.responses import ApiMessageResponse
@@ -137,6 +138,26 @@ class SubscribeToUserNewPostNotifications(APIView):
         with transaction.atomic():
             unsubscribed_user = user.disable_new_post_notifications_for_user_with_username(username=username)
 
-        response_serializer = SubscribeToUserNewPostNotificationsUserSerializer(unsubscribed_user, context={"request": request})
+        response_serializer = SubscribeToUserNewPostNotificationsUserSerializer(unsubscribed_user,
+                                                                                context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class GetUserPostsCount(APIView):
+    permission_classes = (IsAuthenticated, IsNotSuspended)
+
+    def get(self, request, username):
+        serializer = GetUserSerializer(data={'username': username})
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+
+        if user.username == username:
+            target_user = user
+        else:
+            target_user = user.get_user_with_username(username=username)
+
+        response_serializer = GetUserPostsCountUserSerializer(target_user, context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)

@@ -11,7 +11,7 @@ from django.contrib.auth.password_validation import validate_password
 from openbook_common.models import Badge, Language
 from openbook_common.serializers_fields.request import FriendlyUrlField, RestrictedImageFileSizeField
 from openbook_common.serializers_fields.user import FollowersCountField, \
-    FollowingCountField, PostsCountField, \
+    FollowingCountField, \
     IsMemberOfCommunities, \
     UnreadNotificationsCountField, IsGlobalModeratorField
 from openbook_common.validators import name_characters_validator, language_id_exists
@@ -62,7 +62,6 @@ class UserLanguageSerializer(serializers.ModelSerializer):
 
 class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
     profile = GetAuthenticatedUserProfileSerializer(many=False)
-    posts_count = PostsCountField()
     unread_notifications_count = UnreadNotificationsCountField()
     followers_count = FollowersCountField()
     is_global_moderator = IsGlobalModeratorField()
@@ -81,7 +80,6 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
             'username',
             'profile',
             'language',
-            'posts_count',
             'invite_count',
             'date_joined',
             'are_guidelines_accepted',
