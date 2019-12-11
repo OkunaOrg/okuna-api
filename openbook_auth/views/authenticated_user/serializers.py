@@ -13,7 +13,7 @@ from openbook_common.serializers_fields.request import FriendlyUrlField, Restric
 from openbook_common.serializers_fields.user import FollowersCountField, \
     FollowingCountField, \
     IsMemberOfCommunities, \
-    UnreadNotificationsCountField, IsGlobalModeratorField
+    UnreadNotificationsCountField, IsGlobalModeratorField, UserPostsCountField
 from openbook_common.validators import name_characters_validator, language_id_exists
 from openbook_moderation.serializers_fields.user import UserPendingCommunitiesModeratedObjectsCountField, \
     UserActiveModerationPenaltiesCountField
@@ -50,7 +50,6 @@ class GetAuthenticatedUserProfileSerializer(serializers.ModelSerializer):
 
 
 class UserLanguageSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Language
         fields = (
@@ -82,6 +81,42 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
             'language',
             'invite_count',
             'date_joined',
+            'are_guidelines_accepted',
+            'followers_count',
+            'following_count',
+            'connections_circle_id',
+            'is_member_of_communities',
+            'is_global_moderator',
+            'unread_notifications_count',
+            'pending_communities_moderated_objects_count',
+            'active_moderation_penalties_count',
+        )
+
+
+class LegacyGetAuthenticatedUserSerializer(serializers.ModelSerializer):
+    profile = GetAuthenticatedUserProfileSerializer(many=False)
+    unread_notifications_count = UnreadNotificationsCountField()
+    followers_count = FollowersCountField()
+    is_global_moderator = IsGlobalModeratorField()
+    posts_count = UserPostsCountField()
+    following_count = FollowingCountField()
+    is_member_of_communities = IsMemberOfCommunities()
+    pending_communities_moderated_objects_count = UserPendingCommunitiesModeratedObjectsCountField()
+    active_moderation_penalties_count = UserActiveModerationPenaltiesCountField()
+    language = UserLanguageSerializer()
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'uuid',
+            'email',
+            'username',
+            'profile',
+            'language',
+            'invite_count',
+            'date_joined',
+            'posts_count',
             'are_guidelines_accepted',
             'followers_count',
             'following_count',
@@ -145,7 +180,6 @@ class AuthenticatedUserLanguageSerializer(serializers.Serializer):
 
 
 class AuthenticatedUserAllLanguagesSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Language
         fields = (

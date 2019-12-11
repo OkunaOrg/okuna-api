@@ -4,10 +4,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from openbook_auth.views.authenticated_user.serializers import GetAuthenticatedUserSerializer
+from openbook_auth.views.authenticated_user.serializers import GetAuthenticatedUserSerializer, \
+    LegacyGetAuthenticatedUserSerializer
 from openbook_auth.views.users.serializers import SearchUsersSerializer, SearchUsersUserSerializer, GetUserSerializer, \
     GetUserUserSerializer, GetBlockedUserSerializer, SubscribeToUserNewPostNotificationsUserSerializer, \
-    GetUserPostsCountUserSerializer
+    GetUserPostsCountUserSerializer, LegacyGetUserUserSerializer
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.responses import ApiMessageResponse
@@ -50,13 +51,28 @@ class GetUser(APIView):
 
         user = request.user
 
+        serializer = self._get_user_serializer_class_for_user_and_username(
+            user=user, username=username
+        )
+
         if user.username == username:
-            user_serializer = GetAuthenticatedUserSerializer(user, context={"request": request})
+            target_user = user
         else:
-            retrieved_user = user.get_user_with_username(username=username)
-            user_serializer = GetUserUserSerializer(retrieved_user, context={"request": request})
+            target_user = user.get_user_with_username(username=username)
+
+        user_serializer = serializer(target_user, context={"request": request})
 
         return Response(user_serializer.data, status=status.HTTP_200_OK)
+
+    def _get_user_serializer_class_for_user_and_username(self, user, username):
+        if user.username == username:
+            if self.request.version == '1.0':
+                return GetAuthenticatedUserSerializer
+            return LegacyGetAuthenticatedUserSerializer
+        else:
+            if self.request.version == '1.0':
+                return GetUserUserSerializer
+            return LegacyGetUserUserSerializer
 
 
 class BlockUser(APIView):

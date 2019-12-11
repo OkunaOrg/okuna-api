@@ -134,6 +134,43 @@ class GetUserUserSerializer(serializers.ModelSerializer):
         )
 
 
+class LegacyGetUserUserSerializer(serializers.ModelSerializer):
+    profile = GetUserUserProfileSerializer(many=False)
+    followers_count = FollowersCountField()
+    following_count = FollowingCountField()
+    posts_count = UserPostsCountField()
+    is_following = IsFollowingField()
+    is_followed = IsFollowedField()
+    are_new_post_notifications_enabled = AreNewPostNotificationsEnabledForUserField()
+    is_connected = IsConnectedField()
+    is_fully_connected = IsFullyConnectedField()
+    connected_circles = ConnectedCirclesField(circle_serializer=GetUserUserCircleSerializer)
+    follow_lists = FollowListsField(list_serializer=GetUserUserListSerializer)
+    is_pending_connection_confirmation = IsPendingConnectionConfirmation()
+    is_reported = IsUserReportedField()
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'username',
+            'profile',
+            'followers_count',
+            'following_count',
+            'posts_count',
+            'is_following',
+            'is_followed',
+            'are_new_post_notifications_enabled',
+            'is_connected',
+            'is_reported',
+            'is_fully_connected',
+            'connected_circles',
+            'follow_lists',
+            'date_joined',
+            'is_pending_connection_confirmation'
+        )
+
+
 class GetBlockedUserSerializer(serializers.ModelSerializer):
     is_blocked = IsBlockedField()
     is_following = IsFollowingField()
