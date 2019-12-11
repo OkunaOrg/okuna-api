@@ -10,8 +10,9 @@ from openbook_common.utils.helpers import normalise_request_data, normalize_list
 from openbook_communities.views.community.serializers import GetCommunityCommunitySerializer, DeleteCommunitySerializer, \
     UpdateCommunitySerializer, UpdateCommunityAvatarSerializer, UpdateCommunityCoverSerializer, GetCommunitySerializer, \
     FavoriteCommunitySerializer, CommunityAvatarCommunitySerializer, CommunityCoverCommunitySerializer, \
-    FavoriteCommunityCommunitySerializer, TopPostCommunityExclusionSerializer, SubscribeToCommunityNotificationsSerializer, \
-    SubscribeToCommunityNotificationsCommunitySerializer
+    FavoriteCommunityCommunitySerializer, TopPostCommunityExclusionSerializer, \
+    SubscribeToCommunityNotificationsSerializer, \
+    SubscribeToCommunityNotificationsCommunitySerializer, LegacyGetCommunityCommunitySerializer
 from django.utils.translation import ugettext_lazy as _
 
 
@@ -25,7 +26,8 @@ class CommunityItem(APIView):
         user = request.user
         community = user.get_community_with_name(community_name)
 
-        response_serializer = GetCommunityCommunitySerializer(community, context={"request": request})
+        community_serializer = self._get_community_serializer()
+        response_serializer = community_serializer(community, context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
@@ -69,10 +71,15 @@ class CommunityItem(APIView):
                                                         rules=rules, user_adjective=user_adjective,
                                                         users_adjective=users_adjective, categories_names=categories,
                                                         invites_enabled=invites_enabled)
-
-        response_serializer = GetCommunityCommunitySerializer(community, context={"request": request})
+        community_serializer = self._get_community_serializer()
+        response_serializer = community_serializer(community, context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+    def _get_community_serializer(self):
+        if self.request.version == '1.0':
+            return GetCommunityCommunitySerializer
+        return LegacyGetCommunityCommunitySerializer
 
 
 class CommunityAvatar(APIView):
@@ -226,7 +233,8 @@ class SubscribeToCommunityNewPostNotifications(APIView):
         with transaction.atomic():
             community = user.enable_new_post_notifications_for_community_with_name(community_name=community_name)
 
-        response_serializer = SubscribeToCommunityNotificationsCommunitySerializer(community, context={"request": request})
+        response_serializer = SubscribeToCommunityNotificationsCommunitySerializer(community,
+                                                                                   context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -244,6 +252,7 @@ class SubscribeToCommunityNewPostNotifications(APIView):
         with transaction.atomic():
             community = user.disable_new_post_notifications_for_community_with_name(community_name=community_name)
 
-        response_serializer = SubscribeToCommunityNotificationsCommunitySerializer(community, context={"request": request})
+        response_serializer = SubscribeToCommunityNotificationsCommunitySerializer(community,
+                                                                                   context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
