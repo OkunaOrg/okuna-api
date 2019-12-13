@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+  redis:
+    image: bitnami/redis:latest
+    privileged: false
+    ports:
+      - 6380:6379
+    networks:
+      okuna:
+        ipv4_address: 172.16.16.5
+    env_file:
+      - .docker-compose.env
+    volumes:
+      - redisdb:/bitnami/redis/data
+
+volumes:
+  redisdb:
+
+networks:
+  okuna:
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.16.16.0/16"

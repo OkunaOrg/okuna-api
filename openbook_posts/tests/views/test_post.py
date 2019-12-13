@@ -889,6 +889,30 @@ class PostItemAPITests(OpenbookAPITestCase):
 
         self.assertEqual(PostUserMention.objects.filter(post_id=post.pk).count(), 0)
 
+    def test_editing_text_post_ignores_casing_of_mentioned_usernames(self):
+        """
+        should ignores casing of mentioned usernames when editing a post
+        """
+        user = make_user()
+        mentioned_user = make_user(username='Miguel')
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        post = user.create_public_post(text=make_fake_post_text())
+
+        cased_username = 'miguel'
+        post_text = 'Hello @' + cased_username
+
+        data = {
+            'text': post_text
+        }
+        url = self._get_url(post=post)
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+        self.assertEqual(PostUserMention.objects.filter(user_id=mentioned_user.pk, post_id=post.pk).count(), 1)
+
     def test_editing_own_post_does_not_create_double_mentions(self):
         """
         should not create double mentions when editing our own post

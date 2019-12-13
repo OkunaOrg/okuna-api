@@ -648,7 +648,7 @@ class Post(models.Model):
                     username = username.lower()
                     if username not in existing_mention_usernames:
                         try:
-                            user = User.objects.only('id', 'username').get(username=username)
+                            user = User.objects.only('id', 'username').get(username__iexact=username)
                             user_is_post_creator = user.pk == self.creator_id
                             if user.can_see_post(post=self) and not user_is_post_creator:
                                 PostUserMention.create_post_user_mention(user=user, post=self)
@@ -959,7 +959,7 @@ class PostComment(models.Model):
                 username = username.lower()
                 if username not in existing_mention_usernames:
                     try:
-                        user = User.objects.only('id', 'username').get(username=username)
+                        user = User.objects.only('id', 'username').get(username__iexact=username)
                         user_can_see_post_comment = user.can_see_post_comment(post_comment=self)
                         user_is_commenter = user.pk == self.commenter_id
 

@@ -369,6 +369,31 @@ class PostsAPITests(OpenbookAPITestCase):
 
         self.assertTrue(PostUserMention.objects.filter(post_id=post.pk, user_id=mentioned_user.pk).exists())
 
+    def test_create_text_detect_mention_ignores_casing_of_username(self):
+        """
+        should detect mention regardless of the casing of the username
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        mentioned_user = make_user(username='Joel')
+
+        post_text = 'Hello @joel'
+
+        data = {
+            'text': post_text,
+        }
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
+
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(PostUserMention.objects.filter(post_id=post.pk, user_id=mentioned_user.pk).exists())
+
     def test_create_text_post_ignores_non_existing_mentioned_usernames(self):
         """
         should ignore non existing mentioned usernames when creating a post
