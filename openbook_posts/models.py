@@ -197,14 +197,13 @@ class Post(models.Model):
 
         trending_community_posts_query.add(reported_posts_exclusion_query, Q.AND)
 
-        trending_community_posts_queryset = TrendingPost.objects.\
-            select_related(*posts_select_related).\
-            prefetch_related(*posts_prefetch_related).\
-            only(*posts_only).\
+        trending_community_posts_queryset = TrendingPost.objects. \
+            select_related(*posts_select_related). \
+            prefetch_related(*posts_prefetch_related). \
+            only(*posts_only). \
             filter(trending_community_posts_query)
 
         return trending_community_posts_queryset
-
 
     @classmethod
     def get_trending_posts_old_for_user_with_id(cls, user_id):
@@ -636,10 +635,11 @@ class Post(models.Model):
             else:
                 existing_mention_usernames = []
                 for existing_mention in self.user_mentions.only('id', 'user__username').all().iterator():
-                    if existing_mention.user.username not in usernames:
+                    existing_mention_username = existing_mention.user.username.lower()
+                    if existing_mention_username not in usernames:
                         existing_mention.delete()
                     else:
-                        existing_mention_usernames.append(existing_mention.user.username)
+                        existing_mention_usernames.append(existing_mention_username)
 
                 PostUserMention = get_post_user_mention_model()
                 User = get_user_model()
@@ -946,10 +946,11 @@ class PostComment(models.Model):
         else:
             existing_mention_usernames = []
             for existing_mention in self.user_mentions.only('id', 'user__username').all().iterator():
-                if existing_mention.user.username not in usernames:
+                existing_mention_username = existing_mention.user.username.lower()
+                if existing_mention_username not in usernames:
                     existing_mention.delete()
                 else:
-                    existing_mention_usernames.append(existing_mention.user.username)
+                    existing_mention_usernames.append(existing_mention_username)
 
             PostCommentUserMention = get_post_comment_user_mention_model()
             User = get_user_model()
