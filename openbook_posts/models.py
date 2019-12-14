@@ -590,6 +590,14 @@ class Post(models.Model):
         PostUserMentionNotification = get_post_user_mention_notification_model()
         PostUserMentionNotification.objects.filter(post_user_mention__post_id=self.pk).delete()
 
+        # Remove all community new post notifications
+        CommunityNewPostNotification = get_community_new_post_notification_model()
+        CommunityNewPostNotification.objects.filter(post_id=self.pk).delete()
+
+        # Remove all user new post notifications
+        UserNewPostNotification = get_user_new_post_notification_model()
+        UserNewPostNotification.objects.filter(post_id=self.pk).delete()
+
     def delete_notifications_for_user(self, user):
         # Remove all post comment notifications
         PostCommentNotification = get_post_comment_notification_model()
@@ -603,8 +611,18 @@ class Post(models.Model):
 
         # Remove all post comment reply notifications
         PostCommentReplyNotification = get_post_comment_notification_model()
-        PostCommentReplyNotification.objects.filter(post_comment__post=self.pk,
+        PostCommentReplyNotification.objects.filter(post_comment__post_id=self.pk,
                                                     notification__owner_id=user.pk).delete()
+
+        # Remove all community new post notifications
+        CommunityNewPostNotification = get_community_new_post_notification_model()
+        CommunityNewPostNotification.objects.filter(notification__owner_id=user.pk,
+                                                    post_id=self.pk).delete()
+
+        # Remove all user new post notifications
+        UserNewPostNotification = get_user_new_post_notification_model()
+        UserNewPostNotification.objects.filter(notification__owner_id=user.pk,
+                                               post_id=self.pk).delete()
 
     def get_participants(self):
         User = get_user_model()

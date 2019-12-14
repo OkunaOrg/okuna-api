@@ -2136,6 +2136,8 @@ class User(AbstractUser):
         check_can_close_post(user=self, post=post)
         post.community.create_close_post_log(source_user=self, target_user=post.creator, post=post)
         post.is_closed = True
+        if not post.creator == self and not self.is_staff_of_community_with_name(post.community.name):
+            post.delete_notifications()
         post.save()
 
         return post
