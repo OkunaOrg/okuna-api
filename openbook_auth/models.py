@@ -2136,8 +2136,8 @@ class User(AbstractUser):
         check_can_close_post(user=self, post=post)
         post.community.create_close_post_log(source_user=self, target_user=post.creator, post=post)
         post.is_closed = True
-        if not post.creator == self and not self.is_staff_of_community_with_name(post.community.name):
-            post.delete_notifications()
+        excluded_users = self._get_excluded_users_for_community_new_post_notifications_deletion_for_post(post)
+        post.delete_notifications_except_for_users(excluded_users)
         post.save()
 
         return post
@@ -3629,6 +3629,12 @@ class User(AbstractUser):
                 community_posts_query.add(Q(is_closed=False), Q.AND)
 
         return community_posts_query
+
+    def _get_excluded_users_for_community_new_post_notifications_deletion_for_post(self, post):
+        excluded_users = post.community.get_staff_members()
+        User = get_user_model()
+        creator = User.objects.filter(pk=post.creator.pk)
+        return excluded_users.union(creator)
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='bootstrap_auth_token')

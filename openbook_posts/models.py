@@ -624,6 +624,34 @@ class Post(models.Model):
         UserNewPostNotification.objects.filter(notification__owner_id=user.pk,
                                                post_id=self.pk).delete()
 
+    def delete_notifications_except_for_users(self, excluded_users):
+        excluded_ids = [user.pk for user in excluded_users]
+
+        # Remove all post comment notifications
+        PostCommentNotification = get_post_comment_notification_model()
+        PostCommentNotification.objects.exclude(post_comment__post_id=self.pk,
+                                                notification__owner_id__in=excluded_ids).delete()
+
+        # Remove all post reaction notifications
+        PostReactionNotification = get_post_reaction_notification_model()
+        PostReactionNotification.objects.exclude(post_reaction__post_id=self.pk,
+                                                 notification__owner_id__in=excluded_ids).delete()
+
+        # Remove all post comment reply notifications
+        PostCommentReplyNotification = get_post_comment_notification_model()
+        PostCommentReplyNotification.objects.exclude(post_comment__post_id=self.pk,
+                                                     notification__owner_id__in=excluded_ids).delete()
+
+        # Remove all community new post notifications
+        CommunityNewPostNotification = get_community_new_post_notification_model()
+        CommunityNewPostNotification.objects.exclude(notification__owner_id__in=excluded_ids,
+                                                     post_id=self.pk).delete()
+
+        # Remove all user new post notifications
+        UserNewPostNotification = get_user_new_post_notification_model()
+        UserNewPostNotification.objects.exclude(notification__owner_id__in=excluded_ids,
+                                                post_id=self.pk).delete()
+
     def get_participants(self):
         User = get_user_model()
 
