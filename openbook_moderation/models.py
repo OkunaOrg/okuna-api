@@ -261,10 +261,26 @@ class ModeratedObject(models.Model):
         content_object.save()
 
     def approve_with_actor_with_id(self, actor_id):
+        Post = get_post_model()
+        PostComment = get_post_comment_model()
+        Community = get_community_model()
+        User = get_user_model()
+
+        content_object = self.content_object
+        moderation_severity = self.category.severity
         current_status = self.status
         self.status = ModeratedObject.STATUS_APPROVED
         ModeratedObjectStatusChangedLog.create_moderated_object_status_changed_log(
             changed_from=current_status, changed_to=self.status, moderated_object_id=self.pk, actor_id=actor_id)
+
+        if isinstance(content_object, Post) or \
+                isinstance(content_object, PostComment) or \
+                isinstance(content_object, Community):
+            content_object.delete_notifications()
+
+        if isinstance(content_object, User) and moderation_severity == ModerationCategory.SEVERITY_CRITICAL:
+            content_object.delete_outgoing_notifications()
+
         self.save()
 
     def reject_with_actor_with_id(self, actor_id):

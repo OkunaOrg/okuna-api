@@ -35,7 +35,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
     get_moderation_penalty_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
     get_post_comment_reaction_notification_model, get_top_post_model, get_top_post_community_exclusion_model, \
-    get_hashtag_model
+    get_hashtag_model, get_user_new_post_notification_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications import helpers
 from openbook_auth.checkers import *
@@ -2871,8 +2871,21 @@ class User(AbstractUser):
         notification = self.notifications.get(id=notification_id)
         notification.delete()
 
-    def delete_notifications(self):
+    def delete_own_notifications(self):
         self.notifications.all().delete()
+
+    def delete_outgoing_notifications(self):
+        """
+        Deletes notifications sent to other users about this user
+        Eg. UserNewPostNotification
+        """
+        # Remove all user new post notifications
+        UserNewPostNotification = get_user_new_post_notification_model()
+        UserNewPostNotification.objects.filter(user_notifications_subscription__user=self).delete()
+
+    def delete_all_notifications(self):
+        self.delete_own_notifications()
+        self.delete_outgoing_notifications()
 
     def create_device(self, uuid, name=None):
         check_device_with_uuid_does_not_exist(user=self, device_uuid=uuid)
