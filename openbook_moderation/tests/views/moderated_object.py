@@ -17,7 +17,8 @@ from openbook_common.tests.helpers import make_global_moderator, make_user, make
 from openbook_common.utils.model_loaders import get_user_new_post_notification_model, \
     get_community_new_post_notification_model, get_post_comment_notification_model, \
     get_post_comment_reaction_notification_model, get_post_comment_reply_notification_model, \
-    get_post_comment_user_mention_notification_model, get_post_comment_user_mention_model
+    get_post_comment_user_mention_notification_model, get_post_comment_user_mention_model, \
+    get_post_reaction_notification_model, get_post_user_mention_model, get_post_user_mention_notification_model
 from openbook_communities.models import Community
 from openbook_moderation.models import ModeratedObject, ModeratedObjectDescriptionChangedLog, \
     ModeratedObjectCategoryChangedLog, ModerationPenalty, ModerationCategory, ModeratedObjectStatusChangedLog, \
@@ -1230,6 +1231,334 @@ class ApproveModeratedObjectApiTests(OpenbookAPITestCase):
             object_id=community_post.pk,
             status=ModeratedObject.STATUS_APPROVED
         ).exists())
+
+    def test_approving_community_post_moderated_object_deletes_post_reaction_notifications(self):
+        """
+        should delete post reaction notifications on approving a community_post moderated object
+        """
+        global_moderator = make_global_moderator()
+
+        community = make_community()
+
+        community_post_creator = make_user()
+        community_post_reactor = make_user()
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        community_post_reactor.join_community_with_name(community_name=community.name)
+
+        community_post = community_post_creator.create_community_post(community_name=community.name,
+                                                                      text=make_fake_post_text())
+        emoji_group = make_reactions_emoji_group()
+        emoji_id = make_emoji(group=emoji_group).pk
+        community_post_reaction = community_post_reactor.react_to_post(
+            post=community_post, emoji_id=emoji_id)
+
+        reporter_community_post = make_user()
+        report_category = make_moderation_category()
+
+        reporter_community_post.report_post(post=community_post,
+                                            category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(
+            post=community_post,
+            category_id=report_category.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        PostReactionNotification = get_post_reaction_notification_model()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(PostReactionNotification.objects.filter(post_reaction=community_post_reaction))
+
+    def test_approving_community_post_moderated_object_deletes_comment_notifications(self):
+        """
+        should delete comment notifications on approving community_post moderated object
+        """
+        global_moderator = make_global_moderator()
+
+        community = make_community()
+
+        community_post_creator = make_user()
+        community_post_commenter = make_user()
+        community_post_replier = make_user()
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        community_post_commenter.join_community_with_name(community_name=community.name)
+        community_post_replier.join_community_with_name(community_name=community.name)
+
+        community_post = community_post_creator.create_community_post(
+            community_name=community.name,
+            text=make_fake_post_text())
+        community_post_comment = community_post_commenter.comment_post(
+            post=community_post,
+            text=make_fake_post_text())
+
+        reporter_community_post = make_user()
+        report_category = make_moderation_category()
+
+        reporter_community_post.report_post(post=community_post,
+                                            category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(
+            post=community_post,
+            category_id=report_category.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        PostCommentNotification = get_post_comment_notification_model()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(PostCommentNotification.objects.filter(
+            post_comment=community_post_comment).exists())
+
+    def test_approving_community_post_moderated_object_deletes_comment_reply_notifications(self):
+        """
+        should delete comment reply notifications on approving community_post moderated object
+        """
+        global_moderator = make_global_moderator()
+
+        community = make_community()
+
+        community_post_comment_creator = make_user()
+        community_post_replier = make_user()
+
+        community_post_comment_creator.join_community_with_name(community_name=community.name)
+        community_post_replier.join_community_with_name(community_name=community.name)
+
+        # create community post and comment
+        community_post = community_post_comment_creator.create_community_post(
+            community_name=community.name,
+            text=make_fake_post_text())
+        community_post_comment = community_post_comment_creator.comment_post(
+            post=community_post,
+            text=make_fake_post_text())
+
+        # create reply
+        community_post_comment_reply = community_post_replier.reply_to_comment_for_post(
+            post_comment=community_post_comment,
+            post=community_post,
+            text=make_fake_post_comment_text())
+
+        reporter_community_post = make_user()
+        report_category = make_moderation_category()
+
+        reporter_community_post.report_post(post=community_post,
+                                            category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(
+            post=community_post,
+            category_id=report_category.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        PostCommentReplyNotification = get_post_comment_reply_notification_model()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(PostCommentReplyNotification.objects.filter(
+            post_comment=community_post_comment_reply).exists())
+
+    def test_approving_community_post_moderated_object_deletes_comment_reaction_notifications(self):
+        """
+        should delete comment reaction notifications on approving community_post moderated object
+        """
+        global_moderator = make_global_moderator()
+
+        community = make_community()
+
+        community_post_comment_creator = make_user()
+        community_post_comment_reactor = make_user()
+
+        community_post_comment_creator.join_community_with_name(community_name=community.name)
+        community_post_comment_reactor.join_community_with_name(community_name=community.name)
+
+        # create community post and comment
+        community_post = community_post_comment_creator.create_community_post(
+            community_name=community.name,
+            text=make_fake_post_text())
+        community_post_comment = community_post_comment_creator.comment_post(
+            post=community_post,
+            text=make_fake_post_text())
+
+        # react to comment
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+        community_post_comment_reaction = community_post_comment_reactor.react_to_post_comment(
+            post_comment=community_post_comment,
+            emoji_id=emoji.pk)
+
+        reporter_community_post = make_user()
+        report_category = make_moderation_category()
+
+        reporter_community_post.report_post(post=community_post,
+                                            category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(
+            post=community_post,
+            category_id=report_category.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        PostCommentReactionNotification = get_post_comment_reaction_notification_model()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(PostCommentReactionNotification.objects.filter(
+            post_comment_reaction=community_post_comment_reaction).exists())
+
+    def test_approving_community_post_moderated_object_deletes_comment_reply_reaction_notifications(self):
+        """
+        should delete comments reply reactions notifications on approving community_post moderated object
+        """
+        global_moderator = make_global_moderator()
+
+        community = make_community()
+
+        community_post_comment_creator = make_user()
+        community_post_comment_replier = make_user()
+        community_post_comment_reply_reactor = make_user()
+
+        community_post_comment_creator.join_community_with_name(community_name=community.name)
+        community_post_comment_replier.join_community_with_name(community_name=community.name)
+        community_post_comment_reply_reactor.join_community_with_name(community_name=community.name)
+
+        # create community post and comment
+        community_post = community_post_comment_creator.create_community_post(
+            community_name=community.name,
+            text=make_fake_post_text())
+        community_post_comment = community_post_comment_creator.comment_post(
+            post=community_post,
+            text=make_fake_post_text())
+
+        # create reply
+        community_post_comment_reply = community_post_comment_replier.reply_to_comment_for_post(
+            post_comment=community_post_comment,
+            post=community_post,
+            text=make_fake_post_comment_text())
+
+        # react to reply
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+        community_post_comment_reply_reaction = community_post_comment_reply_reactor.react_to_post_comment(
+            post_comment=community_post_comment_reply,
+            emoji_id=emoji.pk)
+
+        reporter_community_post = make_user()
+        report_category = make_moderation_category()
+
+        reporter_community_post.report_post(post=community_post,
+                                            category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(
+            post=community_post,
+            category_id=report_category.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        PostCommentReactionNotification = get_post_comment_reaction_notification_model()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(PostCommentReactionNotification.objects.filter(
+            post_comment_reaction=community_post_comment_reply_reaction).exists())
+
+    def test_approving_community_post_moderated_object_deletes_post_comment_user_mention_notifications(self):
+        """
+        should delete comment user mention notifications on approving community_post moderated object
+        """
+        global_moderator = make_global_moderator()
+
+        community = make_community()
+
+        community_post_comment_creator = make_user()
+        mmentioned_user = make_user(username='joelito')
+        post_comment_text = 'Hello @joelito'
+
+        community_post_comment_creator.join_community_with_name(community_name=community.name)
+        mmentioned_user.join_community_with_name(community_name=community.name)
+
+        # create community post and comment with mention
+        community_post = community_post_comment_creator.create_community_post(
+            community_name=community.name,
+            text=make_fake_post_text())
+        community_post_comment = community_post_comment_creator.comment_post(
+            post=community_post,
+            text=post_comment_text)
+
+        # get user mention
+        PostCommentUserMention = get_post_comment_user_mention_model()
+        community_post_comment_user_mention = PostCommentUserMention.objects.get(post_comment=community_post_comment)
+
+        reporter_community_post = make_user()
+        report_category = make_moderation_category()
+
+        reporter_community_post.report_post(post=community_post,
+                                            category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(
+            post=community_post,
+            category_id=report_category.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        PostCommentUserMentionNotification = get_post_comment_user_mention_notification_model()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(PostCommentUserMentionNotification.objects.filter(
+            post_comment_user_mention=community_post_comment_user_mention).exists())
+
+    def test_approving_community_post_moderated_object_deletes_post_user_mention_notifications(self):
+        """
+        should delete post user mention notifications on approving community_post moderated object
+        """
+        global_moderator = make_global_moderator()
+
+        community = make_community()
+
+        community_post_comment_creator = make_user()
+        mmentioned_user = make_user(username='joelito')
+        post_text = 'Hello @joelito'
+
+        community_post_comment_creator.join_community_with_name(community_name=community.name)
+        mmentioned_user.join_community_with_name(community_name=community.name)
+
+        # create community post with mention
+        community_post = community_post_comment_creator.create_community_post(
+            community_name=community.name,
+            text=post_text)
+
+        # get user mention
+        PostUserMention = get_post_user_mention_model()
+        community_post_user_mention = PostUserMention.objects.get(post=community_post)
+
+        reporter_community_post = make_user()
+        report_category = make_moderation_category()
+
+        reporter_community_post.report_post(post=community_post,
+                                            category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(
+            post=community_post,
+            category_id=report_category.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        PostUserMentionNotification = get_post_user_mention_notification_model()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(PostUserMentionNotification.objects.filter(
+            post_user_mention=community_post_user_mention).exists())
 
     def test_can_approve_community_post_moderated_object_if_community_post_moderator(self):
         """
