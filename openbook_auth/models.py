@@ -388,6 +388,7 @@ class User(AbstractUser):
         for community in self.created_communities.all().iterator():
             community.soft_delete()
 
+        self.delete_all_notifications()
         self.is_deleted = True
         self.save()
 
