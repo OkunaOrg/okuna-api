@@ -13,12 +13,14 @@ from openbook_auth.models import User
 from openbook_common.tests.helpers import make_global_moderator, make_user, make_moderation_category, \
     make_authentication_headers_for_user, make_moderated_object_description, \
     make_community, make_fake_post_text, make_fake_post_comment_text, make_moderated_object, make_moderated_object_log, \
-    make_moderated_object_report, make_reactions_emoji_group, make_emoji
+    make_moderated_object_report, make_reactions_emoji_group, make_emoji, make_circle
 from openbook_common.utils.model_loaders import get_user_new_post_notification_model, \
     get_community_new_post_notification_model, get_post_comment_notification_model, \
     get_post_comment_reaction_notification_model, get_post_comment_reply_notification_model, \
     get_post_comment_user_mention_notification_model, get_post_comment_user_mention_model, \
-    get_post_reaction_notification_model, get_post_user_mention_model, get_post_user_mention_notification_model
+    get_post_reaction_notification_model, get_post_user_mention_model, get_post_user_mention_notification_model, \
+    get_community_invite_notification_model, get_follow_notification_model, get_connection_request_notification_model, \
+    get_connection_confirmed_notification_model
 from openbook_communities.models import Community
 from openbook_moderation.models import ModeratedObject, ModeratedObjectDescriptionChangedLog, \
     ModeratedObjectCategoryChangedLog, ModerationPenalty, ModerationCategory, ModeratedObjectStatusChangedLog, \
@@ -1018,6 +1020,88 @@ class ApproveModeratedObjectApiTests(OpenbookAPITestCase):
         UserNewPostNotification = get_user_new_post_notification_model()
         self.assertFalse(UserNewPostNotification.objects.filter(post=post).exists())
 
+    def test_approving_user_moderated_object_for_severity_critical_deletes_user_follow_notifications(self):
+        """
+        should remove all user follow notifications on approval of a user moderated object for severity critical
+        """
+        global_moderator = make_global_moderator()
+
+        user = make_user()
+        reporter_user = make_user()
+        followed_user = make_user()
+
+        user.follow_user(user=followed_user)
+
+        report_category = make_moderation_category(severity=ModerationCategory.SEVERITY_CRITICAL)
+        reporter_user.report_user_with_username(username=user.username, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(user=user,
+                                                                                   category_id=report_category.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        FollowNotification = get_follow_notification_model()
+        self.assertFalse(FollowNotification.objects.filter(follower=user).exists())
+
+    def test_approving_user_moderated_object_for_severity_critical_deletes_user_connection_request_notifications(self):
+        """
+        should remove all user connection request notifications on approval of a user moderated object for severity critical
+        """
+        global_moderator = make_global_moderator()
+
+        user = make_user()
+        reporter_user = make_user()
+        requested_user = make_user()
+
+        user.connect_with_user_with_id(requested_user.pk)
+
+        report_category = make_moderation_category(severity=ModerationCategory.SEVERITY_CRITICAL)
+        reporter_user.report_user_with_username(username=user.username, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(user=user,
+                                                                                   category_id=report_category.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ConnectionRequestNotification = get_connection_request_notification_model()
+        self.assertFalse(ConnectionRequestNotification.objects.filter(connection_requester=user).exists())
+
+    def test_approving_user_moderated_object_for_severity_critical_deletes_user_connection_confirmed_notifications(self):
+        """
+        should remove all user connection confirmed notifications on approval of a user moderated object for severity critical
+        """
+        global_moderator = make_global_moderator()
+
+        user = make_user()
+        circle = make_circle(creator=user)
+        reporter_user = make_user()
+        connection_requester = make_user()
+
+        connection_requester.connect_with_user_with_id(user.pk)
+        user.confirm_connection_with_user_with_id(user_id=connection_requester.pk, circles_ids=[circle.pk])
+        ConnectionConfirmedNotification = get_connection_confirmed_notification_model()
+        self.assertTrue(ConnectionConfirmedNotification.objects.filter(connection_confirmator=user).exists())
+
+        report_category = make_moderation_category(severity=ModerationCategory.SEVERITY_CRITICAL)
+        reporter_user.report_user_with_username(username=user.username, category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_user(user=user,
+                                                                                   category_id=report_category.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(ConnectionConfirmedNotification.objects.filter(connection_confirmator=user).exists())
+
     def test_cant_approve_user_moderated_object_if_community_moderator(self):
         """
         should not be able to approve a user moderated object if community moderator
@@ -1135,6 +1219,38 @@ class ApproveModeratedObjectApiTests(OpenbookAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         CommunityNewPostNotification = get_community_new_post_notification_model()
         self.assertFalse(CommunityNewPostNotification.objects.filter(post=post).exists())
+
+    def test_approving_community_moderated_object_deleted_community_invite_notifications(self):
+        """
+        should remove community invite notifications on approving a community moderated object
+        """
+        global_moderator = make_global_moderator()
+        community_admin = make_user()
+        community_invitee = make_user()
+
+        community = make_community(creator=community_admin)
+        community_invitee.follow_user(user=community_admin)
+
+        reporter_community = make_user()
+        report_category = make_moderation_category()
+        reporter_community.report_community(community=community,
+                                            category_id=report_category.pk)
+
+        community_invite = community_admin.invite_user_with_username_to_community_with_name(
+            username=community_invitee.username,
+            community_name=community.name)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_community(community=community,
+                                                                                        category_id=report_category.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        CommunityInviteNotification = get_community_invite_notification_model()
+        self.assertFalse(CommunityInviteNotification.objects.filter(community_invite=community_invite).exists())
 
     def test_cant_approve_community_moderated_object_if_community_moderator(self):
         """
