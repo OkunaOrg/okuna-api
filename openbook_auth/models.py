@@ -2136,7 +2136,7 @@ class User(AbstractUser):
         check_can_close_post(user=self, post=post)
         post.community.create_close_post_log(source_user=self, target_user=post.creator, post=post)
         post.is_closed = True
-        excluded_users = self._get_excluded_users_for_community_new_post_notifications_deletion_for_post(post)
+        excluded_users = self._get_excluded_users_for_deleting_community_notifications_on_close_post(post)
         post.delete_notifications_except_for_users(excluded_users)
         post.save()
 
@@ -3655,7 +3655,7 @@ class User(AbstractUser):
 
         return community_posts_query
 
-    def _get_excluded_users_for_community_new_post_notifications_deletion_for_post(self, post):
+    def _get_excluded_users_for_deleting_community_notifications_on_close_post(self, post):
         excluded_users = post.community.get_staff_members()
         User = get_user_model()
         creator = User.objects.filter(pk=post.creator.pk)
