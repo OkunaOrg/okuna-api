@@ -2883,6 +2883,18 @@ class User(AbstractUser):
         UserNewPostNotification = get_user_new_post_notification_model()
         UserNewPostNotification.objects.filter(user_notifications_subscription__user=self).delete()
 
+        # Removes all user connection requests
+        ConnectionRequestNotification = get_connection_request_notification_model()
+        ConnectionRequestNotification.objects.filter(connection_requester=self).delete()
+
+        # Removes all follow notifications
+        FollowNotification = get_follow_notification_model()
+        FollowNotification.objects.filter(follower=self).delete()
+
+        # Removes all connection confirmed notifications
+        ConnectionConfirmedNotification = get_connection_confirmed_notification_model()
+        ConnectionConfirmedNotification.objects.filter(connection_confirmator=self).delete()
+
     def delete_all_notifications(self):
         self.delete_own_notifications()
         self.delete_outgoing_notifications()

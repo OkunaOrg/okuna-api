@@ -14,7 +14,8 @@ from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.utils.model_loaders import get_community_invite_model, \
     get_community_log_model, get_category_model, get_user_model, get_moderated_object_model, \
-    get_community_notifications_subscription_model, get_community_new_post_notification_model
+    get_community_notifications_subscription_model, get_community_new_post_notification_model, \
+    get_community_invite_notification_model
 from openbook_common.validators import hex_color_validator
 from openbook_communities.helpers import upload_to_community_avatar_directory, upload_to_community_cover_directory
 from openbook_communities.validators import community_name_characters_validator
@@ -485,6 +486,10 @@ class Community(models.Model):
         # Remove all community new post notifications
         CommunityNewPostNotification = get_community_new_post_notification_model()
         CommunityNewPostNotification.objects.filter(community_notifications_subscription__community_id=self.pk).delete()
+
+        # Remove all community invite notifications
+        CommunityInviteNotification = get_community_invite_notification_model()
+        CommunityInviteNotification.objects.filter(community_invite__community_id=self.pk).delete()
 
     def soft_delete(self):
         self.is_deleted = True
