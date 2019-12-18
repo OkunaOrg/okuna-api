@@ -3,10 +3,12 @@ from rest_framework import serializers
 
 from openbook_common.serializers import CommonPostImageSerializer, CommonPostCreatorSerializer, \
     CommonCommunityMembershipSerializer, CommonPostEmojiCountSerializer, CommonPostCommunitySerializer, \
-    CommonPostReactionSerializer, CommonPostLanguageSerializer
+    CommonPostReactionSerializer, CommonPostLanguageSerializer, CommonHashtagSerializer
+from openbook_common.serializers_fields.community import CommunityPostsCountField
 from openbook_common.serializers_fields.post import PostReactionsEmojiCountField, CommentsCountField, PostCreatorField, \
     PostIsMutedField, ReactionField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
+from openbook_communities.models import Community
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 from openbook_posts.models import Post
 from openbook_posts.validators import post_text_validators
@@ -49,6 +51,7 @@ class CommunityPostSerializer(serializers.ModelSerializer):
     is_muted = PostIsMutedField()
     reaction = ReactionField(reaction_serializer=CommonPostReactionSerializer)
     language = CommonPostLanguageSerializer()
+    hashtags = CommonHashtagSerializer(many=True)
 
     class Meta:
         model = Post
@@ -72,4 +75,23 @@ class CommunityPostSerializer(serializers.ModelSerializer):
             'media_height',
             'media_width',
             'media_thumbnail',
+            'hashtags'
+        )
+
+
+class GetCommunityPostsCountsSerializer(serializers.Serializer):
+    community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
+                                           allow_blank=False,
+                                           required=True,
+                                           validators=[community_name_characters_validator, community_name_exists])
+
+
+class GetCommunityPostsCountCommunitySerializer(serializers.ModelSerializer):
+    posts_count = CommunityPostsCountField()
+
+    class Meta:
+        model = Community
+        fields = (
+            'id',
+            'posts_count',
         )

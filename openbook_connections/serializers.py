@@ -7,7 +7,7 @@ from openbook_circles.models import Circle
 from openbook_circles.validators import circle_id_exists
 from openbook_common.models import Badge
 from openbook_common.serializers_fields.user import IsConnectedField, ConnectedCirclesField, IsFollowingField, \
-    IsPendingConnectionConfirmation, IsFullyConnectedField, IsSubscribedToUserField
+    IsPendingConnectionConfirmation, IsFullyConnectedField, AreNewPostNotificationsEnabledForUserField
 
 from openbook_connections.models import Connection
 
@@ -63,7 +63,7 @@ class ConnectionUserSerializer(serializers.ModelSerializer):
     profile = ConnectionUserProfileSerializer(many=False)
     is_connected = IsConnectedField()
     is_following = IsFollowingField()
-    is_subscribed = IsSubscribedToUserField()
+    are_new_post_notifications_enabled = AreNewPostNotificationsEnabledForUserField()
     connected_circles = ConnectedCirclesField(circle_serializer=ConnectionUserCircleSerializer)
     is_pending_connection_confirmation = IsPendingConnectionConfirmation()
     is_fully_connected = IsFullyConnectedField()
@@ -77,7 +77,7 @@ class ConnectionUserSerializer(serializers.ModelSerializer):
             'is_connected',
             'is_fully_connected',
             'is_following',
-            'is_subscribed',
+            'are_new_post_notifications_enabled',
             'connected_circles',
             'is_pending_connection_confirmation'
         )

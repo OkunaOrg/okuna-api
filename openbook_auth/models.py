@@ -19,7 +19,9 @@ from django.core.mail import EmailMultiAlternatives
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
-from openbook_auth.queries import make_get_hashtag_posts_query_for_user
+from openbook_auth.queries import make_get_hashtag_posts_for_user_with_id_query, \
+    make_get_hashtag_with_name_for_user_with_id_query
+from openbook_hashtags.queries import make_search_hashtag_query_for_user_with_id
 from openbook_notifications.helpers import get_notification_language_code_for_target_user
 from openbook_translation import translation_strategy
 from openbook_common.helpers import get_supported_translation_language
@@ -33,7 +35,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
     get_moderation_penalty_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
     get_post_comment_reaction_notification_model, get_top_post_model, get_top_post_community_exclusion_model, \
-    get_community_notifications_subscription_model, get_user_notifications_subscription_model, get_hashtag_model
+    get_hashtag_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications import helpers
 from openbook_auth.checkers import *
@@ -334,13 +336,27 @@ class User(AbstractUser):
 
         return results.count()
 
-    def count_posts_for_user_with_id(self, id):
+    def count_posts_for_hashtag_with_name(self, hashtag_name):
+        Hashtag = get_hashtag_model()
+        hashtag = Hashtag.objects.get(name=hashtag_name)
+        return self.count_posts_for_hashtag(hashtag=hashtag)
+
+    def count_posts_for_hashtag(self, hashtag):
+        """
+        Count how many posts are with the given hashtag name relative to the user
+        """
+        Post = get_post_model()
+        hashtag_posts_query = make_get_hashtag_posts_for_user_with_id_query(user_id=self.pk, hashtag=hashtag)
+
+        return Post.objects.filter(hashtag_posts_query).distinct().cache().count()
+
+    def count_posts_for_user_with_id(self, user_id):
         """
         Count how many posts has the user created relative to another user
         :param id:
         :return: count
         """
-        user = User.objects.get(pk=id)
+        user = User.objects.get(pk=user_id)
         if user.is_connected_with_user_with_id(self.pk):
             count = user.get_posts_for_user_with_username(username=self.username).count()
         else:
@@ -602,8 +618,29 @@ class User(AbstractUser):
             followed_user_id=user_id,
             lists__id=list_id).exists()
 
-    def is_subscribed_to_user_with_id(self, user_id):
-        return self.user_notifications_subscriptions.filter(user__id=user_id).exists()
+    def is_subscribed_to_user_notifications(self, user):
+        UserNotificationsSubscription = get_user_notifications_subscription_model()
+        return UserNotificationsSubscription.user_notifications_subscription_exists(
+            user=user,
+            subscriber=self
+        )
+
+    def are_new_post_notifications_enabled_for_user(self, user):
+        UserNotificationsSubscription = get_user_notifications_subscription_model()
+        return UserNotificationsSubscription. \
+            are_new_post_notifications_enabled_for_user_with_username_and_target_with_username(
+            username=self.username,
+            target_username=user.username
+        )
+
+    def are_new_post_notifications_enabled_for_community(self, community):
+        CommunityNotificationsSubscription = get_community_notifications_subscription_model()
+
+        return CommunityNotificationsSubscription. \
+            are_new_post_notifications_enabled_for_user_with_username_and_community_with_name(
+            username=self.username,
+            community_name=community.name
+        )
 
     def is_world_circle_id(self, id):
         world_circle_id = self._get_world_circle_id()
@@ -683,9 +720,10 @@ class User(AbstractUser):
         return Community.is_user_with_username_invited_to_community_with_name(username=self.username,
                                                                               community_name=community_name)
 
-    def is_subscribed_to_community_with_name(self, community_name):
-        Community = get_community_model()
-        return Community.is_user_with_username_subscribed_to_notifications_for_community_with_name(username=self.username, community_name=community_name)
+    def is_subscribed_to_community_notifications(self, community):
+        CommunityNotificationsSubscription = get_community_notifications_subscription_model()
+        return CommunityNotificationsSubscription.community_notifications_subscription_exists(
+            subscriber=self, community=community)
 
     def has_reported_moderated_object_with_id(self, moderated_object_id):
         ModeratedObject = get_moderated_object_model()
@@ -806,6 +844,14 @@ class User(AbstractUser):
                                                moderated_object__object_type=ModeratedObject.OBJECT_TYPE_COMMUNITY
                                                ).exists()
 
+    def has_reported_hashtag_with_id(self, hashtag_id):
+        ModeratedObject = get_moderated_object_model()
+        ModerationReport = get_moderation_report_model()
+        return ModerationReport.objects.filter(reporter_id=self.pk,
+                                               moderated_object__object_id=hashtag_id,
+                                               moderated_object__object_type=ModeratedObject.OBJECT_TYPE_HASHTAG
+                                               ).exists()
+
     def has_profile_community_posts_visible(self):
         return self.profile.community_posts_visible
 
@@ -822,6 +868,12 @@ class User(AbstractUser):
                 return True
 
         return False
+
+    def can_see_hashtag(self, hashtag):
+        query = make_get_hashtag_with_name_for_user_with_id_query(hashtag_name=hashtag.name,
+                                                                  user_id=self.pk)
+        Hashtag = get_hashtag_model()
+        return Hashtag.objects.filter(query).exists()
 
     def can_see_post_comment(self, post_comment):
         post = post_comment.post
@@ -860,14 +912,11 @@ class User(AbstractUser):
         PostReaction = get_post_reaction_model()
         return PostReaction.objects.filter(reactions_query)
 
-    def get_posts_count_for_community(self, community):
-        """
-        Returns 0 if ur not a member and community is private
-        """
+    def count_posts_for_community(self, community):
         Post = get_post_model()
         community_posts_query = self._make_get_community_with_id_posts_query(community=community,
                                                                              include_closed_posts_for_staff=False)
-        return len(set(Post.objects.values_list('id', flat=True).filter(community_posts_query)))
+        return Post.objects.filter(community_posts_query).distinct().cache().count()
 
     def get_emoji_counts_for_post_with_id(self, post_id, emoji_id=None):
         Post = get_post_model()
@@ -1510,6 +1559,9 @@ class User(AbstractUser):
         if self.has_favorite_community_with_name(community_name):
             self.unfavorite_community_with_name(community_name=community_name)
 
+        if self.is_subscribed_to_community_notifications(community=community_to_leave):
+            self.unsubscribe_from_community_notifications(community=community_to_leave)
+
         community_to_leave.remove_member(self)
 
         return community_to_leave
@@ -1762,15 +1814,10 @@ class User(AbstractUser):
         return self.lists.get(id=list_id)
 
     def search_hashtags_with_query(self, query):
-        hashtags_query = self._make_search_hashtags_query(query=query)
+        hashtags_query = make_search_hashtag_query_for_user_with_id(search_query=query, user_id=self.pk)
         Hashtag = get_hashtag_model()
 
         return Hashtag.objects.filter(hashtags_query)
-
-    def _make_search_hashtags_query(self, query):
-        search_hashtags_query = Q(name__icontains=query)
-
-        return search_hashtags_query
 
     def search_users_with_query(self, query):
         users_query = self._make_search_users_query(query=query)
@@ -1902,6 +1949,10 @@ class User(AbstractUser):
     def get_trending_posts(self, max_id=None, min_id=None):
         Post = get_post_model()
         return Post.get_trending_posts_for_user_with_id(user_id=self.pk, max_id=max_id, min_id=min_id)
+
+    def get_trending_posts_old(self):
+        Post = get_post_model()
+        return Post.get_trending_posts_old_for_user_with_id(user_id=self.pk)
 
     def get_trending_communities(self, category_name=None):
         Community = get_community_model()
@@ -2091,13 +2142,15 @@ class User(AbstractUser):
 
     def get_hashtag_with_name(self, hashtag_name):
         Hashtag = get_hashtag_model()
-        return Hashtag.objects.get(name=hashtag_name)
+        hashtag = Hashtag.objects.get(name=hashtag_name)
+        check_can_see_hashtag(user=self, hashtag=hashtag)
+        return hashtag
 
     def get_posts_for_hashtag_with_name(self, hashtag_name, max_id=None):
         Hashtag = get_hashtag_model()
         hashtag = Hashtag.objects.get(name=hashtag_name)
 
-        hashtag_posts_query = make_get_hashtag_posts_query_for_user(user=self, hashtag=hashtag)
+        hashtag_posts_query = make_get_hashtag_posts_for_user_with_id_query(user_id=self.pk, hashtag=hashtag)
 
         if max_id:
             hashtag_posts_query.add(Q(id__lt=max_id), Q.AND)
@@ -2145,23 +2198,44 @@ class User(AbstractUser):
 
         return profile_posts
 
-    def subscribe_to_notifications_for_community_with_name(self, community_name):
+    def unsubscribe_from_community_notifications(self, community):
+        CommunityNotificationsSubscription = get_community_notifications_subscription_model()
+        CommunityNotificationsSubscription.delete_community_notifications_subscription(
+            community=community,
+            subscriber=self
+        )
+
+    def enable_new_post_notifications_for_community_with_name(self, community_name):
         Community = get_community_model()
         CommunityNotificationsSubscription = get_community_notifications_subscription_model()
         community = Community.objects.get(name=community_name)
-        check_can_subscribe_to_posts_for_community(subscriber=self, community=community)
+        check_can_enable_new_post_notifications_for_community(user=self, community=community)
 
-        CommunityNotificationsSubscription.create_community_notifications_subscription(subscriber=self, community=community)
+        community_notifications_subscription = CommunityNotificationsSubscription. \
+            get_or_create_community_notifications_subscription(
+            community=community,
+            subscriber=self
+        )
+
+        community_notifications_subscription.new_post_notifications = True
+        community_notifications_subscription.save()
 
         return community
 
-    def unsubscribe_from_notifications_for_community_with_name(self, community_name):
+    def disable_new_post_notifications_for_community_with_name(self, community_name):
         Community = get_community_model()
         CommunityNotificationsSubscription = get_community_notifications_subscription_model()
         community = Community.objects.get(name=community_name)
-        check_can_unsubscribe_to_posts_for_community(subscriber=self, community=community)
+        check_can_disable_new_post_notifications_for_community(user=self, community=community)
 
-        CommunityNotificationsSubscription.remove_community_notifications_subscription(subscriber=self, community=community)
+        community_notifications_subscription = CommunityNotificationsSubscription. \
+            get_or_create_community_notifications_subscription(
+            community=community,
+            subscriber=self
+        )
+
+        community_notifications_subscription.new_post_notifications = False
+        community_notifications_subscription.save()
 
         return community
 
@@ -2213,7 +2287,7 @@ class User(AbstractUser):
                       'creator__profile__avatar', 'creator__profile__badges__id',
                       'creator__profile__badges__keyword', 'creator__profile__id', 'community__id',
                       'community__name', 'community__avatar', 'community__color', 'community__title')
-    
+
         user_query = Q(creator_id=user.pk)
 
         exclude_reported_and_approved_posts_query = ~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED)
@@ -2236,8 +2310,8 @@ class User(AbstractUser):
 
         world_circle_posts_query = Q(creator__id=user.pk, circles__id=world_circle_id)
 
-        world_circle_posts = Post.objects.prefetch_related(*posts_prefetch_related)\
-            .only(*posts_only)\
+        world_circle_posts = Post.objects.prefetch_related(*posts_prefetch_related) \
+            .only(*posts_only) \
             .filter(
             user_query &
             world_circle_posts_query &
@@ -2877,25 +2951,46 @@ class User(AbstractUser):
         )
         return post_comment, result.get('translated_text')
 
-    def subscribe_to_notifications_for_user_with_username(self, username):
-        user_to_subscribe = User.objects.get(username=username)
+    def unsubscribe_from_user_notifications(self, user):
+        UserNotificationsSubscription = get_user_notifications_subscription_model()
+        UserNotificationsSubscription.delete_user_notifications_subscription(
+            user=user,
+            subscriber=self
+        )
+
+    def enable_new_post_notifications_for_user_with_username(self, username):
+        target_user = User.objects.get(username=username)
         UserNotificationsSubscription = get_user_notifications_subscription_model()
 
-        check_can_subscribe_to_notifications_for_user(subscriber=self, user=user_to_subscribe)
+        check_can_enable_new_post_notifications_for_user(user=self, target_user=target_user)
 
-        UserNotificationsSubscription.create_user_notifications_subscription(subscriber=self, user=user_to_subscribe)
+        user_notifications_subscription = UserNotificationsSubscription. \
+            get_or_create_user_notifications_subscription(
+            user=target_user,
+            subscriber=self
+        )
 
-        return user_to_subscribe
+        user_notifications_subscription.new_post_notifications = True
+        user_notifications_subscription.save()
 
-    def unsubscribe_from_notifications_for_user_with_username(self, username):
-        user_to_unsubscribe = User.objects.get(username=username)
+        return target_user
+
+    def disable_new_post_notifications_for_user_with_username(self, username):
+        target_user = User.objects.get(username=username)
         UserNotificationsSubscription = get_user_notifications_subscription_model()
 
-        check_can_unsubscribe_from_notifications_for_user(subscriber=self, user=user_to_unsubscribe)
+        check_can_disable_new_post_notifications_for_user(user=self, target_user=target_user)
 
-        UserNotificationsSubscription.remove_user_notifications_subscription(subscriber=self, user=user_to_unsubscribe)
+        user_notifications_subscription = UserNotificationsSubscription. \
+            get_or_create_user_notifications_subscription(
+            user=target_user,
+            subscriber=self
+        )
 
-        return user_to_unsubscribe
+        user_notifications_subscription.new_post_notifications = False
+        user_notifications_subscription.save()
+
+        return target_user
 
     def block_user_with_username(self, username):
         user = User.objects.get(username=username)
@@ -2914,11 +3009,11 @@ class User(AbstractUser):
         if user_to_block.is_following_user_with_id(user_id=self.pk):
             user_to_block.unfollow_user_with_id(self.pk)
 
-        if self.is_subscribed_to_user_with_id(user_id=user_to_block.pk):
-            self.unsubscribe_from_notifications_for_user_with_username(user_to_block.username)
+        if self.is_subscribed_to_user_notifications(user=user_to_block.pk):
+            self.unsubscribe_from_user_notifications(user_to_block)
 
-        if user_to_block.is_subscribed_to_user_with_id(user_id=self.pk):
-            user_to_block.unsubscribe_from_notifications_for_user_with_username(self.username)
+        if user_to_block.is_subscribed_to_user_notifications(user=self.pk):
+            user_to_block.unsubscribe_from_user_notifications(self)
 
         UserBlock = get_user_block_model()
         UserBlock.create_user_block(blocker_id=self.pk, blocked_user_id=user_id)
@@ -2978,6 +3073,19 @@ class User(AbstractUser):
                                                        category_id=category_id,
                                                        reporter_id=self.pk,
                                                        description=description)
+
+    def report_hashtag_with_name(self, hashtag_name, category_id, description=None):
+        Hashtag = get_hashtag_model()
+        hashtag = Hashtag.objects.get(name=hashtag_name)
+        return self.report_hashtag(hashtag=hashtag, category_id=category_id, description=description)
+
+    def report_hashtag(self, hashtag, category_id, description=None):
+        check_can_report_hashtag(user=self, hashtag=hashtag)
+        ModerationReport = get_moderation_report_model()
+        ModerationReport.create_hashtag_moderation_report(hashtag=hashtag,
+                                                          category_id=category_id,
+                                                          reporter_id=self.pk,
+                                                          description=description)
 
     def report_community_with_name(self, community_name, category_id, description=None):
         Community = get_community_model()
@@ -3693,22 +3801,56 @@ def bootstrap_user_profile(user, name, is_of_legal_age, avatar=None, ):
 
 
 class UserNotificationsSubscription(models.Model):
-    subscriber = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_notifications_subscriptions', null=False,
+    subscriber = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_notifications_subscriptions',
+                                   null=False,
                                    blank=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications_subscribers', null=False,
                              blank=False)
+    new_post_notifications = models.BooleanField(default=False, blank=False)
 
     class Meta:
         unique_together = ('user', 'subscriber',)
 
     @classmethod
     def create_user_notifications_subscription(cls, subscriber, user):
-        return cls.objects.create(subscriber=subscriber, user=user)
+        if not cls.objects.filter(subscriber=subscriber, user=user).exists():
+            return cls.objects.create(subscriber=subscriber, user=user)
+
+        user_notifications_subscription = cls.objects.get(subscriber=subscriber, user=user)
+        user_notifications_subscription.save()
+
+        return user_notifications_subscription
 
     @classmethod
-    def remove_user_notifications_subscription(cls, subscriber, user):
+    def get_or_create_user_notifications_subscription(cls, subscriber, user):
+        try:
+            user_notifications_subscription = cls.objects.get(subscriber_id=subscriber.pk,
+                                                              user_id=user.pk)
+        except cls.DoesNotExist:
+            user_notifications_subscription = cls.create_user_notifications_subscription(
+                subscriber=subscriber,
+                user=user
+            )
+
+        return user_notifications_subscription
+
+    @classmethod
+    def delete_user_notifications_subscription(cls, subscriber, user):
         return cls.objects.filter(subscriber=subscriber, user=user).delete()
 
     @classmethod
+    def user_notifications_subscription_exists(cls, subscriber, user):
+        return cls.objects.filter(subscriber=subscriber, user=user).exists()
+
+    @classmethod
     def is_user_with_username_subscribed_to_notifications_for_user_with_username(cls, subscriber_username, username):
-        return cls.objects.filter(user__username=username, subscriber__username=subscriber_username).exists()
+        return cls.objects.filter(user__username=username,
+                                  subscriber__username=subscriber_username,
+                                  new_post_notifications=True).exists()
+
+    @classmethod
+    def are_new_post_notifications_enabled_for_user_with_username_and_target_with_username(cls, username,
+                                                                                           target_username):
+        return cls.objects.filter(user__username=target_username,
+                                  subscriber__username=username,
+                                  new_post_notifications=True).exists()

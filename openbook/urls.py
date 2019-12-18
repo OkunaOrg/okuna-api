@@ -30,7 +30,8 @@ from openbook_auth.views.followers.views import Followers, SearchFollowers
 from openbook_auth.views.following.views import Followings, SearchFollowings
 from openbook_auth.views.linked_users.views import LinkedUsers, SearchLinkedUsers
 from openbook_auth.views.proxy.views import ProxyAuth
-from openbook_auth.views.users.views import SearchUsers, GetUser, BlockUser, UnblockUser, SubscribeToUserNotifications
+from openbook_auth.views.users.views import SearchUsers, GetUser, BlockUser, UnblockUser, \
+    SubscribeToUserNewPostNotifications, GetUserPostsCount
 from openbook_categories.views import Categories
 from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups, ProxyDomainCheck
@@ -46,10 +47,11 @@ from openbook_communities.views.community.members.views import CommunityMembers,
     LeaveCommunity, InviteCommunityMember, SearchCommunityMembers, UninviteCommunityMember
 from openbook_communities.views.community.moderators.views import CommunityModeratorItem, CommunityModerators, \
     SearchCommunityModerators
-from openbook_communities.views.community.posts.views import CommunityPosts, ClosedCommunityPosts
+from openbook_communities.views.community.posts.views import CommunityPosts, ClosedCommunityPosts, \
+    GetCommunityPostsCount
 from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, \
     FavoriteCommunity, \
-    TopPostCommunityExclusion, SubscribeToCommunityNotifications
+    TopPostCommunityExclusion, SubscribeToCommunityNewPostNotifications
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
 from openbook_hashtags.views.hashtag.views import HashtagItem, HashtagPosts
@@ -65,7 +67,7 @@ from openbook_moderation.views.moderated_object.views import ModeratedObjectItem
 from openbook_moderation.views.moderated_objects.views import CommunityModeratedObjects, GlobalModeratedObjects
 from openbook_moderation.views.moderation_categories.views import ModerationCategories
 from openbook_moderation.views.report.views import ReportUser, ReportPost, ReportCommunity, \
-    ReportPostComment
+    ReportPostComment, ReportHashtag
 from openbook_moderation.views.user.views import UserModerationPenalties, UserPendingModeratedObjectsCommunities
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification, \
     UnreadNotificationsCount
@@ -81,7 +83,7 @@ from openbook_posts.views.post_comments.views import PostComments, PostCommentsD
 from openbook_posts.views.post_media.views import PostMedia
 from openbook_posts.views.post_reaction.views import PostReactionItem
 from openbook_posts.views.post_reactions.views import PostReactions, PostReactionsEmojiCount, PostReactionEmojiGroups
-from openbook_posts.views.posts.views import Posts, TrendingPosts, TopPosts
+from openbook_posts.views.posts.views import Posts, TrendingPosts, TopPosts, TrendingPostsNew
 from openbook_importer.views import ImportItem
 
 auth_auth_patterns = [
@@ -111,7 +113,9 @@ auth_users_user_patterns = [
     path('block/', BlockUser.as_view(), name='block-user'),
     path('unblock/', UnblockUser.as_view(), name='unblock-user'),
     path('report/', ReportUser.as_view(), name='report-user'),
-    path('notifications/subscribe/', SubscribeToUserNotifications.as_view(), name='subscribe-user-notifications'),
+    path('notifications/subscribe/new-post/', SubscribeToUserNewPostNotifications.as_view(),
+         name='subscribe-user-new-post-notifications'),
+    path('posts/count/', GetUserPostsCount.as_view(), name='user-posts-count'),
 ]
 
 auth_users_patterns = [
@@ -208,6 +212,7 @@ posts_patterns = [
     path('<uuid:post_uuid>/', include(post_patterns)),
     path('', Posts.as_view(), name='posts'),
     path('trending/', TrendingPosts.as_view(), name='trending-posts'),
+    path('trending/new/', TrendingPostsNew.as_view(), name='trending-posts-new'),
     path('top/', TopPosts.as_view(), name='top-posts'),
     path('emojis/groups/', PostReactionEmojiGroups.as_view(), name='posts-emoji-groups'),
 ]
@@ -244,6 +249,7 @@ community_members_patterns = [
 community_posts_patterns = [
     path('', CommunityPosts.as_view(), name='community-posts'),
     path('closed/', ClosedCommunityPosts.as_view(), name='closed-community-posts'),
+    path('count/', GetCommunityPostsCount.as_view(), name='community-posts-count'),
 ]
 
 community_banned_users_patterns = [
@@ -262,7 +268,8 @@ community_patterns = [
     path('avatar/', CommunityAvatar.as_view(), name='community-avatar'),
     path('cover/', CommunityCover.as_view(), name='community-cover'),
     path('favorite/', FavoriteCommunity.as_view(), name='favorite-community'),
-    path('notifications/subscribe/', SubscribeToCommunityNotifications.as_view(), name='subscribe-community-notifications'),
+    path('notifications/subscribe/new-post/', SubscribeToCommunityNewPostNotifications.as_view(),
+         name='subscribe-community-new-post-notifications'),
     path('members/', include(community_members_patterns)),
     path('posts/', include(community_posts_patterns)),
     path('banned-users/', include(community_banned_users_patterns)),
@@ -379,6 +386,7 @@ moderation_patterns = [
 hashtag_patterns = [
     path('', HashtagItem.as_view(), name='hashtag'),
     path('posts/', HashtagPosts.as_view(), name='hashtag-posts'),
+    path('report/', ReportHashtag.as_view(), name='report-hashtag'),
 ]
 
 hashtags_patterns = [

@@ -3,9 +3,12 @@ from rest_framework import serializers
 
 from openbook_common.serializers import CommonPostCreatorSerializer, \
     CommonCommunityMembershipSerializer, CommonPostEmojiCountSerializer, CommonPostCommunitySerializer, \
-    CommonPostReactionSerializer, CommonPostLanguageSerializer, CommonHashtagSerializer
+    CommonPostReactionSerializer, CommonPostLanguageSerializer, CommonHashtagSerializer, CommonCircleSerializer, \
+    CommonEmojiSerializer
+from openbook_common.serializers_fields.hashtag import HashtagPostsCountField, IsHashtagReportedField
 from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, PostCreatorField, \
-    PostReactionsEmojiCountField, PostIsMutedField
+    PostReactionsEmojiCountField, PostIsMutedField, IsEncircledField, CirclesField
+from openbook_hashtags.models import Hashtag
 from openbook_hashtags.validators import hashtag_name_exists
 from openbook_posts.models import Post
 
@@ -30,6 +33,25 @@ class GetHashtagPostsSerializer(serializers.Serializer):
                                          validators=[hashtag_name_exists])
 
 
+class GetHashtagHashtagSerializer(serializers.ModelSerializer):
+    posts_count = HashtagPostsCountField()
+    emoji = CommonEmojiSerializer()
+    is_reported = IsHashtagReportedField()
+
+    class Meta:
+        model = Hashtag
+        fields = (
+            'id',
+            'name',
+            'color',
+            'text_color',
+            'image',
+            'posts_count',
+            'emoji',
+            'is_reported',
+        )
+
+
 class GetHashtagPostsPostSerializer(serializers.ModelSerializer):
     # Temp backwards compat
     creator = PostCreatorField(post_creator_serializer=CommonPostCreatorSerializer,
@@ -41,6 +63,8 @@ class GetHashtagPostsPostSerializer(serializers.ModelSerializer):
     reaction = ReactionField(reaction_serializer=CommonPostReactionSerializer)
     language = CommonPostLanguageSerializer()
     hashtags = CommonHashtagSerializer(many=True)
+    is_encircled = IsEncircledField()
+    circles = CirclesField(circle_serializer=CommonCircleSerializer)
 
     class Meta:
         model = Post
@@ -59,8 +83,10 @@ class GetHashtagPostsPostSerializer(serializers.ModelSerializer):
             'reaction',
             'is_edited',
             'is_closed',
+            'is_encircled',
             'media_height',
             'media_width',
             'media_thumbnail',
-            'hashtags'
+            'hashtags',
+            'circles'
         )

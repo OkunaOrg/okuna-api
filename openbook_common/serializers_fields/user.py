@@ -21,11 +21,11 @@ class IsFollowingField(Field):
         return False
 
 
-class IsSubscribedToUserField(Field):
+class AreNewPostNotificationsEnabledForUserField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'
         kwargs['read_only'] = True
-        super(IsSubscribedToUserField, self).__init__(**kwargs)
+        super(AreNewPostNotificationsEnabledForUserField, self).__init__(**kwargs)
 
     def to_representation(self, value):
         request = self.context.get('request')
@@ -33,7 +33,7 @@ class IsSubscribedToUserField(Field):
         if not request.user.is_anonymous:
             if request.user.pk == value.pk:
                 return False
-            return request.user.is_subscribed_to_user_with_id(value.pk)
+            return request.user.are_new_post_notifications_enabled_for_user(user=value)
 
         return False
 
@@ -191,11 +191,11 @@ class FollowingCountField(Field):
         return value.count_following()
 
 
-class PostsCountField(Field):
+class UserPostsCountField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'
         kwargs['read_only'] = True
-        super(PostsCountField, self).__init__(**kwargs)
+        super(UserPostsCountField, self).__init__(**kwargs)
 
     def to_representation(self, value):
         request = self.context.get('request')

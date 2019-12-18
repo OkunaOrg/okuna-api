@@ -291,6 +291,33 @@ class PostsAPITests(OpenbookAPITestCase):
         self.assertFalse(Post.objects.filter(text=post_text).exists())
         self.assertFalse(Hashtag.objects.filter(name=long_hashtag).exists())
 
+    def test_create_text_post_with_more_hashtags_than_allowed_should_not_create_it(self):
+        """
+        when creating a post with exceeding hashtags, should not create it
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+        post_hashtags = []
+
+        for i in range(0, settings.POST_MAX_HASHTAGS + 1):
+            hashtag = '#%s' % make_hashtag_name()
+            post_hashtags.append(hashtag)
+
+        post_text = ' '.join(post_hashtags)
+
+        data = {
+            'text': post_text
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+        self.assertFalse(Post.objects.filter(text=post_text).exists())
+
     def test_create_text_post_detects_mentions_once(self):
         """
         should be able to create a text post with a mention and detect it once
@@ -340,6 +367,31 @@ class PostsAPITests(OpenbookAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         post = Post.objects.get(text=post_text, creator_id=user.pk)
 
+        self.assertTrue(PostUserMention.objects.filter(post_id=post.pk, user_id=mentioned_user.pk).exists())
+
+    def test_create_text_detect_mention_ignores_casing_of_username(self):
+        """
+        should detect mention regardless of the casing of the username
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        mentioned_user = make_user(username='Joel')
+
+        post_text = 'Hello @joel'
+
+        data = {
+            'text': post_text,
+        }
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
+
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(PostUserMention.objects.filter(post_id=post.pk, user_id=mentioned_user.pk).exists())
 
     def test_create_text_post_ignores_non_existing_mentioned_usernames(self):
@@ -3553,7 +3605,7 @@ class PostsAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(user)
         data = {'text': post_text}
 
-        subscriber.subscribe_to_notifications_for_user_with_username(user.username)
+        subscriber.enable_new_post_notifications_for_user_with_username(user.username)
 
         url = self._get_url()
         response = self.client.put(url, data, **headers, format='multipart')
@@ -3575,7 +3627,7 @@ class PostsAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(user)
         data = {'text': post_text}
 
-        subscriber.subscribe_to_notifications_for_user_with_username(user.username)
+        subscriber.enable_new_post_notifications_for_user_with_username(user.username)
         subscriber.block_user_with_id(user_id=user.pk)
 
         url = self._get_url()
@@ -3598,7 +3650,7 @@ class PostsAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(user)
         data = {'text': post_text}
 
-        subscriber.subscribe_to_notifications_for_user_with_username(user.username)
+        subscriber.enable_new_post_notifications_for_user_with_username(user.username)
         user.block_user_with_id(user_id=subscriber.pk)
 
         url = self._get_url()
@@ -3626,8 +3678,8 @@ class PostsAPITests(OpenbookAPITestCase):
         post_creator.confirm_connection_with_user_with_id(user_id=subscriber.pk, circles_ids=[circle.pk])
 
         # both users subscribe
-        subscriber.subscribe_to_notifications_for_user_with_username(post_creator.username)
-        other_subscriber.subscribe_to_notifications_for_user_with_username(post_creator.username)
+        subscriber.enable_new_post_notifications_for_user_with_username(post_creator.username)
+        other_subscriber.enable_new_post_notifications_for_user_with_username(post_creator.username)
 
         data = {
             'text': post_text,
@@ -3806,7 +3858,8 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         user_to_retrieve_posts_from = make_user()
         user_to_retrieve_posts_from.join_community_with_name(community_name=community.name)
 
-        post = user_to_retrieve_posts_from.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post = user_to_retrieve_posts_from.create_community_post(text=make_fake_post_text(),
+                                                                 community_name=community.name)
 
         # react once, min required while testing
         emoji_group = make_reactions_emoji_group()
@@ -3838,7 +3891,8 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         user_to_retrieve_posts_from = make_user()
         user_to_retrieve_posts_from.join_community_with_name(community_name=community.name)
 
-        post = user_to_retrieve_posts_from.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post = user_to_retrieve_posts_from.create_community_post(text=make_fake_post_text(),
+                                                                 community_name=community.name)
 
         emoji_group = make_reactions_emoji_group()
         emoji = make_emoji(group=emoji_group)
@@ -4130,45 +4184,8 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         response_post = response_posts[0]
         self.assertEqual(response_post['post']['id'], post_two.pk)
 
-    def test_does_not_display_posts_that_have_less_than_min_reactions_after_curation(self):
-        """
-        should not display community posts that have less than minimum reactions but are already curated in trending posts
-        """
-        user = make_user()
-        post_reporter = make_user()
-        community = make_community(creator=user)
-        post_reporter.join_community_with_name(community_name=community.name)
-
-        user.create_public_post(text=make_fake_post_text())
-        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
-        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
-
-        emoji_group = make_reactions_emoji_group()
-        emoji = make_emoji(group=emoji_group)
-
-        # react once, min required while testing
-        post_reaction = user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
-        post_reaction_two = user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
-
-        # curate trending posts
-        curate_trending_posts()
-
-        user.delete_reaction_with_id_for_post_with_id(post_reaction_id=post_reaction.pk, post_id=post.pk)
-
-        headers = make_authentication_headers_for_user(user)
-
-        url = self._get_url()
-
-        response = self.client.get(url, **headers, format='multipart')
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        response_posts = json.loads(response.content)
-        self.assertEqual(1, len(response_posts))
-        response_post = response_posts[0]
-        self.assertEqual(response_post['post']['id'], post_two.pk)
-
     def _get_url(self):
-        return reverse('trending-posts')
+        return reverse('trending-posts-new')
 
 
 class TopPostsAPITests(OpenbookAPITestCase):

@@ -950,6 +950,32 @@ class PostCommentItemAPITests(OpenbookAPITestCase):
 
         self.assertEqual(PostCommentUserMention.objects.filter(post_comment_id=post_comment.pk).count(), 0)
 
+    def test_editing_text_post_comment_ignores_casing_of_mentioned_usernames(self):
+        """
+        should ignore non existing mentioned usernames casings when editing a post_comment
+        """
+        user = make_user()
+        newly_mentioned_user = make_user(username='Miguel')
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = user.comment_post(post=post, text=make_fake_post_text())
+
+        post_comment_text = 'Hello @miguel'
+
+        data = {
+            'text': post_comment_text
+        }
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        post_comment = PostComment.objects.get(text=post_comment_text, commenter_id=user.pk)
+
+        self.assertTrue(PostCommentUserMention.objects.filter(user_id=newly_mentioned_user.pk,
+                                                              post_comment_id=post_comment.pk).exists())
+
     def test_editing_own_post_comment_does_not_create_double_mentions(self):
         """
         should not create double mentions when editing our own post_comment

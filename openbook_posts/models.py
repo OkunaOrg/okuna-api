@@ -2,6 +2,7 @@
 import os
 import tempfile
 import uuid
+from datetime import timedelta
 
 from django.contrib.contenttypes.fields import GenericRelation, GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -196,17 +197,49 @@ class Post(models.Model):
 
         trending_community_posts_query.add(reported_posts_exclusion_query, Q.AND)
 
-        trending_posts_criteria_query = Q(reactions_count__gte=settings.MIN_UNIQUE_TRENDING_POST_REACTIONS_COUNT)
-
-        trending_community_posts_queryset = TrendingPost.objects.\
-            select_related(*posts_select_related).\
-            prefetch_related(*posts_prefetch_related).\
-            only(*posts_only).\
-            filter(trending_community_posts_query).\
-            annotate(reactions_count=Count('post__reactions__reactor_id')). \
-            filter(trending_posts_criteria_query)
+        trending_community_posts_queryset = TrendingPost.objects. \
+            select_related(*posts_select_related). \
+            prefetch_related(*posts_prefetch_related). \
+            only(*posts_only). \
+            filter(trending_community_posts_query)
 
         return trending_community_posts_queryset
+
+    @classmethod
+    def get_trending_posts_old_for_user_with_id(cls, user_id):
+        """
+        For backwards compatibility reasons
+        """
+        trending_posts_query = cls._get_trending_posts_old_query()
+        trending_posts_query.add(~Q(community__banned_users__id=user_id), Q.AND)
+
+        trending_posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=user_id) | Q(
+            creator__user_blocks__blocked_user_id=user_id)), Q.AND)
+
+        trending_posts_query.add(~Q(moderated_object__reports__reporter_id=user_id), Q.AND)
+
+        trending_posts_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
+        return cls._get_trending_posts_old_with_query(query=trending_posts_query)
+
+    @classmethod
+    def _get_trending_posts_old_with_query(cls, query):
+        return cls.objects.filter(query).annotate(Count('reactions')).order_by(
+            '-reactions__count', '-created')
+
+    @classmethod
+    def _get_trending_posts_old_query(cls):
+        trending_posts_query = Q(created__gte=timezone.now() - timedelta(
+            hours=12))
+
+        Community = get_community_model()
+
+        trending_posts_sources_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, status=cls.STATUS_PUBLISHED,
+                                         is_closed=False, is_deleted=False)
+
+        trending_posts_query.add(trending_posts_sources_query, Q.AND)
+
+        return trending_posts_query
 
     @classmethod
     def get_post_comment_notification_target_users(cls, post, post_commenter):
@@ -248,21 +281,23 @@ class Post(models.Model):
     @classmethod
     def get_community_notification_target_subscriptions(cls, post):
         CommunityNotificationsSubscription = get_community_notifications_subscription_model()
+
+        community_subscriptions_query = Q(community=post.community, new_post_notifications=True)
+
         exclude_blocked_users_query = Q(Q(subscriber__blocked_by_users__blocker_id=post.creator.pk) | Q(
             subscriber__user_blocks__blocked_user_id=post.creator.pk))
         community_members_query = Q(subscriber__communities_memberships__community_id=post.community.pk)
         exclude_self_query = ~Q(subscriber=post.creator)
-
-        community_subscriptions_query = Q(community=post.community)
-        community_subscriptions_query.add(community_members_query, Q.AND)
-        community_subscriptions_query.add(exclude_self_query, Q.AND)
 
         # Exclude banned users
         exclude_blocked_users_query.add(Q(subscriber__banned_of_communities__id=post.community.pk), Q.OR)
 
         # Subscriptions after excluding blocked users
         target_subscriptions_excluding_blocked = CommunityNotificationsSubscription.objects. \
-            filter(community_subscriptions_query). \
+            filter(community_subscriptions_query &
+                   community_members_query &
+                   exclude_self_query
+                   ). \
             exclude(exclude_blocked_users_query)
 
         staff_members_query = Q(subscriber__communities_memberships__community_id=post.community.pk,
@@ -271,9 +306,12 @@ class Post(models.Model):
                                 subscriber__communities_memberships__is_moderator=True)
 
         # Subscriptions from staff of community
-        community_subscriptions_with_staff_query = community_subscriptions_query.add(staff_members_query, Q.AND)
-        target_subscriptions_with_staff = CommunityNotificationsSubscription.objects.filter(
-            community_subscriptions_with_staff_query)
+        target_subscriptions_with_staff = CommunityNotificationsSubscription.objects. \
+            filter(community_subscriptions_query &
+                   community_members_query &
+                   staff_members_query &
+                   exclude_self_query
+                   )
 
         results = target_subscriptions_excluding_blocked.union(target_subscriptions_with_staff)
 
@@ -283,7 +321,7 @@ class Post(models.Model):
     def get_user_notification_target_subscriptions(cls, post):
         UserNotificationsSubscription = get_user_notifications_subscription_model()
 
-        user_subscriptions_query = Q(user=post.creator)
+        user_subscriptions_query = Q(user=post.creator, new_post_notifications=True)
 
         exclude_blocked_users_query = Q(Q(subscriber__blocked_by_users__blocker_id=post.creator.pk) | Q(
             subscriber__user_blocks__blocked_user_id=post.creator.pk))
@@ -597,10 +635,11 @@ class Post(models.Model):
             else:
                 existing_mention_usernames = []
                 for existing_mention in self.user_mentions.only('id', 'user__username').all().iterator():
-                    if existing_mention.user.username not in usernames:
+                    existing_mention_username = existing_mention.user.username.lower()
+                    if existing_mention_username not in usernames:
                         existing_mention.delete()
                     else:
-                        existing_mention_usernames.append(existing_mention.user.username)
+                        existing_mention_usernames.append(existing_mention_username)
 
                 PostUserMention = get_post_user_mention_model()
                 User = get_user_model()
@@ -609,7 +648,7 @@ class Post(models.Model):
                     username = username.lower()
                     if username not in existing_mention_usernames:
                         try:
-                            user = User.objects.only('id', 'username').get(username=username)
+                            user = User.objects.only('id', 'username').get(username__iexact=username)
                             user_is_post_creator = user.pk == self.creator_id
                             if user.can_see_post(post=self) and not user_is_post_creator:
                                 PostUserMention.create_post_user_mention(user=user, post=self)
@@ -907,10 +946,11 @@ class PostComment(models.Model):
         else:
             existing_mention_usernames = []
             for existing_mention in self.user_mentions.only('id', 'user__username').all().iterator():
-                if existing_mention.user.username not in usernames:
+                existing_mention_username = existing_mention.user.username.lower()
+                if existing_mention_username not in usernames:
                     existing_mention.delete()
                 else:
-                    existing_mention_usernames.append(existing_mention.user.username)
+                    existing_mention_usernames.append(existing_mention_username)
 
             PostCommentUserMention = get_post_comment_user_mention_model()
             User = get_user_model()
@@ -919,7 +959,7 @@ class PostComment(models.Model):
                 username = username.lower()
                 if username not in existing_mention_usernames:
                     try:
-                        user = User.objects.only('id', 'username').get(username=username)
+                        user = User.objects.only('id', 'username').get(username__iexact=username)
                         user_can_see_post_comment = user.can_see_post_comment(post_comment=self)
                         user_is_commenter = user.pk == self.commenter_id
 

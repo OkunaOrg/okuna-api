@@ -79,7 +79,7 @@ def post_text_hashtags_validator(post_text):
     if len(hashtags) > settings.POST_MAX_HASHTAGS:
         raise ValidationError(
             _(
-                'Please add up to %(max_hashtags)d hashtags.') % {
+                'Please add a maximum of %(max_hashtags)d hashtags.') % {
                 'max_hashtags': settings.POST_MAX_HASHTAGS,
             })
 
@@ -102,7 +102,7 @@ def post_comment_text_hashtags_validator(post_text):
     if len(hashtags) > settings.POST_COMMENT_MAX_HASHTAGS:
         raise ValidationError(
             _(
-                'Please add up to %(max_hashtags)d hashtags.') % {
+                'Please add a maximum of %(max_hashtags)d hashtags.') % {
                 'max_hashtags': settings.POST_MAX_HASHTAGS,
             })
 

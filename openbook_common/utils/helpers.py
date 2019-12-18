@@ -56,9 +56,9 @@ def get_random_pastel_color():
     # Its a random color jeez, we dont need cryptographically secure randomness
     h, s, l = random.random(), 0.5 + random.random() / 2.0, 0.4 + random.random() / 5.0  # nosec
     r, g, b = [int(256 * i) for i in colorsys.hls_to_rgb(h, l, s)]
-    color = spectra.rgb(r, g, b).darken(amount=10)
+    hex_color = '#%02x%02x%02x' % (r, g, b)
+    color = spectra.html(hex_color).darken(amount=20)
     return color.hexcode
-
 
 
 def delete_file_field(filefield):

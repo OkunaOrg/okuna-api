@@ -305,46 +305,30 @@ def check_can_get_closed_posts_for_community_with_name(user, community_name):
         )
 
 
-def check_can_subscribe_to_posts_for_community(subscriber, community):
-    Community = get_community_model()
-    CommunityNotificationsSubscription = get_community_notifications_subscription_model()
-    is_member = Community.is_user_with_username_member_of_community_with_name\
-        (username=subscriber.username, community_name=community.name)
+def check_can_enable_new_post_notifications_for_community(user, community):
+    is_member = user.is_member_of_community_with_name(community_name=community.name)
 
     if not is_member:
         raise ValidationError(
-            _('Only members can subscribe to new posts'),
+            _('Only members can enable new post notifications'),
         )
-    is_subscribed = CommunityNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_community_with_name(
-        username=subscriber.username, community_name=community.name)
+    new_post_notifications_enabled = user.are_new_post_notifications_enabled_for_community(community=community)
 
-    if is_subscribed:
+    if new_post_notifications_enabled:
         raise ValidationError(
-            _('You are already subscribed to new posts for community'),
+            _('New post notifications are already enabled'),
         )
 
-    check_is_not_banned_from_community_with_name(user=subscriber, community_name=community.name)
+    check_is_not_banned_from_community_with_name(user=user, community_name=community.name)
 
 
-def check_can_unsubscribe_to_posts_for_community(subscriber, community):
-    Community = get_community_model()
-    CommunityNotificationsSubscription = get_community_notifications_subscription_model()
-    is_member = Community.is_user_with_username_member_of_community_with_name\
-        (username=subscriber.username, community_name=community.name)
+def check_can_disable_new_post_notifications_for_community(user, community):
+    new_post_notifications_enabled = user.are_new_post_notifications_enabled_for_community(community=community)
 
-    if not is_member:
+    if not new_post_notifications_enabled:
         raise ValidationError(
-            _('Only members can unsubscribe to new posts'),
+            _('New post notifications are not enabled'),
         )
-    is_subscribed = CommunityNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_community_with_name(
-        username=subscriber.username, community_name=community.name)
-
-    if not is_subscribed:
-        raise ValidationError(
-            _('You are already not subscribed to new posts for community'),
-        )
-
-    check_is_not_banned_from_community_with_name(user=subscriber, community_name=community.name)
 
 
 def check_can_get_community_with_name_members(user, community_name):
@@ -893,6 +877,17 @@ def check_has_not_reported_community_with_id(user, community_id):
         )
 
 
+def check_can_report_hashtag(user, hashtag):
+    check_has_not_reported_hashtag_with_id(user=user, hashtag_id=hashtag.pk)
+
+
+def check_has_not_reported_hashtag_with_id(user, hashtag_id):
+    if user.has_reported_hashtag_with_id(hashtag_id=hashtag_id):
+        raise ValidationError(
+            _('You have already reported the hashtag.'),
+        )
+
+
 def check_password_reset_verification_token_is_valid(user, password_verification_token):
     try:
         token_contents = jwt.decode(password_verification_token, settings.SECRET_KEY,
@@ -1153,6 +1148,13 @@ def check_can_see_post(user, post):
         )
 
 
+def check_can_see_hashtag(user, hashtag):
+    if not user.can_see_hashtag(hashtag):
+        raise PermissionDenied(
+            _('This hashtag is not  available.'),
+        )
+
+
 def check_can_react_to_post_comment(user, post_comment, emoji_id):
     check_can_react_with_emoji_id(user=user, emoji_id=emoji_id)
     check_can_see_post_comment(user=user, post_comment=post_comment)
@@ -1359,29 +1361,30 @@ def check_can_get_preview_link_data_for_post(user, post):
         )
 
 
-def check_can_subscribe_to_notifications_for_user(subscriber, user):
-    UserNotificationsSubscription = get_user_notifications_subscription_model()
-    is_subscribed = UserNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_user_with_username(
-        subscriber_username=subscriber.username, username=user.username)
+def check_can_enable_new_post_notifications_for_user(user, target_user):
+    if user.username == target_user.username:
+        raise ValidationError(
+            _('You cannot enable notifications for yourself'),
+        )
 
-    if user.has_blocked_user_with_id(user_id=subscriber.pk) or subscriber.has_blocked_user_with_id(user_id=user.pk):
+    new_post_notifications_enabled = user.are_new_post_notifications_enabled_for_user(user=target_user)
+
+    if target_user.has_blocked_user_with_id(user_id=user.pk) or user.has_blocked_user_with_id(user_id=target_user.pk):
         raise PermissionDenied(_('This account is blocked.'))
 
-    if is_subscribed:
+    if new_post_notifications_enabled:
         raise ValidationError(
-            _('User is already subscribed to this user'),
+            _('New post notifications are already enabled'),
         )
 
 
-def check_can_unsubscribe_from_notifications_for_user(subscriber, user):
-    UserNotificationsSubscription = get_user_notifications_subscription_model()
-    is_subscribed = UserNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_user_with_username(
-        subscriber_username=subscriber.username, username=user.username)
+def check_can_disable_new_post_notifications_for_user(user, target_user):
+    new_post_notifications_enabled = user.are_new_post_notifications_enabled_for_user(user=target_user)
 
-    if user.has_blocked_user_with_id(user_id=subscriber.pk) or subscriber.has_blocked_user_with_id(user_id=user.pk):
+    if target_user.has_blocked_user_with_id(user_id=user.pk) or user.has_blocked_user_with_id(user_id=target_user.pk):
         raise PermissionDenied(_('This account is blocked.'))
 
-    if not is_subscribed:
+    if not new_post_notifications_enabled:
         raise ValidationError(
-            _('User is already unsubscribed from this user'),
+            _('You are not subscribed to new post notifications'),
         )
