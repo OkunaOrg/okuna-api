@@ -21,7 +21,7 @@ def make_only_posts_for_creator_with_id_query(creator_id):
 
 
 def make_only_posts_of_circles_part_for_user_with_id_query(user_id):
-    return Q(circles__connections__target_user_id=user_id.pk,
+    return Q(circles__connections__target_user_id=user_id,
              circles__connections__target_connection__circles__isnull=False)
 
 
