@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from openbook_common.serializers_fields.post_comment import PostCommentReactionsEmojiCountField
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_moderation.permissions import IsNotSuspended
 from openbook_posts.views.post_comment.post_comment_reaction.serializers import PostCommentReactionSerializer
@@ -57,6 +58,7 @@ class PostCommentReactions(APIView):
             post_comment_reaction = user.react_to_post_comment_with_id(post_comment_id=post_comment_id,
                                                                        emoji_id=emoji_id, )
 
+        PostCommentReactionsEmojiCountField.clear_cache_for_post_comment_with_id(post_comment_id=post_comment_id)
         post_reaction_serializer = PostCommentReactionSerializer(post_comment_reaction, context={"request": request})
         return Response(post_reaction_serializer.data, status=status.HTTP_201_CREATED)
 
