@@ -19,7 +19,8 @@ from django.core.mail import EmailMultiAlternatives
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
-from openbook_hashtags.queries import make_search_hashtag_query_for_user_with_id
+from openbook_hashtags.queries import make_search_hashtag_query_for_user_with_id, \
+    make_get_hashtag_with_name_for_user_with_id_query
 from openbook_notifications.helpers import get_notification_language_code_for_target_user
 from openbook_posts.queries import make_get_hashtag_posts_for_user_with_id_query
 from openbook_posts.query_collections import get_posts_for_user_collection
