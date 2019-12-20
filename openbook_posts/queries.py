@@ -173,6 +173,8 @@ def _make_posts_visibility_query_for_target_user_and_source_user(target_user, so
 
     posts_visibility_query.add(make_exclude_closed_posts_query(), Q.AND)
 
+    posts_visibility_query.add(make_exclude_soft_deleted_posts_query(), Q.AND)
+
     posts_visibility_query.add(make_exclude_blocked_posts_for_user_with_id_query(user_id=target_user.pk), Q.AND)
 
     return posts_visibility_query
