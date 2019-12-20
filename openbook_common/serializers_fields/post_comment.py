@@ -74,7 +74,7 @@ class PostCommentReactionsEmojiCountField(Field):
         cached_reaction_emoji_count = cache.get(cache_key)
 
         if cached_reaction_emoji_count:
-            return json.load(cached_reaction_emoji_count)
+            return json.loads(cached_reaction_emoji_count)
 
         PostComment = get_post_comment_model()
         reaction_emoji_count = PostComment.get_emoji_counts_for_post_comment_with_id(post_comment.pk)
