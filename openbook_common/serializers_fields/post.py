@@ -1,8 +1,11 @@
+import json
+
 from rest_framework.fields import Field
+from django.core.cache import cache
 
 from openbook_common.utils.model_loaders import get_post_model
 from openbook_communities.models import CommunityMembership
-from openbook_posts.models import PostReaction, PostCommentReaction
+from openbook_posts.models import PostReaction
 
 
 class ReactionField(Field):
@@ -47,7 +50,54 @@ class CommentsCountField(Field):
 
         return comments_count
 
+
 class PostReactionsEmojiCountField(Field):
+    cache_key_prefix = 'post_reactions_emoji_count_field'
+
+    @classmethod
+    def clear_cache_for_post_with_id(cls, post_id):
+        cache.delete_pattern(cls.make_cache_key(post_id=post_id))
+
+    @classmethod
+    def make_cache_key(cls, post_id, user_id=None):
+        cache_key = '%s_%d' % (cls.cache_key_prefix, post_id)
+
+        if user_id:
+            cache_key = cache_key + '_%d' % user_id
+
+        return cache_key
+
+    @classmethod
+    def get_representation_for_anonymous_user(cls, post):
+        cache_key = cls.make_cache_key(post_id=post.pk)
+
+        cached_reaction_emoji_count = cache.get(cache_key)
+
+        if cached_reaction_emoji_count:
+            return json.load(cached_reaction_emoji_count)
+
+        Post = get_post_model()
+        reaction_emoji_count = Post.get_emoji_counts_for_post_with_id(post.pk)
+
+        cache.set(cache_key, json.dumps(reaction_emoji_count))
+
+        return reaction_emoji_count
+
+    @classmethod
+    def get_representation_for_user(cls, post, user):
+        cache_key = cls.make_cache_key(post_id=post.pk, user_id=user.pk)
+
+        cached_reaction_emoji_count = cache.get(cache_key)
+
+        if cached_reaction_emoji_count:
+            return json.load(cached_reaction_emoji_count)
+
+        reaction_emoji_count = user.get_emoji_counts_for_post_with_id(post.pk)
+
+        cache.set(cache_key, json.dumps(reaction_emoji_count))
+
+        return reaction_emoji_count
+
     def __init__(self, emoji_count_serializer=None, **kwargs):
         kwargs['source'] = '*'
         kwargs['read_only'] = True
@@ -62,10 +112,10 @@ class PostReactionsEmojiCountField(Field):
 
         if request_user.is_anonymous:
             if post.public_reactions:
-                Post = get_post_model()
-                reaction_emoji_count = Post.get_emoji_counts_for_post_with_id(post.pk)
+                reaction_emoji_count = PostReactionsEmojiCountField.get_representation_for_anonymous_user(post=post)
         else:
-            reaction_emoji_count = request_user.get_emoji_counts_for_post_with_id(post.pk)
+            reaction_emoji_count = PostReactionsEmojiCountField.get_representation_for_user(post=post,
+                                                                                            user=request_user)
 
         post_reactions_serializer = self.emoji_count_serializer(reaction_emoji_count, many=True,
                                                                 context={"request": request, 'post': post})

@@ -4,8 +4,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from openbook_common.serializers_fields.post import PostReactionsEmojiCountField
 from openbook_common.utils.model_loaders import get_emoji_group_model, get_post_model
-
 
 # TODO Use post uuid also internally, not only as API resource identifier
 # In order to prevent enumerable posts API in alpha, this is done as a hotfix
@@ -63,7 +63,9 @@ class PostReactions(APIView):
         post_id = get_post_id_for_post_uuid(post_uuid)
 
         with transaction.atomic():
-            post_reaction = user.react_to_post_with_id(post_id=post_id, emoji_id=emoji_id,)
+            post_reaction = user.react_to_post_with_id(post_id=post_id, emoji_id=emoji_id, )
+
+        PostReactionsEmojiCountField.clear_cache_for_post_with_id(post_id=post_id)
 
         post_reaction_serializer = PostReactionSerializer(post_reaction, context={"request": request})
         return Response(post_reaction_serializer.data, status=status.HTTP_201_CREATED)
