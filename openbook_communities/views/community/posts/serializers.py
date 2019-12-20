@@ -45,7 +45,8 @@ class CommunityPostSerializer(serializers.ModelSerializer):
     image = CommonPostImageSerializer(many=False)
     creator = PostCreatorField(post_creator_serializer=CommonPostCreatorSerializer,
                                community_membership_serializer=CommonCommunityMembershipSerializer)
-    reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=CommonPostEmojiCountSerializer)
+    reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=CommonPostEmojiCountSerializer,
+                                                          cache_identifier='CommunityPostSerializer')
     comments_count = CommentsCountField()
     community = CommonPostCommunitySerializer(many=False)
     is_muted = PostIsMutedField()

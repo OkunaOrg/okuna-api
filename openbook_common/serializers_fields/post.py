@@ -59,17 +59,19 @@ class PostReactionsEmojiCountField(Field):
         cache.delete_pattern(cls.make_cache_key(post_id=post_id))
 
     @classmethod
-    def make_cache_key(cls, post_id, user_id=None):
+    def make_cache_key(cls, post_id, cache_identifier=None, user_id=None):
         cache_key = '%s_%d' % (cls.cache_key_prefix, post_id)
+
+        if cache_identifier:
+            cache_key = cache_key + '_%s' % cache_identifier
 
         if user_id:
             cache_key = cache_key + '_%d' % user_id
 
         return cache_key
 
-    @classmethod
-    def get_representation_for_anonymous_user(cls, post):
-        cache_key = cls.make_cache_key(post_id=post.pk)
+    def get_representation_for_anonymous_user(self, post, request):
+        cache_key = PostReactionsEmojiCountField.make_cache_key(post_id=post.pk, cache_identifier=self.cache_identifier)
 
         cached_reaction_emoji_count = cache.get(cache_key)
 
@@ -78,14 +80,17 @@ class PostReactionsEmojiCountField(Field):
 
         Post = get_post_model()
         reaction_emoji_count = Post.get_emoji_counts_for_post_with_id(post.pk)
+        serialized_reaction_emoji_count = self.serialize_reaction_emoji_count(reaction_emoji_count=reaction_emoji_count,
+                                                                              post=post,
+                                                                              request=request)
 
-        cache.set(cache_key, json.dumps(reaction_emoji_count))
+        cache.set(cache_key, json.dumps(serialized_reaction_emoji_count))
 
         return reaction_emoji_count
 
-    @classmethod
-    def get_representation_for_user(cls, post, user):
-        cache_key = cls.make_cache_key(post_id=post.pk, user_id=user.pk)
+    def get_representation_for_user(self, post, user, request):
+        cache_key = PostReactionsEmojiCountField.make_cache_key(post_id=post.pk, user_id=user.pk,
+                                                                cache_identifier=self.cache_identifier)
 
         cached_reaction_emoji_count = cache.get(cache_key)
 
@@ -93,34 +98,42 @@ class PostReactionsEmojiCountField(Field):
             return json.loads(cached_reaction_emoji_count)
 
         reaction_emoji_count = user.get_emoji_counts_for_post_with_id(post.pk)
+        serialized_reaction_emoji_count = self.serialize_reaction_emoji_count(reaction_emoji_count=reaction_emoji_count,
+                                                                              post=post,
+                                                                              request=request)
 
-        cache.set(cache_key, json.dumps(reaction_emoji_count))
+        cache.set(cache_key, json.dumps(serialized_reaction_emoji_count))
 
         return reaction_emoji_count
 
-    def __init__(self, emoji_count_serializer=None, **kwargs):
+    def __init__(self, cache_identifier, emoji_count_serializer=None, **kwargs):
         kwargs['source'] = '*'
         kwargs['read_only'] = True
         self.emoji_count_serializer = emoji_count_serializer
+        self.cache_identifier = cache_identifier
         super(PostReactionsEmojiCountField, self).__init__(**kwargs)
 
     def to_representation(self, post):
         request = self.context.get('request')
         request_user = request.user
 
-        reaction_emoji_count = []
+        serialized_reaction_emoji_count = []
 
         if request_user.is_anonymous:
             if post.public_reactions:
-                reaction_emoji_count = PostReactionsEmojiCountField.get_representation_for_anonymous_user(post=post)
+                serialized_reaction_emoji_count = self.get_representation_for_anonymous_user(
+                    post=post,
+                    request=request)
         else:
-            reaction_emoji_count = PostReactionsEmojiCountField.get_representation_for_user(post=post,
-                                                                                            user=request_user)
+            serialized_reaction_emoji_count = self.get_representation_for_user(post=post,
+                                                                               request=request,
+                                                                               user=request_user)
 
-        post_reactions_serializer = self.emoji_count_serializer(reaction_emoji_count, many=True,
-                                                                context={"request": request, 'post': post})
+        return serialized_reaction_emoji_count
 
-        return post_reactions_serializer.data
+    def serialize_reaction_emoji_count(self, reaction_emoji_count, request, post):
+        return self.emoji_count_serializer(reaction_emoji_count, many=True,
+                                           context={"request": request, 'post': post}).data
 
 
 class CirclesField(Field):

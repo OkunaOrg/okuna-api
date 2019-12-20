@@ -225,7 +225,8 @@ class PostImageSerializer(serializers.ModelSerializer):
 class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
-    reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
+    reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer,
+                                                          cache_identifier='AuthenticatedUserPostSerializer')
     reaction = ReactionField(reaction_serializer=PostReactionSerializer)
     comments_count = CommentsCountField()
     circles = CirclesField(circle_serializer=PostCircleSerializer)
@@ -294,7 +295,8 @@ class AuthenticatedUserTrendingPostSerializer(serializers.ModelSerializer):
 class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
     creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
-    reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
+    reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer,
+                                                          cache_identifier="UnauthenticatedUserPostSerializer")
     comments_count = CommentsCountField()
     language = PostLanguageSerializer()
 

@@ -73,7 +73,10 @@ class Emoji(models.Model):
         emojis = Emoji.objects.filter(emoji_query).annotate(Count('post_reactions')).distinct().order_by(
             '-post_reactions__count').cache().all()
 
-        return [{'emoji': emoji, 'count': emoji.post_reactions__count} for emoji in emojis]
+        return [{'emoji': {
+            'id': emoji.pk,
+
+        }, 'count': emoji.post_reactions__count} for emoji in emojis]
 
     def __str__(self):
         return 'Emoji: ' + self.keyword
