@@ -217,13 +217,16 @@ class User(AbstractUser):
         elif min_id:
             user_query.add(Q(id__gt=min_id), Q.AND)
 
-        posts_prefetch_related = ('circles', 'creator__profile__badges')
+        posts_prefetch_related = (
+            'circles', 'creator', 'creator__profile__badges', 'hashtags', 'community')
 
-        posts_only = ('id', 'uuid', 'created', 'image__width', 'image__height', 'image__image',
+        posts_only = ('text', 'id', 'uuid', 'created',
                       'creator__username', 'creator__id', 'creator__profile__name',
                       'creator__profile__avatar', 'creator__profile__badges__id',
+                      'language', 'media_height', 'media_width', 'media_thumbnail', 'public_reactions',
+                      'comments_enabled',
                       'creator__profile__badges__keyword', 'creator__profile__id', 'community__id',
-                      'community__name', 'community__avatar', 'community__color', 'community__title')
+                      'community__name', 'community__avatar', 'community__color', 'community__title',)
 
         exclude_reported_and_approved_posts_query = ~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED)
 
@@ -2276,13 +2279,16 @@ class User(AbstractUser):
         return self.get_posts_for_user(user=user, max_id=max_id, min_id=min_id)
 
     def get_posts_for_user(self, user, max_id=None, min_id=None):
-        posts_prefetch_related = ('circles', 'creator__profile__badges')
+        posts_prefetch_related = (
+        'circles', 'creator', 'creator__profile__badges', 'hashtags', 'community')
 
-        posts_only = ('text', 'id', 'uuid', 'created', 'image__width', 'image__height', 'image__image',
+        posts_only = ('text', 'id', 'uuid', 'created',
                       'creator__username', 'creator__id', 'creator__profile__name',
                       'creator__profile__avatar', 'creator__profile__badges__id',
+                      'language', 'media_height', 'media_width', 'media_thumbnail', 'public_reactions',
+                      'comments_enabled',
                       'creator__profile__badges__keyword', 'creator__profile__id', 'community__id',
-                      'community__name', 'community__avatar', 'community__color', 'community__title')
+                      'community__name', 'community__avatar', 'community__color', 'community__title',)
 
         include_community_posts = user.has_profile_community_posts_visible()
 
