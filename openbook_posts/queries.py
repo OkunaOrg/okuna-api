@@ -140,7 +140,7 @@ def make_circles_posts_query_for_target_user_and_source_user(target_user, source
     )
 
     target_user_circles_posts_query = make_only_posts_of_circles_part_for_user_with_id_query(
-        user_id=target_user.pk) | make_only_world_circle_posts_query()
+        user_id=source_user.pk) | make_only_world_circle_posts_query()
 
     return target_user_circles_posts_query & posts_visibility_query
 
