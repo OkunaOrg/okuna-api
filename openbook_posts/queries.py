@@ -151,7 +151,7 @@ def make_community_posts_query_for_target_user_and_source_user(target_user, sour
         source_user=source_user
     )
 
-    target_user_community_posts_query = make_only_visible_community_posts_for_user_with_id_query(user_id=source_user)
+    target_user_community_posts_query = make_only_visible_community_posts_for_user_with_id_query(user_id=source_user.pk)
     target_user_community_posts_query.add(
         make_exclude_community_posts_banned_from_for_user_with_id_query(user_id=target_user.pk),
         Q.AND)
