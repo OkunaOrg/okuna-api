@@ -23,7 +23,7 @@ from rq import SimpleWorker, Worker
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_community, make_moderation_category, \
     get_test_videos, get_test_image, make_proxy_blacklisted_domain, make_hashtag, make_hashtag_name
-from openbook_common.utils.model_loaders import get_language_model
+from openbook_common.utils.model_loaders import get_language_model, get_community_new_post_notification_model
 from openbook_communities.models import Community
 from openbook_hashtags.models import Hashtag
 from openbook_notifications.models import PostUserMentionNotification, Notification
@@ -1787,6 +1787,57 @@ class PostCloseAPITests(OpenbookAPITestCase):
                                               post=post,
                                               source_user=admin,
                                               target_user=community_post_creator).exists())
+
+    def test_close_post_deletes_new_post_notifications_for_normal_members(self):
+        """
+         should delete new post notifications for members (except creator/staff) on close post by administrator of a community
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        community_member = make_user()
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+        community_member.enable_new_post_notifications_for_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(community.name, text=make_fake_post_text())
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        # close post
+        self.client.post(url, **headers)
+
+        CommunityNewPostNotification = get_community_new_post_notification_model()
+        self.assertFalse(CommunityNewPostNotification.objects.filter(notification__owner_id=community_member.pk,
+                                                                     post_id=post.pk).exists())
+
+    def test_close_post_does_not_delete_new_post_notifications_for_staff_and_creator(self):
+        """
+         should NOT delete new post notifications for staff and creator on close post
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        community_member = make_user()
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+        admin.enable_new_post_notifications_for_community_with_name(community_name=community.name)
+        community_member.enable_new_post_notifications_for_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(community.name, text=make_fake_post_text())
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        # close post
+        self.client.post(url, **headers)
+
+        CommunityNewPostNotification = get_community_new_post_notification_model()
+        self.assertTrue(CommunityNewPostNotification.objects.filter(notification__owner_id=admin.pk,
+                                                                    post_id=post.pk).exists())
+        self.assertFalse(CommunityNewPostNotification.objects.filter(notification__owner_id=community_member.pk,
+                                                                    post_id=post.pk).exists())
 
     def _get_url(self, post):
         return reverse('close-post', kwargs={
