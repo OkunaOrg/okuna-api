@@ -21,3 +21,10 @@ def make_exclude_reported_and_approved_hashtags_query():
 
 def make_exclude_reported_hashtags_by_user_with_id_query(user_id):
     return ~Q(moderated_object__reports__reporter_id=user_id)
+
+
+def make_get_hashtag_with_name_for_user_with_id_query(hashtag_name, user_id):
+    query = make_get_hashtag_with_name_query(name=hashtag_name)
+    query.add(make_exclude_reported_and_approved_hashtags_query(), Q.AND)
+    query.add(make_exclude_reported_hashtags_by_user_with_id_query(user_id=user_id), Q.AND)
+    return query

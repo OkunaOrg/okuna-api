@@ -19,10 +19,11 @@ from django.core.mail import EmailMultiAlternatives
 
 from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
-from openbook_auth.queries import make_get_hashtag_posts_for_user_with_id_query, \
+from openbook_hashtags.queries import make_search_hashtag_query_for_user_with_id, \
     make_get_hashtag_with_name_for_user_with_id_query
-from openbook_hashtags.queries import make_search_hashtag_query_for_user_with_id
 from openbook_notifications.helpers import get_notification_language_code_for_target_user
+from openbook_posts.queries import make_get_hashtag_posts_for_user_with_id_query
+from openbook_posts.query_collections import get_posts_for_user_collection
 from openbook_translation import translation_strategy
 from openbook_common.helpers import get_supported_translation_language
 from openbook_common.models import Badge, Language
@@ -216,13 +217,16 @@ class User(AbstractUser):
         elif min_id:
             user_query.add(Q(id__gt=min_id), Q.AND)
 
-        posts_prefetch_related = ('circles', 'creator__profile__badges')
+        posts_prefetch_related = (
+            'circles', 'creator', 'creator__profile__badges', 'hashtags', 'community')
 
-        posts_only = ('id', 'uuid', 'created', 'image__width', 'image__height', 'image__image',
+        posts_only = ('text', 'id', 'uuid', 'created',
                       'creator__username', 'creator__id', 'creator__profile__name',
                       'creator__profile__avatar', 'creator__profile__badges__id',
+                      'language', 'media_height', 'media_width', 'media_thumbnail', 'public_reactions',
+                      'comments_enabled',
                       'creator__profile__badges__keyword', 'creator__profile__id', 'community__id',
-                      'community__name', 'community__avatar', 'community__color', 'community__title')
+                      'community__name', 'community__avatar', 'community__color', 'community__title',)
 
         exclude_reported_and_approved_posts_query = ~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED)
 
@@ -2275,92 +2279,27 @@ class User(AbstractUser):
         return self.get_posts_for_user(user=user, max_id=max_id, min_id=min_id)
 
     def get_posts_for_user(self, user, max_id=None, min_id=None):
-        Post = get_post_model()
-        Circle = get_circle_model()
-        ModeratedObject = get_moderated_object_model()
-        world_circle_id = Circle.get_world_circle_id()
+        posts_prefetch_related = (
+        'circles', 'creator', 'creator__profile__badges', 'hashtags', 'community')
 
-        posts_prefetch_related = ('circles', 'creator__profile__badges')
-
-        posts_only = ('text', 'id', 'uuid', 'created', 'image__width', 'image__height', 'image__image',
+        posts_only = ('text', 'id', 'uuid', 'created',
                       'creator__username', 'creator__id', 'creator__profile__name',
                       'creator__profile__avatar', 'creator__profile__badges__id',
+                      'language', 'media_height', 'media_width', 'media_thumbnail', 'public_reactions',
+                      'comments_enabled',
                       'creator__profile__badges__keyword', 'creator__profile__id', 'community__id',
-                      'community__name', 'community__avatar', 'community__color', 'community__title')
+                      'community__name', 'community__avatar', 'community__color', 'community__title',)
 
-        user_query = Q(creator_id=user.pk)
+        include_community_posts = user.has_profile_community_posts_visible()
 
-        exclude_reported_and_approved_posts_query = ~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED)
-
-        exclude_reported_posts_query = ~Q(moderated_object__reports__reporter_id=self.pk)
-
-        cursor_scrolling_query = Q()
-
-        if max_id:
-            cursor_scrolling_query = Q(id__lt=max_id)
-        elif min_id:
-            cursor_scrolling_query = Q(id__gt=min_id)
-
-        exclude_blocked_posts_query = ~Q(Q(creator__blocked_by_users__blocker_id=self.pk) | Q(
-            creator__user_blocks__blocked_user_id=self.pk))
-
-        exclude_deleted_posts_query = Q(is_deleted=False, status=Post.STATUS_PUBLISHED)
-
-        # Get user world circle posts
-
-        world_circle_posts_query = Q(creator__id=user.pk, circles__id=world_circle_id)
-
-        world_circle_posts = Post.objects.prefetch_related(*posts_prefetch_related) \
-            .only(*posts_only) \
-            .filter(
-            user_query &
-            world_circle_posts_query &
-            exclude_deleted_posts_query &
-            exclude_blocked_posts_query &
-            exclude_reported_posts_query &
-            exclude_reported_and_approved_posts_query &
-            cursor_scrolling_query
+        return get_posts_for_user_collection(
+            target_user=user,
+            source_user=self,
+            include_community_posts=include_community_posts,
+            posts_only=posts_only, posts_prefetch_related=posts_prefetch_related,
+            min_id=min_id,
+            max_id=max_id,
         )
-
-        # Get user connection circles posts
-        connection_circles_query = Q(circles__connections__target_user_id=self.pk,
-                                     circles__connections__target_connection__circles__isnull=False)
-
-        connection_circles_posts = Post.objects.prefetch_related(*posts_prefetch_related) \
-            .only(*posts_only).filter(
-            user_query &
-            connection_circles_query &
-            exclude_deleted_posts_query &
-            exclude_blocked_posts_query &
-            exclude_reported_posts_query &
-            exclude_reported_and_approved_posts_query &
-            cursor_scrolling_query
-        )
-
-        # Get user community posts
-        Community = get_community_model()
-        community_posts_query = Q(creator__pk=user.pk, community__isnull=False, is_closed=False)
-        exclude_private_community_posts_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC) | Q(
-            community__memberships__user__id=self.pk)
-
-        community_posts = Post.objects.prefetch_related(*posts_prefetch_related) \
-            .only(*posts_only).filter(
-            user_query &
-            community_posts_query &
-            exclude_private_community_posts_query &
-            exclude_deleted_posts_query &
-            exclude_blocked_posts_query &
-            exclude_reported_posts_query &
-            exclude_reported_and_approved_posts_query &
-            cursor_scrolling_query
-        )
-
-        if user.has_profile_community_posts_visible():
-            results = world_circle_posts.union(community_posts, connection_circles_posts)
-        else:
-            results = world_circle_posts.union(connection_circles_posts)
-
-        return results
 
     def exclude_community_from_top_posts(self, community):
         check_can_exclude_community(user=self, community=community)
