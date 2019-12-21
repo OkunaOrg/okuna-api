@@ -235,9 +235,6 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     is_encircled = IsEncircledField()
     hashtags = CommonHashtagSerializer(many=True)
 
-    # Temp backwards compat
-    image = PostImageSerializer(many=False)
-
     class Meta:
         model = Post
         fields = (
@@ -261,8 +258,6 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'media_height',
             'media_width',
             'media_thumbnail',
-            # Temp backwards compat
-            'image',
             'hashtags',
         )
 
@@ -298,9 +293,6 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
     comments_count = CommentsCountField()
     language = PostLanguageSerializer()
 
-    # Temp backwards compat
-    image = PostImageSerializer(many=False)
-
     class Meta:
         model = Post
         fields = (
@@ -318,6 +310,4 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
             'media_height',
             'media_width',
             'media_thumbnail',
-            # Temp backwards compat
-            'image',
         )

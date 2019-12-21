@@ -1469,7 +1469,7 @@ class PostsAPITests(OpenbookAPITestCase):
 
         response_posts = json.loads(response.content)
 
-        self.assertEqual(len(response_posts), len(created_posts_ids))
+        self.assertEqual(len(created_posts_ids), len(response_posts))
 
         response_posts_ids = [post['id'] for post in response_posts]
 
