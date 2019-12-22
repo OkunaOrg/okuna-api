@@ -3,7 +3,7 @@ from django.db.models import Q
 from openbook_common.utils.model_loaders import get_post_model, get_moderated_object_model
 from openbook_posts.queries import \
     make_community_posts_query_for_user, make_only_posts_with_max_id, \
-    make_only_posts_with_min_id, make_circles_posts_query_for_user, _make_posts_visibility_exclude_query
+    make_only_posts_with_min_id, make_circles_posts_query_for_user
 
 
 def get_posts_for_user_collection(target_user, source_user, posts_only=None, posts_prefetch_related=None,
@@ -29,7 +29,7 @@ def get_posts_for_user_collection(target_user, source_user, posts_only=None, pos
 
     query = Q(
         # Created by the target user
-        creator__username=target_user.pk,
+        creator__username=target_user.username,
         # Not closed
         is_closed=False,
         # Not deleted
@@ -61,7 +61,9 @@ def get_posts_for_user_collection(target_user, source_user, posts_only=None, pos
         Q(moderated_object__status=ModeratedObject.STATUS_APPROVED) |
         # Posts of users we blocked or that have blocked us
         Q(creator__blocked_by_users__blocker_id=source_user.pk) | Q(
-            creator__user_blocks__blocked_user_id=source_user.pk)
+            creator__user_blocks__blocked_user_id=source_user.pk) |
+        # Posts of communities banned from
+        Q(community__banned_users__id=source_user.pk)
     )
 
     posts = posts_collection_manager.filter(query).exclude(posts_visibility_exclude_query)
