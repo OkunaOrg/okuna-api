@@ -7,7 +7,7 @@ from openbook_common.tests.models import OpenbookAPITestCase
 
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, \
     make_community, make_fake_post_text, make_global_moderator, make_moderation_category, \
-    make_fake_post_comment_text
+    make_fake_post_comment_text, make_hashtag
 from openbook_moderation.models import ModeratedObject
 
 fake = Faker()
@@ -52,6 +52,40 @@ class GlobalModeratedObjectsAPITests(OpenbookAPITestCase):
             self.assertEqual(response_post_moderated_object_type, ModeratedObject.OBJECT_TYPE_POST)
 
             self.assertIn(response_moderated_object_post_id, posts_ids)
+
+    def test_retrieves_hashtag_moderated_objects(self):
+        """
+        should be able to retrieve all hashtag moderated objects and return 200
+        """
+
+        global_moderator = make_global_moderator()
+
+        amount_of_hashtags = 5
+        hashtags_ids = []
+
+        for i in range(0, amount_of_hashtags):
+            reporter_user = make_user()
+            hashtag = make_hashtag()
+            hashtags_ids.append(hashtag.pk)
+            report_category = make_moderation_category()
+            reporter_user.report_hashtag(hashtag=hashtag, category_id=report_category.pk)
+
+        url = self._get_url()
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_moderated_objects = json.loads(response.content)
+
+        self.assertEqual(len(hashtags_ids), len(response_moderated_objects))
+
+        for response_moderated_object in response_moderated_objects:
+            response_moderated_object_hashtag_id = response_moderated_object.get('object_id')
+            response_hashtag_moderated_object_type = response_moderated_object.get('object_type')
+            self.assertEqual(response_hashtag_moderated_object_type, ModeratedObject.OBJECT_TYPE_HASHTAG)
+
+            self.assertIn(response_moderated_object_hashtag_id, hashtags_ids)
 
     def test_retrieves_post_comment_moderated_objects(self):
         """

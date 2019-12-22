@@ -1,15 +1,19 @@
+import colorsys
 import os
+import random
 import re
 import secrets
 import tempfile
 
 import magic
+import spectra
 from django.http import QueryDict
 from imagekit.utils import get_cache
 from imagekit.models import ProcessedImageField
 import hashlib
 
 from openbook_common.utils.model_loaders import get_post_model
+from openbook_common.validators import is_valid_hex_color
 
 r = lambda: secrets.randbelow(255)
 
@@ -46,6 +50,15 @@ def normalize_list_value_in_request_data(list_name, request_data):
 
 def generate_random_hex_color():
     return '#%02X%02X%02X' % (r(), r(), r())
+
+
+def get_random_pastel_color():
+    # Its a random color jeez, we dont need cryptographically secure randomness
+    h, s, l = random.random(), 0.5 + random.random() / 2.0, 0.4 + random.random() / 5.0  # nosec
+    r, g, b = [int(256 * i) for i in colorsys.hls_to_rgb(h, l, s)]
+    hex_color = '#%02x%02x%02x' % (r, g, b)
+    color = spectra.html(hex_color).darken(amount=20)
+    return color.hexcode
 
 
 def delete_file_field(filefield):
@@ -95,12 +108,21 @@ def get_post_id_for_post_uuid(post_uuid):
 
 
 # Same as flutter app
-usernames_matcher = re.compile('@[^\s]+')
+usernames_regexp = re.compile('@[^\s]+')
 
 
 def extract_usernames_from_string(string):
-    usernames = usernames_matcher.findall(string=string)
+    usernames = usernames_regexp.findall(string=string)
     return [username[1:] for username in usernames]
+
+
+hashtags_regexp = re.compile(r'\B#\w*[a-zA-Z]+\w*')
+
+
+def extract_hashtags_from_string(string):
+    hashtags = hashtags_regexp.findall(string=string)
+    extracted_hashtags = [hashtag[1:] for hashtag in hashtags]
+    return extracted_hashtags
 
 
 magic = magic.Magic(magic_file='openbook_common/misc/magic.mgc', mime=True)

@@ -3,6 +3,7 @@ import tempfile
 from unittest import mock
 
 from PIL import Image
+from django.conf import settings
 from django.core.files import File
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
@@ -15,7 +16,7 @@ from openbook_common.tests.models import OpenbookAPITestCase
 from mixer.backend.django import mixer
 
 from openbook.settings import POST_MAX_LENGTH
-from openbook_auth.models import User
+from openbook_auth.models import User, UserNotificationsSubscription
 import random
 
 import logging
@@ -25,14 +26,16 @@ from openbook_circles.models import Circle
 from openbook_common.tests.helpers import make_user, make_users, make_fake_post_text, \
     make_authentication_headers_for_user, make_circle, make_community, make_list, make_moderation_category, \
     get_test_usernames, get_test_videos, get_test_image, make_global_moderator, \
-    make_fake_post_comment_text, make_reactions_emoji_group, make_emoji
+    make_fake_post_comment_text, make_reactions_emoji_group, make_emoji, make_hashtag_name, make_hashtag, \
+    get_test_valid_hashtags, get_test_invalid_hashtags
 from openbook_common.utils.helpers import sha256sum
 from openbook_communities.models import Community
+from openbook_hashtags.models import Hashtag
 from openbook_lists.models import List
 from openbook_moderation.models import ModeratedObject
-from openbook_notifications.models import PostUserMentionNotification, Notification
-from openbook_posts.jobs import curate_top_posts
-from openbook_posts.models import Post, PostUserMention, PostMedia, TopPost
+from openbook_notifications.models import PostUserMentionNotification, Notification, UserNewPostNotification
+from openbook_posts.jobs import curate_top_posts, curate_trending_posts
+from openbook_posts.models import Post, PostUserMention, PostMedia, TopPost, TrendingPost
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -128,6 +131,193 @@ class PostsAPITests(OpenbookAPITestCase):
 
         self.assertTrue(user.posts.get(text=post_text).language.code is not None)
 
+    def test_create_text_post_with_hashtag_creates_hashtag_if_not_exist(self):
+        """
+        when ccreating a post with a hashtag, should create it if not exists
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        hashtag = make_hashtag_name()
+
+        post_text = 'A hashtag #' + hashtag
+
+        data = {
+            'text': post_text
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+        created_hashtag = Hashtag.objects.get(name=hashtag)
+        self.assertTrue(post.hashtags.filter(pk=created_hashtag.pk).exists())
+        self.assertEqual(post.hashtags.all().count(), 1)
+
+    def test_create_text_post_with_existing_hashtag_adds_it(self):
+        """
+        when creating a post with an existing hashtag, should add it
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        hashtag = make_hashtag()
+
+        new_post_text = 'A hashtag #' + hashtag.name
+
+        data = {
+            'text': new_post_text
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+        post = Post.objects.get(text=new_post_text, creator_id=user.pk)
+        self.assertTrue(post.hashtags.filter(pk=hashtag.pk).exists())
+        self.assertEqual(Hashtag.objects.filter(pk=hashtag.pk).count(), 1)
+        self.assertEqual(post.hashtags.all().count(), 1)
+
+    def test_create_text_post_with_repeated_hashtag_does_not_create_double_hashtags(self):
+        """
+        when creating a post with a repeated hashtag, doesnt create it twice
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        hashtag_name = make_hashtag_name()
+        post_text = '#%s #%s' % (hashtag_name, hashtag_name)
+
+        data = {
+            'text': post_text
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+        hashtag = Hashtag.objects.get(name=hashtag_name)
+        self.assertEqual(post.hashtags.all().count(), 1)
+        self.assertEqual(post.hashtags.filter(name=hashtag.name).count(), 1)
+        self.assertEqual(Hashtag.objects.filter(name=hashtag.name).count(), 1)
+
+    def test_create_text_post_with_valid_hashtags_creates_them(self):
+        """
+        when creating a post with valid hashtags, should create them
+        """
+        user = make_user()
+
+        valid_hashtags = get_test_valid_hashtags()
+
+        for valid_hashtag in valid_hashtags:
+            headers = make_authentication_headers_for_user(user=user)
+
+            post_text = 'Valid hashtag #' + valid_hashtag
+
+            data = {
+                'text': post_text
+            }
+
+            url = self._get_url()
+
+            response = self.client.put(url, data, **headers, format='multipart')
+
+            self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+            post = Post.objects.get(text=post_text, creator_id=user.pk)
+            created_hashtag = Hashtag.objects.get(name=valid_hashtag)
+            self.assertTrue(post.hashtags.filter(pk=created_hashtag.pk).exists())
+            self.assertEqual(post.hashtags.all().count(), 1)
+
+    def test_create_text_post_with_invalid_hashtags_does_not_create_them(self):
+        """
+        when creating a post with invalid hashtags, should not create them
+        """
+        user = make_user()
+
+        invalid_hashtags = get_test_invalid_hashtags()
+
+        for invalid_hashtag in invalid_hashtags:
+            headers = make_authentication_headers_for_user(user=user)
+
+            post_text = 'Invalid hashtag #' + invalid_hashtag
+
+            data = {
+                'text': post_text
+            }
+
+            url = self._get_url()
+
+            response = self.client.put(url, data, **headers, format='multipart')
+
+            self.assertEqual(status.HTTP_201_CREATED, response.status_code)
+
+            post = Post.objects.get(text=post_text, creator_id=user.pk)
+            self.assertFalse(Hashtag.objects.filter(name=invalid_hashtag).exists())
+            self.assertFalse(post.hashtags.all().exists())
+
+    def test_create_text_post_with_excedingly_long_hashtag_should_not_created_it(self):
+        """
+        when creating a post with an excedingly long hashtag, should not create it
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        long_hashtag = ''.join(['a' for item in range(0, settings.HASHTAG_NAME_MAX_LENGTH + 1)])
+        post_text = 'Long hashtag #' + long_hashtag
+
+        data = {
+            'text': post_text
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+        self.assertFalse(Post.objects.filter(text=post_text).exists())
+        self.assertFalse(Hashtag.objects.filter(name=long_hashtag).exists())
+
+    def test_create_text_post_with_more_hashtags_than_allowed_should_not_create_it(self):
+        """
+        when creating a post with exceeding hashtags, should not create it
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+        post_hashtags = []
+
+        for i in range(0, settings.POST_MAX_HASHTAGS + 1):
+            hashtag = '#%s' % make_hashtag_name()
+            post_hashtags.append(hashtag)
+
+        post_text = ' '.join(post_hashtags)
+
+        data = {
+            'text': post_text
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+        self.assertFalse(Post.objects.filter(text=post_text).exists())
+
     def test_create_text_post_detects_mentions_once(self):
         """
         should be able to create a text post with a mention and detect it once
@@ -177,6 +367,31 @@ class PostsAPITests(OpenbookAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         post = Post.objects.get(text=post_text, creator_id=user.pk)
 
+        self.assertTrue(PostUserMention.objects.filter(post_id=post.pk, user_id=mentioned_user.pk).exists())
+
+    def test_create_text_detect_mention_ignores_casing_of_username(self):
+        """
+        should detect mention regardless of the casing of the username
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        mentioned_user = make_user(username='Joel')
+
+        post_text = 'Hello @joel'
+
+        data = {
+            'text': post_text,
+        }
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
+
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(PostUserMention.objects.filter(post_id=post.pk, user_id=mentioned_user.pk).exists())
 
     def test_create_text_post_ignores_non_existing_mentioned_usernames(self):
@@ -1254,7 +1469,7 @@ class PostsAPITests(OpenbookAPITestCase):
 
         response_posts = json.loads(response.content)
 
-        self.assertEqual(len(response_posts), len(created_posts_ids))
+        self.assertEqual(len(created_posts_ids), len(response_posts))
 
         response_posts_ids = [post['id'] for post in response_posts]
 
@@ -3379,6 +3594,113 @@ class PostsAPITests(OpenbookAPITestCase):
 
         self.assertEqual(0, len(response_posts))
 
+    def test_create_post_notifies_subscribers(self):
+        """
+        should notify subscribers when a post is created
+        """
+        user = make_user()
+        subscriber = make_user()
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+
+        headers = make_authentication_headers_for_user(user)
+        data = {'text': post_text}
+
+        subscriber.enable_new_post_notifications_for_user_with_username(user.username)
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        user_notifications_subscription = UserNotificationsSubscription.objects.get(subscriber=subscriber, user=user)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(UserNewPostNotification.objects.filter(
+            user_notifications_subscription=user_notifications_subscription).count() == 1)
+
+    def test_create_post_does_not_notify_subscribers_if_post_creator_is_blocked(self):
+        """
+        should NOT notify subscribers if creator is blocked when a post is created
+        """
+        user = make_user()
+        subscriber = make_user()
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+
+        headers = make_authentication_headers_for_user(user)
+        data = {'text': post_text}
+
+        subscriber.enable_new_post_notifications_for_user_with_username(user.username)
+        subscriber.block_user_with_id(user_id=user.pk)
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+        response_post = json.loads(response.content)
+        post = Post.objects.get(id=response_post['id'])
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(UserNewPostNotification.objects.filter(
+            post=post).count() == 0)
+
+    def test_create_post_does_not_notify_subscribers_if_they_have_been_blocked(self):
+        """
+        should NOT notify subscribers if creator has blocked them
+        """
+        user = make_user()
+        subscriber = make_user()
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+
+        headers = make_authentication_headers_for_user(user)
+        data = {'text': post_text}
+
+        subscriber.enable_new_post_notifications_for_user_with_username(user.username)
+        user.block_user_with_id(user_id=subscriber.pk)
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+        response_post = json.loads(response.content)
+        post = Post.objects.get(id=response_post['id'])
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(UserNewPostNotification.objects.filter(
+            post=post).count() == 0)
+
+    def test_encircled_post_should_notify_only_subscribers_in_that_circle(self):
+        """
+        should only notify subscribers in a circle if encircled post
+        """
+        post_creator = make_user()
+        subscriber = make_user()
+        other_subscriber = make_user()
+        post_text = fake.text(max_nb_chars=POST_MAX_LENGTH)
+        headers = make_authentication_headers_for_user(post_creator)
+        circle = mixer.blend(Circle, creator=post_creator)
+
+        # connect with subscriber and add them to circle
+        subscriber.connect_with_user_with_id(post_creator.pk)
+        post_creator.confirm_connection_with_user_with_id(user_id=subscriber.pk, circles_ids=[circle.pk])
+
+        # both users subscribe
+        subscriber.enable_new_post_notifications_for_user_with_username(post_creator.username)
+        other_subscriber.enable_new_post_notifications_for_user_with_username(post_creator.username)
+
+        data = {
+            'text': post_text,
+            'circle_id': circle.pk
+        }
+
+        url = self._get_url()
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        other_subscriber_notifications_subscription = UserNotificationsSubscription.objects.get(
+            subscriber=other_subscriber, user=post_creator)
+
+        subscriber_notifications_subscription = UserNotificationsSubscription.objects.get(
+            subscriber=subscriber, user=post_creator)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(UserNewPostNotification.objects.filter(
+            user_notifications_subscription=other_subscriber_notifications_subscription).count() == 0)
+        self.assertTrue(UserNewPostNotification.objects.filter(
+            user_notifications_subscription=subscriber_notifications_subscription).count() == 1)
+
     def _get_url(self):
         return reverse('posts')
 
@@ -3404,6 +3726,14 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
 
         headers = make_authentication_headers_for_user(user)
 
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+
+        curate_trending_posts()
+
         url = self._get_url()
 
         response = self.client.get(url, **headers, format='multipart')
@@ -3416,7 +3746,33 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
 
         response_post = response_posts[0]
 
-        self.assertEqual(response_post['id'], post.pk)
+        self.assertEqual(response_post['post']['id'], post.pk)
+        self.assertTrue(TrendingPost.objects.filter(post__id=post.pk).exists())
+
+    def test_does_not_curate_community_posts_with_less_than_min_reactions(self):
+        """
+        should not curate community posts with less than minimum reactions and return 200
+        """
+        user = make_user()
+        community = make_community(creator=user)
+
+        user.create_public_post(text=make_fake_post_text())
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        headers = make_authentication_headers_for_user(user)
+
+        curate_trending_posts()
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(0, len(response_posts))
+        self.assertFalse(TrendingPost.objects.filter(post__id=post.pk).exists())
 
     def test_does_not_display_closed_community_posts(self):
         """
@@ -3433,6 +3789,15 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
 
         headers = make_authentication_headers_for_user(user)
 
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+        user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
+
+        curate_trending_posts()
+
         url = self._get_url()
 
         response = self.client.get(url, **headers, format='multipart')
@@ -3445,7 +3810,9 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
 
         response_post = response_posts[0]
 
-        self.assertEqual(response_post['id'], post.pk)
+        self.assertEqual(response_post['post']['id'], post.pk)
+        self.assertFalse(TrendingPost.objects.filter(post__id=post_two.pk).exists())
+        self.assertTrue(TrendingPost.objects.filter(post__id=post.pk).exists())
 
     def test_does_not_display_post_from_community_banned_from(self):
         """
@@ -3458,12 +3825,19 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
 
         user.join_community_with_name(community_name=community.name)
 
+        post = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+
         community_owner.ban_user_with_username_from_community_with_name(username=user.username,
                                                                         community_name=community.name)
 
-        community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
-
         headers = make_authentication_headers_for_user(user)
+
+        curate_trending_posts()
 
         url = self._get_url()
 
@@ -3480,13 +3854,22 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         should not be able to retrieve posts of a blocked user
         """
         user = make_user()
-
+        community = make_community(creator=user)
         user_to_retrieve_posts_from = make_user()
-        user_to_retrieve_posts_from.create_public_post(text=make_fake_post_text())
+        user_to_retrieve_posts_from.join_community_with_name(community_name=community.name)
 
-        user.follow_user_with_id(user_id=user_to_retrieve_posts_from.pk)
+        post = user_to_retrieve_posts_from.create_community_post(text=make_fake_post_text(),
+                                                                 community_name=community.name)
+
+        # react once, min required while testing
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
 
         user.block_user_with_id(user_id=user_to_retrieve_posts_from.pk)
+
+        curate_trending_posts()
 
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
@@ -3504,13 +3887,22 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         should not be able to retrieve posts of a blocking user
         """
         user = make_user()
-
+        community = make_community(creator=user)
         user_to_retrieve_posts_from = make_user()
-        user_to_retrieve_posts_from.create_public_post(text=make_fake_post_text())
+        user_to_retrieve_posts_from.join_community_with_name(community_name=community.name)
 
-        user.follow_user_with_id(user_id=user_to_retrieve_posts_from.pk)
+        post = user_to_retrieve_posts_from.create_community_post(text=make_fake_post_text(),
+                                                                 community_name=community.name)
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
 
         user_to_retrieve_posts_from.block_user_with_id(user_id=user.pk)
+
+        curate_trending_posts()
 
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
@@ -3534,9 +3926,17 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
 
         user.join_community_with_name(community_name=community.name)
 
-        community_owner.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post = community_owner.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
 
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+
+        # block user
         user.block_user_with_id(user_id=community_owner.pk)
+
+        curate_trending_posts()
 
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
@@ -3549,8 +3949,243 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
 
         self.assertEqual(0, len(response_posts))
 
+    def test_does_not_curate_encircled_posts(self):
+        """
+        should not curate encircled posts in trending posts
+        """
+        post_creator = make_user()
+        user = make_user()
+
+        circle = make_circle(creator=post_creator)
+
+        post_creator.connect_with_user_with_id(user_id=user.pk, circles_ids=[circle.pk])
+        user.confirm_connection_with_user_with_id(user_id=post_creator.pk)
+
+        post_text = make_fake_post_text()
+        post = post_creator.create_encircled_post(text=post_text, circles_ids=[circle.pk])
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+
+        # curate trending posts
+        curate_trending_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(0, len(response_posts))
+
+        trending_posts = TrendingPost.objects.all()
+        self.assertEqual(0, len(trending_posts))
+        self.assertFalse(TrendingPost.objects.filter(post__id=post.pk).exists())
+
+    def test_does_not_curate_private_community_posts(self):
+        """
+        should not curate private community posts in trending posts
+        """
+        user = make_user()
+
+        community = make_community(creator=user, type=Community.COMMUNITY_TYPE_PRIVATE)
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+
+        # curate trending posts
+        curate_trending_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(0, len(response_posts))
+
+        trending_posts = TrendingPost.objects.all()
+        self.assertEqual(0, len(trending_posts))
+        self.assertFalse(TrendingPost.objects.filter(post__id=post.pk).exists())
+
+    def test_does_not_return_recently_turned_private_community_posts(self):
+        """
+        should not return recently turned private community posts in trending posts
+        """
+        user = make_user()
+
+        community = make_community(creator=user, type=Community.COMMUNITY_TYPE_PUBLIC)
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+
+        # curate trending posts
+        curate_trending_posts()
+
+        community.type = Community.COMMUNITY_TYPE_PRIVATE
+        community.save()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(0, len(response_posts))
+
+        trending_posts = TrendingPost.objects.all()
+        self.assertEqual(1, len(trending_posts))
+        self.assertTrue(TrendingPost.objects.filter(post__id=post.pk).exists())
+
+    def test_does_not_display_curated_closed_community_posts(self):
+        """
+        should not display community posts that are closed after already curated in trending posts
+        """
+        user = make_user()
+        community = make_community(creator=user)
+
+        user.create_public_post(text=make_fake_post_text())
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+        user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
+
+        # curate trending posts
+        curate_trending_posts()
+
+        post_two.is_closed = True
+        post_two.save()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+        response_post = response_posts[0]
+        self.assertEqual(response_post['post']['id'], post.pk)
+
+    def test_does_not_display_reported_community_posts_that_are_approved(self):
+        """
+        should not display community posts that are reported and approved by staff in trending posts
+        """
+        user = make_user()
+        post_reporter = make_user()
+        community = make_community(creator=user)
+        post_reporter.join_community_with_name(community_name=community.name)
+
+        user.create_public_post(text=make_fake_post_text())
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        # report and approve the report for one post
+        moderation_category = make_moderation_category()
+        post_reporter.report_post(post=post, category_id=moderation_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=moderation_category.pk)
+        user.approve_moderated_object(moderated_object=moderated_object)
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+        user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
+
+        # curate trending posts
+        curate_trending_posts()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+        response_post = response_posts[0]
+        self.assertEqual(response_post['post']['id'], post_two.pk)
+
+        trending_posts = TrendingPost.objects.all()
+        self.assertEqual(1, len(trending_posts))
+        self.assertTrue(TrendingPost.objects.filter(post__id=post_two.pk).exists())
+
+    def test_does_not_display_reported_community_posts_that_are_approved_after_curation(self):
+        """
+        should not display community posts that are reported and approved after already curated by staff in trending posts
+        """
+        user = make_user()
+        post_reporter = make_user()
+        community = make_community(creator=user)
+        post_reporter.join_community_with_name(community_name=community.name)
+
+        user.create_public_post(text=make_fake_post_text())
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        # report and approve the report for one post
+        moderation_category = make_moderation_category()
+        post_reporter.report_post(post=post, category_id=moderation_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(post=post,
+                                                                                   category_id=moderation_category.pk)
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+        user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
+
+        # curate trending posts
+        curate_trending_posts()
+
+        user.approve_moderated_object(moderated_object=moderated_object)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_posts = json.loads(response.content)
+        self.assertEqual(1, len(response_posts))
+        response_post = response_posts[0]
+        self.assertEqual(response_post['post']['id'], post_two.pk)
+
     def _get_url(self):
-        return reverse('trending-posts')
+        return reverse('trending-posts-new')
 
 
 class TopPostsAPITests(OpenbookAPITestCase):
@@ -3568,8 +4203,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         """
         user = make_user()
         community = make_community(creator=user)
-        # clear all top posts
-        TopPost.objects.all().delete()
 
         public_post = user.create_public_post(text=make_fake_post_text())
         community_post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -3606,11 +4239,10 @@ class TopPostsAPITests(OpenbookAPITestCase):
         community_creator = make_user()
         user_community = make_community(creator=user)
         community = make_community(creator=community_creator)
-        # clear all top posts
-        TopPost.objects.all().delete()
 
         user_community_post = user.create_community_post(community_name=user_community.name, text=make_fake_post_text())
-        community_post = community_creator.create_community_post(community_name=community.name, text=make_fake_post_text())
+        community_post = community_creator.create_community_post(community_name=community.name,
+                                                                 text=make_fake_post_text())
 
         # comment on both posts to qualify for top
         user.comment_post(user_community_post, text=make_fake_post_comment_text())
@@ -3641,8 +4273,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         """
         user = make_user()
         community = make_community(creator=user)
-        # clear all top posts
-        TopPost.objects.all().delete()
 
         public_post = user.create_public_post(text=make_fake_post_text())
         community_post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -3677,9 +4307,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         """
         post_creator = make_user()
         user = make_user()
-
-        # clear all top posts
-        TopPost.objects.all().delete()
 
         circle = make_circle(creator=post_creator)
 
@@ -3716,9 +4343,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         """
         user = make_user()
 
-        # clear all top posts
-        TopPost.objects.all().delete()
-
         community = make_community(creator=user, type=Community.COMMUNITY_TYPE_PRIVATE)
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
 
@@ -3748,9 +4372,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         should not return recently turned private community posts in top posts
         """
         user = make_user()
-
-        # clear all top posts
-        TopPost.objects.all().delete()
 
         community = make_community(creator=user, type=Community.COMMUNITY_TYPE_PUBLIC)
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -3785,9 +4406,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         """
         user = make_user()
         community = make_community(creator=user)
-
-        # clear all top posts
-        TopPost.objects.all().delete()
 
         user.create_public_post(text=make_fake_post_text())
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -3825,9 +4443,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         user = make_user()
         community = make_community(creator=user)
 
-        # clear all top posts
-        TopPost.objects.all().delete()
-
         user.create_public_post(text=make_fake_post_text())
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
         post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -3862,9 +4477,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         post_reporter = make_user()
         community = make_community(creator=user)
         post_reporter.join_community_with_name(community_name=community.name)
-
-        # clear all top posts
-        TopPost.objects.all().delete()
 
         user.create_public_post(text=make_fake_post_text())
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -3910,9 +4522,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         community = make_community(creator=user)
         post_reporter.join_community_with_name(community_name=community.name)
 
-        # clear all top posts
-        TopPost.objects.all().delete()
-
         user.create_public_post(text=make_fake_post_text())
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
         post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -3952,9 +4561,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         user = make_user()
         community_owner = make_user()
 
-        # clear all top posts
-        TopPost.objects.all().delete()
-
         community = make_community(creator=community_owner)
         user.join_community_with_name(community_name=community.name)
         community_owner.ban_user_with_username_from_community_with_name(username=user.username,
@@ -3983,12 +4589,10 @@ class TopPostsAPITests(OpenbookAPITestCase):
         """
         user = make_user()
 
-        # clear all top posts
-        TopPost.objects.all().delete()
-
         user_to_retrieve_posts_from = make_user()
         community = make_community(creator=user_to_retrieve_posts_from)
-        post = user_to_retrieve_posts_from.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post = user_to_retrieve_posts_from.create_community_post(community_name=community.name,
+                                                                 text=make_fake_post_text())
         user_to_retrieve_posts_from.comment_post(post, text=make_fake_post_comment_text())
 
         user.follow_user_with_id(user_id=user_to_retrieve_posts_from.pk)
@@ -4014,12 +4618,10 @@ class TopPostsAPITests(OpenbookAPITestCase):
         """
         user = make_user()
 
-        # clear all top posts
-        TopPost.objects.all().delete()
-
         user_to_retrieve_posts_from = make_user()
         community = make_community(creator=user_to_retrieve_posts_from)
-        post = user_to_retrieve_posts_from.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post = user_to_retrieve_posts_from.create_community_post(community_name=community.name,
+                                                                 text=make_fake_post_text())
         user_to_retrieve_posts_from.comment_post(post, text=make_fake_post_comment_text())
 
         user_to_retrieve_posts_from.block_user_with_id(user_id=user.pk)
@@ -4044,9 +4646,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         """
         user = make_user()
         community_owner = make_user()
-
-        # clear all top posts
-        TopPost.objects.all().delete()
 
         community = make_community(creator=community_owner)
         post = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -4074,9 +4673,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         """
         user = make_user()
         community_owner = make_user()
-
-        # clear all top posts
-        TopPost.objects.all().delete()
 
         community = make_community(creator=community_owner)
         post = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -4109,9 +4705,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         user = make_user()
         community_owner = make_user()
 
-        # clear all top posts
-        TopPost.objects.all().delete()
-
         community = make_community(creator=community_owner)
         post = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
         post_two = community_owner.create_community_post(community_name=community.name, text=make_fake_post_text())
@@ -4142,10 +4735,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         should take into account max_id in when returning top posts
         """
         user = make_user()
-
-        # clear all top posts
-        TopPost.objects.all().delete()
-
         total_posts = 10
 
         community = make_community(creator=user)
@@ -4173,10 +4762,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         should take into account min_id in when returning top posts
         """
         user = make_user()
-
-        # clear all top posts
-        TopPost.objects.all().delete()
-
         total_posts = 10
 
         community = make_community(creator=user)
@@ -4204,10 +4789,6 @@ class TopPostsAPITests(OpenbookAPITestCase):
         should take into account count when returning top posts
         """
         user = make_user()
-
-        # clear all top posts
-        TopPost.objects.all().delete()
-
         total_posts = 10
 
         community = make_community(creator=user)

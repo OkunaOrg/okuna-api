@@ -5,12 +5,8 @@ import requests
 from langdetect import DetectorFactory
 from langdetect.lang_detect_exception import LangDetectException
 from django.conf import settings
-import urllib
 from urllib.parse import urlparse
-from bs4 import BeautifulSoup
 from urlextract import URLExtract
-from webpreview import web_preview
-from django.utils.translation import ugettext_lazy as _
 
 from openbook.settings import ALERT_HOOK_URL
 from openbook_common.utils.model_loaders import get_language_model

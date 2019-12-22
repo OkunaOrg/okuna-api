@@ -21,6 +21,23 @@ class IsFollowingField(Field):
         return False
 
 
+class AreNewPostNotificationsEnabledForUserField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(AreNewPostNotificationsEnabledForUserField, self).__init__(**kwargs)
+
+    def to_representation(self, value):
+        request = self.context.get('request')
+
+        if not request.user.is_anonymous:
+            if request.user.pk == value.pk:
+                return False
+            return request.user.are_new_post_notifications_enabled_for_user(user=value)
+
+        return False
+
+
 class IsFollowedField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'
@@ -174,11 +191,11 @@ class FollowingCountField(Field):
         return value.count_following()
 
 
-class PostsCountField(Field):
+class UserPostsCountField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'
         kwargs['read_only'] = True
-        super(PostsCountField, self).__init__(**kwargs)
+        super(UserPostsCountField, self).__init__(**kwargs)
 
     def to_representation(self, value):
         request = self.context.get('request')
@@ -189,7 +206,7 @@ class PostsCountField(Field):
             return value.count_posts_for_user_with_id(request.user.pk)
 
         User = get_user_model()
-        return User.count_public_posts_for_user_with_username(username=value.username)
+        return User.count_unauthenticated_public_posts_for_user_with_username(username=value.username)
 
 
 class UnreadNotificationsCountField(Field):

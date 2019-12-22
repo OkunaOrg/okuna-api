@@ -14,7 +14,8 @@ from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.utils.model_loaders import get_community_invite_model, \
     get_community_log_model, get_category_model, get_user_model, get_moderated_object_model, \
-    get_community_notification_subscription_model
+    get_community_notifications_subscription_model, get_community_new_post_notification_model, \
+    get_community_invite_notification_model
 from openbook_common.validators import hex_color_validator
 from openbook_communities.helpers import upload_to_community_avatar_directory, upload_to_community_cover_directory
 from openbook_communities.validators import community_name_characters_validator
@@ -74,10 +75,11 @@ class Community(models.Model):
                                                                                     community_name=community_name)
 
     @classmethod
-    def is_user_with_username_subscribed_to_community_with_name(cls, username, community_name):
-        CommunityNotificationSubscription = get_community_notification_subscription_model()
-        return CommunityNotificationSubscription.is_user_with_username_subscribed_to_community_with_name(username=username,
-                                                                                                         community_name=community_name)
+    def is_user_with_username_subscribed_to_notifications_for_community_with_name(cls, username, community_name):
+        CommunityNotificationsSubscription = get_community_notifications_subscription_model()
+        return CommunityNotificationsSubscription.are_new_post_notifications_enabled_for_user_with_username_and_community_with_name(
+            username=username,
+            community_name=community_name)
 
     @classmethod
     def is_user_with_username_member_of_community_with_name(cls, username, community_name):
@@ -480,6 +482,15 @@ class Community(models.Model):
 
         return super(Community, self).save(*args, **kwargs)
 
+    def delete_notifications(self):
+        # Remove all community new post notifications
+        CommunityNewPostNotification = get_community_new_post_notification_model()
+        CommunityNewPostNotification.objects.filter(community_notifications_subscription__community_id=self.pk).delete()
+
+        # Remove all community invite notifications
+        CommunityInviteNotification = get_community_invite_notification_model()
+        CommunityInviteNotification.objects.filter(community_invite__community_id=self.pk).delete()
+
     def soft_delete(self):
         self.is_deleted = True
         for post in self.posts.all().iterator():
@@ -596,23 +607,51 @@ class CommunityInvite(models.Model):
         return cls.objects.filter(community__name=community_name, invited_user__username=username).exists()
 
 
-class CommunityNotificationSubscription(models.Model):
-    subscriber = models.ForeignKey(User, on_delete=models.CASCADE, related_name='community_notification_subscriptions', null=False,
-                             blank=False)
-    community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='notification_subscriptions', null=False,
+class CommunityNotificationsSubscription(models.Model):
+    subscriber = models.ForeignKey(User, on_delete=models.CASCADE, related_name='community_notifications_subscriptions',
+                                   null=False,
+                                   blank=False)
+    community = models.ForeignKey(Community, on_delete=models.CASCADE, related_name='notifications_subscriptions',
+                                  null=False,
                                   blank=False)
+    new_post_notifications = models.BooleanField(default=False, blank=False)
 
     class Meta:
         unique_together = ('community', 'subscriber',)
 
     @classmethod
-    def create_community_notification_subscription(cls, subscriber, community):
-        return cls.objects.create(subscriber=subscriber, community=community)
+    def create_community_notifications_subscription(cls, subscriber, community):
+        if not cls.objects.filter(community=community, subscriber=subscriber).exists():
+            return cls.objects.create(subscriber=subscriber, community=community)
+
+        community_notifications_subscription = cls.objects.get(subscriber=subscriber, community=community)
+        community_notifications_subscription.save()
+
+        return community_notifications_subscription
 
     @classmethod
-    def remove_community_notification_subscription(cls, subscriber, community):
+    def get_or_create_community_notifications_subscription(cls, subscriber, community):
+        try:
+            community_notifications_subscription = cls.objects.get(subscriber_id=subscriber.pk,
+                                                                   community_id=community.pk)
+        except cls.DoesNotExist:
+            community_notifications_subscription = cls.create_community_notifications_subscription(
+                subscriber=subscriber,
+                community=community
+            )
+
+        return community_notifications_subscription
+
+    @classmethod
+    def delete_community_notifications_subscription(cls, subscriber, community):
         return cls.objects.filter(subscriber=subscriber, community=community).delete()
 
     @classmethod
-    def is_user_with_username_subscribed_to_community_with_name(cls, username, community_name):
-        return cls.objects.filter(community__name=community_name, subscriber__username=username).exists()
+    def community_notifications_subscription_exists(cls, subscriber, community):
+        return cls.objects.filter(subscriber=subscriber, community=community).exists()
+
+    @classmethod
+    def are_new_post_notifications_enabled_for_user_with_username_and_community_with_name(cls, username, community_name):
+        return cls.objects.filter(community__name=community_name,
+                                  subscriber__username=username,
+                                  new_post_notifications=True).exists()

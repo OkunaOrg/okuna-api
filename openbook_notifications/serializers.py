@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
 from openbook_common.models import Emoji, Language, Badge
+from openbook_common.serializers import CommonHashtagSerializer
 from openbook_common.serializers_fields.post import IsEncircledField
 from openbook_common.serializers_fields.post_comment import PostCommentIsMutedField
 from openbook_communities.models import Community, CommunityInvite
@@ -11,6 +12,7 @@ from openbook_notifications.models import Notification, PostCommentNotification,
     PostCommentReactionNotification, PostCommentUserMentionNotification, PostUserMentionNotification, \
     CommunityNewPostNotification
 from openbook_notifications.models.post_reaction_notification import PostReactionNotification
+from openbook_notifications.models.user_new_post_notification import UserNewPostNotification
 from openbook_notifications.serializer_fields import ParentCommentField
 from openbook_posts.models import PostComment, PostReaction, Post, PostImage, PostCommentReaction, \
     PostUserMention, PostCommentUserMention
@@ -71,7 +73,7 @@ class NotificationsBadgeSerializer(serializers.ModelSerializer):
 
 class PostCommentCommenterProfileSerializer(serializers.ModelSerializer):
     badges = NotificationsBadgeSerializer(many=True)
-    
+
     class Meta:
         model = UserProfile
         fields = (
@@ -96,7 +98,7 @@ class PostCommentCommenterSerializer(serializers.ModelSerializer):
 
 class PostCommentCreatorProfileSerializer(serializers.ModelSerializer):
     badges = NotificationsBadgeSerializer(many=True)
-    
+
     class Meta:
         model = UserProfile
         fields = (
@@ -204,6 +206,7 @@ class NotificationPostCommentSerializer(serializers.ModelSerializer):
     parent_comment = NotificationPostCommentParentSerializer()
     is_muted = PostCommentIsMutedField()
     language = PostCommentLanguageSerializer()
+    hashtags = CommonHashtagSerializer(many=True)
 
     class Meta:
         model = PostComment
@@ -215,7 +218,8 @@ class NotificationPostCommentSerializer(serializers.ModelSerializer):
             'post',
             'created',
             'parent_comment',
-            'is_muted'
+            'is_muted',
+            'hashtags'
         )
 
 
@@ -246,7 +250,7 @@ class PostCommentReplyNotificationSerializer(serializers.ModelSerializer):
 
 class PostCommentReactionReactorProfileSerializer(serializers.ModelSerializer):
     badges = NotificationsBadgeSerializer(many=True)
-    
+
     class Meta:
         model = UserProfile
         fields = (
@@ -308,7 +312,7 @@ class PostCommentReactionNotificationSerializer(serializers.ModelSerializer):
 
 class PostReactionReactorProfileSerializer(serializers.ModelSerializer):
     badges = NotificationsBadgeSerializer(many=True)
-    
+
     class Meta:
         model = UserProfile
         fields = (
@@ -548,6 +552,17 @@ class CommunityNewPostNotificationSerializer(serializers.ModelSerializer):
         )
 
 
+class UserNewPostNotificationSerializer(serializers.ModelSerializer):
+    post = NotificationPostSerializer()
+
+    class Meta:
+        model = UserNewPostNotification
+        fields = (
+            'id',
+            'post'
+        )
+
+
 class PostUserMentionSerializer(serializers.ModelSerializer):
     post = NotificationPostSerializer()
     user = PostCommentCreatorSerializer()
@@ -608,6 +623,7 @@ class GetNotificationsNotificationSerializer(serializers.ModelSerializer):
         PostCommentUserMentionNotification: PostCommentUserMentionNotificationSerializer(),
         PostUserMentionNotification: PostUserMentionNotificationSerializer(),
         CommunityNewPostNotification: CommunityNewPostNotificationSerializer(),
+        UserNewPostNotification: UserNewPostNotificationSerializer(),
         CommunityInviteNotification: CommunityInviteNotificationSerializer()
     })
 

@@ -16,3 +16,4 @@ class CommunityPendingModeratedObjectsCountField(Field):
             return None
 
         return community.count_pending_moderated_objects()
+

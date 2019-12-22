@@ -11,7 +11,7 @@ from openbook_common.tests.models import OpenbookAPITestCase
 
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, \
     make_community
-from openbook_communities.models import Community
+from openbook_communities.models import Community, CommunityNotificationsSubscription
 from openbook_notifications.models import CommunityInviteNotification, Notification
 
 logger = logging.getLogger(__name__)
@@ -878,5 +878,38 @@ class SearchCommunityMembersAPITests(OpenbookAPITestCase):
 
     def _get_url(self, community_name):
         return reverse('search-community-members', kwargs={
+            'community_name': community_name,
+        })
+
+
+class LeaveCommunityAPITests(OpenbookAPITestCase):
+
+    def test_leaving_community_should_remove_notifications_subscription(self):
+        """
+        when leaving a community, the member community notifications subscription should be removed
+        """
+        user = make_user()
+        other_user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        community = make_community(creator=other_user)
+        community_name = community.name
+
+        user.join_community_with_name(community_name=community_name)
+
+        user.enable_new_post_notifications_for_community_with_name(community_name=community_name)
+
+        url = self._get_url(community_name=community_name)
+
+        response = self.client.post(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(
+            CommunityNotificationsSubscription.objects.filter(subscriber=user, community=community).exists())
+
+    def _get_url(self, community_name):
+        return reverse('community-leave', kwargs={
             'community_name': community_name,
         })
