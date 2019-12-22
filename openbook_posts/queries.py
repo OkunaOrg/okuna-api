@@ -133,48 +133,45 @@ def make_get_hashtag_posts_for_user_with_id_query(hashtag, user_id):
     return hashtag_posts_query
 
 
-def make_circles_posts_query_for_target_user_and_source_user(target_user, source_user):
-    posts_visibility_query = _make_posts_visibility_query_for_target_user_and_source_user(
-        target_user=target_user,
-        source_user=source_user
-    )
-
+def make_circles_posts_query_for_user(user):
     target_user_circles_posts_query = make_only_posts_of_circles_part_for_user_with_id_query(
-        user_id=source_user.pk) | make_only_world_circle_posts_query()
+        user_id=user.pk) | make_only_world_circle_posts_query()
 
-    return target_user_circles_posts_query & posts_visibility_query
+    return target_user_circles_posts_query
 
 
-def make_community_posts_query_for_target_user_and_source_user(target_user, source_user):
-    posts_visibility_query = _make_posts_visibility_query_for_target_user_and_source_user(
-        target_user=target_user,
-        source_user=source_user
-    )
-
-    target_user_community_posts_query = make_only_visible_community_posts_for_user_with_id_query(user_id=source_user.pk)
+def make_community_posts_query_for_user(user):
+    target_user_community_posts_query = make_only_visible_community_posts_for_user_with_id_query(user_id=user.pk)
     target_user_community_posts_query.add(
-        make_exclude_community_posts_banned_from_for_user_with_id_query(user_id=target_user.pk),
+        make_exclude_community_posts_banned_from_for_user_with_id_query(user_id=user.pk),
         Q.AND)
 
-    return target_user_community_posts_query & posts_visibility_query
+    return target_user_community_posts_query
 
 
-def _make_posts_visibility_query_for_target_user_and_source_user(target_user, source_user):
+def _make_posts_visibility_exclude_query(user):
     """
     This should always be used in conjuction with another query with access control relative to circles or communities
     """
-    posts_visibility_query = make_only_posts_for_creator_with_id_query(creator_id=target_user.pk)
 
-    posts_visibility_query.add(make_exclude_reported_posts_by_user_with_id_query(user_id=source_user.pk), Q.AND)
+    ModeratedObject = get_moderated_object_model()
+    Post = get_post_model()
 
-    posts_visibility_query.add(make_exclude_reported_and_approved_posts_query(), Q.AND)
+    # Reported posts
+    posts_exclude_query = Q(
+        # Non published posts
+        ~ Q(status=Post.STATUS_PUBLISHED) |
+        # Closed posts
+        Q(is_closed=True) |
+        # Deleted posts
+        Q(is_deleted=True) |
+        # Reported posts
+        Q(moderated_object__reports__reporter_id=user.pk) |
+        # Approved reported posts
+        Q(moderated_object__status=ModeratedObject.STATUS_APPROVED) |
+        # Posts of users we blocked or that have blocked us
+        Q(creator__blocked_by_users__blocker_id=user.pk) | Q(
+            creator__user_blocks__blocked_user_id=user.pk)
+    )
 
-    posts_visibility_query.add(make_only_published_posts_query(), Q.AND)
-
-    posts_visibility_query.add(make_exclude_closed_posts_query(), Q.AND)
-
-    posts_visibility_query.add(make_exclude_soft_deleted_posts_query(), Q.AND)
-
-    posts_visibility_query.add(make_exclude_blocked_posts_for_user_with_id_query(user_id=target_user.pk), Q.AND)
-
-    return posts_visibility_query
+    return posts_exclude_query

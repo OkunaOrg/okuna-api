@@ -2,8 +2,8 @@ from django.db.models import Q
 
 from openbook_common.utils.model_loaders import get_post_model
 from openbook_posts.queries import \
-    make_community_posts_query_for_target_user_and_source_user, make_only_posts_with_max_id, \
-    make_only_posts_with_min_id, make_circles_posts_query_for_target_user_and_source_user
+    make_community_posts_query_for_user, make_only_posts_with_max_id, \
+    make_only_posts_with_min_id, make_circles_posts_query_for_user, _make_posts_visibility_exclude_query
 
 
 def get_posts_for_user_collection(target_user, source_user, posts_only=None, posts_prefetch_related=None,
@@ -27,27 +27,24 @@ def get_posts_for_user_collection(target_user, source_user, posts_only=None, pos
     elif min_id:
         id_boundary_query = make_only_posts_with_min_id(min_id=min_id)
 
-    circles_posts_query = make_circles_posts_query_for_target_user_and_source_user(
-        target_user=target_user,
-        source_user=source_user
+    query = Q(username=target_user.pk)
+
+    posts_query = make_circles_posts_query_for_user(
+        user=source_user
     )
 
+    if include_community_posts:
+        posts_query.add(make_community_posts_query_for_user(
+            user=source_user
+        ), Q.OR)
+
+    query.add(posts_query, Q.AND)
+
     if id_boundary_query:
-        circles_posts_query.add(id_boundary_query, Q.AND)
+        query.add(id_boundary_query, Q.AND)
 
-    circles_posts_collection = posts_collection_manager.filter(circles_posts_query)
-
-    if not include_community_posts:
-        return circles_posts_collection
-
-    community_posts_query = make_community_posts_query_for_target_user_and_source_user(
-        target_user=target_user,
-        source_user=source_user
+    posts_visibility_exclude_query = _make_posts_visibility_exclude_query(
+        user=source_user
     )
 
-    if id_boundary_query:
-        community_posts_query.add(id_boundary_query, Q.AND)
-
-    community_posts_collection = posts_collection_manager.filter(community_posts_query)
-
-    return community_posts_collection.union(circles_posts_collection)
+    return posts_collection_manager.filter(query).exclude(posts_visibility_exclude_query)
