@@ -66,8 +66,4 @@ def get_posts_for_user_collection(target_user, source_user, posts_only=None, pos
         Q(community__banned_users__id=source_user.pk)
     )
 
-    posts = posts_collection_manager.filter(query).exclude(posts_visibility_exclude_query)
-
-    print(posts.query)
-
-    return posts
+    return posts_collection_manager.filter(query).exclude(posts_visibility_exclude_query)
