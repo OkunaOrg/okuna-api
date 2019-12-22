@@ -27,6 +27,31 @@ def get_posts_for_user_collection(target_user, source_user, posts_only=None, pos
     elif min_id:
         id_boundary_query = make_only_posts_with_min_id(min_id=min_id)
 
+    query = Q(
+        # Created by the target user
+        creator__username=target_user.username,
+        # Not closed
+        is_closed=False,
+        # Not deleted
+        is_deleted=False,
+        # Published
+        status=Post.STATUS_PUBLISHED,
+    )
+
+    posts_query = make_circles_posts_query_for_user(
+        user=source_user
+    )
+
+    if include_community_posts:
+        posts_query.add(make_community_posts_query_for_user(
+            user=source_user
+        ), Q.OR)
+
+    query.add(posts_query, Q.AND)
+
+    if id_boundary_query:
+        query.add(id_boundary_query, Q.AND)
+
     ModeratedObject = get_moderated_object_model()
 
     posts_visibility_exclude_query = Q(
@@ -41,40 +66,4 @@ def get_posts_for_user_collection(target_user, source_user, posts_only=None, pos
         Q(community__banned_users__id=source_user.pk)
     )
 
-    target_user_posts_query = Q(
-        # Created by the target user
-        creator__username=target_user.username,
-        # Not closed
-        is_closed=False,
-        # Not deleted
-        is_deleted=False,
-        # Published
-        status=Post.STATUS_PUBLISHED,
-    )
-
-    encircled_posts_query = make_circles_posts_query_for_user(
-        user=source_user
-    )
-
-    if id_boundary_query:
-        encircled_posts_query.add(id_boundary_query, Q.AND)
-
-    encircled_posts_collection = posts_collection_manager.filter(
-        target_user_posts_query & encircled_posts_query).exclude(
-        posts_visibility_exclude_query)
-
-    if not include_community_posts:
-        return encircled_posts_collection
-
-    community_posts_query = make_community_posts_query_for_user(
-        user=source_user
-    )
-
-    if id_boundary_query:
-        community_posts_query.add(id_boundary_query, Q.AND)
-
-    community_posts_collection = posts_collection_manager.filter(
-        target_user_posts_query & community_posts_query).exclude(
-        posts_visibility_exclude_query)
-
-    return encircled_posts_collection.union(community_posts_collection)
+    return posts_collection_manager.filter(query).exclude(posts_visibility_exclude_query).distinct()
