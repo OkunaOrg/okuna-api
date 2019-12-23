@@ -657,30 +657,44 @@ class Post(models.Model):
     def delete_notifications_except_for_users(self, excluded_users):
         excluded_ids = [user.pk for user in excluded_users]
 
+        # Remove all post user mention notifications
+        PostUserMentionNotification = get_post_user_mention_notification_model()
+        PostUserMentionNotification.objects.filter(post_user_mention__post_id=self.pk).exclude(
+            notification__owner_id__in=excluded_ids).delete()
+
         # Remove all post comment notifications
         PostCommentNotification = get_post_comment_notification_model()
-        PostCommentNotification.objects.exclude(post_comment__post_id=self.pk,
-                                                notification__owner_id__in=excluded_ids).delete()
+        PostCommentNotification.objects.filter(post_comment__post_id=self.pk).\
+            exclude(notification__owner_id__in=excluded_ids).delete()
 
         # Remove all post reaction notifications
         PostReactionNotification = get_post_reaction_notification_model()
-        PostReactionNotification.objects.exclude(post_reaction__post_id=self.pk,
-                                                 notification__owner_id__in=excluded_ids).delete()
+        PostReactionNotification.objects.filter(post_reaction__post_id=self.pk).exclude(
+            notification__owner_id__in=excluded_ids).delete()
 
         # Remove all post comment reply notifications
-        PostCommentReplyNotification = get_post_comment_notification_model()
-        PostCommentReplyNotification.objects.exclude(post_comment__post_id=self.pk,
-                                                     notification__owner_id__in=excluded_ids).delete()
+        PostCommentReplyNotification = get_post_comment_reply_notification_model()
+        PostCommentReplyNotification.objects.filter(post_comment__post_id=self.pk).exclude(
+            notification__owner_id__in=excluded_ids).delete()
+
+        # Remove all post comment reaction notifications
+        PostCommentReactionNotification = get_post_comment_reaction_notification_model()
+        PostCommentReactionNotification.objects.filter(post_comment_reaction__post_comment__post_id=self.pk).exclude(
+            notification__owner_id__in=excluded_ids).delete()
+
+        # Remove all post comment user mention notifications
+        PostCommentUserMentionNotification = get_post_comment_user_mention_notification_model()
+        PostCommentUserMentionNotification.objects.filter(post_comment_user_mention__post_comment__post_id=self.pk).exclude(
+            notification__owner_id__in=excluded_ids).delete()
 
         # Remove all community new post notifications
         CommunityNewPostNotification = get_community_new_post_notification_model()
-        CommunityNewPostNotification.objects.exclude(notification__owner_id__in=excluded_ids,
-                                                     post_id=self.pk).delete()
+        CommunityNewPostNotification.objects.filter(post_id=self.pk).exclude(
+            notification__owner_id__in=excluded_ids).delete()
 
         # Remove all user new post notifications
         UserNewPostNotification = get_user_new_post_notification_model()
-        UserNewPostNotification.objects.exclude(notification__owner_id__in=excluded_ids,
-                                                post_id=self.pk).delete()
+        UserNewPostNotification.objects.filter(post_id=self.pk).exclude(notification__owner_id__in=excluded_ids).delete()
 
     def get_participants(self):
         User = get_user_model()
