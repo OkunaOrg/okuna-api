@@ -1461,10 +1461,11 @@ class User(AbstractUser):
                                    users_adjective=None, rules=None, categories_names=None,
                                    invites_enabled=None):
         check_can_update_community_with_name(user=self, community_name=community_name)
-        check_community_data(user=self, name=name)
 
         Community = get_community_model()
         community_to_update = Community.objects.get(name=community_name)
+
+        check_community_data(user=self, community=community_to_update, name=name, type=type)
 
         community_to_update.update(name=name, title=title, description=description,
                                    color=color, type=type, user_adjective=user_adjective,
@@ -1475,12 +1476,12 @@ class User(AbstractUser):
 
     def update_community_with_name_avatar(self, community_name, avatar):
         check_can_update_community_with_name(user=self, community_name=community_name)
-        check_community_data(user=self, avatar=avatar)
 
         Community = get_community_model()
         community_to_update_avatar_from = Community.objects.get(name=community_name)
-        community_to_update_avatar_from.avatar = avatar
+        check_community_data(user=self, community=community_to_update_avatar_from, avatar=avatar)
 
+        community_to_update_avatar_from.avatar = avatar
         community_to_update_avatar_from.save()
 
         return community_to_update_avatar_from
@@ -1496,10 +1497,10 @@ class User(AbstractUser):
 
     def update_community_with_name_cover(self, community_name, cover):
         check_can_update_community_with_name(user=self, community_name=community_name)
-        check_community_data(user=self, cover=cover)
 
         Community = get_community_model()
         community_to_update_cover_from = Community.objects.get(name=community_name)
+        check_community_data(user=self, community=community_to_update_cover_from, cover=cover)
 
         community_to_update_cover_from.cover = cover
 
