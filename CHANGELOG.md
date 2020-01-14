@@ -23,6 +23,7 @@ The change log for the API server for Okuna.
 - Add "IsFollower" field to user serializers
 - Groups notifications on high, medium and low prio
 - Fix bug in profile post counts
+- Delete related notifications on moderated object approval
 
 #### Happy testing 🎉!
 
