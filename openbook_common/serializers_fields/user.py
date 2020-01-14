@@ -1,6 +1,7 @@
 from rest_framework.fields import Field
 
 from openbook_communities.models import CommunityInvite
+from openbook_common.utils.model_loaders import get_user_model
 
 
 class IsFollowingField(Field):
@@ -16,6 +17,40 @@ class IsFollowingField(Field):
             if request.user.pk == value.pk:
                 return False
             return request.user.is_following_user_with_id(value.pk)
+
+        return False
+
+
+class AreNewPostNotificationsEnabledForUserField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(AreNewPostNotificationsEnabledForUserField, self).__init__(**kwargs)
+
+    def to_representation(self, value):
+        request = self.context.get('request')
+
+        if not request.user.is_anonymous:
+            if request.user.pk == value.pk:
+                return False
+            return request.user.are_new_post_notifications_enabled_for_user(user=value)
+
+        return False
+
+
+class IsFollowedField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(IsFollowedField, self).__init__(**kwargs)
+
+    def to_representation(self, user):
+        request = self.context.get('request')
+
+        if not request.user.is_anonymous:
+            if request.user.pk == user.pk:
+                return False
+            return user.is_following_user_with_id(request.user.pk)
 
         return False
 
@@ -156,11 +191,11 @@ class FollowingCountField(Field):
         return value.count_following()
 
 
-class PostsCountField(Field):
+class UserPostsCountField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'
         kwargs['read_only'] = True
-        super(PostsCountField, self).__init__(**kwargs)
+        super(UserPostsCountField, self).__init__(**kwargs)
 
     def to_representation(self, value):
         request = self.context.get('request')
@@ -170,7 +205,8 @@ class PostsCountField(Field):
                 return value.count_posts()
             return value.count_posts_for_user_with_id(request.user.pk)
 
-        return value.count_public_posts()
+        User = get_user_model()
+        return User.count_unauthenticated_public_posts_for_user_with_username(username=value.username)
 
 
 class UnreadNotificationsCountField(Field):

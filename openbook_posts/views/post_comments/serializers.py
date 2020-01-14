@@ -3,17 +3,17 @@ from django.conf import settings
 
 from openbook_auth.models import UserProfile, User
 from openbook_common.models import Emoji, Language
-from openbook_common.serializers import UserProfileBadgeSerializer
+from openbook_common.serializers import CommonUserProfileBadgeSerializer, CommonHashtagSerializer
 from openbook_common.serializers_fields.post_comment import PostCommenterField, RepliesCountField, \
     PostCommentReactionsEmojiCountField, PostCommentReactionField, PostCommentIsMutedField
 from openbook_communities.models import CommunityMembership
 from openbook_posts.models import PostComment, Post, PostCommentReaction
-from openbook_posts.validators import post_uuid_exists
+from openbook_posts.validators import post_uuid_exists, post_comment_text_validators
 from openbook_posts.views.post_comments.serializer_fields import RepliesField
 
 
 class PostCommenterProfileSerializer(serializers.ModelSerializer):
-    badges = UserProfileBadgeSerializer(many=True)
+    badges = CommonUserProfileBadgeSerializer(many=True)
 
     class Meta:
         model = UserProfile
@@ -49,7 +49,6 @@ class PostCommenterCommunityMembershipSerializer(serializers.ModelSerializer):
 
 
 class PostCommentLanguageSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Language
         fields = (
@@ -106,6 +105,7 @@ class PostCommentReplySerializer(serializers.ModelSerializer):
     reaction = PostCommentReactionField(post_comment_reaction_serializer=PostCommentReactionSerializer)
     is_muted = PostCommentIsMutedField()
     language = PostCommentLanguageSerializer()
+    hashtags = CommonHashtagSerializer(many=True)
 
     class Meta:
         model = PostComment
@@ -119,7 +119,8 @@ class PostCommentReplySerializer(serializers.ModelSerializer):
             'is_muted',
             'reactions_emoji_counts',
             'id',
-            'reaction'
+            'reaction',
+            'hashtags'
         )
 
 
@@ -133,6 +134,7 @@ class PostCommentSerializer(serializers.ModelSerializer):
     reaction = PostCommentReactionField(post_comment_reaction_serializer=PostCommentReactionSerializer)
     is_muted = PostCommentIsMutedField()
     language = PostCommentLanguageSerializer()
+    hashtags = CommonHashtagSerializer(many=True)
 
     class Meta:
         model = PostComment
@@ -147,6 +149,7 @@ class PostCommentSerializer(serializers.ModelSerializer):
             'reaction',
             'is_edited',
             'is_muted',
+            'hashtags',
             'id'
         )
 
@@ -156,7 +159,8 @@ class CommentPostSerializer(serializers.Serializer):
         validators=[post_uuid_exists],
         required=True,
     )
-    text = serializers.CharField(max_length=settings.POST_COMMENT_MAX_LENGTH, required=True, allow_blank=False)
+    text = serializers.CharField(max_length=settings.POST_COMMENT_MAX_LENGTH, required=True, allow_blank=False,
+                                 validators=post_comment_text_validators)
 
 
 class GetPostCommentsSerializer(serializers.Serializer):

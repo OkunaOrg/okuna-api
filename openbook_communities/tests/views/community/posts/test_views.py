@@ -8,7 +8,7 @@ import json
 
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, \
     make_community, make_fake_post_text, make_post_image, make_moderation_category
-from openbook_communities.models import Community, CommunityNotificationSubscription
+from openbook_communities.models import Community, CommunityNotificationsSubscription
 from openbook_moderation.models import ModeratedObject
 from openbook_notifications.models import CommunityNewPostNotification
 from openbook_posts.models import Post, PostUserMention
@@ -719,7 +719,7 @@ class CommunityPostsAPITest(OpenbookAPITestCase):
         community = make_community(creator=community_admin, type='P')
 
         user.join_community_with_name(community_name=community.name)
-        user.subscribe_to_community_with_name(community_name=community.name)
+        user.enable_new_post_notifications_for_community_with_name(community_name=community.name)
 
         headers = make_authentication_headers_for_user(community_admin)
         url = self._get_url(community_name=community.name)
@@ -728,14 +728,14 @@ class CommunityPostsAPITest(OpenbookAPITestCase):
         }
         response = self.client.put(url, data, **headers, format='multipart')
 
-        community_notification_subscription = CommunityNotificationSubscription.objects.get(subscriber=user,
-                                                                                            community=community)
+        community_notifications_subscription = CommunityNotificationsSubscription.objects.get(subscriber=user,
+                                                                                              community=community)
 
         self.assertEqual(CommunityNewPostNotification.objects.filter(
-            community_notification_subscription_id=community_notification_subscription.pk,
+            community_notifications_subscription_id=community_notifications_subscription.pk,
             notification__owner_id=user.pk,
             notification__notification_type=Notification.COMMUNITY_NEW_POST).count(),
-                     1)
+                         1)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -752,8 +752,8 @@ class CommunityPostsAPITest(OpenbookAPITestCase):
         user.join_community_with_name(community_name=community.name)
         blocking_user.join_community_with_name(community_name=community.name)
 
-        user.subscribe_to_community_with_name(community_name=community.name)
-        blocking_user.subscribe_to_community_with_name(community_name=community.name)
+        user.enable_new_post_notifications_for_community_with_name(community_name=community.name)
+        blocking_user.enable_new_post_notifications_for_community_with_name(community_name=community.name)
 
         blocking_user.block_user_with_id(user_id=user.pk)
 
@@ -764,45 +764,11 @@ class CommunityPostsAPITest(OpenbookAPITestCase):
         }
         response = self.client.put(url, data, **headers, format='multipart')
 
-        community_notification_subscription = CommunityNotificationSubscription.objects.get(subscriber=blocking_user,
-                                                                                            community=community)
+        community_notifications_subscription = CommunityNotificationsSubscription.objects.get(subscriber=blocking_user,
+                                                                                              community=community)
         self.assertFalse(CommunityNewPostNotification.objects.filter(
-            community_notification_subscription_id=community_notification_subscription.pk,
+            community_notifications_subscription_id=community_notifications_subscription.pk,
             notification__owner_id=blocking_user.pk,
-            notification__notification_type=Notification.COMMUNITY_NEW_POST).exists())
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-    def test_create_community_post_does_not_notify_banned_subscribers(self):
-        """
-        should NOT notify subscribers who are banned from community when creating a community post
-        """
-        user = make_user()
-        banned_user = make_user()
-
-        community_admin = make_user()
-        community = make_community(creator=community_admin, type='P')
-
-        user.join_community_with_name(community_name=community.name)
-        banned_user.join_community_with_name(community_name=community.name)
-
-        banned_user.subscribe_to_community_with_name(community_name=community.name)
-
-        community_admin.ban_user_with_username_from_community_with_name(username=banned_user.username,
-                                                                        community_name=community.name)
-
-        headers = make_authentication_headers_for_user(user)
-        url = self._get_url(community_name=community.name)
-        data = {
-            'text': make_fake_post_text()
-        }
-        response = self.client.put(url, data, **headers, format='multipart')
-
-        community_notification_subscription = CommunityNotificationSubscription.objects.get(subscriber=banned_user,
-                                                                                            community=community)
-        self.assertFalse(CommunityNewPostNotification.objects.filter(
-            community_notification_subscription_id=community_notification_subscription.pk,
-            notification__owner_id=banned_user.pk,
             notification__notification_type=Notification.COMMUNITY_NEW_POST).exists())
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -818,8 +784,8 @@ class CommunityPostsAPITest(OpenbookAPITestCase):
 
         user.join_community_with_name(community_name=community.name)
 
-        user.subscribe_to_community_with_name(community_name=community.name)
-        community_admin.subscribe_to_community_with_name(community_name=community.name)
+        user.enable_new_post_notifications_for_community_with_name(community_name=community.name)
+        community_admin.enable_new_post_notifications_for_community_with_name(community_name=community.name)
 
         community_admin.block_user_with_id(user_id=user.pk)
 
@@ -830,13 +796,57 @@ class CommunityPostsAPITest(OpenbookAPITestCase):
         }
         response = self.client.put(url, data, **headers, format='multipart')
 
-        community_notification_subscription = CommunityNotificationSubscription.objects.get(subscriber=community_admin,
-                                                                                            community=community)
+        community_notifications_subscription = CommunityNotificationsSubscription.objects.get(
+            subscriber=community_admin,
+            community=community)
         self.assertTrue(CommunityNewPostNotification.objects.filter(
-            community_notification_subscription_id=community_notification_subscription.pk,
+            community_notifications_subscription_id=community_notifications_subscription.pk,
             notification__owner_id=community_admin.pk,
             notification__notification_type=Notification.COMMUNITY_NEW_POST).exists())
 
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_create_community_post_for_one_community_does_not_notify_admin_for_all_communities_they_are_subscribed_to(
+            self):
+        """
+        should notify admins who are susbcribers only once for the community in which the post was created
+        """
+        user = make_user()
+
+        post_creator = make_user()
+        user_community = make_community(creator=user, type='P')
+        community_1 = make_community(creator=post_creator, type='P')
+        community_2 = make_community(creator=make_user(), type='P')
+
+        user.join_community_with_name(community_name=community_1.name)
+        user.join_community_with_name(community_name=community_2.name)
+
+        # susbcribe to all three communities
+        user.enable_new_post_notifications_for_community_with_name(community_name=community_1.name)
+        user.enable_new_post_notifications_for_community_with_name(community_name=community_2.name)
+        user.enable_new_post_notifications_for_community_with_name(community_name=user_community.name)
+
+        headers = make_authentication_headers_for_user(post_creator)
+
+        # post is created in community_1
+        url = self._get_url(community_name=community_1.name)
+        data = {
+            'text': make_fake_post_text()
+        }
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        # notification should only be for community susbcribed to
+        self.assertEqual(CommunityNewPostNotification.objects.filter(
+            notification__owner_id=user.pk,
+            notification__notification_type=Notification.COMMUNITY_NEW_POST).count(), 1)
+
+        community_notifications_subscription = CommunityNotificationsSubscription.objects.get(subscriber=user,
+                                                                                              community=community_1)
+        retrieved_notifications_subscription = CommunityNewPostNotification.objects.get(
+            notification__owner_id=user.pk,
+            notification__notification_type=Notification.COMMUNITY_NEW_POST)
+
+        self.assertEqual(retrieved_notifications_subscription.pk, community_notifications_subscription.pk)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def _get_url(self, community_name):
@@ -993,5 +1003,43 @@ class CommunityClosedPostsAPITest(OpenbookAPITestCase):
 
     def _get_url(self, community_name):
         return reverse('closed-community-posts', kwargs={
+            'community_name': community_name
+        })
+
+
+class GetCommunityPostsCountAPITests(OpenbookAPITestCase):
+    def test_can_retrieve_posts_count(self):
+        """
+        should be able to retrieve the posts count and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community_creator = make_user()
+        community = make_community(creator=community_creator)
+        community_name = community.name
+
+        amount_of_posts = 5
+
+        for i in range(0, amount_of_posts):
+            community_creator.create_community_post(
+                text=make_fake_post_text(), community_name=community_name
+            )
+
+        url = self._get_url(community_name=community_name)
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        parsed_response = json.loads(response.content)
+
+        self.assertIn('posts_count', parsed_response)
+        response_posts_count = parsed_response['posts_count']
+
+        self.assertEqual(response_posts_count, amount_of_posts)
+
+    def _get_url(self, community_name):
+        return reverse('community-posts-count', kwargs={
             'community_name': community_name
         })

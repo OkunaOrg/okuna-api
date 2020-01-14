@@ -6,6 +6,7 @@ from os import access, F_OK
 from PIL import Image
 from django.urls import reverse
 from django_rq import get_worker
+from django_rq.queues import get_queues
 from faker import Faker
 from rest_framework import status
 from openbook_common.tests.models import OpenbookAPITestCase
@@ -17,13 +18,18 @@ from unittest import mock
 
 import logging
 
-from rq import SimpleWorker
+from rq import SimpleWorker, Worker
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_community, make_moderation_category, \
-    get_test_videos, get_test_image, make_proxy_blacklisted_domain
-from openbook_common.utils.model_loaders import get_language_model
+    get_test_videos, get_test_image, make_proxy_blacklisted_domain, make_hashtag, make_hashtag_name, \
+    make_reactions_emoji_group, make_emoji
+from openbook_common.utils.model_loaders import get_language_model, get_community_new_post_notification_model, \
+    get_post_comment_notification_model, get_post_comment_user_mention_notification_model, \
+    get_post_user_mention_notification_model, get_post_comment_reaction_notification_model, \
+    get_post_comment_reply_notification_model
 from openbook_communities.models import Community
+from openbook_hashtags.models import Hashtag
 from openbook_notifications.models import PostUserMentionNotification, Notification
 from openbook_posts.models import Post, PostUserMention, PostMedia
 from openbook_common.models import ProxyBlacklistedDomain
@@ -887,6 +893,30 @@ class PostItemAPITests(OpenbookAPITestCase):
 
         self.assertEqual(PostUserMention.objects.filter(post_id=post.pk).count(), 0)
 
+    def test_editing_text_post_ignores_casing_of_mentioned_usernames(self):
+        """
+        should ignores casing of mentioned usernames when editing a post
+        """
+        user = make_user()
+        mentioned_user = make_user(username='Miguel')
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        post = user.create_public_post(text=make_fake_post_text())
+
+        cased_username = 'miguel'
+        post_text = 'Hello @' + cased_username
+
+        data = {
+            'text': post_text
+        }
+        url = self._get_url(post=post)
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        post = Post.objects.get(text=post_text, creator_id=user.pk)
+        self.assertEqual(PostUserMention.objects.filter(user_id=mentioned_user.pk, post_id=post.pk).count(), 1)
+
     def test_editing_own_post_does_not_create_double_mentions(self):
         """
         should not create double mentions when editing our own post
@@ -918,6 +948,129 @@ class PostItemAPITests(OpenbookAPITestCase):
         new_post_user_mention = PostUserMention.objects.get(user_id=mentioned_user.pk, post_id=post.pk,
                                                             id=post_user_mention.pk)
         self.assertEqual(new_post_user_mention.pk, post_user_mention.pk)
+
+    def test_editing_own_post_with_hashtag_creates_hashtag_if_not_exist(self):
+        """
+        when editing a post with a hashtag, should create  it if not exists
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        hashtag_name = make_hashtag_name()
+        post_text = 'One hashtag #' + hashtag_name
+
+        post = user.create_public_post(text=post_text)
+
+        new_hashtag_name = make_hashtag_name()
+
+        new_post_text = 'Another hashtag #' + new_hashtag_name
+
+        data = {
+            'text': new_post_text
+        }
+
+        url = self._get_url(post)
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        post = Post.objects.get(text=new_post_text, creator_id=user.pk)
+        created_hashtag = Hashtag.objects.get(name=new_hashtag_name)
+        self.assertTrue(post.hashtags.filter(pk=created_hashtag.pk).exists())
+        self.assertEqual(post.hashtags.all().count(), 1)
+
+    def test_editing_own_post_with_hashtag_updates_to_existing_hashtag_exists(self):
+        """
+        when editing a post with a hashtag, should update to it if exists
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        hashtag = make_hashtag()
+        post_text = 'One hashtag #' + hashtag.name
+
+        post = user.create_public_post(text=post_text)
+
+        new_hashtag = make_hashtag()
+
+        new_post_text = 'Another hashtag #' + new_hashtag.name
+
+        data = {
+            'text': new_post_text
+        }
+
+        url = self._get_url(post)
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        post = Post.objects.get(text=new_post_text, creator_id=user.pk)
+        self.assertTrue(post.hashtags.filter(pk=new_hashtag.pk).exists())
+        self.assertEqual(post.hashtags.all().count(), 1)
+
+    def test_editing_own_post_with_hashtag_does_not_create_double_hashtags(self):
+        """
+        when editing a post with a hashtag, should not create duplicate hashtags
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        hashtag = make_hashtag()
+        post_text = 'One hashtag #' + hashtag.name
+
+        post = user.create_public_post(text=post_text)
+
+        new_post_text = 'Same hashtag #' + hashtag.name
+
+        data = {
+            'text': new_post_text
+        }
+
+        url = self._get_url(post)
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_200_OK, response.status_code)
+
+        post = Post.objects.get(text=new_post_text, creator_id=user.pk)
+        self.assertEqual(post.hashtags.filter(name=hashtag.name).count(), 1)
+        self.assertEqual(post.hashtags.all().count(), 1)
+
+    def test_edit_text_post_with_more_hashtags_than_allowed_should_not_edit_it(self):
+        """
+        when editing a post with more than allowed hashtags, should not create it
+        """
+        user = make_user()
+
+        post_text = make_fake_post_text()
+
+        post = user.create_public_post(text=post_text)
+
+        headers = make_authentication_headers_for_user(user=user)
+        post_hashtags = []
+
+        for i in range(0, settings.POST_MAX_HASHTAGS + 1):
+            hashtag = '#%s' % make_hashtag_name()
+            post_hashtags.append(hashtag)
+
+        new_post_text = ' '.join(post_hashtags)
+
+        data = {
+            'text': new_post_text
+        }
+
+        url = self._get_url(post=post)
+
+        response = self.client.patch(url, data, **headers, format='multipart')
+
+        self.assertEqual(status.HTTP_400_BAD_REQUEST, response.status_code)
+
+        self.assertTrue(Post.objects.filter(text=post_text).exists())
 
     def test_canot_edit_to_remove_text_from_own_text_only_post(self):
         """
@@ -1638,6 +1791,198 @@ class PostCloseAPITests(OpenbookAPITestCase):
                                               post=post,
                                               source_user=admin,
                                               target_user=community_post_creator).exists())
+
+    def test_close_post_deletes_new_post_notifications_for_normal_members(self):
+        """
+         should delete new post notifications for members (except creator/staff) on close post by administrator of a community
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        community_member = make_user()
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+        community_member.enable_new_post_notifications_for_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(community.name, text=make_fake_post_text())
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        # close post
+        self.client.post(url, **headers)
+
+        CommunityNewPostNotification = get_community_new_post_notification_model()
+        self.assertFalse(CommunityNewPostNotification.objects.filter(notification__owner_id=community_member.pk,
+                                                                     post_id=post.pk).exists())
+
+    def test_close_post_deletes_post_user_mention_notifications_for_normal_members(self):
+        """
+         should delete post user mention notifications for members (except creator/staff) on close post by administrator of a community
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        mentioned_user = make_user(username='joel123')
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        mentioned_user.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(community.name, text='hey there @joel123')
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        # close post
+        self.client.post(url, **headers)
+
+        PostUserMentionNotification = get_post_user_mention_notification_model()
+        self.assertFalse(PostUserMentionNotification.objects.filter(
+            notification__owner_id=mentioned_user.pk, post_user_mention__post=post).exists())
+
+    def test_close_post_deletes_post_comment_notifications_for_normal_members(self):
+        """
+         should delete post comment notifications for members (except creator/staff) on close post by administrator of a community
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        community_member = make_user()
+        community_member_two = make_user()
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+        community_member_two.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(community.name, text=make_fake_post_text())
+        post_comment = community_member.comment_post(post=post, text=make_fake_post_text())
+        post_comment_two = community_member_two.comment_post(post=post, text=make_fake_post_text())
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        # close post
+        self.client.post(url, **headers)
+
+        PostCommentNotification = get_post_comment_notification_model()
+        self.assertFalse(PostCommentNotification.objects.filter(notification__owner_id=community_member.pk,
+                                                                post_comment=post_comment_two).exists())
+
+    def test_close_post_deletes_post_comment_reaction_notifications_for_normal_members(self):
+        """
+         should delete post comment reaction notifications for members (except creator/staff) on close post by administrator of a community
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        community_member = make_user()
+        community_member_reactor = make_user()
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+        community_member_reactor.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(community.name, text=make_fake_post_text())
+        post_comment = community_member.comment_post(post=post, text=make_fake_post_text())
+
+        # react
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+        community_post_comment_reply_reaction = community_member_reactor.react_to_post_comment(
+            post_comment=post_comment,
+            emoji_id=emoji.pk)
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        # close post
+        self.client.post(url, **headers)
+
+        PostCommentReactionNotification = get_post_comment_reaction_notification_model()
+        self.assertFalse(PostCommentReactionNotification.objects.filter(
+            notification__owner_id=community_member.pk,
+            post_comment_reaction__post_comment=post_comment).exists())
+
+    def test_close_post_deletes_post_comment_reply_notifications_for_normal_members(self):
+        """
+         should delete post comment reply notifications for members (except creator/staff) on close post by administrator of a community
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        community_member = make_user()
+        community_member_replier = make_user()
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+        community_member_replier.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(community.name, text=make_fake_post_text())
+        post_comment = community_member.comment_post(post=post, text=make_fake_post_text())
+        post_comment_reply = community_member_replier.reply_to_comment_for_post(
+            post_comment=post_comment,
+            post=post,
+            text=make_fake_post_comment_text())
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        # close post
+        self.client.post(url, **headers)
+
+        PostCommentReplyNotification = get_post_comment_reply_notification_model()
+        self.assertFalse(PostCommentReplyNotification.objects.filter(
+            notification__owner_id=community_member.pk,
+            post_comment=post_comment_reply).exists())
+
+    def test_close_post_deletes_post_comment_user_mention_notifications_for_normal_members(self):
+        """
+         should delete post comment user mention notifications for members (except creator/staff) on close post by administrator of a community
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        community_member = make_user()
+        mentioned_user = make_user(username='joel123')
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+        mentioned_user.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(community.name, text=make_fake_post_text())
+        post_comment = community_member.comment_post(post=post, text='hey @joel123')
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        # close post
+        self.client.post(url, **headers)
+
+        PostCommentUserMentionNotification = get_post_comment_user_mention_notification_model()
+        self.assertFalse(PostCommentUserMentionNotification.objects.filter(
+            notification__owner_id=mentioned_user.pk, post_comment_user_mention__post_comment=post_comment).exists())
+
+    def test_close_post_does_not_delete_new_post_notifications_for_staff_and_creator(self):
+        """
+         should NOT delete new post notifications for staff and creator on close post
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        community_member = make_user()
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+        admin.enable_new_post_notifications_for_community_with_name(community_name=community.name)
+        community_member.enable_new_post_notifications_for_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(community.name, text=make_fake_post_text())
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        # close post
+        self.client.post(url, **headers)
+
+        CommunityNewPostNotification = get_community_new_post_notification_model()
+        self.assertTrue(CommunityNewPostNotification.objects.filter(notification__owner_id=admin.pk,
+                                                                    post_id=post.pk).exists())
+        self.assertFalse(CommunityNewPostNotification.objects.filter(notification__owner_id=community_member.pk,
+                                                                    post_id=post.pk).exists())
 
     def _get_url(self, post):
         return reverse('close-post', kwargs={
@@ -2578,6 +2923,45 @@ class PublishPostAPITests(OpenbookAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         self.assertTrue(Post.objects.filter(pk=post.pk, status=Post.STATUS_DRAFT))
+
+    def test_publishing_publicly_visible_image_post_with_new_hashtag_should_use_image(self):
+        """
+        when publishing a publicly visible post with a new hashtag, the hashtag should use the image
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user)
+
+        image = Image.new('RGB', (100, 100))
+        tmp_file = tempfile.NamedTemporaryFile(suffix='.jpg')
+        image.save(tmp_file)
+        tmp_file.seek(0)
+
+        hashtag_name = make_hashtag_name()
+
+        post_text = '#%s' % hashtag_name
+
+        post = user.create_public_post(text=post_text, image=ImageFile(tmp_file), is_draft=True)
+
+        url = self._get_url(post=post)
+
+        response = self.client.post(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        post = Post.objects.get(pk=post.pk)
+
+        self.assertEqual(post.status, Post.STATUS_PROCESSING)
+
+        # Run the process handled by a worker
+        get_worker('high', worker_class=SimpleWorker).work(burst=True)
+
+        post.refresh_from_db()
+
+        self.assertEqual(post.status, Post.STATUS_PUBLISHED)
+
+        hashtag = Hashtag.objects.get(name=hashtag_name)
+        self.assertTrue(hashtag.has_image())
 
     def _get_url(self, post):
         return reverse('publish-post', kwargs={

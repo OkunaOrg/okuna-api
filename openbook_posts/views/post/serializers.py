@@ -4,12 +4,13 @@ from django.conf import settings
 from openbook_auth.models import UserProfile, User
 from openbook_circles.models import Circle
 from openbook_common.models import Badge, Language
+from openbook_common.serializers import CommonHashtagSerializer
 from openbook_common.serializers_fields.post import PostCreatorField, PostReactionsEmojiCountField, ReactionField, \
     CommentsCountField, CirclesField, PostIsMutedField, IsEncircledField
 from openbook_communities.models import CommunityMembership, Community
 from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_posts.models import PostImage, Post
-from openbook_posts.validators import post_uuid_exists
+from openbook_posts.validators import post_uuid_exists, post_text_validators
 
 from openbook_posts.views.post_reaction.serializers import PostReactionSerializer
 from openbook_posts.views.post_reactions.serializers import PostEmojiCountSerializer
@@ -99,6 +100,7 @@ class PostImageSerializer(serializers.ModelSerializer):
             'height'
         )
 
+
 class CommunityMembershipSerializer(serializers.ModelSerializer):
     class Meta:
         model = CommunityMembership
@@ -138,6 +140,7 @@ class PostCircleSerializer(serializers.ModelSerializer):
             'color',
         )
 
+
 class GetPostPostSerializer(serializers.ModelSerializer):
     creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
@@ -149,6 +152,7 @@ class GetPostPostSerializer(serializers.ModelSerializer):
     is_muted = PostIsMutedField()
     language = PostLanguageSerializer()
     is_encircled = IsEncircledField()
+    hashtags = CommonHashtagSerializer(many=True)
 
     class Meta:
         model = Post
@@ -166,6 +170,7 @@ class GetPostPostSerializer(serializers.ModelSerializer):
             'public_reactions',
             'circles',
             'community',
+            'hashtags',
             'is_muted',
             'is_edited',
             'is_closed',
@@ -177,7 +182,8 @@ class GetPostPostSerializer(serializers.ModelSerializer):
 
 
 class EditPostSerializer(serializers.Serializer):
-    text = serializers.CharField(max_length=settings.POST_MAX_LENGTH, required=False, allow_blank=True)
+    text = serializers.CharField(max_length=settings.POST_MAX_LENGTH, required=False, allow_blank=True,
+                                 validators=post_text_validators)
     post_uuid = serializers.UUIDField(
         validators=[post_uuid_exists],
         required=True,
@@ -186,6 +192,7 @@ class EditPostSerializer(serializers.Serializer):
 
 class AuthenticatedUserEditPostSerializer(serializers.ModelSerializer):
     language = PostLanguageSerializer()
+    hashtags = CommonHashtagSerializer(many=True)
 
     class Meta:
         model = Post
@@ -195,6 +202,7 @@ class AuthenticatedUserEditPostSerializer(serializers.ModelSerializer):
             'text',
             'language',
             'is_edited',
+            'hashtags'
         )
 
 

@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_communities.views.community.posts.serializers import GetCommunityPostsSerializer, CommunityPostSerializer, \
-    CreateCommunityPostSerializer
+    CreateCommunityPostSerializer, GetCommunityPostsCountsSerializer, GetCommunityPostsCountCommunitySerializer
 
 
 class CommunityPosts(APIView):
@@ -82,5 +82,20 @@ class ClosedCommunityPosts(APIView):
 
         response_serializer = CommunityPostSerializer(posts, many=True,
                                                       context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class GetCommunityPostsCount(APIView):
+    permission_classes = (IsAuthenticated, IsNotSuspended)
+
+    def get(self, request, community_name):
+        serializer = GetCommunityPostsCountsSerializer(data={'community_name': community_name})
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        community = user.get_community_with_name(community_name)
+
+        response_serializer = GetCommunityPostsCountCommunitySerializer(community, context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)

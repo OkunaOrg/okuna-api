@@ -171,21 +171,10 @@ class PasswordResetRequest(APIView):
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
-        has_username = 'username' in data
-        has_email = 'email' in data
-
-        if not has_email and not has_username:
-            return Response('At least one of email or username is required', status=status.HTTP_400_BAD_REQUEST)
 
         User = get_user_model()
-        user = None
-        if has_username:
-            username = data.get('username')
-            user = User.objects.get(username=username)
-
-        if has_email:
-            email = data.get('email')
-            user = User.get_user_with_email(email)
+        email = data.get('email')
+        user = User.get_user_with_email(email)
 
         with transaction.atomic():
             user.request_password_reset()

@@ -4,11 +4,12 @@ from rest_framework import serializers
 from openbook.settings import COLOR_ATTR_MAX_LENGTH
 from openbook_categories.models import Category
 from openbook_categories.validators import category_name_exists
+from openbook_common.serializers_fields.community import CommunityPostsCountField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
 from openbook_common.validators import hex_color_validator
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import IsInvitedField, IsCreatorField, CommunityMembershipsField, \
-    IsFavoriteField, IsSubscribedField
+    IsFavoriteField, AreNewPostNotificationsEnabledForCommunityField
 from openbook_communities.validators import community_name_characters_validator, community_name_not_taken_validator
 
 
@@ -37,7 +38,7 @@ class CreateCommunitySerializer(serializers.Serializer):
         required=True,
         min_length=settings.COMMUNITY_CATEGORIES_MIN_AMOUNT,
         max_length=settings.COMMUNITY_CATEGORIES_MAX_AMOUNT,
-        child=serializers.CharField(max_length=settings.TAG_NAME_MAX_LENGTH, validators=[category_name_exists]),
+        child=serializers.CharField(max_length=settings.HASHTAG_NAME_MAX_LENGTH, validators=[category_name_exists]),
     )
 
 
@@ -48,16 +49,6 @@ class CommunityNameCheckSerializer(serializers.Serializer):
 
 
 class GetJoinedCommunitiesSerializer(serializers.Serializer):
-    count = serializers.IntegerField(
-        required=False,
-        max_value=20
-    )
-    offset = serializers.IntegerField(
-        required=False,
-    )
-
-
-class GetSubscribedCommunitiesSerializer(serializers.Serializer):
     count = serializers.IntegerField(
         required=False,
         max_value=20
@@ -142,8 +133,58 @@ class CommunitiesCommunityMembershipSerializer(serializers.ModelSerializer):
 class CommunitiesCommunitySerializer(serializers.ModelSerializer):
     categories = GetCommunitiesCommunityCategorySerializer(many=True)
     is_invited = IsInvitedField()
-    is_subscribed = IsSubscribedField()
+    are_new_post_notifications_enabled = AreNewPostNotificationsEnabledForCommunityField()
     is_favorite = IsFavoriteField()
+    is_creator = IsCreatorField()
+    posts_count = CommunityPostsCountField()
+    memberships = CommunityMembershipsField(community_membership_serializer=CommunitiesCommunityMembershipSerializer)
+
+    class Meta:
+        model = Community
+        fields = (
+            'id',
+            'name',
+            'title',
+            'avatar',
+            'cover',
+            'members_count',
+            'posts_count',
+            'color',
+            'user_adjective',
+            'users_adjective',
+            'categories',
+            'type',
+            'is_invited',
+            'are_new_post_notifications_enabled',
+            'is_favorite',
+            'is_creator',
+            'invites_enabled',
+            'memberships'
+        )
+
+
+class SearchCommunitiesCommunitySerializer(serializers.ModelSerializer):
+    is_favorite = IsFavoriteField()
+    memberships = CommunityMembershipsField(community_membership_serializer=CommunitiesCommunityMembershipSerializer)
+
+    class Meta:
+        model = Community
+        fields = (
+            'id',
+            'name',
+            'title',
+            'avatar',
+            'cover',
+            'members_count',
+            'color',
+            'user_adjective',
+            'users_adjective',
+            'is_favorite',
+            'memberships'
+        )
+
+
+class SuggestedCommunitiesCommunitySerializer(serializers.ModelSerializer):
     is_creator = IsCreatorField()
     memberships = CommunityMembershipsField(community_membership_serializer=CommunitiesCommunityMembershipSerializer)
 
@@ -159,13 +200,7 @@ class CommunitiesCommunitySerializer(serializers.ModelSerializer):
             'color',
             'user_adjective',
             'users_adjective',
-            'categories',
-            'type',
-            'is_invited',
-            'is_subscribed',
-            'is_favorite',
             'is_creator',
-            'invites_enabled',
             'memberships'
         )
 
@@ -178,4 +213,3 @@ class GetTopPostCommunityExclusionSerializer(serializers.Serializer):
         required=False,
         max_value=20
     )
-

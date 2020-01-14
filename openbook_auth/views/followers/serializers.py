@@ -4,7 +4,7 @@ from rest_framework import serializers
 from openbook_auth.models import User, UserProfile
 from openbook_common.models import Badge
 from openbook_common.serializers_fields.user import \
-    IsFollowingField, IsConnectedField
+    IsFollowingField, IsConnectedField, IsFollowedField
 
 
 class GetFollowersSerializer(serializers.Serializer):
@@ -51,6 +51,7 @@ class FollowersUserSerializer(serializers.ModelSerializer):
     profile = FollowersUserProfileSerializer(many=False)
     is_following = IsFollowingField()
     is_connected = IsConnectedField()
+    is_followed = IsFollowedField()
 
     class Meta:
         model = User
@@ -59,5 +60,6 @@ class FollowersUserSerializer(serializers.ModelSerializer):
             'profile',
             'username',
             'is_following',
-            'is_connected'
+            'is_connected',
+            'is_followed'
         )

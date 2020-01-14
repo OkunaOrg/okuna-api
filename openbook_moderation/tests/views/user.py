@@ -1,15 +1,12 @@
 import json
 
 from django.urls import reverse
-from django.utils import timezone
 from faker import Faker
 from rest_framework import status
 from openbook_common.tests.models import OpenbookAPITestCase
 
-from openbook_common.tests.helpers import make_global_moderator, make_user, make_moderation_category, \
+from openbook_common.tests.helpers import make_user, make_moderation_category, \
     make_authentication_headers_for_user, make_moderation_penalty, make_community, make_fake_post_text
-from openbook_moderation.models import ModeratedObject, \
-    ModerationCategory, ModerationPenalty
 
 fake = Faker()
 
