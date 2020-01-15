@@ -1852,7 +1852,9 @@ class User(AbstractUser):
         if max_id:
             linked_users_query.add(Q(id__lt=max_id), Q.AND)
 
-        return User.objects.filter(linked_users_query).distinct()
+        linked_users = User.objects.filter(linked_users_query)
+
+        return linked_users.union(linked_users)  # remove duplicates
 
     def search_linked_users_with_query(self, query):
         linked_users_query = self._make_linked_users_query()
@@ -1862,7 +1864,9 @@ class User(AbstractUser):
 
         linked_users_query.add(names_query, Q.AND)
 
-        return User.objects.filter(linked_users_query).distinct()
+        search_results_users = User.objects.filter(linked_users_query)
+
+        return search_results_users.union(search_results_users)  # remove duplicates
 
     def get_blocked_users(self, max_id=None):
         blocked_users_query = self._make_blocked_users_query(max_id=max_id)
