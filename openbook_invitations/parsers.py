@@ -50,8 +50,7 @@ def parse_indiegogo_csv(filepath):
 
                 if username is None or username == '0' or username is '':
                     print('Username was empty for:', name)
-                    username = get_temporary_username(email)
-                    print('Using generated random username @', username)
+                    username = None
                 invited_user = UserInvite.create_invite(name=name, email=email, username=username,
                                                         badge=badge)
                 invited_user.save()
