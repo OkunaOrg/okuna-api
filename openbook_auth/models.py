@@ -3292,16 +3292,22 @@ class User(AbstractUser):
         # All users which are connected with us and we have accepted by adding
         # them to a circle
         linked_users_query = Q(circles__connections__target_connection__user_id=self.pk,
-                               circles__connections__target_connection__circles__isnull=False)
+                               circles__connections__target_connection__circles__isnull=False,
+                               is_deleted=False)
 
         followers_query = self._make_followers_query()
 
         # All users following us
         linked_users_query.add(followers_query, Q.OR)
 
-        linked_users_query.add(Q(is_deleted=False), Q.AND)
-
         return linked_users_query
+
+    def _make_connected_users_query(self):
+        connected_users_query = Q(circles__connections__target_connection__user_id=self.pk,
+                                  circles__connections__target_connection__circles__isnull=False,
+                                  is_deleted=False)
+
+        return connected_users_query
 
     def _make_followers_query(self):
         return Q(follows__followed_user_id=self.pk, is_deleted=False)
