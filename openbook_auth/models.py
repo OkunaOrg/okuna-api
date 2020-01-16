@@ -3302,13 +3302,6 @@ class User(AbstractUser):
 
         return linked_users_query
 
-    def _make_connected_users_query(self):
-        connected_users_query = Q(circles__connections__target_connection__user_id=self.pk,
-                                  circles__connections__target_connection__circles__isnull=False,
-                                  is_deleted=False)
-
-        return connected_users_query
-
     def _make_followers_query(self):
         return Q(follows__followed_user_id=self.pk, is_deleted=False)
 
