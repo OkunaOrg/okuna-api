@@ -113,9 +113,20 @@ def check_list_data(user, name):
         check_list_name_not_taken(user=user, list_name=name)
 
 
-def check_community_data(user, name=None, cover=None, avatar=None):
+def check_community_data(user, community, name=None, cover=None, avatar=None, type=None):
     if name:
         check_community_name_not_taken(user=user, community_name=name)
+
+    if type:
+        check_community_type_can_be_updated(type=type, community=community)
+
+
+def check_community_type_can_be_updated(type, community):
+    Community = get_community_model()
+    if type == Community.COMMUNITY_TYPE_PUBLIC and community.is_private:
+        raise ValidationError(
+            _('A community cannot be changed from private to public'),
+        )
 
 
 def check_circle_data(user, name, color):
