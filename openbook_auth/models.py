@@ -3319,8 +3319,8 @@ class User(AbstractUser):
     def _make_linked_users_query(self):
         # All users which are connected with us and we have accepted by adding
         # them to a circle
-        linked_users_query = Q(circles__connections__target_user_id=self.pk,
-                               circles__connections__target_connection__circles__isnull=False,
+        linked_users_query = Q(targeted_connections__target_user_id=self.pk,
+                               targeted_connections__target_connection__circles__isnull=False,
                                is_deleted=False)
 
         followers_query = self._make_followers_query()
