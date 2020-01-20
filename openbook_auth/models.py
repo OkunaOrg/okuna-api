@@ -1846,24 +1846,34 @@ class User(AbstractUser):
     def get_linked_users(self, max_id=None):
         # All users which are connected with us and we have accepted by adding
         # them to a circle
-        linked_users_query = self._make_linked_users_query()
+        connected_users_query = self._make_connections_query()
+        followers_query = self._make_followers_query()
 
         if max_id:
-            linked_users_query.add(Q(id__lt=max_id), Q.AND)
+            connected_users_query.add(Q(id__lt=max_id), Q.AND)
+            followers_query.add(Q(id__lt=max_id), Q.AND)
 
-        linked_users = User.objects.filter(linked_users_query).distinct()
+        connected_users = User.objects.filter(connected_users_query)
+        followers = User.objects.filter(followers_query)
+
+        linked_users = connected_users.union(followers)
 
         return linked_users
 
     def search_linked_users_with_query(self, query):
-        linked_users_query = self._make_linked_users_query()
+        connected_users_query = self._make_connections_query()
+        followers_query = self._make_followers_query()
 
         names_query = Q(username__icontains=query)
         names_query.add(Q(profile__name__icontains=query), Q.OR)
 
-        linked_users_query.add(names_query, Q.AND)
+        connected_users_query.add(names_query, Q.AND)
+        followers_query.add(names_query, Q.AND)
 
-        search_results_users = User.objects.filter(linked_users_query).distinct()
+        connected_users = User.objects.filter(connected_users_query)
+        followers = User.objects.filter(followers_query)
+
+        search_results_users = connected_users.union(followers)
 
         return search_results_users
 
@@ -3301,6 +3311,13 @@ class User(AbstractUser):
         linked_users_query.add(followers_query, Q.OR)
 
         return linked_users_query
+
+    def _make_connections_query(self):
+        connected_users_query = Q(targeted_connections__target_user_id=self.pk,
+                                  targeted_connections__target_connection__circles__isnull=False,
+                                  is_deleted=False)
+
+        return connected_users_query
 
     def _make_followers_query(self):
         return Q(follows__followed_user_id=self.pk, is_deleted=False)

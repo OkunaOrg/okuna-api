@@ -10,6 +10,9 @@ class Follow(models.Model):
 
     class Meta:
         unique_together = ('user', 'followed_user',)
+        indexes = [
+            models.Index(fields=['followed_user', 'user']),
+        ]
 
     @classmethod
     def create_follow(cls, user_id, followed_user_id, lists_ids=None):
