@@ -1880,7 +1880,7 @@ class User(AbstractUser):
     def get_blocked_users(self, max_id=None):
         blocked_users_query = self._make_blocked_users_query(max_id=max_id)
 
-        return User.objects.filter(blocked_users_query).distinct()
+        return User.objects.filter(blocked_users_query)
 
     def search_blocked_users_with_query(self, query):
         blocked_users_query = self._make_blocked_users_query()
@@ -1890,7 +1890,7 @@ class User(AbstractUser):
 
         blocked_users_query.add(names_query, Q.AND)
 
-        return User.objects.filter(blocked_users_query).distinct()
+        return User.objects.filter(blocked_users_query)
 
     def search_top_posts_excluded_communities_with_query(self, query):
 
