@@ -26,3 +26,6 @@ The change log for the API server for Okuna.
 
 #### Happy testing 🎉!
 
+## Release 0.0.62
+
+- Improve performance for linked users API
