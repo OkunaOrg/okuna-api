@@ -4,7 +4,13 @@ The change log for the API server for Okuna.
 
 ## Table of contents
 
+- [Release 0.0.63](#release-0.0.63)
 - [Release 0.0.59](#release-0.0.59)
+
+
+## Release 0.0.63
+
+- Improve performance for linked users API
 
 ## Release 0.0.59
 
@@ -25,7 +31,3 @@ The change log for the API server for Okuna.
 - Fix bug in profile post counts
 
 #### Happy testing 🎉!
-
-## Release 0.0.62
-
-- Improve performance for linked users API
