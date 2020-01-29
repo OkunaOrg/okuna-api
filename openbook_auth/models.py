@@ -1847,27 +1847,41 @@ class User(AbstractUser):
     def get_linked_users(self, max_id=None):
         # All users which are connected with us and we have accepted by adding
         # them to a circle
-        linked_users_query = self._make_linked_users_query()
+        connected_users_query = self._make_connections_query()
+        followers_query = self._make_followers_query()
 
         if max_id:
-            linked_users_query.add(Q(id__lt=max_id), Q.AND)
+            connected_users_query.add(Q(id__lt=max_id), Q.AND)
+            followers_query.add(Q(id__lt=max_id), Q.AND)
 
-        return User.objects.filter(linked_users_query).distinct()
+        connected_users = User.objects.filter(connected_users_query)
+        followers = User.objects.filter(followers_query)
+
+        linked_users = connected_users.union(followers)
+
+        return linked_users
 
     def search_linked_users_with_query(self, query):
-        linked_users_query = self._make_linked_users_query()
+        connected_users_query = self._make_connections_query()
+        followers_query = self._make_followers_query()
 
         names_query = Q(username__icontains=query)
         names_query.add(Q(profile__name__icontains=query), Q.OR)
 
-        linked_users_query.add(names_query, Q.AND)
+        connected_users_query.add(names_query, Q.AND)
+        followers_query.add(names_query, Q.AND)
 
-        return User.objects.filter(linked_users_query).distinct()
+        connected_users = User.objects.filter(connected_users_query)
+        followers = User.objects.filter(followers_query)
+
+        search_results_users = connected_users.union(followers)
+
+        return search_results_users
 
     def get_blocked_users(self, max_id=None):
         blocked_users_query = self._make_blocked_users_query(max_id=max_id)
 
-        return User.objects.filter(blocked_users_query).distinct()
+        return User.objects.filter(blocked_users_query)
 
     def search_blocked_users_with_query(self, query):
         blocked_users_query = self._make_blocked_users_query()
@@ -1877,7 +1891,7 @@ class User(AbstractUser):
 
         blocked_users_query.add(names_query, Q.AND)
 
-        return User.objects.filter(blocked_users_query).distinct()
+        return User.objects.filter(blocked_users_query)
 
     def search_top_posts_excluded_communities_with_query(self, query):
 
@@ -1903,7 +1917,7 @@ class User(AbstractUser):
         if max_id:
             followers_query.add(Q(id__lt=max_id), Q.AND)
 
-        return User.objects.filter(followers_query).distinct()
+        return User.objects.filter(followers_query)
 
     def get_followings(self, max_id=None):
         followings_query = self._make_followings_query()
@@ -1911,7 +1925,7 @@ class User(AbstractUser):
         if max_id:
             followings_query.add(Q(id__lt=max_id), Q.AND)
 
-        return User.objects.filter(followings_query).distinct()
+        return User.objects.filter(followings_query)
 
     def search_followers_with_query(self, query):
         followers_query = Q(follows__followed_user_id=self.pk, is_deleted=False)
@@ -1921,7 +1935,7 @@ class User(AbstractUser):
 
         followers_query.add(names_query, Q.AND)
 
-        return User.objects.filter(followers_query).distinct()
+        return User.objects.filter(followers_query)
 
     def get_user_subscriptions(self, max_id=None):
         user_subscriptions_query = Q(notifications_subscribers__subscriber=self, is_deleted=False)
@@ -3285,20 +3299,12 @@ class User(AbstractUser):
         self.auth_token.delete()
         bootstrap_user_auth_token(user=self)
 
-    def _make_linked_users_query(self):
-        # All users which are connected with us and we have accepted by adding
-        # them to a circle
-        linked_users_query = Q(circles__connections__target_connection__user_id=self.pk,
-                               circles__connections__target_connection__circles__isnull=False)
+    def _make_connections_query(self):
+        connected_users_query = Q(targeted_connections__target_user_id=self.pk,
+                                  targeted_connections__target_connection__circles__isnull=False,
+                                  is_deleted=False)
 
-        followers_query = self._make_followers_query()
-
-        # All users following us
-        linked_users_query.add(followers_query, Q.OR)
-
-        linked_users_query.add(Q(is_deleted=False), Q.AND)
-
-        return linked_users_query
+        return connected_users_query
 
     def _make_followers_query(self):
         return Q(follows__followed_user_id=self.pk, is_deleted=False)
