@@ -14,6 +14,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Count
+from django.db import transaction
 import ffmpy
 
 # Create your views here.
@@ -51,7 +52,8 @@ from openbook_posts.checkers import check_can_be_updated, check_can_add_media, c
     check_mimetype_is_supported_media_mimetypes
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory, \
     upload_to_post_directory
-from openbook_posts.jobs import process_post_media
+from openbook_posts.jobs import process_post_media, process_activity_score_post_reaction, \
+    process_activity_score_post_comment
 
 magic = get_magic()
 from openbook_common.helpers import get_language_for_text
@@ -84,6 +86,10 @@ class Post(models.Model):
         (STATUS_PROCESSING, 'Processing'),
         (STATUS_PUBLISHED, 'Published'),
     )
+    ACTIVITY_UNIQUE_REACTION_WEIGHT = 0.001
+    ACTIVITY_UNIQUE_COMMENT_WEIGHT = 0.002
+    ACTIVITY_COUNT_COMMENTS_WEIGHT = 0.0001
+
     status = models.CharField(blank=False, null=False, choices=STATUSES, default=STATUS_DRAFT, max_length=2)
     media_height = models.PositiveSmallIntegerField(_('media height'), null=True)
     media_width = models.PositiveSmallIntegerField(_('media width'), null=True)
@@ -91,10 +97,14 @@ class Post(models.Model):
                                           upload_to=upload_to_post_directory,
                                           blank=False, null=True, format='JPEG', options={'quality': 30},
                                           processors=[ResizeToFit(width=512, upscale=False)])
+    activity_score = models.FloatField(default=0.0)
 
     class Meta:
         index_together = [
             ('creator', 'community'),
+        ]
+        indexes = [
+            models.Index(fields=['activity_score']),
         ]
 
     @classmethod
@@ -615,6 +625,11 @@ class Post(models.Model):
         # Add post commentators
         post_commenters = User.objects.filter(posts_comments__post_id=self.pk, is_deleted=False)
 
+        postcommenters = User.objects.values('id').filter(posts_comments__post_id=self.pk,
+                                                          posts_comments__parent_comment__isnull=True,
+                                                          is_deleted=False).annotate(total_count=Count('id'))
+        print(postcommenters)
+
         # If community post, add community members
         if self.community:
             community_members = User.objects.filter(communities_memberships__community_id=self.community_id,
@@ -867,8 +882,11 @@ class PostComment(models.Model):
         post_comment = PostComment.objects.create(text=text, commenter=commenter, post=post,
                                                   parent_comment=parent_comment)
         post_comment.language = get_language_for_text(text)
+        if parent_comment is None:
+            transaction.on_commit(lambda: process_activity_score_post_comment(post_id=post.pk,
+                                                                              post_comment_id=post_comment.pk,
+                                                                              post_commenter_id=commenter.pk))
         post_comment.save()
-
         return post_comment
 
     @classmethod
@@ -1020,6 +1038,17 @@ class PostComment(models.Model):
         self.is_deleted = True
         self.delete_notifications()
         self.save()
+        transaction.on_commit(lambda: process_activity_score_post_comment(post_id=self.post.pk,
+                                                                          post_comment_id=self.pk,
+                                                                          post_commenter_id=self.commenter.pk))
+
+    def delete(self, *args, **kwargs):
+        if not self.is_deleted:
+            transaction.on_commit(lambda: process_activity_score_post_comment(post_id=self.post.pk,
+                                                                              post_comment_id=self.pk,
+                                                                              post_commenter_id=self.commenter.pk))
+
+        super(PostComment, self).delete(*args, **kwargs)
 
     def unsoft_delete(self):
         self.is_deleted = False
@@ -1053,7 +1082,11 @@ class PostReaction(models.Model):
 
     @classmethod
     def create_reaction(cls, reactor, emoji_id, post):
-        return PostReaction.objects.create(reactor=reactor, emoji_id=emoji_id, post=post)
+        post_reaction = PostReaction.objects.create(reactor=reactor, emoji_id=emoji_id, post=post)
+        transaction.on_commit(lambda: process_activity_score_post_reaction.delay(post_id=post_reaction.post.pk,
+                                                                                 post_reaction_id=post_reaction.pk))
+
+        return post_reaction
 
     @classmethod
     def count_reactions_for_post_with_id(cls, post_id, reactor_id=None):
@@ -1063,6 +1096,12 @@ class PostReaction(models.Model):
             count_query.add(Q(reactor_id=reactor_id), Q.AND)
 
         return cls.objects.filter(count_query).count()
+
+    def delete(self, *args, **kwargs):
+        transaction.on_commit(lambda: process_activity_score_post_reaction.delay(post_id=self.post.pk,
+                                                                                 post_reaction_id=self.pk))
+
+        super(PostReaction, self).delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
