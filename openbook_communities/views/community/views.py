@@ -184,7 +184,9 @@ class FavoriteCommunity(APIView):
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
-class TopPostCommunityExclusion(APIView):
+# This is wrong as a REST API... Put should be to the resource root /, delete to /community-name and get
+# also to the root /
+class ExcludeTopPostsCommunity(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def put(self, request, community_name):

@@ -7,6 +7,7 @@ from openbook_common.models import Emoji, EmojiGroup, Badge, Language
 from openbook_common.serializers_fields.hashtag import HashtagPostsCountField
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import IsFavoriteField, CommunityMembershipsField
+from openbook_communities.validators import community_name_characters_validator, community_name_exists
 from openbook_hashtags.models import Hashtag
 from openbook_posts.models import PostReaction, PostImage
 
@@ -217,6 +218,13 @@ class CommonSearchCommunitiesCommunitySerializer(serializers.ModelSerializer):
             'is_favorite',
             'memberships'
         )
+
+
+class CommonCommunityNameSerializer(serializers.Serializer):
+    community_name = serializers.CharField(max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
+                                           allow_blank=False,
+                                           required=True,
+                                           validators=[community_name_characters_validator, community_name_exists])
 
 
 class ProxyDomainCheckSerializer(serializers.Serializer):

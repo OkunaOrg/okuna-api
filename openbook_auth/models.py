@@ -2369,7 +2369,7 @@ class User(AbstractUser):
         self.exclude_community_from_profile_posts(community_to_exclude)
 
     def exclude_community_from_profile_posts(self, community):
-        check_can_exclude_community_from_top_posts(user=self, community=community)
+        check_can_exclude_community_from_profile_posts(user=self, community=community)
 
         ProfilePostsCommunityExclusion = get_profile_posts_community_exclusion_model()
         profile_posts_community_exclusion = ProfilePostsCommunityExclusion(
@@ -2384,7 +2384,7 @@ class User(AbstractUser):
         self.remove_exclusion_for_community_from_profile_posts(community)
 
     def remove_exclusion_for_community_from_profile_posts(self, community):
-        check_can_remove_top_posts_exclusion_for_community(user=self, community=community)
+        check_can_remove_profile_posts_exclusion_for_community(user=self, community=community)
 
         ProfilePostsCommunityExclusion = get_profile_posts_community_exclusion_model()
         ProfilePostsCommunityExclusion.objects.get(user=self, community=community).delete()

@@ -962,9 +962,9 @@ class FavoriteCommunityAPITests(OpenbookAPITestCase):
         })
 
 
-class TopPostCommunityExclusionAPITests(OpenbookAPITestCase):
+class ExcludeTopPostsCommunityAPITests(OpenbookAPITestCase):
     """
-    TopPostCommunityExclusionAPITests
+    ExcludeTopPostsCommunityAPITests
     """
 
     def test_can_exclude_community(self):

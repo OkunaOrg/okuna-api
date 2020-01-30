@@ -1,14 +1,16 @@
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.utils.translation import ugettext_lazy as _
 
-from openbook_common.serializers import CommonSearchCommunitiesSerializer, CommonSearchCommunitiesCommunitySerializer
+from openbook_common.responses import ApiMessageResponse
+from openbook_common.serializers import CommonSearchCommunitiesSerializer, CommonSearchCommunitiesCommunitySerializer, \
+    CommonCommunityNameSerializer
 from openbook_moderation.permissions import IsNotSuspended
-from openbook_common.utils.helpers import normalize_list_value_in_request_data
+from openbook_common.utils.helpers import normalize_list_value_in_request_data, normalise_request_data
 from openbook_posts.permissions import IsGetOrIsAuthenticated
 from openbook_posts.views.posts.serializers import AuthenticatedUserPostSerializer, \
     GetPostsSerializer, UnauthenticatedUserPostSerializer, CreatePostSerializer, GetTopPostsSerializer, \
@@ -238,6 +240,39 @@ class ProfilePostsExcludedCommunities(APIView):
                                                                             context={'request': request})
 
         return Response(communities_serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request):
+        serializer = CommonCommunityNameSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        community_name = data.get('community_name')
+
+        user = request.user
+
+        with transaction.atomic():
+            user.exclude_community_with_name_from_profile_posts(community_name)
+
+        return ApiMessageResponse(_('Community excluded from this feed'), status=status.HTTP_202_ACCEPTED)
+
+
+class ProfilePostsExcludedCommunity(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def delete(self, request, community_name):
+        request_data = normalise_request_data(request.data)
+        request_data['community_name'] = community_name
+
+        serializer = CommonCommunityNameSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+
+        with transaction.atomic():
+            user.remove_exclusion_for_community_with_name_from_profile_posts(community_name)
+
+        return ApiMessageResponse(_('Community exclusion removed'), status=status.HTTP_202_ACCEPTED)
 
 
 class SearchProfilePostsExcludedCommunities(APIView):
