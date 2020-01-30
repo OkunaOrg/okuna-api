@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
@@ -5,6 +6,7 @@ from openbook_circles.models import Circle
 from openbook_common.models import Emoji, EmojiGroup, Badge, Language
 from openbook_common.serializers_fields.hashtag import HashtagPostsCountField
 from openbook_communities.models import Community, CommunityMembership
+from openbook_communities.serializers_fields import IsFavoriteField, CommunityMembershipsField
 from openbook_hashtags.models import Hashtag
 from openbook_posts.models import PostReaction, PostImage
 
@@ -182,6 +184,40 @@ class CommonCircleSerializer(serializers.ModelSerializer):
             'color',
             'users_count'
         )
+
+
+class CommonSearchCommunitiesSerializer(serializers.Serializer):
+    count = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
+    query = serializers.CharField(
+        max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
+        allow_blank=False,
+        required=True
+    )
+
+
+class CommonSearchCommunitiesCommunitySerializer(serializers.ModelSerializer):
+    is_favorite = IsFavoriteField()
+    memberships = CommunityMembershipsField(community_membership_serializer=CommonCommunityMembershipSerializer)
+
+    class Meta:
+        model = Community
+        fields = (
+            'id',
+            'name',
+            'title',
+            'avatar',
+            'cover',
+            'members_count',
+            'color',
+            'user_adjective',
+            'users_adjective',
+            'is_favorite',
+            'memberships'
+        )
+
 
 class ProxyDomainCheckSerializer(serializers.Serializer):
     url = serializers.CharField(

@@ -37,7 +37,7 @@ from openbook_circles.views import Circles, CircleItem, CircleNameCheck
 from openbook_common.views import Time, Health, EmojiGroups, ProxyDomainCheck
 from openbook_communities.views.communities.views import Communities, TrendingCommunities, CommunityNameCheck, \
     FavoriteCommunities, SearchCommunities, JoinedCommunities, AdministratedCommunities, ModeratedCommunities, \
-    SearchJoinedCommunities, TopPostCommunityExclusions, TopPostCommunityExclusionsSearch, SuggestedCommunities, \
+    SearchJoinedCommunities, SuggestedCommunities, \
     SearchAdministratedCommunities, SearchModeratedCommunities, SearchFavoriteCommunities
 from openbook_communities.views.community.administrators.views import CommunityAdministratorItem, \
     CommunityAdministrators, SearchCommunityAdministrators
@@ -83,7 +83,9 @@ from openbook_posts.views.post_comments.views import PostComments, PostCommentsD
 from openbook_posts.views.post_media.views import PostMedia
 from openbook_posts.views.post_reaction.views import PostReactionItem
 from openbook_posts.views.post_reactions.views import PostReactions, PostReactionsEmojiCount, PostReactionEmojiGroups
-from openbook_posts.views.posts.views import Posts, TrendingPosts, TopPosts, TrendingPostsNew
+from openbook_posts.views.posts.views import Posts, TrendingPosts, TopPosts, TrendingPostsNew, \
+    ProfilePostsCommunityExclusions, ProfilePostsCommunityExclusionsSearch, TopPostCommunityExclusions, \
+    TopPostCommunityExclusionsSearch
 from openbook_importer.views import ImportItem
 
 auth_auth_patterns = [
@@ -215,6 +217,9 @@ posts_patterns = [
     path('trending/new/', TrendingPostsNew.as_view(), name='trending-posts-new'),
     path('top/', TopPosts.as_view(), name='top-posts'),
     path('emojis/groups/', PostReactionEmojiGroups.as_view(), name='posts-emoji-groups'),
+    path('profile/community-exclusions/', ProfilePostsCommunityExclusions.as_view(),
+         name='profile-posts-community-exclusions'),
+    path('profile/community-exclusions/search/', ProfilePostsCommunityExclusionsSearch.as_view(), )
 ]
 
 community_administrator_patterns = [
