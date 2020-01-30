@@ -744,6 +744,24 @@ class TopPostCommunityExclusion(models.Model):
         return super(TopPostCommunityExclusion, self).save(*args, **kwargs)
 
 
+class ProfilePostsCommunityExclusion(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='profile_posts_community_exclusions')
+    community = models.ForeignKey('openbook_communities.Community', on_delete=models.CASCADE,
+                                  related_name='profile_posts_community_exclusions')
+    created = models.DateTimeField(editable=False, db_index=True)
+
+    class Meta:
+        unique_together = ('user', 'community',)
+
+    def save(self, *args, **kwargs):
+        ''' On save, update timestamps '''
+        if not self.id:
+            self.created = timezone.now()
+        self.modified = timezone.now()
+
+        return super(ProfilePostsCommunityExclusion, self).save(*args, **kwargs)
+
+
 class PostMedia(OrderedModel):
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='media')
     order_with_respect_to = 'post'

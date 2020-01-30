@@ -982,7 +982,7 @@ class TopPostCommunityExclusionAPITests(OpenbookAPITestCase):
         response = self.client.put(url, **headers, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
-        self.assertTrue(user.has_excluded_community_with_name(community_name=community.name))
+        self.assertTrue(user.has_excluded_community_with_name_from_top_posts(community_name=community.name))
 
     def test_cannot_exclude_private_community(self):
         """
@@ -999,7 +999,7 @@ class TopPostCommunityExclusionAPITests(OpenbookAPITestCase):
         response = self.client.put(url, **headers, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertFalse(user.has_excluded_community_with_name(community_name=community.name))
+        self.assertFalse(user.has_excluded_community_with_name_from_top_posts(community_name=community.name))
 
     def test_cannot_exclude_community_already_excluded(self):
         """
@@ -1017,7 +1017,7 @@ class TopPostCommunityExclusionAPITests(OpenbookAPITestCase):
         response = self.client.put(url, **headers, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertTrue(user.has_excluded_community_with_name(community_name=community.name))
+        self.assertTrue(user.has_excluded_community_with_name_from_top_posts(community_name=community.name))
 
     def test_can_remove_excluded_community(self):
         """
@@ -1035,7 +1035,7 @@ class TopPostCommunityExclusionAPITests(OpenbookAPITestCase):
         response = self.client.delete(url, **headers, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
-        self.assertFalse(user.has_excluded_community_with_name(community_name=community.name))
+        self.assertFalse(user.has_excluded_community_with_name_from_top_posts(community_name=community.name))
 
     def test_cannot_remove_exclusion_for_community_if_not_excluded(self):
         """
@@ -1052,7 +1052,7 @@ class TopPostCommunityExclusionAPITests(OpenbookAPITestCase):
         response = self.client.delete(url, **headers, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertFalse(user.has_excluded_community_with_name(community_name=community.name))
+        self.assertFalse(user.has_excluded_community_with_name_from_top_posts(community_name=community.name))
 
     def _get_url(self, community_name):
         return reverse('exclude-community-from-top-posts', kwargs={

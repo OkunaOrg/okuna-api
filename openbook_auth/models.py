@@ -36,7 +36,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
     get_moderation_penalty_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
     get_post_comment_reaction_notification_model, get_top_post_model, get_top_post_community_exclusion_model, \
-    get_hashtag_model
+    get_hashtag_model, get_profile_posts_community_exclusion_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications import helpers
 from openbook_auth.checkers import *
@@ -740,8 +740,11 @@ class User(AbstractUser):
     def has_favorite_community_with_name(self, community_name):
         return self.favorite_communities.filter(name=community_name).exists()
 
-    def has_excluded_community_with_name(self, community_name):
+    def has_excluded_community_with_name_from_top_posts(self, community_name):
         return self.top_posts_community_exclusions.filter(community__name=community_name).exists()
+
+    def has_excluded_community_with_name_from_profile_posts(self, community_name):
+        return self.profile_posts_community_exclusions.filter(community__name=community_name).exists()
 
     def has_list_with_name(self, list_name):
         return self.lists.filter(name=list_name).exists()
@@ -2295,7 +2298,7 @@ class User(AbstractUser):
 
     def get_posts_for_user(self, user, max_id=None, min_id=None):
         posts_prefetch_related = (
-        'circles', 'creator', 'creator__profile__badges', 'hashtags', 'community')
+            'circles', 'creator', 'creator__profile__badges', 'hashtags', 'community')
 
         posts_only = ('text', 'id', 'uuid', 'created',
                       'creator__username', 'creator__id', 'creator__profile__name',
@@ -2316,8 +2319,13 @@ class User(AbstractUser):
             max_id=max_id,
         )
 
+    def exclude_community_with_name_from_top_posts(self, community_name):
+        Community = get_community_model()
+        community_to_exclude = Community.objects.get(name=community_name)
+        self.exclude_community_from_top_posts(community_to_exclude)
+
     def exclude_community_from_top_posts(self, community):
-        check_can_exclude_community(user=self, community=community)
+        check_can_exclude_community_from_top_posts(user=self, community=community)
 
         TopPostCommunityExclusion = get_top_post_community_exclusion_model()
         top_post_community_exclusion = TopPostCommunityExclusion(
@@ -2326,21 +2334,42 @@ class User(AbstractUser):
         )
         self.top_posts_community_exclusions.add(top_post_community_exclusion, bulk=False)
 
-    def exclude_community_with_name_from_top_posts(self, community_name):
-        Community = get_community_model()
-        community_to_exclude = Community.objects.get(name=community_name)
-        self.exclude_community_from_top_posts(community_to_exclude)
-
-    def remove_exclusion_for_community_from_top_posts(self, community):
-        check_can_remove_exclusion_for_community(user=self, community=community)
-
-        TopPostCommunityExclusion = get_top_post_community_exclusion_model()
-        TopPostCommunityExclusion.objects.get(user=self, community=community).delete()
-
     def remove_exclusion_for_community_with_name_from_top_posts(self, community_name):
         Community = get_community_model()
         community = Community.objects.get(name=community_name)
         self.remove_exclusion_for_community_from_top_posts(community)
+
+    def remove_exclusion_for_community_from_top_posts(self, community):
+        check_can_remove_top_posts_exclusion_for_community(user=self, community=community)
+
+        TopPostCommunityExclusion = get_top_post_community_exclusion_model()
+        TopPostCommunityExclusion.objects.get(user=self, community=community).delete()
+
+    def exclude_community_with_name_from_profile_posts(self, community_name):
+        Community = get_community_model()
+        community_to_exclude = Community.objects.get(name=community_name)
+        self.exclude_community_from_profile_posts(community_to_exclude)
+
+    def exclude_community_from_profile_posts(self, community):
+        check_can_exclude_community_from_top_posts(user=self, community=community)
+
+        ProfilePostsCommunityExclusion = get_profile_posts_community_exclusion_model()
+        top_post_community_exclusion = ProfilePostsCommunityExclusion(
+            user=self,
+            community=community
+        )
+        self.profile_posts_community_exclusions.add(top_post_community_exclusion, bulk=False)
+
+    def remove_exclusion_for_community_with_name_from_profile_posts(self, community_name):
+        Community = get_community_model()
+        community = Community.objects.get(name=community_name)
+        self.remove_exclusion_for_community_from_profile_posts(community)
+
+    def remove_exclusion_for_community_from_profile_posts(self, community):
+        check_can_remove_top_posts_exclusion_for_community(user=self, community=community)
+
+        ProfilePostsCommunityExclusion = get_profile_posts_community_exclusion_model()
+        ProfilePostsCommunityExclusion.objects.get(user=self, community=community).delete()
 
     def get_top_posts(self, max_id=None, min_id=None, exclude_joined_communities=False):
         """
