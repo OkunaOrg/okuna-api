@@ -167,7 +167,7 @@ class TopPosts(APIView):
         return Response(posts_serializer.data, status=status.HTTP_200_OK)
 
 
-class TopPostCommunityExclusions(APIView):
+class TopPostsExcludedCommunities(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
@@ -191,7 +191,7 @@ class TopPostCommunityExclusions(APIView):
         return Response(communities_serializer.data, status=status.HTTP_200_OK)
 
 
-class TopPostCommunityExclusionsSearch(APIView):
+class SearchTopPostsExcludedCommunities(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
@@ -216,7 +216,7 @@ class TopPostCommunityExclusionsSearch(APIView):
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
-class ProfilePostsCommunityExclusions(APIView):
+class ProfilePostsExcludedCommunities(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
@@ -240,7 +240,7 @@ class ProfilePostsCommunityExclusions(APIView):
         return Response(communities_serializer.data, status=status.HTTP_200_OK)
 
 
-class ProfilePostsCommunityExclusionsSearch(APIView):
+class SearchProfilePostsExcludedCommunities(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):

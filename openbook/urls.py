@@ -84,8 +84,8 @@ from openbook_posts.views.post_media.views import PostMedia
 from openbook_posts.views.post_reaction.views import PostReactionItem
 from openbook_posts.views.post_reactions.views import PostReactions, PostReactionsEmojiCount, PostReactionEmojiGroups
 from openbook_posts.views.posts.views import Posts, TrendingPosts, TopPosts, TrendingPostsNew, \
-    ProfilePostsCommunityExclusions, ProfilePostsCommunityExclusionsSearch, TopPostCommunityExclusions, \
-    TopPostCommunityExclusionsSearch
+    ProfilePostsExcludedCommunities, SearchProfilePostsExcludedCommunities, TopPostsExcludedCommunities, \
+    SearchTopPostsExcludedCommunities
 from openbook_importer.views import ImportItem
 
 auth_auth_patterns = [
@@ -217,9 +217,10 @@ posts_patterns = [
     path('trending/new/', TrendingPostsNew.as_view(), name='trending-posts-new'),
     path('top/', TopPosts.as_view(), name='top-posts'),
     path('emojis/groups/', PostReactionEmojiGroups.as_view(), name='posts-emoji-groups'),
-    path('profile/community-exclusions/', ProfilePostsCommunityExclusions.as_view(),
-         name='profile-posts-community-exclusions'),
-    path('profile/community-exclusions/search/', ProfilePostsCommunityExclusionsSearch.as_view(), )
+    path('profile/excluded-communities/', ProfilePostsExcludedCommunities.as_view(),
+         name='profile-posts-excluded-communities'),
+    path('profile/excluded-communities/search/', SearchProfilePostsExcludedCommunities.as_view(),
+         name='search-profile-posts-excluded-communities')
 ]
 
 community_administrator_patterns = [
@@ -298,8 +299,9 @@ communities_patterns = [
     path('moderated/', ModeratedCommunities.as_view(), name='moderated-communities'),
     path('moderated/search/', SearchModeratedCommunities.as_view(), name='search-moderated-communities'),
     path('name-check/', CommunityNameCheck.as_view(), name='community-name-check'),
-    path('top-posts/exclusions/', TopPostCommunityExclusions.as_view(), name='top-posts-excluded-communities'),
-    path('top-posts/exclusions/search/', TopPostCommunityExclusionsSearch.as_view(),
+    # This should be in /posts/top/excluded-communities/...
+    path('top-posts/exclusions/', TopPostsExcludedCommunities.as_view(), name='top-posts-excluded-communities'),
+    path('top-posts/exclusions/search/', SearchTopPostsExcludedCommunities.as_view(),
          name='search-top-posts-excluded-communities'),
     path('search/', SearchCommunities.as_view(), name='search-communities'),
     path('<str:community_name>/', include(community_patterns)),

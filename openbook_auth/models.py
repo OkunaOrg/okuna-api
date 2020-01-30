@@ -2372,11 +2372,11 @@ class User(AbstractUser):
         check_can_exclude_community_from_top_posts(user=self, community=community)
 
         ProfilePostsCommunityExclusion = get_profile_posts_community_exclusion_model()
-        top_post_community_exclusion = ProfilePostsCommunityExclusion(
+        profile_posts_community_exclusion = ProfilePostsCommunityExclusion(
             user=self,
             community=community
         )
-        self.profile_posts_community_exclusions.add(top_post_community_exclusion, bulk=False)
+        self.profile_posts_community_exclusions.add(profile_posts_community_exclusion, bulk=False)
 
     def remove_exclusion_for_community_with_name_from_profile_posts(self, community_name):
         Community = get_community_model()
