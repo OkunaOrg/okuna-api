@@ -1536,7 +1536,7 @@ class TopPostsExcludedCommunitiesAPITests(OpenbookAPITestCase):
             self.assertIn(response_community_id, offsetted_communities_ids)
 
     def _get_url(self):
-        return reverse('top-posts-excluded-communities')
+        return reverse('legacy-top-posts-excluded-communities')
 
 
 class SearchTopPostsExcludedCommunitiesAPITests(OpenbookAPITestCase):
@@ -1619,7 +1619,7 @@ class SearchTopPostsExcludedCommunitiesAPITests(OpenbookAPITestCase):
             community.delete()
 
     def _get_url(self):
-        return reverse('search-top-posts-excluded-communities')
+        return reverse('legacy-search-top-posts-excluded-communities')
 
 
 class SuggestedCommunitiesAPITests(OpenbookAPITestCase):

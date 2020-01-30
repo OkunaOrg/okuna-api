@@ -1055,7 +1055,7 @@ class ExcludeTopPostsCommunityAPITests(OpenbookAPITestCase):
         self.assertFalse(user.has_excluded_community_with_name_from_top_posts(community_name=community.name))
 
     def _get_url(self, community_name):
-        return reverse('exclude-community-from-top-posts', kwargs={
+        return reverse('legacy-exclude-community-from-top-posts', kwargs={
             'community_name': community_name
         })
 

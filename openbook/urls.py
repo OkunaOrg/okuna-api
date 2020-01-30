@@ -51,7 +51,7 @@ from openbook_communities.views.community.posts.views import CommunityPosts, Clo
     GetCommunityPostsCount
 from openbook_communities.views.community.views import CommunityItem, CommunityAvatar, CommunityCover, \
     FavoriteCommunity, \
-    SubscribeToCommunityNewPostNotifications, ExcludeTopPostsCommunity
+    SubscribeToCommunityNewPostNotifications, LegacyExcludeTopPostsCommunity
 from openbook_connections.views import ConnectWithUser, Connections, DisconnectFromUser, UpdateConnection, \
     ConfirmConnection
 from openbook_hashtags.views.hashtag.views import HashtagItem, HashtagPosts
@@ -85,7 +85,7 @@ from openbook_posts.views.post_reaction.views import PostReactionItem
 from openbook_posts.views.post_reactions.views import PostReactions, PostReactionsEmojiCount, PostReactionEmojiGroups
 from openbook_posts.views.posts.views import Posts, TrendingPosts, TopPosts, TrendingPostsNew, \
     ProfilePostsExcludedCommunities, SearchProfilePostsExcludedCommunities, TopPostsExcludedCommunities, \
-    SearchTopPostsExcludedCommunities, ProfilePostsExcludedCommunity
+    SearchTopPostsExcludedCommunities, ProfilePostsExcludedCommunity, TopPostsExcludedCommunity
 from openbook_importer.views import ImportItem
 
 auth_auth_patterns = [
@@ -219,14 +219,24 @@ posts_profile_patterns = [
          name='profile-posts-excluded-community'),
 ]
 
+posts_top_patterns = [
+    path('', TopPosts.as_view(), name='top-posts'),
+    path('excluded-communities/', TopPostsExcludedCommunities.as_view(),
+         name='top-posts-excluded-communities'),
+    path('excluded-communities/search/', SearchTopPostsExcludedCommunities.as_view(),
+         name='search-top-posts-excluded-communities'),
+    path('excluded-communities/<str:community_name>/', TopPostsExcludedCommunity.as_view(),
+         name='top-posts-excluded-community'),
+]
+
 posts_patterns = [
     path('<uuid:post_uuid>/', include(post_patterns)),
     path('', Posts.as_view(), name='posts'),
     path('trending/', TrendingPosts.as_view(), name='trending-posts'),
     path('trending/new/', TrendingPostsNew.as_view(), name='trending-posts-new'),
-    path('top/', TopPosts.as_view(), name='top-posts'),
     path('emojis/groups/', PostReactionEmojiGroups.as_view(), name='posts-emoji-groups'),
     path('profile/', include(posts_profile_patterns)),
+    path('top/', include(posts_top_patterns)),
 ]
 
 community_administrator_patterns = [
@@ -289,8 +299,8 @@ community_patterns = [
     path('moderators/', include(community_moderators_patterns)),
     path('moderated-objects/', include(community_moderated_objects_patterns)),
     path('report/', ReportCommunity.as_view(), name='report-community'),
-    # This should be in PUT /posts/top/excluded-communities/...
-    path('top-posts/exclude/', ExcludeTopPostsCommunity.as_view(), name='exclude-community-from-top-posts'),
+    # LEGACY. Remove after 0.0.63
+    path('top-posts/exclude/', LegacyExcludeTopPostsCommunity.as_view(), name='legacy-exclude-community-from-top-posts'),
 ]
 
 communities_patterns = [
@@ -306,10 +316,10 @@ communities_patterns = [
     path('moderated/', ModeratedCommunities.as_view(), name='moderated-communities'),
     path('moderated/search/', SearchModeratedCommunities.as_view(), name='search-moderated-communities'),
     path('name-check/', CommunityNameCheck.as_view(), name='community-name-check'),
-    # This should be in /posts/top/excluded-communities/...
-    path('top-posts/exclusions/', TopPostsExcludedCommunities.as_view(), name='top-posts-excluded-communities'),
+    # LEGACY. Remove after 0.0.63
+    path('top-posts/exclusions/', TopPostsExcludedCommunities.as_view(), name='legacy-top-posts-excluded-communities'),
     path('top-posts/exclusions/search/', SearchTopPostsExcludedCommunities.as_view(),
-         name='search-top-posts-excluded-communities'),
+         name='legacy-search-top-posts-excluded-communities'),
     path('search/', SearchCommunities.as_view(), name='search-communities'),
     path('<str:community_name>/', include(community_patterns)),
 ]

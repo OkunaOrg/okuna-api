@@ -192,6 +192,21 @@ class TopPostsExcludedCommunities(APIView):
 
         return Response(communities_serializer.data, status=status.HTTP_200_OK)
 
+    def put(self, request):
+        serializer = CommonCommunityNameSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        community_name = data.get('community_name')
+
+        user = request.user
+
+        with transaction.atomic():
+            user.exclude_community_with_name_from_top_posts(community_name)
+
+        return ApiMessageResponse(_('Community excluded from this feed'), status=status.HTTP_202_ACCEPTED)
+
 
 class SearchTopPostsExcludedCommunities(APIView):
     permission_classes = (IsAuthenticated,)
@@ -216,6 +231,24 @@ class SearchTopPostsExcludedCommunities(APIView):
                                                                          context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class TopPostsExcludedCommunity(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def delete(self, request, community_name):
+        request_data = normalise_request_data(request.data)
+        request_data['community_name'] = community_name
+
+        serializer = CommonCommunityNameSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+
+        with transaction.atomic():
+            user.remove_exclusion_for_community_with_name_from_top_posts(community_name)
+
+        return ApiMessageResponse(_('Community exclusion removed'), status=status.HTTP_202_ACCEPTED)
 
 
 class ProfilePostsExcludedCommunities(APIView):
