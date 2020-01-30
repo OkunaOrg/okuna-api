@@ -2,12 +2,13 @@ from django.utils import timezone
 from django_rq import job
 from video_encoding import tasks
 from datetime import timedelta
-from django.db.models import Q, Count
+from django.db.models import Q, Count, F
 from django.conf import settings
 from cursor_pagination import CursorPaginator
 
 from openbook_common.utils.model_loaders import get_post_model, get_post_media_model, get_community_model, \
-    get_top_post_model, get_post_comment_model, get_moderated_object_model, get_trending_post_model
+    get_top_post_model, get_post_comment_model, get_moderated_object_model, get_trending_post_model, \
+    get_post_reaction_model
 import logging
 
 logger = logging.getLogger(__name__)
@@ -51,6 +52,65 @@ def process_post_media(post_id):
     # This updates the status and created attributes
     post._publish()
     logger.info('Processed media of post with id: %d' % post_id)
+
+
+@job('default')
+def process_activity_score_post_reaction(post_id, post_reaction_id):
+    """
+    This job is called to process activity score on a post after add/remove reaction
+    """
+    Post = get_post_model()
+    PostReaction = get_post_reaction_model()
+    post = Post.objects.get(pk=post_id)
+    logger.info('Processing activity score for reaction of post with id: %d' % post_id)
+
+    if not PostReaction.objects.filter(pk=post_reaction_id).exists():
+        # reaction was deleted
+        post.activity_score = F('activity_score') - Post.ACTIVITY_UNIQUE_REACTION_WEIGHT
+    else:
+        # reaction was added
+        post.activity_score = F('activity_score') + Post.ACTIVITY_UNIQUE_REACTION_WEIGHT
+
+    post.save()
+    logger.info('Processed activity score for reaction of post with id: %d' % post_id)
+
+
+@job('default')
+def process_activity_score_post_comment(post_id, post_comment_id, post_commenter_id):
+    """
+    This job is called to process activity score on a post after add/remove comment
+    """
+    Post = get_post_model()
+    PostComment = get_post_comment_model()
+    post = Post.objects.get(pk=post_id)
+    logger.info('Processing activity score for comment of post with id: %d' % post_id)
+
+    commenter_comments_count = PostComment.objects.filter(post_id=post_id,
+                                                          parent_comment__isnull=True,
+                                                          is_deleted=False,
+                                                          commenter_id=post_commenter_id).count()
+
+    if not PostComment.objects.filter(pk=post_comment_id).exists():
+        # comment was deleted
+        if commenter_comments_count > 0:
+            # there are still other comments by this user
+            post.activity_score = F('activity_score') - Post.ACTIVITY_COUNT_COMMENTS_WEIGHT
+        else:
+            # no more comments anymore by this user, subtract the unique comment weight too
+            post.activity_score = F('activity_score') - \
+                                  Post.ACTIVITY_UNIQUE_COMMENT_WEIGHT - \
+                                  Post.ACTIVITY_COUNT_COMMENTS_WEIGHT
+    else:
+        # comment was added
+        if commenter_comments_count > 1:
+            post.activity_score = F('activity_score') + Post.ACTIVITY_COUNT_COMMENTS_WEIGHT
+        elif commenter_comments_count == 1:
+            post.activity_score = F('activity_score') + \
+                                  Post.ACTIVITY_UNIQUE_COMMENT_WEIGHT + \
+                                  Post.ACTIVITY_COUNT_COMMENTS_WEIGHT
+
+    post.save()
+    logger.info('Processed activity score for comment of post with id: %d' % post_id)
 
 
 @job('low')
