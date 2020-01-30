@@ -2300,6 +2300,10 @@ class User(AbstractUser):
 
         posts_query.add(exclude_reported_and_approved_posts_query, Q.AND)
 
+        exclude_excluded_communitities_posts_query = ~Q(community__profile_posts_community_exclusions__user_id=self.pk)
+
+        posts_query.add(exclude_excluded_communitities_posts_query, Q.AND)
+
         if not self.has_profile_community_posts_visible():
             posts_query.add(Q(community__isnull=True), Q.AND)
 

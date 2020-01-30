@@ -55,6 +55,8 @@ def get_posts_for_user_collection(target_user, source_user, posts_only=None, pos
     ModeratedObject = get_moderated_object_model()
 
     posts_visibility_exclude_query = Q(
+        # Excluded communities posts
+        Q(community__profile_posts_community_exclusions__user=target_user.pk) |
         # Reported posts
         Q(moderated_object__reports__reporter_id=source_user.pk) |
         # Approved reported posts
