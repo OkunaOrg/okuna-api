@@ -1914,6 +1914,24 @@ class User(AbstractUser):
 
         return top_posts_community_exclusions
 
+    def search_profile_posts_excluded_communities_with_query(self, query):
+
+        excluded_communities_search_query = Q(user=self)
+        excluded_communities_search_query.add((Q(community__title__icontains=query) |
+                                               Q(community__name__icontains=query)), Q.AND)
+
+        ProfilePostsCommunityExclusion = get_profile_posts_community_exclusion_model()
+
+        return ProfilePostsCommunityExclusion.objects.filter(excluded_communities_search_query)
+
+    def get_profile_posts_community_exclusions(self):
+        ProfilePostsCommunityExclusion = get_profile_posts_community_exclusion_model()
+        profile_posts_community_exclusions = ProfilePostsCommunityExclusion.objects \
+            .select_related('community') \
+            .filter(user=self)
+
+        return profile_posts_community_exclusions
+
     def get_followers(self, max_id=None):
         followers_query = self._make_followers_query()
 
