@@ -8,11 +8,12 @@ from django.core.files import File
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django_rq import get_worker
+from django.db import transaction
 from faker import Faker
 from rest_framework import status
 from rq import SimpleWorker
 
-from openbook_common.tests.models import OpenbookAPITestCase
+from openbook_common.tests.models import OpenbookAPITestCase, OpenbookAPITransactionTestCase
 from mixer.backend.django import mixer
 
 from openbook.settings import POST_MAX_LENGTH
@@ -34,7 +35,7 @@ from openbook_hashtags.models import Hashtag
 from openbook_lists.models import List
 from openbook_moderation.models import ModeratedObject
 from openbook_notifications.models import PostUserMentionNotification, Notification, UserNewPostNotification
-from openbook_posts.jobs import curate_top_posts, curate_trending_posts
+from openbook_posts.jobs import curate_top_posts, curate_trending_posts, process_activity_score_post_reaction
 from openbook_posts.models import Post, PostUserMention, PostMedia, TopPost, TrendingPost
 
 logger = logging.getLogger(__name__)
@@ -3714,41 +3715,6 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         'openbook_circles/fixtures/circles.json'
     ]
 
-    def test_displays_community_posts_only(self):
-        """
-        should display community posts only and return 200
-        """
-        user = make_user()
-        community = make_community(creator=user)
-
-        user.create_public_post(text=make_fake_post_text())
-        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
-
-        headers = make_authentication_headers_for_user(user)
-
-        emoji_group = make_reactions_emoji_group()
-        emoji = make_emoji(group=emoji_group)
-
-        # react once, min required while testing
-        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
-
-        curate_trending_posts()
-
-        url = self._get_url()
-
-        response = self.client.get(url, **headers, format='multipart')
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        response_posts = json.loads(response.content)
-
-        self.assertEqual(1, len(response_posts))
-
-        response_post = response_posts[0]
-
-        self.assertEqual(response_post['post']['id'], post.pk)
-        self.assertTrue(TrendingPost.objects.filter(post__id=post.pk).exists())
-
     def test_does_not_curate_community_posts_with_less_than_min_reactions(self):
         """
         should not curate community posts with less than minimum reactions and return 200
@@ -3773,46 +3739,6 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
 
         self.assertEqual(0, len(response_posts))
         self.assertFalse(TrendingPost.objects.filter(post__id=post.pk).exists())
-
-    def test_does_not_display_closed_community_posts(self):
-        """
-        should not display community posts that are closed
-        """
-        user = make_user()
-        community = make_community(creator=user)
-
-        user.create_public_post(text=make_fake_post_text())
-        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
-        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
-        post_two.is_closed = True
-        post_two.save()
-
-        headers = make_authentication_headers_for_user(user)
-
-        emoji_group = make_reactions_emoji_group()
-        emoji = make_emoji(group=emoji_group)
-
-        # react once, min required while testing
-        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
-        user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
-
-        curate_trending_posts()
-
-        url = self._get_url()
-
-        response = self.client.get(url, **headers, format='multipart')
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        response_posts = json.loads(response.content)
-
-        self.assertEqual(1, len(response_posts))
-
-        response_post = response_posts[0]
-
-        self.assertEqual(response_post['post']['id'], post.pk)
-        self.assertFalse(TrendingPost.objects.filter(post__id=post_two.pk).exists())
-        self.assertTrue(TrendingPost.objects.filter(post__id=post.pk).exists())
 
     def test_does_not_display_post_from_community_banned_from(self):
         """
@@ -4021,28 +3947,35 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         self.assertEqual(0, len(trending_posts))
         self.assertFalse(TrendingPost.objects.filter(post__id=post.pk).exists())
 
-    def test_does_not_return_recently_turned_private_community_posts(self):
+    def _get_url(self):
+        return reverse('trending-posts-new')
+
+
+class TrendingPostsTransactionAPITests(OpenbookAPITransactionTestCase):
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
+    def test_displays_community_posts_only(self):
         """
-        should not return recently turned private community posts in trending posts
+        should display community posts only and return 200
         """
         user = make_user()
+        community = make_community(creator=user)
 
-        community = make_community(creator=user, type=Community.COMMUNITY_TYPE_PUBLIC)
+        user.create_public_post(text=make_fake_post_text())
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        headers = make_authentication_headers_for_user(user)
 
         emoji_group = make_reactions_emoji_group()
         emoji = make_emoji(group=emoji_group)
 
         # react once, min required while testing
-        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+        with transaction.atomic():
+            user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
 
-        # curate trending posts
         curate_trending_posts()
-
-        community.type = Community.COMMUNITY_TYPE_PRIVATE
-        community.save()
-
-        headers = make_authentication_headers_for_user(user)
 
         url = self._get_url()
 
@@ -4051,10 +3984,53 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         response_posts = json.loads(response.content)
-        self.assertEqual(0, len(response_posts))
 
-        trending_posts = TrendingPost.objects.all()
-        self.assertEqual(1, len(trending_posts))
+        self.assertEqual(1, len(response_posts))
+
+        response_post = response_posts[0]
+
+        self.assertEqual(response_post['post']['id'], post.pk)
+        self.assertTrue(TrendingPost.objects.filter(post__id=post.pk).exists())
+
+    def test_does_not_display_closed_community_posts(self):
+        """
+        should not display community posts that are closed
+        """
+        user = make_user()
+        community = make_community(creator=user)
+
+        user.create_public_post(text=make_fake_post_text())
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+        post_two.is_closed = True
+        post_two.save()
+
+        headers = make_authentication_headers_for_user(user)
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        with transaction.atomic():
+            user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+            user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
+
+        curate_trending_posts()
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(1, len(response_posts))
+
+        response_post = response_posts[0]
+
+        self.assertEqual(response_post['post']['id'], post.pk)
+        self.assertFalse(TrendingPost.objects.filter(post__id=post_two.pk).exists())
         self.assertTrue(TrendingPost.objects.filter(post__id=post.pk).exists())
 
     def test_does_not_display_curated_closed_community_posts(self):
@@ -4072,8 +4048,9 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         emoji = make_emoji(group=emoji_group)
 
         # react once, min required while testing
-        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
-        user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
+        with transaction.atomic():
+            user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+            user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
 
         # curate trending posts
         curate_trending_posts()
@@ -4118,8 +4095,9 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         emoji = make_emoji(group=emoji_group)
 
         # react once, min required while testing
-        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
-        user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
+        with transaction.atomic():
+            user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+            user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
 
         # curate trending posts
         curate_trending_posts()
@@ -4164,8 +4142,9 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         emoji = make_emoji(group=emoji_group)
 
         # react once, min required while testing
-        user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
-        user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
+        with transaction.atomic():
+            user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+            user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
 
         # curate trending posts
         curate_trending_posts()
@@ -4183,6 +4162,43 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         self.assertEqual(1, len(response_posts))
         response_post = response_posts[0]
         self.assertEqual(response_post['post']['id'], post_two.pk)
+
+    def test_does_not_return_recently_turned_private_community_posts(self):
+        """
+        should not return recently turned private community posts in trending posts
+        """
+        user = make_user()
+
+        community = make_community(creator=user, type=Community.COMMUNITY_TYPE_PUBLIC)
+        post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+
+        # react once, min required while testing
+        with transaction.atomic():
+            user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+
+        # curate trending posts
+        curate_trending_posts()
+
+        community.type = Community.COMMUNITY_TYPE_PRIVATE
+        community.save()
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+        self.assertEqual(0, len(response_posts))
+
+        trending_posts = TrendingPost.objects.all()
+        self.assertEqual(1, len(trending_posts))
+        self.assertTrue(TrendingPost.objects.filter(post__id=post.pk).exists())
 
     def _get_url(self):
         return reverse('trending-posts-new')

@@ -1083,8 +1083,8 @@ class PostReaction(models.Model):
     @classmethod
     def create_reaction(cls, reactor, emoji_id, post):
         post_reaction = PostReaction.objects.create(reactor=reactor, emoji_id=emoji_id, post=post)
-        transaction.on_commit(lambda: process_activity_score_post_reaction.delay(post_id=post_reaction.post.pk,
-                                                                                 post_reaction_id=post_reaction.pk))
+        transaction.on_commit(lambda: process_activity_score_post_reaction(post_id=post_reaction.post.pk,
+                                                                           post_reaction_id=post_reaction.pk))
 
         return post_reaction
 
@@ -1098,8 +1098,8 @@ class PostReaction(models.Model):
         return cls.objects.filter(count_query).count()
 
     def delete(self, *args, **kwargs):
-        transaction.on_commit(lambda: process_activity_score_post_reaction.delay(post_id=self.post.pk,
-                                                                                 post_reaction_id=self.pk))
+        transaction.on_commit(lambda: process_activity_score_post_reaction(post_id=self.post.pk,
+                                                                           post_reaction_id=self.pk))
 
         super(PostReaction, self).delete(*args, **kwargs)
 
