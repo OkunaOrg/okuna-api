@@ -317,10 +317,12 @@ class SearchCommunities(APIView):
 
         count = data.get('count', 20)
         query = data.get('query')
+        excluded_from_profile_posts = data.get('excluded_from_profile_posts')
 
         user = request.user
 
-        communities = user.search_communities_with_query(query=query)[:count]
+        communities = user.search_communities_with_query(query=query,
+                                                         excluded_from_profile_posts=excluded_from_profile_posts)[:count]
 
         response_serializer = CommonSearchCommunitiesCommunitySerializer(communities, many=True,
                                                                          context={"request": request})

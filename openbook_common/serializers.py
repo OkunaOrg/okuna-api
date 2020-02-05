@@ -4,8 +4,6 @@ from rest_framework import serializers
 from openbook_auth.models import User, UserProfile
 from openbook_circles.models import Circle
 from openbook_common.models import Emoji, EmojiGroup, Badge, Language
-from openbook_common.serializers_fields.community import IsCommunityExcludedFromProfilePostsField
-from openbook_common.serializers_fields.hashtag import HashtagPostsCountField
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import IsFavoriteField, CommunityMembershipsField
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
@@ -199,10 +197,14 @@ class CommonSearchCommunitiesSerializer(serializers.Serializer):
         required=True
     )
 
+    excluded_from_profile_posts = serializers.BooleanField(
+        required=False,
+        default=True
+    )
+
 
 class CommonSearchCommunitiesCommunitySerializer(serializers.ModelSerializer):
     is_favorite = IsFavoriteField()
-    is_excluded_from_profile_posts = IsCommunityExcludedFromProfilePostsField()
 
     memberships = CommunityMembershipsField(community_membership_serializer=CommonCommunityMembershipSerializer)
 
@@ -219,7 +221,6 @@ class CommonSearchCommunitiesCommunitySerializer(serializers.ModelSerializer):
             'user_adjective',
             'users_adjective',
             'is_favorite',
-            'is_excluded_from_profile',
             'memberships'
         )
 

@@ -1351,6 +1351,40 @@ class SearchCommunitiesAPITests(OpenbookAPITestCase):
         retrieved_community = parsed_response[0]
         self.assertEqual(retrieved_community['name'], community.name)
 
+    def test_can_search_only_communities_not_excluded_from_profile_posts(self):
+        """
+        should be able to search for only communities not excluded from profile posts and return 200
+        """
+        user = make_user()
+
+        non_excluded_community_owner = make_user()
+        non_excluded_community = make_community(creator=non_excluded_community_owner, name='memes')
+
+        excluded_community_owner = make_user()
+        excluded_community = make_community(creator=excluded_community_owner, name='memestwo')
+
+        user.join_community_with_name(community_name=non_excluded_community.name)
+        user.join_community_with_name(community_name=excluded_community.name)
+
+        user.exclude_community_from_profile_posts(community=excluded_community)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'query': 'memes',
+            'excluded_from_profile_posts': False
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        parsed_response = json.loads(response.content)
+        self.assertEqual(len(parsed_response), 1)
+
+        retrieved_community = parsed_response[0]
+
+        self.assertEqual(retrieved_community['name'], non_excluded_community.name)
+
     def _get_url(self):
         return reverse('search-communities')
 

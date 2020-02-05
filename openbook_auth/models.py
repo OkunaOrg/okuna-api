@@ -1998,9 +1998,10 @@ class User(AbstractUser):
         Community = get_community_model()
         return Community.get_trending_communities_for_user_with_id(user_id=self.pk, category_name=category_name)
 
-    def search_communities_with_query(self, query):
+    def search_communities_with_query(self, query, excluded_from_profile_posts):
         Community = get_community_model()
-        return Community.search_communities_with_query(query)
+        return Community.search_communities_with_query_for_user(query=query, user=self,
+                                                                excluded_from_profile_posts=excluded_from_profile_posts)
 
     def get_community_with_name(self, community_name):
         check_can_get_community_with_name(user=self, community_name=community_name)
@@ -2415,7 +2416,7 @@ class User(AbstractUser):
                       'post__community__color', 'post__community__title')
 
         reported_posts_exclusion_query = ~Q(post__moderated_object__reports__reporter_id=self.pk)
-        excluded_communities_query = ~Q(post__community__top_posts_community_exclusions__user=self.pk)
+        excluded_top_posts_communities_query = ~Q(post__community__top_posts_community_exclusions__user=self.pk)
 
         top_community_posts_query = Q(post__is_closed=False,
                                       post__is_deleted=False,
@@ -2440,7 +2441,7 @@ class User(AbstractUser):
             top_community_posts_query.add(exclude_joined_communities_query, Q.AND)
 
         top_community_posts_query.add(reported_posts_exclusion_query, Q.AND)
-        top_community_posts_query.add(excluded_communities_query, Q.AND)
+        top_community_posts_query.add(excluded_top_posts_communities_query, Q.AND)
 
         top_community_posts_queryset = TopPost.objects.select_related(*posts_select_related).prefetch_related(
             *posts_prefetch_related).only(*posts_only).filter(top_community_posts_query)
