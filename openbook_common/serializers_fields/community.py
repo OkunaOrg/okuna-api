@@ -18,6 +18,23 @@ class IsCommunityReportedField(Field):
         return False
 
 
+class IsCommunityExcludedFromProfilePostsField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(IsCommunityExcludedFromProfilePostsField, self).__init__(**kwargs)
+
+    def to_representation(self, value):
+        request = self.context.get('request')
+
+        if not request.user.is_anonymous:
+            if request.user.pk == value.pk:
+                return False
+            return request.user.has_excluded_community_with_name_from_profile_posts(value.pk)
+
+        return False
+
+
 class CommunityPostsCountField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'

@@ -300,7 +300,8 @@ community_patterns = [
     path('moderated-objects/', include(community_moderated_objects_patterns)),
     path('report/', ReportCommunity.as_view(), name='report-community'),
     # LEGACY. Remove after 0.0.63
-    path('top-posts/exclude/', LegacyExcludeTopPostsCommunity.as_view(), name='legacy-exclude-community-from-top-posts'),
+    path('top-posts/exclude/', LegacyExcludeTopPostsCommunity.as_view(),
+         name='legacy-exclude-community-from-top-posts'),
 ]
 
 communities_patterns = [
