@@ -6,29 +6,26 @@ from os import access, F_OK
 from PIL import Image
 from django.urls import reverse
 from django_rq import get_worker
-from django_rq.queues import get_queues
 from faker import Faker
 from rest_framework import status
 from openbook_common.tests.models import OpenbookAPITestCase
 from django.core.files.images import ImageFile
 from django.core.files import File
-from django.core.cache import cache
 from django.conf import settings
 from unittest import mock
 
 import logging
 
-from rq import SimpleWorker, Worker
+from rq import SimpleWorker
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_community, make_moderation_category, \
-    get_test_videos, get_test_image, make_proxy_blacklisted_domain, make_hashtag, make_hashtag_name
+    get_test_videos, get_test_image, make_hashtag, make_hashtag_name
 from openbook_common.utils.model_loaders import get_language_model
 from openbook_communities.models import Community
 from openbook_hashtags.models import Hashtag
 from openbook_notifications.models import PostUserMentionNotification, Notification
 from openbook_posts.models import Post, PostUserMention, PostMedia
-from openbook_common.models import ProxyBlacklistedDomain
 
 logger = logging.getLogger(__name__)
 fake = Faker()
