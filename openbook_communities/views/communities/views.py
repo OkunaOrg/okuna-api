@@ -100,10 +100,12 @@ class JoinedCommunities(APIView):
 
         count = data.get('count', 10)
         offset = data.get('offset', 0)
+        excluded_from_profile_posts = data.get('excluded_from_profile_posts')
 
         user = request.user
 
-        communities = user.get_joined_communities()[offset:offset + count]
+        communities = user.get_joined_communities(excluded_from_profile_posts=excluded_from_profile_posts)[
+                      offset:offset + count]
 
         response_serializer = CommonSearchCommunitiesCommunitySerializer(communities, many=True,
                                                                          context={"request": request})
@@ -123,10 +125,13 @@ class SearchJoinedCommunities(APIView):
 
         count = data.get('count', 10)
         query = data.get('query')
+        excluded_from_profile_posts = data.get('excluded_from_profile_posts')
 
         user = request.user
 
-        communities = user.search_joined_communities_with_query(query=query)[:count]
+        communities = user.search_joined_communities_with_query(query=query,
+                                                                excluded_from_profile_posts=excluded_from_profile_posts)[
+                      :count]
 
         response_serializer = CommonSearchCommunitiesCommunitySerializer(communities, many=True,
                                                                          context={"request": request})
@@ -322,7 +327,8 @@ class SearchCommunities(APIView):
         user = request.user
 
         communities = user.search_communities_with_query(query=query,
-                                                         excluded_from_profile_posts=excluded_from_profile_posts)[:count]
+                                                         excluded_from_profile_posts=excluded_from_profile_posts)[
+                      :count]
 
         response_serializer = CommonSearchCommunitiesCommunitySerializer(communities, many=True,
                                                                          context={"request": request})

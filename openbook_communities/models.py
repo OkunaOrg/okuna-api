@@ -17,7 +17,8 @@ from openbook_common.utils.model_loaders import get_community_invite_model, \
     get_community_notifications_subscription_model
 from openbook_common.validators import hex_color_validator
 from openbook_communities.helpers import upload_to_community_avatar_directory, upload_to_community_cover_directory
-from openbook_communities.queries import make_search_communities_query_for_user
+from openbook_communities.queries import make_search_communities_query_for_user, \
+    make_search_joined_communities_query_for_user, make_get_joined_communities_query_for_user
 from openbook_communities.validators import community_name_characters_validator
 from openbook_moderation.models import ModeratedObject, ModerationCategory
 from openbook_posts.models import Post
@@ -122,6 +123,18 @@ class Community(models.Model):
     def search_communities_with_query_for_user(cls, query, user, excluded_from_profile_posts=True):
         query = make_search_communities_query_for_user(query=query, user=user,
                                                        excluded_from_profile_posts=excluded_from_profile_posts)
+        return cls.objects.filter(query)
+
+    @classmethod
+    def search_joined_communities_with_query_for_user(cls, query, user, excluded_from_profile_posts=True):
+        query = make_search_joined_communities_query_for_user(query=query, user=user,
+                                                              excluded_from_profile_posts=excluded_from_profile_posts)
+        return cls.objects.filter(query)
+
+    @classmethod
+    def get_joined_communities_for_user(cls, user, excluded_from_profile_posts=True):
+        query = make_get_joined_communities_query_for_user(user=user,
+                                                           excluded_from_profile_posts=excluded_from_profile_posts)
         return cls.objects.filter(query)
 
     @classmethod

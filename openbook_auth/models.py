@@ -2008,9 +2008,12 @@ class User(AbstractUser):
         Community = get_community_model()
         return Community.get_community_with_name_for_user_with_id(community_name=community_name, user_id=self.pk)
 
-    def get_joined_communities(self):
+    def get_joined_communities(self, excluded_from_profile_posts):
         Community = get_community_model()
-        return Community.objects.filter(memberships__user=self)
+        return Community.get_joined_communities_for_user(
+            excluded_from_profile_posts=excluded_from_profile_posts,
+            user=self
+        )
 
     def get_subscribed_communities(self):
         Community = get_community_model()
@@ -2028,13 +2031,13 @@ class User(AbstractUser):
         Community = get_community_model()
         return Community.get_new_user_suggested_communities()
 
-    def search_joined_communities_with_query(self, query):
-        joined_communities_query = Q(memberships__user=self)
-        joined_communities_name_query = Q(name__icontains=query)
-        joined_communities_name_query.add(Q(title__icontains=query), Q.OR)
-        joined_communities_query.add(joined_communities_name_query, Q.AND)
+    def search_joined_communities_with_query(self, query, excluded_from_profile_posts):
         Community = get_community_model()
-        return Community.objects.filter(joined_communities_query)
+        return Community.search_joined_communities_with_query_for_user(
+            query=query,
+            user=self,
+            excluded_from_profile_posts=excluded_from_profile_posts,
+        )
 
     def get_favorite_communities(self):
         return self.favorite_communities.all()
