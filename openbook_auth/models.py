@@ -36,7 +36,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
     get_moderation_penalty_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
     get_post_comment_reaction_notification_model, get_top_post_model, get_top_post_community_exclusion_model, \
-    get_hashtag_model
+    get_hashtag_model, get_profile_posts_community_exclusion_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications import helpers
 from openbook_auth.checkers import *
@@ -740,8 +740,11 @@ class User(AbstractUser):
     def has_favorite_community_with_name(self, community_name):
         return self.favorite_communities.filter(name=community_name).exists()
 
-    def has_excluded_community_with_name(self, community_name):
+    def has_excluded_community_with_name_from_top_posts(self, community_name):
         return self.top_posts_community_exclusions.filter(community__name=community_name).exists()
+
+    def has_excluded_community_with_name_from_profile_posts(self, community_name):
+        return self.profile_posts_community_exclusions.filter(community__name=community_name).exists()
 
     def has_list_with_name(self, list_name):
         return self.lists.filter(name=list_name).exists()
@@ -1911,6 +1914,24 @@ class User(AbstractUser):
 
         return top_posts_community_exclusions
 
+    def search_profile_posts_excluded_communities_with_query(self, query):
+
+        excluded_communities_search_query = Q(user=self)
+        excluded_communities_search_query.add((Q(community__title__icontains=query) |
+                                               Q(community__name__icontains=query)), Q.AND)
+
+        ProfilePostsCommunityExclusion = get_profile_posts_community_exclusion_model()
+
+        return ProfilePostsCommunityExclusion.objects.filter(excluded_communities_search_query)
+
+    def get_profile_posts_community_exclusions(self):
+        ProfilePostsCommunityExclusion = get_profile_posts_community_exclusion_model()
+        profile_posts_community_exclusions = ProfilePostsCommunityExclusion.objects \
+            .select_related('community') \
+            .filter(user=self)
+
+        return profile_posts_community_exclusions
+
     def get_followers(self, max_id=None):
         followers_query = self._make_followers_query()
 
@@ -1977,18 +1998,22 @@ class User(AbstractUser):
         Community = get_community_model()
         return Community.get_trending_communities_for_user_with_id(user_id=self.pk, category_name=category_name)
 
-    def search_communities_with_query(self, query):
+    def search_communities_with_query(self, query, excluded_from_profile_posts):
         Community = get_community_model()
-        return Community.search_communities_with_query(query)
+        return Community.search_communities_with_query_for_user(query=query, user=self,
+                                                                excluded_from_profile_posts=excluded_from_profile_posts)
 
     def get_community_with_name(self, community_name):
         check_can_get_community_with_name(user=self, community_name=community_name)
         Community = get_community_model()
         return Community.get_community_with_name_for_user_with_id(community_name=community_name, user_id=self.pk)
 
-    def get_joined_communities(self):
+    def get_joined_communities(self, excluded_from_profile_posts):
         Community = get_community_model()
-        return Community.objects.filter(memberships__user=self)
+        return Community.get_joined_communities_for_user(
+            excluded_from_profile_posts=excluded_from_profile_posts,
+            user=self
+        )
 
     def get_subscribed_communities(self):
         Community = get_community_model()
@@ -2006,13 +2031,13 @@ class User(AbstractUser):
         Community = get_community_model()
         return Community.get_new_user_suggested_communities()
 
-    def search_joined_communities_with_query(self, query):
-        joined_communities_query = Q(memberships__user=self)
-        joined_communities_name_query = Q(name__icontains=query)
-        joined_communities_name_query.add(Q(title__icontains=query), Q.OR)
-        joined_communities_query.add(joined_communities_name_query, Q.AND)
+    def search_joined_communities_with_query(self, query, excluded_from_profile_posts):
         Community = get_community_model()
-        return Community.objects.filter(joined_communities_query)
+        return Community.search_joined_communities_with_query_for_user(
+            query=query,
+            user=self,
+            excluded_from_profile_posts=excluded_from_profile_posts,
+        )
 
     def get_favorite_communities(self):
         return self.favorite_communities.all()
@@ -2279,6 +2304,10 @@ class User(AbstractUser):
 
         posts_query.add(exclude_reported_and_approved_posts_query, Q.AND)
 
+        exclude_excluded_communitities_posts_query = ~Q(community__profile_posts_community_exclusions__user_id=self.pk)
+
+        posts_query.add(exclude_excluded_communitities_posts_query, Q.AND)
+
         if not self.has_profile_community_posts_visible():
             posts_query.add(Q(community__isnull=True), Q.AND)
 
@@ -2295,7 +2324,7 @@ class User(AbstractUser):
 
     def get_posts_for_user(self, user, max_id=None, min_id=None):
         posts_prefetch_related = (
-        'circles', 'creator', 'creator__profile__badges', 'hashtags', 'community')
+            'circles', 'creator', 'creator__profile__badges', 'hashtags', 'community')
 
         posts_only = ('text', 'id', 'uuid', 'created',
                       'creator__username', 'creator__id', 'creator__profile__name',
@@ -2316,8 +2345,13 @@ class User(AbstractUser):
             max_id=max_id,
         )
 
+    def exclude_community_with_name_from_top_posts(self, community_name):
+        Community = get_community_model()
+        community_to_exclude = Community.objects.get(name=community_name)
+        self.exclude_community_from_top_posts(community_to_exclude)
+
     def exclude_community_from_top_posts(self, community):
-        check_can_exclude_community(user=self, community=community)
+        check_can_exclude_community_from_top_posts(user=self, community=community)
 
         TopPostCommunityExclusion = get_top_post_community_exclusion_model()
         top_post_community_exclusion = TopPostCommunityExclusion(
@@ -2326,21 +2360,42 @@ class User(AbstractUser):
         )
         self.top_posts_community_exclusions.add(top_post_community_exclusion, bulk=False)
 
-    def exclude_community_with_name_from_top_posts(self, community_name):
-        Community = get_community_model()
-        community_to_exclude = Community.objects.get(name=community_name)
-        self.exclude_community_from_top_posts(community_to_exclude)
-
-    def remove_exclusion_for_community_from_top_posts(self, community):
-        check_can_remove_exclusion_for_community(user=self, community=community)
-
-        TopPostCommunityExclusion = get_top_post_community_exclusion_model()
-        TopPostCommunityExclusion.objects.get(user=self, community=community).delete()
-
     def remove_exclusion_for_community_with_name_from_top_posts(self, community_name):
         Community = get_community_model()
         community = Community.objects.get(name=community_name)
         self.remove_exclusion_for_community_from_top_posts(community)
+
+    def remove_exclusion_for_community_from_top_posts(self, community):
+        check_can_remove_top_posts_exclusion_for_community(user=self, community=community)
+
+        TopPostCommunityExclusion = get_top_post_community_exclusion_model()
+        TopPostCommunityExclusion.objects.get(user=self, community=community).delete()
+
+    def exclude_community_with_name_from_profile_posts(self, community_name):
+        Community = get_community_model()
+        community_to_exclude = Community.objects.get(name=community_name)
+        self.exclude_community_from_profile_posts(community_to_exclude)
+
+    def exclude_community_from_profile_posts(self, community):
+        check_can_exclude_community_from_profile_posts(user=self, community=community)
+
+        ProfilePostsCommunityExclusion = get_profile_posts_community_exclusion_model()
+        profile_posts_community_exclusion = ProfilePostsCommunityExclusion(
+            user=self,
+            community=community
+        )
+        self.profile_posts_community_exclusions.add(profile_posts_community_exclusion, bulk=False)
+
+    def remove_exclusion_for_community_with_name_from_profile_posts(self, community_name):
+        Community = get_community_model()
+        community = Community.objects.get(name=community_name)
+        self.remove_exclusion_for_community_from_profile_posts(community)
+
+    def remove_exclusion_for_community_from_profile_posts(self, community):
+        check_can_remove_profile_posts_exclusion_for_community(user=self, community=community)
+
+        ProfilePostsCommunityExclusion = get_profile_posts_community_exclusion_model()
+        ProfilePostsCommunityExclusion.objects.get(user=self, community=community).delete()
 
     def get_top_posts(self, max_id=None, min_id=None, exclude_joined_communities=False):
         """
@@ -2364,7 +2419,7 @@ class User(AbstractUser):
                       'post__community__color', 'post__community__title')
 
         reported_posts_exclusion_query = ~Q(post__moderated_object__reports__reporter_id=self.pk)
-        excluded_communities_query = ~Q(post__community__top_posts_community_exclusions__user=self.pk)
+        excluded_top_posts_communities_query = ~Q(post__community__top_posts_community_exclusions__user=self.pk)
 
         top_community_posts_query = Q(post__is_closed=False,
                                       post__is_deleted=False,
@@ -2389,7 +2444,7 @@ class User(AbstractUser):
             top_community_posts_query.add(exclude_joined_communities_query, Q.AND)
 
         top_community_posts_query.add(reported_posts_exclusion_query, Q.AND)
-        top_community_posts_query.add(excluded_communities_query, Q.AND)
+        top_community_posts_query.add(excluded_top_posts_communities_query, Q.AND)
 
         top_community_posts_queryset = TopPost.objects.select_related(*posts_select_related).prefetch_related(
             *posts_prefetch_related).only(*posts_only).filter(top_community_posts_query)

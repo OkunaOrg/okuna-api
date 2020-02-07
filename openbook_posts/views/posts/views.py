@@ -1,17 +1,21 @@
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.utils.translation import ugettext_lazy as _
 
+from openbook_common.responses import ApiMessageResponse
+from openbook_common.serializers import CommonSearchCommunitiesSerializer, CommonSearchCommunitiesCommunitySerializer, \
+    CommonCommunityNameSerializer
 from openbook_moderation.permissions import IsNotSuspended
-from openbook_common.utils.helpers import normalize_list_value_in_request_data
+from openbook_common.utils.helpers import normalize_list_value_in_request_data, normalise_request_data
 from openbook_posts.permissions import IsGetOrIsAuthenticated
 from openbook_posts.views.posts.serializers import AuthenticatedUserPostSerializer, \
     GetPostsSerializer, UnauthenticatedUserPostSerializer, CreatePostSerializer, GetTopPostsSerializer, \
-    AuthenticatedUserTopPostSerializer, GetTrendingPostsSerializer, AuthenticatedUserTrendingPostSerializer
+    AuthenticatedUserTopPostSerializer, GetTrendingPostsSerializer, AuthenticatedUserTrendingPostSerializer, \
+    GetProfilePostsCommunityExclusionSerializer, GetTopPostsCommunityExclusionSerializer
 
 
 class Posts(APIView):
@@ -35,7 +39,8 @@ class Posts(APIView):
 
         with transaction.atomic():
             if circles_ids:
-                post = user.create_encircled_post(text=text, circles_ids=circles_ids, image=image, video=video, is_draft=is_draft)
+                post = user.create_encircled_post(text=text, circles_ids=circles_ids, image=image, video=video,
+                                                  is_draft=is_draft)
             else:
                 post = user.create_public_post(text=text, image=image, video=video, is_draft=is_draft)
 
@@ -136,7 +141,8 @@ class TrendingPostsNew(APIView):
         user = request.user
 
         trending_posts = user.get_trending_posts(max_id=max_id, min_id=min_id).order_by('-id')[:count]
-        posts_serializer = AuthenticatedUserTrendingPostSerializer(trending_posts, many=True, context={"request": request})
+        posts_serializer = AuthenticatedUserTrendingPostSerializer(trending_posts, many=True,
+                                                                   context={"request": request})
         return Response(posts_serializer.data, status=status.HTTP_200_OK)
 
 
@@ -161,3 +167,167 @@ class TopPosts(APIView):
                                        exclude_joined_communities=exclude_joined_communities).order_by('-id')[:count]
         posts_serializer = AuthenticatedUserTopPostSerializer(top_posts, many=True, context={"request": request})
         return Response(posts_serializer.data, status=status.HTTP_200_OK)
+
+
+class TopPostsExcludedCommunities(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        query_params = request.query_params.dict()
+        serializer = GetTopPostsCommunityExclusionSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 10)
+        offset = data.get('offset', 0)
+
+        user = request.user
+        exclusions = user.get_top_posts_community_exclusions()[offset:offset + count]
+
+        communities = [exclusion.community for exclusion in exclusions]
+
+        communities_serializer = CommonSearchCommunitiesCommunitySerializer(communities, many=True,
+                                                                            context={'request': request})
+
+        return Response(communities_serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request):
+        serializer = CommonCommunityNameSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        community_name = data.get('community_name')
+
+        user = request.user
+
+        with transaction.atomic():
+            user.exclude_community_with_name_from_top_posts(community_name)
+
+        return ApiMessageResponse(_('Community excluded from this feed'), status=status.HTTP_202_ACCEPTED)
+
+
+class SearchTopPostsExcludedCommunities(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        query_params = request.query_params.dict()
+        serializer = CommonSearchCommunitiesSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 20)
+        query = data.get('query')
+
+        user = request.user
+
+        exclusions = user.search_top_posts_excluded_communities_with_query(query=query)[:count]
+
+        communities = [exclusion.community for exclusion in exclusions]
+
+        response_serializer = CommonSearchCommunitiesCommunitySerializer(communities, many=True,
+                                                                         context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class TopPostsExcludedCommunity(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def delete(self, request, community_name):
+        request_data = normalise_request_data(request.data)
+        request_data['community_name'] = community_name
+
+        serializer = CommonCommunityNameSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+
+        with transaction.atomic():
+            user.remove_exclusion_for_community_with_name_from_top_posts(community_name)
+
+        return ApiMessageResponse(_('Community exclusion removed'), status=status.HTTP_202_ACCEPTED)
+
+
+class ProfilePostsExcludedCommunities(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        query_params = request.query_params.dict()
+        serializer = GetProfilePostsCommunityExclusionSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 10)
+        offset = data.get('offset', 0)
+
+        user = request.user
+        exclusions = user.get_profile_posts_community_exclusions()[offset:offset + count]
+
+        communities = [exclusion.community for exclusion in exclusions]
+
+        communities_serializer = CommonSearchCommunitiesCommunitySerializer(communities, many=True,
+                                                                            context={'request': request})
+
+        return Response(communities_serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request):
+        serializer = CommonCommunityNameSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        community_name = data.get('community_name')
+
+        user = request.user
+
+        with transaction.atomic():
+            user.exclude_community_with_name_from_profile_posts(community_name)
+
+        return ApiMessageResponse(_('Community excluded from this feed'), status=status.HTTP_202_ACCEPTED)
+
+
+class ProfilePostsExcludedCommunity(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def delete(self, request, community_name):
+        request_data = normalise_request_data(request.data)
+        request_data['community_name'] = community_name
+
+        serializer = CommonCommunityNameSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+
+        with transaction.atomic():
+            user.remove_exclusion_for_community_with_name_from_profile_posts(community_name)
+
+        return ApiMessageResponse(_('Community exclusion removed'), status=status.HTTP_202_ACCEPTED)
+
+
+class SearchProfilePostsExcludedCommunities(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        query_params = request.query_params.dict()
+        serializer = CommonSearchCommunitiesSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+
+        count = data.get('count', 20)
+        query = data.get('query')
+
+        user = request.user
+
+        exclusions = user.search_profile_posts_excluded_communities_with_query(query=query)[:count]
+
+        communities = [exclusion.community for exclusion in exclusions]
+
+        communities_serializer = CommonSearchCommunitiesCommunitySerializer(communities, many=True,
+                                                                            context={"request": request})
+
+        return Response(communities_serializer.data, status=status.HTTP_200_OK)

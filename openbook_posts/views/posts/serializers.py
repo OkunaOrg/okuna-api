@@ -311,3 +311,23 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
             'media_width',
             'media_thumbnail',
         )
+
+
+class GetTopPostsCommunityExclusionSerializer(serializers.Serializer):
+    offset = serializers.IntegerField(
+        required=False,
+    )
+    count = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
+
+
+class GetProfilePostsCommunityExclusionSerializer(serializers.Serializer):
+    offset = serializers.IntegerField(
+        required=False,
+    )
+    count = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
