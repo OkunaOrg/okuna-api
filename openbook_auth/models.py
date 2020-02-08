@@ -36,7 +36,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
     get_moderation_penalty_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
     get_post_comment_reaction_notification_model, get_top_post_model, get_top_post_community_exclusion_model, \
-    get_hashtag_model, get_profile_posts_community_exclusion_model
+    get_hashtag_model, get_profile_posts_community_exclusion_model, get_user_new_post_notification_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications import helpers
 from openbook_auth.checkers import *
@@ -392,6 +392,7 @@ class User(AbstractUser):
         for community in self.created_communities.all().iterator():
             community.soft_delete()
 
+        self.delete_all_notifications()
         self.is_deleted = True
         self.save()
 
@@ -2180,6 +2181,8 @@ class User(AbstractUser):
         check_can_close_post(user=self, post=post)
         post.community.create_close_post_log(source_user=self, target_user=post.creator, post=post)
         post.is_closed = True
+        excluded_users = self._get_excluded_users_for_deleting_community_notifications_on_close_post(post)
+        post.delete_notifications_except_for_users(excluded_users)
         post.save()
 
         return post
@@ -2878,8 +2881,33 @@ class User(AbstractUser):
         notification = self.notifications.get(id=notification_id)
         notification.delete()
 
-    def delete_notifications(self):
+    def delete_own_notifications(self):
         self.notifications.all().delete()
+
+    def delete_outgoing_notifications(self):
+        """
+        Deletes notifications sent to other users about this user
+        Eg. UserNewPostNotification
+        """
+        # Remove all user new post notifications
+        UserNewPostNotification = get_user_new_post_notification_model()
+        UserNewPostNotification.objects.filter(user_notifications_subscription__user=self).delete()
+
+        # Removes all user connection requests
+        ConnectionRequestNotification = get_connection_request_notification_model()
+        ConnectionRequestNotification.objects.filter(connection_requester=self).delete()
+
+        # Removes all follow notifications
+        FollowNotification = get_follow_notification_model()
+        FollowNotification.objects.filter(follower=self).delete()
+
+        # Removes all connection confirmed notifications
+        ConnectionConfirmedNotification = get_connection_confirmed_notification_model()
+        ConnectionConfirmedNotification.objects.filter(connection_confirmator=self).delete()
+
+    def delete_all_notifications(self):
+        self.delete_own_notifications()
+        self.delete_outgoing_notifications()
 
     def create_device(self, uuid, name=None):
         check_device_with_uuid_does_not_exist(user=self, device_uuid=uuid)
@@ -3628,6 +3656,12 @@ class User(AbstractUser):
                 community_posts_query.add(Q(is_closed=False), Q.AND)
 
         return community_posts_query
+
+    def _get_excluded_users_for_deleting_community_notifications_on_close_post(self, post):
+        excluded_users = post.community.get_staff_members()
+        User = get_user_model()
+        creator = User.objects.filter(pk=post.creator.pk)
+        return excluded_users.union(creator)
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL, dispatch_uid='bootstrap_auth_token')

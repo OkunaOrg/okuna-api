@@ -41,7 +41,7 @@ class Notifications(APIView):
         user = request.user
 
         with transaction.atomic():
-            user.delete_notifications()
+            user.delete_own_notifications()
 
         return Response(status=status.HTTP_200_OK)
 
