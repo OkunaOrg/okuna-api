@@ -249,29 +249,6 @@ class CommunityAPITests(OpenbookAPITestCase):
 
         self.assertEqual(community.type, new_community_type)
 
-    def test_cannot_update_private_community_type(self):
-        """
-        should NOT be able to update a private community type to public
-        """
-        user = make_user()
-        headers = make_authentication_headers_for_user(user)
-
-        community = make_community(creator=user, type='T')
-        new_community_type = 'P'
-
-        data = {
-            'type': new_community_type
-        }
-
-        url = self._get_url(community_name=community.name)
-
-        response = self.client.patch(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        community.refresh_from_db()
-
-        self.assertEqual(community.type, 'T')
-
     def test_can_update_administrated_community_title(self):
         """
         should be able to update an administrated community title
