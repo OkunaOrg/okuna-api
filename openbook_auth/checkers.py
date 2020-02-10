@@ -123,7 +123,7 @@ def check_community_data(user, community, name=None, cover=None, avatar=None, ty
 
 def check_community_type_can_be_updated(type, community):
     Community = get_community_model()
-    if type == Community.COMMUNITY_TYPE_PUBLIC and community.is_private:
+    if type == Community.COMMUNITY_TYPE_PUBLIC and community.is_private():
         raise ValidationError(
             _('A community cannot be changed from private to public'),
         )
