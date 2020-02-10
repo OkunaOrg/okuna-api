@@ -419,6 +419,31 @@ class CommunityAPITests(OpenbookAPITestCase):
 
         self.assertEqual(community.description, new_community_description)
 
+    def test_can_update_administrated_community_description_with_type_unchanged(self):
+        """
+        should be able to update an administrated community description with the same type
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        community = make_community(creator=user)
+        new_community_description = make_community_description()
+
+        data = {
+            'description': new_community_description,
+            'type': 'P'
+        }
+
+        url = self._get_url(community_name=community.name)
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        community.refresh_from_db()
+
+        self.assertEqual(community.description, new_community_description)
+
     def test_can_update_administrated_community_rules(self):
         """
         should be able to update an administrated community rules
