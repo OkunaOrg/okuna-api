@@ -177,6 +177,8 @@ REDIS_DEFAULT_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': 
 REDIS_RQ_DEFAULT_JOBS_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 1}
 REDIS_RQ_HIGH_JOBS_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 2}
 REDIS_RQ_LOW_JOBS_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 3}
+REDIS_COMMUNITY_ACTIVITY_SCORES_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {
+    'redis_location': REDIS_LOCATION, 'db': 4}
 
 CACHES = {
     'default': {
@@ -210,6 +212,14 @@ CACHES = {
             "CLIENT_CLASS": "django_redis.client.DefaultClient"
         },
         "KEY_PREFIX": "ob-api-rq-low-job-"
+    },
+    'community-activity-scores': {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_COMMUNITY_ACTIVITY_SCORES_CACHE_LOCATION,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient"
+        },
+        "KEY_PREFIX": "ob-api-cmmnty-actvty-scres-"
     },
 }
 
