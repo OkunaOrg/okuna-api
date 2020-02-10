@@ -3726,6 +3726,7 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
 
         headers = make_authentication_headers_for_user(user)
+        headers = self._add_version_header(headers)
 
         curate_trending_posts()
 
@@ -3762,6 +3763,7 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
                                                                         community_name=community.name)
 
         headers = make_authentication_headers_for_user(user)
+        headers = self._add_version_header(headers)
 
         curate_trending_posts()
 
@@ -3799,6 +3801,7 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
 
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
+        headers = self._add_version_header(headers)
 
         response = self.client.get(url, **headers)
 
@@ -3832,6 +3835,7 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
 
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
+        headers = self._add_version_header(headers)
 
         response = self.client.get(url, **headers)
 
@@ -3866,6 +3870,7 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
 
         url = self._get_url()
         headers = make_authentication_headers_for_user(user)
+        headers = self._add_version_header(headers)
 
         response = self.client.get(url, **headers)
 
@@ -3900,6 +3905,7 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         curate_trending_posts()
 
         headers = make_authentication_headers_for_user(user)
+        headers = self._add_version_header(headers)
 
         url = self._get_url()
 
@@ -3933,6 +3939,7 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         curate_trending_posts()
 
         headers = make_authentication_headers_for_user(user)
+        headers = self._add_version_header(headers)
 
         url = self._get_url()
 
@@ -3947,8 +3954,12 @@ class TrendingPostsAPITests(OpenbookAPITestCase):
         self.assertEqual(0, len(trending_posts))
         self.assertFalse(TrendingPost.objects.filter(post__id=post.pk).exists())
 
+    def _add_version_header(self, headers):
+        headers['HTTP_ACCEPT'] = 'application/json; version=2.0'
+        return headers
+
     def _get_url(self):
-        return reverse('trending-posts-new')
+        return reverse('trending-posts')
 
 
 class TrendingPostsTransactionAPITests(OpenbookAPITransactionTestCase):
@@ -3967,6 +3978,7 @@ class TrendingPostsTransactionAPITests(OpenbookAPITransactionTestCase):
         post = user.create_community_post(community_name=community.name, text=make_fake_post_text())
 
         headers = make_authentication_headers_for_user(user)
+        headers = self._add_version_header(headers)
 
         emoji_group = make_reactions_emoji_group()
         emoji = make_emoji(group=emoji_group)
@@ -4006,6 +4018,7 @@ class TrendingPostsTransactionAPITests(OpenbookAPITransactionTestCase):
         post_two.save()
 
         headers = make_authentication_headers_for_user(user)
+        headers = self._add_version_header(headers)
 
         emoji_group = make_reactions_emoji_group()
         emoji = make_emoji(group=emoji_group)
@@ -4059,6 +4072,7 @@ class TrendingPostsTransactionAPITests(OpenbookAPITransactionTestCase):
         post_two.save()
 
         headers = make_authentication_headers_for_user(user)
+        headers = self._add_version_header(headers)
 
         url = self._get_url()
 
@@ -4103,6 +4117,7 @@ class TrendingPostsTransactionAPITests(OpenbookAPITransactionTestCase):
         curate_trending_posts()
 
         headers = make_authentication_headers_for_user(user)
+        headers = self._add_version_header(headers)
 
         url = self._get_url()
 
@@ -4152,6 +4167,7 @@ class TrendingPostsTransactionAPITests(OpenbookAPITransactionTestCase):
         user.approve_moderated_object(moderated_object=moderated_object)
 
         headers = make_authentication_headers_for_user(user)
+        headers = self._add_version_header(headers)
 
         url = self._get_url()
 
@@ -4186,6 +4202,7 @@ class TrendingPostsTransactionAPITests(OpenbookAPITransactionTestCase):
         community.save()
 
         headers = make_authentication_headers_for_user(user)
+        headers = self._add_version_header(headers)
 
         url = self._get_url()
 
@@ -4200,8 +4217,12 @@ class TrendingPostsTransactionAPITests(OpenbookAPITransactionTestCase):
         self.assertEqual(1, len(trending_posts))
         self.assertTrue(TrendingPost.objects.filter(post__id=post.pk).exists())
 
+    def _add_version_header(self, headers):
+        headers['HTTP_ACCEPT'] = 'application/json; version=2.0'
+        return headers
+
     def _get_url(self):
-        return reverse('trending-posts-new')
+        return reverse('trending-posts')
 
 
 class TopPostsAPITests(OpenbookAPITestCase):

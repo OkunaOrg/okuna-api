@@ -87,8 +87,8 @@ class Post(models.Model):
         (STATUS_PUBLISHED, 'Published'),
     )
     ACTIVITY_UNIQUE_REACTION_WEIGHT = 0.001
-    ACTIVITY_UNIQUE_COMMENT_WEIGHT = 0.002
-    ACTIVITY_COUNT_COMMENTS_WEIGHT = 0.0001
+    ACTIVITY_UNIQUE_COMMENT_WEIGHT = 0.001
+    ACTIVITY_COUNT_COMMENTS_WEIGHT = 0.001
 
     status = models.CharField(blank=False, null=False, choices=STATUSES, default=STATUS_DRAFT, max_length=2)
     media_height = models.PositiveSmallIntegerField(_('media height'), null=True)
