@@ -15,6 +15,7 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Count
 from django.db import transaction
+import django_rq
 import ffmpy
 
 # Create your views here.
@@ -86,10 +87,6 @@ class Post(models.Model):
         (STATUS_PROCESSING, 'Processing'),
         (STATUS_PUBLISHED, 'Published'),
     )
-    ACTIVITY_UNIQUE_REACTION_WEIGHT = 0.001
-    ACTIVITY_UNIQUE_COMMENT_WEIGHT = 0.001
-    ACTIVITY_COUNT_COMMENTS_WEIGHT = 0.001
-
     status = models.CharField(blank=False, null=False, choices=STATUSES, default=STATUS_DRAFT, max_length=2)
     media_height = models.PositiveSmallIntegerField(_('media height'), null=True)
     media_width = models.PositiveSmallIntegerField(_('media width'), null=True)
@@ -882,10 +879,11 @@ class PostComment(models.Model):
         post_comment = PostComment.objects.create(text=text, commenter=commenter, post=post,
                                                   parent_comment=parent_comment)
         post_comment.language = get_language_for_text(text)
-        if parent_comment is None:
-            transaction.on_commit(lambda: process_activity_score_post_comment(post_id=post.pk,
-                                                                              post_comment_id=post_comment.pk,
-                                                                              post_commenter_id=commenter.pk))
+        queue = django_rq.get_queue('default')
+        transaction.on_commit(lambda: queue.enqueue(process_activity_score_post_comment,
+                                                    post_id=post.pk,
+                                                    post_comment_id=post_comment.pk,
+                                                    post_commenter_id=commenter.pk))
         post_comment.save()
         return post_comment
 
@@ -1038,15 +1036,21 @@ class PostComment(models.Model):
         self.is_deleted = True
         self.delete_notifications()
         self.save()
-        transaction.on_commit(lambda: process_activity_score_post_comment(post_id=self.post.pk,
-                                                                          post_comment_id=self.pk,
-                                                                          post_commenter_id=self.commenter.pk))
+        queue = django_rq.get_queue('default')
+        transaction.on_commit(lambda: queue.enqueue(process_activity_score_post_comment,
+                                                    post_id=self.post.pk,
+                                                    post_comment_id=self.pk,
+                                                    post_commenter_id=self.commenter.pk))
 
     def delete(self, *args, **kwargs):
         if not self.is_deleted:
-            transaction.on_commit(lambda: process_activity_score_post_comment(post_id=self.post.pk,
-                                                                              post_comment_id=self.pk,
-                                                                              post_commenter_id=self.commenter.pk))
+            comment_id = self.pk
+            commenter_id = self.commenter.pk
+            queue = django_rq.get_queue('default')
+            transaction.on_commit(lambda: queue.enqueue(process_activity_score_post_comment,
+                                                        post_id=self.post.pk,
+                                                        post_comment_id=comment_id,
+                                                        post_commenter_id=commenter_id))
 
         super(PostComment, self).delete(*args, **kwargs)
 
@@ -1083,8 +1087,10 @@ class PostReaction(models.Model):
     @classmethod
     def create_reaction(cls, reactor, emoji_id, post):
         post_reaction = PostReaction.objects.create(reactor=reactor, emoji_id=emoji_id, post=post)
-        transaction.on_commit(lambda: process_activity_score_post_reaction(post_id=post_reaction.post.pk,
-                                                                           post_reaction_id=post_reaction.pk))
+        queue = django_rq.get_queue('default')
+        transaction.on_commit(lambda: queue.enqueue(process_activity_score_post_reaction,
+                                                    post_id=post_reaction.post.pk,
+                                                    post_reaction_id=post_reaction.pk))
 
         return post_reaction
 
@@ -1098,8 +1104,12 @@ class PostReaction(models.Model):
         return cls.objects.filter(count_query).count()
 
     def delete(self, *args, **kwargs):
-        transaction.on_commit(lambda: process_activity_score_post_reaction(post_id=self.post.pk,
-                                                                           post_reaction_id=self.pk))
+        reaction_id = self.pk
+        post_id = self.post.pk
+        queue = django_rq.get_queue('default')
+        transaction.on_commit(lambda: queue.enqueue(process_activity_score_post_reaction,
+                                                    post_id=post_id,
+                                                    post_reaction_id=reaction_id))
 
         super(PostReaction, self).delete(*args, **kwargs)
 
