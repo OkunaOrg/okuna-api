@@ -35,7 +35,7 @@ from openbook_hashtags.models import Hashtag
 from openbook_lists.models import List
 from openbook_moderation.models import ModeratedObject
 from openbook_notifications.models import PostUserMentionNotification, Notification, UserNewPostNotification
-from openbook_posts.jobs import curate_top_posts, curate_trending_posts, process_activity_score_post_reaction
+from openbook_posts.jobs import curate_top_posts, curate_trending_posts
 from openbook_posts.models import Post, PostUserMention, PostMedia, TopPost, TrendingPost
 
 logger = logging.getLogger(__name__)
