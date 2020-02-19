@@ -100,6 +100,10 @@ def process_activity_score_post_reaction(post_id, post_reaction_id):
     Post = get_post_model()
     PostReaction = get_post_reaction_model()
     Community = get_community_model()
+    if not Post.objects.filter(pk=post_id).exists():
+        # if post was deleted, return
+        return
+
     post = Post.objects.get(pk=post_id)
     # redis_cache = caches['community-activity-scores']
     logger.info('Processing activity score for reaction of post with id: %d' % post_id)
@@ -247,16 +251,20 @@ def process_activity_score_post_comment(post_id, post_comment_id, post_commenter
     """
     delete_comment_job_id = 'process_delete_comment_pid_{0}_cid_{1}'.format(post_id, post_comment_id)
     default_queue = get_queue('default')
-    job = default_queue.fetch_job(delete_comment_job_id)
+    delete_job = default_queue.fetch_job(delete_comment_job_id)
 
-    if job is not None and job.is_queued:
+    if delete_job is not None and delete_job.is_queued:
         # remove job is also queued, jobs cancel each other, return
-        job.cancel()
+        delete_job.cancel()
         return
 
     Post = get_post_model()
     PostComment = get_post_comment_model()
     Community = get_community_model()
+    if not Post.objects.filter(pk=post_id).exists():
+        # if post was deleted, return
+        return
+
     post = Post.objects.get(pk=post_id)
     # redis_cache = caches['community-activity-scores']
     logger.info('Processing activity score for comment of post with id: %d' % post_id)
@@ -310,26 +318,28 @@ def process_activity_score_post_comment(post_id, post_comment_id, post_commenter
 def _process_community_activity_score_post_added(post, total_posts_by_creator):
     default_scheduler = get_scheduler('default')
     expire_datetime = timezone.now() + timedelta(hours=settings.ACTIVITY_SCORE_EXPIRY_IN_HOURS)
-    unique_comment_job_id = 'expire_community_{0}_pid_{1}_uid_{2}_unique_post'.format(
+    unique_post_job_id = 'expire_community_{0}_uid_{1}_unique_post'.format(
         post.community.pk,
-        post.pk,
         post.creator.pk)
 
-    if total_posts_by_creator > 1:
+    if unique_post_job_id in default_scheduler:
         post.community.activity_score = F('activity_score') + settings.ACTIVITY_COUNT_POSTS_WEIGHT
     else:
         post.community.activity_score = F('activity_score') + \
                                     settings.ACTIVITY_UNIQUE_POST_WEIGHT + \
                                     settings.ACTIVITY_COUNT_POSTS_WEIGHT
 
+    post.community.save()
+    if unique_post_job_id in default_scheduler:
+        default_scheduler.cancel(unique_post_job_id)
+
     # schedule reduction of activity scores
     default_scheduler.enqueue_at(expire_datetime, _reduce_atomic_community_activity_score, post.community.pk,
-                                 job_id=unique_comment_job_id)
+                                 job_id=unique_post_job_id)
     default_scheduler.enqueue_at(expire_datetime, _reduce_atomic_community_activity_score, post.community.pk,
                                  job_id='expire_community_{0}_pid_{1}'.format(
                                      post.community.pk, post.pk)
                                  )
-    post.community.save()
 
 
 def _process_community_activity_score_post_deleted(post_id, post_creator_id,
@@ -337,19 +347,19 @@ def _process_community_activity_score_post_deleted(post_id, post_creator_id,
 
     default_scheduler = get_scheduler('default')
     job_id = 'expire_community_{0}_pid_{1}'.format(post_community_id, post_id)
-    unique_post_job_id = 'expire_community_{0}_pid_{1}_uid_{2}_unique_post'.format(post_community_id,
-                                                                                   post_id,
-                                                                                   post_creator_id)
+    unique_post_job_id = 'expire_community_{0}_uid_{1}_unique_post'.format(post_community_id,
+                                                                           post_creator_id)
 
     Community = get_community_model()
     community = Community.objects.get(id=post_community_id)
     if job_id in default_scheduler:
+        default_scheduler.cancel(job_id)
         community.activity_score = F('activity_score') - settings.ACTIVITY_COUNT_POSTS_WEIGHT
         community.save()
 
     if total_posts_by_creator == 0 and unique_post_job_id in default_scheduler:
-        community.activity_score = F('activity_score') - \
-                                    settings.ACTIVITY_UNIQUE_POST_WEIGHT
+        community.activity_score = F('activity_score') - settings.ACTIVITY_UNIQUE_POST_WEIGHT
+        default_scheduler.cancel(unique_post_job_id)
         community.save()
 
 
@@ -359,20 +369,23 @@ def process_community_activity_score_post(post_id, post_creator_id, post_communi
     """
     logger.info('Processing community activity score for create/delete post with id: %d' % post_id)
 
-    # check if delete job is not already scheduled,
-
     delete_post_job_id = 'process_delete_community_post_community_{0}_pid_{1}_uid_{2}'.format(post_community_id,
                                                                                               post_id,
                                                                                               post_creator_id)
     default_queue = get_queue('default')
-    job = default_queue.fetch_job(delete_post_job_id)
+    delete_post_job = default_queue.fetch_job(delete_post_job_id)
 
-    if job is not None and job.is_queued:
-        # remove job is also queued, jobs cancel each other, return
-        job.cancel()
+    if delete_post_job is not None and delete_post_job.is_queued:
+        # delete post job is also queued, jobs cancel each other, return
+        delete_post_job.cancel()
         return
 
     Post = get_post_model()
+    Community = get_community_model()
+    if not Community.objects.filter(id=post_community_id).exists():
+        # if community was deleted, return
+        return
+
     creator_posts_query = Q(created__gte=timezone.now() - timedelta(hours=settings.ACTIVITY_SCORE_EXPIRY_IN_HOURS))
     creator_posts_query.add(Q(creator_id=post_creator_id, community_id=post_community_id), Q.AND)
 
@@ -388,9 +401,6 @@ def process_community_activity_score_post(post_id, post_creator_id, post_communi
                                                        post_creator_id,
                                                        post_community_id,
                                                        total_posts_by_creator)
-
-
-
     logger.info('Processed community activity score for create/delete post with id: %d' % post_id)
 
 
