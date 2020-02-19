@@ -253,7 +253,7 @@ def process_activity_score_post_comment(post_id, post_comment_id, post_commenter
     default_queue = get_queue('default')
     delete_job = default_queue.fetch_job(delete_comment_job_id)
 
-    if delete_job is not None and delete_job.is_queued:
+    if delete_comment_job_id in default_queue.job_ids:
         # remove job is also queued, jobs cancel each other, return
         delete_job.cancel()
         return
