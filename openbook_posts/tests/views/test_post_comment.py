@@ -1,5 +1,5 @@
 from django.urls import reverse
-from django_rq import get_worker
+from django_rq import get_worker, get_scheduler
 from django.conf import settings
 from faker import Faker
 from rest_framework import status
@@ -2189,6 +2189,7 @@ class PostCommentItemTransactionAPITests(OpenbookAPITransactionTestCase):
         post.refresh_from_db()
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self._clear_jobs_in_scheduler()
         self.assertEqual(post.activity_score, 0.0)
 
     def test_delete_comment_in_community_post_reduces_community_activity_score(self):
@@ -2199,6 +2200,10 @@ class PostCommentItemTransactionAPITests(OpenbookAPITransactionTestCase):
         community = make_community(creator=user)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
 
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+        activity_score_before_delete = community.activity_score
+
         post_comment = user.comment_post_with_id(post.pk, text=make_fake_post_comment_text())
 
         url = self._get_url(post_comment=post_comment, post=post)
@@ -2207,8 +2212,9 @@ class PostCommentItemTransactionAPITests(OpenbookAPITransactionTestCase):
         response = self.client.delete(url, **headers)
 
         get_worker('default', worker_class=SimpleWorker).work(burst=True)
-
         community.refresh_from_db()
+        self._clear_jobs_in_scheduler()
+        self.assertEqual(community.activity_score, activity_score_before_delete)
 
     def test_delete_comment_in_community_post_one_by_one_reduces_community_activity_score_correctly(self):
         """
@@ -2223,14 +2229,10 @@ class PostCommentItemTransactionAPITests(OpenbookAPITransactionTestCase):
         post_comment_2 = user.comment_post_with_id(post.pk, text=make_fake_post_comment_text())
 
         get_worker('default', worker_class=SimpleWorker).work(burst=True)
-
         community.refresh_from_db()
+        activity_score_before_delete = community.activity_score
 
-        # assert activity score is updated
-        expected_comment_weight = settings.ACTIVITY_UNIQUE_COMMENT_WEIGHT + (2 * settings.ACTIVITY_COUNT_COMMENTS_WEIGHT)
-        self.assertEqual(community.activity_score, expected_comment_weight)
-
-        # delete comment one
+        # delete comment onegit s
         url = self._get_url(post_comment=post_comment_1, post=post)
         headers = make_authentication_headers_for_user(user)
         response = self.client.delete(url, **headers)
@@ -2238,7 +2240,7 @@ class PostCommentItemTransactionAPITests(OpenbookAPITransactionTestCase):
         get_worker('default', worker_class=SimpleWorker).work(burst=True)
         community.refresh_from_db()
 
-        expected_activity_score_1 = expected_comment_weight - settings.ACTIVITY_COUNT_COMMENTS_WEIGHT
+        expected_activity_score_1 = activity_score_before_delete - settings.ACTIVITY_COUNT_COMMENTS_WEIGHT
         self.assertEqual(community.activity_score, expected_activity_score_1)
 
         # delete comment two
@@ -2248,8 +2250,17 @@ class PostCommentItemTransactionAPITests(OpenbookAPITransactionTestCase):
 
         get_worker('default', worker_class=SimpleWorker).work(burst=True)
         community.refresh_from_db()
+        expected_activity_score_2 = expected_activity_score_1 - \
+                                    settings.ACTIVITY_COUNT_COMMENTS_WEIGHT - \
+                                    settings.ACTIVITY_UNIQUE_COMMENT_WEIGHT
 
-        self.assertEqual(community.activity_score, 0.0)
+        self._clear_jobs_in_scheduler()
+        self.assertEqual(community.activity_score, expected_activity_score_2)
+
+    def _clear_jobs_in_scheduler(self):
+        default_scheduler = get_scheduler('default')
+        for job in default_scheduler.get_jobs():
+            default_scheduler.cancel(job.get_id())
 
     def _get_url(self, post, post_comment):
         return reverse('post-comment', kwargs={

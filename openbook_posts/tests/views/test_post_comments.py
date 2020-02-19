@@ -1,7 +1,7 @@
 # Create your tests here.
 import json
 from django.urls import reverse
-from django_rq import get_worker
+from django_rq import get_worker, get_scheduler
 from django.conf import settings
 from faker import Faker
 from rest_framework import status
@@ -2095,6 +2095,7 @@ class PostCommentsTransactionAPITests(OpenbookAPITransactionTestCase):
         post.refresh_from_db()
 
         expected_comment_weight = settings.ACTIVITY_UNIQUE_COMMENT_WEIGHT + settings.ACTIVITY_COUNT_COMMENTS_WEIGHT
+        self._clear_jobs_in_scheduler()
         self.assertEqual(post.activity_score, expected_comment_weight)
 
     def test_commenting_in_post_updates_community_activity_score(self):
@@ -2106,6 +2107,10 @@ class PostCommentsTransactionAPITests(OpenbookAPITransactionTestCase):
         community = make_community(creator=user)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
 
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+        activity_score_before_comment = community.activity_score
+
         post_comment_text = make_fake_post_comment_text()
 
         data = self._get_create_post_comment_request_data(post_comment_text)
@@ -2114,11 +2119,11 @@ class PostCommentsTransactionAPITests(OpenbookAPITransactionTestCase):
         self.client.put(url, data, **headers)
 
         get_worker('default', worker_class=SimpleWorker).work(burst=True)
-
         community.refresh_from_db()
 
         expected_comment_weight = settings.ACTIVITY_UNIQUE_COMMENT_WEIGHT + settings.ACTIVITY_COUNT_COMMENTS_WEIGHT
-        self.assertEqual(community.activity_score, expected_comment_weight)
+        self._clear_jobs_in_scheduler()
+        self.assertEqual(community.activity_score - activity_score_before_comment, expected_comment_weight)
 
     def test_adding_non_unique_comment_in_post_updates_community_activity_score_appropriately(self):
         """
@@ -2129,6 +2134,10 @@ class PostCommentsTransactionAPITests(OpenbookAPITransactionTestCase):
         headers = make_authentication_headers_for_user(user)
         community = make_community(creator=user)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+        activity_score_before_comment = community.activity_score
 
         post_comment_text = make_fake_post_comment_text()
         data = self._get_create_post_comment_request_data(post_comment_text)
@@ -2144,7 +2153,13 @@ class PostCommentsTransactionAPITests(OpenbookAPITransactionTestCase):
         community.refresh_from_db()
 
         expected_comment_weight = settings.ACTIVITY_UNIQUE_COMMENT_WEIGHT + (2 * settings.ACTIVITY_COUNT_COMMENTS_WEIGHT)
-        self.assertEqual(community.activity_score, expected_comment_weight)
+        self._clear_jobs_in_scheduler()
+        self.assertEqual(community.activity_score - activity_score_before_comment, expected_comment_weight)
+
+    def _clear_jobs_in_scheduler(self):
+        default_scheduler = get_scheduler('default')
+        for job in default_scheduler.get_jobs():
+            default_scheduler.cancel(job.get_id())
 
     def _get_create_post_comment_request_data(self, post_comment_text):
         return {
