@@ -1,6 +1,7 @@
 # Create your tests here.
 from django.urls import reverse
 from django.db import transaction
+from django.conf import settings
 from django_rq import get_worker
 from faker import Faker
 from rest_framework import status
@@ -448,6 +449,10 @@ class PostReactionItemTransactionAPITests(OpenbookAPITransactionTestCase):
     PostReactionItemTransactionsAPI
     """
 
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
     def test_delete_own_reaction_reduces_post_activity_score(self):
         """
           should reduce activity score on delete own reaction in public post and return 200
@@ -493,17 +498,21 @@ class PostReactionItemTransactionAPITests(OpenbookAPITransactionTestCase):
         with transaction.atomic():
             post_reaction = user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id)
 
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+        activity_score_before_delete = community.activity_score
+
         url = self._get_url(post_reaction=post_reaction, post=post)
         headers = make_authentication_headers_for_user(user)
         response = self.client.delete(url, **headers)
 
         # run job to reduce activity score
         get_worker('default', worker_class=SimpleWorker).work(burst=True)
-
         community.refresh_from_db()
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(community.activity_score, 0.0)
+        self.assertEqual(community.activity_score,
+                         activity_score_before_delete - settings.ACTIVITY_UNIQUE_REACTION_WEIGHT)
 
     def _get_url(self, post, post_reaction):
         return reverse('post-reaction', kwargs={

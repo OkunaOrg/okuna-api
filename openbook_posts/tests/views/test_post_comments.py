@@ -2075,6 +2075,10 @@ class PostCommentsAPITests(OpenbookAPITestCase):
 
 class PostCommentsTransactionAPITests(OpenbookAPITransactionTestCase):
 
+    fixtures = [
+        'openbook_circles/fixtures/circles.json',
+    ]
+
     def test_commenting_in_post_updates_post_activity_score(self):
         """
          should update post activity score when commenting on a post

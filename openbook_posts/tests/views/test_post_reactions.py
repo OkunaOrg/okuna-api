@@ -638,6 +638,11 @@ class PostReactionsTransactionAPITests(OpenbookAPITransactionTestCase):
         community = make_community(creator=user)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
 
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+
+        activity_score_before_reaction = community.activity_score
+
         emoji_group = make_reactions_emoji_group()
 
         post_reaction_emoji_id = make_emoji(group=emoji_group).pk
@@ -650,7 +655,7 @@ class PostReactionsTransactionAPITests(OpenbookAPITransactionTestCase):
 
         community.refresh_from_db()
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(community.activity_score, settings.ACTIVITY_UNIQUE_REACTION_WEIGHT)
+        self.assertEqual(community.activity_score, activity_score_before_reaction + settings.ACTIVITY_UNIQUE_REACTION_WEIGHT)
 
     def _get_create_post_reaction_request_data(self, emoji_id, emoji_group_id):
         return {

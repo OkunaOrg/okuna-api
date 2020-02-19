@@ -2169,6 +2169,10 @@ class PostCommentItemAPITests(OpenbookAPITestCase):
 
 class PostCommentItemTransactionAPITests(OpenbookAPITransactionTestCase):
 
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
     def test_delete_comment_in_post_reduces_post_activity_score(self):
         """
           should reduce post activity score on delete comment in post and return 200
@@ -2185,7 +2189,6 @@ class PostCommentItemTransactionAPITests(OpenbookAPITransactionTestCase):
         response = self.client.delete(url, **headers)
 
         get_worker('default', worker_class=SimpleWorker).work(burst=True)
-
         post.refresh_from_db()
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -2218,8 +2221,7 @@ class PostCommentItemTransactionAPITests(OpenbookAPITransactionTestCase):
 
     def test_delete_comment_in_community_post_one_by_one_reduces_community_activity_score_correctly(self):
         """
-          should reduce community activity score correctly on sequential job runs of
-          delete comment in community post and return 200
+          should reduce community activity score correctly on sequential job runs of delete comment in community post and return 200
         """
         user = make_user()
         community = make_community(creator=user)
