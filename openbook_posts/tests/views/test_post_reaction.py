@@ -1,8 +1,12 @@
 # Create your tests here.
 from django.urls import reverse
+from django.db import transaction
+from django_rq import get_worker
 from faker import Faker
 from rest_framework import status
-from openbook_common.tests.models import OpenbookAPITestCase
+from rq import SimpleWorker
+
+from openbook_common.tests.models import OpenbookAPITestCase, OpenbookAPITransactionTestCase
 
 import logging
 
@@ -431,6 +435,75 @@ class PostReactionItemAPITests(OpenbookAPITestCase):
 
         self.assertFalse(PostReactionNotification.objects.filter(pk=post_reaction_notification.pk).exists())
         self.assertFalse(Notification.objects.filter(pk=notification.pk).exists())
+
+    def _get_url(self, post, post_reaction):
+        return reverse('post-reaction', kwargs={
+            'post_uuid': post.uuid,
+            'post_reaction_id': post_reaction.pk
+        })
+
+
+class PostReactionItemTransactionAPITests(OpenbookAPITransactionTestCase):
+    """
+    PostReactionItemTransactionsAPI
+    """
+
+    def test_delete_own_reaction_reduces_post_activity_score(self):
+        """
+          should reduce activity score on delete own reaction in public post and return 200
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+
+        post = foreign_user.create_public_post(text=make_fake_post_text())
+
+        emoji_group = make_reactions_emoji_group()
+
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        with transaction.atomic():
+            post_reaction = user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id)
+
+        url = self._get_url(post_reaction=post_reaction, post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.delete(url, **headers)
+
+        # run job to reduce activity score
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+
+        post.refresh_from_db()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(post.activity_score, 0.0)
+
+    def test_delete_own_post_reaction_reduces_community_activity_score(self):
+        """
+          should reduce community activity score on delete own reaction in community post and return 200
+        """
+        user = make_user()
+
+        community = make_community(creator=user)
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        emoji_group = make_reactions_emoji_group()
+
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        with transaction.atomic():
+            post_reaction = user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id)
+
+        url = self._get_url(post_reaction=post_reaction, post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.delete(url, **headers)
+
+        # run job to reduce activity score
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+
+        community.refresh_from_db()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(community.activity_score, 0.0)
 
     def _get_url(self, post, post_reaction):
         return reverse('post-reaction', kwargs={

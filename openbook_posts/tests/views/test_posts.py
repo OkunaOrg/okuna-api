@@ -3987,6 +3987,7 @@ class TrendingPostsTransactionAPITests(OpenbookAPITransactionTestCase):
         with transaction.atomic():
             user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
 
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
         curate_trending_posts()
 
         url = self._get_url()
@@ -4028,6 +4029,7 @@ class TrendingPostsTransactionAPITests(OpenbookAPITransactionTestCase):
             user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
             user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
 
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
         curate_trending_posts()
 
         url = self._get_url()
@@ -4065,6 +4067,7 @@ class TrendingPostsTransactionAPITests(OpenbookAPITransactionTestCase):
             user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
             user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
 
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
         # curate trending posts
         curate_trending_posts()
 
@@ -4112,6 +4115,8 @@ class TrendingPostsTransactionAPITests(OpenbookAPITransactionTestCase):
         with transaction.atomic():
             user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
             user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
+
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
 
         # curate trending posts
         curate_trending_posts()
@@ -4161,6 +4166,8 @@ class TrendingPostsTransactionAPITests(OpenbookAPITransactionTestCase):
             user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
             user.react_to_post_with_id(post_id=post_two.pk, emoji_id=emoji.pk)
 
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+
         # curate trending posts
         curate_trending_posts()
 
@@ -4194,6 +4201,8 @@ class TrendingPostsTransactionAPITests(OpenbookAPITransactionTestCase):
         # react once, min required while testing
         with transaction.atomic():
             user.react_to_post_with_id(post_id=post.pk, emoji_id=emoji.pk)
+
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
 
         # curate trending posts
         curate_trending_posts()

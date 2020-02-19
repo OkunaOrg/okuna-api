@@ -1,11 +1,16 @@
 # Create your tests here.
 import json
 from django.urls import reverse
+from django_rq import get_worker
+from django.conf import settings
 from faker import Faker
 from rest_framework import status
 from unittest import mock
 from unittest.mock import ANY
-from openbook_common.tests.models import OpenbookAPITestCase
+
+from rq import SimpleWorker
+
+from openbook_common.tests.models import OpenbookAPITestCase, OpenbookAPITransactionTestCase
 
 import logging
 import random
@@ -2056,6 +2061,90 @@ class PostCommentsAPITests(OpenbookAPITestCase):
 
         for post_id in post_comments_ids:
             self.assertIn(post_id, response_post_comments_ids)
+
+    def _get_create_post_comment_request_data(self, post_comment_text):
+        return {
+            'text': post_comment_text
+        }
+
+    def _get_url(self, post):
+        return reverse('post-comments', kwargs={
+            'post_uuid': post.uuid,
+        })
+
+
+class PostCommentsTransactionAPITests(OpenbookAPITransactionTestCase):
+
+    def test_commenting_in_post_updates_post_activity_score(self):
+        """
+         should update post activity score when commenting on a post
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+
+        post.refresh_from_db()
+
+        expected_comment_weight = settings.ACTIVITY_UNIQUE_COMMENT_WEIGHT + settings.ACTIVITY_COUNT_COMMENTS_WEIGHT
+        self.assertEqual(post.activity_score, expected_comment_weight)
+
+    def test_commenting_in_post_updates_community_activity_score(self):
+        """
+         should update community activity score when commenting on a post
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        community = make_community(creator=user)
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+
+        community.refresh_from_db()
+
+        expected_comment_weight = settings.ACTIVITY_UNIQUE_COMMENT_WEIGHT + settings.ACTIVITY_COUNT_COMMENTS_WEIGHT
+        self.assertEqual(community.activity_score, expected_comment_weight)
+
+    def test_adding_non_unique_comment_in_post_updates_community_activity_score_appropriately(self):
+        """
+         should update community activity score by appropriate weight when commenting on a post which already
+         has users comment
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        community = make_community(creator=user)
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        post_comment_text = make_fake_post_comment_text()
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        # comment again
+        self.client.put(url, data, **headers)
+
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+
+        community.refresh_from_db()
+
+        expected_comment_weight = settings.ACTIVITY_UNIQUE_COMMENT_WEIGHT + (2 * settings.ACTIVITY_COUNT_COMMENTS_WEIGHT)
+        self.assertEqual(community.activity_score, expected_comment_weight)
 
     def _get_create_post_comment_request_data(self, post_comment_text):
         return {
