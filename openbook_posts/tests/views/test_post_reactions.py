@@ -599,6 +599,13 @@ class PostReactionsAPITests(OpenbookAPITestCase):
 
 
 class PostReactionsTransactionAPITests(OpenbookAPITransactionTestCase):
+    """
+    PostReactionsTransactionAPI
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
 
     def test_creating_post_reaction_updates_post_activity_score(self):
         """
