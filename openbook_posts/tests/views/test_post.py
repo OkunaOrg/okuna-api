@@ -5,7 +5,7 @@ from os import access, F_OK
 
 from PIL import Image
 from django.urls import reverse
-from django_rq import get_worker
+from django_rq import get_worker, get_scheduler
 from faker import Faker
 from rest_framework import status
 from openbook_common.tests.models import OpenbookAPITestCase, OpenbookAPITransactionTestCase
@@ -1299,9 +1299,9 @@ class PostItemAPITests(OpenbookAPITestCase):
 
 class PostItemTransactionAPITests(OpenbookAPITransactionTestCase):
 
-    def test_can_delete_own_post(self):
+    def test_reduces_community_activity_score_on_delete_post(self):
         """
-        should be able to delete own post and return 200
+        should reduce community activity score on delete post and return 200
         """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
@@ -1323,13 +1323,52 @@ class PostItemTransactionAPITests(OpenbookAPITransactionTestCase):
                           settings.ACTIVITY_UNIQUE_POST_WEIGHT - \
                           settings.ACTIVITY_COUNT_POSTS_WEIGHT
 
+        self._clear_jobs_in_scheduler()
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(community.activity_score, expected_weight)
+
+    def test_reduces_community_activity_score_appropriately_on_delete_two_posts_by_same_creator(self):
+        """
+        should reduce community activity score correctly on delete two posts by same creator
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        community = make_community(creator=user)
+        post_1 = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        post_2 = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+
+        activity_score_before_delete = community.activity_score
+
+        url_1 = self._get_url(post_1)
+        response_1 = self.client.delete(url_1, **headers)
+        url_2 = self._get_url(post_2)
+        response_2 = self.client.delete(url_2, **headers)
+
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+
+        expected_weight = activity_score_before_delete - \
+                          settings.ACTIVITY_UNIQUE_POST_WEIGHT - \
+                          (2 * settings.ACTIVITY_COUNT_POSTS_WEIGHT)
+
+        self._clear_jobs_in_scheduler()
+        self.assertEqual(response_1.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_2.status_code, status.HTTP_200_OK)
+        self.assertEqual(community.activity_score, expected_weight)
+
+    def _clear_jobs_in_scheduler(self):
+        default_scheduler = get_scheduler('default')
+        for job in default_scheduler.get_jobs():
+            default_scheduler.cancel(job.get_id())
 
     def _get_url(self, post):
         return reverse('post', kwargs={
             'post_uuid': post.uuid
         })
+
 
 class MutePostAPITests(OpenbookAPITestCase):
     """
