@@ -8,7 +8,7 @@ from django.urls import reverse
 from django_rq import get_worker
 from faker import Faker
 from rest_framework import status
-from openbook_common.tests.models import OpenbookAPITestCase
+from openbook_common.tests.models import OpenbookAPITestCase, OpenbookAPITransactionTestCase
 from django.core.files.images import ImageFile
 from django.core.files import File
 from django.conf import settings
@@ -1296,6 +1296,40 @@ class PostItemAPITests(OpenbookAPITestCase):
             'post_uuid': post.uuid
         })
 
+
+class PostItemTransactionAPITests(OpenbookAPITransactionTestCase):
+
+    def test_can_delete_own_post(self):
+        """
+        should be able to delete own post and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        community = make_community(creator=user)
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+
+        activity_score_before_delete = community.activity_score
+
+        url = self._get_url(post)
+        response = self.client.delete(url, **headers)
+
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+
+        expected_weight = activity_score_before_delete - \
+                          settings.ACTIVITY_UNIQUE_POST_WEIGHT - \
+                          settings.ACTIVITY_COUNT_POSTS_WEIGHT
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(community.activity_score, expected_weight)
+
+    def _get_url(self, post):
+        return reverse('post', kwargs={
+            'post_uuid': post.uuid
+        })
 
 class MutePostAPITests(OpenbookAPITestCase):
     """
