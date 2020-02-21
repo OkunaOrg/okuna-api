@@ -100,33 +100,23 @@ def process_activity_score_post_reaction(post_id, post_reaction_id):
     Post = get_post_model()
     PostReaction = get_post_reaction_model()
     Community = get_community_model()
+
     if not Post.objects.filter(pk=post_id).exists():
         # if post was deleted, return
         return
 
     post = Post.objects.get(pk=post_id)
-    # redis_cache = caches['community-activity-scores']
     logger.info('Processing activity score for reaction of post with id: %d' % post_id)
 
     if post.community is not None and post.community.type is Community.COMMUNITY_TYPE_PUBLIC:
-        # community_reaction_key = 'expire_community_{0}_rid_{1}'.format(post.community.pk, post_reaction_id)
-        # current_activity_score = redis_cache.get(community_reaction_key, default=0)
-
         if not PostReaction.objects.filter(pk=post_reaction_id).exists():
             # reaction was deleted
             post.activity_score = F('activity_score') - settings.ACTIVITY_UNIQUE_REACTION_WEIGHT
             _process_community_activity_score_reaction_deleted(post.community, post_reaction_id)
-            # current_activity_score -= settings.ACTIVITY_UNIQUE_REACTION_WEIGHT
         else:
             # reaction was added
             post.activity_score = F('activity_score') + settings.ACTIVITY_UNIQUE_REACTION_WEIGHT
             _process_community_activity_score_reaction_added(post.community, post_reaction_id)
-            # current_activity_score += settings.ACTIVITY_UNIQUE_REACTION_WEIGHT
-
-        # if current_activity_score <= 0:
-        #     redis_cache.expire(community_reaction_key, timeout=0)
-        # else:
-        #     redis_cache.set(community_reaction_key, current_activity_score,  timeout=3600*12)
 
     elif post.community is None and not PostReaction.objects.filter(pk=post_reaction_id).exists():
         # reaction was deleted
@@ -211,39 +201,6 @@ def _process_community_activity_score_comment_added(community,
                                      community.pk, post_id, post_commenter_id, post_comment_id)
                                  )
 
-# def _process_redis_activity_score_comment_deleted(commenter_comments_count,
-#                                                   current_activity_score=None,
-#                                                   redis_cache=None,
-#                                                   community_comment_key=None):
-#     if commenter_comments_count > 0:
-#         # there are still other comments by this user
-#         current_activity_score -= settings.ACTIVITY_COUNT_COMMENTS_WEIGHT
-#     else:
-#         # no more comments anymore by this user, subtract the unique comment weight too
-#         current_activity_score = current_activity_score - \
-#                              settings.ACTIVITY_COUNT_COMMENTS_WEIGHT - \
-#                              settings.ACTIVITY_UNIQUE_COMMENT_WEIGHT
-#
-#     if current_activity_score <= 0:
-#         # expire immediately if score less than 0
-#         redis_cache.expire(community_comment_key, timeout=0)
-#     else:
-#         redis_cache.set(community_comment_key, current_activity_score, timeout=3600*12)
-
-# def _process_redis_activity_score_comment_added(commenter_comments_count,
-#                                                 current_activity_score=None,
-#                                                 redis_cache=None,
-#                                                 community_comment_key=None):
-#     Post = get_post_model()
-#     if commenter_comments_count > 1:
-#         current_activity_score += settings.ACTIVITY_COUNT_COMMENTS_WEIGHT
-#     elif commenter_comments_count == 1:
-#         current_activity_score = current_activity_score + \
-#                           settings.ACTIVITY_UNIQUE_COMMENT_WEIGHT + \
-#                           settings.ACTIVITY_COUNT_COMMENTS_WEIGHT
-#
-#     redis_cache.set(community_comment_key, current_activity_score, timeout=3600*12)
-
 
 def process_activity_score_post_comment(post_id, post_comment_id, post_commenter_id):
     """
@@ -267,7 +224,6 @@ def process_activity_score_post_comment(post_id, post_comment_id, post_commenter
         return
 
     post = Post.objects.get(pk=post_id)
-    # redis_cache = caches['community-activity-scores']
     logger.info('Processing activity score for comment with id: %d' % post_comment_id)
 
     commenter_comments_count = PostComment.objects.filter(post_id=post_id,
@@ -275,11 +231,6 @@ def process_activity_score_post_comment(post_id, post_comment_id, post_commenter
                                                           commenter_id=post_commenter_id).count()
 
     if post.community is not None and post.community.type is Community.COMMUNITY_TYPE_PUBLIC:
-        # community_comment_key = 'expire_community_{0}_uid_{1}_cid_{2}'.format(post.community.pk,
-        #                                                                post_commenter_id,
-        #                                                                post_comment_id)
-        # current_activity_score = redis_cache.get(community_comment_key, default=0)
-
         if not PostComment.objects.filter(pk=post_comment_id).exists():
             # comment was deleted
             _process_post_activity_score_comment_deleted(post, commenter_comments_count)
@@ -288,10 +239,6 @@ def process_activity_score_post_comment(post_id, post_comment_id, post_commenter
                                                               post_comment_id,
                                                               post_commenter_id,
                                                               commenter_comments_count)
-            # _process_redis_activity_score_comment_deleted(commenter_comments_count,
-            #                                               redis_cache=redis_cache,
-            #                                               current_activity_score=current_activity_score,
-            #                                               community_comment_key=community_comment_key)
         else:
             # comment was added
             _process_post_activity_score_comment_added(post, commenter_comments_count)
@@ -299,10 +246,6 @@ def process_activity_score_post_comment(post_id, post_comment_id, post_commenter
                                                             post_id,
                                                             post_comment_id,
                                                             post_commenter_id)
-            # _process_redis_activity_score_comment_added(commenter_comments_count,
-            #                                             redis_cache=redis_cache,
-            #                                             current_activity_score=current_activity_score,
-            #                                             community_comment_key=community_comment_key)
     else:
         if not PostComment.objects.filter(pk=post_comment_id).exists():
             # comment was deleted
