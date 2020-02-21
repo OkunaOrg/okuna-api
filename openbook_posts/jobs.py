@@ -329,10 +329,6 @@ def process_community_activity_score_post(post_id, post_creator_id, post_communi
         # if community was deleted, soft deleted return
         return
 
-    if not Post.objects.filter(pk=post_id, is_deleted=False, is_closed=False).exists():
-        # if post was deleted, soft deleted or closed return
-        return
-
     creator_posts_query = Q(created__gte=timezone.now() - timedelta(hours=settings.ACTIVITY_SCORE_EXPIRY_IN_HOURS))
     creator_posts_query.add(Q(creator_id=post_creator_id,
                               community_id=post_community_id,

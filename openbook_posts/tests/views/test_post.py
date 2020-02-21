@@ -7,6 +7,7 @@ from PIL import Image
 from django.urls import reverse
 from django_rq import get_worker, get_scheduler
 from faker import Faker
+from django.db import transaction
 from rest_framework import status
 from openbook_common.tests.models import OpenbookAPITestCase, OpenbookAPITransactionTestCase
 from django.core.files.images import ImageFile
@@ -1303,10 +1304,12 @@ class PostItemTransactionAPITests(OpenbookAPITransactionTestCase):
         """
         should reduce community activity score on delete post and return 200
         """
+        self._clear_jobs_in_scheduler()
         user = make_user()
         headers = make_authentication_headers_for_user(user)
         community = make_community(creator=user)
-        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        with transaction.atomic():
+            post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
 
         get_worker('default', worker_class=SimpleWorker).work(burst=True)
         community.refresh_from_db()
@@ -1334,8 +1337,9 @@ class PostItemTransactionAPITests(OpenbookAPITransactionTestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
         community = make_community(creator=user)
-        post_1 = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        post_2 = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        with transaction.atomic():
+            post_1 = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+            post_2 = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
 
         get_worker('default', worker_class=SimpleWorker).work(burst=True)
         community.refresh_from_db()

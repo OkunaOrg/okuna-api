@@ -141,7 +141,12 @@ class Community(models.Model):
                                                                           max_id=max_id,
                                                                           min_id=min_id)
         trending_communities_query.add(~Q(banned_users__id=user_id), Q.AND)
-        return cls._get_trending_communities_with_query(query=trending_communities_query)
+
+        trending_communities = cls._get_trending_communities_with_query(query=trending_communities_query)
+        if trending_communities.count() == 0:
+            return cls.get_trending_communities_by_members_for_user_with_id(user_id, category_name=category_name)
+
+        return trending_communities
 
     @classmethod
     def get_trending_communities(cls, category_name=None, max_id=None, min_id=None):
@@ -152,11 +157,7 @@ class Community(models.Model):
 
     @classmethod
     def _get_trending_communities_with_query(cls, query):
-        trending_communities = cls.objects.filter(query).order_by('-activity_score')
-        if trending_communities.count() == 0:
-            return cls._get_trending_communities_by_members_with_query(query)
-
-        return trending_communities
+        return cls.objects.filter(query).order_by('-activity_score')
 
     @classmethod
     def _make_trending_communities_query(cls, category_name=None, max_id=None, min_id=None):
