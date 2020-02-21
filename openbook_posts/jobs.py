@@ -261,13 +261,14 @@ def process_activity_score_post_comment(post_id, post_comment_id, post_commenter
     Post = get_post_model()
     PostComment = get_post_comment_model()
     Community = get_community_model()
-    if not Post.objects.filter(pk=post_id).exists():
-        # if post was deleted, return
+
+    if not Post.objects.filter(pk=post_id, is_deleted=False, is_closed=False).exists():
+        # if post was deleted, soft deleted or closed return
         return
 
     post = Post.objects.get(pk=post_id)
     # redis_cache = caches['community-activity-scores']
-    logger.info('Processing activity score for comment of post with id: %d' % post_id)
+    logger.info('Processing activity score for comment with id: %d' % post_comment_id)
 
     commenter_comments_count = PostComment.objects.filter(post_id=post_id,
                                                           is_deleted=False,
@@ -281,7 +282,6 @@ def process_activity_score_post_comment(post_id, post_comment_id, post_commenter
 
         if not PostComment.objects.filter(pk=post_comment_id).exists():
             # comment was deleted
-
             _process_post_activity_score_comment_deleted(post, commenter_comments_count)
             _process_community_activity_score_comment_deleted(post.community,
                                                               post_id,
@@ -312,7 +312,7 @@ def process_activity_score_post_comment(post_id, post_comment_id, post_commenter
             _process_post_activity_score_comment_added(post, commenter_comments_count)
 
     post.save()
-    logger.info('Processed activity score for comment of post with id: %d' % post_id)
+    logger.info('Processed activity score for comment with id: %d' % post_comment_id)
 
 
 def _process_community_activity_score_post_added(post, total_posts_by_creator):
@@ -382,16 +382,22 @@ def process_community_activity_score_post(post_id, post_creator_id, post_communi
 
     Post = get_post_model()
     Community = get_community_model()
-    if not Community.objects.filter(id=post_community_id).exists():
-        # if community was deleted, return
+    if not Community.objects.filter(id=post_community_id, is_deleted=False).exists():
+        # if community was deleted, soft deleted return
+        return
+
+    if not Post.objects.filter(pk=post_id, is_deleted=False, is_closed=False).exists():
+        # if post was deleted, soft deleted or closed return
         return
 
     creator_posts_query = Q(created__gte=timezone.now() - timedelta(hours=settings.ACTIVITY_SCORE_EXPIRY_IN_HOURS))
-    creator_posts_query.add(Q(creator_id=post_creator_id, community_id=post_community_id), Q.AND)
+    creator_posts_query.add(Q(creator_id=post_creator_id,
+                              community_id=post_community_id,
+                              is_closed=False, is_deleted=False), Q.AND)
 
     total_posts_by_creator = Post.objects.filter(creator_posts_query).count()
 
-    if Post.objects.filter(pk=post_id).exists():
+    if Post.objects.filter(pk=post_id, is_closed=False, is_deleted=False).exists():
         # post was added
         post = Post.objects.get(pk=post_id)
         _process_community_activity_score_post_added(post, total_posts_by_creator)
