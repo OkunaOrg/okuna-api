@@ -13,8 +13,7 @@ from openbook_communities.views.communities.serializers import CreateCommunitySe
     CommunitiesCommunitySerializer, SearchCommunitiesSerializer, CommunityNameCheckSerializer, \
     GetFavoriteCommunitiesSerializer, GetJoinedCommunitiesSerializer, TrendingCommunitiesSerializer, \
     GetModeratedCommunitiesSerializer, GetAdministratedCommunitiesSerializer, GetTopPostCommunityExclusionSerializer, \
-    SearchCommunitiesCommunitySerializer, SuggestedCommunitiesCommunitySerializer, TrendingCommunitiesSerializerLegacy, \
-    TrendingCommunitiesCommunitySerializer
+    SearchCommunitiesCommunitySerializer, SuggestedCommunitiesCommunitySerializer, TrendingCommunitiesSerializerLegacy
 
 
 class Communities(APIView):
@@ -269,9 +268,9 @@ class TrendingCommunities(APIView):
 
         trending_communities = user.get_trending_communities(category_name=category_name,
                                                              max_id=max_id,
-                                                             min_id=min_id).order_by('-id')[:count]
+                                                             min_id=min_id)[:count]
 
-        trending_communities_serializer = TrendingCommunitiesCommunitySerializer(
+        trending_communities_serializer = SearchCommunitiesCommunitySerializer(
             trending_communities, many=True, context={"request": request})
 
         return Response(trending_communities_serializer.data, status=status.HTTP_200_OK)

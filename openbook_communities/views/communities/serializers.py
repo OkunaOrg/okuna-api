@@ -201,17 +201,6 @@ class SearchCommunitiesCommunitySerializer(serializers.ModelSerializer):
         )
 
 
-class TrendingCommunitiesCommunitySerializer(serializers.ModelSerializer):
-    community = SearchCommunitiesCommunitySerializer()
-
-    class Meta:
-        model = TrendingCommunity
-        fields = (
-            'id',
-            'community'
-        )
-
-
 class SuggestedCommunitiesCommunitySerializer(serializers.ModelSerializer):
     is_creator = IsCreatorField()
     memberships = CommunityMembershipsField(community_membership_serializer=CommunitiesCommunityMembershipSerializer)
