@@ -5,7 +5,10 @@ from django.urls import reverse
 from django.conf import settings
 from faker import Faker
 from rest_framework import status
-from openbook_common.tests.models import OpenbookAPITestCase
+from django_rq import get_worker, get_scheduler
+from rq import SimpleWorker
+
+from openbook_common.tests.models import OpenbookAPITestCase, OpenbookAPITransactionTestCase
 from mixer.backend.django import mixer
 
 import logging
@@ -13,7 +16,7 @@ import json
 
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user, \
     make_community_avatar, make_community_cover, make_category, make_community_users_adjective, \
-    make_community_user_adjective, make_community
+    make_community_user_adjective, make_community, make_fake_post_text
 from openbook_common.utils.model_loaders import get_community_model
 from openbook_communities.models import Community
 
@@ -1445,6 +1448,158 @@ class TrendingCommunitiesAPITests(OpenbookAPITestCase):
         response_communities = json.loads(response.content)
 
         self.assertEqual(0, len(response_communities))
+
+    def _get_url(self):
+        return reverse('trending-communities')
+
+
+class TrendingCommunitiesTransactionAPITests(OpenbookAPITransactionTestCase):
+    """
+    TrendingCommunitiesTransactionAPITests
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
+    def test_displays_public_communities(self):
+        """
+        should display public communities and return 200
+        """
+        user = make_user()
+
+        amount_of_communities = 5
+        communities_ids = []
+
+        for i in range(0, amount_of_communities):
+            community_owner = make_user()
+            community = make_community(creator=community_owner)
+            communities_ids.append(community.pk)
+            post = community_owner.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        # update activity scores
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+
+        headers = make_authentication_headers_for_user(user)
+        headers = self._add_version_header(headers)
+
+        url = self._get_url()
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), len(communities_ids))
+        self._clear_jobs_in_scheduler()
+        for response_community in response_communities:
+            response_community_id = response_community.get('id')
+            self.assertIn(response_community_id, communities_ids)
+
+    def test_displays_only_public_communities_with_min_activity_score(self):
+        """
+        should display only public communities with minimum activity score and return 200
+        """
+        user = make_user()
+
+        amount_of_communities = 5
+        communities_ids = []
+
+        for i in range(0, amount_of_communities):
+            community_owner = make_user()
+            community = make_community(creator=community_owner)
+            if i % 2 == 0:
+                communities_ids.append(community.pk)
+                post = community_owner.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        # update activity scores
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+
+        headers = make_authentication_headers_for_user(user)
+        headers = self._add_version_header(headers)
+
+        url = self._get_url()
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), len(communities_ids))
+        self._clear_jobs_in_scheduler()
+        for response_community in response_communities:
+            response_community_id = response_community.get('id')
+            self.assertIn(response_community_id, communities_ids)
+
+    def test_not_displays_private_communities(self):
+        """
+        should not display private communities and return 200
+        """
+        user = make_user()
+
+        amount_of_communities = 5
+
+        Community = get_community_model()
+
+        for i in range(0, amount_of_communities):
+            community_owner = make_user()
+            community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PRIVATE)
+            post = community_owner.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        # update activity scores
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+
+        headers = make_authentication_headers_for_user(user)
+        headers = self._add_version_header(headers)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self._clear_jobs_in_scheduler()
+        self.assertEqual(len(response_communities), 0)
+
+    def test_does_not_display_community_banned_from(self):
+        """
+        should not display a community banned from and return 200
+        """
+        user = make_user()
+        community_owner = make_user()
+
+        community = make_community(creator=community_owner)
+        post = community_owner.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        community_owner.ban_user_with_username_from_community_with_name(username=user.username, community_name=community.name)
+
+        # update activity scores
+        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+
+        headers = make_authentication_headers_for_user(user)
+        headers = self._add_version_header(headers)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+        self._clear_jobs_in_scheduler()
+        self.assertEqual(0, len(response_communities))
+
+    def _clear_jobs_in_scheduler(self):
+        default_scheduler = get_scheduler('default')
+        for job in default_scheduler.get_jobs():
+            default_scheduler.cancel(job.get_id())
+
+    def _add_version_header(self, headers):
+        headers['HTTP_ACCEPT'] = 'application/json; version=2.0'
+        return headers
 
     def _get_url(self):
         return reverse('trending-communities')

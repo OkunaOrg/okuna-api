@@ -2234,7 +2234,7 @@ class PostCommentItemTransactionAPITests(OpenbookAPITransactionTestCase):
         community.refresh_from_db()
         activity_score_before_delete = community.activity_score
 
-        # delete comment onegit s
+        # delete comment one
         url = self._get_url(post_comment=post_comment_1, post=post)
         headers = make_authentication_headers_for_user(user)
         response = self.client.delete(url, **headers)
@@ -2246,9 +2246,9 @@ class PostCommentItemTransactionAPITests(OpenbookAPITransactionTestCase):
         self.assertEqual(community.activity_score, expected_activity_score_1)
 
         # delete comment two
-        url = self._get_url(post_comment=post_comment_2, post=post)
+        url_2 = self._get_url(post_comment=post_comment_2, post=post)
         headers = make_authentication_headers_for_user(user)
-        response = self.client.delete(url, **headers)
+        response = self.client.delete(url_2, **headers)
 
         get_worker('default', worker_class=SimpleWorker).work(burst=True)
         community.refresh_from_db()
