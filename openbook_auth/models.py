@@ -36,7 +36,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
     get_moderation_penalty_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
     get_post_comment_reaction_notification_model, get_top_post_model, get_top_post_community_exclusion_model, \
-    get_hashtag_model
+    get_hashtag_model, get_trending_community_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications import helpers
 from openbook_auth.checkers import *
@@ -1959,9 +1959,16 @@ class User(AbstractUser):
         Post = get_post_model()
         return Post.get_trending_posts_old_for_user_with_id(user_id=self.pk)
 
-    def get_trending_communities(self, category_name=None):
+    def get_trending_communities(self, category_name=None, max_id=None, min_id=None):
+        TrendingCommunity = get_trending_community_model()
+        return TrendingCommunity.get_trending_communities_for_user_with_id(user_id=self.pk,
+                                                                           category_name=category_name,
+                                                                           max_id=max_id,
+                                                                           min_id=min_id)
+
+    def get_trending_communities_by_members(self, category_name=None):
         Community = get_community_model()
-        return Community.get_trending_communities_for_user_with_id(user_id=self.pk, category_name=category_name)
+        return Community.get_trending_communities_by_members_for_user_with_id(user_id=self.pk, category_name=category_name)
 
     def search_communities_with_query(self, query):
         Community = get_community_model()

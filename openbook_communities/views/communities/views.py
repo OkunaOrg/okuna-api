@@ -13,7 +13,8 @@ from openbook_communities.views.communities.serializers import CreateCommunitySe
     CommunitiesCommunitySerializer, SearchCommunitiesSerializer, CommunityNameCheckSerializer, \
     GetFavoriteCommunitiesSerializer, GetJoinedCommunitiesSerializer, TrendingCommunitiesSerializer, \
     GetModeratedCommunitiesSerializer, GetAdministratedCommunitiesSerializer, GetTopPostCommunityExclusionSerializer, \
-    SearchCommunitiesCommunitySerializer, SuggestedCommunitiesCommunitySerializer
+    SearchCommunitiesCommunitySerializer, SuggestedCommunitiesCommunitySerializer, TrendingCommunitiesSerializerLegacy, \
+    TrendingCommunitiesCommunitySerializer
 
 
 class Communities(APIView):
@@ -228,11 +229,20 @@ class SearchAdministratedCommunities(APIView):
 
 class TrendingCommunities(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
+    serializer_class_legacy = TrendingCommunitiesSerializerLegacy
     serializer_class = TrendingCommunitiesSerializer
 
     def get(self, request):
+        version = request.version
+
+        if version == '2.0':
+            return self.get_trending_communities(request)
+        else:
+            return self.get_trending_communities_legacy(request)
+
+    def get_trending_communities_legacy(self, request):
         query_params = request.query_params.dict()
-        serializer = self.serializer_class(data=query_params)
+        serializer = self.serializer_class_legacy(data=query_params)
         serializer.is_valid(raise_exception=True)
 
         data = serializer.data
@@ -240,10 +250,31 @@ class TrendingCommunities(APIView):
 
         user = request.user
 
-        communities = user.get_trending_communities(category_name=category_name)[:30]
+        communities = user.get_trending_communities_by_members(category_name=category_name)[:30]
 
         posts_serializer = SearchCommunitiesCommunitySerializer(communities, many=True, context={"request": request})
         return Response(posts_serializer.data, status=status.HTTP_200_OK)
+
+    def get_trending_communities(self, request):
+        query_params = request.query_params.dict()
+        serializer = self.serializer_class(data=query_params)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.data
+        category_name = data.get('category')
+        max_id = data.get('max_id')
+        min_id = data.get('min_id')
+        count = data.get('count', 10)
+        user = request.user
+
+        trending_communities = user.get_trending_communities(category_name=category_name,
+                                                             max_id=max_id,
+                                                             min_id=min_id).order_by('-id')[:count]
+
+        trending_communities_serializer = TrendingCommunitiesCommunitySerializer(
+            trending_communities, many=True, context={"request": request})
+
+        return Response(trending_communities_serializer.data, status=status.HTTP_200_OK)
 
 
 class FavoriteCommunities(APIView):

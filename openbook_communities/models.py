@@ -136,18 +136,18 @@ class Community(models.Model):
         return communities_query
 
     @classmethod
-    def get_trending_communities_for_user_with_id(cls, user_id, category_name=None):
+    def get_trending_communities_by_members_for_user_with_id(cls, user_id, category_name=None):
         trending_communities_query = cls._make_trending_communities_query(category_name=category_name)
         trending_communities_query.add(~Q(banned_users__id=user_id), Q.AND)
-        return cls._get_trending_communities_with_query(query=trending_communities_query)
+        return cls._get_trending_communities_by_members_with_query(query=trending_communities_query)
 
     @classmethod
-    def get_trending_communities(cls, category_name=None):
+    def get_trending_communities_by_members(cls, category_name=None):
         trending_communities_query = cls._make_trending_communities_query(category_name=category_name)
-        return cls._get_trending_communities_with_query(query=trending_communities_query)
+        return cls._get_trending_communities_by_members_with_query(query=trending_communities_query)
 
     @classmethod
-    def _get_trending_communities_with_query(cls, query):
+    def _get_trending_communities_by_members_with_query(cls, query):
         return cls.objects.annotate(Count('memberships')).filter(query).order_by(
             '-memberships__count', '-created')
 
@@ -651,6 +651,39 @@ class CommunityNotificationsSubscription(models.Model):
 class TrendingCommunity(models.Model):
     community = models.OneToOneField(Community, on_delete=models.CASCADE, related_name='trending_community')
     created = models.DateTimeField(editable=False, db_index=True)
+
+    @classmethod
+    def get_trending_communities_for_user_with_id(cls, user_id, category_name=None, max_id=None, min_id=None):
+        trending_communities_query = cls._make_trending_communities_query(category_name=category_name,
+                                                                          max_id=max_id,
+                                                                          min_id=min_id)
+        trending_communities_query.add(~Q(community__banned_users__id=user_id), Q.AND)
+        return cls._get_trending_communities_with_query(query=trending_communities_query)
+
+    @classmethod
+    def get_trending_communities(cls, category_name=None, max_id=None, min_id=None):
+        trending_communities_query = cls._make_trending_communities_query(category_name=category_name,
+                                                                          max_id=max_id,
+                                                                          min_id=min_id)
+        return cls._get_trending_communities_with_query(query=trending_communities_query)
+
+    @classmethod
+    def _get_trending_communities_with_query(cls, query):
+        return cls.objects.filter(query)
+
+    @classmethod
+    def _make_trending_communities_query(cls, category_name=None, max_id=None, min_id=None):
+        trending_communities_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, community__is_deleted=False)
+
+        if category_name:
+            trending_communities_query.add(Q(community__categories__name=category_name), Q.AND)
+
+        if max_id:
+            trending_communities_query.add(Q(id__lt=max_id), Q.AND)
+        elif min_id:
+            trending_communities_query.add(Q(id__gt=min_id), Q.AND)
+
+        return trending_communities_query
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
