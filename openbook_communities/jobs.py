@@ -1,5 +1,6 @@
 from django.db.models import Q
 from django_rq import job
+from django.conf import settings
 from django.core.cache import caches
 from django.utils import timezone
 
@@ -38,6 +39,7 @@ def curate_trending_communities():
 
     communities_only = ('id', 'activity_score', 'type')
     trending_communities_query = Q(type=Community.COMMUNITY_TYPE_PUBLIC)
+    trending_communities_query.add(Q(activity_score__gte=settings.MIN_ACTIVITY_SCORE_FOR_COMMUNITY_TRENDING), Q.AND)
     trending_communities_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
 
     top_trending_communities = Community.objects. \

@@ -571,7 +571,7 @@ def curate_trending_posts():
 
     trending_posts_query.add(trending_posts_community_query, Q.AND)
 
-    trending_posts_criteria_query = Q(activity_score__gte=settings.MIN_ACTIVITY_SCORE_FOR_TRENDING)
+    trending_posts_criteria_query = Q(activity_score__gte=settings.MIN_ACTIVITY_SCORE_FOR_POST_TRENDING)
 
     trending_posts_query.add(trending_posts_criteria_query, Q.AND)
 
@@ -616,7 +616,7 @@ def bootstrap_trending_posts():
 
     trending_posts_community_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
 
-    trending_posts_criteria_query = Q(activity_score__gte=settings.MIN_ACTIVITY_SCORE_FOR_TRENDING)
+    trending_posts_criteria_query = Q(activity_score__gte=settings.MIN_ACTIVITY_SCORE_FOR_POST_TRENDING)
 
     trending_posts_community_query.add(trending_posts_criteria_query, Q.AND)
 
@@ -668,7 +668,7 @@ def clean_trending_posts():
     trending_posts_community_query.add(Q(post__status=Post.STATUS_DRAFT), Q.OR)
     trending_posts_community_query.add(Q(post__status=Post.STATUS_PROCESSING), Q.OR)
     trending_posts_community_query.add(Q(post__moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.OR)
-    trending_posts_community_query.add(Q(post__activity_score__lt=settings.MIN_ACTIVITY_SCORE_FOR_TRENDING), Q.OR)
+    trending_posts_community_query.add(Q(post__activity_score__lt=settings.MIN_ACTIVITY_SCORE_FOR_POST_TRENDING), Q.OR)
 
     posts_select_related = 'post__community'
     posts_only = ('post__id', 'post__status', 'post__activity_score', 'post__is_deleted', 'post__is_closed',
