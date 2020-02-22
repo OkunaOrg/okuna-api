@@ -715,10 +715,6 @@ class Post(models.Model):
         # Add post commentators
         post_commenters = User.objects.filter(posts_comments__post_id=self.pk, is_deleted=False)
 
-        postcommenters = User.objects.values('id').filter(posts_comments__post_id=self.pk,
-                                                          posts_comments__parent_comment__isnull=True,
-                                                          is_deleted=False).annotate(total_count=Count('id'))
-
         # If community post, add community members
         if self.community:
             community_members = User.objects.filter(communities_memberships__community_id=self.community_id,

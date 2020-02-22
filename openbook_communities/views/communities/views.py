@@ -268,14 +268,10 @@ class TrendingCommunities(APIView):
 
         data = serializer.data
         category_name = data.get('category')
-        max_id = data.get('max_id')
-        min_id = data.get('min_id')
         count = data.get('count', 10)
         user = request.user
 
-        trending_communities = user.get_trending_communities(category_name=category_name,
-                                                             max_id=max_id,
-                                                             min_id=min_id)[:count]
+        trending_communities = user.get_trending_communities(category_name=category_name)[:count]
 
         trending_communities_serializer = CommonSearchCommunitiesCommunitySerializer(
             trending_communities, many=True, context={"request": request})

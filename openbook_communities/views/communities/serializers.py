@@ -101,12 +101,6 @@ class TrendingCommunitiesSerializer(serializers.Serializer):
                                      allow_blank=True,
                                      required=False,
                                      validators=[category_name_exists])
-    max_id = serializers.IntegerField(
-        required=False,
-    )
-    min_id = serializers.IntegerField(
-        required=False,
-    )
     count = serializers.IntegerField(
         required=False,
         max_value=20
