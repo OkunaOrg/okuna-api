@@ -21,7 +21,12 @@ from rq import SimpleWorker
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_community, make_moderation_category, \
-    get_test_videos, get_test_image, make_hashtag, make_hashtag_name
+    get_test_videos, get_test_image, make_proxy_blacklisted_domain, make_hashtag, make_hashtag_name, \
+    make_reactions_emoji_group, make_emoji
+from openbook_common.utils.model_loaders import get_language_model, get_community_new_post_notification_model, \
+    get_post_comment_notification_model, get_post_comment_user_mention_notification_model, \
+    get_post_user_mention_notification_model, get_post_comment_reaction_notification_model, \
+    get_post_comment_reply_notification_model, get_test_videos, get_test_image, make_hashtag, make_hashtag_name
 from openbook_common.utils.model_loaders import get_language_model
 from openbook_communities.models import Community
 from openbook_hashtags.models import Hashtag
@@ -1861,6 +1866,198 @@ class PostCloseAPITests(OpenbookAPITestCase):
                                               post=post,
                                               source_user=admin,
                                               target_user=community_post_creator).exists())
+
+    def test_close_post_deletes_new_post_notifications_for_normal_members(self):
+        """
+         should delete new post notifications for members (except creator/staff) on close post by administrator of a community
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        community_member = make_user()
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+        community_member.enable_new_post_notifications_for_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(community.name, text=make_fake_post_text())
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        # close post
+        self.client.post(url, **headers)
+
+        CommunityNewPostNotification = get_community_new_post_notification_model()
+        self.assertFalse(CommunityNewPostNotification.objects.filter(notification__owner_id=community_member.pk,
+                                                                     post_id=post.pk).exists())
+
+    def test_close_post_deletes_post_user_mention_notifications_for_normal_members(self):
+        """
+         should delete post user mention notifications for members (except creator/staff) on close post by administrator of a community
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        mentioned_user = make_user(username='joel123')
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        mentioned_user.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(community.name, text='hey there @joel123')
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        # close post
+        self.client.post(url, **headers)
+
+        PostUserMentionNotification = get_post_user_mention_notification_model()
+        self.assertFalse(PostUserMentionNotification.objects.filter(
+            notification__owner_id=mentioned_user.pk, post_user_mention__post=post).exists())
+
+    def test_close_post_deletes_post_comment_notifications_for_normal_members(self):
+        """
+         should delete post comment notifications for members (except creator/staff) on close post by administrator of a community
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        community_member = make_user()
+        community_member_two = make_user()
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+        community_member_two.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(community.name, text=make_fake_post_text())
+        post_comment = community_member.comment_post(post=post, text=make_fake_post_text())
+        post_comment_two = community_member_two.comment_post(post=post, text=make_fake_post_text())
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        # close post
+        self.client.post(url, **headers)
+
+        PostCommentNotification = get_post_comment_notification_model()
+        self.assertFalse(PostCommentNotification.objects.filter(notification__owner_id=community_member.pk,
+                                                                post_comment=post_comment_two).exists())
+
+    def test_close_post_deletes_post_comment_reaction_notifications_for_normal_members(self):
+        """
+         should delete post comment reaction notifications for members (except creator/staff) on close post by administrator of a community
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        community_member = make_user()
+        community_member_reactor = make_user()
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+        community_member_reactor.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(community.name, text=make_fake_post_text())
+        post_comment = community_member.comment_post(post=post, text=make_fake_post_text())
+
+        # react
+        emoji_group = make_reactions_emoji_group()
+        emoji = make_emoji(group=emoji_group)
+        community_post_comment_reply_reaction = community_member_reactor.react_to_post_comment(
+            post_comment=post_comment,
+            emoji_id=emoji.pk)
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        # close post
+        self.client.post(url, **headers)
+
+        PostCommentReactionNotification = get_post_comment_reaction_notification_model()
+        self.assertFalse(PostCommentReactionNotification.objects.filter(
+            notification__owner_id=community_member.pk,
+            post_comment_reaction__post_comment=post_comment).exists())
+
+    def test_close_post_deletes_post_comment_reply_notifications_for_normal_members(self):
+        """
+         should delete post comment reply notifications for members (except creator/staff) on close post by administrator of a community
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        community_member = make_user()
+        community_member_replier = make_user()
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+        community_member_replier.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(community.name, text=make_fake_post_text())
+        post_comment = community_member.comment_post(post=post, text=make_fake_post_text())
+        post_comment_reply = community_member_replier.reply_to_comment_for_post(
+            post_comment=post_comment,
+            post=post,
+            text=make_fake_post_comment_text())
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        # close post
+        self.client.post(url, **headers)
+
+        PostCommentReplyNotification = get_post_comment_reply_notification_model()
+        self.assertFalse(PostCommentReplyNotification.objects.filter(
+            notification__owner_id=community_member.pk,
+            post_comment=post_comment_reply).exists())
+
+    def test_close_post_deletes_post_comment_user_mention_notifications_for_normal_members(self):
+        """
+         should delete post comment user mention notifications for members (except creator/staff) on close post by administrator of a community
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        community_member = make_user()
+        mentioned_user = make_user(username='joel123')
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+        mentioned_user.join_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(community.name, text=make_fake_post_text())
+        post_comment = community_member.comment_post(post=post, text='hey @joel123')
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        # close post
+        self.client.post(url, **headers)
+
+        PostCommentUserMentionNotification = get_post_comment_user_mention_notification_model()
+        self.assertFalse(PostCommentUserMentionNotification.objects.filter(
+            notification__owner_id=mentioned_user.pk, post_comment_user_mention__post_comment=post_comment).exists())
+
+    def test_close_post_does_not_delete_new_post_notifications_for_staff_and_creator(self):
+        """
+         should NOT delete new post notifications for staff and creator on close post
+        """
+        community_post_creator = make_user()
+        admin = make_user()
+        community_member = make_user()
+        community = make_community(admin)
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        community_member.join_community_with_name(community_name=community.name)
+        admin.enable_new_post_notifications_for_community_with_name(community_name=community.name)
+        community_member.enable_new_post_notifications_for_community_with_name(community_name=community.name)
+
+        post = community_post_creator.create_community_post(community.name, text=make_fake_post_text())
+
+        url = self._get_url(post)
+        headers = make_authentication_headers_for_user(admin)
+        # close post
+        self.client.post(url, **headers)
+
+        CommunityNewPostNotification = get_community_new_post_notification_model()
+        self.assertTrue(CommunityNewPostNotification.objects.filter(notification__owner_id=admin.pk,
+                                                                    post_id=post.pk).exists())
+        self.assertFalse(CommunityNewPostNotification.objects.filter(notification__owner_id=community_member.pk,
+                                                                    post_id=post.pk).exists())
 
     def _get_url(self, post):
         return reverse('close-post', kwargs={

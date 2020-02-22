@@ -647,8 +647,8 @@ def check_can_favorite_community_with_name(user, community_name):
         )
 
 
-def check_can_exclude_community(user, community):
-    if user.has_excluded_community_with_name(community_name=community.name):
+def check_can_exclude_community_from_top_posts(user, community):
+    if user.has_excluded_community_with_name_from_top_posts(community_name=community.name):
         raise ValidationError(
             _('You have already marked this community as excluded.'),
         )
@@ -659,8 +659,22 @@ def check_can_exclude_community(user, community):
         )
 
 
-def check_can_remove_exclusion_for_community(user, community):
-    if not user.has_excluded_community_with_name(community_name=community.name):
+def check_can_remove_top_posts_exclusion_for_community(user, community):
+    if not user.has_excluded_community_with_name_from_top_posts(community_name=community.name):
+        raise ValidationError(
+            _('You have not marked this community as excluded.'),
+        )
+
+
+def check_can_exclude_community_from_profile_posts(user, community):
+    if user.has_excluded_community_with_name_from_profile_posts(community_name=community.name):
+        raise ValidationError(
+            _('You have already marked this community as excluded.'),
+        )
+
+
+def check_can_remove_profile_posts_exclusion_for_community(user, community):
+    if not user.has_excluded_community_with_name_from_profile_posts(community_name=community.name):
         raise ValidationError(
             _('You have not marked this community as excluded.'),
         )

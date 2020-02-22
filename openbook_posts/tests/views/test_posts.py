@@ -1947,6 +1947,76 @@ class PostsAPITests(OpenbookAPITestCase):
 
         self.assertEqual(len(response_posts), 0)
 
+    def test_filter_excluded_public_community_post_from_foreign_user_posts(self):
+        """
+        should filter excluded public community from foreign user and return 200
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        foreign_user.update(community_posts_visible=True)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PUBLIC)
+
+        foreign_user.join_community_with_name(community_name=community.name)
+
+        foreign_user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        foreign_user.exclude_community_from_profile_posts(community=community)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': foreign_user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), 0)
+
+    def test_filter_excluded_private_community_member_of_post_from_foreign_user_posts(self):
+        """
+        should filter excluded private community member of post from foreign user and return 200
+        """
+        user = make_user()
+
+        foreign_user = make_user()
+        foreign_user.update(community_posts_visible=True)
+
+        community_owner = make_user()
+        community = make_community(creator=community_owner, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=foreign_user.username,
+                                                                         community_name=community.name)
+        foreign_user.join_community_with_name(community_name=community.name)
+
+        community_owner.invite_user_with_username_to_community_with_name(username=user.username,
+                                                                         community_name=community.name)
+        user.join_community_with_name(community_name=community.name)
+
+        foreign_user.create_community_post(community_name=community.name, text=make_fake_post_text())
+
+        foreign_user.exclude_community_from_profile_posts(community=community)
+
+        headers = make_authentication_headers_for_user(user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': foreign_user.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), 0)
+
     def test_get_all_public_posts_for_user_unauthenticated_with_max_id_and_count(self):
         """
         should be able to retrieve all the public posts of an specific user
@@ -4856,3 +4926,565 @@ class TopPostsAPITests(OpenbookAPITestCase):
 
     def _get_url(self):
         return reverse('top-posts')
+
+
+class ProfilePostsExcludedCommunitiesAPITests(OpenbookAPITestCase):
+    """
+    ProfilePostsExcludedCommunitiesAPI
+    """
+
+    def test_retrieve_excluded_communities(self):
+        """
+        should be able to retrieve all excluded communities and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        communities = mixer.cycle(5).blend(Community, creator=user)
+        communities_ids = [community.pk for community in communities]
+        for community in communities:
+            user.join_community_with_name(community_name=community.name)
+            user.exclude_community_with_name_from_profile_posts(community_name=community.name)
+
+        url = self._get_url()
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), len(communities_ids))
+
+        for response_community in response_communities:
+            response_community_id = response_community.get('id')
+            self.assertIn(response_community_id, communities_ids)
+
+    def test_should_not_retrieve_non_excluded_communities(self):
+        """
+        should NOT retrieve non-excluded communities and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        communities = mixer.cycle(5).blend(Community, creator=user)
+        for community in communities:
+            user.join_community_with_name(community_name=community.name)
+
+        url = self._get_url()
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), 0)
+
+    def test_retrieve_excluded_communities_offset(self):
+        """
+        should be able to retrieve all excluded communities with an offset return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        total_amount_of_communities = 10
+        offset = 5
+
+        communities = mixer.cycle(total_amount_of_communities).blend(Community, creator=user)
+
+        offsetted_communities = communities[offset: total_amount_of_communities]
+        offsetted_communities_ids = [community.pk for community in offsetted_communities]
+
+        for community in communities:
+            user.join_community_with_name(community_name=community.name)
+            user.exclude_community_with_name_from_profile_posts(community_name=community.name)
+
+        url = self._get_url()
+        response = self.client.get(url, {
+            'offset': offset
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), total_amount_of_communities - offset)
+
+        for response_community in response_communities:
+            response_community_id = response_community.get('id')
+            self.assertIn(response_community_id, offsetted_communities_ids)
+
+    def test_can_exclude_public_community(self):
+        """
+        should be able to exclude a public community from profile posts
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user)
+
+        url = self._get_url()
+
+        data = {
+            'community_name': community.name
+        }
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertTrue(user.has_excluded_community_with_name_from_profile_posts(community_name=community.name))
+
+    def test_can_exclude_private_community(self):
+        """
+        should be able to exclude a private community from profile posts
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        url = self._get_url()
+
+        data = {
+            'community_name': community.name
+        }
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertTrue(user.has_excluded_community_with_name_from_profile_posts(community_name=community.name))
+
+    def test_cannot_exclude_community_already_excluded(self):
+        """
+        should not be able to exclude a community if already excluded from profile posts
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user)
+        user.exclude_community_with_name_from_profile_posts(community.name)
+
+        url = self._get_url()
+
+        data = {
+            'community_name': community.name
+        }
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(user.has_excluded_community_with_name_from_profile_posts(community_name=community.name))
+
+    def _get_url(self):
+        return reverse('profile-posts-excluded-communities')
+
+
+class SearchProfilePostsExcludedCommunitiesAPITests(OpenbookAPITestCase):
+    """
+    SearchProfilePostsExcludedCommunitiesAPI
+    """
+
+    def test_can_search_excluded_communities_by_name(self):
+        """
+        should be able to search for excluded communities by their name and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_joined_communities_to_search_for = 5
+
+        for i in range(0, amount_of_joined_communities_to_search_for):
+            community_name = fake.user_name().lower()
+            community = mixer.blend(Community, name=community_name, type=Community.COMMUNITY_TYPE_PUBLIC)
+
+            user.exclude_community_with_name_from_profile_posts(community_name)
+
+            amount_of_characters_to_query = random.randint(1, len(community_name))
+            query = community_name[0:amount_of_characters_to_query]
+
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url()
+
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            parsed_response = json.loads(response.content)
+            self.assertEqual(len(parsed_response), 1)
+
+            retrieved_community = parsed_response[0]
+            self.assertEqual(retrieved_community['name'], community_name.lower())
+            community.delete()
+
+    def test_can_search_excluded_communities_by_title(self):
+        """
+        should be able to search for excluded communities by their title and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_joined_communities_to_search_for = 5
+
+        for i in range(0, amount_of_joined_communities_to_search_for):
+            community_title = fake.user_name().lower()
+            community = mixer.blend(Community, title=community_title, type=Community.COMMUNITY_TYPE_PUBLIC)
+
+            user.exclude_community_with_name_from_profile_posts(community.name)
+
+            amount_of_characters_to_query = random.randint(1, len(community_title))
+            query = community_title[0:amount_of_characters_to_query]
+
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url()
+
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            parsed_response = json.loads(response.content)
+            self.assertEqual(len(parsed_response), 1)
+
+            retrieved_community = parsed_response[0]
+            self.assertEqual(retrieved_community['title'], community_title.lower())
+            community.delete()
+
+    def _get_url(self):
+        return reverse('search-profile-posts-excluded-communities')
+
+
+class ProfilePostsExcludedCommunityAPITests(OpenbookAPITestCase):
+    """
+    ProfilePostsExcludedCommunityAPI
+    """
+
+    def test_can_remove_excluded_community(self):
+        """
+        should be able to remove an community exclusion
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user)
+        user.exclude_community_with_name_from_profile_posts(community.name)
+
+        url = self._get_url(community=community)
+
+        response = self.client.delete(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertFalse(user.has_excluded_community_with_name_from_profile_posts(community_name=community.name))
+
+    def test_cannot_remove_exclusion_for_community_if_not_excluded(self):
+        """
+        should not be able to remove an community exclusion, if the community is not excluded in the first place
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user)
+
+        url = self._get_url(community=community)
+
+        response = self.client.delete(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(user.has_excluded_community_with_name_from_profile_posts(community_name=community.name))
+
+    def _get_url(self, community):
+        return reverse('profile-posts-excluded-community', kwargs={
+            'community_name': community.name
+        })
+
+
+class TopPostsExcludedCommunitiesAPITests(OpenbookAPITestCase):
+    """
+    TopPostsExcludedCommunitiesAPI
+    """
+
+    def test_retrieve_excluded_communities(self):
+        """
+        should be able to retrieve all excluded communities and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        communities = mixer.cycle(5).blend(Community, creator=user)
+        communities_ids = [community.pk for community in communities]
+        for community in communities:
+            user.join_community_with_name(community_name=community.name)
+            user.exclude_community_with_name_from_top_posts(community_name=community.name)
+
+        url = self._get_url()
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), len(communities_ids))
+
+        for response_community in response_communities:
+            response_community_id = response_community.get('id')
+            self.assertIn(response_community_id, communities_ids)
+
+    def test_should_not_retrieve_non_excluded_communities(self):
+        """
+        should NOT retrieve non-excluded communities and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        communities = mixer.cycle(5).blend(Community, creator=user)
+        for community in communities:
+            user.join_community_with_name(community_name=community.name)
+
+        url = self._get_url()
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), 0)
+
+    def test_retrieve_excluded_communities_offset(self):
+        """
+        should be able to retrieve all excluded communities with an offset return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        total_amount_of_communities = 10
+        offset = 5
+
+        communities = mixer.cycle(total_amount_of_communities).blend(Community, creator=user)
+
+        offsetted_communities = communities[offset: total_amount_of_communities]
+        offsetted_communities_ids = [community.pk for community in offsetted_communities]
+
+        for community in communities:
+            user.join_community_with_name(community_name=community.name)
+            user.exclude_community_with_name_from_top_posts(community_name=community.name)
+
+        url = self._get_url()
+        response = self.client.get(url, {
+            'offset': offset
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_communities = json.loads(response.content)
+
+        self.assertEqual(len(response_communities), total_amount_of_communities - offset)
+
+        for response_community in response_communities:
+            response_community_id = response_community.get('id')
+            self.assertIn(response_community_id, offsetted_communities_ids)
+
+    def test_can_exclude_public_community(self):
+        """
+        should be able to exclude a public community from top posts
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user)
+
+        url = self._get_url()
+
+        data = {
+            'community_name': community.name
+        }
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertTrue(user.has_excluded_community_with_name_from_top_posts(community_name=community.name))
+
+    def test_cannot_exclude_private_community(self):
+        """
+        should be able to exclude a private community from top posts
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user, type=Community.COMMUNITY_TYPE_PRIVATE)
+
+        url = self._get_url()
+
+        data = {
+            'community_name': community.name
+        }
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(user.has_excluded_community_with_name_from_top_posts(community_name=community.name))
+
+    def test_cannot_exclude_community_already_excluded(self):
+        """
+        should not be able to exclude a community if already excluded from top posts
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user)
+        user.exclude_community_with_name_from_top_posts(community.name)
+
+        url = self._get_url()
+
+        data = {
+            'community_name': community.name
+        }
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(user.has_excluded_community_with_name_from_top_posts(community_name=community.name))
+
+    def _get_url(self):
+        return reverse('top-posts-excluded-communities')
+
+
+class SearchTopPostsExcludedCommunitiesAPITests(OpenbookAPITestCase):
+    """
+    SearchTopPostsExcludedCommunitiesAPI
+    """
+
+    def test_can_search_excluded_communities_by_name(self):
+        """
+        should be able to search for excluded communities by their name and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_joined_communities_to_search_for = 5
+
+        for i in range(0, amount_of_joined_communities_to_search_for):
+            community_name = fake.user_name().lower()
+            community = mixer.blend(Community, name=community_name, type=Community.COMMUNITY_TYPE_PUBLIC)
+
+            user.exclude_community_with_name_from_top_posts(community_name)
+
+            amount_of_characters_to_query = random.randint(1, len(community_name))
+            query = community_name[0:amount_of_characters_to_query]
+
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url()
+
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            parsed_response = json.loads(response.content)
+            self.assertEqual(len(parsed_response), 1)
+
+            retrieved_community = parsed_response[0]
+            self.assertEqual(retrieved_community['name'], community_name.lower())
+            community.delete()
+
+    def test_can_search_excluded_communities_by_title(self):
+        """
+        should be able to search for excluded communities by their title and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        amount_of_joined_communities_to_search_for = 5
+
+        for i in range(0, amount_of_joined_communities_to_search_for):
+            community_title = fake.user_name().lower()
+            community = mixer.blend(Community, title=community_title, type=Community.COMMUNITY_TYPE_PUBLIC)
+
+            user.exclude_community_with_name_from_top_posts(community.name)
+
+            amount_of_characters_to_query = random.randint(1, len(community_title))
+            query = community_title[0:amount_of_characters_to_query]
+
+            final_query = ''
+            for character in query:
+                final_query = final_query + (character.upper() if fake.boolean() else character.lower())
+
+            url = self._get_url()
+
+            response = self.client.get(url, {
+                'query': final_query
+            }, **headers)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+            parsed_response = json.loads(response.content)
+            self.assertEqual(len(parsed_response), 1)
+
+            retrieved_community = parsed_response[0]
+            self.assertEqual(retrieved_community['title'], community_title.lower())
+            community.delete()
+
+    def _get_url(self):
+        return reverse('search-top-posts-excluded-communities')
+
+
+class TopPostsExcludedCommunityAPITests(OpenbookAPITestCase):
+    """
+    TopPostsExcludedCommunityAPI
+    """
+
+    def test_can_remove_excluded_community(self):
+        """
+        should be able to remove an community exclusion
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user)
+        user.exclude_community_with_name_from_top_posts(community.name)
+
+        url = self._get_url(community=community)
+
+        response = self.client.delete(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertFalse(user.has_excluded_community_with_name_from_top_posts(community_name=community.name))
+
+    def test_cannot_remove_exclusion_for_community_if_not_excluded(self):
+        """
+        should not be able to remove an community exclusion, if the community is not excluded in the first place
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        other_user = make_user()
+        community = make_community(creator=other_user)
+
+        url = self._get_url(community=community)
+
+        response = self.client.delete(url, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(user.has_excluded_community_with_name_from_top_posts(community_name=community.name))
+
+    def _get_url(self, community):
+        return reverse('top-posts-excluded-community', kwargs={
+            'community_name': community.name
+        })

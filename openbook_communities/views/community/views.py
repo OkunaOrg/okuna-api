@@ -184,7 +184,8 @@ class FavoriteCommunity(APIView):
         return Response(response_serializer.data, status=status.HTTP_200_OK)
 
 
-class TopPostCommunityExclusion(APIView):
+# LEGACY, Remove after 0.0.63
+class LegacyExcludeTopPostsCommunity(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def put(self, request, community_name):

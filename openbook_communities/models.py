@@ -14,9 +14,12 @@ from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.utils.model_loaders import get_community_invite_model, \
     get_community_log_model, get_category_model, get_user_model, get_moderated_object_model, \
-    get_community_notifications_subscription_model
+    get_community_notifications_subscription_model, get_community_new_post_notification_model, \
+    get_community_invite_notification_model
 from openbook_common.validators import hex_color_validator
 from openbook_communities.helpers import upload_to_community_avatar_directory, upload_to_community_cover_directory
+from openbook_communities.queries import make_search_communities_query_for_user, \
+    make_search_joined_communities_query_for_user, make_get_joined_communities_query_for_user
 from openbook_communities.validators import community_name_characters_validator
 from openbook_moderation.models import ModeratedObject, ModerationCategory
 from openbook_posts.models import Post
@@ -119,21 +122,27 @@ class Community(models.Model):
         return cls.objects.get(query)
 
     @classmethod
-    def search_communities_with_query(cls, query):
-        query = cls._make_search_communities_query(query=query)
+    def search_communities_with_query_for_user(cls, query, user, excluded_from_profile_posts=True):
+        query = make_search_communities_query_for_user(query=query, user=user,
+                                                       excluded_from_profile_posts=excluded_from_profile_posts)
+        return cls.objects.filter(query)
+
+    @classmethod
+    def search_joined_communities_with_query_for_user(cls, query, user, excluded_from_profile_posts=True):
+        query = make_search_joined_communities_query_for_user(query=query, user=user,
+                                                              excluded_from_profile_posts=excluded_from_profile_posts)
+        return cls.objects.filter(query)
+
+    @classmethod
+    def get_joined_communities_for_user(cls, user, excluded_from_profile_posts=True):
+        query = make_get_joined_communities_query_for_user(user=user,
+                                                           excluded_from_profile_posts=excluded_from_profile_posts)
         return cls.objects.filter(query)
 
     @classmethod
     def get_new_user_suggested_communities(cls):
         community_ids = [int(community_id) for community_id in settings.NEW_USER_SUGGESTED_COMMUNITIES.split(',')]
         return cls.objects.filter(id__in=community_ids, type=cls.COMMUNITY_TYPE_PUBLIC)
-
-    @classmethod
-    def _make_search_communities_query(cls, query):
-        communities_query = Q(name__icontains=query)
-        communities_query.add(Q(title__icontains=query), Q.OR)
-        communities_query.add(Q(is_deleted=False), Q.AND)
-        return communities_query
 
     @classmethod
     def get_trending_communities_for_user_with_id(cls, user_id, category_name=None, max_id=None, min_id=None):
@@ -522,6 +531,15 @@ class Community(models.Model):
 
         return super(Community, self).save(*args, **kwargs)
 
+    def delete_notifications(self):
+        # Remove all community new post notifications
+        CommunityNewPostNotification = get_community_new_post_notification_model()
+        CommunityNewPostNotification.objects.filter(community_notifications_subscription__community_id=self.pk).delete()
+
+        # Remove all community invite notifications
+        CommunityInviteNotification = get_community_invite_notification_model()
+        CommunityInviteNotification.objects.filter(community_invite__community_id=self.pk).delete()
+
     def soft_delete(self):
         self.is_deleted = True
         for post in self.posts.all().iterator():
@@ -682,8 +700,8 @@ class CommunityNotificationsSubscription(models.Model):
         return cls.objects.filter(subscriber=subscriber, community=community).exists()
 
     @classmethod
-    def are_new_post_notifications_enabled_for_user_with_username_and_community_with_name(cls, username, community_name):
+    def are_new_post_notifications_enabled_for_user_with_username_and_community_with_name(cls, username,
+                                                                                          community_name):
         return cls.objects.filter(community__name=community_name,
                                   subscriber__username=username,
                                   new_post_notifications=True).exists()
-

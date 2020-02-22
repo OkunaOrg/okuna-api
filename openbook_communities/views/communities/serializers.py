@@ -4,10 +4,11 @@ from rest_framework import serializers
 from openbook.settings import COLOR_ATTR_MAX_LENGTH
 from openbook_categories.models import Category
 from openbook_categories.validators import category_name_exists
+from openbook_common.serializers import CommonCommunityMembershipSerializer
 from openbook_common.serializers_fields.community import CommunityPostsCountField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
 from openbook_common.validators import hex_color_validator
-from openbook_communities.models import Community, CommunityMembership
+from openbook_communities.models import Community
 from openbook_communities.serializers_fields import IsInvitedField, IsCreatorField, CommunityMembershipsField, \
     IsFavoriteField, AreNewPostNotificationsEnabledForCommunityField
 from openbook_communities.validators import community_name_characters_validator, community_name_not_taken_validator
@@ -88,18 +89,6 @@ class GetFavoriteCommunitiesSerializer(serializers.Serializer):
     )
 
 
-class SearchCommunitiesSerializer(serializers.Serializer):
-    count = serializers.IntegerField(
-        required=False,
-        max_value=20
-    )
-    query = serializers.CharField(
-        max_length=settings.COMMUNITY_NAME_MAX_LENGTH,
-        allow_blank=False,
-        required=True
-    )
-
-
 class TrendingCommunitiesSerializerLegacy(serializers.Serializer):
     category = serializers.CharField(max_length=settings.CATEGORY_NAME_MAX_LENGTH,
                                      allow_blank=True,
@@ -135,18 +124,6 @@ class GetCommunitiesCommunityCategorySerializer(serializers.ModelSerializer):
         )
 
 
-class CommunitiesCommunityMembershipSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CommunityMembership
-        fields = (
-            'id',
-            'user_id',
-            'community_id',
-            'is_administrator',
-            'is_moderator',
-        )
-
-
 class CommunitiesCommunitySerializer(serializers.ModelSerializer):
     categories = GetCommunitiesCommunityCategorySerializer(many=True)
     is_invited = IsInvitedField()
@@ -154,7 +131,7 @@ class CommunitiesCommunitySerializer(serializers.ModelSerializer):
     is_favorite = IsFavoriteField()
     is_creator = IsCreatorField()
     posts_count = CommunityPostsCountField()
-    memberships = CommunityMembershipsField(community_membership_serializer=CommunitiesCommunityMembershipSerializer)
+    memberships = CommunityMembershipsField(community_membership_serializer=CommonCommunityMembershipSerializer)
 
     class Meta:
         model = Community
@@ -180,30 +157,9 @@ class CommunitiesCommunitySerializer(serializers.ModelSerializer):
         )
 
 
-class SearchCommunitiesCommunitySerializer(serializers.ModelSerializer):
-    is_favorite = IsFavoriteField()
-    memberships = CommunityMembershipsField(community_membership_serializer=CommunitiesCommunityMembershipSerializer)
-
-    class Meta:
-        model = Community
-        fields = (
-            'id',
-            'name',
-            'title',
-            'avatar',
-            'cover',
-            'members_count',
-            'color',
-            'user_adjective',
-            'users_adjective',
-            'is_favorite',
-            'memberships'
-        )
-
-
 class SuggestedCommunitiesCommunitySerializer(serializers.ModelSerializer):
     is_creator = IsCreatorField()
-    memberships = CommunityMembershipsField(community_membership_serializer=CommunitiesCommunityMembershipSerializer)
+    memberships = CommunityMembershipsField(community_membership_serializer=CommonCommunityMembershipSerializer)
 
     class Meta:
         model = Community
@@ -220,13 +176,3 @@ class SuggestedCommunitiesCommunitySerializer(serializers.ModelSerializer):
             'is_creator',
             'memberships'
         )
-
-
-class GetTopPostCommunityExclusionSerializer(serializers.Serializer):
-    offset = serializers.IntegerField(
-        required=False,
-    )
-    count = serializers.IntegerField(
-        required=False,
-        max_value=20
-    )

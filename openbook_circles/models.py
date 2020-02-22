@@ -22,6 +22,9 @@ class ConnectionCircle(models.Model):
         unique_together = [
             ('connection', 'circle')
         ]
+        indexes = [
+            models.Index(fields=['connection', 'circle']),
+        ]
 
 
 class Circle(models.Model):
