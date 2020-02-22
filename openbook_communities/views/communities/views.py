@@ -14,7 +14,7 @@ from openbook_communities.views.communities.serializers import CreateCommunitySe
     CommunitiesCommunitySerializer, CommunityNameCheckSerializer, \
     GetFavoriteCommunitiesSerializer, GetJoinedCommunitiesSerializer, TrendingCommunitiesSerializer, \
     GetModeratedCommunitiesSerializer, GetAdministratedCommunitiesSerializer, SuggestedCommunitiesCommunitySerializer, \
-    GetTopPostCommunityExclusionSerializer, SearchCommunitiesCommunitySerializer, TrendingCommunitiesSerializerLegacy
+    TrendingCommunitiesSerializerLegacy
 
 
 class Communities(APIView):

@@ -21,12 +21,12 @@ from rq import SimpleWorker
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_community, make_moderation_category, \
-    get_test_videos, get_test_image, make_proxy_blacklisted_domain, make_hashtag, make_hashtag_name, \
+    get_test_videos, get_test_image, make_hashtag, make_hashtag_name, \
     make_reactions_emoji_group, make_emoji
-from openbook_common.utils.model_loaders import get_language_model, get_community_new_post_notification_model, \
+from openbook_common.utils.model_loaders import get_community_new_post_notification_model, \
     get_post_comment_notification_model, get_post_comment_user_mention_notification_model, \
     get_post_user_mention_notification_model, get_post_comment_reaction_notification_model, \
-    get_post_comment_reply_notification_model, get_test_videos, get_test_image, make_hashtag, make_hashtag_name
+    get_post_comment_reply_notification_model
 from openbook_common.utils.model_loaders import get_language_model
 from openbook_communities.models import Community
 from openbook_hashtags.models import Hashtag
