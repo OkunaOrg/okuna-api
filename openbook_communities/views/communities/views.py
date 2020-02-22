@@ -277,7 +277,7 @@ class TrendingCommunities(APIView):
                                                              max_id=max_id,
                                                              min_id=min_id)[:count]
 
-        trending_communities_serializer = SearchCommunitiesCommunitySerializer(
+        trending_communities_serializer = CommonSearchCommunitiesCommunitySerializer(
             trending_communities, many=True, context={"request": request})
 
         return Response(trending_communities_serializer.data, status=status.HTTP_200_OK)
