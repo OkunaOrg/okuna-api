@@ -54,11 +54,11 @@ def process_post_media(post_id):
     logger.info('Processed media of post with id: %d' % post_id)
 
 
-def _reduce_atomic_community_activity_score(community_id):
+def _reduce_atomic_community_activity_score(community_id, multiplier=1):
     Community = get_community_model()
     community = Community.objects.get(id=community_id)
     if community:
-        community.activity_score = F('activity_score') - settings.ACTIVITY_ATOMIC_WEIGHT
+        community.activity_score = F('activity_score') - (multiplier * settings.ACTIVITY_ATOMIC_WEIGHT)
         community.save()
 
 
@@ -69,7 +69,9 @@ def _process_community_activity_score_reaction_added(community, post_reaction_id
     community.save()
 
     # schedule reduction of activity scores
-    default_scheduler.enqueue_at(expire_datetime, _reduce_atomic_community_activity_score, community.pk,
+    default_scheduler.enqueue_at(expire_datetime, _reduce_atomic_community_activity_score,
+                                 community.pk,
+                                 multiplier=settings.ACTIVITY_UNIQUE_REACTION_MULTIPLIER,
                                  job_id='expire_community_{0}_rid_{1}_unique_reaction'.format(
                                      community.pk, post_reaction_id))
 
@@ -194,9 +196,13 @@ def _process_community_activity_score_comment_added(community,
         default_scheduler.cancel(unique_comment_job_id)
 
     # schedule reduction of activity scores
-    default_scheduler.enqueue_at(expire_datetime, _reduce_atomic_community_activity_score, community.pk,
+    default_scheduler.enqueue_at(expire_datetime, _reduce_atomic_community_activity_score,
+                                 community.pk,
+                                 multiplier=settings.ACTIVITY_UNIQUE_COMMENT_MULTIPLIER,
                                  job_id=unique_comment_job_id)
-    default_scheduler.enqueue_at(expire_datetime, _reduce_atomic_community_activity_score, community.pk,
+    default_scheduler.enqueue_at(expire_datetime, _reduce_atomic_community_activity_score,
+                                 community.pk,
+                                 multiplier=settings.ACTIVITY_COUNT_COMMENTS_MULTIPLIER,
                                  job_id='expire_community_{0}_pid_{1}_uid_{2}_cid_{3}'.format(
                                      community.pk, post_id, post_commenter_id, post_comment_id)
                                  )
@@ -277,9 +283,13 @@ def _process_community_activity_score_post_added(post, total_posts_by_creator):
         default_scheduler.cancel(unique_post_job_id)
 
     # schedule reduction of activity scores
-    default_scheduler.enqueue_at(expire_datetime, _reduce_atomic_community_activity_score, post.community.pk,
+    default_scheduler.enqueue_at(expire_datetime, _reduce_atomic_community_activity_score,
+                                 post.community.pk,
+                                 multiplier=settings.ACTIVITY_UNIQUE_POST_MULTIPLIER,
                                  job_id=unique_post_job_id)
-    default_scheduler.enqueue_at(expire_datetime, _reduce_atomic_community_activity_score, post.community.pk,
+    default_scheduler.enqueue_at(expire_datetime, _reduce_atomic_community_activity_score,
+                                 post.community.pk,
+                                 multiplier=settings.ACTIVITY_COUNT_POSTS_MULTIPLIER,
                                  job_id='expire_community_{0}_pid_{1}'.format(
                                      post.community.pk, post.pk)
                                  )
