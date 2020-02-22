@@ -687,15 +687,3 @@ class CommunityNotificationsSubscription(models.Model):
                                   subscriber__username=username,
                                   new_post_notifications=True).exists()
 
-
-class TrendingCommunity(models.Model):
-    community = models.OneToOneField(Community, on_delete=models.CASCADE, related_name='trending_community')
-    created = models.DateTimeField(editable=False, db_index=True)
-
-    def save(self, *args, **kwargs):
-        ''' On save, update timestamps '''
-        if not self.id:
-            self.created = timezone.now()
-        self.modified = timezone.now()
-
-        return super(TrendingCommunity, self).save(*args, **kwargs)

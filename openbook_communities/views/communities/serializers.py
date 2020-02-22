@@ -7,7 +7,7 @@ from openbook_categories.validators import category_name_exists
 from openbook_common.serializers_fields.community import CommunityPostsCountField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
 from openbook_common.validators import hex_color_validator
-from openbook_communities.models import Community, CommunityMembership, TrendingCommunity
+from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import IsInvitedField, IsCreatorField, CommunityMembershipsField, \
     IsFavoriteField, AreNewPostNotificationsEnabledForCommunityField
 from openbook_communities.validators import community_name_characters_validator, community_name_not_taken_validator
