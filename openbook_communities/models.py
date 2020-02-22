@@ -70,6 +70,9 @@ class Community(models.Model):
 
     class Meta:
         verbose_name_plural = 'communities'
+        indexes = [
+            models.Index(fields=['activity_score']),
+        ]
 
     @classmethod
     def is_user_with_username_invited_to_community_with_name(cls, username, community_name):
