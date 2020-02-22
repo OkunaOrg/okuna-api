@@ -214,11 +214,11 @@ class Post(models.Model):
         return trending_community_posts_queryset
 
     @classmethod
-    def get_trending_posts_old_for_user_with_id(cls, user_id):
+    def get_trending_posts_for_user_with_id_legacy(cls, user_id):
         """
         For backwards compatibility reasons
         """
-        trending_posts_query = cls._get_trending_posts_old_query()
+        trending_posts_query = cls._get_trending_posts_query_legacy()
         trending_posts_query.add(~Q(community__banned_users__id=user_id), Q.AND)
 
         trending_posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=user_id) | Q(
@@ -228,15 +228,15 @@ class Post(models.Model):
 
         trending_posts_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
 
-        return cls._get_trending_posts_old_with_query(query=trending_posts_query)
+        return cls._get_trending_posts_with_query_legacy(query=trending_posts_query)
 
     @classmethod
-    def _get_trending_posts_old_with_query(cls, query):
+    def _get_trending_posts_with_query_legacy(cls, query):
         return cls.objects.filter(query).annotate(Count('reactions')).order_by(
             '-reactions__count', '-created')
 
     @classmethod
-    def _get_trending_posts_old_query(cls):
+    def _get_trending_posts_query_legacy(cls):
         trending_posts_query = Q(created__gte=timezone.now() - timedelta(
             hours=12))
 

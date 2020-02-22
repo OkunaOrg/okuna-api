@@ -114,7 +114,7 @@ class Posts(APIView):
         return Response(post_serializer.data, status=status.HTTP_200_OK)
 
 
-class TrendingPostsNew(APIView):
+class TrendingPostsLegacy(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
 
     def get(self, request):
@@ -141,17 +141,17 @@ class TrendingPosts(APIView):
         version = request.version
 
         if version == '2.0':
-            return self.get_trending_posts_v2(request)
+            return self.get_trending_posts(request)
         else:
-            return self.get_trending_posts_v1(request)
+            return self.get_trending_posts_legacy(request)
 
-    def get_trending_posts_v1(self, request):
+    def get_trending_posts_legacy(self, request):
         user = request.user
-        posts = user.get_trending_posts_old()[:30]
+        posts = user.get_trending_posts_legacy()[:30]
         posts_serializer = AuthenticatedUserPostSerializer(posts, many=True, context={"request": request})
         return Response(posts_serializer.data, status=status.HTTP_200_OK)
 
-    def get_trending_posts_v2(self, request):
+    def get_trending_posts(self, request):
         query_params = request.query_params.dict()
 
         serializer = GetTrendingPostsSerializer(data=query_params)
