@@ -95,7 +95,7 @@ class Post(models.Model):
                                           upload_to=upload_to_post_directory,
                                           blank=False, null=True, format='JPEG', options={'quality': 30},
                                           processors=[ResizeToFit(width=512, upscale=False)])
-    activity_score = models.FloatField(default=0.0)
+    activity_score = models.DecimalField(default=0.0, decimal_places=10, max_digits=10)
 
     class Meta:
         index_together = [

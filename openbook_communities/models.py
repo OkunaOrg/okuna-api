@@ -66,7 +66,7 @@ class Community(models.Model):
         _('is deleted'),
         default=False,
     )
-    activity_score = models.FloatField(default=0.0)
+    activity_score = models.DecimalField(default=0.0, decimal_places=10, max_digits=10)
 
     class Meta:
         verbose_name_plural = 'communities'
