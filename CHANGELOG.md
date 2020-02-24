@@ -4,12 +4,12 @@ The change log for the API server for Okuna.
 
 ## Table of contents
 
-- [Release 0.0.65](#release-0.0.65)
+- [Release 0.0.66](#release-0.0.66)
 - [Release 0.0.63](#release-0.0.63)
 - [Release 0.0.59](#release-0.0.59)
 
 
-## Release 0.0.65
+## Release 0.0.66
 
 - Introduce activity score in posts and communities, add jobs for the same
 - Refactor trending posts and trending communities to use activity score
