@@ -1316,7 +1316,7 @@ class PostItemTransactionAPITests(OpenbookAPITransactionTestCase):
         with transaction.atomic():
             post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
 
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
         community.refresh_from_db()
 
         activity_score_before_delete = community.activity_score
@@ -1324,7 +1324,7 @@ class PostItemTransactionAPITests(OpenbookAPITransactionTestCase):
         url = self._get_url(post)
         response = self.client.delete(url, **headers)
 
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
         community.refresh_from_db()
 
         expected_weight = activity_score_before_delete - \
@@ -1346,7 +1346,7 @@ class PostItemTransactionAPITests(OpenbookAPITransactionTestCase):
             post_1 = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
             post_2 = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
 
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
         community.refresh_from_db()
 
         activity_score_before_delete = community.activity_score
@@ -1356,7 +1356,7 @@ class PostItemTransactionAPITests(OpenbookAPITransactionTestCase):
         url_2 = self._get_url(post_2)
         response_2 = self.client.delete(url_2, **headers)
 
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
         community.refresh_from_db()
 
         expected_weight = activity_score_before_delete - \
@@ -1369,7 +1369,7 @@ class PostItemTransactionAPITests(OpenbookAPITransactionTestCase):
         self.assertEqual(community.activity_score, expected_weight)
 
     def _clear_jobs_in_scheduler(self):
-        default_scheduler = get_scheduler('default')
+        default_scheduler = get_scheduler('process-activity-score')
         for job in default_scheduler.get_jobs():
             default_scheduler.cancel(job.get_id())
 

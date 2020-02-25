@@ -475,7 +475,7 @@ class PostReactionItemTransactionAPITests(OpenbookAPITransactionTestCase):
         response = self.client.delete(url, **headers)
 
         # run job to reduce activity score
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
 
         post.refresh_from_db()
 
@@ -498,7 +498,7 @@ class PostReactionItemTransactionAPITests(OpenbookAPITransactionTestCase):
         with transaction.atomic():
             post_reaction = user.react_to_post_with_id(post.pk, emoji_id=post_reaction_emoji_id)
 
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
         community.refresh_from_db()
         activity_score_before_delete = community.activity_score
 
@@ -507,7 +507,7 @@ class PostReactionItemTransactionAPITests(OpenbookAPITransactionTestCase):
         response = self.client.delete(url, **headers)
 
         # run job to reduce activity score
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
         community.refresh_from_db()
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)

@@ -2094,7 +2094,7 @@ class PostCommentsTransactionAPITests(OpenbookAPITransactionTestCase):
         url = self._get_url(post)
         self.client.put(url, data, **headers)
 
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
 
         post.refresh_from_db()
 
@@ -2111,7 +2111,7 @@ class PostCommentsTransactionAPITests(OpenbookAPITransactionTestCase):
         community = make_community(creator=user)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
 
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
         community.refresh_from_db()
         activity_score_before_comment = community.activity_score
 
@@ -2122,7 +2122,7 @@ class PostCommentsTransactionAPITests(OpenbookAPITransactionTestCase):
         url = self._get_url(post)
         self.client.put(url, data, **headers)
 
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
         community.refresh_from_db()
 
         expected_comment_weight = settings.ACTIVITY_UNIQUE_COMMENT_WEIGHT + settings.ACTIVITY_COUNT_COMMENTS_WEIGHT
@@ -2139,7 +2139,7 @@ class PostCommentsTransactionAPITests(OpenbookAPITransactionTestCase):
         community = make_community(creator=user)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
 
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
         community.refresh_from_db()
         activity_score_before_comment = community.activity_score
 
@@ -2152,7 +2152,7 @@ class PostCommentsTransactionAPITests(OpenbookAPITransactionTestCase):
         # comment again
         self.client.put(url, data, **headers)
 
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
 
         community.refresh_from_db()
 
@@ -2161,7 +2161,7 @@ class PostCommentsTransactionAPITests(OpenbookAPITransactionTestCase):
         self.assertEqual(community.activity_score - activity_score_before_comment, expected_comment_weight)
 
     def _clear_jobs_in_scheduler(self):
-        default_scheduler = get_scheduler('default')
+        default_scheduler = get_scheduler('process-activity-score')
         for job in default_scheduler.get_jobs():
             default_scheduler.cancel(job.get_id())
 

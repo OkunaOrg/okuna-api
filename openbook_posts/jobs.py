@@ -64,7 +64,7 @@ def _reduce_atomic_community_activity_score(community_id, multiplier=1):
 
 
 def _process_community_activity_score_reaction_added(community, post_reaction_id):
-    default_scheduler = get_scheduler('default')
+    default_scheduler = get_scheduler('process-activity-score')
     expire_datetime = datetime.utcnow() + timedelta(hours=settings.ACTIVITY_SCORE_EXPIRY_IN_HOURS)
     community.activity_score = F('activity_score') + settings.ACTIVITY_UNIQUE_REACTION_WEIGHT
     community.save()
@@ -78,7 +78,7 @@ def _process_community_activity_score_reaction_added(community, post_reaction_id
 
 
 def _process_community_activity_score_reaction_deleted(community, post_reaction_id):
-    default_scheduler = get_scheduler('default')
+    default_scheduler = get_scheduler('process-activity-score')
     reaction_job_id = 'expire_community_{0}_rid_{1}_unique_reaction'.format(community.pk, post_reaction_id)
 
     if reaction_job_id in default_scheduler:
@@ -98,7 +98,7 @@ def process_activity_score_post_reaction(post_id, post_reaction_id):
     This job is called to process activity score on a post after add/remove reaction
     """
     remove_reaction_job_id = 'process_remove_unique_reaction_pid_{0}_rid_{1}'.format(post_id, post_reaction_id)
-    default_queue = get_queue('default')
+    default_queue = get_queue('process-activity-score')
     remove_job = default_queue.fetch_job(remove_reaction_job_id)
 
     if remove_reaction_job_id in default_queue.job_ids:
@@ -169,7 +169,7 @@ def _process_community_activity_score_comment_deleted(community,
                                                       post_commenter_id,
                                                       commenter_comments_count):
 
-    default_scheduler = get_scheduler('default')
+    default_scheduler = get_scheduler('process-activity-score')
     job_id = 'expire_community_{0}_pid_{1}_uid_{2}_cid_{3}'.format(community.pk, post_id,
                                                                    post_commenter_id, post_comment_id)
     unique_comment_job_id = 'expire_community_{0}_pid_{1}_uid_{2}_unique_comment'.format(community.pk,
@@ -198,7 +198,7 @@ def _process_community_activity_score_comment_added(community,
                                                     post_id,
                                                     post_comment_id,
                                                     post_commenter_id):
-    default_scheduler = get_scheduler('default')
+    default_scheduler = get_scheduler('process-activity-score')
     unique_comment_job_id = 'expire_community_{0}_pid_{1}_uid_{2}_unique_comment'.format(community.pk,
                                                                                          post_id, post_commenter_id)
     expire_datetime = timezone.now() + timedelta(hours=settings.ACTIVITY_SCORE_EXPIRY_IN_HOURS)
@@ -231,7 +231,7 @@ def process_activity_score_post_comment(post_id, post_comment_id, post_commenter
     This job is called to process activity score on a post after add/remove comment
     """
     delete_comment_job_id = 'process_delete_comment_pid_{0}_cid_{1}'.format(post_id, post_comment_id)
-    default_queue = get_queue('default')
+    default_queue = get_queue('process-activity-score')
     delete_job = default_queue.fetch_job(delete_comment_job_id)
 
     if delete_comment_job_id in default_queue.job_ids:
@@ -287,7 +287,7 @@ def process_activity_score_post_comment(post_id, post_comment_id, post_commenter
 
 
 def _process_community_activity_score_post_added(post, total_posts_by_creator):
-    default_scheduler = get_scheduler('default')
+    default_scheduler = get_scheduler('process-activity-score')
     expire_datetime = timezone.now() + timedelta(hours=settings.ACTIVITY_SCORE_EXPIRY_IN_HOURS)
     unique_post_job_id = 'expire_community_{0}_uid_{1}_unique_post'.format(
         post.community.pk,
@@ -320,7 +320,7 @@ def _process_community_activity_score_post_added(post, total_posts_by_creator):
 def _process_community_activity_score_post_deleted(post_id, post_creator_id,
                                                    post_community_id, total_posts_by_creator):
 
-    default_scheduler = get_scheduler('default')
+    default_scheduler = get_scheduler('process-activity-score')
     job_id = 'expire_community_{0}_pid_{1}'.format(post_community_id, post_id)
     unique_post_job_id = 'expire_community_{0}_uid_{1}_unique_post'.format(post_community_id,
                                                                            post_creator_id)
@@ -353,7 +353,7 @@ def process_community_activity_score_post(post_id, post_creator_id, post_communi
     delete_post_job_id = 'process_delete_community_post_community_{0}_pid_{1}_uid_{2}'.format(post_community_id,
                                                                                               post_id,
                                                                                               post_creator_id)
-    default_queue = get_queue('default')
+    default_queue = get_queue('process-activity-score')
     delete_post_job = default_queue.fetch_job(delete_post_job_id)
 
     if delete_post_job is not None and delete_post_job.is_queued:

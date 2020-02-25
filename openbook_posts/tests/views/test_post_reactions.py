@@ -623,7 +623,7 @@ class PostReactionsTransactionAPITests(OpenbookAPITransactionTestCase):
 
         url = self._get_url(post)
         response = self.client.put(url, data, **headers)
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         post.refresh_from_db()
@@ -638,7 +638,7 @@ class PostReactionsTransactionAPITests(OpenbookAPITransactionTestCase):
         community = make_community(creator=user)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
 
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
         community.refresh_from_db()
 
         activity_score_before_reaction = community.activity_score
@@ -651,7 +651,7 @@ class PostReactionsTransactionAPITests(OpenbookAPITransactionTestCase):
 
         url = self._get_url(post)
         response = self.client.put(url, data, **headers)
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
 
         community.refresh_from_db()
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)

@@ -2188,7 +2188,7 @@ class PostCommentItemTransactionAPITests(OpenbookAPITransactionTestCase):
         headers = make_authentication_headers_for_user(user)
         response = self.client.delete(url, **headers)
 
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
         post.refresh_from_db()
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -2203,7 +2203,7 @@ class PostCommentItemTransactionAPITests(OpenbookAPITransactionTestCase):
         community = make_community(creator=user)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
 
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
         community.refresh_from_db()
         activity_score_before_delete = community.activity_score
 
@@ -2214,7 +2214,7 @@ class PostCommentItemTransactionAPITests(OpenbookAPITransactionTestCase):
         headers = make_authentication_headers_for_user(user)
         response = self.client.delete(url, **headers)
 
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
         community.refresh_from_db()
         self._clear_jobs_in_scheduler()
         self.assertEqual(community.activity_score, activity_score_before_delete)
@@ -2230,7 +2230,7 @@ class PostCommentItemTransactionAPITests(OpenbookAPITransactionTestCase):
         post_comment_1 = user.comment_post_with_id(post.pk, text=make_fake_post_comment_text())
         post_comment_2 = user.comment_post_with_id(post.pk, text=make_fake_post_comment_text())
 
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
         community.refresh_from_db()
         activity_score_before_delete = community.activity_score
 
@@ -2239,7 +2239,7 @@ class PostCommentItemTransactionAPITests(OpenbookAPITransactionTestCase):
         headers = make_authentication_headers_for_user(user)
         response = self.client.delete(url, **headers)
 
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
         community.refresh_from_db()
 
         expected_activity_score_1 = activity_score_before_delete - settings.ACTIVITY_COUNT_COMMENTS_WEIGHT
@@ -2250,7 +2250,7 @@ class PostCommentItemTransactionAPITests(OpenbookAPITransactionTestCase):
         headers = make_authentication_headers_for_user(user)
         response = self.client.delete(url_2, **headers)
 
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
         community.refresh_from_db()
         expected_activity_score_2 = expected_activity_score_1 - \
                                     settings.ACTIVITY_COUNT_COMMENTS_WEIGHT - \
@@ -2260,7 +2260,7 @@ class PostCommentItemTransactionAPITests(OpenbookAPITransactionTestCase):
         self.assertEqual(community.activity_score, expected_activity_score_2)
 
     def _clear_jobs_in_scheduler(self):
-        default_scheduler = get_scheduler('default')
+        default_scheduler = get_scheduler('process-activity-score')
         for job in default_scheduler.get_jobs():
             default_scheduler.cancel(job.get_id())
 

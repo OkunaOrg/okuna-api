@@ -770,7 +770,7 @@ class Post(models.Model):
         add_post_job_id = 'process_add_community_post_community_{0}_pid_{1}_uid_{2}'.format(self.community.pk,
                                                                                             self.pk,
                                                                                             self.creator.pk)
-        queue = django_rq.get_queue('default')
+        queue = django_rq.get_queue('process-activity-score')
         transaction.on_commit(lambda: queue.enqueue(process_community_activity_score_post,
                                                     post_id=self.pk,
                                                     post_creator_id=self.creator.pk,
@@ -784,7 +784,7 @@ class Post(models.Model):
         delete_post_job_id = 'process_delete_community_post_community_{0}_pid_{1}_uid_{2}'.format(self.community.pk,
                                                                                                   self.pk,
                                                                                                   self.creator.pk)
-        queue = django_rq.get_queue('default')
+        queue = django_rq.get_queue('process-activity-score')
         post_id = self.pk
         post_creator_id = self.creator.pk
         post_community_id = self.community.pk
@@ -1001,7 +1001,7 @@ class PostComment(models.Model):
 
     @classmethod
     def enqueue_process_activity_score_job(cls, post_id, post_comment_id, post_commenter_id, job_id):
-        queue = django_rq.get_queue('default')
+        queue = django_rq.get_queue('process-activity-score')
         queue.enqueue(process_activity_score_post_comment,
                       post_id=post_id,
                       post_comment_id=post_comment_id,
@@ -1233,7 +1233,7 @@ class PostReaction(models.Model):
 
     @classmethod
     def enqueue_process_activity_score_job(cls, post_id, post_reaction_id, job_id):
-        queue = django_rq.get_queue('default')
+        queue = django_rq.get_queue('process-activity-score')
         queue.enqueue(process_activity_score_post_reaction,
                       post_id=post_id,
                       post_reaction_id=post_reaction_id,

@@ -1576,7 +1576,7 @@ class TrendingCommunitiesTransactionAPITests(OpenbookAPITransactionTestCase):
             post = community_owner.create_community_post(text=make_fake_post_text(), community_name=community.name)
 
         # update activity scores
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
 
         headers = make_authentication_headers_for_user(user)
         headers = self._add_version_header(headers)
@@ -1611,7 +1611,7 @@ class TrendingCommunitiesTransactionAPITests(OpenbookAPITransactionTestCase):
                 post = community_owner.create_community_post(text=make_fake_post_text(), community_name=community.name)
 
         # update activity scores
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
 
         headers = make_authentication_headers_for_user(user)
         headers = self._add_version_header(headers)
@@ -1645,7 +1645,7 @@ class TrendingCommunitiesTransactionAPITests(OpenbookAPITransactionTestCase):
             post = community_owner.create_community_post(text=make_fake_post_text(), community_name=community.name)
 
         # update activity scores
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
 
         headers = make_authentication_headers_for_user(user)
         headers = self._add_version_header(headers)
@@ -1675,7 +1675,7 @@ class TrendingCommunitiesTransactionAPITests(OpenbookAPITransactionTestCase):
         community_owner.ban_user_with_username_from_community_with_name(username=user.username, community_name=community.name)
 
         # update activity scores
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
 
         headers = make_authentication_headers_for_user(user)
         headers = self._add_version_header(headers)
@@ -1691,7 +1691,7 @@ class TrendingCommunitiesTransactionAPITests(OpenbookAPITransactionTestCase):
         self.assertEqual(0, len(response_communities))
 
     def _clear_jobs_in_scheduler(self):
-        default_scheduler = get_scheduler('default')
+        default_scheduler = get_scheduler('process-activity-score')
         for job in default_scheduler.get_jobs():
             default_scheduler.cancel(job.get_id())
 

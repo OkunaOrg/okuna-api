@@ -879,7 +879,7 @@ class CommunityPostsTransactionAPITests(OpenbookAPITransactionTestCase):
 
         url = self._get_url(community_name=community.name)
         response = self.client.put(url, data, **headers, format='multipart')
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
 
         community.refresh_from_db()
 
@@ -908,7 +908,7 @@ class CommunityPostsTransactionAPITests(OpenbookAPITransactionTestCase):
         # create one more post
         response = self.client.put(url, data, **headers, format='multipart')
 
-        get_worker('default', worker_class=SimpleWorker).work(burst=True)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
         community.refresh_from_db()
 
         expected_weight = settings.ACTIVITY_UNIQUE_POST_WEIGHT + (2 * settings.ACTIVITY_COUNT_POSTS_WEIGHT)
@@ -917,7 +917,7 @@ class CommunityPostsTransactionAPITests(OpenbookAPITransactionTestCase):
         self.assertEqual(community.activity_score, expected_weight)
 
     def _clear_jobs_in_scheduler(self):
-        default_scheduler = get_scheduler('default')
+        default_scheduler = get_scheduler('process-activity-score')
         for job in default_scheduler.get_jobs():
             default_scheduler.cancel(job.get_id())
 
