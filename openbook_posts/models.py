@@ -1300,3 +1300,58 @@ class PostCommentUserMention(models.Model):
             owner_id=user.pk)
         send_post_comment_user_mention_push_notification(post_comment_user_mention=post_comment_user_mention)
         return post_comment_user_mention
+
+
+class PostNotificationsSubscription(models.Model):
+    subscriber = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_notifications_subscriptions',
+                                   null=False,
+                                   blank=False)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='notifications_subscriptions', null=False,
+                             blank=False)
+    post_notifications = models.BooleanField(default=False, blank=False)
+
+    class Meta:
+        unique_together = ('post', 'subscriber',)
+
+    @classmethod
+    def create_post_notifications_subscription(cls, subscriber, post):
+        if not cls.objects.filter(subscriber=subscriber, post=post).exists():
+            return cls.objects.create(subscriber=subscriber, post=post)
+
+        post_notifications_subscription = cls.objects.get(subscriber=subscriber, post=post)
+        post_notifications_subscription.save()
+
+        return post_notifications_subscription
+
+    @classmethod
+    def get_or_create_post_notifications_subscription(cls, subscriber, post):
+        try:
+            post_notifications_subscription = cls.objects.get(subscriber_id=subscriber.pk,
+                                                              post_id=post.pk)
+        except cls.DoesNotExist:
+            post_notifications_subscription = cls.create_post_notifications_subscription(
+                subscriber=subscriber,
+                post=post
+            )
+
+        return post_notifications_subscription
+
+    @classmethod
+    def delete_post_notifications_subscription(cls, subscriber, post):
+        return cls.objects.filter(subscriber=subscriber, post=post).delete()
+
+    @classmethod
+    def post_notifications_subscription_exists(cls, subscriber, post):
+        return cls.objects.filter(subscriber=subscriber, post=post).exists()
+
+    @classmethod
+    def is_user_with_username_subscribed_to_notifications_for_post_with_id(cls, username, post_id):
+        return cls.objects.filter(post_id=post_id,
+                                  subscriber__username=username,
+                                  post_notifications=True).exists()
+
+    @classmethod
+    def are_post_notifications_enabled_for_user_with_username_and_post_with_id(cls, username, post_id):
+        return cls.objects.filter(post_id=post_id,
+                                  subscriber__username=username,
+                                  post_notifications=True).exists()
