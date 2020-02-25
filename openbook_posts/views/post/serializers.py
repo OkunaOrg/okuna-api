@@ -10,6 +10,7 @@ from openbook_common.serializers_fields.post import PostCreatorField, PostReacti
 from openbook_communities.models import CommunityMembership, Community
 from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_posts.models import PostImage, Post
+from openbook_posts.serializer_fields import PostNotificationsEnabledField
 from openbook_posts.validators import post_uuid_exists, post_text_validators
 
 from openbook_posts.views.post_reaction.serializers import PostReactionSerializer
@@ -213,6 +214,13 @@ class ClosePostSerializer(serializers.Serializer):
     )
 
 
+class SubscribeToPostNotificationsSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+
+
 class OpenPostSerializer(serializers.Serializer):
     post_uuid = serializers.UUIDField(
         validators=[post_uuid_exists],
@@ -287,6 +295,18 @@ class OpenClosePostSerializer(serializers.ModelSerializer):
             'id',
             'uuid',
             'is_closed',
+        )
+
+
+class SubscribeToPostNotificationsPostSerializer(serializers.ModelSerializer):
+    post_notifications_enabled = PostNotificationsEnabledField()
+
+    class Meta:
+        model = Post
+        fields = (
+            'id',
+            'uuid',
+            'post_notifications_enabled',
         )
 
 

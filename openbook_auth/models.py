@@ -36,7 +36,8 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
     get_moderation_penalty_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
     get_post_comment_reaction_notification_model, get_top_post_model, get_top_post_community_exclusion_model, \
-    get_hashtag_model, get_profile_posts_community_exclusion_model, get_user_new_post_notification_model
+    get_hashtag_model, get_profile_posts_community_exclusion_model, get_user_new_post_notification_model, \
+    get_post_notifications_subscription_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications import helpers
 from openbook_auth.checkers import *
@@ -2186,6 +2187,42 @@ class User(AbstractUser):
         post.save()
 
         return post
+
+    def enable_post_notifications_for_post_with_id(self, post_id):
+        Post = get_post_model()
+        post = Post.objects.get(id=post_id)
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+
+        check_can_enable_post_notifications_for_post(user=self, post=post)
+
+        post_notifications_subscription = PostNotificationsSubscription. \
+            get_or_create_post_notifications_subscription(post=post, subscriber=self)
+
+        post_notifications_subscription.post_notifications = True
+        post_notifications_subscription.save()
+
+        return post
+
+    def disable_post_notifications_for_post_with_id(self, post_id):
+        Post = get_post_model()
+        post = Post.objects.get(id=post_id)
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+
+        check_can_disable_post_notifications_for_post(user=self, post=post)
+
+        post_notifications_subscription = PostNotificationsSubscription.\
+            get_or_create_post_notifications_subscription(post=post, subscriber=self)
+
+        post_notifications_subscription.post_notifications = False
+        post_notifications_subscription.save()
+
+        return post
+
+    def are_post_notifications_enabled_for_post(self, post):
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        return PostNotificationsSubscription.are_post_notifications_enabled_for_user_with_username_and_post_with_id(
+            username=self.username, post_id=post.pk
+        )
 
     def get_hashtag_with_name(self, hashtag_name):
         Hashtag = get_hashtag_model()

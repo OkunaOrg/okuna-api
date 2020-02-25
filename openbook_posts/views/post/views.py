@@ -14,7 +14,7 @@ from openbook_posts.views.post.serializers import DeletePostSerializer, GetPostS
     OpenClosePostSerializer, \
     OpenPostSerializer, ClosePostSerializer, TranslatePostSerializer, \
     SearchPostParticipantsSerializer, PostParticipantSerializer, GetPostParticipantsSerializer, PublishPostSerializer, \
-    GetPostStatusSerializer
+    GetPostStatusSerializer, SubscribeToPostNotificationsSerializer, SubscribeToPostNotificationsPostSerializer
 from openbook_translation.strategies.base import TranslationClientError, UnsupportedLanguagePairException, \
     MaxTextLengthExceededError
 
@@ -321,3 +321,44 @@ class PostPreviewLinkData(APIView):
 
         return Response(preview_link_data, status=status.HTTP_200_OK)
 
+
+class SubscribeToPostNotifications(APIView):
+    permission_classes = (IsAuthenticated,)
+
+    def put(self, request, post_uuid):
+        request_data = request.data.copy()
+        request_data['post_uuid'] = post_uuid
+
+        serializer = SubscribeToPostNotificationsSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        data = serializer.validated_data
+        post_uuid = data.get('post_uuid')
+        post_id = get_post_id_for_post_uuid(post_uuid)
+
+        with transaction.atomic():
+            post = user.enable_post_notifications_for_post_with_id(post_id=post_id)
+
+        response_serializer = SubscribeToPostNotificationsPostSerializer(post, context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, post_uuid):
+        request_data = request.data.copy()
+        request_data['post_uuid'] = post_uuid
+
+        serializer = SubscribeToPostNotificationsSerializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user = request.user
+        post_uuid = data.get('post_uuid')
+        post_id = get_post_id_for_post_uuid(post_uuid)
+
+        with transaction.atomic():
+            post = user.disable_post_notifications_for_post_with_id(post_id=post_id)
+
+        response_serializer = SubscribeToPostNotificationsPostSerializer(post, context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)

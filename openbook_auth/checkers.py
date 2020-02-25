@@ -5,7 +5,8 @@ from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.utils.model_loaders import get_post_model, get_community_model, get_post_comment_model, \
     get_language_model, get_user_model, get_emoji_group_model, get_post_reaction_model, get_user_invite_model, \
-    get_community_notifications_subscription_model, get_user_notifications_subscription_model
+    get_community_notifications_subscription_model, get_user_notifications_subscription_model, \
+    get_post_notifications_subscription_model
 
 from openbook_common import checkers as common_checkers
 
@@ -340,6 +341,33 @@ def check_can_disable_new_post_notifications_for_community(user, community):
         raise ValidationError(
             _('New post notifications are not enabled'),
         )
+
+
+def check_can_disable_post_notifications_for_post(user, post):
+    PostNotificationsSubscription = get_post_notifications_subscription_model()
+    post_notifications_enabled = \
+        PostNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_post_with_id(
+            username=user.username, post_id=post.pk)
+
+    if not post_notifications_enabled:
+        raise ValidationError(
+            _('Post notifications are not enabled'),
+        )
+
+
+def check_can_enable_post_notifications_for_post(user, post):
+    if not user.can_see_post(post=post):
+        raise ValidationError(
+            _('You do not have permissions to view this post.'),
+        )
+
+    PostNotificationsSubscription = get_post_notifications_subscription_model()
+    post_notifications_enabled = \
+        PostNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_post_with_id(
+            username=user.username, post_id=post.pk)
+
+    if post_notifications_enabled:
+        raise ValidationError('Post notifications are already enabled.')
 
 
 def check_can_get_community_with_name_members(user, community_name):
