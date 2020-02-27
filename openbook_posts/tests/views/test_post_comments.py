@@ -1470,7 +1470,7 @@ class PostCommentsAPITests(OpenbookAPITestCase):
         self.assertFalse(PostCommentNotification.objects.filter(post_comment__text=post_comment_text,
                                                                 notification__owner=user).exists())
 
-    @mock.patch('openbook_notifications.helpers.send_post_comment_push_notification_with_message')
+    @mock.patch('openbook_notifications.helpers.send_post_comment_push_notification')
     def test_commenting_in_post_does_not_send_push_notification_if_user_is_blocked(self,
                                                                                    send_post_comment_push_notification_call):
         """
