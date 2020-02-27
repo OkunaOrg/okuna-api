@@ -346,7 +346,7 @@ def check_can_disable_new_post_notifications_for_community(user, community):
 def check_can_disable_post_notifications_for_post(user, post):
     PostNotificationsSubscription = get_post_notifications_subscription_model()
     post_notifications_enabled = \
-        PostNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_post_with_id(
+        PostNotificationsSubscription.is_user_with_username_subscribed_to_comment_notifications_for_post_with_id(
             username=user.username, post_id=post.pk)
 
     if not post_notifications_enabled:
@@ -363,7 +363,7 @@ def check_can_enable_post_notifications_for_post(user, post):
 
     PostNotificationsSubscription = get_post_notifications_subscription_model()
     post_notifications_enabled = \
-        PostNotificationsSubscription.is_user_with_username_subscribed_to_notifications_for_post_with_id(
+        PostNotificationsSubscription.is_user_with_username_subscribed_to_comment_notifications_for_post_with_id(
             username=user.username, post_id=post.pk)
 
     if post_notifications_enabled:
