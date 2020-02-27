@@ -338,7 +338,7 @@ class SubscribeToPostNotifications(APIView):
         post_id = get_post_id_for_post_uuid(post_uuid)
 
         with transaction.atomic():
-            post = user.enable_post_notifications_for_post_with_id(post_id=post_id)
+            post = user.enable_post_subscription_comment_notifications_for_post_with_id(post_id=post_id)
 
         response_serializer = SubscribeToPostNotificationsPostSerializer(post, context={"request": request})
 
@@ -357,7 +357,7 @@ class SubscribeToPostNotifications(APIView):
         post_id = get_post_id_for_post_uuid(post_uuid)
 
         with transaction.atomic():
-            post = user.disable_post_notifications_for_post_with_id(post_id=post_id)
+            post = user.disable_post_subscription_comment_notifications_for_post_with_id(post_id=post_id)
 
         response_serializer = SubscribeToPostNotificationsPostSerializer(post, context={"request": request})
 

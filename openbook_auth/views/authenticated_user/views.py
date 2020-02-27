@@ -112,6 +112,7 @@ class AuthenticatedUserNotificationsSettings(APIView):
         post_comment_reply_notifications = data.get('post_comment_reply_notifications')
         post_comment_user_mention_notifications = data.get('post_comment_user_mention_notifications')
         post_user_mention_notifications = data.get('post_user_mention_notifications')
+        post_subscription_comment_notifications = data.get('post_subscription_comment_notifications')
 
         user = request.user
 
@@ -128,7 +129,8 @@ class AuthenticatedUserNotificationsSettings(APIView):
                 post_comment_reaction_notifications=post_comment_reaction_notifications,
                 post_comment_reply_notifications=post_comment_reply_notifications,
                 post_comment_user_mention_notifications=post_comment_user_mention_notifications,
-                post_user_mention_notifications=post_user_mention_notifications
+                post_user_mention_notifications=post_user_mention_notifications,
+                post_subscription_comment_notifications=post_subscription_comment_notifications
             )
 
         user_notifications_settings_serializer = AuthenticatedUserNotificationsSettingsSerializer(
