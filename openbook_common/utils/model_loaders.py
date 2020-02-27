@@ -133,6 +133,10 @@ def get_post_comment_notification_model():
     return apps.get_model('openbook_notifications.PostCommentNotification')
 
 
+def get_post_subscription_comment_notification_model():
+    return apps.get_model('openbook_notifications.PostSubscriptionCommentNotification')
+
+
 def get_post_user_mention_notification_model():
     return apps.get_model('openbook_notifications.PostUserMentionNotification')
 

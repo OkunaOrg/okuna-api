@@ -157,3 +157,19 @@ class IsEncircledField(Field):
             is_encircled = post.is_encircled_post()
 
         return is_encircled
+
+
+class PostSubscriptionCommentNotificationsEnabledField(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(PostSubscriptionCommentNotificationsEnabledField, self).__init__(**kwargs)
+
+    def to_representation(self, post):
+        request = self.context.get('request')
+        request_user = request.user
+
+        if request_user.is_anonymous:
+            return False
+
+        return request_user.are_post_subscription_comment_notifications_enabled_for_post(post=post)
