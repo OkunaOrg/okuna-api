@@ -8,7 +8,7 @@ from openbook_circles.validators import circle_id_exists
 from openbook_common.models import Emoji, Badge
 from openbook_common.serializers import CommonHashtagSerializer
 from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, PostReactionsEmojiCountField, \
-    CirclesField, PostCreatorField, PostIsMutedField, IsEncircledField
+    CirclesField, PostCreatorField, PostIsMutedField, IsEncircledField, PostSubscriptionCommentNotificationsEnabledField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField, RestrictedFileSizeField
 from openbook_common.models import Language
 from openbook_communities.models import Community, CommunityMembership
@@ -234,6 +234,7 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     language = PostLanguageSerializer()
     is_encircled = IsEncircledField()
     hashtags = CommonHashtagSerializer(many=True)
+    post_subscription_comment_notifications_enabled = PostSubscriptionCommentNotificationsEnabledField()
 
     class Meta:
         model = Post
@@ -258,6 +259,7 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'media_height',
             'media_width',
             'media_thumbnail',
+            'post_subscription_comment_notifications_enabled',
             'hashtags',
         )
 

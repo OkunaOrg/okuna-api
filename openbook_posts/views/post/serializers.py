@@ -6,11 +6,10 @@ from openbook_circles.models import Circle
 from openbook_common.models import Badge, Language
 from openbook_common.serializers import CommonHashtagSerializer
 from openbook_common.serializers_fields.post import PostCreatorField, PostReactionsEmojiCountField, ReactionField, \
-    CommentsCountField, CirclesField, PostIsMutedField, IsEncircledField
+    CommentsCountField, CirclesField, PostIsMutedField, IsEncircledField, PostSubscriptionCommentNotificationsEnabledField
 from openbook_communities.models import CommunityMembership, Community
 from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_posts.models import PostImage, Post
-from openbook_posts.serializer_fields import PostNotificationsEnabledField
 from openbook_posts.validators import post_uuid_exists, post_text_validators
 
 from openbook_posts.views.post_reaction.serializers import PostReactionSerializer
@@ -154,6 +153,7 @@ class GetPostPostSerializer(serializers.ModelSerializer):
     language = PostLanguageSerializer()
     is_encircled = IsEncircledField()
     hashtags = CommonHashtagSerializer(many=True)
+    post_subscription_comment_notifications_enabled = PostSubscriptionCommentNotificationsEnabledField()
 
     class Meta:
         model = Post
@@ -175,6 +175,7 @@ class GetPostPostSerializer(serializers.ModelSerializer):
             'is_muted',
             'is_edited',
             'is_closed',
+            'post_subscription_comment_notifications_enabled',
             'is_encircled',
             'media_height',
             'media_width',
@@ -299,14 +300,14 @@ class OpenClosePostSerializer(serializers.ModelSerializer):
 
 
 class SubscribeToPostNotificationsPostSerializer(serializers.ModelSerializer):
-    post_notifications_enabled = PostNotificationsEnabledField()
+    post_subscription_comment_notifications_enabled = PostSubscriptionCommentNotificationsEnabledField()
 
     class Meta:
         model = Post
         fields = (
             'id',
             'uuid',
-            'post_notifications_enabled',
+            'post_subscription_comment_notifications_enabled',
         )
 
 
