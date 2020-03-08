@@ -1497,7 +1497,6 @@ class PostCommentsAPITests(OpenbookAPITestCase):
         send_post_comment_push_notification_call.assert_called_once()
         send_post_comment_push_notification_call.assert_called_with(
             post_comment=post_comment,
-            message=ANY,
             target_user=foreign_user
         )
 

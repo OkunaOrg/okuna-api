@@ -21,9 +21,6 @@ from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
 from openbook_hashtags.queries import make_search_hashtag_query_for_user_with_id, \
     make_get_hashtag_with_name_for_user_with_id_query
-from openbook_notifications.helpers import get_notification_language_code_for_target_user, \
-    send_post_comment_push_notification, send_post_notifications_subscription_comment_push_notification, \
-    send_post_comment_reply_push_notification
 from openbook_posts.queries import make_get_hashtag_posts_for_user_with_id_query
 from openbook_posts.query_collections import get_posts_for_user_collection
 from openbook_translation import translation_strategy
@@ -1207,13 +1204,14 @@ class User(AbstractUser):
 
             if post_notification_target_user_is_post_creator:
                 # send post notification
-                send_post_comment_push_notification(post_comment=post_comment, target_user=post_notification_target_user)
+                self._send_post_comment_push_notification(post_comment=post_comment,
+                                                          target_user=post_notification_target_user)
                 PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
                                                                          owner_id=post_notification_target_user.id)
 
             elif post_notification_target_user_is_post_subscriber:
                 # send the post subscriber notification
-                send_post_notifications_subscription_comment_push_notification(
+                self._send_post_notifications_subscription_comment_push_notification(
                     post_comment=post_comment,
                     target_user=post_notification_target_user)
                 PostSubscriptionCommentNotification.create_post_subscription_comment_notification(
@@ -1221,7 +1219,8 @@ class User(AbstractUser):
 
             else:
                 # regular commenter
-                send_post_comment_push_notification(post_comment=post_comment, target_user=post_notification_target_user)
+                self._send_post_comment_push_notification(post_comment=post_comment,
+                                                          target_user=post_notification_target_user)
                 PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
                                                                          owner_id=post_notification_target_user.id)
 
@@ -1261,21 +1260,21 @@ class User(AbstractUser):
                 post_notification_target_user.are_post_subscription_comment_notifications_enabled_for_post(post=post_comment.post)
 
             if post_notification_target_user_is_post_comment_creator or post_notification_target_user_is_post_creator:
-                send_post_comment_reply_push_notification(post_comment_reply=post_comment_reply,
-                                                          target_user=post_notification_target_user)
+                self._send_post_comment_reply_push_notification(post_comment_reply=post_comment_reply,
+                                                                target_user=post_notification_target_user)
                 PostCommentReplyNotification.create_post_comment_reply_notification(
                     post_comment_id=post_comment_reply.pk,
                     owner_id=post_notification_target_user.id)
             elif post_notification_target_user_is_post_subscriber:
                 # send the post subscriber notification
-                send_post_notifications_subscription_comment_push_notification(
+                self._send_post_notifications_subscription_comment_push_notification(
                     post_comment=post_comment_reply,
                     target_user=post_notification_target_user)
                 PostSubscriptionCommentNotification.create_post_subscription_comment_notification(
                     post_comment_id=post_comment_reply.pk, owner_id=post_notification_target_user.id)
             else:
-                send_post_comment_reply_push_notification(post_comment_reply=post_comment_reply,
-                                                          target_user=post_notification_target_user)
+                self._send_post_comment_reply_push_notification(post_comment_reply=post_comment_reply,
+                                                                target_user=post_notification_target_user)
                 PostCommentReplyNotification.create_post_comment_reply_notification(
                     post_comment_id=post_comment_reply.pk,
                     owner_id=post_notification_target_user.id)
@@ -3306,6 +3305,30 @@ class User(AbstractUser):
             mail_subject, text_content, to=[self.email], from_email=settings.SERVICE_EMAIL_ADDRESS)
         email.attach_alternative(html_content, 'text/html')
         email.send()
+
+    def _send_post_notifications_subscription_comment_push_notification(self, post_comment, target_user):
+        target_has_post_notifications_subscription_comment_notifications_enabled = \
+            target_user.has_post_subscription_comment_notifications_enabled_for_post_with_id(
+                post_id=post_comment.post_id)
+
+        if target_has_post_notifications_subscription_comment_notifications_enabled:
+            helpers.send_post_notifications_subscription_comment_push_notification(post_comment=post_comment,
+                                                                                   target_user=target_user)
+
+    def _send_post_comment_reply_push_notification(self, post_comment_reply, target_user):
+        post_comment = post_comment_reply.parent_comment
+        target_has_comment_reply_notifications_enabled = \
+            target_user.has_reply_notifications_enabled_for_post_comment(post_comment=post_comment)
+        if target_has_comment_reply_notifications_enabled:
+            helpers.send_post_comment_reply_push_notification(post_comment_reply=post_comment_reply,
+                                                              target_user=target_user)
+
+    def _send_post_comment_push_notification(self, post_comment, target_user):
+        post_notification_target_has_comment_notifications_enabled = \
+            target_user.has_comment_notifications_enabled_for_post_with_id(post_id=post_comment.post_id)
+        if post_notification_target_has_comment_notifications_enabled:
+            helpers.send_post_comment_push_notification(post_comment=post_comment,
+                                                        target_user=target_user)
 
     def _delete_post_comment_notification(self, post_comment):
         if post_comment.parent_comment is not None:

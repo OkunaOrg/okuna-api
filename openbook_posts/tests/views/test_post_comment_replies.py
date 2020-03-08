@@ -2,7 +2,6 @@
 import json
 import random
 from unittest import mock
-from unittest.mock import ANY
 
 from django.urls import reverse
 from faker import Faker
@@ -1496,7 +1495,7 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
         self.assertFalse(PostCommentReplyNotification.objects.filter(post_comment__text=reply_comment_text,
                                                                      notification__owner=foreign_user).exists())
 
-    @mock.patch('openbook_notifications.helpers.send_post_comment_push_notification')
+    @mock.patch('openbook_notifications.helpers.send_post_comment_reply_push_notification')
     def test_replying_on_foreign_post_comment_sends_push_notification_to_commenter(self,
                                                                                    send_post_comment_reply_push_notification_call):
         """
@@ -1531,12 +1530,11 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
             parent_comment_id=post_comment.id)
 
         send_post_comment_reply_push_notification_call.assert_called_with(
-            post_comment=post_comment_reply,
-            message=ANY,
+            post_comment_reply=post_comment_reply,
             target_user=post_creator
         )
 
-    @mock.patch('openbook_notifications.helpers.send_post_comment_push_notification')
+    @mock.patch('openbook_notifications.helpers.send_post_comment_reply_push_notification')
     def test_replying_on_foreign_post_comment_sends_push_notification_to_post_creator(self,
                                                                                    send_post_comment_reply_push_notification_call):
         """
@@ -1570,12 +1568,11 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
             parent_comment_id=post_comment.id)
 
         send_post_comment_reply_push_notification_call.assert_called_with(
-            post_comment=post_comment_reply,
-            message=ANY,
+            post_comment_reply=post_comment_reply,
             target_user=post_creator
         )
 
-    @mock.patch('openbook_notifications.helpers.send_post_comment_push_notification')
+    @mock.patch('openbook_notifications.helpers.send_post_comment_reply_push_notification')
     def test_replying_on_foreign_post_comment_sends_push_notification_to_other_replier(self,
                                                                                        send_post_comment_reply_push_notification_call):
         """
@@ -1610,12 +1607,11 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
             parent_comment_id=post_comment.id)
 
         send_post_comment_reply_push_notification_call.assert_called_with(
-            post_comment=post_comment_reply,
-            message=ANY,
+            post_comment_reply=post_comment_reply,
             target_user=foreign_user
         )
 
-    @mock.patch('openbook_notifications.helpers.send_post_comment_push_notification')
+    @mock.patch('openbook_notifications.helpers.send_post_comment_reply_push_notification')
     def test_replying_on_foreign_post_comment_doesnt_send_push_notification_when_muted(self,
                                                                                        send_post_comment_reply_push_notification_call):
         """
@@ -1649,7 +1645,7 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
 
         send_post_comment_reply_push_notification_call.assert_not_called()
 
-    @mock.patch('openbook_notifications.helpers.send_post_comment_push_notification')
+    @mock.patch('openbook_notifications.helpers.send_post_comment_reply_push_notification')
     def test_replying_on_foreign_post_comment_doesnt_send_push_notification_when_post_muted(self,
                                                                                             send_post_comment_reply_push_notification_call):
         """
@@ -1716,7 +1712,7 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
                                                                     notification__owner=blocking_user).exists())
 
 
-    @mock.patch('openbook_notifications.helpers.send_post_comment_push_notification')
+    @mock.patch('openbook_notifications.helpers.send_post_comment_reply_push_notification')
     def test_replying_on_post_comment_doesnt_send_push_notification_when_user_blocked(self,
                                                                                       send_post_comment_reply_push_notification_call):
         """
@@ -1753,8 +1749,7 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
         # assert notification only for the post creator, not blocking user who blocked the commenting user
         send_post_comment_reply_push_notification_call.assert_called_once()
         send_post_comment_reply_push_notification_call.assert_called_with(
-            post_comment=post_comment_reply,
-            message=ANY,
+            post_comment_reply=post_comment_reply,
             target_user=post_creator
         )
 
