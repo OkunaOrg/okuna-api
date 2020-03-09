@@ -1209,6 +1209,12 @@ class User(AbstractUser):
                 PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
                                                                          owner_id=post_notification_target_user.id)
 
+            elif not post_notification_target_user_is_post_subscriber:
+                # regular commenter
+                self._send_post_comment_push_notification(post_comment=post_comment,
+                                                          target_user=post_notification_target_user)
+                PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
+                                                                         owner_id=post_notification_target_user.id)
             elif post_notification_target_user_is_post_subscriber:
                 # send the post subscriber notification
                 self._send_post_notifications_subscription_comment_push_notification(
@@ -1216,13 +1222,6 @@ class User(AbstractUser):
                     target_user=post_notification_target_user)
                 PostSubscriptionCommentNotification.create_post_subscription_comment_notification(
                     post_comment_id=post_comment.pk, owner_id=post_notification_target_user.id)
-
-            else:
-                # regular commenter
-                self._send_post_comment_push_notification(post_comment=post_comment,
-                                                          target_user=post_notification_target_user)
-                PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
-                                                                         owner_id=post_notification_target_user.id)
 
         return post_comment
 
@@ -1265,6 +1264,13 @@ class User(AbstractUser):
                 PostCommentReplyNotification.create_post_comment_reply_notification(
                     post_comment_id=post_comment_reply.pk,
                     owner_id=post_notification_target_user.id)
+            elif not post_notification_target_user_is_post_subscriber:
+                self._send_post_comment_reply_push_notification(post_comment_reply=post_comment_reply,
+                                                                target_user=post_notification_target_user)
+                PostCommentReplyNotification.create_post_comment_reply_notification(
+                    post_comment_id=post_comment_reply.pk,
+                    owner_id=post_notification_target_user.id)
+
             elif post_notification_target_user_is_post_subscriber:
                 # send the post subscriber notification
                 self._send_post_notifications_subscription_comment_push_notification(
@@ -1272,12 +1278,6 @@ class User(AbstractUser):
                     target_user=post_notification_target_user)
                 PostSubscriptionCommentNotification.create_post_subscription_comment_notification(
                     post_comment_id=post_comment_reply.pk, owner_id=post_notification_target_user.id)
-            else:
-                self._send_post_comment_reply_push_notification(post_comment_reply=post_comment_reply,
-                                                                target_user=post_notification_target_user)
-                PostCommentReplyNotification.create_post_comment_reply_notification(
-                    post_comment_id=post_comment_reply.pk,
-                    owner_id=post_notification_target_user.id)
 
         return post_comment_reply
 
