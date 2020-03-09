@@ -14,7 +14,7 @@ from openbook_posts.views.post.serializers import DeletePostSerializer, GetPostS
     OpenClosePostSerializer, \
     OpenPostSerializer, ClosePostSerializer, TranslatePostSerializer, \
     SearchPostParticipantsSerializer, PostParticipantSerializer, GetPostParticipantsSerializer, PublishPostSerializer, \
-    GetPostStatusSerializer, SubscribeToPostNotificationsSerializer, SubscribeToPostNotificationsPostSerializer
+    GetPostStatusSerializer, SubscribePostSubscriptionCommentNotificationsSerializer, SubscribePostSubscriptionCommentNotificationsPostSerializer
 from openbook_translation.strategies.base import TranslationClientError, UnsupportedLanguagePairException, \
     MaxTextLengthExceededError
 
@@ -322,14 +322,14 @@ class PostPreviewLinkData(APIView):
         return Response(preview_link_data, status=status.HTTP_200_OK)
 
 
-class SubscribeToPostNotifications(APIView):
+class SubscribePostSubscriptionCommentNotifications(APIView):
     permission_classes = (IsAuthenticated,)
 
     def put(self, request, post_uuid):
         request_data = request.data.copy()
         request_data['post_uuid'] = post_uuid
 
-        serializer = SubscribeToPostNotificationsSerializer(data=request_data)
+        serializer = SubscribePostSubscriptionCommentNotificationsSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         user = request.user
@@ -340,7 +340,7 @@ class SubscribeToPostNotifications(APIView):
         with transaction.atomic():
             post = user.enable_post_subscription_comment_notifications_for_post_with_id(post_id=post_id)
 
-        response_serializer = SubscribeToPostNotificationsPostSerializer(post, context={"request": request})
+        response_serializer = SubscribePostSubscriptionCommentNotificationsPostSerializer(post, context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -348,7 +348,7 @@ class SubscribeToPostNotifications(APIView):
         request_data = request.data.copy()
         request_data['post_uuid'] = post_uuid
 
-        serializer = SubscribeToPostNotificationsSerializer(data=request_data)
+        serializer = SubscribePostSubscriptionCommentNotificationsSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
@@ -359,6 +359,6 @@ class SubscribeToPostNotifications(APIView):
         with transaction.atomic():
             post = user.disable_post_subscription_comment_notifications_for_post_with_id(post_id=post_id)
 
-        response_serializer = SubscribeToPostNotificationsPostSerializer(post, context={"request": request})
+        response_serializer = SubscribePostSubscriptionCommentNotificationsPostSerializer(post, context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)

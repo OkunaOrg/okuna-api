@@ -215,7 +215,7 @@ class ClosePostSerializer(serializers.Serializer):
     )
 
 
-class SubscribeToPostNotificationsSerializer(serializers.Serializer):
+class SubscribePostSubscriptionCommentNotificationsSerializer(serializers.Serializer):
     post_uuid = serializers.UUIDField(
         validators=[post_uuid_exists],
         required=True,
@@ -299,7 +299,7 @@ class OpenClosePostSerializer(serializers.ModelSerializer):
         )
 
 
-class SubscribeToPostNotificationsPostSerializer(serializers.ModelSerializer):
+class SubscribePostSubscriptionCommentNotificationsPostSerializer(serializers.ModelSerializer):
     post_subscription_comment_notifications_enabled = PostSubscriptionCommentNotificationsEnabledField()
 
     class Meta:
