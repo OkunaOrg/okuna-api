@@ -2180,7 +2180,7 @@ class User(AbstractUser):
         post = Post.objects.get(id=post_id)
         PostNotificationsSubscription = get_post_notifications_subscription_model()
 
-        check_can_enable_post_notifications_for_post(user=self, post=post)
+        check_can_enable_post_notifications_subscription_for_post(user=self, post=post)
 
         post_notifications_subscription = PostNotificationsSubscription. \
             get_or_create_post_notifications_subscription(post=post, subscriber=self)
@@ -2195,7 +2195,7 @@ class User(AbstractUser):
         post = Post.objects.get(id=post_id)
         PostNotificationsSubscription = get_post_notifications_subscription_model()
 
-        check_can_disable_post_notifications_for_post(user=self, post=post)
+        check_can_disable_post_notifications_subscription_for_post(user=self, post=post)
 
         post_notifications_subscription = PostNotificationsSubscription.\
             get_or_create_post_notifications_subscription(post=post, subscriber=self)
