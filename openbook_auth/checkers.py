@@ -360,19 +360,11 @@ def check_can_disable_post_notifications_subscription_for_post(user, post):
         )
 
 
-def check_can_enable_post_notifications_subscription_for_post(user, post):
+def check_can_create_or_update_post_notifications_subscription_for_post(user, post):
     if not user.can_see_post(post=post):
         raise ValidationError(
             _('You do not have permissions to view this post.'),
         )
-
-    PostNotificationsSubscription = get_post_notifications_subscription_model()
-    post_notifications_enabled = \
-        PostNotificationsSubscription.is_user_with_username_subscribed_to_comment_notifications_for_post_with_id(
-            username=user.username, post_id=post.pk)
-
-    if post_notifications_enabled:
-        raise ValidationError('Post notifications are already enabled.')
 
 
 def check_can_get_community_with_name_members(user, community_name):

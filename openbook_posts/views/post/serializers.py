@@ -9,7 +9,7 @@ from openbook_common.serializers_fields.post import PostCreatorField, PostReacti
     CommentsCountField, CirclesField, PostIsMutedField, IsEncircledField, PostSubscriptionCommentNotificationsEnabledField
 from openbook_communities.models import CommunityMembership, Community
 from openbook_communities.serializers_fields import CommunityMembershipsField
-from openbook_posts.models import PostImage, Post
+from openbook_posts.models import PostImage, Post, PostNotificationsSubscription
 from openbook_posts.validators import post_uuid_exists, post_text_validators
 
 from openbook_posts.views.post_reaction.serializers import PostReactionSerializer
@@ -215,11 +215,16 @@ class ClosePostSerializer(serializers.Serializer):
     )
 
 
-class SubscribePostSubscriptionCommentNotificationsSerializer(serializers.Serializer):
+class PostNotificationsSubscriptionSettingsSerializer(serializers.Serializer):
     post_uuid = serializers.UUIDField(
         validators=[post_uuid_exists],
         required=True,
     )
+    comment_notifications = serializers.BooleanField(required=False)
+    comment_reaction_notifications = serializers.BooleanField(required=False)
+    reaction_notifications = serializers.BooleanField(required=False)
+    reply_notifications = serializers.BooleanField(required=False)
+    reply_where_commented_notifications = serializers.BooleanField(required=False)
 
 
 class OpenPostSerializer(serializers.Serializer):
@@ -299,7 +304,7 @@ class OpenClosePostSerializer(serializers.ModelSerializer):
         )
 
 
-class SubscribePostSubscriptionCommentNotificationsPostSerializer(serializers.ModelSerializer):
+class PostNotificationsSubscriptionSettingsPostSerializer(serializers.ModelSerializer):
     post_subscription_comment_notifications_enabled = PostSubscriptionCommentNotificationsEnabledField()
 
     class Meta:
@@ -308,6 +313,21 @@ class SubscribePostSubscriptionCommentNotificationsPostSerializer(serializers.Mo
             'id',
             'uuid',
             'post_subscription_comment_notifications_enabled',
+        )
+
+
+class PostNotificationsSubscriptionSettingsResponseSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = PostNotificationsSubscription
+        fields = (
+            'id',
+            'post',
+            'comment_notifications',
+            'comment_reaction_notifications',
+            'reaction_notifications',
+            'reply_notifications',
+            'reply_where_commented_notifications',
         )
 
 

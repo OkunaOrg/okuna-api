@@ -2175,35 +2175,68 @@ class User(AbstractUser):
 
         return post
 
-    def enable_post_subscription_comment_notifications_for_post_with_id(self, post_id):
+    def create_post_notifications_subscription_for_post_with_id(self, post_id,
+                                                                comment_notifications=None,
+                                                                comment_reaction_notifications=None,
+                                                                reaction_notifications=None,
+                                                                reply_notifications=None,
+                                                                reply_where_commented_notifications=None):
         Post = get_post_model()
         post = Post.objects.get(id=post_id)
         PostNotificationsSubscription = get_post_notifications_subscription_model()
 
-        check_can_enable_post_notifications_subscription_for_post(user=self, post=post)
-
-        post_notifications_subscription = PostNotificationsSubscription. \
-            get_or_create_post_notifications_subscription(post=post, subscriber=self)
-
-        post_notifications_subscription.comment_notifications = True
-        post_notifications_subscription.save()
-
-        return post
-
-    def disable_post_subscription_comment_notifications_for_post_with_id(self, post_id):
-        Post = get_post_model()
-        post = Post.objects.get(id=post_id)
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-
-        check_can_disable_post_notifications_subscription_for_post(user=self, post=post)
+        check_can_create_or_update_post_notifications_subscription_for_post(user=self, post=post)
 
         post_notifications_subscription = PostNotificationsSubscription.\
-            get_or_create_post_notifications_subscription(post=post, subscriber=self)
+            create_post_notifications_subscription(
+                post=post,
+                subscriber=self,
+                comment_notifications=comment_notifications,
+                comment_reaction_notifications=comment_reaction_notifications,
+                reaction_notifications=reaction_notifications,
+                reply_notifications=reply_notifications,
+                reply_where_commented_notifications=reply_where_commented_notifications
+            )
 
-        post_notifications_subscription.comment_notifications = False
-        post_notifications_subscription.save()
+        return post_notifications_subscription
 
-        return post
+    def update_post_notifications_subscription_for_post_with_id(self, post_id,
+                                                                comment_notifications=None,
+                                                                comment_reaction_notifications=None,
+                                                                reaction_notifications=None,
+                                                                reply_notifications=None,
+                                                                reply_where_commented_notifications=None):
+        Post = get_post_model()
+        post = Post.objects.get(id=post_id)
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+
+        check_can_create_or_update_post_notifications_subscription_for_post(user=self, post=post)
+
+        post_notifications_subscription = PostNotificationsSubscription.objects.get(post=post, subscriber=self)
+        post_notifications_subscription.update(
+            comment_notifications=comment_notifications,
+            comment_reaction_notifications=comment_reaction_notifications,
+            reaction_notifications=reaction_notifications,
+            reply_notifications=reply_notifications,
+            reply_where_commented_notifications=reply_where_commented_notifications
+        )
+
+        return post_notifications_subscription
+
+    # def disable_post_subscription_comment_notifications_for_post_with_id(self, post_id):
+    #     Post = get_post_model()
+    #     post = Post.objects.get(id=post_id)
+    #     PostNotificationsSubscription = get_post_notifications_subscription_model()
+    #
+    #     check_can_disable_post_notifications_subscription_for_post(user=self, post=post)
+    #
+    #     post_notifications_subscription = PostNotificationsSubscription.\
+    #         get_or_create_post_notifications_subscription(post=post, subscriber=self)
+    #
+    #     post_notifications_subscription.comment_notifications = False
+    #     post_notifications_subscription.save()
+    #
+    #     return post
 
     def are_post_subscription_comment_notifications_enabled_for_post(self, post):
         PostNotificationsSubscription = get_post_notifications_subscription_model()
