@@ -73,7 +73,7 @@ from openbook_notifications.views import Notifications, NotificationItem, ReadNo
     UnreadNotificationsCount
 from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost, TranslatePost, \
     PostPreviewLinkData, SearchPostParticipants, GetPostParticipants, PublishPost, PostStatus, \
-    SubscribePostSubscriptionCommentNotifications
+    PostNotificationsSubscriptionSettings
 from openbook_posts.views.post_comment.post_comment_reaction.views import PostCommentReactionItem
 from openbook_posts.views.post_comment.post_comment_reactions.views import PostCommentReactions, \
     PostCommentReactionsEmojiCount
@@ -160,8 +160,8 @@ auth_patterns = [
 post_notifications_patterns = [
     path('mute/', MutePost.as_view(), name='mute-post'),
     path('unmute/', UnmutePost.as_view(), name='unmute-post'),
-    path('subscribe/comments/', SubscribePostSubscriptionCommentNotifications.as_view(),
-         name='subscribe-post-subscription-comment-notifications'),
+    path('subscribe/', PostNotificationsSubscriptionSettings.as_view(),
+         name='post-notifications-subscription-settings'),
 ]
 
 post_comment_reactions_patterns = [
