@@ -41,6 +41,10 @@ def get_post_notifications_subscription_model():
     return apps.get_model('openbook_posts.PostNotificationsSubscription')
 
 
+def get_post_comment_notifications_subscription_model():
+    return apps.get_model('openbook_posts.PostCommentNotificationsSubscription')
+
+
 def get_proxy_blacklist_domain_model():
     return apps.get_model('openbook_common.ProxyBlacklistedDomain')
 
@@ -131,10 +135,6 @@ def get_community_membership_model():
 
 def get_post_comment_notification_model():
     return apps.get_model('openbook_notifications.PostCommentNotification')
-
-
-def get_post_subscription_comment_notification_model():
-    return apps.get_model('openbook_notifications.PostSubscriptionCommentNotification')
 
 
 def get_post_user_mention_notification_model():

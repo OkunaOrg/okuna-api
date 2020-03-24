@@ -41,7 +41,7 @@ from openbook_common.utils.model_loaders import get_emoji_model, \
     get_post_user_mention_model, get_post_comment_user_mention_model, get_community_notifications_subscription_model, \
     get_community_new_post_notification_model, get_user_new_post_notification_model, \
     get_hashtag_model, get_user_notifications_subscription_model, get_trending_post_model, \
-    get_post_comment_reaction_notification_model
+    get_post_comment_reaction_notification_model, get_post_notifications_subscription_model
 from imagekit.models import ProcessedImageField
 
 from openbook_moderation.models import ModeratedObject
@@ -243,57 +243,21 @@ class Post(models.Model):
         return trending_posts_query
 
     @classmethod
-    def get_post_comment_notification_target_users(cls, post, post_commenter):
+    def get_post_comment_notification_target_users(cls, post):
         """
-        Returns the users that should be notified of a post comment.
+        Returns the users that qualify to be notified of a post comment.
         This includes the post creator and other post commenters and post subscribers
         :return:
         """
 
-        # Add other post commenters and subscribers, exclude replies to comments, the post commenter
-
         # post subscribers
-        post_subscribers_query = Q(post_notifications_subscriptions__post_id=post.pk,
-                                   post_notifications_subscriptions__comment_notifications=True)
+        post_subscribers_query = Q(post_notifications_subscriptions__post_id=post.pk)
 
-        other_commenters_query = Q(posts_comments__post_id=post.pk, posts_comments__parent_comment_id=None,)
-
-        other_target_users = User.objects.\
+        target_users = User.objects.\
             only('id', 'username', 'notifications_settings__post_comment_notifications').\
-            filter((post_subscribers_query | other_commenters_query) & ~Q(id=post_commenter.pk))
+            filter(post_subscribers_query)
 
-        post_creator = User.objects. \
-            only('id', 'username', 'notifications_settings__post_comment_notifications'). \
-            filter(pk=post.creator_id)
-
-        return other_target_users.union(post_creator)
-
-    @classmethod
-    def get_post_comment_reply_notification_target_users(cls, post_commenter, parent_post_comment):
-        """
-        Returns the users that should be notified of a post comment reply.
-        :return:
-        """
-        post = parent_post_comment.post
-        # post subscribers
-        post_subscribers_query = Q(post_notifications_subscriptions__post_id=post.pk,
-                                   post_notifications_subscriptions__comment_notifications=True)
-
-        other_repliers_query = Q(posts_comments__parent_comment_id=parent_post_comment.pk, )
-        # Add other post commenters, exclude non replies, the post commenter
-        other_repliers = User.objects.\
-            only('id', 'username', 'notifications_settings__post_comment_reply_notifications').\
-            filter((post_subscribers_query | other_repliers_query) & ~Q(id=post_commenter.pk))
-
-        # Add post comment creator
-        post_comment_creator = User.objects. \
-            only('id', 'username', 'notifications_settings__post_comment_reply_notifications'). \
-            filter(pk=parent_post_comment.commenter_id)
-        # Add post creator
-        post_creator = User.objects. \
-            only('id', 'username', 'notifications_settings__post_comment_reply_notifications'). \
-            filter(pk=post.creator.id)
-        return other_repliers.union(post_comment_creator, post_creator)
+        return target_users
 
     @classmethod
     def get_community_notification_target_subscriptions(cls, post):
@@ -544,6 +508,7 @@ class Post(models.Model):
         self.status = Post.STATUS_PUBLISHED
         self.created = timezone.now()
         self._process_post_subscribers()
+        self._subscribe_creator_to_post_notifications()
         self.save()
 
     def is_draft(self):
@@ -804,6 +769,19 @@ class Post(models.Model):
                     post_id=self.pk, owner_id=subscription.subscriber.pk,
                     user_notifications_subscription_id=subscription.pk)
                 send_user_new_post_push_notification(user_notifications_subscription=subscription, post=self)
+
+    def _subscribe_creator_to_post_notifications(self):
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+
+        PostNotificationsSubscription.create_post_notifications_subscription(
+            post=self,
+            subscriber=self.creator,
+            comment_notifications=True,
+            comment_reaction_notifications=True,
+            reaction_notifications=True,
+            reply_notifications=True,
+            reply_where_commented_notifications=True
+        )
 
 
 class TopPost(models.Model):
@@ -1333,9 +1311,14 @@ class PostCommentNotificationsSubscription(models.Model):
         unique_together = ('post_comment', 'subscriber',)
 
     @classmethod
-    def create_post_comment_notifications_subscription(cls, subscriber, post_comment):
+    def create_post_comment_notifications_subscription(cls, subscriber, post_comment,
+                                                       reply_notifications=False,
+                                                       reaction_notifications=False):
         if not cls.objects.filter(subscriber=subscriber, post_comment=post_comment).exists():
-            return cls.objects.create(subscriber=subscriber, post_comment=post_comment)
+            return cls.objects.create(subscriber=subscriber,
+                                      post_comment=post_comment,
+                                      reply_notifications=reply_notifications,
+                                      reaction_notifications=reaction_notifications)
 
         post_comment_notifications_subscription = cls.objects.get(subscriber=subscriber, post_comment=post_comment)
         post_comment_notifications_subscription.save()
@@ -1343,14 +1326,18 @@ class PostCommentNotificationsSubscription(models.Model):
         return post_comment_notifications_subscription
 
     @classmethod
-    def get_or_create_post_comment_notifications_subscription(cls, subscriber, post_comment):
+    def get_or_create_post_comment_notifications_subscription(cls, subscriber, post_comment,
+                                                              reply_notifications=None,
+                                                              reaction_notifications=None):
         try:
             post_comment_notifications_subscription = cls.objects.get(subscriber_id=subscriber.pk,
                                                                       post_comment_id=post_comment.pk)
         except cls.DoesNotExist:
             post_comment_notifications_subscription = cls.create_post_comment_notifications_subscription(
                 subscriber=subscriber,
-                post_comment=post_comment
+                post_comment=post_comment,
+                reply_notifications=reply_notifications,
+                reaction_notifications=reaction_notifications
             )
 
         return post_comment_notifications_subscription
@@ -1367,13 +1354,25 @@ class PostCommentNotificationsSubscription(models.Model):
     def is_user_with_username_subscribed_to_reply_notifications_for_post_comment_with_id(cls, username, post_comment_id):
         return cls.objects.filter(post_comment_id=post_comment_id,
                                   subscriber__username=username,
-                                  comment_notifications=True).exists()
+                                  reply_notifications=True).exists()
 
     @classmethod
     def are_reply_notifications_enabled_for_user_with_username_and_post_comment_with_id(cls, username, post_comment_id):
         return cls.objects.filter(post_comment_id=post_comment_id,
                                   subscriber__username=username,
-                                  comment_notifications=True).exists()
+                                  reply_notifications=True).exists()
+
+    def update(self,
+               reaction_notifications=None,
+               reply_notifications=None):
+
+        if reply_notifications is not None:
+            self.reply_notifications = reply_notifications
+
+        if reaction_notifications is not None:
+            self.reaction_notifications = reaction_notifications
+
+        self.save()
 
 
 class PostNotificationsSubscription(models.Model):
@@ -1393,11 +1392,12 @@ class PostNotificationsSubscription(models.Model):
 
     @classmethod
     def create_post_notifications_subscription(cls, subscriber, post,
-                                               comment_notifications=None,
-                                               comment_reaction_notifications=None,
-                                               reaction_notifications=None,
-                                               reply_notifications=None,
-                                               reply_where_commented_notifications=None):
+                                               comment_notifications=False,
+                                               comment_reaction_notifications=False,
+                                               reaction_notifications=False,
+                                               reply_notifications=False,
+                                               reply_where_commented_notifications=False):
+
         if not cls.objects.filter(subscriber=subscriber, post=post).exists():
             return cls.objects.create(subscriber=subscriber,
                                       post=post,
@@ -1411,11 +1411,12 @@ class PostNotificationsSubscription(models.Model):
         return post_notifications_subscription
 
     @classmethod
-    def get_or_create_post_notifications_subscription(cls, subscriber, post, comment_notifications=None,
-                                                      comment_reaction_notifications=None,
-                                                      reaction_notifications=None,
-                                                      reply_notifications=None,
-                                                      reply_where_commented_notifications=None):
+    def get_or_create_post_notifications_subscription(cls, subscriber, post,
+                                                      comment_notifications=False,
+                                                      comment_reaction_notifications=False,
+                                                      reaction_notifications=False,
+                                                      reply_notifications=False,
+                                                      reply_where_commented_notifications=False):
         try:
             post_notifications_subscription = cls.objects.get(subscriber_id=subscriber.pk,
                                                               post_id=post.pk)

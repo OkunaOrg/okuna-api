@@ -367,6 +367,13 @@ def check_can_create_or_update_post_notifications_subscription_for_post(user, po
         )
 
 
+def check_can_create_or_update_notifications_subscription_for_post_comment(user, post_comment):
+    if not user.can_see_post_comment(post_comment=post_comment):
+        raise ValidationError(
+            _('You do not have permissions to view this post comment.'),
+        )
+
+
 def check_can_get_community_with_name_members(user, community_name):
     check_is_not_banned_from_community_with_name(user=user, community_name=community_name)
 

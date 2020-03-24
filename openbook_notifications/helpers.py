@@ -55,6 +55,7 @@ def send_post_comment_reply_push_notification(post_comment_reply, target_user):
 
     target_user_is_post_comment_creator = target_user.id == comment_creator_id
     target_user_is_post_creator = target_user.id == post_creator.id
+    target_user_has_replied = target_user.has_replied_on_post_with_id(post_id=post_comment_reply.post.pk)
     target_user_language_code = get_notification_language_code_for_target_user(
         target_user)
 
@@ -73,10 +74,17 @@ def send_post_comment_reply_push_notification(post_comment_reply, target_user):
                           'post_commenter_username': replier.username,
                           'post_commenter_name': replier.profile.name,
                       }}
-        else:
+        elif target_user_has_replied:
             notification_message = {
                 "en": _(
                     '%(post_commenter_name)s · @%(post_commenter_username)s replied on a comment you also replied on.') % {
+                          'post_commenter_username': replier.username,
+                          'post_commenter_name': replier.profile.name,
+                      }}
+        else:
+            notification_message = {
+                "en": _(
+                    '%(post_commenter_name)s · @%(post_commenter_username)s replied on a post you are following.') % {
                           'post_commenter_username': replier.username,
                           'post_commenter_name': replier.profile.name,
                       }}
@@ -103,9 +111,11 @@ def send_post_comment_push_notification(post_comment, target_user):
 
     post_creator = post_comment.post.creator
     post_commenter = post_comment.commenter
-    post_notification_target_user_is_post_creator = target_user.id == post_creator.id
     target_user_language_code = get_notification_language_code_for_target_user(
         target_user)
+    post_notification_target_user_is_post_creator = target_user.id == post_creator.id
+    post_notification_target_user_has_commented = \
+        target_user.has_commented_post_with_id(post_id=post_comment.post.pk)
 
     with translation.override(target_user_language_code):
         if post_notification_target_user_is_post_creator:
@@ -114,10 +124,17 @@ def send_post_comment_push_notification(post_comment, target_user):
                     'post_commenter_username': post_commenter.username,
                     'post_commenter_name': post_commenter.profile.name,
                 }}
-        else:
+        elif post_notification_target_user_has_commented:
             notification_message = {
                 "en": _(
                     '%(post_commenter_name)s · @%(post_commenter_username)s commented on a post you also commented on.') % {
+                          'post_commenter_username': post_commenter.username,
+                          'post_commenter_name': post_commenter.profile.name,
+                      }}
+        else:
+            notification_message = {
+                "en": _(
+                    '%(post_commenter_name)s · @%(post_commenter_username)s commented on a post you are following.') % {
                           'post_commenter_username': post_commenter.username,
                           'post_commenter_name': post_commenter.profile.name,
                       }}
@@ -130,45 +147,6 @@ def send_post_comment_push_notification(post_comment, target_user):
 
     notification_data = {
         'type': Notification.POST_COMMENT,
-    }
-
-    one_signal_notification.set_parameter('data', notification_data)
-    one_signal_notification.set_parameter('!thread_id', notification_group)
-    one_signal_notification.set_parameter('android_group', notification_group)
-
-    _send_notification_to_user(notification=one_signal_notification, user=target_user)
-
-
-def send_post_notifications_subscription_comment_push_notification(post_comment, target_user):
-    Notification = get_notification_model()
-    post_commenter = post_comment.commenter
-    target_user_language_code = get_notification_language_code_for_target_user(
-        target_user)
-
-    with translation.override(target_user_language_code):
-        if post_comment.parent_comment is None:
-            notification_message = {
-                "en": _(
-                    '%(post_commenter_name)s · @%(post_commenter_username)s commented on a post you are subscribed to.') % {
-                          'post_commenter_username': post_commenter.username,
-                          'post_commenter_name': post_commenter.profile.name,
-                      }}
-        else:
-            notification_message = {
-                "en": _(
-                    '%(post_commenter_name)s · @%(post_commenter_username)s replied on a post you are subscribed to.') % {
-                          'post_commenter_username': post_commenter.username,
-                          'post_commenter_name': post_commenter.profile.name,
-                      }}
-
-    notification_group = NOTIFICATION_GROUP_LOW_PRIORITY
-
-    one_signal_notification = onesignal_sdk.Notification(post_body={
-        "contents": notification_message
-    })
-
-    notification_data = {
-        'type': Notification.POST_SUBSCRIPTION_COMMENT,
     }
 
     one_signal_notification.set_parameter('data', notification_data)

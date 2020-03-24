@@ -11,4 +11,3 @@ from .post_comment_user_mention_notification import PostCommentUserMentionNotifi
 from .post_user_mention_notification import PostUserMentionNotification
 from .community_new_post_notification import CommunityNewPostNotification
 from .user_new_post_notification import UserNewPostNotification
-from .post_subscription_comment_notification import PostSubscriptionCommentNotification
