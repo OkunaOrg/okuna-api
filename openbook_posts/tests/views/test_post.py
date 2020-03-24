@@ -1304,9 +1304,9 @@ class PostItemAPITests(OpenbookAPITestCase):
         })
 
 
-class SubscribePostSubscriptionCommentNotificationsAPITests(OpenbookAPITestCase):
+class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
     """
-    SubscribePostSubscriptionCommentNotifications API
+    PostNotificationsSubscriptionSettings API
     """
 
     fixtures = [
@@ -1540,7 +1540,7 @@ class SubscribePostSubscriptionCommentNotificationsAPITests(OpenbookAPITestCase)
         headers = make_authentication_headers_for_user(subscriber)
         post = user.create_public_post(text=make_fake_post_text())
 
-        subscriber.enable_post_subscription_comment_notifications_for_post_with_id(post_id=post.id)
+        subscriber.create_post_notifications_subscription_for_post_with_id(post_id=post.id)
 
         url = self._get_url(post)
 
@@ -1583,7 +1583,7 @@ class SubscribePostSubscriptionCommentNotificationsAPITests(OpenbookAPITestCase)
         post = foreign_user.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
         foreign_user.connect_with_user_with_id(user_id=user.pk, circles_ids=[circle.pk])
         user.confirm_connection_with_user_with_id(user_id=foreign_user.pk)
-        user.enable_post_subscription_comment_notifications_for_post_with_id(post_id=post.id)
+        user.create_post_notifications_subscription_for_post_with_id(post_id=post.id)
 
         url = self._get_url(post)
 
@@ -1604,7 +1604,7 @@ class SubscribePostSubscriptionCommentNotificationsAPITests(OpenbookAPITestCase)
         headers = make_authentication_headers_for_user(user)
         user.join_community_with_name(community_name=community.name)
         post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        user.enable_post_subscription_comment_notifications_for_post_with_id(post_id=post.id)
+        user.create_post_notifications_subscription_for_post_with_id(post_id=post.id)
 
         url = self._get_url(post)
 
@@ -1625,7 +1625,7 @@ class SubscribePostSubscriptionCommentNotificationsAPITests(OpenbookAPITestCase)
 
         headers = make_authentication_headers_for_user(user)
         post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        user.enable_post_subscription_comment_notifications_for_post_with_id(post_id=post.id)
+        user.create_post_notifications_subscription_for_post_with_id(post_id=post.id)
 
         post.is_closed = True
         post.save()
@@ -1648,7 +1648,7 @@ class SubscribePostSubscriptionCommentNotificationsAPITests(OpenbookAPITestCase)
 
         headers = make_authentication_headers_for_user(user)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        user.enable_post_subscription_comment_notifications_for_post_with_id(post_id=post.id)
+        user.create_post_notifications_subscription_for_post_with_id(post_id=post.id)
         post.is_closed = True
         post.save()
 
@@ -1671,7 +1671,7 @@ class SubscribePostSubscriptionCommentNotificationsAPITests(OpenbookAPITestCase)
 
         headers = make_authentication_headers_for_user(admin)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        admin.enable_post_subscription_comment_notifications_for_post_with_id(post_id=post.id)
+        admin.create_post_notifications_subscription_for_post_with_id(post_id=post.id)
         post.is_closed = True
         post.save()
 
@@ -1698,7 +1698,7 @@ class SubscribePostSubscriptionCommentNotificationsAPITests(OpenbookAPITestCase)
 
         headers = make_authentication_headers_for_user(moderator)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        moderator.enable_post_subscription_comment_notifications_for_post_with_id(post_id=post.id)
+        moderator.create_post_notifications_subscription_for_post_with_id(post_id=post.id)
         post.is_closed = True
         post.save()
 
@@ -1745,7 +1745,7 @@ class SubscribePostSubscriptionCommentNotificationsAPITests(OpenbookAPITestCase)
                                                                       community_name=community.name)
 
         user.join_community_with_name(community_name=community.name)
-        user.enable_post_subscription_comment_notifications_for_post_with_id(post_id=post.id)
+        user.create_post_notifications_subscription_for_post_with_id(post_id=post.id)
 
         url = self._get_url(post)
 
@@ -1755,7 +1755,7 @@ class SubscribePostSubscriptionCommentNotificationsAPITests(OpenbookAPITestCase)
         self.assertFalse(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
 
     def _get_url(self, post):
-        return reverse('subscribe-post-subscription-comment-notifications', kwargs={
+        return reverse('post-notifications-subscription-settings', kwargs={
             'post_uuid': post.uuid
         })
 

@@ -20,7 +20,7 @@ from openbook_common.utils.model_loaders import get_user_new_post_notification_m
     get_post_comment_user_mention_notification_model, get_post_comment_user_mention_model, \
     get_post_reaction_notification_model, get_post_user_mention_model, get_post_user_mention_notification_model, \
     get_community_invite_notification_model, get_follow_notification_model, get_connection_request_notification_model, \
-    get_connection_confirmed_notification_model, get_post_subscription_comment_notification_model
+    get_connection_confirmed_notification_model
 from openbook_communities.models import Community
 from openbook_moderation.models import ModeratedObject, ModeratedObjectDescriptionChangedLog, \
     ModeratedObjectCategoryChangedLog, ModerationPenalty, ModerationCategory, ModeratedObjectStatusChangedLog, \
@@ -1468,10 +1468,10 @@ class ApproveModeratedObjectApiTests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(global_moderator)
         response = self.client.post(url, **headers)
 
-        PostSubscriptionCommentNotification = get_post_subscription_comment_notification_model()
+        PostCommentNotification = get_post_comment_notification_model()
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(PostSubscriptionCommentNotification.objects.filter(
+        self.assertFalse(PostCommentNotification.objects.filter(
             post_comment=community_post_comment).exists())
 
     def test_approving_community_post_moderated_object_deletes_comment_reply_notifications(self):
@@ -1564,10 +1564,10 @@ class ApproveModeratedObjectApiTests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(global_moderator)
         response = self.client.post(url, **headers)
 
-        PostSubscriptionCommentNotification = get_post_subscription_comment_notification_model()
+        PostCommentReplyNotification = get_post_comment_reply_notification_model()
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(PostSubscriptionCommentNotification.objects.filter(
+        self.assertFalse(PostCommentReplyNotification.objects.filter(
             post_comment=community_post_comment_reply).exists())
 
     def test_approving_community_post_moderated_object_deletes_comment_reaction_notifications(self):

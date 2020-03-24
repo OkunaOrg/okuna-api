@@ -2,6 +2,7 @@
 import json
 import random
 from unittest import mock
+from unittest.mock import call
 
 from django.urls import reverse
 from faker import Faker
@@ -12,7 +13,7 @@ import logging
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_community, make_private_community
-from openbook_notifications.models import PostCommentReplyNotification, PostSubscriptionCommentNotification
+from openbook_notifications.models import PostCommentReplyNotification
 from openbook_posts.models import PostComment, PostCommentUserMention
 
 logger = logging.getLogger(__name__)
@@ -1384,7 +1385,12 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
         foreign_user.reply_to_comment_with_id_for_post_with_uuid(post_comment_id=post_comment.pk,
                                                                  post_uuid=post.uuid,
                                                                  text=make_fake_post_comment_text())
-        foreign_user.mute_post_with_id(post_id=post.pk)
+        # mute post notifications
+        foreign_user.update_post_notifications_subscription_for_post_with_id(
+            post_id=post.pk,
+            comment_notifications=False,
+            reply_where_commented_notifications=False,
+            reply_notifications=False)
 
         reply_comment_text = make_fake_post_comment_text()
 
@@ -1504,17 +1510,22 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
 
-        post_creator = make_user()
+        post_creator = post_commenter = make_user()
 
         foreign_user = make_user()
 
         post = post_creator.create_public_post(text=make_fake_post_text())
-        post_comment = post_creator.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+        post_comment = post_commenter.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
         foreign_user.reply_to_comment_with_id_for_post_with_uuid(post_comment_id=post_comment.pk,
                                                                  post_uuid=post.uuid,
                                                                  text=make_fake_post_comment_text())
 
-        foreign_user.mute_post(post=post)
+        # mute post notifications
+        foreign_user.update_post_notifications_subscription_for_post_with_id(
+            post_id=post.pk,
+            comment_notifications=False,
+            reply_where_commented_notifications=False,
+            reply_notifications=False)
 
         reply_comment_text = make_fake_post_comment_text()
 
@@ -1529,10 +1540,14 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
             commenter_id=user.pk,
             parent_comment_id=post_comment.id)
 
-        send_post_comment_reply_push_notification_call.assert_called_with(
-            post_comment_reply=post_comment_reply,
-            target_user=post_creator
-        )
+        calls = [
+            call(
+                post_comment_reply=post_comment_reply,
+                target_user=post_commenter
+            )
+        ]
+
+        send_post_comment_reply_push_notification_call.assert_has_calls(calls, any_order=True)
 
     @mock.patch('openbook_notifications.helpers.send_post_comment_reply_push_notification')
     def test_replying_on_foreign_post_comment_sends_push_notification_to_post_creator(self,
@@ -1547,12 +1562,7 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
         foreign_user = make_user()
 
         post = post_creator.create_public_post(text=make_fake_post_text())
-        post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
-        foreign_user.reply_to_comment_with_id_for_post_with_uuid(post_comment_id=post_comment.pk,
-                                                                 post_uuid=post.uuid,
-                                                                 text=make_fake_post_comment_text())
-
-        foreign_user.mute_post(post=post)
+        post_comment = foreign_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
 
         reply_comment_text = make_fake_post_comment_text()
 
@@ -1567,10 +1577,18 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
             commenter_id=user.pk,
             parent_comment_id=post_comment.id)
 
-        send_post_comment_reply_push_notification_call.assert_called_with(
-            post_comment_reply=post_comment_reply,
-            target_user=post_creator
-        )
+        calls = [
+            call(
+                post_comment_reply=post_comment_reply,
+                target_user=post_creator
+            ),
+            call(
+                post_comment_reply=post_comment_reply,
+                target_user=foreign_user
+            )
+        ]
+
+        send_post_comment_reply_push_notification_call.assert_has_calls(calls, any_order=True)
 
     @mock.patch('openbook_notifications.helpers.send_post_comment_reply_push_notification')
     def test_replying_on_foreign_post_comment_sends_push_notification_to_other_replier(self,
@@ -1591,7 +1609,12 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
                                                                  post_uuid=post.uuid,
                                                                  text=make_fake_post_comment_text())
 
-        post_creator.mute_post(post=post)
+        # mute post notifications
+        post_creator.update_post_notifications_subscription_for_post_with_id(
+            post_id=post.pk,
+            comment_notifications=False,
+            reply_where_commented_notifications=False,
+            reply_notifications=False)
 
         reply_comment_text = make_fake_post_comment_text()
 
@@ -1615,7 +1638,7 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
     def test_replying_on_foreign_post_comment_doesnt_send_push_notification_when_muted(self,
                                                                                        send_post_comment_reply_push_notification_call):
         """
-         should NOT send a push notification when replying on a foreign post comment when muted
+         should NOT send a push notification when replying on a foreign post comment when comment is muted
          """
         user = make_user()
         headers = make_authentication_headers_for_user(user)
@@ -1627,12 +1650,18 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
         post = post_creator.create_public_post(text=make_fake_post_text())
         post_comment = post_creator.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
 
-        post_creator.mute_post_comment_with_id(post_comment_id=post_comment.pk)
+        # mute post comment for creator
+        post_creator.update_post_comment_notifications_subscription_for_comment_with_id(
+            post_comment_id=post_comment.pk,
+            reply_notifications=False)
 
         foreign_user.reply_to_comment_with_id_for_post_with_uuid(post_comment_id=post_comment.pk,
                                                                  post_uuid=post.uuid,
                                                                  text=make_fake_post_comment_text())
-        foreign_user.mute_post_comment_with_id(post_comment_id=post_comment.pk)
+        # mute post comment for foreign user
+        foreign_user.update_post_comment_notifications_subscription_for_comment_with_id(
+            post_comment_id=post_comment.pk,
+            reply_notifications=False)
 
         send_post_comment_reply_push_notification_call.reset_mock()
 
@@ -1661,12 +1690,24 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
         post = post_creator.create_public_post(text=make_fake_post_text())
         post_comment = post_creator.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
 
-        post_creator.mute_post_with_id(post_id=post.pk)
+        # mute post creator notifications
+        post_creator.update_post_notifications_subscription_for_post_with_id(
+            post_id=post.pk,
+            comment_notifications=False,
+            reply_notifications=False,
+            reply_where_commented_notifications=False
+        )
 
         foreign_user.reply_to_comment_with_id_for_post_with_uuid(post_comment_id=post_comment.pk,
                                                                  post_uuid=post.uuid,
                                                                  text=make_fake_post_comment_text())
-        foreign_user.mute_post_with_id(post_id=post.pk)
+
+        foreign_user.update_post_notifications_subscription_for_post_with_id(
+            post_id=post.pk,
+            comment_notifications=False,
+            reply_notifications=False,
+            reply_where_commented_notifications=False
+        )
 
         send_post_comment_reply_push_notification_call.reset_mock()
 
@@ -2080,9 +2121,9 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
 
     # post notifications subscription tests
 
-    @mock.patch('openbook_notifications.helpers.send_post_notifications_subscription_comment_push_notification')
+    @mock.patch('openbook_notifications.helpers.send_post_comment_reply_push_notification')
     def test_foreign_user_replying_on_post_comment_sends_push_notification_to_subscriber(self,
-                                                                            send_post_notifications_subscription_comment_push_notification_call):
+                                                                            send_post_comment_reply_push_notification_call):
         """
          should send a push notification to the subscriber when someone replies on a post comment
          """
@@ -2098,9 +2139,10 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
         data = self._get_create_post_comment_request_data(reply_comment_text)
 
         # subscribe to post comment notifications
-        post_subscriber.enable_post_subscription_comment_notifications_for_post_with_id(post_id=post.id)
+        post_subscriber.create_post_notifications_subscription_for_post_with_id(
+            post_id=post.id, reply_notifications=True)
 
-        send_post_notifications_subscription_comment_push_notification_call.reset_mock()
+        send_post_comment_reply_push_notification_call.reset_mock()
 
         url = self._get_url(post, post_comment)
         self.client.put(url, data, **headers)
@@ -2109,14 +2151,22 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
             commenter_id=foreign_user.pk,
             parent_comment_id=post_comment.id)
 
-        send_post_notifications_subscription_comment_push_notification_call.assert_called_with(
-            post_comment=post_comment_reply,
-            target_user=post_subscriber
-        )
+        calls = [
+            call(
+                post_comment_reply=post_comment_reply,
+                target_user=post_subscriber
+            ),
+            call(
+                post_comment_reply=post_comment_reply,
+                target_user=post_creator
+            )
+        ]
 
-    @mock.patch('openbook_notifications.helpers.send_post_notifications_subscription_comment_push_notification')
+        send_post_comment_reply_push_notification_call.assert_has_calls(calls, any_order=True)
+
+    @mock.patch('openbook_notifications.helpers.send_post_comment_reply_push_notification')
     def test_foreign_user_replying_on_post_comment_doesnt_send_push_notification_to_subscriber_if_muted(self,
-                                                                                         send_post_notifications_subscription_comment_push_notification_call):
+                                                                                         send_post_comment_reply_push_notification_call):
         """
          should NOT send a push notification to the subscriber when someone replies on a post comment if post is muted
          """
@@ -2132,19 +2182,63 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
         data = self._get_create_post_comment_request_data(reply_comment_text)
 
         # subscribe to post comment notifications and mute
-        post_subscriber.enable_post_subscription_comment_notifications_for_post_with_id(post_id=post.id)
-        post_subscriber.mute_post(post=post)
+        post_subscriber.create_post_notifications_subscription_for_post_with_id(post_id=post.id)
+        post_subscriber.update_post_notifications_subscription_for_post_with_id(
+            post_id=post.id,
+            reply_notifications=False,
+            reply_where_commented_notifications=False)
 
-        send_post_notifications_subscription_comment_push_notification_call.reset_mock()
+        send_post_comment_reply_push_notification_call.reset_mock()
 
         url = self._get_url(post, post_comment)
         self.client.put(url, data, **headers)
 
-        send_post_notifications_subscription_comment_push_notification_call.assert_not_called()
+        # once for creator
+        send_post_comment_reply_push_notification_call.assert_called_once()
 
-    @mock.patch('openbook_notifications.helpers.send_post_notifications_subscription_comment_push_notification')
+
+    @mock.patch('openbook_notifications.helpers.send_post_comment_reply_push_notification')
+    def test_replying_on_foreign_post_comment_doesnt_send_push_notification_to_subscriber_when_comment_muted(self,
+                                                                                       send_post_comment_reply_push_notification_call):
+        """
+         should NOT send a push notification to subscriber when replying on a foreign post comment when comment is muted
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post_subscriber = make_user()
+
+        post_creator = make_user()
+
+        post = post_creator.create_public_post(text=make_fake_post_text())
+        post_comment = post_creator.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+        # mute post comment for creator
+        post_creator.update_post_comment_notifications_subscription_for_comment_with_id(
+            post_comment_id=post_comment.pk,
+            reply_notifications=False)
+
+        # subscribe to post comment notifications and mute
+        post_subscriber.create_post_notifications_subscription_for_post_with_id(
+            post_id=post.id,
+            reply_notifications=True)
+        post_subscriber.create_post_comment_notifications_subscription_for_comment_with_id(
+            post_comment_id=post_comment.pk,
+            reply_notifications=False)
+
+        send_post_comment_reply_push_notification_call.reset_mock()
+
+        reply_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(reply_comment_text)
+
+        url = self._get_url(post, post_comment)
+        self.client.put(url, data, **headers)
+
+        send_post_comment_reply_push_notification_call.assert_not_called()
+
+    @mock.patch('openbook_notifications.helpers.send_post_comment_reply_push_notification')
     def test_replying_on_foreign_post_comment_does_not_send_subscription_notification_to_a_subscribed_commenter(self,
-                                                                                                    send_post_notifications_subscription_comment_push_notification_call):
+                                                                                                    send_post_comment_reply_push_notification_call):
         """
          should NOT send post subscription push notification to the commenter when replying on a foreign post comment
          """
@@ -2158,23 +2252,34 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
         post = post_creator.create_public_post(text=make_fake_post_text())
         post_comment = commenter.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
 
-        foreign_user.reply_to_comment_with_id_for_post_with_uuid(post_comment_id=post_comment.pk,
-                                                                 post_uuid=post.uuid,
-                                                                 text=make_fake_post_comment_text())
+        foreign_post_comment = foreign_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
 
         # subscribe to post comment notifications
-        commenter.enable_post_subscription_comment_notifications_for_post_with_id(post_id=post.id)
+        commenter.create_post_notifications_subscription_for_post_with_id(post_id=post.id)
 
         reply_comment_text = make_fake_post_comment_text()
 
         data = self._get_create_post_comment_request_data(reply_comment_text)
 
-        send_post_notifications_subscription_comment_push_notification_call.reset_mock()
+        send_post_comment_reply_push_notification_call.reset_mock()
 
-        url = self._get_url(post, post_comment)
+        url = self._get_url(post, foreign_post_comment)
         self.client.put(url, data, **headers)
 
-        send_post_notifications_subscription_comment_push_notification_call.assert_not_called()
+        post_comment_reply = PostComment.objects.get(commenter=user, parent_comment_id=foreign_post_comment.id)
+
+        calls = [
+            call(
+                post_comment_reply=post_comment_reply,
+                target_user=foreign_user
+            ),
+            call(
+                post_comment_reply=post_comment_reply,
+                target_user=post_creator
+            )
+        ]
+        # only called for foreign user and creator
+        send_post_comment_reply_push_notification_call.assert_has_calls(calls, any_order=True)
 
     def test_replying_on_post_comment_doesnt_create_post_subscription_push_notification_when_user_blocked(self):
         """
@@ -2194,7 +2299,7 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
         # Block user
         blocking_user_aka_subscriber.block_user_with_id(user_id=blocked_user.pk)
         # subscribe to post comment notifications
-        blocking_user_aka_subscriber.enable_post_subscription_comment_notifications_for_post_with_id(post_id=post.id)
+        blocking_user_aka_subscriber.create_post_notifications_subscription_for_post_with_id(post_id=post.id)
 
         reply_comment_text = make_fake_post_comment_text()
 
@@ -2203,12 +2308,12 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
         url = self._get_url(post, post_comment)
         self.client.put(url, data, **headers)
 
-        self.assertFalse(PostSubscriptionCommentNotification.objects.filter(post_comment__text=reply_comment_text,
+        self.assertFalse(PostCommentReplyNotification.objects.filter(post_comment__text=reply_comment_text,
                                                                             notification__owner=blocking_user_aka_subscriber).exists())
 
-    @mock.patch('openbook_notifications.helpers.send_post_notifications_subscription_comment_push_notification')
+    @mock.patch('openbook_notifications.helpers.send_post_comment_reply_push_notification')
     def test_replying_on_post_comment_doesnt_send_post_subscription_push_notification_when_user_blocked(self,
-                                                                                                        send_post_notifications_subscription_comment_push_notification_call):
+                                                                                                        send_post_comment_reply_push_notification_call):
         """
          should NOT send push notification to blocking user when the blocked user replies on a post the
          blocking user is subscribed to
@@ -2217,17 +2322,25 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(blocked_user)
 
         post_creator = make_user()
+        post_commenter = post_creator
         blocking_user_aka_subscriber = make_user()
 
         post = post_creator.create_public_post(text=make_fake_post_text())
-        post_comment = post_creator.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+        post_comment = post_commenter.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
 
         # Block user
         blocking_user_aka_subscriber.block_user_with_id(user_id=blocked_user.pk)
         # subscribe to post comment notifications
-        blocking_user_aka_subscriber.enable_post_subscription_comment_notifications_for_post_with_id(post_id=post.id)
+        blocking_user_aka_subscriber.create_post_notifications_subscription_for_post_with_id(
+            post_id=post.id,
+            comment_notifications=False,
+            comment_reaction_notifications=False,
+            reaction_notifications=False,
+            reply_notifications=True,
+            reply_where_commented_notifications=True
+        )
 
-        send_post_notifications_subscription_comment_push_notification_call.reset_mock()
+        send_post_comment_reply_push_notification_call.reset_mock()
 
         reply_comment_text = make_fake_post_comment_text()
 
@@ -2236,8 +2349,13 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
         url = self._get_url(post, post_comment)
         self.client.put(url, data, **headers)
 
-        # assert notification only for the post creator, not blocking user who blocked the commenting user
-        send_post_notifications_subscription_comment_push_notification_call.assert_not_called()
+        post_comment_reply = PostComment.objects.get(commenter=blocked_user, parent_comment_id=post_comment.id)
+
+        # assert notification only for the post commenter, not blocking user who blocked the commenting user
+        send_post_comment_reply_push_notification_call.assert_called_once_with(
+            post_comment_reply=post_comment_reply,
+            target_user=post_commenter
+        )
 
     def test_reply_in_community_post_does_not_create_foreign_user_post_subscription_notification_when_closed(self):
         """
@@ -2254,7 +2372,7 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
         post_comment = post_creator.comment_post(post=post, text=make_fake_post_text())
 
         # subscribe to notifications
-        foreign_user.enable_post_subscription_comment_notifications_for_post_with_id(post_id=post.id)
+        foreign_user.create_post_notifications_subscription_for_post_with_id(post_id=post.id)
         # post will be closed now
         post.is_closed = True
         post.save()
@@ -2266,8 +2384,8 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
         url = self._get_url(post, post_comment)
         self.client.put(url, data, **headers)
 
-        self.assertFalse(PostSubscriptionCommentNotification.objects.filter(post_comment__text=reply_comment_text,
-                                                                            notification__owner=foreign_user).exists())
+        self.assertFalse(PostCommentReplyNotification.objects.filter(post_comment__text=reply_comment_text,
+                                                                     notification__owner=foreign_user).exists())
 
     def test_reply_in_community_post_by_admin_does_create_subscription_notification_to_another_admin_when_closed(self):
         """
@@ -2285,7 +2403,7 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
 
         post_comment = post_creator.comment_post(post=post, text=make_fake_post_text())
         # subscribe to notifications
-        admin.enable_post_subscription_comment_notifications_for_post_with_id(post_id=post.id)
+        admin.create_post_notifications_subscription_for_post_with_id(post_id=post.id)
         # post will be closed now
         post.is_closed = True
         post.save()
@@ -2297,8 +2415,8 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
         url = self._get_url(post, post_comment)
         self.client.put(url, data, **headers)
 
-        self.assertTrue(PostSubscriptionCommentNotification.objects.filter(post_comment__text=reply_comment_text,
-                                                                           notification__owner=admin).exists())
+        self.assertTrue(PostCommentReplyNotification.objects.filter(post_comment__text=reply_comment_text,
+                                                                    notification__owner=admin).exists())
 
     def _get_create_post_comment_request_data(self, reply_comment_text):
         return {
