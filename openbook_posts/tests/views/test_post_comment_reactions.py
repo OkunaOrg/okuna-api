@@ -669,7 +669,12 @@ class PostCommentReactionsAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(reactor)
         post = user.create_public_post(text=make_fake_post_text())
         post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
-        user.mute_post_comment_with_id(post_comment_id=post_comment.pk)
+
+        # mute post comment
+        user.update_post_comment_notifications_subscription_for_comment_with_id(
+            post_comment_id=post_comment.pk,
+            reaction_notifications=False,
+            reply_notifications=False)
 
         emoji_group = make_reactions_emoji_group()
 
@@ -694,7 +699,12 @@ class PostCommentReactionsAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(reactor)
         post = user.create_public_post(text=make_fake_post_text())
         post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
-        user.mute_post_with_id(post_id=post.pk)
+
+        # mute post notifications
+        user.update_post_notifications_subscription_for_post_with_id(
+            post_id=post.pk,
+            reaction_notifications=False,
+            comment_reaction_notifications=False)
 
         emoji_group = make_reactions_emoji_group()
 
