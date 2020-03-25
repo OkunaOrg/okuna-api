@@ -389,22 +389,3 @@ class PostNotificationsSubscriptionSettings(APIView):
                                                                                       context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
-
-    # def delete(self, request, post_uuid):
-    #     request_data = request.data.copy()
-    #     request_data['post_uuid'] = post_uuid
-    #
-    #     serializer = PostNotificationsSubscriptionSettingsSerializer(data=request_data)
-    #     serializer.is_valid(raise_exception=True)
-    #     data = serializer.validated_data
-    #
-    #     user = request.user
-    #     post_uuid = data.get('post_uuid')
-    #     post_id = get_post_id_for_post_uuid(post_uuid)
-    #
-    #     with transaction.atomic():
-    #         post = user.disable_post_subscription_comment_notifications_for_post_with_id(post_id=post_id)
-    #
-    #     response_serializer = PostNotificationsSubscriptionSettingsPostSerializer(post, context={"request": request})
-    #
-    #     return Response(response_serializer.data, status=status.HTTP_200_OK)

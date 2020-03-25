@@ -367,6 +367,20 @@ def check_can_create_or_update_post_notifications_subscription_for_post(user, po
         )
 
 
+def check_can_update_reaction_notifications_for_post(user, post):
+    if not user.id == post.creator.id:
+        raise ValidationError(
+            _('Only the post creator can modify reaction notifications'),
+        )
+
+
+def check_can_update_comment_reaction_notifications_for_post(user, post):
+    if not user.has_commented_post_with_id(post_id=post.pk):
+        raise ValidationError(
+            _('Only users with comments can modify comment reaction notifications'),
+        )
+
+
 def check_can_create_or_update_notifications_subscription_for_post_comment(user, post_comment):
     if not user.can_see_post_comment(post_comment=post_comment):
         raise ValidationError(

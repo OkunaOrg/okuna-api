@@ -674,6 +674,9 @@ class User(AbstractUser):
     def has_disabled_comment_notifications_for_post(self, post_id):
         return self.post_notifications_subscriptions.filter(post_id=post_id, comment_notifications=False).exists()
 
+    def has_disabled_reaction_notifications_for_post_with_id(self, post_id):
+        return self.post_notifications_subscriptions.filter(post_id=post_id, reaction_notifications=False).exists()
+
     def has_disabled_reply_notifications_for_post(self, post_id, post_comment_id):
         has_replied = self.has_replied_on_comment_with_id(post_comment_id=post_comment_id)
         is_commenter = self.posts_comments.filter(id=post_comment_id).exists()
@@ -686,6 +689,10 @@ class User(AbstractUser):
     def has_disabled_reply_notifications_for_post_comment(self, post_comment_id):
         return self.post_comment_notifications_subscriptions.filter(post_comment_id=post_comment_id,
                                                                     reply_notifications=False).exists()
+
+    def has_disabled_reaction_notifications_for_post_comment(self, post_comment):
+        return self.post_comment_notifications_subscriptions.filter(post_comment_id=post_comment.id,
+                                                                    reaction_notifications=False).exists()
 
     def has_blocked_user_with_id(self, user_id):
         return self.user_blocks.filter(blocked_user_id=user_id).exists()
@@ -812,13 +819,19 @@ class User(AbstractUser):
         return self.notifications_settings.post_user_mention_notifications
 
     def has_reaction_notifications_enabled_for_post_with_id(self, post_id):
-        return self.notifications_settings.post_reaction_notifications and not self.has_muted_post_with_id(
-            post_id=post_id)
+        # @TODO :remove legacy has_muted_post_with_id check later
+
+        return self.notifications_settings.post_reaction_notifications and \
+               not self.has_muted_post_with_id(post_id=post_id) and \
+               not self.has_disabled_reaction_notifications_for_post_with_id(post_id=post_id)
 
     def has_reaction_notifications_enabled_for_post_comment(self, post_comment):
-        return self.notifications_settings.post_comment_reaction_notifications and not self.has_muted_post_with_id(
-            post_id=post_comment.post_id) and not self.has_muted_post_comment_with_id(
-            post_comment_id=post_comment.id)
+        # @TODO :remove legacy has_muted_* checks later
+        return self.notifications_settings.post_comment_reaction_notifications and \
+               not self.has_muted_post_with_id(post_id=post_comment.post_id) and \
+               not self.has_muted_post_comment_with_id(post_comment_id=post_comment.id) and \
+               not self.has_disabled_reaction_notifications_for_post_with_id(post_id=post_comment.post.pk) and \
+               not self.has_disabled_reaction_notifications_for_post_comment(post_comment=post_comment)
 
     def has_comment_notifications_enabled_for_post_with_id(self, post_id):
         return self.notifications_settings.post_comment_notifications and \
@@ -1073,7 +1086,7 @@ class User(AbstractUser):
                 if post.creator.has_reaction_notifications_enabled_for_post_with_id(post_id=post.pk) and \
                         not post.creator.has_blocked_user_with_id(self.pk):
                     self._create_post_reaction_notification(post_reaction=post_reaction)
-                self._send_post_reaction_push_notification(post_reaction=post_reaction)
+                    self._send_post_reaction_push_notification(post_reaction=post_reaction)
 
         return post_reaction
 
@@ -1103,12 +1116,13 @@ class User(AbstractUser):
         else:
             post_comment_reaction = post_comment.react(reactor=self, emoji_id=emoji_id)
             if post_comment_reaction.post_comment.commenter_id != self.pk:
-                commenter_has_reaction_notifications_enabled = post_comment.commenter.has_reaction_notifications_enabled_for_post_comment(
-                    post_comment=post_comment)
+                commenter_has_reaction_notifications_enabled = \
+                    post_comment.commenter.has_reaction_notifications_enabled_for_post_comment(post_comment=post_comment)
 
-                if commenter_has_reaction_notifications_enabled:
+                if commenter_has_reaction_notifications_enabled and \
+                        not post_comment.commenter.has_blocked_user_with_id(self.pk):
                     self._send_post_comment_reaction_push_notification(post_comment_reaction=post_comment_reaction)
-                self._create_post_comment_reaction_notification(post_comment_reaction=post_comment_reaction)
+                    self._create_post_comment_reaction_notification(post_comment_reaction=post_comment_reaction)
 
         return post_comment_reaction
 
@@ -2245,6 +2259,12 @@ class User(AbstractUser):
 
         check_can_create_or_update_post_notifications_subscription_for_post(user=self, post=post)
 
+        if reaction_notifications is not None:
+            check_can_update_reaction_notifications_for_post(user=self, post=post)
+
+        if comment_reaction_notifications is not None:
+            check_can_update_comment_reaction_notifications_for_post(user=self, post=post)
+
         post_notifications_subscription = PostNotificationsSubscription.\
             create_post_notifications_subscription(
                 post=post,
@@ -2269,6 +2289,12 @@ class User(AbstractUser):
         PostNotificationsSubscription = get_post_notifications_subscription_model()
 
         check_can_create_or_update_post_notifications_subscription_for_post(user=self, post=post)
+
+        if reaction_notifications is not None:
+            check_can_update_reaction_notifications_for_post(user=self, post=post)
+
+        if comment_reaction_notifications is not None:
+            check_can_update_comment_reaction_notifications_for_post(user=self, post=post)
 
         post_notifications_subscription = PostNotificationsSubscription.\
             get_or_create_post_notifications_subscription(post=post,
