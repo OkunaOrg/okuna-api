@@ -225,6 +225,18 @@ class PostNotificationsSubscriptionSettingsSerializer(serializers.Serializer):
     reply_where_commented_notifications = serializers.BooleanField(required=False)
 
 
+class UpdatePostNotificationsSubscriptionSettingsSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+    comment_notifications = serializers.NullBooleanField(required=False, default=None)
+    comment_reaction_notifications = serializers.NullBooleanField(required=False, default=None)
+    reaction_notifications = serializers.NullBooleanField(required=False, default=None)
+    reply_notifications = serializers.NullBooleanField(required=False, default=None)
+    reply_where_commented_notifications = serializers.NullBooleanField(required=False, default=None)
+
+
 class OpenPostSerializer(serializers.Serializer):
     post_uuid = serializers.UUIDField(
         validators=[post_uuid_exists],

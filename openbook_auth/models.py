@@ -2209,8 +2209,8 @@ class User(AbstractUser):
         return post
 
     def create_post_comment_notifications_subscription_for_comment_with_id(self, post_comment_id,
-                                                                           reply_notifications=None,
-                                                                           reaction_notifications=None):
+                                                                           reply_notifications=False,
+                                                                           reaction_notifications=False):
         PostComment = get_post_comment_model()
         post_comment = PostComment.objects.get(id=post_comment_id)
         PostCommentNotificationsSubscription = get_post_comment_notifications_subscription_model()
@@ -2228,8 +2228,8 @@ class User(AbstractUser):
         return post_comment_notifications_subscription
 
     def update_post_comment_notifications_subscription_for_comment_with_id(self, post_comment_id,
-                                                                        reply_notifications=False,
-                                                                        reaction_notifications=False):
+                                                                        reply_notifications=None,
+                                                                        reaction_notifications=None):
 
         PostComment = get_post_comment_model()
         post_comment = PostComment.objects.get(id=post_comment_id)
@@ -2290,15 +2290,14 @@ class User(AbstractUser):
 
         check_can_create_or_update_post_notifications_subscription_for_post(user=self, post=post)
 
+        post_notifications_subscription = PostNotificationsSubscription. \
+            get_or_create_post_notifications_subscription(post=post,
+                                                          subscriber=self)
         if reaction_notifications is not None:
             check_can_update_reaction_notifications_for_post(user=self, post=post)
 
         if comment_reaction_notifications is not None:
             check_can_update_comment_reaction_notifications_for_post(user=self, post=post)
-
-        post_notifications_subscription = PostNotificationsSubscription.\
-            get_or_create_post_notifications_subscription(post=post,
-                                                          subscriber=self)
 
         post_notifications_subscription.update(
             comment_notifications=comment_notifications,

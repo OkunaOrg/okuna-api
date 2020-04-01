@@ -14,8 +14,8 @@ from openbook_posts.views.post.serializers import DeletePostSerializer, GetPostS
     OpenClosePostSerializer, \
     OpenPostSerializer, ClosePostSerializer, TranslatePostSerializer, \
     SearchPostParticipantsSerializer, PostParticipantSerializer, GetPostParticipantsSerializer, PublishPostSerializer, \
-    GetPostStatusSerializer, PostNotificationsSubscriptionSettingsSerializer, \
-    PostNotificationsSubscriptionSettingsPostSerializer, PostNotificationsSubscriptionSettingsResponseSerializer
+    GetPostStatusSerializer, PostNotificationsSubscriptionSettingsSerializer, PostNotificationsSubscriptionSettingsResponseSerializer, \
+    UpdatePostNotificationsSubscriptionSettingsSerializer
 from openbook_translation.strategies.base import TranslationClientError, UnsupportedLanguagePairException, \
     MaxTextLengthExceededError
 
@@ -362,7 +362,7 @@ class PostNotificationsSubscriptionSettings(APIView):
         request_data = request.data.copy()
         request_data['post_uuid'] = post_uuid
 
-        serializer = PostNotificationsSubscriptionSettingsSerializer(data=request_data)
+        serializer = UpdatePostNotificationsSubscriptionSettingsSerializer(data=request_data)
         serializer.is_valid(raise_exception=True)
 
         user = request.user

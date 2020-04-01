@@ -27,7 +27,7 @@ from openbook_common.tests.helpers import make_authentication_headers_for_user, 
 from openbook_common.utils.model_loaders import get_language_model, get_community_new_post_notification_model, \
     get_post_comment_notification_model, get_post_comment_user_mention_notification_model, \
     get_post_user_mention_notification_model, get_post_comment_reaction_notification_model, \
-    get_post_comment_reply_notification_model
+    get_post_comment_reply_notification_model, get_post_notifications_subscription_model
 from openbook_communities.models import Community
 from openbook_hashtags.models import Hashtag
 from openbook_notifications.models import PostUserMentionNotification, Notification
@@ -1322,9 +1322,11 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(subscriber)
         post = user.create_public_post(text=make_fake_post_text())
 
+        data = {
+            'comment_notifications': True
+        }
         url = self._get_url(post)
-
-        response = self.client.put(url, **headers)
+        response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(subscriber.are_post_subscription_comment_notifications_enabled_for_post(post=post))
@@ -1342,9 +1344,11 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
 
         post = foreign_user.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
+        data = {
+            'comment_notifications': True
+        }
         url = self._get_url(post)
-
-        response = self.client.put(url, **headers)
+        response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -1365,9 +1369,13 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         foreign_user.connect_with_user_with_id(user_id=user.pk, circles_ids=[circle.pk])
         user.confirm_connection_with_user_with_id(user_id=foreign_user.pk)
 
+        data = {
+            'comment_notifications': True
+        }
+
         url = self._get_url(post)
 
-        response = self.client.put(url, **headers)
+        response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -1386,9 +1394,12 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         user.join_community_with_name(community_name=community.name)
         post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
 
+        data = {
+            'comment_notifications': True
+        }
         url = self._get_url(post)
 
-        response = self.client.put(url, **headers)
+        response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
@@ -1409,9 +1420,12 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         post.is_closed = True
         post.save()
 
-        url = self._get_url(post)
+        data = {
+            'comment_notifications': True
+        }
 
-        response = self.client.put(url, **headers)
+        url = self._get_url(post)
+        response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -1432,9 +1446,12 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         post.is_closed = True
         post.save()
 
-        url = self._get_url(post)
+        data = {
+            'comment_notifications': True
+        }
 
-        response = self.client.put(url, **headers)
+        url = self._get_url(post)
+        response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
@@ -1454,9 +1471,12 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         post.is_closed = True
         post.save()
 
-        url = self._get_url(post)
+        data = {
+            'comment_notifications': True
+        }
 
-        response = self.client.put(url, **headers)
+        url = self._get_url(post)
+        response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(admin.are_post_subscription_comment_notifications_enabled_for_post(post=post))
@@ -1480,9 +1500,11 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         post.is_closed = True
         post.save()
 
+        data = {
+            'comment_notifications': True
+        }
         url = self._get_url(post)
-
-        response = self.client.put(url, **headers)
+        response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(moderator.are_post_subscription_comment_notifications_enabled_for_post(post=post))
@@ -1499,9 +1521,11 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(user)
         post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
 
+        data = {
+            'comment_notifications': True
+        }
         url = self._get_url(post)
-
-        response = self.client.put(url, **headers)
+        response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -1524,9 +1548,11 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
 
         user.join_community_with_name(community_name=community.name)
 
+        data = {
+            'comment_notifications': True
+        }
         url = self._get_url(post)
-
-        response = self.client.put(url, **headers)
+        response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
@@ -1540,14 +1566,19 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(subscriber)
         post = user.create_public_post(text=make_fake_post_text())
 
-        subscriber.create_post_notifications_subscription_for_post_with_id(post_id=post.id)
+        subscriber.create_post_notifications_subscription_for_post_with_id(post_id=post.id, comment_notifications=True)
 
+        data = {
+            'comment_notifications': False
+        }
         url = self._get_url(post)
+        response = self.client.patch(url, data, **headers)
 
-        response = self.client.delete(url, **headers)
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        post_notification_subscription = PostNotificationsSubscription.objects.get(post=post, subscriber=subscriber)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
+        self.assertFalse(post_notification_subscription.comment_notifications)
 
     def test_cannot_unsubscribe_to_comment_notifications_for_post_if_encircled_post(self):
         """
@@ -1562,9 +1593,11 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
 
         post = foreign_user.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
 
+        data = {
+            'comment_notifications': False
+        }
         url = self._get_url(post)
-
-        response = self.client.delete(url, **headers)
+        response = self.client.patch(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
@@ -1583,11 +1616,13 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         post = foreign_user.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
         foreign_user.connect_with_user_with_id(user_id=user.pk, circles_ids=[circle.pk])
         user.confirm_connection_with_user_with_id(user_id=foreign_user.pk)
-        user.create_post_notifications_subscription_for_post_with_id(post_id=post.id)
+        user.create_post_notifications_subscription_for_post_with_id(post_id=post.id, comment_notifications=True)
 
+        data = {
+            'comment_notifications': False
+        }
         url = self._get_url(post)
-
-        response = self.client.delete(url, **headers)
+        response = self.client.patch(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
@@ -1604,11 +1639,13 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(user)
         user.join_community_with_name(community_name=community.name)
         post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        user.create_post_notifications_subscription_for_post_with_id(post_id=post.id)
+        user.create_post_notifications_subscription_for_post_with_id(post_id=post.id, comment_notifications=True)
 
+        data = {
+            'comment_notifications': False
+        }
         url = self._get_url(post)
-
-        response = self.client.delete(url, **headers)
+        response = self.client.patch(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
@@ -1625,13 +1662,16 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
 
         headers = make_authentication_headers_for_user(user)
         post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        user.create_post_notifications_subscription_for_post_with_id(post_id=post.id)
+        user.create_post_notifications_subscription_for_post_with_id(post_id=post.id, comment_notifications=True)
 
         post.is_closed = True
         post.save()
 
+        data = {
+            'comment_notifications': False
+        }
         url = self._get_url(post)
-        response = self.client.delete(url, **headers)
+        response = self.client.patch(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
@@ -1648,13 +1688,15 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
 
         headers = make_authentication_headers_for_user(user)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        user.create_post_notifications_subscription_for_post_with_id(post_id=post.id)
+        user.create_post_notifications_subscription_for_post_with_id(post_id=post.id, comment_notifications=True)
         post.is_closed = True
         post.save()
 
+        data = {
+            'comment_notifications': False
+        }
         url = self._get_url(post)
-
-        response = self.client.delete(url, **headers)
+        response = self.client.patch(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
@@ -1671,13 +1713,15 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
 
         headers = make_authentication_headers_for_user(admin)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        admin.create_post_notifications_subscription_for_post_with_id(post_id=post.id)
+        admin.create_post_notifications_subscription_for_post_with_id(post_id=post.id, comment_notifications=True)
         post.is_closed = True
         post.save()
 
+        data = {
+            'comment_notifications': False
+        }
         url = self._get_url(post)
-
-        response = self.client.delete(url, **headers)
+        response = self.client.patch(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(admin.are_post_subscription_comment_notifications_enabled_for_post(post=post))
@@ -1698,13 +1742,15 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
 
         headers = make_authentication_headers_for_user(moderator)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        moderator.create_post_notifications_subscription_for_post_with_id(post_id=post.id)
+        moderator.create_post_notifications_subscription_for_post_with_id(post_id=post.id, comment_notifications=True)
         post.is_closed = True
         post.save()
 
+        data = {
+            'comment_notifications': False
+        }
         url = self._get_url(post)
-
-        response = self.client.delete(url, **headers)
+        response = self.client.patch(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(moderator.are_post_subscription_comment_notifications_enabled_for_post(post=post))
@@ -1721,9 +1767,11 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(user)
         post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
 
+        data = {
+            'comment_notifications': False
+        }
         url = self._get_url(post)
-
-        response = self.client.delete(url, **headers)
+        response = self.client.patch(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -1745,11 +1793,13 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
                                                                       community_name=community.name)
 
         user.join_community_with_name(community_name=community.name)
-        user.create_post_notifications_subscription_for_post_with_id(post_id=post.id)
+        user.create_post_notifications_subscription_for_post_with_id(post_id=post.id, comment_notifications=True)
 
+        data = {
+            'comment_notifications': False
+        }
         url = self._get_url(post)
-
-        response = self.client.delete(url, **headers)
+        response = self.client.patch(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
