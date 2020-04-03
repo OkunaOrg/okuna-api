@@ -1476,3 +1476,4 @@ class PostNotificationsSubscription(models.Model):
             self.reply_where_commented_notifications = reply_where_commented_notifications
 
         self.save()
+

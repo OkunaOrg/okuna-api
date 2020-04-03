@@ -666,7 +666,16 @@ class User(AbstractUser):
         return post.creator_id == self.pk
 
     def has_muted_post_with_id(self, post_id):
-        return self.post_mutes.filter(post_id=post_id).exists()
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        return PostNotificationsSubscription.objects.filter(
+            post_id=post_id,
+            subscriber=self,
+            comment_notifications=False,
+            comment_reaction_notifications=False,
+            reaction_notifications=False,
+            reply_notifications=False,
+            reply_where_commented_notifications=False
+        ).exists()
 
     def has_muted_post_comment_with_id(self, post_comment_id):
         return self.post_comment_mutes.filter(post_comment_id=post_comment_id).exists()
@@ -3074,16 +3083,31 @@ class User(AbstractUser):
 
     def mute_post(self, post):
         check_can_mute_post(user=self, post=post)
-        PostMute = get_post_mute_model()
-        PostMute.create_post_mute(post_id=post.pk, muter_id=self.pk)
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        post_notification_subscription = PostNotificationsSubscription.objects.get(post=post, subscriber=self)
+        post_notification_subscription.update(
+            comment_notifications=False,
+            comment_reaction_notifications=False,
+            reaction_notifications=False,
+            reply_notifications=False,
+            reply_where_commented_notifications=False
+        )
+
         return post
 
     def unmute_post_with_id(self, post_id):
         Post = get_post_model()
         post = Post.objects.get(pk=post_id)
-
         check_can_unmute_post(user=self, post=post)
-        self.post_mutes.filter(post_id=post_id).delete()
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        post_notification_subscription = PostNotificationsSubscription.objects.get(post=post, subscriber=self)
+        post_notification_subscription.update(
+            comment_notifications=True,
+            comment_reaction_notifications=True,
+            reaction_notifications=True,
+            reply_notifications=True,
+            reply_where_commented_notifications=True
+        )
         return post
 
     def mute_post_comment_with_id(self, post_comment_id):

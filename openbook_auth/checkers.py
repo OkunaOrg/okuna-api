@@ -771,6 +771,11 @@ def check_has_device_with_uuid(user, device_uuid):
 
 
 def check_can_mute_post(user, post):
+    PostNotificationsSubscription = get_post_notifications_subscription_model()
+    if not PostNotificationsSubscription.objects.filter(post=post, subscriber=user).exists():
+        raise ValidationError(
+            _('You aren\'t receiving notifications for this post'),
+        )
     if user.has_muted_post_with_id(post_id=post.pk):
         raise ValidationError(
             _('Post already muted'),

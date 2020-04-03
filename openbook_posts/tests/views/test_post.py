@@ -1826,7 +1826,6 @@ class MutePostAPITests(OpenbookAPITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
         post = user.create_public_post(text=make_fake_post_text())
-
         url = self._get_url(post)
 
         response = self.client.post(url, **headers)
@@ -1850,10 +1849,12 @@ class MutePostAPITests(OpenbookAPITestCase):
         response = self.client.post(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
         self.assertTrue(user.has_muted_post_with_id(post.pk))
 
-    def test_can_mute_foreign_post_if_public_post(self):
+    def test_cannot_mute_foreign_post_if_public_post_and_not_subscribed(self):
+        """
+        should not be able to mute post if not receiving notifications and return 400
+        """
         user = make_user()
         foreign_user = make_user()
 
@@ -1864,9 +1865,8 @@ class MutePostAPITests(OpenbookAPITestCase):
 
         response = self.client.post(url, **headers)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        self.assertTrue(user.has_muted_post_with_id(post.pk))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(user.has_muted_post_with_id(post.pk))
 
     def test_cannot_mute_foreign_post_if_encircled_post(self):
         user = make_user()
@@ -1899,12 +1899,17 @@ class MutePostAPITests(OpenbookAPITestCase):
         foreign_user.connect_with_user_with_id(user_id=user.pk, circles_ids=[circle.pk])
         user.confirm_connection_with_user_with_id(user_id=foreign_user.pk)
 
+        user.create_post_notifications_subscription_for_post_with_id(
+            post_id=post.id,
+            comment_notifications=True,
+            reply_where_commented_notifications=True
+        )
+
         url = self._get_url(post)
 
         response = self.client.post(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
         self.assertTrue(user.has_muted_post_with_id(post.pk))
 
     def test_can_mute_community_post_if_public(self):
@@ -1915,13 +1920,17 @@ class MutePostAPITests(OpenbookAPITestCase):
 
         headers = make_authentication_headers_for_user(user)
         post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        user.create_post_notifications_subscription_for_post_with_id(
+            post_id=post.id,
+            comment_notifications=True,
+            reply_where_commented_notifications=True
+        )
 
         url = self._get_url(post)
 
         response = self.client.post(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
         self.assertTrue(user.has_muted_post_with_id(post.pk))
 
     def test_cannot_mute_closed_community_post(self):
@@ -1980,6 +1989,11 @@ class MutePostAPITests(OpenbookAPITestCase):
 
         headers = make_authentication_headers_for_user(admin)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        admin.create_post_notifications_subscription_for_post_with_id(
+            post_id=post.id,
+            comment_notifications=True,
+            reply_where_commented_notifications=True
+        )
         post.is_closed = True
         post.save()
 
@@ -2006,6 +2020,11 @@ class MutePostAPITests(OpenbookAPITestCase):
 
         headers = make_authentication_headers_for_user(moderator)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        moderator.create_post_notifications_subscription_for_post_with_id(
+            post_id=post.id,
+            comment_notifications=True,
+            reply_where_commented_notifications=True
+        )
         post.is_closed = True
         post.save()
 
@@ -2016,7 +2035,7 @@ class MutePostAPITests(OpenbookAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(moderator.has_muted_post_with_id(post.pk))
 
-    def test_cant_mute_community_post_if_private_and_not_member(self):
+    def test_cannot_mute_community_post_if_private_and_not_member(self):
         user = make_user()
 
         foreign_user = make_user()
@@ -2030,7 +2049,6 @@ class MutePostAPITests(OpenbookAPITestCase):
         response = self.client.post(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
         self.assertFalse(user.has_muted_post_with_id(post.pk))
 
     def test_can_mute_community_post_if_private_and_member(self):
@@ -2046,13 +2064,17 @@ class MutePostAPITests(OpenbookAPITestCase):
                                                                       community_name=community.name)
 
         user.join_community_with_name(community_name=community.name)
+        user.create_post_notifications_subscription_for_post_with_id(
+            post_id=post.id,
+            comment_notifications=True,
+            reply_where_commented_notifications=True
+        )
 
         url = self._get_url(post)
 
         response = self.client.post(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
         self.assertTrue(user.has_muted_post_with_id(post.pk))
 
     def _get_url(self, post):
@@ -2085,7 +2107,6 @@ class UnmutePostAPITests(OpenbookAPITestCase):
         response = self.client.post(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
         self.assertFalse(user.has_muted_post_with_id(post.pk))
 
     def test_cant_unmute_own_post_if_already_unmuted(self):
@@ -2116,12 +2137,16 @@ class UnmutePostAPITests(OpenbookAPITestCase):
 
         headers = make_authentication_headers_for_user(user)
         post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        user.create_post_notifications_subscription_for_post_with_id(
+            post_id=post.id,
+            comment_notifications=True,
+            reply_where_commented_notifications=True
+        )
         user.mute_post_with_id(post.pk)
         post.is_closed = True
         post.save()
 
         url = self._get_url(post)
-
         response = self.client.post(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -2162,6 +2187,11 @@ class UnmutePostAPITests(OpenbookAPITestCase):
 
         headers = make_authentication_headers_for_user(admin)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        admin.create_post_notifications_subscription_for_post_with_id(
+            post_id=post.id,
+            comment_notifications=True,
+            reply_where_commented_notifications=True
+        )
         admin.mute_post_with_id(post.pk)
         post.is_closed = True
         post.save()
@@ -2189,6 +2219,11 @@ class UnmutePostAPITests(OpenbookAPITestCase):
 
         headers = make_authentication_headers_for_user(moderator)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+        moderator.create_post_notifications_subscription_for_post_with_id(
+            post_id=post.id,
+            comment_notifications=True,
+            reply_where_commented_notifications=True
+        )
         moderator.mute_post_with_id(post.pk)
         post.is_closed = True
         post.save()
