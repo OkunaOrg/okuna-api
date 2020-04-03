@@ -678,7 +678,13 @@ class User(AbstractUser):
         ).exists()
 
     def has_muted_post_comment_with_id(self, post_comment_id):
-        return self.post_comment_mutes.filter(post_comment_id=post_comment_id).exists()
+        PostCommentNotificationsSubscription = get_post_comment_notifications_subscription_model()
+        return PostCommentNotificationsSubscription.objects.filter(
+            post_comment_id=post_comment_id,
+            subscriber=self,
+            reaction_notifications=False,
+            reply_notifications=False
+        ).exists()
 
     def has_disabled_comment_notifications_for_post(self, post_id):
         return self.post_notifications_subscriptions.filter(post_id=post_id, comment_notifications=False).exists()
@@ -3117,16 +3123,26 @@ class User(AbstractUser):
 
     def mute_post_comment(self, post_comment):
         check_can_mute_post_comment(user=self, post_comment=post_comment)
-        PostCommentMute = get_post_comment_mute_model()
-        PostCommentMute.create_post_comment_mute(post_comment_id=post_comment.pk, muter_id=self.pk)
+        PostCommentNotificationsSubscription = get_post_comment_notifications_subscription_model()
+        post_comment_notification_subscription = PostCommentNotificationsSubscription.objects.get(
+            post_comment=post_comment, subscriber=self)
+        post_comment_notification_subscription.update(
+            reaction_notifications=False,
+            reply_notifications=False
+        )
         return post_comment
 
     def unmute_post_comment_with_id(self, post_comment_id):
         Post_comment = get_post_comment_model()
         post_comment = Post_comment.objects.get(pk=post_comment_id)
-
         check_can_unmute_post_comment(user=self, post_comment=post_comment)
-        self.post_comment_mutes.filter(post_comment_id=post_comment_id).delete()
+        PostCommentNotificationsSubscription = get_post_comment_notifications_subscription_model()
+        post_comment_notification_subscription = PostCommentNotificationsSubscription.objects.get(
+            post_comment=post_comment, subscriber=self)
+        post_comment_notification_subscription.update(
+            reaction_notifications=True,
+            reply_notifications=True
+        )
         return post_comment
 
     def translate_post_comment_with_id(self, post_comment_id):

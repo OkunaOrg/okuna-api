@@ -2215,13 +2215,16 @@ class MutePostCommentAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(user)
         post = foreign_user.create_public_post(text=make_fake_post_text())
         post_comment = foreign_user.comment_post(post=post, text=make_fake_post_comment_text())
-
+        user.create_post_comment_notifications_subscription_for_comment_with_id(
+            post_comment_id=post_comment.id,
+            reply_notifications=True,
+            reaction_notifications=True
+        )
         url = self._get_url(post=post, post_comment=post_comment)
 
         response = self.client.post(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
         self.assertTrue(user.has_muted_post_comment_with_id(post_comment.pk))
 
     def test_cannot_mute_foreign_post_comment_if_encircled_post(self):
@@ -2235,13 +2238,11 @@ class MutePostCommentAPITests(OpenbookAPITestCase):
         post = foreign_user.create_encircled_post(text=make_fake_post_text(),
                                                   circles_ids=[circle.pk])
         post_comment = foreign_user.comment_post(post=post, text=make_fake_post_comment_text())
-
         url = self._get_url(post=post, post_comment=post_comment)
 
         response = self.client.post(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
         self.assertFalse(user.has_muted_post_comment_with_id(post_comment.pk))
 
     def test_can_mute_foreign_post_comment_if_part_of_encircled_post_comment(self):
@@ -2258,13 +2259,17 @@ class MutePostCommentAPITests(OpenbookAPITestCase):
 
         foreign_user.connect_with_user_with_id(user_id=user.pk, circles_ids=[circle.pk])
         user.confirm_connection_with_user_with_id(user_id=foreign_user.pk)
+        user.create_post_comment_notifications_subscription_for_comment_with_id(
+            post_comment_id=post_comment.id,
+            reply_notifications=True,
+            reaction_notifications=True
+        )
 
         url = self._get_url(post=post, post_comment=post_comment)
 
         response = self.client.post(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
         self.assertTrue(user.has_muted_post_comment_with_id(post_comment.pk))
 
     def test_can_mute_community_post_comment_if_public(self):
@@ -2277,7 +2282,11 @@ class MutePostCommentAPITests(OpenbookAPITestCase):
         post = foreign_user.create_community_post(text=make_fake_post_text(),
                                                   community_name=community.name)
         post_comment = foreign_user.comment_post(post=post, text=make_fake_post_comment_text())
-
+        user.create_post_comment_notifications_subscription_for_comment_with_id(
+            post_comment_id=post_comment.id,
+            reply_notifications=True,
+            reaction_notifications=True
+        )
         url = self._get_url(post=post, post_comment=post_comment)
 
         response = self.client.post(url, **headers)
@@ -2300,7 +2309,11 @@ class MutePostCommentAPITests(OpenbookAPITestCase):
         post = foreign_user.create_community_post(text=make_fake_post_text(),
                                                   community_name=community.name)
         post_comment = foreign_user.comment_post(post=post, text=make_fake_post_comment_text())
-
+        user.create_post_comment_notifications_subscription_for_comment_with_id(
+            post_comment_id=post_comment.id,
+            reply_notifications=True,
+            reaction_notifications=True
+        )
         post_comment.is_closed = True
         post_comment.save()
 
@@ -2350,7 +2363,11 @@ class MutePostCommentAPITests(OpenbookAPITestCase):
         post = user.create_community_post(text=make_fake_post_text(),
                                           community_name=community.name)
         post_comment = user.comment_post(post=post, text=make_fake_post_comment_text())
-
+        admin.create_post_comment_notifications_subscription_for_comment_with_id(
+            post_comment_id=post_comment.id,
+            reply_notifications=True,
+            reaction_notifications=True
+        )
         post_comment.is_closed = True
         post_comment.save()
 
@@ -2379,7 +2396,11 @@ class MutePostCommentAPITests(OpenbookAPITestCase):
         post = user.create_community_post(text=make_fake_post_text(),
                                           community_name=community.name)
         post_comment = user.comment_post(post=post, text=make_fake_post_comment_text())
-
+        moderator.create_post_comment_notifications_subscription_for_comment_with_id(
+            post_comment_id=post_comment.id,
+            reply_notifications=True,
+            reaction_notifications=True
+        )
         post_comment.is_closed = True
         post_comment.save()
 
@@ -2390,7 +2411,7 @@ class MutePostCommentAPITests(OpenbookAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(moderator.has_muted_post_comment_with_id(post_comment.pk))
 
-    def test_cant_mute_community_post_comment_if_private_and_not_member(self):
+    def test_cannot_mute_community_post_comment_if_private_and_not_member(self):
         user = make_user()
 
         foreign_user = make_user()
@@ -2400,13 +2421,11 @@ class MutePostCommentAPITests(OpenbookAPITestCase):
         post = foreign_user.create_community_post(text=make_fake_post_text(),
                                                   community_name=community.name)
         post_comment = foreign_user.comment_post(post=post, text=make_fake_post_comment_text())
-
         url = self._get_url(post=post, post_comment=post_comment)
 
         response = self.client.post(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
         self.assertFalse(user.has_muted_post_comment_with_id(post_comment.pk))
 
     def test_can_mute_community_post_comment_if_private_and_member(self):
@@ -2424,13 +2443,17 @@ class MutePostCommentAPITests(OpenbookAPITestCase):
                                                                       community_name=community.name)
 
         user.join_community_with_name(community_name=community.name)
+        user.create_post_comment_notifications_subscription_for_comment_with_id(
+            post_comment_id=post_comment.id,
+            reply_notifications=True,
+            reaction_notifications=True
+        )
 
         url = self._get_url(post=post, post_comment=post_comment)
 
         response = self.client.post(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
         self.assertTrue(user.has_muted_post_comment_with_id(post_comment.pk))
 
     def _get_url(self, post, post_comment):
@@ -2499,6 +2522,11 @@ class UnmutePostCommentAPITests(OpenbookAPITestCase):
         post = foreign_user.create_community_post(text=make_fake_post_text(),
                                                   community_name=community.name)
         post_comment = foreign_user.comment_post(post=post, text=make_fake_post_comment_text())
+        user.create_post_comment_notifications_subscription_for_comment_with_id(
+            post_comment_id=post_comment.id,
+            reply_notifications=True,
+            reaction_notifications=True
+        )
         user.mute_post_comment_with_id(post_comment.pk)
         post_comment.is_closed = True
         post_comment.save()
@@ -2549,6 +2577,11 @@ class UnmutePostCommentAPITests(OpenbookAPITestCase):
         post = user.create_community_post(text=make_fake_post_text(),
                                           community_name=community.name)
         post_comment = user.comment_post(post=post, text=make_fake_post_comment_text())
+        admin.create_post_comment_notifications_subscription_for_comment_with_id(
+            post_comment_id=post_comment.id,
+            reply_notifications=True,
+            reaction_notifications=True
+        )
         admin.mute_post_comment_with_id(post_comment.pk)
         post_comment.is_closed = True
         post_comment.save()
@@ -2578,6 +2611,11 @@ class UnmutePostCommentAPITests(OpenbookAPITestCase):
         post = user.create_community_post(text=make_fake_post_text(),
                                           community_name=community.name)
         post_comment = user.comment_post(post=post, text=make_fake_post_comment_text())
+        moderator.create_post_comment_notifications_subscription_for_comment_with_id(
+            post_comment_id=post_comment.id,
+            reply_notifications=True,
+            reaction_notifications=True
+        )
         moderator.mute_post_comment_with_id(post_comment.pk)
         post_comment.is_closed = True
         post_comment.save()

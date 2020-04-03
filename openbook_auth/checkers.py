@@ -6,7 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 from openbook_common.utils.model_loaders import get_post_model, get_community_model, get_post_comment_model, \
     get_language_model, get_user_model, get_emoji_group_model, get_post_reaction_model, get_user_invite_model, \
     get_community_notifications_subscription_model, get_user_notifications_subscription_model, \
-    get_post_notifications_subscription_model
+    get_post_notifications_subscription_model, get_post_comment_notifications_subscription_model
 
 from openbook_common import checkers as common_checkers
 
@@ -796,6 +796,12 @@ def check_has_muted_post_with_id(user, post_id):
 
 
 def check_can_mute_post_comment(user, post_comment):
+    PostCommentNotificationsSubscription = get_post_comment_notifications_subscription_model()
+    if not PostCommentNotificationsSubscription.objects.filter(post_comment=post_comment, subscriber=user).exists():
+        raise ValidationError(
+            _('You aren\'t receiving notifications for this post comment'),
+        )
+
     if user.has_muted_post_comment_with_id(post_comment_id=post_comment.pk):
         raise ValidationError(
             _('Post comment already muted'),
