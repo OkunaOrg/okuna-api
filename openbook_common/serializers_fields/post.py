@@ -1,5 +1,6 @@
 from rest_framework.fields import Field
 
+from openbook_common.serializers import CommonPostNotificationsSubscriptionSerializer
 from openbook_common.utils.model_loaders import get_post_model
 from openbook_communities.models import CommunityMembership
 from openbook_posts.models import PostReaction, PostCommentReaction
@@ -158,3 +159,21 @@ class IsEncircledField(Field):
 
         return is_encircled
 
+
+class CommonPostNotificationsSubscriptionField(Field):
+
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(CommonPostNotificationsSubscriptionField, self).__init__(**kwargs)
+
+    def to_representation(self, post):
+        request = self.context.get('request')
+        request_user = request.user
+        post_notifications_subscription_serializer = None
+        if request_user.post_notifications_subscriptions.filter(post=post).exists():
+            post_notifications_subscription = request_user.post_notifications_subscriptions.get(post=post)
+            post_notifications_subscription_serializer = CommonPostNotificationsSubscriptionSerializer(
+                post_notifications_subscription, context={"request": request}).data
+
+        return post_notifications_subscription_serializer

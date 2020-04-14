@@ -8,7 +8,7 @@ from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import IsFavoriteField, CommunityMembershipsField
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 from openbook_hashtags.models import Hashtag
-from openbook_posts.models import PostReaction, PostImage
+from openbook_posts.models import PostReaction, PostImage, PostNotificationsSubscription
 
 
 class CommonEmojiSerializer(serializers.ModelSerializer):
@@ -236,3 +236,16 @@ class ProxyDomainCheckSerializer(serializers.Serializer):
     url = serializers.CharField(
         required=True,
     )
+
+
+class CommonPostNotificationsSubscriptionSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = PostNotificationsSubscription
+        fields = (
+            'id',
+            'post',
+            'comment_notifications',
+            'reaction_notifications',
+            'reply_notifications',
+        )
