@@ -533,7 +533,6 @@ class User(AbstractUser):
                                       post_comment_reply_notifications=None,
                                       post_comment_user_mention_notifications=None,
                                       post_user_mention_notifications=None,
-                                      post_subscription_comment_notifications=None,
                                       ):
 
         notifications_settings = self.notifications_settings
@@ -550,8 +549,7 @@ class User(AbstractUser):
             post_comment_reaction_notifications=post_comment_reaction_notifications,
             post_comment_reply_notifications=post_comment_reply_notifications,
             post_comment_user_mention_notifications=post_comment_user_mention_notifications,
-            post_user_mention_notifications=post_user_mention_notifications,
-            post_subscription_comment_notifications=post_subscription_comment_notifications,
+            post_user_mention_notifications=post_user_mention_notifications
         )
         return notifications_settings
 
@@ -3842,7 +3840,6 @@ class UserNotificationsSettings(models.Model):
     post_comment_user_mention_notifications = models.BooleanField(_('post comment user mention notifications'),
                                                                   default=True)
     post_user_mention_notifications = models.BooleanField(_('post user mention notifications'), default=True)
-    post_subscription_comment_notifications = models.BooleanField(_('post subscription comment notifications'), default=True)
 
     @classmethod
     def create_notifications_settings(cls, user):
@@ -3859,8 +3856,7 @@ class UserNotificationsSettings(models.Model):
                user_new_post_notifications=None,
                post_comment_user_mention_notifications=None,
                post_user_mention_notifications=None,
-               post_comment_reaction_notifications=None,
-               post_subscription_comment_notifications=None, ):
+               post_comment_reaction_notifications=None):
 
         if post_comment_notifications is not None:
             self.post_comment_notifications = post_comment_notifications
@@ -3897,9 +3893,6 @@ class UserNotificationsSettings(models.Model):
 
         if user_new_post_notifications is not None:
             self.user_new_post_notifications = user_new_post_notifications
-
-        if post_subscription_comment_notifications is not None:
-            self.post_subscription_comment_notifications = post_subscription_comment_notifications
 
         self.save()
 
