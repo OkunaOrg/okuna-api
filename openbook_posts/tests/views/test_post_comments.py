@@ -1540,10 +1540,7 @@ class PostCommentsAPITests(OpenbookAPITestCase):
 
         foreign_user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
 
-        foreign_user.update_post_notifications_subscription_for_post_with_id(
-            post_id=post.pk,
-            comment_notifications=False
-        )
+        foreign_user.mute_post_with_id(post_id=post.pk)
 
         post_comment_text = make_fake_post_comment_text()
 

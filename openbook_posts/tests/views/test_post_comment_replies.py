@@ -1385,11 +1385,7 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
         foreign_user.reply_to_comment_with_id_for_post_with_uuid(post_comment_id=post_comment.pk,
                                                                  post_uuid=post.uuid,
                                                                  text=make_fake_post_comment_text())
-        # mute post notifications
-        foreign_user.update_post_notifications_subscription_for_post_with_id(
-            post_id=post.pk,
-            comment_notifications=False,
-            reply_notifications=False)
+        foreign_user.mute_post_with_id(post_id=post.pk)
 
         reply_comment_text = make_fake_post_comment_text()
 
@@ -1519,11 +1515,7 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
                                                                  post_uuid=post.uuid,
                                                                  text=make_fake_post_comment_text())
 
-        # mute post notifications
-        foreign_user.update_post_notifications_subscription_for_post_with_id(
-            post_id=post.pk,
-            comment_notifications=False,
-            reply_notifications=False)
+        foreign_user.mute_post(post=post)
 
         reply_comment_text = make_fake_post_comment_text()
 
@@ -1567,11 +1559,7 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
                                                                  post_uuid=post.uuid,
                                                                  text=make_fake_post_comment_text())
 
-        # mute post notifications
-        post_creator.update_post_notifications_subscription_for_post_with_id(
-            post_id=post.pk,
-            comment_notifications=False,
-            reply_notifications=False)
+        post_creator.mute_post(post=post)
 
         reply_comment_text = make_fake_post_comment_text()
 
@@ -1607,18 +1595,12 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
         post = post_creator.create_public_post(text=make_fake_post_text())
         post_comment = post_creator.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
 
-        # mute post comment for creator
-        post_creator.update_post_comment_notifications_subscription_for_comment_with_id(
-            post_comment_id=post_comment.pk,
-            reply_notifications=False)
+        post_creator.mute_post_comment_with_id(post_comment_id=post_comment.pk)
 
         foreign_user.reply_to_comment_with_id_for_post_with_uuid(post_comment_id=post_comment.pk,
                                                                  post_uuid=post.uuid,
                                                                  text=make_fake_post_comment_text())
-        # mute post comment for foreign user
-        foreign_user.update_post_comment_notifications_subscription_for_comment_with_id(
-            post_comment_id=post_comment.pk,
-            reply_notifications=False)
+        foreign_user.mute_post_comment_with_id(post_comment_id=post_comment.pk)
 
         send_post_comment_reply_push_notification_call.reset_mock()
 
@@ -1653,7 +1635,6 @@ class PostCommentRepliesAPITests(OpenbookAPITestCase):
         foreign_user.reply_to_comment_with_id_for_post_with_uuid(post_comment_id=post_comment.pk,
                                                                  post_uuid=post.uuid,
                                                                  text=make_fake_post_comment_text())
-
         foreign_user.mute_post_with_id(post_id=post.pk)
 
         send_post_comment_reply_push_notification_call.reset_mock()
