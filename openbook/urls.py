@@ -79,7 +79,7 @@ from openbook_posts.views.post_comment.post_comment_reactions.views import PostC
     PostCommentReactionsEmojiCount
 from openbook_posts.views.post_comment.post_comment_replies.views import PostCommentReplies
 from openbook_posts.views.post_comment.views import PostCommentItem, MutePostComment, UnmutePostComment, \
-    TranslatePostComment
+    TranslatePostComment, PostCommentNotificationsSubscriptionSettings
 from openbook_posts.views.post_comments.views import PostComments, PostCommentsDisable, PostCommentsEnable
 from openbook_posts.views.post_media.views import PostMedia
 from openbook_posts.views.post_reaction.views import PostReactionItem
@@ -172,6 +172,8 @@ post_comment_reactions_patterns = [
 post_comment_notifications_patterns = [
     path('mute/', MutePostComment.as_view(), name='mute-post-comment'),
     path('unmute/', UnmutePostComment.as_view(), name='unmute-post-comment'),
+    path('subscribe/', PostCommentNotificationsSubscriptionSettings.as_view(),
+         name='post-comment-notifications-subscription-settings'),
 ]
 
 post_comment_patterns = [

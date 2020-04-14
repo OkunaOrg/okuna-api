@@ -1902,7 +1902,6 @@ class MutePostAPITests(OpenbookAPITestCase):
         user.create_post_notifications_subscription_for_post_with_id(
             post_id=post.id,
             comment_notifications=True,
-            reply_where_commented_notifications=True
         )
 
         url = self._get_url(post)
@@ -1923,7 +1922,6 @@ class MutePostAPITests(OpenbookAPITestCase):
         user.create_post_notifications_subscription_for_post_with_id(
             post_id=post.id,
             comment_notifications=True,
-            reply_where_commented_notifications=True
         )
 
         url = self._get_url(post)
@@ -1992,7 +1990,6 @@ class MutePostAPITests(OpenbookAPITestCase):
         admin.create_post_notifications_subscription_for_post_with_id(
             post_id=post.id,
             comment_notifications=True,
-            reply_where_commented_notifications=True
         )
         post.is_closed = True
         post.save()
@@ -2023,7 +2020,6 @@ class MutePostAPITests(OpenbookAPITestCase):
         moderator.create_post_notifications_subscription_for_post_with_id(
             post_id=post.id,
             comment_notifications=True,
-            reply_where_commented_notifications=True
         )
         post.is_closed = True
         post.save()
@@ -2067,7 +2063,6 @@ class MutePostAPITests(OpenbookAPITestCase):
         user.create_post_notifications_subscription_for_post_with_id(
             post_id=post.id,
             comment_notifications=True,
-            reply_where_commented_notifications=True
         )
 
         url = self._get_url(post)
@@ -2140,7 +2135,6 @@ class UnmutePostAPITests(OpenbookAPITestCase):
         user.create_post_notifications_subscription_for_post_with_id(
             post_id=post.id,
             comment_notifications=True,
-            reply_where_commented_notifications=True
         )
         user.mute_post_with_id(post.pk)
         post.is_closed = True
@@ -2190,7 +2184,6 @@ class UnmutePostAPITests(OpenbookAPITestCase):
         admin.create_post_notifications_subscription_for_post_with_id(
             post_id=post.id,
             comment_notifications=True,
-            reply_where_commented_notifications=True
         )
         admin.mute_post_with_id(post.pk)
         post.is_closed = True
@@ -2222,7 +2215,6 @@ class UnmutePostAPITests(OpenbookAPITestCase):
         moderator.create_post_notifications_subscription_for_post_with_id(
             post_id=post.id,
             comment_notifications=True,
-            reply_where_commented_notifications=True
         )
         moderator.mute_post_with_id(post.pk)
         post.is_closed = True

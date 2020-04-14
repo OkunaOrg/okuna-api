@@ -7,7 +7,7 @@ from openbook_common.serializers import CommonUserProfileBadgeSerializer, Common
 from openbook_common.serializers_fields.post_comment import PostCommenterField, PostCommentReactionsEmojiCountField, \
     PostCommentReactionField, PostCommentIsMutedField, RepliesCountField
 from openbook_communities.models import CommunityMembership
-from openbook_posts.models import PostComment, PostCommentReaction
+from openbook_posts.models import PostComment, PostCommentReaction, PostCommentNotificationsSubscription
 from openbook_posts.validators import post_comment_id_exists, post_uuid_exists, \
     post_comment_id_exists_for_post_with_uuid
 from openbook_posts.views.posts.serializers import PostLanguageSerializer
@@ -201,4 +201,42 @@ class GetPostCommentSerializer(serializers.ModelSerializer):
             'is_muted',
             'hashtags',
             'id'
+        )
+
+
+class PostCommentNotificationsSubscriptionSettingsSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+    post_comment_id = serializers.IntegerField(
+        validators=[post_comment_id_exists],
+        required=True,
+    )
+    reaction_notifications = serializers.BooleanField(required=False)
+    reply_notifications = serializers.BooleanField(required=False)
+
+
+class UpdatePostCommentNotificationsSubscriptionSettingsSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+    post_comment_id = serializers.IntegerField(
+        validators=[post_comment_id_exists],
+        required=True,
+    )
+    reaction_notifications = serializers.NullBooleanField(required=False, default=None)
+    reply_notifications = serializers.NullBooleanField(required=False, default=None)
+
+
+class PostCommentNotificationsSubscriptionSettingsResponseSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = PostCommentNotificationsSubscription
+        fields = (
+            'id',
+            'post_comment',
+            'reaction_notifications',
+            'reply_notifications',
         )

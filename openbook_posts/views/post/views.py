@@ -14,8 +14,9 @@ from openbook_posts.views.post.serializers import DeletePostSerializer, GetPostS
     OpenClosePostSerializer, \
     OpenPostSerializer, ClosePostSerializer, TranslatePostSerializer, \
     SearchPostParticipantsSerializer, PostParticipantSerializer, GetPostParticipantsSerializer, PublishPostSerializer, \
-    GetPostStatusSerializer, PostNotificationsSubscriptionSettingsSerializer, PostNotificationsSubscriptionSettingsResponseSerializer, \
-    UpdatePostNotificationsSubscriptionSettingsSerializer
+    GetPostStatusSerializer, PostNotificationsSubscriptionSettingsSerializer, \
+    PostNotificationsSubscriptionSettingsResponseSerializer, \
+    UpdatePostNotificationsSubscriptionSettingsSerializer, PostNotificationsSubscriptionSettingsPostSerializer
 from openbook_translation.strategies.base import TranslationClientError, UnsupportedLanguagePairException, \
     MaxTextLengthExceededError
 
@@ -337,24 +338,20 @@ class PostNotificationsSubscriptionSettings(APIView):
         data = serializer.validated_data
         post_uuid = data.get('post_uuid')
         comment_notifications = data.get('comment_notifications')
-        comment_reaction_notifications = data.get('comment_reaction_notifications')
         reaction_notifications = data.get('reaction_notifications')
         reply_notifications = data.get('reply_notifications')
-        reply_where_commented_notifications = data.get('reply_where_commented_notifications')
         post_id = get_post_id_for_post_uuid(post_uuid)
 
         with transaction.atomic():
             post_notifications_subscription = user.create_post_notifications_subscription_for_post_with_id(
                 post_id=post_id,
                 comment_notifications=comment_notifications,
-                comment_reaction_notifications=comment_reaction_notifications,
                 reaction_notifications=reaction_notifications,
-                reply_notifications=reply_notifications,
-                reply_where_commented_notifications=reply_where_commented_notifications
+                reply_notifications=reply_notifications
             )
 
-        response_serializer = PostNotificationsSubscriptionSettingsResponseSerializer(post_notifications_subscription,
-                                                                                      context={"request": request})
+        response_serializer = PostNotificationsSubscriptionSettingsPostSerializer(post_notifications_subscription.post,
+                                                                                  context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
@@ -369,23 +366,19 @@ class PostNotificationsSubscriptionSettings(APIView):
         data = serializer.validated_data
         post_uuid = data.get('post_uuid')
         comment_notifications = data.get('comment_notifications')
-        comment_reaction_notifications = data.get('comment_reaction_notifications')
         reaction_notifications = data.get('reaction_notifications')
         reply_notifications = data.get('reply_notifications')
-        reply_where_commented_notifications = data.get('reply_where_commented_notifications')
         post_id = get_post_id_for_post_uuid(post_uuid)
 
         with transaction.atomic():
             post_notifications_subscription = user.update_post_notifications_subscription_for_post_with_id(
                 post_id=post_id,
                 comment_notifications=comment_notifications,
-                comment_reaction_notifications=comment_reaction_notifications,
                 reaction_notifications=reaction_notifications,
-                reply_notifications=reply_notifications,
-                reply_where_commented_notifications=reply_where_commented_notifications
+                reply_notifications=reply_notifications
             )
 
-        response_serializer = PostNotificationsSubscriptionSettingsResponseSerializer(post_notifications_subscription,
-                                                                                      context={"request": request})
+        response_serializer = PostNotificationsSubscriptionSettingsPostSerializer(post_notifications_subscription.post,
+                                                                                  context={"request": request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
