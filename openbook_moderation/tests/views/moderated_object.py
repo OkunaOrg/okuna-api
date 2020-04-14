@@ -1431,9 +1431,9 @@ class ApproveModeratedObjectApiTests(OpenbookAPITestCase):
         self.assertFalse(PostCommentNotification.objects.filter(
             post_comment=community_post_comment).exists())
 
-    def test_approving_community_post_moderated_object_deletes_post_subscription_comment_notifications_for_comment(self):
+    def test_approving_community_post_moderated_object_deletes_post_subscribers_comment_notifications_for_comment(self):
         """
-        should delete post subscription comment notifications for comments on approving community_post moderated object
+        should delete post subscribers notifications for comments on approving community_post moderated object
         """
         global_moderator = make_global_moderator()
 
@@ -1441,15 +1441,19 @@ class ApproveModeratedObjectApiTests(OpenbookAPITestCase):
 
         community_post_creator = make_user()
         community_post_commenter = make_user()
-        community_post_replier = make_user()
+        community_post_subscriber = make_user()
 
         community_post_creator.join_community_with_name(community_name=community.name)
         community_post_commenter.join_community_with_name(community_name=community.name)
-        community_post_replier.join_community_with_name(community_name=community.name)
+        community_post_subscriber.join_community_with_name(community_name=community.name)
 
         community_post = community_post_creator.create_community_post(
             community_name=community.name,
             text=make_fake_post_text())
+
+        community_post_subscriber.create_post_notifications_subscription_for_post_with_id(
+            post_id=community_post.id,
+            comment_notifications=True)
         community_post_comment = community_post_commenter.comment_post(
             post=community_post,
             text=make_fake_post_text())
@@ -1472,7 +1476,7 @@ class ApproveModeratedObjectApiTests(OpenbookAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(PostCommentNotification.objects.filter(
-            post_comment=community_post_comment).exists())
+            post_comment=community_post_comment, notification__owner=community_post_subscriber).exists())
 
     def test_approving_community_post_moderated_object_deletes_comment_reply_notifications(self):
         """

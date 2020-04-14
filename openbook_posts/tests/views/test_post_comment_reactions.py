@@ -703,8 +703,7 @@ class PostCommentReactionsAPITests(OpenbookAPITestCase):
         # mute post notifications
         user.update_post_notifications_subscription_for_post_with_id(
             post_id=post.pk,
-            reaction_notifications=False,
-            comment_reaction_notifications=False)
+            reaction_notifications=True)
 
         emoji_group = make_reactions_emoji_group()
 

@@ -601,7 +601,6 @@ class AuthenticatedUserNotificationsSettingsTests(OpenbookAPITestCase):
         notifications_settings.post_comment_reaction_notifications = fake.boolean()
         notifications_settings.post_comment_user_mention_notifications = fake.boolean()
         notifications_settings.post_user_mention_notifications = fake.boolean()
-        notifications_settings.post_subscription_comment_notifications = fake.boolean()
 
         notifications_settings.save()
 
@@ -619,7 +618,6 @@ class AuthenticatedUserNotificationsSettingsTests(OpenbookAPITestCase):
         new_post_comment_reply_notifications = not notifications_settings.post_comment_reply_notifications
         new_post_comment_user_mention_notifications = not notifications_settings.post_comment_user_mention_notifications
         new_post_user_mention_notifications = not notifications_settings.post_user_mention_notifications
-        new_post_subscription_comment_notifications = not notifications_settings.post_subscription_comment_notifications
 
         data = {
             'post_comment_notifications': new_post_comment_notifications,
@@ -634,7 +632,6 @@ class AuthenticatedUserNotificationsSettingsTests(OpenbookAPITestCase):
             'post_comment_reaction_notifications': new_post_comment_reaction_notifications,
             'post_comment_user_mention_notifications': new_post_comment_user_mention_notifications,
             'post_user_mention_notifications': new_post_user_mention_notifications,
-            'post_subscription_comment_notifications': new_post_subscription_comment_notifications
         }
 
         url = self._get_url()
@@ -658,8 +655,6 @@ class AuthenticatedUserNotificationsSettingsTests(OpenbookAPITestCase):
                          new_post_comment_reply_notifications)
         self.assertEqual(notifications_settings.post_comment_reaction_notifications,
                          new_post_comment_reaction_notifications)
-        self.assertEqual(notifications_settings.post_subscription_comment_notifications,
-                         new_post_subscription_comment_notifications)
 
     def _get_url(self):
         return reverse('authenticated-user-notifications-settings')

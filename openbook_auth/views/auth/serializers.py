@@ -69,8 +69,7 @@ class AuthenticatedUserNotificationsSettingsSerializer(serializers.ModelSerializ
             'post_comment_reaction_notifications',
             'post_comment_reply_notifications',
             'post_comment_user_mention_notifications',
-            'post_user_mention_notifications',
-            'post_subscription_comment_notifications',
+            'post_user_mention_notifications'
         )
 
 
@@ -87,7 +86,6 @@ class UpdateAuthenticatedUserNotificationsSettingsSerializer(serializers.Seriali
     post_comment_reply_notifications = serializers.BooleanField(required=False)
     post_comment_user_mention_notifications = serializers.BooleanField(required=False)
     post_user_mention_notifications = serializers.BooleanField(required=False)
-    post_subscription_comment_notifications = serializers.BooleanField(required=False)
 
 
 class RequestPasswordResetSerializer(serializers.Serializer):
