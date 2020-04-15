@@ -8,7 +8,7 @@ polib = "*"
 pytz = "*"
 
 [packages]
-django = "==2.2.10"
+django = "==2.2.12"
 python-dotenv = "*"
 djangorestframework = "*"
 sentry-sdk = "==0.10.2"
