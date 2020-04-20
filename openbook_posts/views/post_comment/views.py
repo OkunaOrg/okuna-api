@@ -12,7 +12,7 @@ from openbook_posts.views.post_comment.serializers import DeletePostCommentSeria
     EditPostCommentSerializer, MutePostCommentSerializer, UnmutePostCommentSerializer, TranslatePostCommentSerializer, \
     GetPostCommentSerializer, GetPostCommentRequestSerializer, PostCommentNotificationsSubscriptionSettingsSerializer, \
     PostCommentNotificationsSubscriptionSettingsResponseSerializer, \
-    UpdatePostCommentNotificationsSubscriptionSettingsSerializer
+    UpdatePostCommentNotificationsSubscriptionSettingsSerializer, MuteUnmutePostCommentResponseSerializer
 from openbook_translation.strategies.base import UnsupportedLanguagePairException, TranslationClientError, \
     MaxTextLengthExceededError
 
@@ -100,9 +100,11 @@ class MutePostComment(APIView):
         user = request.user
 
         with transaction.atomic():
-            user.mute_post_comment_with_id(post_comment_id=post_comment_id)
+            post_comment = user.mute_post_comment_with_id(post_comment_id=post_comment_id)
 
-        return ApiMessageResponse(message=_('Post comment muted.'), status=status.HTTP_200_OK)
+        post_comment_serializer = MuteUnmutePostCommentResponseSerializer(post_comment, context={"request": request})
+
+        return Response(post_comment_serializer.data, status=status.HTTP_200_OK)
 
 
 class UnmutePostComment(APIView):
@@ -118,9 +120,11 @@ class UnmutePostComment(APIView):
         user = request.user
 
         with transaction.atomic():
-            user.unmute_post_comment_with_id(post_comment_id=post_comment_id)
+            post_comment = user.unmute_post_comment_with_id(post_comment_id=post_comment_id)
 
-        return ApiMessageResponse(message=_('Post comment unmuted.'), status=status.HTTP_200_OK)
+        post_comment_serializer = MuteUnmutePostCommentResponseSerializer(post_comment, context={"request": request})
+
+        return Response(post_comment_serializer.data, status=status.HTTP_200_OK)
 
 
 class PostCommentNotificationsSubscriptionSettings(APIView):

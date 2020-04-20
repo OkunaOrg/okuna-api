@@ -5,7 +5,8 @@ from openbook_auth.models import UserProfile, User
 from openbook_common.models import Language, Emoji
 from openbook_common.serializers import CommonUserProfileBadgeSerializer, CommonHashtagSerializer
 from openbook_common.serializers_fields.post_comment import PostCommenterField, PostCommentReactionsEmojiCountField, \
-    PostCommentReactionField, PostCommentIsMutedField, RepliesCountField
+    PostCommentReactionField, PostCommentIsMutedField, RepliesCountField, \
+    CommonPostCommentNotificationsSubscriptionField
 from openbook_communities.models import CommunityMembership
 from openbook_posts.models import PostComment, PostCommentReaction, PostCommentNotificationsSubscription
 from openbook_posts.validators import post_comment_id_exists, post_uuid_exists, \
@@ -25,6 +26,17 @@ class EditPostCommentSerializer(serializers.ModelSerializer):
             'language',
             'is_edited',
             'hashtags'
+        )
+
+
+class MuteUnmutePostCommentResponseSerializer(serializers.ModelSerializer):
+    is_muted = PostCommentIsMutedField()
+
+    class Meta:
+        model = PostComment
+        fields = (
+            'id',
+            'is_muted',
         )
 
 
@@ -186,6 +198,7 @@ class GetPostCommentSerializer(serializers.ModelSerializer):
     is_muted = PostCommentIsMutedField()
     language = PostCommentLanguageSerializer()
     hashtags = CommonHashtagSerializer(many=True)
+    post_comment_notifications_subscription = CommonPostCommentNotificationsSubscriptionField()
 
     class Meta:
         model = PostComment
@@ -200,7 +213,8 @@ class GetPostCommentSerializer(serializers.ModelSerializer):
             'is_edited',
             'is_muted',
             'hashtags',
-            'id'
+            'id',
+            'post_comment_notifications_subscription'
         )
 
 

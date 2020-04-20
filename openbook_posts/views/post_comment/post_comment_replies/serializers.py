@@ -4,7 +4,7 @@ from django.conf import settings
 from openbook_common.models import Emoji
 from openbook_common.serializers import CommonHashtagSerializer
 from openbook_common.serializers_fields.post_comment import PostCommenterField, PostCommentReactionsEmojiCountField, \
-    PostCommentReactionField, PostCommentIsMutedField
+    PostCommentReactionField, PostCommentIsMutedField, CommonPostCommentNotificationsSubscriptionField
 from openbook_posts.models import PostComment, PostCommentReaction
 from openbook_posts.validators import post_comment_id_exists, post_uuid_exists, post_comment_text_validators
 
@@ -74,6 +74,7 @@ class PostCommentReplySerializer(serializers.ModelSerializer):
     is_muted = PostCommentIsMutedField()
     language = PostCommentLanguageSerializer()
     hashtags = CommonHashtagSerializer(many=True)
+    post_comment_notifications_subscription = CommonPostCommentNotificationsSubscriptionField()
 
     class Meta:
         model = PostComment
@@ -88,7 +89,8 @@ class PostCommentReplySerializer(serializers.ModelSerializer):
             'is_edited',
             'is_muted',
             'hashtags',
-            'id'
+            'id',
+            'post_comment_notifications_subscription'
         )
 
 

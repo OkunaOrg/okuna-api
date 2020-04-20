@@ -1,5 +1,6 @@
 from rest_framework.fields import Field
 
+from openbook_common.serializers import CommonPostCommentNotificationsSubscriptionSerializer
 from openbook_common.utils.model_loaders import get_post_comment_model
 from openbook_posts.models import PostCommentReaction
 
@@ -113,3 +114,23 @@ class PostCommentIsMutedField(Field):
             is_muted = request_user.has_muted_post_comment_with_id(post_comment_id=post_comment.pk)
 
         return is_muted
+
+
+class CommonPostCommentNotificationsSubscriptionField(Field):
+
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(CommonPostCommentNotificationsSubscriptionField, self).__init__(**kwargs)
+
+    def to_representation(self, post_comment):
+        request = self.context.get('request')
+        request_user = request.user
+        post_comment_notifications_subscription_serializer = None
+        if request_user.post_comment_notifications_subscriptions.filter(post_comment=post_comment).exists():
+            post_comment_notifications_subscription = request_user.post_comment_notifications_subscriptions.get(
+                post_comment=post_comment)
+            post_comment_notifications_subscription_serializer = CommonPostCommentNotificationsSubscriptionSerializer(
+                post_comment_notifications_subscription, context={"request": request}).data
+
+        return post_comment_notifications_subscription_serializer
