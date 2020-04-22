@@ -523,33 +523,25 @@ class User(AbstractUser):
             profile.save()
             self.save()
 
-    def update_notifications_settings(self, post_comment_notifications=None, post_reaction_notifications=None,
-                                      follow_notifications=None, connection_request_notifications=None,
+    def update_notifications_settings(self,
+                                      follow_notifications=None,
+                                      connection_request_notifications=None,
                                       connection_confirmed_notifications=None,
                                       community_invite_notifications=None,
                                       community_new_post_notifications=None,
                                       user_new_post_notifications=None,
-                                      post_comment_reaction_notifications=None,
-                                      post_comment_reply_notifications=None,
-                                      post_comment_user_mention_notifications=None,
-                                      post_user_mention_notifications=None,
-                                      ):
+                                      post_notifications=None):
 
         notifications_settings = self.notifications_settings
 
         notifications_settings.update(
-            post_comment_notifications=post_comment_notifications,
-            post_reaction_notifications=post_reaction_notifications,
             follow_notifications=follow_notifications,
             connection_request_notifications=connection_request_notifications,
             connection_confirmed_notifications=connection_confirmed_notifications,
             community_invite_notifications=community_invite_notifications,
             community_new_post_notifications=community_new_post_notifications,
             user_new_post_notifications=user_new_post_notifications,
-            post_comment_reaction_notifications=post_comment_reaction_notifications,
-            post_comment_reply_notifications=post_comment_reply_notifications,
-            post_comment_user_mention_notifications=post_comment_user_mention_notifications,
-            post_user_mention_notifications=post_user_mention_notifications
+            post_notifications=post_notifications
         )
         return notifications_settings
 
@@ -805,29 +797,29 @@ class User(AbstractUser):
         return self.notifications_settings.follow_notifications
 
     def has_post_comment_mention_notifications_enabled(self):
-        return self.notifications_settings.post_comment_user_mention_notifications
+        return self.notifications_settings.post_notifications
 
     def has_post_mention_notifications_enabled(self):
-        return self.notifications_settings.post_user_mention_notifications
+        return self.notifications_settings.post_notifications
 
     def has_reaction_notifications_enabled_for_post_with_id(self, post_id):
-        return self.notifications_settings.post_reaction_notifications and \
+        return self.notifications_settings.post_notifications and \
                not self.has_muted_post_with_id(post_id=post_id) and \
                not self.has_disabled_reaction_notifications_for_post_with_id(post_id=post_id)
 
     def has_reaction_notifications_enabled_for_post_comment(self, post_comment):
-        return self.notifications_settings.post_comment_reaction_notifications and \
+        return self.notifications_settings.post_notifications and \
                not self.has_muted_post_with_id(post_id=post_comment.post_id) and \
                not self.has_muted_post_comment_with_id(post_comment_id=post_comment.id) and \
                not self.has_disabled_reaction_notifications_for_post_comment(post_comment=post_comment)
 
     def has_comment_notifications_enabled_for_post_with_id(self, post_id):
-        return self.notifications_settings.post_comment_notifications and \
+        return self.notifications_settings.post_notifications and \
                not self.has_muted_post_with_id(post_id=post_id) and \
                not self.has_disabled_comment_notifications_for_post(post_id=post_id)
 
     def has_reply_notifications_enabled_for_post_comment(self, post_comment):
-        return self.notifications_settings.post_comment_reply_notifications and \
+        return self.notifications_settings.post_notifications and \
                not self.has_muted_post_with_id(post_id=post_comment.post_id) and \
                not self.has_muted_post_comment_with_id(post_comment_id=post_comment.id) and \
                not self.has_disabled_reply_notifications_for_post_comment(post_comment_id=post_comment.id)
@@ -3827,54 +3819,29 @@ class UserProfile(models.Model):
 class UserNotificationsSettings(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                                 related_name='notifications_settings')
-    post_comment_notifications = models.BooleanField(_('post comment notifications'), default=True)
-    post_comment_reply_notifications = models.BooleanField(_('post comment reply notifications'), default=True)
-    post_reaction_notifications = models.BooleanField(_('post reaction notifications'), default=True)
     follow_notifications = models.BooleanField(_('follow notifications'), default=True)
     connection_request_notifications = models.BooleanField(_('connection request notifications'), default=True)
     connection_confirmed_notifications = models.BooleanField(_('connection confirmed notifications'), default=True)
     community_invite_notifications = models.BooleanField(_('community invite notifications'), default=True)
     community_new_post_notifications = models.BooleanField(_('community new post notifications'), default=True)
     user_new_post_notifications = models.BooleanField(_('user new post notifications'), default=True)
-    post_comment_reaction_notifications = models.BooleanField(_('post comment reaction notifications'), default=True)
-    post_comment_user_mention_notifications = models.BooleanField(_('post comment user mention notifications'),
-                                                                  default=True)
-    post_user_mention_notifications = models.BooleanField(_('post user mention notifications'), default=True)
+    post_notifications = models.BooleanField(_('post notifications'), default=True)
 
     @classmethod
     def create_notifications_settings(cls, user):
         return UserNotificationsSettings.objects.create(user=user)
 
-    def update(self, post_comment_notifications=None,
-               post_comment_reply_notifications=None,
-               post_reaction_notifications=None,
+    def update(self,
                follow_notifications=None,
                connection_request_notifications=None,
                connection_confirmed_notifications=None,
                community_invite_notifications=None,
                community_new_post_notifications=None,
                user_new_post_notifications=None,
-               post_comment_user_mention_notifications=None,
-               post_user_mention_notifications=None,
-               post_comment_reaction_notifications=None):
+               post_notifications=None):
 
-        if post_comment_notifications is not None:
-            self.post_comment_notifications = post_comment_notifications
-
-        if post_comment_user_mention_notifications is not None:
-            self.post_comment_user_mention_notifications = post_comment_user_mention_notifications
-
-        if post_user_mention_notifications is not None:
-            self.post_user_mention_notifications = post_user_mention_notifications
-
-        if post_comment_reaction_notifications is not None:
-            self.post_comment_reaction_notifications = post_comment_reaction_notifications
-
-        if post_comment_reply_notifications is not None:
-            self.post_comment_reply_notifications = post_comment_reply_notifications
-
-        if post_reaction_notifications is not None:
-            self.post_reaction_notifications = post_reaction_notifications
+        if post_notifications is not None:
+            self.post_notifications = post_notifications
 
         if follow_notifications is not None:
             self.follow_notifications = follow_notifications
