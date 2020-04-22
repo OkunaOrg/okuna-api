@@ -1329,7 +1329,10 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(subscriber.are_post_subscription_comment_notifications_enabled_for_post(post=post))
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        self.assertTrue(PostNotificationsSubscription.objects.filter(post=post,
+                                                                     subscriber=subscriber,
+                                                                     comment_notifications=True).exists())
 
     def test_cannot_subscribe_to_comment_notifications_for_post_if_encircled_post(self):
         """
@@ -1351,8 +1354,10 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-        self.assertFalse(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
+                                                                      subscriber=user,
+                                                                      comment_notifications=True).exists())
 
     def test_can_subscribe_to_comment_notifications_for_post_if_part_of_encircled_post(self):
         """
@@ -1378,8 +1383,10 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-        self.assertTrue(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        self.assertTrue(PostNotificationsSubscription.objects.filter(post=post,
+                                                                     subscriber=user,
+                                                                     comment_notifications=True).exists())
 
     def test_can_subscribe_to_comment_notifications_for_community_post_if_public(self):
         """
@@ -1402,8 +1409,10 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-        self.assertTrue(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        self.assertTrue(PostNotificationsSubscription.objects.filter(post=post,
+                                                                     subscriber=user,
+                                                                     comment_notifications=True).exists())
 
     def test_cannot_subscribe_to_comment_notifications_for_closed_community_post_if_public(self):
         """
@@ -1428,8 +1437,10 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-        self.assertFalse(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
+                                                                      subscriber=user,
+                                                                      comment_notifications=True).exists())
 
     def test_can_subscribe_to_comment_notifications_for_closed_community_post_if_creator(self):
         """
@@ -1454,7 +1465,10 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        self.assertTrue(PostNotificationsSubscription.objects.filter(post=post,
+                                                                     subscriber=user,
+                                                                     comment_notifications=True).exists())
 
     def test_can_subscribe_to_comment_notifications_for_closed_community_post_administrator(self):
         """
@@ -1479,7 +1493,10 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(admin.are_post_subscription_comment_notifications_enabled_for_post(post=post))
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        self.assertTrue(PostNotificationsSubscription.objects.filter(post=post,
+                                                                     subscriber=admin,
+                                                                     comment_notifications=True).exists())
 
     def test_can_subscribe_to_comment_notifications_for_closed_community_post_if_moderator(self):
         """
@@ -1507,7 +1524,10 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(moderator.are_post_subscription_comment_notifications_enabled_for_post(post=post))
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        self.assertTrue(PostNotificationsSubscription.objects.filter(post=post,
+                                                                     subscriber=moderator,
+                                                                     comment_notifications=True).exists())
 
     def test_cannot_subscribe_to_comment_notifications_for_community_post_if_private_and_not_member(self):
         """
@@ -1529,7 +1549,10 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        self.assertFalse(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
+                                                                      subscriber=user,
+                                                                      comment_notifications=True).exists())
 
     def test_can_subscribe_to_comment_notifications_for_community_post_if_private_and_member(self):
         """
@@ -1555,7 +1578,10 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         response = self.client.put(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        self.assertTrue(PostNotificationsSubscription.objects.filter(post=post,
+                                                                     subscriber=user,
+                                                                     comment_notifications=True).exists())
 
     def test_can_unsubscribe_comment_notifications_for_public_post(self):
         """
@@ -1600,7 +1626,10 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         response = self.client.patch(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertFalse(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
+                                                                      subscriber=user,
+                                                                      comment_notifications=True).exists())
 
     def test_can_unsubscribe_to_comment_notifications_for_post_if_part_of_encircled_post(self):
         """
@@ -1625,7 +1654,10 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         response = self.client.patch(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
+                                                                      subscriber=user,
+                                                                      comment_notifications=True).exists())
 
     def test_can_unsubscribe_to_comment_notifications_for_community_post_if_public(self):
         """
@@ -1648,7 +1680,10 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         response = self.client.patch(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
+                                                                      subscriber=user,
+                                                                      comment_notifications=True).exists())
 
     def test_cannot_unsubscribe_to_comment_notifications_for_closed_community_post_if_public(self):
         """
@@ -1674,7 +1709,10 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         response = self.client.patch(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertTrue(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        self.assertTrue(PostNotificationsSubscription.objects.filter(post=post,
+                                                                     subscriber=user,
+                                                                     comment_notifications=True).exists())
 
     def test_can_unsubscribe_to_comment_notifications_for_closed_community_post_if_creator(self):
         """
@@ -1699,7 +1737,10 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         response = self.client.patch(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
+                                                                      subscriber=user,
+                                                                      comment_notifications=True).exists())
 
     def test_can_unsubscribe_to_comment_notifications_for_closed_community_post_administrator(self):
         """
@@ -1724,7 +1765,10 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         response = self.client.patch(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(admin.are_post_subscription_comment_notifications_enabled_for_post(post=post))
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
+                                                                      subscriber=admin,
+                                                                      comment_notifications=True).exists())
 
     def test_can_unsubscribe_to_comment_notifications_for_closed_community_post_if_moderator(self):
         """
@@ -1753,7 +1797,10 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         response = self.client.patch(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(moderator.are_post_subscription_comment_notifications_enabled_for_post(post=post))
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
+                                                                      subscriber=moderator,
+                                                                      comment_notifications=True).exists())
 
     def test_cannot_unsubscribe_to_comment_notifications_for_community_post_if_private_and_not_member(self):
         """
@@ -1775,7 +1822,10 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        self.assertFalse(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
+                                                                      subscriber=user,
+                                                                      comment_notifications=True).exists())
 
     def test_can_unsubscribe_to_comment_notifications_for_community_post_if_private_and_member(self):
         """
@@ -1802,7 +1852,10 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         response = self.client.patch(url, data, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(user.are_post_subscription_comment_notifications_enabled_for_post(post=post))
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
+                                                                      subscriber=user,
+                                                                      comment_notifications=True).exists())
 
     def _get_url(self, post):
         return reverse('post-notifications-subscription-settings', kwargs={

@@ -257,11 +257,11 @@ class Post(models.Model):
         other_commenters_query = Q(posts_comments__post_id=post.pk, posts_comments__parent_comment_id=None,)
 
         other_target_users = User.objects. \
-            only('id', 'username', 'notifications_settings__post_comment_notifications'). \
+            only('id', 'username', 'notifications_settings__post_notifications'). \
             filter((post_subscribers_query | other_commenters_query) & ~Q(id=post_commenter.pk))
 
         post_creator = User.objects. \
-            only('id', 'username', 'notifications_settings__post_comment_notifications'). \
+            only('id', 'username', 'notifications_settings__post_notifications'). \
             filter(pk=post.creator_id)
 
         return other_target_users.union(post_creator)
@@ -282,11 +282,11 @@ class Post(models.Model):
         post_comment_reply_subscribers_query = Q(post_comment_notifications_subscriptions__post_comment_id=post_comment.pk)
 
         post_target_users = User.objects.\
-            only('id', 'username', 'notifications_settings__post_comment_notifications').\
+            only('id', 'username', 'notifications_settings__post_notifications').\
             filter(post_subscribers_query)
 
         post_comment_reply_target_users = User.objects.\
-            only('id', 'username', 'notifications_settings__post_comment_notifications').\
+            only('id', 'username', 'notifications_settings__post_notifications').\
             filter(post_comment_reply_subscribers_query)
 
         return post_target_users.union(post_comment_reply_target_users)
