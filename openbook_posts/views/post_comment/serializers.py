@@ -5,9 +5,10 @@ from openbook_auth.models import UserProfile, User
 from openbook_common.models import Language, Emoji
 from openbook_common.serializers import CommonUserProfileBadgeSerializer, CommonHashtagSerializer
 from openbook_common.serializers_fields.post_comment import PostCommenterField, PostCommentReactionsEmojiCountField, \
-    PostCommentReactionField, PostCommentIsMutedField, RepliesCountField
+    PostCommentReactionField, PostCommentIsMutedField, RepliesCountField, \
+    CommonPostCommentNotificationsSubscriptionField
 from openbook_communities.models import CommunityMembership
-from openbook_posts.models import PostComment, PostCommentReaction
+from openbook_posts.models import PostComment, PostCommentReaction, PostCommentNotificationsSubscription
 from openbook_posts.validators import post_comment_id_exists, post_uuid_exists, \
     post_comment_id_exists_for_post_with_uuid
 from openbook_posts.views.posts.serializers import PostLanguageSerializer
@@ -25,6 +26,17 @@ class EditPostCommentSerializer(serializers.ModelSerializer):
             'language',
             'is_edited',
             'hashtags'
+        )
+
+
+class MuteUnmutePostCommentResponseSerializer(serializers.ModelSerializer):
+    is_muted = PostCommentIsMutedField()
+
+    class Meta:
+        model = PostComment
+        fields = (
+            'id',
+            'is_muted',
         )
 
 
@@ -186,6 +198,7 @@ class GetPostCommentSerializer(serializers.ModelSerializer):
     is_muted = PostCommentIsMutedField()
     language = PostCommentLanguageSerializer()
     hashtags = CommonHashtagSerializer(many=True)
+    post_comment_notifications_subscription = CommonPostCommentNotificationsSubscriptionField()
 
     class Meta:
         model = PostComment
@@ -200,5 +213,44 @@ class GetPostCommentSerializer(serializers.ModelSerializer):
             'is_edited',
             'is_muted',
             'hashtags',
-            'id'
+            'id',
+            'post_comment_notifications_subscription'
+        )
+
+
+class PostCommentNotificationsSubscriptionSettingsSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+    post_comment_id = serializers.IntegerField(
+        validators=[post_comment_id_exists],
+        required=True,
+    )
+    reaction_notifications = serializers.BooleanField(required=False)
+    reply_notifications = serializers.BooleanField(required=False)
+
+
+class UpdatePostCommentNotificationsSubscriptionSettingsSerializer(serializers.Serializer):
+    post_uuid = serializers.UUIDField(
+        validators=[post_uuid_exists],
+        required=True,
+    )
+    post_comment_id = serializers.IntegerField(
+        validators=[post_comment_id_exists],
+        required=True,
+    )
+    reaction_notifications = serializers.NullBooleanField(required=False, default=None)
+    reply_notifications = serializers.NullBooleanField(required=False, default=None)
+
+
+class PostCommentNotificationsSubscriptionSettingsResponseSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = PostCommentNotificationsSubscription
+        fields = (
+            'id',
+            'post_comment',
+            'reaction_notifications',
+            'reply_notifications',
         )

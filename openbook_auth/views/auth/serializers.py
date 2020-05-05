@@ -58,34 +58,24 @@ class AuthenticatedUserNotificationsSettingsSerializer(serializers.ModelSerializ
         model = UserNotificationsSettings
         fields = (
             'id',
-            'post_comment_notifications',
-            'post_reaction_notifications',
             'follow_notifications',
             'connection_request_notifications',
             'connection_confirmed_notifications',
             'community_invite_notifications',
             'community_new_post_notifications',
             'user_new_post_notifications',
-            'post_comment_reaction_notifications',
-            'post_comment_reply_notifications',
-            'post_comment_user_mention_notifications',
-            'post_user_mention_notifications',
+            'post_notifications'
         )
 
 
 class UpdateAuthenticatedUserNotificationsSettingsSerializer(serializers.Serializer):
-    post_comment_notifications = serializers.BooleanField(required=False)
-    post_reaction_notifications = serializers.BooleanField(required=False)
     follow_notifications = serializers.BooleanField(required=False)
     connection_request_notifications = serializers.BooleanField(required=False)
     connection_confirmed_notifications = serializers.BooleanField(required=False)
     community_invite_notifications = serializers.BooleanField(required=False)
     community_new_post_notifications = serializers.BooleanField(required=False)
     user_new_post_notifications = serializers.BooleanField(required=False)
-    post_comment_reaction_notifications = serializers.BooleanField(required=False)
-    post_comment_reply_notifications = serializers.BooleanField(required=False)
-    post_comment_user_mention_notifications = serializers.BooleanField(required=False)
-    post_user_mention_notifications = serializers.BooleanField(required=False)
+    post_notifications = serializers.BooleanField(required=False)
 
 
 class RequestPasswordResetSerializer(serializers.Serializer):

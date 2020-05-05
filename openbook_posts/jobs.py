@@ -5,7 +5,6 @@ from video_encoding import tasks
 from datetime import timedelta, datetime
 from django.db.models import Q, Count, F
 from django.conf import settings
-from cursor_pagination import CursorPaginator
 
 from openbook_common.utils.model_loaders import get_post_model, get_post_media_model, get_community_model, \
     get_top_post_model, get_post_comment_model, get_moderated_object_model, get_trending_post_model, \
@@ -425,7 +424,7 @@ def curate_top_posts():
     total_checked_posts = 0
     total_curated_posts = 0
 
-    for post in _chunked_queryset_iterator(posts, 1000):
+    for post in chunked_queryset_iterator(posts, 1000):
         total_checked_posts = total_checked_posts + 1
         if not post.reactions_count >= settings.MIN_UNIQUE_TOP_POST_REACTIONS_COUNT:
             unique_comments_count = PostComment.objects.filter(post=post). \
@@ -512,7 +511,7 @@ def clean_top_posts():
 
     delete_ids = []
 
-    for top_post in _chunked_queryset_iterator(top_posts, 1000):
+    for top_post in chunked_queryset_iterator(top_posts, 1000):
         if not top_post.reactions_count >= settings.MIN_UNIQUE_TOP_POST_REACTIONS_COUNT:
             unique_comments_count = PostComment.objects.filter(post=top_post.post). \
                 values('commenter_id'). \
@@ -616,7 +615,7 @@ def bootstrap_trending_posts():
     total_curated_posts = 0
     total_checked_posts = 0
 
-    for post in _chunked_queryset_iterator(posts, 1000):
+    for post in chunked_queryset_iterator(posts, 1000):
         total_checked_posts += 1
         trending_post = TrendingPost(post=post, created=timezone.now())
         trending_posts_objects.append(trending_post)
