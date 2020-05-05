@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class PostMediaAPITests(OpenbookAPITestCase):
+class PostMediaAPITests(OpenbookAPITransactionTestCase):
     """
     PostMediaAPI
     """
