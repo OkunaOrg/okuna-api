@@ -1,10 +1,11 @@
 from django.utils import timezone
 from django_rq import job
+
+from openbook_common.utils.helpers import chunked_queryset_iterator
 from video_encoding import tasks
 from datetime import timedelta
 from django.db.models import Q, Count
 from django.conf import settings
-from cursor_pagination import CursorPaginator
 
 from openbook_common.utils.model_loaders import get_post_model, get_post_media_model, get_community_model, \
     get_top_post_model, get_post_comment_model, get_moderated_object_model, get_trending_post_model
@@ -91,7 +92,7 @@ def curate_top_posts():
     total_checked_posts = 0
     total_curated_posts = 0
 
-    for post in _chunked_queryset_iterator(posts, 1000):
+    for post in chunked_queryset_iterator(posts, 1000):
         total_checked_posts = total_checked_posts + 1
         if not post.reactions_count >= settings.MIN_UNIQUE_TOP_POST_REACTIONS_COUNT:
             unique_comments_count = PostComment.objects.filter(post=post). \
@@ -178,7 +179,7 @@ def clean_top_posts():
 
     delete_ids = []
 
-    for top_post in _chunked_queryset_iterator(top_posts, 1000):
+    for top_post in chunked_queryset_iterator(top_posts, 1000):
         if not top_post.reactions_count >= settings.MIN_UNIQUE_TOP_POST_REACTIONS_COUNT:
             unique_comments_count = PostComment.objects.filter(post=top_post.post). \
                 values('commenter_id'). \
@@ -286,7 +287,7 @@ def bootstrap_trending_posts():
     total_curated_posts = 0
     total_checked_posts = 0
 
-    for post in _chunked_queryset_iterator(posts, 1000):
+    for post in chunked_queryset_iterator(posts, 1000):
         total_checked_posts += 1
         trending_post = TrendingPost(post=post, created=timezone.now())
         trending_posts_objects.append(trending_post)
@@ -345,26 +346,3 @@ def clean_trending_posts():
 
     delete_ids = [trending_post.pk for trending_post in less_than_min_reactions_trending_posts]
     TrendingPost.objects.filter(id__in=delete_ids).delete()
-
-
-def _chunked_queryset_iterator(queryset, size, *, ordering=('id',)):
-    """
-    Split a queryset into chunks.
-    This can be used instead of `queryset.iterator()`,
-    so `.prefetch_related()` also works
-    Note::
-    The ordering must uniquely identify the object,
-    and be in the same order (ASC/DESC). See https://github.com/photocrowd/django-cursor-pagination
-    """
-    pager = CursorPaginator(queryset, ordering)
-    after = None
-    while True:
-        page = pager.page(after=after, first=size)
-        if page:
-            yield from page.items
-        else:
-            return
-        if not page.has_next:
-            break
-        # take last item, next page starts after this.
-        after = pager.cursor(instance=page[-1])

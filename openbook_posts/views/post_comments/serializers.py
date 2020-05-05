@@ -5,7 +5,8 @@ from openbook_auth.models import UserProfile, User
 from openbook_common.models import Emoji, Language
 from openbook_common.serializers import CommonUserProfileBadgeSerializer, CommonHashtagSerializer
 from openbook_common.serializers_fields.post_comment import PostCommenterField, RepliesCountField, \
-    PostCommentReactionsEmojiCountField, PostCommentReactionField, PostCommentIsMutedField
+    PostCommentReactionsEmojiCountField, PostCommentReactionField, PostCommentIsMutedField, \
+    CommonPostCommentNotificationsSubscriptionField
 from openbook_communities.models import CommunityMembership
 from openbook_posts.models import PostComment, Post, PostCommentReaction
 from openbook_posts.validators import post_uuid_exists, post_comment_text_validators
@@ -106,6 +107,7 @@ class PostCommentReplySerializer(serializers.ModelSerializer):
     is_muted = PostCommentIsMutedField()
     language = PostCommentLanguageSerializer()
     hashtags = CommonHashtagSerializer(many=True)
+    post_comment_notifications_subscription = CommonPostCommentNotificationsSubscriptionField()
 
     class Meta:
         model = PostComment
@@ -120,7 +122,8 @@ class PostCommentReplySerializer(serializers.ModelSerializer):
             'reactions_emoji_counts',
             'id',
             'reaction',
-            'hashtags'
+            'hashtags',
+            'post_comment_notifications_subscription'
         )
 
 
@@ -135,6 +138,7 @@ class PostCommentSerializer(serializers.ModelSerializer):
     is_muted = PostCommentIsMutedField()
     language = PostCommentLanguageSerializer()
     hashtags = CommonHashtagSerializer(many=True)
+    post_comment_notifications_subscription = CommonPostCommentNotificationsSubscriptionField()
 
     class Meta:
         model = PostComment
@@ -150,7 +154,8 @@ class PostCommentSerializer(serializers.ModelSerializer):
             'is_edited',
             'is_muted',
             'hashtags',
-            'id'
+            'id',
+            'post_comment_notifications_subscription'
         )
 
 

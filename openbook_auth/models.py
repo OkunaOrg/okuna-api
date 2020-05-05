@@ -21,12 +21,11 @@ from openbook.settings import USERNAME_MAX_LENGTH
 from openbook_auth.helpers import upload_to_user_cover_directory, upload_to_user_avatar_directory
 from openbook_hashtags.queries import make_search_hashtag_query_for_user_with_id, \
     make_get_hashtag_with_name_for_user_with_id_query
-from openbook_notifications.helpers import get_notification_language_code_for_target_user
 from openbook_posts.queries import make_get_hashtag_posts_for_user_with_id_query
 from openbook_posts.query_collections import get_posts_for_user_collection
 from openbook_translation import translation_strategy
 from openbook_common.helpers import get_supported_translation_language
-from openbook_common.models import Badge, Language
+from openbook_common.models import Badge
 from openbook_common.utils.helpers import delete_file_field
 from openbook_common.utils.model_loaders import get_connection_model, get_circle_model, get_follow_model, \
     get_list_model, get_community_invite_model, \
@@ -36,7 +35,8 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
     get_moderation_penalty_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
     get_post_comment_reaction_notification_model, get_top_post_model, get_top_post_community_exclusion_model, \
-    get_hashtag_model, get_profile_posts_community_exclusion_model, get_user_new_post_notification_model
+    get_hashtag_model, get_profile_posts_community_exclusion_model, get_user_new_post_notification_model, \
+    get_post_comment_notifications_subscription_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications import helpers
 from openbook_auth.checkers import *
@@ -523,33 +523,25 @@ class User(AbstractUser):
             profile.save()
             self.save()
 
-    def update_notifications_settings(self, post_comment_notifications=None, post_reaction_notifications=None,
-                                      follow_notifications=None, connection_request_notifications=None,
+    def update_notifications_settings(self,
+                                      follow_notifications=None,
+                                      connection_request_notifications=None,
                                       connection_confirmed_notifications=None,
                                       community_invite_notifications=None,
                                       community_new_post_notifications=None,
                                       user_new_post_notifications=None,
-                                      post_comment_reaction_notifications=None,
-                                      post_comment_reply_notifications=None,
-                                      post_comment_user_mention_notifications=None,
-                                      post_user_mention_notifications=None,
-                                      ):
+                                      post_notifications=None):
 
         notifications_settings = self.notifications_settings
 
         notifications_settings.update(
-            post_comment_notifications=post_comment_notifications,
-            post_reaction_notifications=post_reaction_notifications,
             follow_notifications=follow_notifications,
             connection_request_notifications=connection_request_notifications,
             connection_confirmed_notifications=connection_confirmed_notifications,
             community_invite_notifications=community_invite_notifications,
             community_new_post_notifications=community_new_post_notifications,
             user_new_post_notifications=user_new_post_notifications,
-            post_comment_reaction_notifications=post_comment_reaction_notifications,
-            post_comment_reply_notifications=post_comment_reply_notifications,
-            post_comment_user_mention_notifications=post_comment_user_mention_notifications,
-            post_user_mention_notifications=post_user_mention_notifications,
+            post_notifications=post_notifications
         )
         return notifications_settings
 
@@ -669,6 +661,23 @@ class User(AbstractUser):
     def has_muted_post_comment_with_id(self, post_comment_id):
         return self.post_comment_mutes.filter(post_comment_id=post_comment_id).exists()
 
+    def has_disabled_comment_notifications_for_post(self, post_id):
+        return self.post_notifications_subscriptions.filter(post_id=post_id, comment_notifications=False).exists()
+
+    def has_disabled_reaction_notifications_for_post_with_id(self, post_id):
+        return self.post_notifications_subscriptions.filter(post_id=post_id, reaction_notifications=False).exists()
+
+    def has_disabled_reply_notifications_for_post(self, post_id):
+        return self.post_notifications_subscriptions.filter(post_id=post_id, reply_notifications=False).exists()
+
+    def has_disabled_reply_notifications_for_post_comment(self, post_comment_id):
+        return self.post_comment_notifications_subscriptions.filter(post_comment_id=post_comment_id,
+                                                                    reply_notifications=False).exists()
+
+    def has_disabled_reaction_notifications_for_post_comment(self, post_comment):
+        return self.post_comment_notifications_subscriptions.filter(post_comment_id=post_comment.id,
+                                                                    reaction_notifications=False).exists()
+
     def has_blocked_user_with_id(self, user_id):
         return self.user_blocks.filter(blocked_user_id=user_id).exists()
 
@@ -772,6 +781,12 @@ class User(AbstractUser):
     def has_commented_post_with_id(self, post_id):
         return self.posts_comments.filter(post_id=post_id).exists()
 
+    def has_replied_on_post_with_id(self, post_id):
+        return self.posts_comments.filter(parent_comment__isnull=False, post_id=post_id).exists()
+
+    def has_replied_on_comment_with_id(self, post_comment_id):
+        return self.posts_comments.filter(parent_comment_id=post_comment_id).exists()
+
     def has_notification_with_id(self, notification_id):
         return self.notifications.filter(pk=notification_id).exists()
 
@@ -782,28 +797,32 @@ class User(AbstractUser):
         return self.notifications_settings.follow_notifications
 
     def has_post_comment_mention_notifications_enabled(self):
-        return self.notifications_settings.post_comment_user_mention_notifications
+        return self.notifications_settings.post_notifications
 
     def has_post_mention_notifications_enabled(self):
-        return self.notifications_settings.post_user_mention_notifications
+        return self.notifications_settings.post_notifications
 
     def has_reaction_notifications_enabled_for_post_with_id(self, post_id):
-        return self.notifications_settings.post_reaction_notifications and not self.has_muted_post_with_id(
-            post_id=post_id)
+        return self.notifications_settings.post_notifications and \
+               not self.has_muted_post_with_id(post_id=post_id) and \
+               not self.has_disabled_reaction_notifications_for_post_with_id(post_id=post_id)
 
     def has_reaction_notifications_enabled_for_post_comment(self, post_comment):
-        return self.notifications_settings.post_comment_reaction_notifications and not self.has_muted_post_with_id(
-            post_id=post_comment.post_id) and not self.has_muted_post_comment_with_id(
-            post_comment_id=post_comment.id)
+        return self.notifications_settings.post_notifications and \
+               not self.has_muted_post_with_id(post_id=post_comment.post_id) and \
+               not self.has_muted_post_comment_with_id(post_comment_id=post_comment.id) and \
+               not self.has_disabled_reaction_notifications_for_post_comment(post_comment=post_comment)
 
     def has_comment_notifications_enabled_for_post_with_id(self, post_id):
-        return self.notifications_settings.post_comment_notifications and not self.has_muted_post_with_id(
-            post_id=post_id)
+        return self.notifications_settings.post_notifications and \
+               not self.has_muted_post_with_id(post_id=post_id) and \
+               not self.has_disabled_comment_notifications_for_post(post_id=post_id)
 
     def has_reply_notifications_enabled_for_post_comment(self, post_comment):
-        return self.notifications_settings.post_comment_reply_notifications and not self.has_muted_post_with_id(
-            post_id=post_comment.post_id) and not self.has_muted_post_comment_with_id(
-            post_comment_id=post_comment.id)
+        return self.notifications_settings.post_notifications and \
+               not self.has_muted_post_with_id(post_id=post_comment.post_id) and \
+               not self.has_muted_post_comment_with_id(post_comment_id=post_comment.id) and \
+               not self.has_disabled_reply_notifications_for_post_comment(post_comment_id=post_comment.id)
 
     def has_connection_request_notifications_enabled(self):
         return self.notifications_settings.connection_request_notifications
@@ -1044,11 +1063,10 @@ class User(AbstractUser):
         else:
             post_reaction = post.react(reactor=self, emoji_id=emoji_id)
             if post_reaction.post.creator_id != self.pk:
-                if post.creator.has_reaction_notifications_enabled_for_post_with_id(post_id=post.pk) and \
-                        not post.creator.has_blocked_user_with_id(self.pk):
+                if not post.creator.has_blocked_user_with_id(self.pk):
                     self._create_post_reaction_notification(post_reaction=post_reaction)
-                self._send_post_reaction_push_notification(post_reaction=post_reaction)
-
+                    if post.creator.has_reaction_notifications_enabled_for_post_with_id(post_id=post.pk):
+                        self._send_post_reaction_push_notification(post_reaction=post_reaction)
         return post_reaction
 
     def delete_reaction_with_id_for_post_with_id(self, post_reaction_id, post_id):
@@ -1077,12 +1095,13 @@ class User(AbstractUser):
         else:
             post_comment_reaction = post_comment.react(reactor=self, emoji_id=emoji_id)
             if post_comment_reaction.post_comment.commenter_id != self.pk:
-                commenter_has_reaction_notifications_enabled = post_comment.commenter.has_reaction_notifications_enabled_for_post_comment(
-                    post_comment=post_comment)
+                commenter_has_reaction_notifications_enabled = \
+                    post_comment.commenter.has_reaction_notifications_enabled_for_post_comment(post_comment=post_comment)
 
-                if commenter_has_reaction_notifications_enabled:
-                    self._send_post_comment_reaction_push_notification(post_comment_reaction=post_comment_reaction)
-                self._create_post_comment_reaction_notification(post_comment_reaction=post_comment_reaction)
+                if not post_comment.commenter.has_blocked_user_with_id(self.pk):
+                    self._create_post_comment_reaction_notification(post_comment_reaction=post_comment_reaction)
+                    if commenter_has_reaction_notifications_enabled:
+                        self._send_post_comment_reaction_push_notification(post_comment_reaction=post_comment_reaction)
 
         return post_comment_reaction
 
@@ -1175,47 +1194,40 @@ class User(AbstractUser):
     def comment_post(self, post, text):
         check_can_comment_in_post(user=self, post=post)
         post_comment = post.comment(text=text, commenter=self)
-        post_creator = post.creator
         post_commenter = self
-
         Post = get_post_model()
 
+        # create post notifications subscription for user
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        PostNotificationsSubscription.get_or_create_post_notifications_subscription(
+            post=post,
+            subscriber=self,
+            comment_notifications=True,
+            reaction_notifications=False,
+            reply_notifications=False,
+        )
+        # create post comment notifications subscription for user
+        PostCommentNotificationsSubscription = get_post_comment_notifications_subscription_model()
+        PostCommentNotificationsSubscription.create_post_comment_notifications_subscription(
+            post_comment=post_comment,
+            subscriber=self,
+            reply_notifications=True,
+            reaction_notifications=True,
+        )
+
         # Language should also be prefetched here, for some reason it doesnt work....
-        post_notification_target_users = Post.get_post_comment_notification_target_users(post=post,
-                                                                                         post_commenter=post_commenter).only(
-            'id', 'username', 'notifications_settings__post_comment_notifications')
+        post_notification_target_users = Post.get_post_comment_notification_target_users(post=post, post_commenter=self)
+
         PostCommentNotification = get_post_comment_notification_model()
 
         for post_notification_target_user in post_notification_target_users:
+
             if post_notification_target_user.pk == post_commenter.pk or \
                     not post_notification_target_user.can_see_post_comment(post_comment=post_comment):
                 continue
-            post_notification_target_user_is_post_creator = post_notification_target_user.id == post_creator.id
-            post_notification_target_has_comment_notifications_enabled = post_notification_target_user.has_comment_notifications_enabled_for_post_with_id(
-                post_id=post_comment.post_id)
 
-            if post_notification_target_has_comment_notifications_enabled:
-                target_user_language_code = get_notification_language_code_for_target_user(
-                    post_notification_target_user)
-                with translation.override(target_user_language_code):
-                    if post_notification_target_user_is_post_creator:
-                        notification_message = {
-                            "en": _('%(post_commenter_name)s · %(post_commenter_username)s commented on your post.') % {
-                                'post_commenter_username': post_commenter.username,
-                                'post_commenter_name': post_commenter.profile.name,
-                            }}
-                    else:
-                        notification_message = {
-                            "en": _(
-                                '%(post_commenter_name)s · @%(post_commenter_username)s commented on a post you also commented on.') % {
-                                      'post_commenter_username': post_commenter.username,
-                                      'post_commenter_name': post_commenter.profile.name,
-                                  }}
-
-                    self._send_post_comment_push_notification(post_comment=post_comment,
-                                                              notification_message=notification_message,
-                                                              notification_target_user=post_notification_target_user)
-
+            self._send_post_comment_push_notification(post_comment=post_comment,
+                                                      target_user=post_notification_target_user)
             PostCommentNotification.create_post_comment_notification(post_comment_id=post_comment.pk,
                                                                      owner_id=post_notification_target_user.id)
 
@@ -1231,18 +1243,37 @@ class User(AbstractUser):
     def reply_to_comment_for_post(self, post_comment, post, text):
         check_can_reply_to_post_comment_for_post(user=self, post_comment=post_comment, post=post)
         post_comment_reply = post_comment.reply_to_comment(text=text, commenter=self)
-        comment_creator = post_comment.commenter.id
-        post_creator = post.creator
         replier = self
-        post = post_comment.post
+
+        # create post notifications subscription for user
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        PostNotificationsSubscription.get_or_create_post_notifications_subscription(
+            post=post,
+            subscriber=self,
+            comment_notifications=False,
+            reaction_notifications=False,
+            reply_notifications=False,
+        )
+        # create post comment notifications subscription for user
+        PostCommentNotificationsSubscription = get_post_comment_notifications_subscription_model()
+        PostCommentNotificationsSubscription.get_or_create_post_comment_notifications_subscription(
+            post_comment=post_comment,
+            subscriber=self,
+            reply_notifications=True,
+            reaction_notifications=False,
+        )
+        # create post comment reply notifications subscription for user
+        PostCommentNotificationsSubscription = get_post_comment_notifications_subscription_model()
+        PostCommentNotificationsSubscription.create_post_comment_notifications_subscription(
+            post_comment=post_comment_reply,
+            subscriber=self,
+            reaction_notifications=True,
+            reply_notifications=False,
+        )
 
         Post = get_post_model()
-
         # Language should also be prefetched here, for some reason it doesnt work....
-        post_notification_target_users = Post.get_post_comment_reply_notification_target_users(
-            post_commenter=self,
-            parent_post_comment=post_comment).only(
-            'id', 'username', 'notifications_settings__post_comment_reply_notifications')
+        post_notification_target_users = Post.get_post_comment_reply_notification_target_users(post=post, post_comment=post_comment)
 
         PostCommentReplyNotification = get_post_comment_reply_notification_model()
 
@@ -1250,43 +1281,8 @@ class User(AbstractUser):
             if post_notification_target_user.pk == replier.pk or \
                     not post_notification_target_user.can_see_post_comment(post_comment=post_comment_reply):
                 continue
-            post_notification_target_user_is_post_comment_creator = post_notification_target_user.id == comment_creator
-            post_notification_target_user_is_post_creator = post_notification_target_user.id == post_creator.id
-            post_notification_target_has_comment_reply_notifications_enabled = \
-                post_notification_target_user.has_reply_notifications_enabled_for_post_comment(
-                    post_comment=post_comment)
-
-            if post_notification_target_has_comment_reply_notifications_enabled:
-                target_user_language_code = get_notification_language_code_for_target_user(
-                    post_notification_target_user)
-
-                with translation.override(target_user_language_code):
-                    if post_notification_target_user_is_post_comment_creator:
-                        notification_message = {
-                            "en": _(
-                                '%(post_commenter_name)s · @%(post_commenter_username)s replied to your comment on a post.') % {
-                                      'post_commenter_username': replier.username,
-                                      'post_commenter_name': replier.profile.name,
-                                  }}
-                    elif post_notification_target_user_is_post_creator:
-                        notification_message = {
-                            "en": _(
-                                '%(post_commenter_name)s · %(post_commenter_username)s replied to a comment on your post.') % {
-                                      'post_commenter_username': replier.username,
-                                      'post_commenter_name': replier.profile.name,
-                                  }}
-                    else:
-                        notification_message = {
-                            "en": _(
-                                '%(post_commenter_name)s · @%(post_commenter_username)s replied on a comment you also replied on.') % {
-                                      'post_commenter_username': replier.username,
-                                      'post_commenter_name': replier.profile.name,
-                                  }}
-
-                    self._send_post_comment_push_notification(post_comment=post_comment_reply,
-                                                              notification_message=notification_message,
-                                                              notification_target_user=post_notification_target_user)
-
+            self._send_post_comment_reply_push_notification(post_comment_reply=post_comment_reply,
+                                                            target_user=post_notification_target_user)
             PostCommentReplyNotification.create_post_comment_reply_notification(
                 post_comment_id=post_comment_reply.pk,
                 owner_id=post_notification_target_user.id)
@@ -2186,6 +2182,99 @@ class User(AbstractUser):
         post.save()
 
         return post
+
+    def create_post_comment_notifications_subscription_for_comment_with_id(self, post_comment_id,
+                                                                           reply_notifications=False,
+                                                                           reaction_notifications=False):
+        PostComment = get_post_comment_model()
+        post_comment = PostComment.objects.get(id=post_comment_id)
+        PostCommentNotificationsSubscription = get_post_comment_notifications_subscription_model()
+
+        check_can_create_or_update_notifications_subscription_for_post_comment(user=self, post_comment=post_comment)
+
+        post_comment_notifications_subscription = PostCommentNotificationsSubscription. \
+            create_post_comment_notifications_subscription(
+                post_comment=post_comment,
+                subscriber=self,
+                reply_notifications=reply_notifications,
+                reaction_notifications=reaction_notifications
+        )
+
+        return post_comment_notifications_subscription
+
+    def update_post_comment_notifications_subscription_for_comment_with_id(self, post_comment_id,
+                                                                           reply_notifications=None,
+                                                                           reaction_notifications=None):
+
+        PostComment = get_post_comment_model()
+        post_comment = PostComment.objects.get(id=post_comment_id)
+        PostCommentNotificationsSubscription = get_post_comment_notifications_subscription_model()
+
+        check_can_create_or_update_notifications_subscription_for_post_comment(user=self, post_comment=post_comment)
+
+        post_comment_notifications_subscription = PostCommentNotificationsSubscription.\
+            get_or_create_post_comment_notifications_subscription(post_comment=post_comment,
+                                                                  subscriber=self)
+        post_comment_notifications_subscription.update(
+            reply_notifications=reply_notifications,
+            reaction_notifications=reaction_notifications
+        )
+
+        return post_comment_notifications_subscription
+
+    def create_post_notifications_subscription_for_post_with_id(self, post_id,
+                                                                comment_notifications=False,
+                                                                reaction_notifications=False,
+                                                                reply_notifications=False):
+        Post = get_post_model()
+        post = Post.objects.get(id=post_id)
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+
+        check_can_create_or_update_post_notifications_subscription_for_post(user=self, post=post)
+
+        if reaction_notifications is True:
+            check_can_update_reaction_notifications_for_post(user=self, post=post)
+
+        post_notifications_subscription = PostNotificationsSubscription.\
+            create_post_notifications_subscription(
+                post=post,
+                subscriber=self,
+                comment_notifications=comment_notifications,
+                reaction_notifications=reaction_notifications,
+                reply_notifications=reply_notifications
+            )
+
+        return post_notifications_subscription
+
+    def update_post_notifications_subscription_for_post_with_id(self, post_id,
+                                                                comment_notifications=None,
+                                                                reaction_notifications=None,
+                                                                reply_notifications=None):
+        Post = get_post_model()
+        post = Post.objects.get(id=post_id)
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+
+        check_can_create_or_update_post_notifications_subscription_for_post(user=self, post=post)
+
+        post_notifications_subscription = PostNotificationsSubscription. \
+            get_or_create_post_notifications_subscription(post=post,
+                                                          subscriber=self)
+        if reaction_notifications is not None:
+            check_can_update_reaction_notifications_for_post(user=self, post=post)
+
+        post_notifications_subscription.update(
+            comment_notifications=comment_notifications,
+            reaction_notifications=reaction_notifications,
+            reply_notifications=reply_notifications,
+        )
+
+        return post_notifications_subscription
+
+    def are_post_subscription_comment_notifications_enabled_for_post(self, post):
+        PostNotificationsSubscription = get_post_notifications_subscription_model()
+        return PostNotificationsSubscription.are_comment_notifications_enabled_for_user_with_username_and_post_with_id(
+            username=self.username, post_id=post.pk
+        )
 
     def get_hashtag_with_name(self, hashtag_name):
         Hashtag = get_hashtag_model()
@@ -3282,10 +3371,21 @@ class User(AbstractUser):
         email.attach_alternative(html_content, 'text/html')
         email.send()
 
-    def _send_post_comment_push_notification(self, post_comment, notification_message, notification_target_user):
-        helpers.send_post_comment_push_notification_with_message(post_comment=post_comment,
-                                                                 message=notification_message,
-                                                                 target_user=notification_target_user)
+    def _send_post_comment_reply_push_notification(self, post_comment_reply, target_user):
+        post_comment = post_comment_reply.parent_comment
+        target_has_comment_reply_notifications_enabled = \
+            target_user.has_reply_notifications_enabled_for_post_comment(post_comment=post_comment)
+
+        if target_has_comment_reply_notifications_enabled:
+            helpers.send_post_comment_reply_push_notification(post_comment_reply=post_comment_reply,
+                                                              target_user=target_user)
+
+    def _send_post_comment_push_notification(self, post_comment, target_user):
+        post_notification_target_has_comment_notifications_enabled = \
+            target_user.has_comment_notifications_enabled_for_post_with_id(post_id=post_comment.post.id)
+        if post_notification_target_has_comment_notifications_enabled:
+            helpers.send_post_comment_push_notification(post_comment=post_comment,
+                                                        target_user=target_user)
 
     def _delete_post_comment_notification(self, post_comment):
         if post_comment.parent_comment is not None:
@@ -3719,54 +3819,29 @@ class UserProfile(models.Model):
 class UserNotificationsSettings(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                                 related_name='notifications_settings')
-    post_comment_notifications = models.BooleanField(_('post comment notifications'), default=True)
-    post_comment_reply_notifications = models.BooleanField(_('post comment reply notifications'), default=True)
-    post_reaction_notifications = models.BooleanField(_('post reaction notifications'), default=True)
     follow_notifications = models.BooleanField(_('follow notifications'), default=True)
     connection_request_notifications = models.BooleanField(_('connection request notifications'), default=True)
     connection_confirmed_notifications = models.BooleanField(_('connection confirmed notifications'), default=True)
     community_invite_notifications = models.BooleanField(_('community invite notifications'), default=True)
     community_new_post_notifications = models.BooleanField(_('community new post notifications'), default=True)
     user_new_post_notifications = models.BooleanField(_('user new post notifications'), default=True)
-    post_comment_reaction_notifications = models.BooleanField(_('post comment reaction notifications'), default=True)
-    post_comment_user_mention_notifications = models.BooleanField(_('post comment user mention notifications'),
-                                                                  default=True)
-    post_user_mention_notifications = models.BooleanField(_('post user mention notifications'), default=True)
+    post_notifications = models.BooleanField(_('post notifications'), default=True)
 
     @classmethod
     def create_notifications_settings(cls, user):
         return UserNotificationsSettings.objects.create(user=user)
 
-    def update(self, post_comment_notifications=None,
-               post_comment_reply_notifications=None,
-               post_reaction_notifications=None,
+    def update(self,
                follow_notifications=None,
                connection_request_notifications=None,
                connection_confirmed_notifications=None,
                community_invite_notifications=None,
                community_new_post_notifications=None,
                user_new_post_notifications=None,
-               post_comment_user_mention_notifications=None,
-               post_user_mention_notifications=None,
-               post_comment_reaction_notifications=None, ):
+               post_notifications=None):
 
-        if post_comment_notifications is not None:
-            self.post_comment_notifications = post_comment_notifications
-
-        if post_comment_user_mention_notifications is not None:
-            self.post_comment_user_mention_notifications = post_comment_user_mention_notifications
-
-        if post_user_mention_notifications is not None:
-            self.post_user_mention_notifications = post_user_mention_notifications
-
-        if post_comment_reaction_notifications is not None:
-            self.post_comment_reaction_notifications = post_comment_reaction_notifications
-
-        if post_comment_reply_notifications is not None:
-            self.post_comment_reply_notifications = post_comment_reply_notifications
-
-        if post_reaction_notifications is not None:
-            self.post_reaction_notifications = post_reaction_notifications
+        if post_notifications is not None:
+            self.post_notifications = post_notifications
 
         if follow_notifications is not None:
             self.follow_notifications = follow_notifications
