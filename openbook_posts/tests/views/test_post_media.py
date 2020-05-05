@@ -11,7 +11,7 @@ from faker import Faker
 from rest_framework import status
 from rq import SimpleWorker
 
-from openbook_common.tests.models import OpenbookAPITestCase
+from openbook_common.tests.models import OpenbookAPITestCase, OpenbookAPITransactionTestCase
 import random
 
 import logging
