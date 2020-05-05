@@ -1,6 +1,8 @@
 from django.utils import timezone
 from decimal import Decimal
 from django_rq import job, get_scheduler, get_queue
+
+from openbook_common.utils.helpers import chunked_queryset_iterator
 from video_encoding import tasks
 from datetime import timedelta, datetime
 from django.db.models import Q, Count, F
