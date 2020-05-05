@@ -19,6 +19,7 @@ from django.utils.translation import gettext_lazy  as _
 from dotenv import load_dotenv, find_dotenv
 from sentry_sdk.integrations.django import DjangoIntegration
 from django_replicated.settings import *
+from decimal import Decimal, getcontext
 
 # Logging config
 from sentry_sdk.integrations.rq import RqIntegration
@@ -177,6 +178,8 @@ REDIS_DEFAULT_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': 
 REDIS_RQ_DEFAULT_JOBS_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 1}
 REDIS_RQ_HIGH_JOBS_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 2}
 REDIS_RQ_LOW_JOBS_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 3}
+REDIS_ACTIVITY_SCORES_JOBS_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {
+    'redis_location': REDIS_LOCATION, 'db': 4}
 
 CACHES = {
     'default': {
@@ -211,6 +214,14 @@ CACHES = {
         },
         "KEY_PREFIX": "ob-api-rq-low-job-"
     },
+    'activity-score-jobs': {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_ACTIVITY_SCORES_JOBS_CACHE_LOCATION,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient"
+        },
+        "KEY_PREFIX": "ob-api-actvty-score-job-"
+    },
 }
 
 CACHEOPS_REDIS_DB = int(os.environ.get('CACHEOPS_REDIS_DB', '1'))
@@ -235,6 +246,9 @@ RQ_QUEUES = {
     },
     'low': {
         'USE_REDIS_CACHE': 'rq-low-jobs',
+    },
+    'process-activity-score': {
+        'USE_REDIS_CACHE': 'activity-score-jobs',
     },
 }
 
@@ -527,7 +541,26 @@ ALERT_HOOK_URL = os.environ.get('ALERT_HOOK_URL')
 
 MIN_UNIQUE_TOP_POST_REACTIONS_COUNT = int(os.environ.get('MIN_UNIQUE_TOP_POST_REACTIONS_COUNT', '5'))
 MIN_UNIQUE_TOP_POST_COMMENTS_COUNT = int(os.environ.get('MIN_UNIQUE_TOP_POST_COMMENTS_COUNT', '5'))
-MIN_UNIQUE_TRENDING_POST_REACTIONS_COUNT = int(os.environ.get('MIN_UNIQUE_TRENDING_POST_REACTIONS_COUNT', '5'))
+
+# for activity score, set decimal precision to 10
+getcontext().prec = 10
+
+MIN_ACTIVITY_SCORE_FOR_POST_TRENDING = Decimal((os.environ.get('MIN_ACTIVITY_SCORE_FOR_POST_TRENDING', 0.002)))
+MIN_ACTIVITY_SCORE_FOR_COMMUNITY_TRENDING = Decimal((os.environ.get('MIN_ACTIVITY_SCORE_FOR_COMMUNITY_TRENDING', 0.002)))
+ACTIVITY_ATOMIC_WEIGHT = Decimal((os.environ.get('ACTIVITY_ATOMIC_WEIGHT', 0.001)))
+
+ACTIVITY_UNIQUE_REACTION_MULTIPLIER = int(os.environ.get('ACTIVITY_UNIQUE_REACTION_MULTIPLIER', 1))
+ACTIVITY_UNIQUE_COMMENT_MULTIPLIER = int(os.environ.get('ACTIVITY_UNIQUE_COMMENT_MULTIPLIER', 1))
+ACTIVITY_COUNT_COMMENTS_MULTIPLIER = int(os.environ.get('ACTIVITY_COUNT_COMMENTS_MULTIPLIER', 1))
+ACTIVITY_UNIQUE_POST_MULTIPLIER = int(os.environ.get('ACTIVITY_UNIQUE_POST_MULTIPLIER', 1))
+ACTIVITY_COUNT_POSTS_MULTIPLIER = int(os.environ.get('ACTIVITY_COUNT_POSTS_MULTIPLIER', 1))
+
+ACTIVITY_UNIQUE_REACTION_WEIGHT = Decimal((ACTIVITY_ATOMIC_WEIGHT * ACTIVITY_UNIQUE_REACTION_MULTIPLIER))
+ACTIVITY_UNIQUE_COMMENT_WEIGHT = Decimal((ACTIVITY_ATOMIC_WEIGHT * ACTIVITY_UNIQUE_COMMENT_MULTIPLIER))
+ACTIVITY_COUNT_COMMENTS_WEIGHT = Decimal((ACTIVITY_ATOMIC_WEIGHT * ACTIVITY_COUNT_COMMENTS_MULTIPLIER))
+ACTIVITY_UNIQUE_POST_WEIGHT = Decimal((ACTIVITY_ATOMIC_WEIGHT * ACTIVITY_UNIQUE_POST_MULTIPLIER))
+ACTIVITY_COUNT_POSTS_WEIGHT = Decimal((ACTIVITY_ATOMIC_WEIGHT * ACTIVITY_COUNT_POSTS_MULTIPLIER))
+ACTIVITY_SCORE_EXPIRY_IN_HOURS = int(os.environ.get('ACTIVITY_SCORE_EXPIRY_IN_HOURS', 12))
 
 # Email Config
 
@@ -550,7 +583,7 @@ if TESTING:
     OS_TRANSLATION_STRATEGY_NAME = 'testing'
     MIN_UNIQUE_TOP_POST_REACTIONS_COUNT = 1
     MIN_UNIQUE_TOP_POST_COMMENTS_COUNT = 1
-    MIN_UNIQUE_TRENDING_POST_REACTIONS_COUNT = 1
+    MIN_ACTIVITY_SCORE_FOR_POST_TRENDING = 0.001
 
 if IS_PRODUCTION:
     AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID')

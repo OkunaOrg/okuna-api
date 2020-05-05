@@ -1,11 +1,17 @@
 # Create your tests here.
 import json
 from django.urls import reverse
+from django_rq import get_worker, get_scheduler
+from django.conf import settings
 from faker import Faker
 from rest_framework import status
 from unittest import mock
+from unittest.mock import ANY
+
+from rq import SimpleWorker
+
+from openbook_common.tests.models import OpenbookAPITestCase, OpenbookAPITransactionTestCase
 from unittest.mock import call
-from openbook_common.tests.models import OpenbookAPITestCase
 
 import logging
 import random
@@ -2056,11 +2062,12 @@ class PostCommentsAPITests(OpenbookAPITestCase):
         for post_id in post_comments_ids:
             self.assertIn(post_id, response_post_comments_ids)
 
+
     # post notifications subscription tests
 
     @mock.patch('openbook_notifications.helpers.send_post_comment_push_notification')
     def test_foreign_user_commenting_on_post_comment_sends_push_notification_to_subscriber(self,
-                                                                                         send_post_comment_push_notification_call):
+                                                                                           send_post_comment_push_notification_call):
         """
          should send a push notification to the subscriber when someone comments on a post
          """
@@ -2101,7 +2108,7 @@ class PostCommentsAPITests(OpenbookAPITestCase):
 
     @mock.patch('openbook_notifications.helpers.send_post_comment_push_notification')
     def test_foreign_user_commenting_on_post_comment_doesnt_send_push_notification_to_subscriber_if_muted(self,
-                                                                                                        send_post_comment_push_notification_call):
+                                                                                                          send_post_comment_push_notification_call):
         """
          should NOT send a push notification to the subscriber when someone comments on a post if post is muted
          """
@@ -2163,11 +2170,11 @@ class PostCommentsAPITests(OpenbookAPITestCase):
         self.client.put(url, data, **headers)
 
         self.assertFalse(PostCommentNotification.objects.filter(post_comment__text=comment_text,
-                                                                            notification__owner=blocking_user_aka_subscriber).exists())
+                                                                notification__owner=blocking_user_aka_subscriber).exists())
 
     @mock.patch('openbook_notifications.helpers.send_post_comment_push_notification')
     def test_commenting_on_post_doesnt_send_post_subscription_push_notification_when_user_blocked(self,
-                                                                                                        send_post_comment_push_notification_call):
+                                                                                                  send_post_comment_push_notification_call):
         """
          should NOT send push notification to blocking user when the blocked user comments on a post the
          blocking user is subscribed to
@@ -2232,7 +2239,7 @@ class PostCommentsAPITests(OpenbookAPITestCase):
         self.client.put(url, data, **headers)
 
         self.assertFalse(PostCommentNotification.objects.filter(post_comment__text=comment_text,
-                                                                            notification__owner=foreign_user).exists())
+                                                                notification__owner=foreign_user).exists())
 
     def test_comment_in_community_post_by_admin_does_create_subscription_notification_to_another_admin_when_closed(self):
         """
@@ -2262,7 +2269,110 @@ class PostCommentsAPITests(OpenbookAPITestCase):
         self.client.put(url, data, **headers)
 
         self.assertTrue(PostCommentNotification.objects.filter(post_comment__text=comment_text,
-                                                                           notification__owner=admin).exists())
+                                                               notification__owner=admin).exists())
+
+    def _get_create_post_comment_request_data(self, post_comment_text):
+        return {
+            'text': post_comment_text
+        }
+
+    def _get_url(self, post):
+        return reverse('post-comments', kwargs={
+            'post_uuid': post.uuid,
+        })
+
+
+class PostCommentsTransactionAPITests(OpenbookAPITransactionTestCase):
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json',
+    ]
+
+    def test_commenting_in_post_updates_post_activity_score(self):
+        """
+         should update post activity score when commenting on a post
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
+
+        post.refresh_from_db()
+
+        expected_comment_weight = settings.ACTIVITY_UNIQUE_COMMENT_WEIGHT + settings.ACTIVITY_COUNT_COMMENTS_WEIGHT
+        self._clear_jobs_in_scheduler()
+        self.assertEqual(post.activity_score, expected_comment_weight)
+
+    def test_commenting_in_post_updates_community_activity_score(self):
+        """
+         should update community activity score when commenting on a post
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        community = make_community(creator=user)
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+        activity_score_before_comment = community.activity_score
+
+        post_comment_text = make_fake_post_comment_text()
+
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+
+        expected_comment_weight = settings.ACTIVITY_UNIQUE_COMMENT_WEIGHT + settings.ACTIVITY_COUNT_COMMENTS_WEIGHT
+        self._clear_jobs_in_scheduler()
+        self.assertEqual(community.activity_score - activity_score_before_comment, expected_comment_weight)
+
+    def test_adding_non_unique_comment_in_post_updates_community_activity_score_appropriately(self):
+        """
+         should update community activity score by appropriate weight when commenting on a post which already
+         has users comment
+         """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        community = make_community(creator=user)
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+        activity_score_before_comment = community.activity_score
+
+        post_comment_text = make_fake_post_comment_text()
+        data = self._get_create_post_comment_request_data(post_comment_text)
+
+        url = self._get_url(post)
+        self.client.put(url, data, **headers)
+
+        # comment again
+        self.client.put(url, data, **headers)
+
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
+
+        community.refresh_from_db()
+
+        expected_comment_weight = settings.ACTIVITY_UNIQUE_COMMENT_WEIGHT + (2 * settings.ACTIVITY_COUNT_COMMENTS_WEIGHT)
+        self._clear_jobs_in_scheduler()
+        self.assertEqual(community.activity_score - activity_score_before_comment, expected_comment_weight)
+
+    def _clear_jobs_in_scheduler(self):
+        default_scheduler = get_scheduler('process-activity-score')
+        for job in default_scheduler.get_jobs():
+            default_scheduler.cancel(job.get_id())
 
     def _get_create_post_comment_request_data(self, post_comment_text):
         return {
