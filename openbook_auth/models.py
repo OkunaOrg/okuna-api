@@ -1096,7 +1096,8 @@ class User(AbstractUser):
             post_comment_reaction = post_comment.react(reactor=self, emoji_id=emoji_id)
             if post_comment_reaction.post_comment.commenter_id != self.pk:
                 commenter_has_reaction_notifications_enabled = \
-                    post_comment.commenter.has_reaction_notifications_enabled_for_post_comment(post_comment=post_comment)
+                    post_comment.commenter.has_reaction_notifications_enabled_for_post_comment(
+                        post_comment=post_comment)
 
                 if not post_comment.commenter.has_blocked_user_with_id(self.pk):
                     self._create_post_comment_reaction_notification(post_comment_reaction=post_comment_reaction)
@@ -1273,7 +1274,8 @@ class User(AbstractUser):
 
         Post = get_post_model()
         # Language should also be prefetched here, for some reason it doesnt work....
-        post_notification_target_users = Post.get_post_comment_reply_notification_target_users(post=post, post_comment=post_comment)
+        post_notification_target_users = Post.get_post_comment_reply_notification_target_users(post=post,
+                                                                                               post_comment=post_comment)
 
         PostCommentReplyNotification = get_post_comment_reply_notification_model()
 
@@ -1998,7 +2000,8 @@ class User(AbstractUser):
 
     def get_trending_communities_by_members(self, category_name=None):
         Community = get_community_model()
-        return Community.get_trending_communities_by_members_for_user_with_id(user_id=self.pk, category_name=category_name)
+        return Community.get_trending_communities_by_members_for_user_with_id(user_id=self.pk,
+                                                                              category_name=category_name)
 
     def search_communities_with_query(self, query, excluded_from_profile_posts):
         Community = get_community_model()
@@ -2199,10 +2202,10 @@ class User(AbstractUser):
 
         post_comment_notifications_subscription = PostCommentNotificationsSubscription. \
             create_post_comment_notifications_subscription(
-                post_comment=post_comment,
-                subscriber=self,
-                reply_notifications=reply_notifications,
-                reaction_notifications=reaction_notifications
+            post_comment=post_comment,
+            subscriber=self,
+            reply_notifications=reply_notifications,
+            reaction_notifications=reaction_notifications
         )
 
         return post_comment_notifications_subscription
@@ -2217,7 +2220,7 @@ class User(AbstractUser):
 
         check_can_create_or_update_notifications_subscription_for_post_comment(user=self, post_comment=post_comment)
 
-        post_comment_notifications_subscription = PostCommentNotificationsSubscription.\
+        post_comment_notifications_subscription = PostCommentNotificationsSubscription. \
             get_or_create_post_comment_notifications_subscription(post_comment=post_comment,
                                                                   subscriber=self)
         post_comment_notifications_subscription.update(

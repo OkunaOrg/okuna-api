@@ -1537,9 +1537,9 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
         }
 
         url = self._get_url(post)
-        response = self.client.put(url, data, **headers)
+        response = self.client.patch(url, data, **headers)
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         PostNotificationsSubscription = get_post_notifications_subscription_model()
         self.assertTrue(PostNotificationsSubscription.objects.filter(post=post,
                                                                      subscriber=user,
@@ -1801,7 +1801,7 @@ class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
 
         headers = make_authentication_headers_for_user(user)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        user.create_post_notifications_subscription_for_post_with_id(post_id=post.id, comment_notifications=True)
+        user.update_post_notifications_subscription_for_post_with_id(post_id=post.id, comment_notifications=True)
         post.is_closed = True
         post.save()
 
