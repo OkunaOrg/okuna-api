@@ -3380,7 +3380,7 @@ class GetPostParticipantsAPITests(OpenbookAPITestCase):
         })
 
 
-class PublishPostAPITests(OpenbookAPITestCase):
+class PublishPostAPITests(OpenbookAPITransactionTestCase):
     """
     PublishPostAPI
     """
