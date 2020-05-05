@@ -1012,7 +1012,6 @@ class PostComment(models.Model):
                                                                                      post_comment_id=post_comment.pk,
                                                                                      post_commenter_id=commenter.pk,
                                                                                      job_id=add_comment_job_id))
-        post_comment.save()
         return post_comment
 
     @classmethod
