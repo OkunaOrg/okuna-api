@@ -1,13 +1,16 @@
 from django.utils import timezone
-from django_rq import job
+from decimal import Decimal
+from django_rq import job, get_scheduler, get_queue
+
+from openbook_common.utils.helpers import chunked_queryset_iterator
 from video_encoding import tasks
-from datetime import timedelta
-from django.db.models import Q, Count
+from datetime import timedelta, datetime
+from django.db.models import Q, Count, F
 from django.conf import settings
-from cursor_pagination import CursorPaginator
 
 from openbook_common.utils.model_loaders import get_post_model, get_post_media_model, get_community_model, \
-    get_top_post_model, get_post_comment_model, get_moderated_object_model, get_trending_post_model
+    get_top_post_model, get_post_comment_model, get_moderated_object_model, get_trending_post_model, \
+    get_post_reaction_model
 import logging
 
 logger = logging.getLogger(__name__)
@@ -53,6 +56,338 @@ def process_post_media(post_id):
     logger.info('Processed media of post with id: %d' % post_id)
 
 
+def _reduce_atomic_community_activity_score(community_id, multiplier=1):
+    Community = get_community_model()
+    community = Community.objects.get(id=community_id)
+    if community:
+        community.activity_score = F('activity_score') - (multiplier * settings.ACTIVITY_ATOMIC_WEIGHT)
+        community.save()
+
+
+def _process_community_activity_score_reaction_added(community, post_reaction_id):
+    default_scheduler = get_scheduler('process-activity-score')
+    expire_datetime = datetime.utcnow() + timedelta(hours=settings.ACTIVITY_SCORE_EXPIRY_IN_HOURS)
+    community.activity_score = F('activity_score') + settings.ACTIVITY_UNIQUE_REACTION_WEIGHT
+    community.save()
+
+    # schedule reduction of activity scores
+    default_scheduler.enqueue_at(expire_datetime, _reduce_atomic_community_activity_score,
+                                 community.pk,
+                                 multiplier=settings.ACTIVITY_UNIQUE_REACTION_MULTIPLIER,
+                                 job_id='expire_community_{0}_rid_{1}_unique_reaction'.format(
+                                     community.pk, post_reaction_id))
+
+
+def _process_community_activity_score_reaction_deleted(community, post_reaction_id):
+    default_scheduler = get_scheduler('process-activity-score')
+    reaction_job_id = 'expire_community_{0}_rid_{1}_unique_reaction'.format(community.pk, post_reaction_id)
+
+    if reaction_job_id in default_scheduler:
+        default_scheduler.cancel(reaction_job_id)
+        community.activity_score = F('activity_score') - settings.ACTIVITY_UNIQUE_REACTION_WEIGHT
+        community.save()
+
+    community.refresh_from_db()
+    if community.activity_score < Decimal(0.0):
+        logger.info('Community activity score for community with id {0} '
+                    'went below zero while processing delete reaction with id {1}'.format(
+            community.pk, post_reaction_id))
+
+
+def process_activity_score_post_reaction(post_id, post_reaction_id):
+    """
+    This job is called to process activity score on a post after add/remove reaction
+    """
+    remove_reaction_job_id = 'process_remove_unique_reaction_pid_{0}_rid_{1}'.format(post_id, post_reaction_id)
+    default_queue = get_queue('process-activity-score')
+    remove_job = default_queue.fetch_job(remove_reaction_job_id)
+
+    if remove_reaction_job_id in default_queue.job_ids:
+        # remove job is also queued, jobs cancel each other, return
+        remove_job.cancel()
+        return
+
+    Post = get_post_model()
+    PostReaction = get_post_reaction_model()
+    Community = get_community_model()
+
+    if not Post.objects.filter(pk=post_id).exists():
+        # if post was deleted, return
+        return
+
+    post = Post.objects.get(pk=post_id)
+    logger.info('Processing activity score for reaction of post with id: %d' % post_id)
+
+    if post.community is not None and post.community.type is Community.COMMUNITY_TYPE_PUBLIC:
+        if not PostReaction.objects.filter(pk=post_reaction_id).exists():
+            # reaction was deleted
+            post.activity_score = F('activity_score') - settings.ACTIVITY_UNIQUE_REACTION_WEIGHT
+            _process_community_activity_score_reaction_deleted(post.community, post_reaction_id)
+        else:
+            # reaction was added
+            post.activity_score = F('activity_score') + settings.ACTIVITY_UNIQUE_REACTION_WEIGHT
+            _process_community_activity_score_reaction_added(post.community, post_reaction_id)
+
+    elif post.community is None and not PostReaction.objects.filter(pk=post_reaction_id).exists():
+        # reaction was deleted
+            post.activity_score = F('activity_score') - settings.ACTIVITY_UNIQUE_REACTION_WEIGHT
+    else:
+        # reaction was added
+        post.activity_score = F('activity_score') + settings.ACTIVITY_UNIQUE_REACTION_WEIGHT
+
+    post.save()
+    post.refresh_from_db()
+
+    if post.activity_score < Decimal(0.0):
+        logger.info('Post activity score for post with id {0} '
+                    'went below zero while processing reaction with id {1}'.format(post_id, post_reaction_id))
+    logger.info('Processed activity score for reaction of post with id: %d' % post_id)
+
+
+def _process_post_activity_score_comment_deleted(post, commenter_comments_count):
+    if commenter_comments_count > 0:
+        # there are still other comments by this user
+        post.activity_score = F('activity_score') - settings.ACTIVITY_COUNT_COMMENTS_WEIGHT
+    else:
+        # no more comments anymore by this user, subtract the unique comment weight too
+        post.activity_score = F('activity_score') - \
+                              settings.ACTIVITY_UNIQUE_COMMENT_WEIGHT - \
+                              settings.ACTIVITY_COUNT_COMMENTS_WEIGHT
+
+
+def _process_post_activity_score_comment_added(post, commenter_comments_count):
+    if commenter_comments_count > 1:
+        post.activity_score = F('activity_score') + settings.ACTIVITY_COUNT_COMMENTS_WEIGHT
+    elif commenter_comments_count == 1:
+        post.activity_score = F('activity_score') + \
+                              settings.ACTIVITY_UNIQUE_COMMENT_WEIGHT + \
+                              settings.ACTIVITY_COUNT_COMMENTS_WEIGHT
+
+
+def _process_community_activity_score_comment_deleted(community,
+                                                      post_id,
+                                                      post_comment_id,
+                                                      post_commenter_id,
+                                                      commenter_comments_count):
+
+    default_scheduler = get_scheduler('process-activity-score')
+    job_id = 'expire_community_{0}_pid_{1}_uid_{2}_cid_{3}'.format(community.pk, post_id,
+                                                                   post_commenter_id, post_comment_id)
+    unique_comment_job_id = 'expire_community_{0}_pid_{1}_uid_{2}_unique_comment'.format(community.pk,
+                                                                                         post_id, post_commenter_id)
+
+    if job_id in default_scheduler:
+        # there are still other comments by this user
+        default_scheduler.cancel(job_id)
+        community.activity_score = F('activity_score') - settings.ACTIVITY_COUNT_COMMENTS_WEIGHT
+        community.save()
+
+    if commenter_comments_count == 0 and unique_comment_job_id in default_scheduler:
+        # no more comments anymore by this user, subtract the unique comment weight too
+        community.activity_score = F('activity_score') - settings.ACTIVITY_UNIQUE_COMMENT_WEIGHT
+        default_scheduler.cancel(unique_comment_job_id)
+        community.save()
+
+    community.refresh_from_db()
+    if community.activity_score < Decimal(0.0):
+        logger.info('Community activity score for community with id {0} '
+                    'went below zero while processing delete comment with id {1}'.format(
+                community.pk, post_comment_id))
+
+
+def _process_community_activity_score_comment_added(community,
+                                                    post_id,
+                                                    post_comment_id,
+                                                    post_commenter_id):
+    default_scheduler = get_scheduler('process-activity-score')
+    unique_comment_job_id = 'expire_community_{0}_pid_{1}_uid_{2}_unique_comment'.format(community.pk,
+                                                                                         post_id, post_commenter_id)
+    expire_datetime = timezone.now() + timedelta(hours=settings.ACTIVITY_SCORE_EXPIRY_IN_HOURS)
+
+    if unique_comment_job_id in default_scheduler:
+        community.activity_score = F('activity_score') + settings.ACTIVITY_COUNT_COMMENTS_WEIGHT
+    else:
+        community.activity_score = F('activity_score') + \
+                                   settings.ACTIVITY_UNIQUE_COMMENT_WEIGHT + \
+                                   settings.ACTIVITY_COUNT_COMMENTS_WEIGHT
+    community.save()
+    if unique_comment_job_id in default_scheduler:
+        default_scheduler.cancel(unique_comment_job_id)
+
+    # schedule reduction of activity scores
+    default_scheduler.enqueue_at(expire_datetime, _reduce_atomic_community_activity_score,
+                                 community.pk,
+                                 multiplier=settings.ACTIVITY_UNIQUE_COMMENT_MULTIPLIER,
+                                 job_id=unique_comment_job_id)
+    default_scheduler.enqueue_at(expire_datetime, _reduce_atomic_community_activity_score,
+                                 community.pk,
+                                 multiplier=settings.ACTIVITY_COUNT_COMMENTS_MULTIPLIER,
+                                 job_id='expire_community_{0}_pid_{1}_uid_{2}_cid_{3}'.format(
+                                     community.pk, post_id, post_commenter_id, post_comment_id)
+                                 )
+
+
+def process_activity_score_post_comment(post_id, post_comment_id, post_commenter_id):
+    """
+    This job is called to process activity score on a post after add/remove comment
+    """
+    delete_comment_job_id = 'process_delete_comment_pid_{0}_cid_{1}'.format(post_id, post_comment_id)
+    default_queue = get_queue('process-activity-score')
+    delete_job = default_queue.fetch_job(delete_comment_job_id)
+
+    if delete_comment_job_id in default_queue.job_ids:
+        # remove job is also queued, jobs cancel each other, return
+        delete_job.cancel()
+        return
+
+    Post = get_post_model()
+    PostComment = get_post_comment_model()
+    Community = get_community_model()
+
+    if not Post.objects.filter(pk=post_id, is_deleted=False, is_closed=False).exists():
+        # if post was deleted, soft deleted or closed return
+        return
+
+    post = Post.objects.get(pk=post_id)
+    logger.info('Processing activity score for comment with id: %d' % post_comment_id)
+
+    commenter_comments_count = PostComment.objects.filter(post_id=post_id,
+                                                          is_deleted=False,
+                                                          commenter_id=post_commenter_id).count()
+
+    if post.community is not None and post.community.type is Community.COMMUNITY_TYPE_PUBLIC:
+        if not PostComment.objects.filter(pk=post_comment_id).exists():
+            # comment was deleted
+            _process_post_activity_score_comment_deleted(post, commenter_comments_count)
+            _process_community_activity_score_comment_deleted(post.community,
+                                                              post_id,
+                                                              post_comment_id,
+                                                              post_commenter_id,
+                                                              commenter_comments_count)
+        else:
+            # comment was added
+            _process_post_activity_score_comment_added(post, commenter_comments_count)
+            _process_community_activity_score_comment_added(post.community,
+                                                            post_id,
+                                                            post_comment_id,
+                                                            post_commenter_id)
+    else:
+        if not PostComment.objects.filter(pk=post_comment_id).exists():
+            # comment was deleted
+            _process_post_activity_score_comment_deleted(post, commenter_comments_count)
+        else:
+            # comment was added
+            _process_post_activity_score_comment_added(post, commenter_comments_count)
+
+    post.save()
+    post.refresh_from_db()
+    if post.activity_score < Decimal(0.0):
+        logger.info('Post activity score for post with id {0} '
+                    'went below zero while processing comment with id {1}'.format(post_id, post_comment_id))
+    logger.info('Processed activity score for comment with id: %d' % post_comment_id)
+
+
+def _process_community_activity_score_post_added(post, total_posts_by_creator):
+    default_scheduler = get_scheduler('process-activity-score')
+    expire_datetime = timezone.now() + timedelta(hours=settings.ACTIVITY_SCORE_EXPIRY_IN_HOURS)
+    unique_post_job_id = 'expire_community_{0}_uid_{1}_unique_post'.format(
+        post.community.pk,
+        post.creator.pk)
+
+    if unique_post_job_id in default_scheduler:
+        post.community.activity_score = F('activity_score') + settings.ACTIVITY_COUNT_POSTS_WEIGHT
+    else:
+        post.community.activity_score = F('activity_score') + \
+                                    settings.ACTIVITY_UNIQUE_POST_WEIGHT + \
+                                    settings.ACTIVITY_COUNT_POSTS_WEIGHT
+
+    post.community.save()
+    if unique_post_job_id in default_scheduler:
+        default_scheduler.cancel(unique_post_job_id)
+
+    # schedule reduction of activity scores
+    default_scheduler.enqueue_at(expire_datetime, _reduce_atomic_community_activity_score,
+                                 post.community.pk,
+                                 multiplier=settings.ACTIVITY_UNIQUE_POST_MULTIPLIER,
+                                 job_id=unique_post_job_id)
+    default_scheduler.enqueue_at(expire_datetime, _reduce_atomic_community_activity_score,
+                                 post.community.pk,
+                                 multiplier=settings.ACTIVITY_COUNT_POSTS_MULTIPLIER,
+                                 job_id='expire_community_{0}_pid_{1}'.format(
+                                     post.community.pk, post.pk)
+                                 )
+
+
+def _process_community_activity_score_post_deleted(post_id, post_creator_id,
+                                                   post_community_id, total_posts_by_creator):
+
+    default_scheduler = get_scheduler('process-activity-score')
+    job_id = 'expire_community_{0}_pid_{1}'.format(post_community_id, post_id)
+    unique_post_job_id = 'expire_community_{0}_uid_{1}_unique_post'.format(post_community_id,
+                                                                           post_creator_id)
+
+    Community = get_community_model()
+    community = Community.objects.get(id=post_community_id)
+    if job_id in default_scheduler:
+        default_scheduler.cancel(job_id)
+        community.activity_score = F('activity_score') - settings.ACTIVITY_COUNT_POSTS_WEIGHT
+        community.save()
+
+    if total_posts_by_creator == 0 and unique_post_job_id in default_scheduler:
+        community.activity_score = F('activity_score') - settings.ACTIVITY_UNIQUE_POST_WEIGHT
+        default_scheduler.cancel(unique_post_job_id)
+        community.save()
+
+    community.refresh_from_db()
+    if community.activity_score < Decimal(0.0):
+        logger.info('Community activity score for community with id {0} '
+                    'went below zero while processing delete post with id {1}'.format(
+            community.pk, post_id))
+
+
+def process_community_activity_score_post(post_id, post_creator_id, post_community_id):
+    """
+    This job is called to process activity score on a community after add/remove post
+    """
+    logger.info('Processing community activity score for create/delete post with id: %d' % post_id)
+
+    delete_post_job_id = 'process_delete_community_post_community_{0}_pid_{1}_uid_{2}'.format(post_community_id,
+                                                                                              post_id,
+                                                                                              post_creator_id)
+    default_queue = get_queue('process-activity-score')
+    delete_post_job = default_queue.fetch_job(delete_post_job_id)
+
+    if delete_post_job is not None and delete_post_job.is_queued:
+        # delete post job is also queued, jobs cancel each other, return
+        delete_post_job.cancel()
+        return
+
+    Post = get_post_model()
+    Community = get_community_model()
+    if not Community.objects.filter(id=post_community_id, is_deleted=False).exists():
+        # if community was deleted, soft deleted return
+        return
+
+    creator_posts_query = Q(created__gte=timezone.now() - timedelta(hours=settings.ACTIVITY_SCORE_EXPIRY_IN_HOURS))
+    creator_posts_query.add(Q(creator_id=post_creator_id,
+                              community_id=post_community_id,
+                              is_closed=False, is_deleted=False), Q.AND)
+
+    total_posts_by_creator = Post.objects.filter(creator_posts_query).count()
+
+    if Post.objects.filter(pk=post_id, is_closed=False, is_deleted=False).exists():
+        # post was added
+        post = Post.objects.get(pk=post_id)
+        _process_community_activity_score_post_added(post, total_posts_by_creator)
+    else:
+        # post was removed
+        _process_community_activity_score_post_deleted(post_id,
+                                                       post_creator_id,
+                                                       post_community_id,
+                                                       total_posts_by_creator)
+    logger.info('Processed community activity score for create/delete post with id: %d' % post_id)
+
+
 @job('low')
 def curate_top_posts():
     """
@@ -91,7 +426,7 @@ def curate_top_posts():
     total_checked_posts = 0
     total_curated_posts = 0
 
-    for post in _chunked_queryset_iterator(posts, 1000):
+    for post in chunked_queryset_iterator(posts, 1000):
         total_checked_posts = total_checked_posts + 1
         if not post.reactions_count >= settings.MIN_UNIQUE_TOP_POST_REACTIONS_COUNT:
             unique_comments_count = PostComment.objects.filter(post=post). \
@@ -178,7 +513,7 @@ def clean_top_posts():
 
     delete_ids = []
 
-    for top_post in _chunked_queryset_iterator(top_posts, 1000):
+    for top_post in chunked_queryset_iterator(top_posts, 1000):
         if not top_post.reactions_count >= settings.MIN_UNIQUE_TOP_POST_REACTIONS_COUNT:
             unique_comments_count = PostComment.objects.filter(post=top_post.post). \
                 values('commenter_id'). \
@@ -220,20 +555,18 @@ def curate_trending_posts():
 
     trending_posts_query.add(trending_posts_community_query, Q.AND)
 
-    posts_select_related = 'community'
-    posts_prefetch_related = 'reactions__reactor'
-    posts_only = ('id', 'status', 'is_deleted', 'is_closed', 'community__type')
+    trending_posts_criteria_query = Q(activity_score__gte=settings.MIN_ACTIVITY_SCORE_FOR_POST_TRENDING)
 
-    trending_posts_criteria_query = Q(reactions_count__gte=settings.MIN_UNIQUE_TRENDING_POST_REACTIONS_COUNT)
+    trending_posts_query.add(trending_posts_criteria_query, Q.AND)
+
+    posts_select_related = 'community'
+    posts_only = ('id', 'status', 'activity_score', 'is_deleted', 'is_closed', 'community__type')
 
     posts = Post.objects. \
         select_related(posts_select_related). \
-        prefetch_related(posts_prefetch_related). \
         only(*posts_only). \
         filter(trending_posts_query). \
-        annotate(reactions_count=Count('reactions__reactor_id')).\
-        filter(trending_posts_criteria_query).\
-        order_by('-reactions_count', '-created')[:30]
+        order_by('-activity_score', '-created')[:30]
 
     trending_posts_objects = []
 
@@ -267,26 +600,24 @@ def bootstrap_trending_posts():
 
     trending_posts_community_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
 
-    posts_select_related = 'community'
-    posts_prefetch_related = 'reactions__reactor'
-    posts_only = ('id', 'status', 'is_deleted', 'is_closed', 'community__type')
+    trending_posts_criteria_query = Q(activity_score__gte=settings.MIN_ACTIVITY_SCORE_FOR_POST_TRENDING)
 
-    trending_posts_criteria_query = Q(reactions_count__gte=settings.MIN_UNIQUE_TRENDING_POST_REACTIONS_COUNT)
+    trending_posts_community_query.add(trending_posts_criteria_query, Q.AND)
+
+    posts_select_related = 'community'
+    posts_only = ('id', 'status', 'activity_score', 'is_deleted', 'is_closed', 'community__type')
 
     posts = Post.objects. \
         select_related(posts_select_related). \
-        prefetch_related(posts_prefetch_related). \
         only(*posts_only). \
         filter(trending_posts_community_query). \
-        annotate(reactions_count=Count('reactions__reactor_id')). \
-        filter(trending_posts_criteria_query). \
         order_by('-created')
 
     trending_posts_objects = []
     total_curated_posts = 0
     total_checked_posts = 0
 
-    for post in _chunked_queryset_iterator(posts, 1000):
+    for post in chunked_queryset_iterator(posts, 1000):
         total_checked_posts += 1
         trending_post = TrendingPost(post=post, created=timezone.now())
         trending_posts_objects.append(trending_post)
@@ -321,9 +652,11 @@ def clean_trending_posts():
     trending_posts_community_query.add(Q(post__status=Post.STATUS_DRAFT), Q.OR)
     trending_posts_community_query.add(Q(post__status=Post.STATUS_PROCESSING), Q.OR)
     trending_posts_community_query.add(Q(post__moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.OR)
+    trending_posts_community_query.add(Q(post__activity_score__lt=settings.MIN_ACTIVITY_SCORE_FOR_POST_TRENDING), Q.OR)
 
     posts_select_related = 'post__community'
-    posts_only = ('post__id', 'post__status', 'post__is_deleted', 'post__is_closed', 'post__community__type')
+    posts_only = ('post__id', 'post__status', 'post__activity_score', 'post__is_deleted', 'post__is_closed',
+                  'post__community__type')
 
     removable_trending_posts = TrendingPost.objects.select_related(posts_select_related). \
         only(*posts_only). \
@@ -333,18 +666,6 @@ def clean_trending_posts():
 
     # delete posts
     TrendingPost.objects.filter(id__in=direct_removable_delete_ids).delete()
-
-    # Now we filter trending posts that do not meet criteria anymore
-    trending_posts_criteria_query = Q(reactions_count__lt=settings.MIN_UNIQUE_TRENDING_POST_REACTIONS_COUNT)
-
-    less_than_min_reactions_trending_posts = TrendingPost.objects.\
-        prefetch_related('post__reactions__reactor'). \
-        only('id'). \
-        annotate(reactions_count=Count('post__reactions__reactor_id')). \
-        filter(trending_posts_criteria_query)
-
-    delete_ids = [trending_post.pk for trending_post in less_than_min_reactions_trending_posts]
-    TrendingPost.objects.filter(id__in=delete_ids).delete()
 
 
 def _chunked_queryset_iterator(queryset, size, *, ordering=('id',)):

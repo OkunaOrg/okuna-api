@@ -37,6 +37,14 @@ def get_post_media_model():
     return apps.get_model('openbook_posts.PostMedia')
 
 
+def get_post_notifications_subscription_model():
+    return apps.get_model('openbook_posts.PostNotificationsSubscription')
+
+
+def get_post_comment_notifications_subscription_model():
+    return apps.get_model('openbook_posts.PostCommentNotificationsSubscription')
+
+
 def get_proxy_blacklist_domain_model():
     return apps.get_model('openbook_common.ProxyBlacklistedDomain')
 

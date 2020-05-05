@@ -66,9 +66,13 @@ class Community(models.Model):
         _('is deleted'),
         default=False,
     )
+    activity_score = models.DecimalField(default=0.0, decimal_places=10, max_digits=10)
 
     class Meta:
         verbose_name_plural = 'communities'
+        indexes = [
+            models.Index(fields=['activity_score']),
+        ]
 
     @classmethod
     def is_user_with_username_invited_to_community_with_name(cls, username, community_name):
@@ -147,7 +151,12 @@ class Community(models.Model):
     def get_trending_communities_for_user_with_id(cls, user_id, category_name=None):
         trending_communities_query = cls._make_trending_communities_query(category_name=category_name)
         trending_communities_query.add(~Q(banned_users__id=user_id), Q.AND)
-        return cls._get_trending_communities_with_query(query=trending_communities_query)
+
+        trending_communities = cls._get_trending_communities_with_query(query=trending_communities_query)
+        if trending_communities.count() == 0:
+            return cls.get_trending_communities_by_members_for_user_with_id(user_id, category_name=category_name)
+
+        return trending_communities
 
     @classmethod
     def get_trending_communities(cls, category_name=None):
@@ -156,11 +165,37 @@ class Community(models.Model):
 
     @classmethod
     def _get_trending_communities_with_query(cls, query):
+        return cls.objects.filter(query).order_by('-activity_score')
+
+    @classmethod
+    def _make_trending_communities_query(cls, category_name=None):
+        trending_communities_query = Q(type=Community.COMMUNITY_TYPE_PUBLIC, is_deleted=False)
+        trending_communities_query.add(Q(activity_score__gte=settings.MIN_ACTIVITY_SCORE_FOR_COMMUNITY_TRENDING), Q.AND)
+        trending_communities_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
+        if category_name:
+            trending_communities_query.add(Q(categories__name=category_name), Q.AND)
+
+        return trending_communities_query
+
+    @classmethod
+    def get_trending_communities_by_members_for_user_with_id(cls, user_id, category_name=None):
+        trending_communities_query = cls._make_trending_communities_by_members_query(category_name=category_name)
+        trending_communities_query.add(~Q(banned_users__id=user_id), Q.AND)
+        return cls._get_trending_communities_by_members_with_query(query=trending_communities_query)
+
+    @classmethod
+    def get_trending_communities_by_members(cls, category_name=None):
+        trending_communities_query = cls._make_trending_communities_by_members_query(category_name=category_name)
+        return cls._get_trending_communities_by_members_with_query(query=trending_communities_query)
+
+    @classmethod
+    def _get_trending_communities_by_members_with_query(cls, query):
         return cls.objects.annotate(Count('memberships')).filter(query).order_by(
             '-memberships__count', '-created')
 
     @classmethod
-    def _make_trending_communities_query(cls, category_name=None):
+    def _make_trending_communities_by_members_query(cls, category_name=None):
         trending_communities_query = Q(type=cls.COMMUNITY_TYPE_PUBLIC, is_deleted=False)
 
         if category_name:

@@ -1,6 +1,10 @@
 from django.urls import reverse
+from django_rq import get_worker, get_scheduler
+from django.conf import settings
 from faker import Faker
-from openbook_common.tests.models import OpenbookAPITestCase
+from rq import SimpleWorker
+
+from openbook_common.tests.models import OpenbookAPITestCase, OpenbookAPITransactionTestCase
 from rest_framework import status
 
 import logging
@@ -848,6 +852,74 @@ class CommunityPostsAPITest(OpenbookAPITestCase):
 
         self.assertEqual(retrieved_notifications_subscription.pk, community_notifications_subscription.pk)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def _get_url(self, community_name):
+        return reverse('community-posts', kwargs={
+            'community_name': community_name
+        })
+
+
+class CommunityPostsTransactionAPITests(OpenbookAPITransactionTestCase):
+    """
+    CommunityPostsTransactionAPI
+    """
+
+    def test_create_community_post_updates_community_activity_score(self):
+        """
+        should update community activity score when creating community post
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+        community = make_community(creator=user)
+
+        data = {
+            'text': make_fake_post_text(),
+        }
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.put(url, data, **headers, format='multipart')
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
+
+        community.refresh_from_db()
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        expected_weight = settings.ACTIVITY_UNIQUE_POST_WEIGHT + settings.ACTIVITY_COUNT_POSTS_WEIGHT
+
+        self._clear_jobs_in_scheduler()
+        self.assertEqual(community.activity_score, expected_weight)
+
+    def test_create_second_community_post_updates_community_activity_score_appropriately(self):
+        """
+        should update community activity score by only count weight when creating a second community post by same user
+        """
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+        community = make_community(creator=user)
+
+        data = {
+            'text': make_fake_post_text(),
+        }
+
+        url = self._get_url(community_name=community.name)
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        # create one more post
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+
+        expected_weight = settings.ACTIVITY_UNIQUE_POST_WEIGHT + (2 * settings.ACTIVITY_COUNT_POSTS_WEIGHT)
+
+        self._clear_jobs_in_scheduler()
+        self.assertEqual(community.activity_score, expected_weight)
+
+    def _clear_jobs_in_scheduler(self):
+        default_scheduler = get_scheduler('process-activity-score')
+        for job in default_scheduler.get_jobs():
+            default_scheduler.cancel(job.get_id())
 
     def _get_url(self, community_name):
         return reverse('community-posts', kwargs={

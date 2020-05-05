@@ -5,7 +5,7 @@ from openbook_auth.models import User, UserProfile
 from openbook_common.models import Language, Badge
 from openbook_common.serializers import CommonEmojiSerializer
 from openbook_common.serializers_fields.hashtag import HashtagPostsCountField
-from openbook_common.serializers_fields.post import IsEncircledField
+from openbook_common.serializers_fields.post import IsEncircledField, CommonPostNotificationsSubscriptionField
 from openbook_communities.models import Community
 from openbook_hashtags.models import Hashtag
 from openbook_moderation.models import ModeratedObject, ModerationCategory
@@ -114,6 +114,7 @@ class ModeratedObjectPostSerializer(serializers.ModelSerializer):
     image = ModeratedObjectPostImageSerializer()
     language = LanguageSerializer()
     is_encircled = IsEncircledField()
+    post_notifications_subscription = CommonPostNotificationsSubscriptionField()
 
     class Meta:
         model = Post
@@ -128,6 +129,7 @@ class ModeratedObjectPostSerializer(serializers.ModelSerializer):
             'comments_enabled',
             'is_closed',
             'is_encircled',
+            'post_notifications_subscription'
         )
 
 

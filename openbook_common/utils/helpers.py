@@ -7,6 +7,7 @@ import tempfile
 
 import magic
 import spectra
+from cursor_pagination import CursorPaginator
 from django.http import QueryDict
 from imagekit.utils import get_cache
 from imagekit.models import ProcessedImageField
@@ -143,3 +144,26 @@ def write_in_memory_file_to_disk(in_memory_file):
     tmp_file.seek(0)
     tmp_file.close()
     return tmp_file
+
+
+def chunked_queryset_iterator(queryset, size, *, ordering=('id',)):
+    """
+    Split a queryset into chunks.
+    This can be used instead of `queryset.iterator()`,
+    so `.prefetch_related()` also works
+    Note::
+    The ordering must uniquely identify the object,
+    and be in the same order (ASC/DESC). See https://github.com/photocrowd/django-cursor-pagination
+    """
+    pager = CursorPaginator(queryset, ordering)
+    after = None
+    while True:
+        page = pager.page(after=after, first=size)
+        if page:
+            yield from page.items
+        else:
+            return
+        if not page.has_next:
+            break
+        # take last item, next page starts after this.
+        after = pager.cursor(instance=page[-1])
