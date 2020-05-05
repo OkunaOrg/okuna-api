@@ -1004,10 +1004,12 @@ class PostComment(models.Model):
 
     @classmethod
     def create_comment(cls, text, commenter, post, parent_comment=None):
+        post_comment_language = get_language_for_text(text)
+
         post_comment = PostComment.objects.create(text=text, commenter=commenter, post=post,
-                                                  parent_comment=parent_comment)
-        post_comment.language = get_language_for_text(text)
+                                                  parent_comment=parent_comment, language=post_comment_language)
         add_comment_job_id = 'process_add_comment_pid_{0}_cid_{1}'.format(post.pk, post_comment.pk)
+
         transaction.on_commit(lambda: PostComment.enqueue_process_activity_score_job(post_id=post.pk,
                                                                                      post_comment_id=post_comment.pk,
                                                                                      post_commenter_id=commenter.pk,
