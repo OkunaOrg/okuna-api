@@ -41,7 +41,7 @@ def get_language_for_text_mock(text):
     return text
 
 
-class PostItemAPITests(OpenbookAPITestCase):
+class PostItemAPITests(OpenbookAPITransactionTestCase):
     """
     PostItemAPI
     """
