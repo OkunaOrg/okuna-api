@@ -669,6 +669,8 @@ class PostCommentReactionsAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(reactor)
         post = user.create_public_post(text=make_fake_post_text())
         post_comment = user.comment_post_with_id(post_id=post.pk, text=make_fake_post_comment_text())
+
+        # mute post comment
         user.mute_post_comment_with_id(post_comment_id=post_comment.pk)
 
         emoji_group = make_reactions_emoji_group()

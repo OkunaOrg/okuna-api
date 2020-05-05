@@ -5,7 +5,8 @@ from django.utils.translation import ugettext_lazy as _
 
 from openbook_common.utils.model_loaders import get_post_model, get_community_model, get_post_comment_model, \
     get_language_model, get_user_model, get_emoji_group_model, get_post_reaction_model, get_user_invite_model, \
-    get_community_notifications_subscription_model, get_user_notifications_subscription_model
+    get_community_notifications_subscription_model, get_user_notifications_subscription_model, \
+    get_post_notifications_subscription_model, get_post_comment_notifications_subscription_model
 
 from openbook_common import checkers as common_checkers
 
@@ -123,7 +124,7 @@ def check_community_data(user, community, name=None, cover=None, avatar=None, ty
 
 def check_community_type_can_be_updated(type, community):
     Community = get_community_model()
-    if type == Community.COMMUNITY_TYPE_PUBLIC and community.is_private:
+    if type == Community.COMMUNITY_TYPE_PUBLIC and community.is_private():
         raise ValidationError(
             _('A community cannot be changed from private to public'),
         )
@@ -339,6 +340,51 @@ def check_can_disable_new_post_notifications_for_community(user, community):
     if not new_post_notifications_enabled:
         raise ValidationError(
             _('New post notifications are not enabled'),
+        )
+
+
+def check_can_disable_post_notifications_subscription_for_post(user, post):
+    if not user.can_see_post(post=post):
+        raise ValidationError(
+            _('You do not have permissions to view this post.'),
+        )
+
+    PostNotificationsSubscription = get_post_notifications_subscription_model()
+    post_notifications_enabled = \
+        PostNotificationsSubscription.is_user_with_username_subscribed_to_comment_notifications_for_post_with_id(
+            username=user.username, post_id=post.pk)
+
+    if not post_notifications_enabled:
+        raise ValidationError(
+            _('Post notifications are not enabled'),
+        )
+
+
+def check_can_create_or_update_post_notifications_subscription_for_post(user, post):
+    if not user.can_see_post(post=post):
+        raise ValidationError(
+            _('You do not have permissions to view this post.'),
+        )
+
+
+def check_can_update_reaction_notifications_for_post(user, post):
+    if not user.id == post.creator.id:
+        raise ValidationError(
+            _('Only the post creator can modify reaction notifications'),
+        )
+
+
+def check_can_update_comment_reaction_notifications_for_post(user, post):
+    if not user.has_commented_post_with_id(post_id=post.pk):
+        raise ValidationError(
+            _('Only users with comments can modify comment reaction notifications'),
+        )
+
+
+def check_can_create_or_update_notifications_subscription_for_post_comment(user, post_comment):
+    if not user.can_see_post_comment(post_comment=post_comment):
+        raise ValidationError(
+            _('You do not have permissions to view this post comment.'),
         )
 
 
@@ -725,6 +771,11 @@ def check_has_device_with_uuid(user, device_uuid):
 
 
 def check_can_mute_post(user, post):
+    PostNotificationsSubscription = get_post_notifications_subscription_model()
+    if not PostNotificationsSubscription.objects.filter(post=post, subscriber=user).exists():
+        raise ValidationError(
+            _('You aren\'t receiving notifications for this post'),
+        )
     if user.has_muted_post_with_id(post_id=post.pk):
         raise ValidationError(
             _('Post already muted'),
@@ -745,6 +796,12 @@ def check_has_muted_post_with_id(user, post_id):
 
 
 def check_can_mute_post_comment(user, post_comment):
+    PostCommentNotificationsSubscription = get_post_comment_notifications_subscription_model()
+    if not PostCommentNotificationsSubscription.objects.filter(post_comment=post_comment, subscriber=user).exists():
+        raise ValidationError(
+            _('You aren\'t receiving notifications for this post comment'),
+        )
+
     if user.has_muted_post_comment_with_id(post_comment_id=post_comment.pk):
         raise ValidationError(
             _('Post comment already muted'),

@@ -1431,9 +1431,104 @@ class ApproveModeratedObjectApiTests(OpenbookAPITestCase):
         self.assertFalse(PostCommentNotification.objects.filter(
             post_comment=community_post_comment).exists())
 
+    def test_approving_community_post_moderated_object_deletes_post_subscribers_comment_notifications_for_comment(self):
+        """
+        should delete post subscribers notifications for comments on approving community_post moderated object
+        """
+        global_moderator = make_global_moderator()
+
+        community = make_community()
+
+        community_post_creator = make_user()
+        community_post_commenter = make_user()
+        community_post_subscriber = make_user()
+
+        community_post_creator.join_community_with_name(community_name=community.name)
+        community_post_commenter.join_community_with_name(community_name=community.name)
+        community_post_subscriber.join_community_with_name(community_name=community.name)
+
+        community_post = community_post_creator.create_community_post(
+            community_name=community.name,
+            text=make_fake_post_text())
+
+        community_post_subscriber.create_post_notifications_subscription_for_post_with_id(
+            post_id=community_post.id,
+            comment_notifications=True)
+        community_post_comment = community_post_commenter.comment_post(
+            post=community_post,
+            text=make_fake_post_text())
+
+        reporter_community_post = make_user()
+        report_category = make_moderation_category()
+
+        reporter_community_post.report_post(post=community_post,
+                                            category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(
+            post=community_post,
+            category_id=report_category.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        PostCommentNotification = get_post_comment_notification_model()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(PostCommentNotification.objects.filter(
+            post_comment=community_post_comment, notification__owner=community_post_subscriber).exists())
+
     def test_approving_community_post_moderated_object_deletes_comment_reply_notifications(self):
         """
         should delete comment reply notifications on approving community_post moderated object
+        """
+        global_moderator = make_global_moderator()
+
+        community = make_community()
+
+        community_post_comment_creator = make_user()
+        community_post_replier = make_user()
+
+        community_post_comment_creator.join_community_with_name(community_name=community.name)
+        community_post_replier.join_community_with_name(community_name=community.name)
+
+        # create community post and comment
+        community_post = community_post_comment_creator.create_community_post(
+            community_name=community.name,
+            text=make_fake_post_text())
+        community_post_comment = community_post_comment_creator.comment_post(
+            post=community_post,
+            text=make_fake_post_text())
+
+        # create reply
+        community_post_comment_reply = community_post_replier.reply_to_comment_for_post(
+            post_comment=community_post_comment,
+            post=community_post,
+            text=make_fake_post_comment_text())
+
+        reporter_community_post = make_user()
+        report_category = make_moderation_category()
+
+        reporter_community_post.report_post(post=community_post,
+                                            category_id=report_category.pk)
+
+        moderated_object = ModeratedObject.get_or_create_moderated_object_for_post(
+            post=community_post,
+            category_id=report_category.pk)
+
+        url = self._get_url(moderated_object=moderated_object)
+        headers = make_authentication_headers_for_user(global_moderator)
+        response = self.client.post(url, **headers)
+
+        PostCommentReplyNotification = get_post_comment_reply_notification_model()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(PostCommentReplyNotification.objects.filter(
+            post_comment=community_post_comment_reply).exists())
+
+    def test_approving_community_post_moderated_object_deletes_post_subscription_comment_notifications_for_reply(self):
+        """
+        should delete post subscription comment notifications for replies on approving community_post moderated object
         """
         global_moderator = make_global_moderator()
 

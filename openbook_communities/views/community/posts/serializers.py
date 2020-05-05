@@ -3,10 +3,11 @@ from rest_framework import serializers
 
 from openbook_common.serializers import CommonPostImageSerializer, CommonPostCreatorSerializer, \
     CommonCommunityMembershipSerializer, CommonPostEmojiCountSerializer, CommonPostCommunitySerializer, \
-    CommonPostReactionSerializer, CommonPostLanguageSerializer, CommonHashtagSerializer
+    CommonPostReactionSerializer, CommonPostLanguageSerializer, CommonHashtagSerializer, \
+    CommonPostNotificationsSubscriptionSerializer
 from openbook_common.serializers_fields.community import CommunityPostsCountField
 from openbook_common.serializers_fields.post import PostReactionsEmojiCountField, CommentsCountField, PostCreatorField, \
-    PostIsMutedField, ReactionField
+    PostIsMutedField, ReactionField, CommonPostNotificationsSubscriptionField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField
 from openbook_communities.models import Community
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
@@ -52,6 +53,7 @@ class CommunityPostSerializer(serializers.ModelSerializer):
     reaction = ReactionField(reaction_serializer=CommonPostReactionSerializer)
     language = CommonPostLanguageSerializer()
     hashtags = CommonHashtagSerializer(many=True)
+    post_notifications_subscription = CommonPostNotificationsSubscriptionField()
 
     class Meta:
         model = Post
@@ -75,7 +77,8 @@ class CommunityPostSerializer(serializers.ModelSerializer):
             'media_height',
             'media_width',
             'media_thumbnail',
-            'hashtags'
+            'hashtags',
+            'post_notifications_subscription'
         )
 
 
