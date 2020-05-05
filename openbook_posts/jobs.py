@@ -544,7 +544,7 @@ def curate_trending_posts():
     logger.info('Processing trending posts at %s...' % timezone.now())
 
     trending_posts_query = Q(
-        created__gte=timezone.now() - timedelta(hours=12),
+        created__gte=timezone.now() - timedelta(hours=6),
         community__type=Community.COMMUNITY_TYPE_PUBLIC,
         status=Post.STATUS_PUBLISHED,
         is_closed=False,
