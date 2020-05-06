@@ -14,8 +14,6 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Count
-from django.db import transaction
-import django_rq
 import ffmpy
 
 # Create your views here.
@@ -54,8 +52,7 @@ from openbook_posts.checkers import check_can_be_updated, check_can_add_media, c
     check_mimetype_is_supported_media_mimetypes
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory, \
     upload_to_post_directory
-from openbook_posts.jobs import process_post_media, process_activity_score_post_reaction, \
-    process_activity_score_post_comment, process_community_activity_score_post
+from openbook_posts.jobs import process_post_media
 
 magic = get_magic()
 from openbook_common.helpers import get_language_for_text
@@ -95,14 +92,10 @@ class Post(models.Model):
                                           upload_to=upload_to_post_directory,
                                           blank=False, null=True, format='JPEG', options={'quality': 30},
                                           processors=[ResizeToFit(width=512, upscale=False)])
-    activity_score = models.DecimalField(default=0.0, decimal_places=10, max_digits=10)
 
     class Meta:
         index_together = [
             ('creator', 'community'),
-        ]
-        indexes = [
-            models.Index(fields=['activity_score']),
         ]
 
     @classmethod
@@ -212,6 +205,42 @@ class Post(models.Model):
             filter(trending_community_posts_query)
 
         return trending_community_posts_queryset
+
+    @classmethod
+    def get_trending_posts_old_for_user_with_id(cls, user_id):
+        """
+        For backwards compatibility reasons
+        """
+        trending_posts_query = cls._get_trending_posts_old_query()
+        trending_posts_query.add(~Q(community__banned_users__id=user_id), Q.AND)
+
+        trending_posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=user_id) | Q(
+            creator__user_blocks__blocked_user_id=user_id)), Q.AND)
+
+        trending_posts_query.add(~Q(moderated_object__reports__reporter_id=user_id), Q.AND)
+
+        trending_posts_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
+
+        return cls._get_trending_posts_old_with_query(query=trending_posts_query)
+
+    @classmethod
+    def _get_trending_posts_old_with_query(cls, query):
+        return cls.objects.filter(query).annotate(Count('reactions')).order_by(
+            '-reactions__count', '-created')
+
+    @classmethod
+    def _get_trending_posts_old_query(cls):
+        trending_posts_query = Q(created__gte=timezone.now() - timedelta(
+            hours=12))
+
+        Community = get_community_model()
+
+        trending_posts_sources_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, status=cls.STATUS_PUBLISHED,
+                                         is_closed=False, is_deleted=False)
+
+        trending_posts_query.add(trending_posts_sources_query, Q.AND)
+
+        return trending_posts_query
 
     @classmethod
     def get_post_comment_notification_target_users(cls, post, post_commenter):
@@ -511,7 +540,6 @@ class Post(models.Model):
         self.status = Post.STATUS_PUBLISHED
         self.created = timezone.now()
         self._process_post_subscribers()
-        self._enqueue_process_activity_score_add_community_post()
         self._subscribe_creator_to_post_notifications()
         self.save()
 
@@ -540,7 +568,6 @@ class Post(models.Model):
 
     def delete(self, *args, **kwargs):
         self.delete_media()
-        self._enqueue_process_activity_score_delete_community_post()
         super(Post, self).delete(*args, **kwargs)
 
     def delete_media(self):
@@ -549,7 +576,6 @@ class Post(models.Model):
 
     def soft_delete(self):
         self.delete_notifications()
-        self._enqueue_process_activity_score_delete_community_post()
         for comment in self.comments.all().iterator():
             comment.soft_delete()
         self.is_deleted = True
@@ -776,37 +802,6 @@ class Post(models.Model):
                     user_notifications_subscription_id=subscription.pk)
                 send_user_new_post_push_notification(user_notifications_subscription=subscription, post=self)
 
-    def _enqueue_process_activity_score_add_community_post(self):
-        if self.community is None:
-            return
-
-        add_post_job_id = 'process_add_community_post_community_{0}_pid_{1}_uid_{2}'.format(self.community.pk,
-                                                                                            self.pk,
-                                                                                            self.creator.pk)
-        queue = django_rq.get_queue('process-activity-score')
-        transaction.on_commit(lambda: queue.enqueue(process_community_activity_score_post,
-                                                    post_id=self.pk,
-                                                    post_creator_id=self.creator.pk,
-                                                    post_community_id=self.community.pk,
-                                                    job_id=add_post_job_id))
-
-    def _enqueue_process_activity_score_delete_community_post(self):
-        if self.community is None:
-            return
-
-        delete_post_job_id = 'process_delete_community_post_community_{0}_pid_{1}_uid_{2}'.format(self.community.pk,
-                                                                                                  self.pk,
-                                                                                                  self.creator.pk)
-        queue = django_rq.get_queue('process-activity-score')
-        post_id = self.pk
-        post_creator_id = self.creator.pk
-        post_community_id = self.community.pk
-        transaction.on_commit(lambda: queue.enqueue(process_community_activity_score_post,
-                                                    post_id=post_id,
-                                                    post_creator_id=post_creator_id,
-                                                    post_community_id=post_community_id,
-                                                    job_id=delete_post_job_id))
-
     def _subscribe_creator_to_post_notifications(self):
         PostNotificationsSubscription = get_post_notifications_subscription_model()
 
@@ -1004,12 +999,8 @@ class PostComment(models.Model):
         post_comment = PostComment.objects.create(text=text, commenter=commenter, post=post,
                                                   parent_comment=parent_comment)
         post_comment.language = get_language_for_text(text)
-        add_comment_job_id = 'process_add_comment_pid_{0}_cid_{1}'.format(post.pk, post_comment.pk)
-        transaction.on_commit(lambda: PostComment.enqueue_process_activity_score_job(post_id=post.pk,
-                                                                                     post_comment_id=post_comment.pk,
-                                                                                     post_commenter_id=commenter.pk,
-                                                                                     job_id=add_comment_job_id))
         post_comment.save()
+
         return post_comment
 
     @classmethod
@@ -1022,15 +1013,6 @@ class PostComment(models.Model):
     def get_emoji_counts_for_post_comment_with_id(cls, post_comment_id, emoji_id=None, reactor_id=None):
         return Emoji.get_emoji_counts_for_post_comment_with_id(post_comment_id=post_comment_id, emoji_id=emoji_id,
                                                                reactor_id=reactor_id)
-
-    @classmethod
-    def enqueue_process_activity_score_job(cls, post_id, post_comment_id, post_commenter_id, job_id):
-        queue = django_rq.get_queue('process-activity-score')
-        queue.enqueue(process_activity_score_post_comment,
-                      post_id=post_id,
-                      post_comment_id=post_comment_id,
-                      post_commenter_id=post_commenter_id,
-                      job_id=job_id)
 
     def count_replies(self):
         return self.replies.count()
@@ -1170,25 +1152,6 @@ class PostComment(models.Model):
         self.is_deleted = True
         self.delete_notifications()
         self.save()
-        delete_comment_job_id = 'process_delete_comment_pid_{0}_cid_{1}'.format(self.post.pk, self.pk)
-        transaction.on_commit(lambda: PostComment.enqueue_process_activity_score_job(post_id=self.post.pk,
-                                                                                     post_comment_id=self.pk,
-                                                                                     post_commenter_id=self.commenter.pk,
-                                                                                     job_id=delete_comment_job_id))
-
-    def delete(self, *args, **kwargs):
-        if not self.is_deleted:
-            post_id = self.post.pk
-            post_comment_id = self.pk
-            post_commenter_id = self.commenter.pk
-            delete_comment_job_id = 'process_delete_comment_pid_{0}_cid_{1}'.format(post_id, post_comment_id)
-            transaction.on_commit(lambda:
-                                  PostComment.enqueue_process_activity_score_job(post_id=post_id,
-                                                                                 post_comment_id=post_comment_id,
-                                                                                 post_commenter_id=post_commenter_id,
-                                                                                 job_id=delete_comment_job_id))
-
-        super(PostComment, self).delete(*args, **kwargs)
 
     def unsoft_delete(self):
         self.is_deleted = False
@@ -1256,22 +1219,8 @@ class PostReaction(models.Model):
         unique_together = ('reactor', 'post',)
 
     @classmethod
-    def enqueue_process_activity_score_job(cls, post_id, post_reaction_id, job_id):
-        queue = django_rq.get_queue('process-activity-score')
-        queue.enqueue(process_activity_score_post_reaction,
-                      post_id=post_id,
-                      post_reaction_id=post_reaction_id,
-                      job_id=job_id)
-
-    @classmethod
     def create_reaction(cls, reactor, emoji_id, post):
-        post_reaction = PostReaction.objects.create(reactor=reactor, emoji_id=emoji_id, post=post)
-        job_id = 'process_add_unique_reaction_pid_{0}_rid_{1}'.format(post.pk, post_reaction.pk)
-        transaction.on_commit(lambda: PostReaction.enqueue_process_activity_score_job(post_id=post.pk,
-                                                                                      post_reaction_id=post_reaction.pk,
-                                                                                      job_id=job_id))
-
-        return post_reaction
+        return PostReaction.objects.create(reactor=reactor, emoji_id=emoji_id, post=post)
 
     @classmethod
     def count_reactions_for_post_with_id(cls, post_id, reactor_id=None):
@@ -1281,17 +1230,6 @@ class PostReaction(models.Model):
             count_query.add(Q(reactor_id=reactor_id), Q.AND)
 
         return cls.objects.filter(count_query).count()
-
-    def delete(self, *args, **kwargs):
-        reaction_id = self.pk
-        post_id = self.post.pk
-        job_id = 'process_remove_unique_reaction_pid_{0}_rid_{1}'.format(post_id, reaction_id)
-        transaction.on_commit(lambda: PostReaction.enqueue_process_activity_score_job(
-            post_id=post_id,
-            post_reaction_id=reaction_id,
-            job_id=job_id))
-
-        super(PostReaction, self).delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''

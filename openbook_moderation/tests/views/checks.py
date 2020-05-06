@@ -41,6 +41,8 @@ class IsNotSuspendedCheckAPITests(OpenbookAPITestCase):
         headers = make_authentication_headers_for_user(user)
         response = self.client.get(url, **headers)
 
+        print(response.content)
+
         self.assertEqual(status.HTTP_403_FORBIDDEN, response.status_code)
 
     def test_expired_suspension_penalty_does_not_prevent_access(self):
