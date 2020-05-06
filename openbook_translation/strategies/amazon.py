@@ -22,9 +22,9 @@ class AmazonTranslate(BaseTranslationStrategy):
         # from what langdetect provides for chinese (zh) and chinese traditional (zh-TW)
 
         detected_language = detect(text)
-        if detected_language is 'zh-cn':
+        if detected_language == 'zh-cn':
             detected_language = 'zh'
-        if detected_language is 'zh-tw':
+        if detected_language == 'zh-tw':
             detected_language = 'zh-TW'
 
         return detected_language
@@ -35,7 +35,7 @@ class AmazonTranslate(BaseTranslationStrategy):
     def get_supported_translation_language_code(self, language_code):
         # Returns English as default if no match
         parsed_code = language_code
-        if language_code is not 'zh-TW':
+        if language_code != 'zh-TW':
             code_parts = language_code.split('-')
             if len(code_parts) == 2:
                 parsed_code = code_parts[0]
