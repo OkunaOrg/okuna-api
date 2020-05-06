@@ -27,7 +27,7 @@ from openbook_common.tests.helpers import make_authentication_headers_for_user, 
 from openbook_common.utils.model_loaders import get_language_model, get_community_new_post_notification_model, \
     get_post_comment_notification_model, get_post_comment_user_mention_notification_model, \
     get_post_user_mention_notification_model, get_post_comment_reaction_notification_model, \
-    get_post_comment_reply_notification_model, get_post_notifications_subscription_model
+    get_post_comment_reply_notification_model
 from openbook_communities.models import Community
 from openbook_hashtags.models import Hashtag
 from openbook_notifications.models import PostUserMentionNotification, Notification
@@ -1304,565 +1304,6 @@ class PostItemAPITests(OpenbookAPITestCase):
         })
 
 
-class PostNotificationsSubscriptionSettingsAPITests(OpenbookAPITestCase):
-    """
-    PostNotificationsSubscriptionSettings API
-    """
-
-    fixtures = [
-        'openbook_circles/fixtures/circles.json'
-    ]
-
-    def test_can_subscribe_comment_notifications_for_public_post(self):
-        """
-        should be able to subscribe to comment notifications for public post and return 200
-        """
-        user = make_user()
-        subscriber = make_user()
-        headers = make_authentication_headers_for_user(subscriber)
-        post = user.create_public_post(text=make_fake_post_text())
-
-        data = {
-            'comment_notifications': True
-        }
-        url = self._get_url(post)
-        response = self.client.put(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-        self.assertTrue(PostNotificationsSubscription.objects.filter(post=post,
-                                                                     subscriber=subscriber,
-                                                                     comment_notifications=True).exists())
-
-    def test_cannot_subscribe_to_comment_notifications_for_post_if_encircled_post(self):
-        """
-        should NOT be able to subscribe to comment notifications for post if encircled post
-        """
-        user = make_user()
-        foreign_user = make_user()
-
-        headers = make_authentication_headers_for_user(user)
-
-        circle = make_circle(creator=foreign_user)
-
-        post = foreign_user.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
-
-        data = {
-            'comment_notifications': True
-        }
-        url = self._get_url(post)
-        response = self.client.put(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
-                                                                      subscriber=user,
-                                                                      comment_notifications=True).exists())
-
-    def test_can_subscribe_to_comment_notifications_for_post_if_part_of_encircled_post(self):
-        """
-        should be able to subscribe to comment notifications for post if part of encircled post
-        """
-        user = make_user()
-        foreign_user = make_user()
-
-        headers = make_authentication_headers_for_user(user)
-
-        circle = make_circle(creator=foreign_user)
-
-        post = foreign_user.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
-        foreign_user.connect_with_user_with_id(user_id=user.pk, circles_ids=[circle.pk])
-        user.confirm_connection_with_user_with_id(user_id=foreign_user.pk)
-
-        data = {
-            'comment_notifications': True
-        }
-
-        url = self._get_url(post)
-
-        response = self.client.put(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-        self.assertTrue(PostNotificationsSubscription.objects.filter(post=post,
-                                                                     subscriber=user,
-                                                                     comment_notifications=True).exists())
-
-    def test_can_subscribe_to_comment_notifications_for_community_post_if_public(self):
-        """
-        should be able to subscribe to comment notifications for community post if public
-        """
-        user = make_user()
-
-        foreign_user = make_user()
-        community = make_community(creator=foreign_user)
-
-        headers = make_authentication_headers_for_user(user)
-        user.join_community_with_name(community_name=community.name)
-        post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-
-        data = {
-            'comment_notifications': True
-        }
-        url = self._get_url(post)
-
-        response = self.client.put(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-        self.assertTrue(PostNotificationsSubscription.objects.filter(post=post,
-                                                                     subscriber=user,
-                                                                     comment_notifications=True).exists())
-
-    def test_cannot_subscribe_to_comment_notifications_for_closed_community_post_if_public(self):
-        """
-        should NOT be able to subscribe to comment notifications for closed community post
-        """
-        user = make_user()
-
-        foreign_user = make_user()
-        community = make_community(creator=foreign_user)
-        user.join_community_with_name(community_name=community.name)
-
-        headers = make_authentication_headers_for_user(user)
-        post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        post.is_closed = True
-        post.save()
-
-        data = {
-            'comment_notifications': True
-        }
-
-        url = self._get_url(post)
-        response = self.client.put(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
-                                                                      subscriber=user,
-                                                                      comment_notifications=True).exists())
-
-    def test_can_subscribe_to_comment_notifications_for_closed_community_post_if_creator(self):
-        """
-        should be able to subscribe to comment notifications for closed post if post creator in community
-        """
-        user = make_user()
-
-        foreign_user = make_user()
-        community = make_community(creator=foreign_user)
-        user.join_community_with_name(community_name=community.name)
-
-        headers = make_authentication_headers_for_user(user)
-        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        post.is_closed = True
-        post.save()
-
-        data = {
-            'comment_notifications': True
-        }
-
-        url = self._get_url(post)
-        response = self.client.put(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-        self.assertTrue(PostNotificationsSubscription.objects.filter(post=post,
-                                                                     subscriber=user,
-                                                                     comment_notifications=True).exists())
-
-    def test_can_subscribe_to_comment_notifications_for_closed_community_post_administrator(self):
-        """
-        should be able to subscribe to comment notifications for closed post if administrator in community
-        """
-        user = make_user()
-
-        admin = make_user()
-        community = make_community(creator=admin)
-        user.join_community_with_name(community_name=community.name)
-
-        headers = make_authentication_headers_for_user(admin)
-        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        post.is_closed = True
-        post.save()
-
-        data = {
-            'comment_notifications': True
-        }
-
-        url = self._get_url(post)
-        response = self.client.put(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-        self.assertTrue(PostNotificationsSubscription.objects.filter(post=post,
-                                                                     subscriber=admin,
-                                                                     comment_notifications=True).exists())
-
-    def test_can_subscribe_to_comment_notifications_for_closed_community_post_if_moderator(self):
-        """
-        should be able to subscribe to comment notifications for closed post if moderator in community
-        """
-        user = make_user()
-
-        admin = make_user()
-        moderator = make_user()
-        community = make_community(creator=admin)
-        user.join_community_with_name(community_name=community.name)
-        moderator.join_community_with_name(community_name=community.name)
-        admin.add_moderator_with_username_to_community_with_name(username=moderator.username,
-                                                                 community_name=community.name)
-
-        headers = make_authentication_headers_for_user(moderator)
-        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        post.is_closed = True
-        post.save()
-
-        data = {
-            'comment_notifications': True
-        }
-        url = self._get_url(post)
-        response = self.client.put(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-        self.assertTrue(PostNotificationsSubscription.objects.filter(post=post,
-                                                                     subscriber=moderator,
-                                                                     comment_notifications=True).exists())
-
-    def test_cannot_subscribe_to_comment_notifications_for_community_post_if_private_and_not_member(self):
-        """
-        should NOT be able to subscribe to comment notifications for private community post and not a member
-        """
-        user = make_user()
-
-        foreign_user = make_user()
-        community = make_community(creator=foreign_user, type='T')
-
-        headers = make_authentication_headers_for_user(user)
-        post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-
-        data = {
-            'comment_notifications': True
-        }
-        url = self._get_url(post)
-        response = self.client.put(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
-                                                                      subscriber=user,
-                                                                      comment_notifications=True).exists())
-
-    def test_can_subscribe_to_comment_notifications_for_community_post_if_private_and_member(self):
-        """
-        should be able to subscribe to comment notifications for private community post if member
-        """
-        user = make_user()
-
-        foreign_user = make_user()
-        community = make_community(creator=foreign_user, type='T')
-
-        headers = make_authentication_headers_for_user(user)
-        post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-
-        foreign_user.invite_user_with_username_to_community_with_name(username=user.username,
-                                                                      community_name=community.name)
-
-        user.join_community_with_name(community_name=community.name)
-
-        data = {
-            'comment_notifications': True
-        }
-        url = self._get_url(post)
-        response = self.client.put(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-        self.assertTrue(PostNotificationsSubscription.objects.filter(post=post,
-                                                                     subscriber=user,
-                                                                     comment_notifications=True).exists())
-
-    def test_can_unsubscribe_comment_notifications_for_public_post(self):
-        """
-        should be able to unsubscribe to comment notifications for public post and return 200
-        """
-        user = make_user()
-        subscriber = make_user()
-        headers = make_authentication_headers_for_user(subscriber)
-        post = user.create_public_post(text=make_fake_post_text())
-
-        subscriber.create_post_notifications_subscription_for_post_with_id(post_id=post.id, comment_notifications=True)
-
-        data = {
-            'comment_notifications': False
-        }
-        url = self._get_url(post)
-        response = self.client.patch(url, data, **headers)
-
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-        post_notification_subscription = PostNotificationsSubscription.objects.get(post=post, subscriber=subscriber)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertFalse(post_notification_subscription.comment_notifications)
-
-    def test_cannot_unsubscribe_to_comment_notifications_for_post_if_encircled_post(self):
-        """
-        should NOT be able to unsubscribe to comment notifications for post if encircled post
-        """
-        user = make_user()
-        foreign_user = make_user()
-
-        headers = make_authentication_headers_for_user(user)
-
-        circle = make_circle(creator=foreign_user)
-
-        post = foreign_user.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
-
-        data = {
-            'comment_notifications': False
-        }
-        url = self._get_url(post)
-        response = self.client.patch(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
-                                                                      subscriber=user,
-                                                                      comment_notifications=True).exists())
-
-    def test_can_unsubscribe_to_comment_notifications_for_post_if_part_of_encircled_post(self):
-        """
-        should be able to unsubscribe to comment notifications for post if part of encircled post
-        """
-        user = make_user()
-        foreign_user = make_user()
-
-        headers = make_authentication_headers_for_user(user)
-
-        circle = make_circle(creator=foreign_user)
-
-        post = foreign_user.create_encircled_post(text=make_fake_post_text(), circles_ids=[circle.pk])
-        foreign_user.connect_with_user_with_id(user_id=user.pk, circles_ids=[circle.pk])
-        user.confirm_connection_with_user_with_id(user_id=foreign_user.pk)
-        user.create_post_notifications_subscription_for_post_with_id(post_id=post.id, comment_notifications=True)
-
-        data = {
-            'comment_notifications': False
-        }
-        url = self._get_url(post)
-        response = self.client.patch(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
-                                                                      subscriber=user,
-                                                                      comment_notifications=True).exists())
-
-    def test_can_unsubscribe_to_comment_notifications_for_community_post_if_public(self):
-        """
-        should be able to unsubscribe to comment notifications for community post if public
-        """
-        user = make_user()
-
-        foreign_user = make_user()
-        community = make_community(creator=foreign_user)
-
-        headers = make_authentication_headers_for_user(user)
-        user.join_community_with_name(community_name=community.name)
-        post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        user.create_post_notifications_subscription_for_post_with_id(post_id=post.id, comment_notifications=True)
-
-        data = {
-            'comment_notifications': False
-        }
-        url = self._get_url(post)
-        response = self.client.patch(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
-                                                                      subscriber=user,
-                                                                      comment_notifications=True).exists())
-
-    def test_cannot_unsubscribe_to_comment_notifications_for_closed_community_post_if_public(self):
-        """
-        should NOT be able to unsubscribe to comment notifications for closed community post
-        """
-        user = make_user()
-
-        foreign_user = make_user()
-        community = make_community(creator=foreign_user)
-        user.join_community_with_name(community_name=community.name)
-
-        headers = make_authentication_headers_for_user(user)
-        post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        user.create_post_notifications_subscription_for_post_with_id(post_id=post.id, comment_notifications=True)
-
-        post.is_closed = True
-        post.save()
-
-        data = {
-            'comment_notifications': False
-        }
-        url = self._get_url(post)
-        response = self.client.patch(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-        self.assertTrue(PostNotificationsSubscription.objects.filter(post=post,
-                                                                     subscriber=user,
-                                                                     comment_notifications=True).exists())
-
-    def test_can_unsubscribe_to_comment_notifications_for_closed_community_post_if_creator(self):
-        """
-        should be able to unsubscribe to comment notifications for closed post if post creator in community
-        """
-        user = make_user()
-
-        foreign_user = make_user()
-        community = make_community(creator=foreign_user)
-        user.join_community_with_name(community_name=community.name)
-
-        headers = make_authentication_headers_for_user(user)
-        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        user.create_post_notifications_subscription_for_post_with_id(post_id=post.id, comment_notifications=True)
-        post.is_closed = True
-        post.save()
-
-        data = {
-            'comment_notifications': False
-        }
-        url = self._get_url(post)
-        response = self.client.patch(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
-                                                                      subscriber=user,
-                                                                      comment_notifications=True).exists())
-
-    def test_can_unsubscribe_to_comment_notifications_for_closed_community_post_administrator(self):
-        """
-        should be able to unsubscribe to comment notifications for closed post if administrator in community
-        """
-        user = make_user()
-
-        admin = make_user()
-        community = make_community(creator=admin)
-        user.join_community_with_name(community_name=community.name)
-
-        headers = make_authentication_headers_for_user(admin)
-        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        admin.create_post_notifications_subscription_for_post_with_id(post_id=post.id, comment_notifications=True)
-        post.is_closed = True
-        post.save()
-
-        data = {
-            'comment_notifications': False
-        }
-        url = self._get_url(post)
-        response = self.client.patch(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
-                                                                      subscriber=admin,
-                                                                      comment_notifications=True).exists())
-
-    def test_can_unsubscribe_to_comment_notifications_for_closed_community_post_if_moderator(self):
-        """
-        should be able to unsubscribe to comment notifications for closed post if moderator in community
-        """
-        user = make_user()
-
-        admin = make_user()
-        moderator = make_user()
-        community = make_community(creator=admin)
-        user.join_community_with_name(community_name=community.name)
-        moderator.join_community_with_name(community_name=community.name)
-        admin.add_moderator_with_username_to_community_with_name(username=moderator.username,
-                                                                 community_name=community.name)
-
-        headers = make_authentication_headers_for_user(moderator)
-        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        moderator.create_post_notifications_subscription_for_post_with_id(post_id=post.id, comment_notifications=True)
-        post.is_closed = True
-        post.save()
-
-        data = {
-            'comment_notifications': False
-        }
-        url = self._get_url(post)
-        response = self.client.patch(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
-                                                                      subscriber=moderator,
-                                                                      comment_notifications=True).exists())
-
-    def test_cannot_unsubscribe_to_comment_notifications_for_community_post_if_private_and_not_member(self):
-        """
-        should NOT be able to unsubscribe to comment notifications for private community post if not a member
-        """
-        user = make_user()
-
-        foreign_user = make_user()
-        community = make_community(creator=foreign_user, type='T')
-
-        headers = make_authentication_headers_for_user(user)
-        post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-
-        data = {
-            'comment_notifications': False
-        }
-        url = self._get_url(post)
-        response = self.client.patch(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
-                                                                      subscriber=user,
-                                                                      comment_notifications=True).exists())
-
-    def test_can_unsubscribe_to_comment_notifications_for_community_post_if_private_and_member(self):
-        """
-        should be able to unsubscribe to comment notifications for private community post if member
-        """
-        user = make_user()
-
-        foreign_user = make_user()
-        community = make_community(creator=foreign_user, type='T')
-
-        headers = make_authentication_headers_for_user(user)
-        post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-
-        foreign_user.invite_user_with_username_to_community_with_name(username=user.username,
-                                                                      community_name=community.name)
-
-        user.join_community_with_name(community_name=community.name)
-        user.create_post_notifications_subscription_for_post_with_id(post_id=post.id, comment_notifications=True)
-
-        data = {
-            'comment_notifications': False
-        }
-        url = self._get_url(post)
-        response = self.client.patch(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-        self.assertFalse(PostNotificationsSubscription.objects.filter(post=post,
-                                                                      subscriber=user,
-                                                                      comment_notifications=True).exists())
-
-    def _get_url(self, post):
-        return reverse('post-notifications-subscription-settings', kwargs={
-            'post_uuid': post.uuid
-        })
-
-
 class MutePostAPITests(OpenbookAPITestCase):
     """
     MutePostAPI
@@ -1879,6 +1320,7 @@ class MutePostAPITests(OpenbookAPITestCase):
         user = make_user()
         headers = make_authentication_headers_for_user(user)
         post = user.create_public_post(text=make_fake_post_text())
+
         url = self._get_url(post)
 
         response = self.client.post(url, **headers)
@@ -1902,12 +1344,10 @@ class MutePostAPITests(OpenbookAPITestCase):
         response = self.client.post(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
         self.assertTrue(user.has_muted_post_with_id(post.pk))
 
-    def test_cannot_mute_foreign_post_if_public_post_and_not_subscribed(self):
-        """
-        should not be able to mute post if not receiving notifications and return 400
-        """
+    def test_can_mute_foreign_post_if_public_post(self):
         user = make_user()
         foreign_user = make_user()
 
@@ -1918,8 +1358,9 @@ class MutePostAPITests(OpenbookAPITestCase):
 
         response = self.client.post(url, **headers)
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertFalse(user.has_muted_post_with_id(post.pk))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(user.has_muted_post_with_id(post.pk))
 
     def test_cannot_mute_foreign_post_if_encircled_post(self):
         user = make_user()
@@ -1952,16 +1393,12 @@ class MutePostAPITests(OpenbookAPITestCase):
         foreign_user.connect_with_user_with_id(user_id=user.pk, circles_ids=[circle.pk])
         user.confirm_connection_with_user_with_id(user_id=foreign_user.pk)
 
-        user.create_post_notifications_subscription_for_post_with_id(
-            post_id=post.id,
-            comment_notifications=True,
-        )
-
         url = self._get_url(post)
 
         response = self.client.post(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
         self.assertTrue(user.has_muted_post_with_id(post.pk))
 
     def test_can_mute_community_post_if_public(self):
@@ -1972,16 +1409,13 @@ class MutePostAPITests(OpenbookAPITestCase):
 
         headers = make_authentication_headers_for_user(user)
         post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        user.create_post_notifications_subscription_for_post_with_id(
-            post_id=post.id,
-            comment_notifications=True,
-        )
 
         url = self._get_url(post)
 
         response = self.client.post(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
         self.assertTrue(user.has_muted_post_with_id(post.pk))
 
     def test_cannot_mute_closed_community_post(self):
@@ -2040,10 +1474,6 @@ class MutePostAPITests(OpenbookAPITestCase):
 
         headers = make_authentication_headers_for_user(admin)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        admin.create_post_notifications_subscription_for_post_with_id(
-            post_id=post.id,
-            comment_notifications=True,
-        )
         post.is_closed = True
         post.save()
 
@@ -2070,10 +1500,6 @@ class MutePostAPITests(OpenbookAPITestCase):
 
         headers = make_authentication_headers_for_user(moderator)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        moderator.create_post_notifications_subscription_for_post_with_id(
-            post_id=post.id,
-            comment_notifications=True,
-        )
         post.is_closed = True
         post.save()
 
@@ -2084,7 +1510,7 @@ class MutePostAPITests(OpenbookAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(moderator.has_muted_post_with_id(post.pk))
 
-    def test_cannot_mute_community_post_if_private_and_not_member(self):
+    def test_cant_mute_community_post_if_private_and_not_member(self):
         user = make_user()
 
         foreign_user = make_user()
@@ -2098,6 +1524,7 @@ class MutePostAPITests(OpenbookAPITestCase):
         response = self.client.post(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
         self.assertFalse(user.has_muted_post_with_id(post.pk))
 
     def test_can_mute_community_post_if_private_and_member(self):
@@ -2113,16 +1540,13 @@ class MutePostAPITests(OpenbookAPITestCase):
                                                                       community_name=community.name)
 
         user.join_community_with_name(community_name=community.name)
-        user.create_post_notifications_subscription_for_post_with_id(
-            post_id=post.id,
-            comment_notifications=True,
-        )
 
         url = self._get_url(post)
 
         response = self.client.post(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
         self.assertTrue(user.has_muted_post_with_id(post.pk))
 
     def _get_url(self, post):
@@ -2155,6 +1579,7 @@ class UnmutePostAPITests(OpenbookAPITestCase):
         response = self.client.post(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
         self.assertFalse(user.has_muted_post_with_id(post.pk))
 
     def test_cant_unmute_own_post_if_already_unmuted(self):
@@ -2185,15 +1610,12 @@ class UnmutePostAPITests(OpenbookAPITestCase):
 
         headers = make_authentication_headers_for_user(user)
         post = foreign_user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        user.create_post_notifications_subscription_for_post_with_id(
-            post_id=post.id,
-            comment_notifications=True,
-        )
         user.mute_post_with_id(post.pk)
         post.is_closed = True
         post.save()
 
         url = self._get_url(post)
+
         response = self.client.post(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -2234,10 +1656,6 @@ class UnmutePostAPITests(OpenbookAPITestCase):
 
         headers = make_authentication_headers_for_user(admin)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        admin.create_post_notifications_subscription_for_post_with_id(
-            post_id=post.id,
-            comment_notifications=True,
-        )
         admin.mute_post_with_id(post.pk)
         post.is_closed = True
         post.save()
@@ -2265,10 +1683,6 @@ class UnmutePostAPITests(OpenbookAPITestCase):
 
         headers = make_authentication_headers_for_user(moderator)
         post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
-        moderator.create_post_notifications_subscription_for_post_with_id(
-            post_id=post.id,
-            comment_notifications=True,
-        )
         moderator.mute_post_with_id(post.pk)
         post.is_closed = True
         post.save()

@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "08e9aa637a9494fc6250c92d330dff771826b4a1783a2b8f483f9d548a23ae4c"
+            "sha256": "0db9e3659f14e7c8aed38a746c746ba0aa3902d6b00947b2504b01d08bdb062d"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -80,14 +80,6 @@
                 "sha256:e96da0d330793e2cb9485e9ddfd918d456036c7149416295932478192f4436a1"
             ],
             "version": "==0.4.3"
-        },
-        "colorlog": {
-            "hashes": [
-                "sha256:30aaef5ab2a1873dec5da38fd6ba568fa761c9fa10b40241027fa3edea47f3d2",
-                "sha256:732c191ebbe9a353ec160d043d02c64ddef9028de8caae4cfa8bd49b6afed53e"
-            ],
-            "index": "pypi",
-            "version": "==4.1.0"
         },
         "colormath": {
             "hashes": [
@@ -824,14 +816,6 @@
         }
     },
     "develop": {
-        "colorlog": {
-            "hashes": [
-                "sha256:30aaef5ab2a1873dec5da38fd6ba568fa761c9fa10b40241027fa3edea47f3d2",
-                "sha256:732c191ebbe9a353ec160d043d02c64ddef9028de8caae4cfa8bd49b6afed53e"
-            ],
-            "index": "pypi",
-            "version": "==4.1.0"
-        },
         "polib": {
             "hashes": [
                 "sha256:93b730477c16380c9a96726c54016822ff81acfa553977fdd131f2b90ba858d7",

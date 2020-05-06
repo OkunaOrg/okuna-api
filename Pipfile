@@ -6,13 +6,13 @@ name = "pypi"
 [dev-packages]
 polib = "*"
 pytz = "*"
-colorlog = "*"
 
 [packages]
 django = "==2.2.12"
 python-dotenv = "*"
 djangorestframework = "*"
 sentry-sdk = "==0.10.2"
+mysqlclient = "*"
 pillow = "*"
 django-nose = "*"
 nose = "*"
@@ -55,8 +55,6 @@ shutilwhich = "*"
 halo = "*"
 watchdog = "*"
 spectra = "*"
-mysqlclient = "*"
-colorlog = "*"
 
 [pipenv]
 allow_prereleases = true

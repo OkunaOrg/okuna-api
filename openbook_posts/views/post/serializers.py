@@ -6,10 +6,10 @@ from openbook_circles.models import Circle
 from openbook_common.models import Badge, Language
 from openbook_common.serializers import CommonHashtagSerializer
 from openbook_common.serializers_fields.post import PostCreatorField, PostReactionsEmojiCountField, ReactionField, \
-    CommentsCountField, CirclesField, PostIsMutedField, IsEncircledField, CommonPostNotificationsSubscriptionField
+    CommentsCountField, CirclesField, PostIsMutedField, IsEncircledField
 from openbook_communities.models import CommunityMembership, Community
 from openbook_communities.serializers_fields import CommunityMembershipsField
-from openbook_posts.models import PostImage, Post, PostNotificationsSubscription
+from openbook_posts.models import PostImage, Post
 from openbook_posts.validators import post_uuid_exists, post_text_validators
 
 from openbook_posts.views.post_reaction.serializers import PostReactionSerializer
@@ -153,7 +153,6 @@ class GetPostPostSerializer(serializers.ModelSerializer):
     language = PostLanguageSerializer()
     is_encircled = IsEncircledField()
     hashtags = CommonHashtagSerializer(many=True)
-    post_notifications_subscription = CommonPostNotificationsSubscriptionField()
 
     class Meta:
         model = Post
@@ -179,7 +178,6 @@ class GetPostPostSerializer(serializers.ModelSerializer):
             'media_height',
             'media_width',
             'media_thumbnail',
-            'post_notifications_subscription',
         )
 
 
@@ -213,26 +211,6 @@ class ClosePostSerializer(serializers.Serializer):
         validators=[post_uuid_exists],
         required=True,
     )
-
-
-class PostNotificationsSubscriptionSettingsSerializer(serializers.Serializer):
-    post_uuid = serializers.UUIDField(
-        validators=[post_uuid_exists],
-        required=True,
-    )
-    comment_notifications = serializers.BooleanField(required=False)
-    reaction_notifications = serializers.BooleanField(required=False)
-    reply_notifications = serializers.BooleanField(required=False)
-
-
-class UpdatePostNotificationsSubscriptionSettingsSerializer(serializers.Serializer):
-    post_uuid = serializers.UUIDField(
-        validators=[post_uuid_exists],
-        required=True,
-    )
-    comment_notifications = serializers.NullBooleanField(required=False, default=None)
-    reaction_notifications = serializers.NullBooleanField(required=False, default=None)
-    reply_notifications = serializers.NullBooleanField(required=False, default=None)
 
 
 class OpenPostSerializer(serializers.Serializer):
@@ -309,31 +287,6 @@ class OpenClosePostSerializer(serializers.ModelSerializer):
             'id',
             'uuid',
             'is_closed',
-        )
-
-
-class PostNotificationsSubscriptionSettingsPostSerializer(serializers.ModelSerializer):
-    post_notifications_subscription = CommonPostNotificationsSubscriptionField()
-
-    class Meta:
-        model = Post
-        fields = (
-            'id',
-            'uuid',
-            'post_notifications_subscription'
-        )
-
-
-class PostNotificationsSubscriptionSettingsResponseSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = PostNotificationsSubscription
-        fields = (
-            'id',
-            'post',
-            'comment_notifications',
-            'reaction_notifications',
-            'reply_notifications',
         )
 
 

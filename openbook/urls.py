@@ -72,14 +72,13 @@ from openbook_moderation.views.user.views import UserModerationPenalties, UserPe
 from openbook_notifications.views import Notifications, NotificationItem, ReadNotifications, ReadNotification, \
     UnreadNotificationsCount
 from openbook_posts.views.post.views import PostItem, PostOpen, PostClose, MutePost, UnmutePost, TranslatePost, \
-    PostPreviewLinkData, SearchPostParticipants, GetPostParticipants, PublishPost, PostStatus, \
-    PostNotificationsSubscriptionSettings
+    PostPreviewLinkData, SearchPostParticipants, GetPostParticipants, PublishPost, PostStatus
 from openbook_posts.views.post_comment.post_comment_reaction.views import PostCommentReactionItem
 from openbook_posts.views.post_comment.post_comment_reactions.views import PostCommentReactions, \
     PostCommentReactionsEmojiCount
 from openbook_posts.views.post_comment.post_comment_replies.views import PostCommentReplies
 from openbook_posts.views.post_comment.views import PostCommentItem, MutePostComment, UnmutePostComment, \
-    TranslatePostComment, PostCommentNotificationsSubscriptionSettings
+    TranslatePostComment
 from openbook_posts.views.post_comments.views import PostComments, PostCommentsDisable, PostCommentsEnable
 from openbook_posts.views.post_media.views import PostMedia
 from openbook_posts.views.post_reaction.views import PostReactionItem
@@ -160,8 +159,6 @@ auth_patterns = [
 post_notifications_patterns = [
     path('mute/', MutePost.as_view(), name='mute-post'),
     path('unmute/', UnmutePost.as_view(), name='unmute-post'),
-    path('subscribe/', PostNotificationsSubscriptionSettings.as_view(),
-         name='post-notifications-subscription-settings'),
 ]
 
 post_comment_reactions_patterns = [
@@ -172,8 +169,6 @@ post_comment_reactions_patterns = [
 post_comment_notifications_patterns = [
     path('mute/', MutePostComment.as_view(), name='mute-post-comment'),
     path('unmute/', UnmutePostComment.as_view(), name='unmute-post-comment'),
-    path('subscribe/', PostCommentNotificationsSubscriptionSettings.as_view(),
-         name='post-comment-notifications-subscription-settings'),
 ]
 
 post_comment_patterns = [
