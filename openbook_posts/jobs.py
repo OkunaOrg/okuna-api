@@ -130,7 +130,7 @@ def process_activity_score_post_reaction(post_id, post_reaction_id):
 
     elif post.community is None and not PostReaction.objects.filter(pk=post_reaction_id).exists():
         # reaction was deleted
-            post.activity_score = F('activity_score') - settings.ACTIVITY_UNIQUE_REACTION_WEIGHT
+        post.activity_score = F('activity_score') - settings.ACTIVITY_UNIQUE_REACTION_WEIGHT
     else:
         # reaction was added
         post.activity_score = F('activity_score') + settings.ACTIVITY_UNIQUE_REACTION_WEIGHT
@@ -169,7 +169,6 @@ def _process_community_activity_score_comment_deleted(community,
                                                       post_comment_id,
                                                       post_commenter_id,
                                                       commenter_comments_count):
-
     default_scheduler = get_scheduler('process-activity-score')
     job_id = 'expire_community_{0}_pid_{1}_uid_{2}_cid_{3}'.format(community.pk, post_id,
                                                                    post_commenter_id, post_comment_id)
@@ -192,7 +191,7 @@ def _process_community_activity_score_comment_deleted(community,
     if community.activity_score < Decimal(0.0):
         logger.info('Community activity score for community with id {0} '
                     'went below zero while processing delete comment with id {1}'.format(
-                community.pk, post_comment_id))
+            community.pk, post_comment_id))
 
 
 def _process_community_activity_score_comment_added(community,
@@ -298,8 +297,8 @@ def _process_community_activity_score_post_added(post, total_posts_by_creator):
         post.community.activity_score = F('activity_score') + settings.ACTIVITY_COUNT_POSTS_WEIGHT
     else:
         post.community.activity_score = F('activity_score') + \
-                                    settings.ACTIVITY_UNIQUE_POST_WEIGHT + \
-                                    settings.ACTIVITY_COUNT_POSTS_WEIGHT
+                                        settings.ACTIVITY_UNIQUE_POST_WEIGHT + \
+                                        settings.ACTIVITY_COUNT_POSTS_WEIGHT
 
     post.community.save()
     if unique_post_job_id in default_scheduler:
@@ -320,7 +319,6 @@ def _process_community_activity_score_post_added(post, total_posts_by_creator):
 
 def _process_community_activity_score_post_deleted(post_id, post_creator_id,
                                                    post_community_id, total_posts_by_creator):
-
     default_scheduler = get_scheduler('process-activity-score')
     job_id = 'expire_community_{0}_pid_{1}'.format(post_community_id, post_id)
     unique_post_job_id = 'expire_community_{0}_uid_{1}_unique_post'.format(post_community_id,
@@ -545,28 +543,21 @@ def curate_trending_posts():
     TrendingPost = get_trending_post_model()
     logger.info('Processing trending posts at %s...' % timezone.now())
 
-    trending_posts_query = Q(created__gte=timezone.now() - timedelta(
-        hours=12))
+    trending_posts_query = Q(
+        created__gte=timezone.now() - timedelta(hours=6),
+        community__type=Community.COMMUNITY_TYPE_PUBLIC,
+        status=Post.STATUS_PUBLISHED,
+        is_closed=False,
+        is_deleted=False,
+        activity_score__gte=settings.MIN_ACTIVITY_SCORE_FOR_POST_TRENDING
+    ) & ~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED)
 
-    trending_posts_community_query = Q(community__isnull=False, community__type=Community.COMMUNITY_TYPE_PUBLIC,
-                                       status=Post.STATUS_PUBLISHED,
-                                       is_closed=False, is_deleted=False)
-    trending_posts_community_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
-
-    trending_posts_query.add(trending_posts_community_query, Q.AND)
-
-    trending_posts_criteria_query = Q(activity_score__gte=settings.MIN_ACTIVITY_SCORE_FOR_POST_TRENDING)
-
-    trending_posts_query.add(trending_posts_criteria_query, Q.AND)
-
-    posts_select_related = 'community'
-    posts_only = ('id', 'status', 'activity_score', 'is_deleted', 'is_closed', 'community__type')
+    posts_only = ('id', 'status', 'activity_score', 'is_deleted', 'is_closed')
 
     posts = Post.objects. \
-        select_related(posts_select_related). \
-        only(*posts_only). \
-        filter(trending_posts_query). \
-        order_by('-activity_score', '-created')[:30]
+                only(*posts_only). \
+                filter(trending_posts_query). \
+                order_by('-activity_score', '-created')[:30]
 
     trending_posts_objects = []
 

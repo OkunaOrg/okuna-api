@@ -11,7 +11,7 @@ from faker import Faker
 from rest_framework import status
 from rq import SimpleWorker
 
-from openbook_common.tests.models import OpenbookAPITestCase
+from openbook_common.tests.models import OpenbookAPITestCase, OpenbookAPITransactionTestCase
 import random
 
 import logging
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 fake = Faker()
 
 
-class PostMediaAPITests(OpenbookAPITestCase):
+class PostMediaAPITests(OpenbookAPITransactionTestCase):
     """
     PostMediaAPI
     """

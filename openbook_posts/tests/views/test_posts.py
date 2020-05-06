@@ -45,7 +45,7 @@ fake = Faker()
 # TODO A lot of setup duplication. Perhaps its a good idea to create a single factory on top of mixer or Factory boy
 
 
-class PostsAPITests(OpenbookAPITestCase):
+class PostsAPITests(OpenbookAPITransactionTestCase):
     """
     PostsAPI
     """
