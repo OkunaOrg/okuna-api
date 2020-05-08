@@ -36,7 +36,8 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_post_comment_reply_notification_model, get_moderated_object_model, get_moderation_report_model, \
     get_moderation_penalty_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
     get_post_comment_reaction_notification_model, get_top_post_model, get_top_post_community_exclusion_model, \
-    get_hashtag_model, get_profile_posts_community_exclusion_model, get_user_new_post_notification_model
+    get_hashtag_model, get_profile_posts_community_exclusion_model, get_user_new_post_notification_model, \
+    get_follow_request_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications import helpers
 from openbook_auth.checkers import *
@@ -882,6 +883,12 @@ class User(AbstractUser):
 
     def has_profile_community_posts_visible(self):
         return self.profile.community_posts_visible
+
+    def has_visibility_public(self):
+        return self.visibility == User.VISIBILITY_TYPE_PUBLIC
+
+    def has_approved_follow_request_from_user(self, user):
+        return self.received_follow_requests.filter(creator=user, approved=True).exists()
 
     def can_see_post(self, post):
         # Check if post is public
@@ -2705,13 +2712,14 @@ class User(AbstractUser):
 
         return ModeratedObject.objects.filter(query).count()
 
-    def follow_user(self, user, lists_ids=None):
-        return self.follow_user_with_id(user.pk, lists_ids)
-
     def follow_user_with_id(self, user_id, lists_ids=None):
-        check_can_follow_user_with_id(user=self, user_id=user_id)
+        user = User.objects.get(pk=user_id)
+        return self.follow_user(user, lists_ids)
 
-        if self.pk == user_id:
+    def follow_user(self, user_to_follow, lists_ids=None, is_pre_approved=False):
+        check_can_follow_user(user=self, user_to_follow=user_to_follow, is_pre_approved=is_pre_approved)
+
+        if self.pk == user_to_follow.pk:
             raise ValidationError(
                 _('A user cannot follow itself.'),
             )
@@ -2722,9 +2730,9 @@ class User(AbstractUser):
         check_follow_lists_ids(user=self, lists_ids=lists_ids)
 
         Follow = get_follow_model()
-        follow = Follow.create_follow(user_id=self.pk, followed_user_id=user_id, lists_ids=lists_ids)
-        self._create_follow_notification(followed_user_id=user_id)
-        self._send_follow_push_notification(followed_user_id=user_id)
+        follow = Follow.create_follow(user_id=self.pk, followed_user_id=user_to_follow.pk, lists_ids=lists_ids)
+        self._create_follow_notification(followed_user_id=user_to_follow.pk)
+        self._send_follow_push_notification(followed_user_id=user_to_follow.pk)
 
         return follow
 
@@ -2769,6 +2777,28 @@ class User(AbstractUser):
         follow = self.get_follow_for_user_with_id(user_id)
         follow.lists.add(list_id)
         return follow
+
+    def approve_follow_request_from_user_with_id(self, user_id):
+        user = User.objects.get(pk=user_id)
+        return self.approve_follow_request_from_user(user=user)
+
+    def approve_follow_request_from_user(self, user):
+        check_can_approve_follow_request_from_user(user=self, target_user=user)
+        user.follow_user(user=self, is_pre_approved=True)
+
+        self.delete_follow_request_from_user(user=user)
+
+    def reject_follow_request_from_user_with_id(self, user_id):
+        user = User.objects.get(pk=user_id)
+        return self.reject_follow_request_from_user(user=user)
+
+    def reject_follow_request_from_user(self, user):
+        self.delete_follow_request_from_user(user=user)
+
+    def delete_follow_request_from_user(self, user):
+        check_can_delete_follow_request_from_user(user=self, target_user=user)
+        FollowRequest = get_follow_request_model()
+        FollowRequest.objects.delete(creator=user, target_user=self)
 
     def connect_with_user_with_id(self, user_id, circles_ids=None):
         check_can_connect_with_user_with_id(user=self, user_id=user_id)

@@ -13,6 +13,10 @@ def get_follow_model():
     return apps.get_model('openbook_follows.Follow')
 
 
+def get_follow_request_model():
+    return apps.get_model('openbook_follows.FollowRequest')
+
+
 def get_post_model():
     return apps.get_model('openbook_posts.Post')
 

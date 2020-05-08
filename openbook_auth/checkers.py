@@ -134,10 +134,21 @@ def check_circle_data(user, name, color):
         check_circle_name_not_taken(user=user, circle_name=name)
 
 
-def check_can_follow_user_with_id(user, user_id):
-    check_is_not_blocked_with_user_with_id(user=user, user_id=user_id)
-    check_is_not_following_user_with_id(user=user, user_id=user_id)
+def check_can_follow_user(user, user_to_follow, is_pre_approved):
+    check_is_not_following_user_with_id(user=user, user_id=user_to_follow.pk)
+    check_is_not_blocked_with_user_with_id(user=user, user_id=user_to_follow.pk)
     check_has_not_reached_max_follows(user=user)
+
+    if not is_pre_approved:
+        check_visibility_is_public(target_user=user_to_follow)
+
+
+def check_visibility_is_public(target_user):
+    # Check wether the visibility is public
+    if not target_user.has_visibility_public():
+        raise ValidationError(
+            _('You must request to follow this user.'),
+        )
 
 
 def check_is_not_following_user_with_id(user, user_id):
