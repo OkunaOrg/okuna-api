@@ -34,7 +34,7 @@ def make_fake_post_comment_text():
     return fake.text(max_nb_chars=settings.POST_COMMENT_MAX_LENGTH)
 
 
-def make_user(username=None, invite_count=None, name=None, visibility=None):
+def make_user(username=None, invite_count=None, name=None, visibility=User.VISIBILITY_TYPE_PRIVATE):
     if username and invite_count:
         user = mixer.blend(User, username=username, invite_count=invite_count, visibility=visibility)
     elif username:
