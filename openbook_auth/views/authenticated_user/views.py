@@ -43,6 +43,7 @@ class AuthenticatedUser(APIView):
                 url=data.get('url'),
                 followers_count_visible=data.get('followers_count_visible'),
                 community_posts_visible=data.get('community_posts_visible'),
+                visibility=data.get('visibility'),
                 save=False
             )
 

@@ -66,6 +66,22 @@ class User(AbstractUser):
         _('is deleted'),
         default=False,
     )
+    VISIBILITY_TYPE_PRIVATE = 'T'
+    VISIBILITY_TYPE_PUBLIC = 'P'
+
+    VISIBILITY_TYPES = (
+        (VISIBILITY_TYPE_PUBLIC, 'Public'),
+        (VISIBILITY_TYPE_PRIVATE, 'Private'),
+    )
+
+    visibility = models.CharField(
+        editable=False,
+        blank=False,
+        null=False,
+        choices=VISIBILITY_TYPES,
+        default=VISIBILITY_TYPE_PRIVATE,
+        max_length=2
+    )
 
     username = models.CharField(
         _('username'),
@@ -485,6 +501,7 @@ class User(AbstractUser):
                url=None,
                followers_count_visible=None,
                community_posts_visible=None,
+               visibility=None,
                save=True):
 
         profile = self.profile
@@ -518,6 +535,9 @@ class User(AbstractUser):
 
         if community_posts_visible is not None:
             profile.community_posts_visible = community_posts_visible
+
+        if visibility:
+            self.visibility = visibility
 
         if save:
             profile.save()

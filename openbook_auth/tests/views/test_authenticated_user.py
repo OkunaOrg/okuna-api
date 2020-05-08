@@ -479,6 +479,56 @@ class AuthenticatedUserAPITests(OpenbookAPITestCase):
 
         self.assertEqual('https://' + unfully_qualified_url, user.profile.url)
 
+    def test_can_update_user_visibility_from_private_to_public(self):
+        """
+        should be able to update the authenticated user visibility from private to public and return 200
+        """
+
+        initial_visibility = User.VISIBILITY_TYPE_PRIVATE
+        new_visibility = User.VISIBILITY_TYPE_PUBLIC
+
+        user = make_user(visibility=initial_visibility)
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'visibility': new_visibility
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertEqual(user.visibility, new_visibility)
+
+    def test_can_update_user_visibility_from_public_to_private(self):
+        """
+        should be able to update the authenticated user visibility from public to private and return 200
+        """
+
+        initial_visibility = User.VISIBILITY_TYPE_PUBLIC
+        new_visibility = User.VISIBILITY_TYPE_PRIVATE
+
+        user = make_user(visibility=initial_visibility)
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'visibility': new_visibility
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        user.refresh_from_db()
+
+        self.assertEqual(user.visibility, new_visibility)
+
     def _get_url(self):
         return reverse('authenticated-user')
 
