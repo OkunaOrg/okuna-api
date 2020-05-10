@@ -3,7 +3,8 @@ from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
 from openbook_common.models import Emoji, Language, Badge
-from openbook_common.serializers import CommonHashtagSerializer
+from openbook_common.serializers import CommonHashtagSerializer, CommonPublicUserSerializer, \
+    CommonFollowRequestSerializer
 from openbook_common.serializers_fields.post import IsEncircledField
 from openbook_common.serializers_fields.post_comment import PostCommentIsMutedField
 from openbook_communities.models import Community, CommunityInvite
@@ -11,6 +12,8 @@ from openbook_notifications.models import Notification, PostCommentNotification,
     ConnectionConfirmedNotification, FollowNotification, CommunityInviteNotification, PostCommentReplyNotification, \
     PostCommentReactionNotification, PostCommentUserMentionNotification, PostUserMentionNotification, \
     CommunityNewPostNotification
+from openbook_notifications.models.follow_request_approved_notification import FollowRequestApprovedNotification
+from openbook_notifications.models.follow_request_notification import FollowRequestNotification
 from openbook_notifications.models.post_reaction_notification import PostReactionNotification
 from openbook_notifications.models.user_new_post_notification import UserNewPostNotification
 from openbook_notifications.serializer_fields import ParentCommentField
@@ -479,6 +482,28 @@ class FollowNotificationSerializer(serializers.ModelSerializer):
         )
 
 
+class FollowRequestNotificationSerializer(serializers.ModelSerializer):
+    follow_request = CommonFollowRequestSerializer()
+
+    class Meta:
+        model = FollowRequestNotification
+        fields = (
+            'id',
+            'follow_request'
+        )
+
+
+class FollowRequestApprovedNotificationSerializer(serializers.ModelSerializer):
+    approver = CommonPublicUserSerializer()
+
+    class Meta:
+        model = FollowRequestNotification
+        fields = (
+            'id',
+            'approver'
+        )
+
+
 class CommunityInviteCreatorProfileSerializer(serializers.ModelSerializer):
     badges = NotificationsBadgeSerializer(many=True)
 
@@ -620,6 +645,8 @@ class GetNotificationsNotificationSerializer(serializers.ModelSerializer):
         ConnectionRequestNotification: ConnectionRequestNotificationSerializer(),
         ConnectionConfirmedNotification: ConnectionConfirmedNotificationSerializer(),
         FollowNotification: FollowNotificationSerializer(),
+        FollowRequestNotification: FollowRequestNotificationSerializer(),
+        FollowRequestApprovedNotification: FollowRequestApprovedNotificationSerializer(),
         PostCommentUserMentionNotification: PostCommentUserMentionNotificationSerializer(),
         PostUserMentionNotification: PostUserMentionNotificationSerializer(),
         CommunityNewPostNotification: CommunityNewPostNotificationSerializer(),
