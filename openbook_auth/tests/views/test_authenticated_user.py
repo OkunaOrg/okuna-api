@@ -529,6 +529,32 @@ class AuthenticatedUserAPITests(OpenbookAPITestCase):
 
         self.assertEqual(user.visibility, new_visibility)
 
+    def test_can_update_user_visibility(self):
+        """
+        should be able to update the authenticated user visibility and return 200
+        """
+
+        for initial_visibility in User.VISIBILITY_TYPES:
+            for new_visibility in User.VISIBILITY_TYPES:
+                if new_visibility == initial_visibility:
+                    return
+                user = make_user(visibility=initial_visibility)
+                headers = make_authentication_headers_for_user(user)
+
+                data = {
+                    'visibility': new_visibility
+                }
+
+                url = self._get_url()
+
+                response = self.client.patch(url, data, **headers)
+
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+                user.refresh_from_db()
+
+                self.assertEqual(user.visibility, new_visibility)
+
     def _get_url(self):
         return reverse('authenticated-user')
 

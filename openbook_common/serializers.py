@@ -7,6 +7,7 @@ from openbook_common.models import Emoji, EmojiGroup, Badge, Language
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import IsFavoriteField, CommunityMembershipsField
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
+from openbook_follows.models import FollowRequest, Follow
 from openbook_hashtags.models import Hashtag
 from openbook_posts.models import PostReaction, PostImage
 
@@ -230,6 +231,66 @@ class CommonCommunityNameSerializer(serializers.Serializer):
                                            allow_blank=False,
                                            required=True,
                                            validators=[community_name_characters_validator, community_name_exists])
+
+
+class CommonBadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Badge
+        fields = (
+            'keyword',
+            'keyword_description'
+        )
+
+
+class CommonPublicUserProfileSerializer(serializers.ModelSerializer):
+    badges = CommonBadgeSerializer(many=True)
+
+    class Meta:
+        model = UserProfile
+        fields = (
+            'id',
+            'avatar',
+            'name',
+            'badges'
+        )
+
+
+class CommonPublicUserSerializer(serializers.ModelSerializer):
+    profile = CommonPublicUserProfileSerializer()
+
+    class Meta:
+        model = User
+        fields = (
+            'id',
+            'username',
+            'profile'
+        )
+
+
+class CommonFollowRequestSerializer(serializers.ModelSerializer):
+    creator = CommonPublicUserSerializer()
+    target_user = CommonPublicUserSerializer()
+
+    class Meta:
+        model = FollowRequest
+        fields = (
+            'id',
+            'creator',
+            'target_user',
+        )
+
+
+class CommonFollowSerializer(serializers.ModelSerializer):
+    followed_user = CommonPublicUserSerializer(many=False)
+
+    class Meta:
+        model = Follow
+        fields = (
+            'id',
+            'user',
+            'lists',
+            'followed_user',
+        )
 
 
 class ProxyDomainCheckSerializer(serializers.Serializer):

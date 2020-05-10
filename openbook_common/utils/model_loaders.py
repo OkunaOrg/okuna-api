@@ -157,6 +157,14 @@ def get_follow_notification_model():
     return apps.get_model('openbook_notifications.FollowNotification')
 
 
+def get_follow_request_notification_model():
+    return apps.get_model('openbook_notifications.FollowRequestNotification')
+
+
+def get_follow_request_approved_notification_model():
+    return apps.get_model('openbook_notifications.FollowRequestApprovedNotification')
+
+
 def get_connection_request_notification_model():
     return apps.get_model('openbook_notifications.ConnectionRequestNotification')
 

@@ -37,7 +37,7 @@ from openbook_common.utils.model_loaders import get_connection_model, get_circle
     get_moderation_penalty_model, get_post_comment_mute_model, get_post_comment_reaction_model, \
     get_post_comment_reaction_notification_model, get_top_post_model, get_top_post_community_exclusion_model, \
     get_hashtag_model, get_profile_posts_community_exclusion_model, get_user_new_post_notification_model, \
-    get_follow_request_model
+    get_follow_request_model, get_follow_request_notification_model, get_follow_request_approved_notification_model
 from openbook_common.validators import name_characters_validator
 from openbook_notifications import helpers
 from openbook_auth.checkers import *
@@ -69,10 +69,12 @@ class User(AbstractUser):
     )
     VISIBILITY_TYPE_PRIVATE = 'T'
     VISIBILITY_TYPE_PUBLIC = 'P'
+    VISIBILITY_TYPE_OKUNA = 'O'
 
     VISIBILITY_TYPES = (
         (VISIBILITY_TYPE_PUBLIC, 'Public'),
         (VISIBILITY_TYPE_PRIVATE, 'Private'),
+        (VISIBILITY_TYPE_OKUNA, 'Okuna'),
     )
 
     visibility = models.CharField(
@@ -80,7 +82,7 @@ class User(AbstractUser):
         blank=False,
         null=False,
         choices=VISIBILITY_TYPES,
-        default=VISIBILITY_TYPE_PRIVATE,
+        default=VISIBILITY_TYPE_OKUNA,
         max_length=2
     )
 
@@ -390,6 +392,10 @@ class User(AbstractUser):
 
     def count_following(self):
         return self.follows.count()
+
+    def has_max_number_of_following(self):
+        # This should never be > but playing it safe...
+        return self.count_following() >= settings.USER_MAX_FOLLOWS
 
     def count_connections(self):
         return self.connections.count()
@@ -802,6 +808,12 @@ class User(AbstractUser):
     def has_follow_notifications_enabled(self):
         return self.notifications_settings.follow_notifications
 
+    def has_follow_request_notifications_enabled(self):
+        return self.notifications_settings.follow_request_notifications
+
+    def has_follow_request_approved_notifications_enabled(self):
+        return self.notifications_settings.follow_request_approved_notifications
+
     def has_post_comment_mention_notifications_enabled(self):
         return self.notifications_settings.post_comment_user_mention_notifications
 
@@ -886,6 +898,9 @@ class User(AbstractUser):
 
     def has_visibility_public(self):
         return self.visibility == User.VISIBILITY_TYPE_PUBLIC
+
+    def has_visibility_private(self):
+        return self.visibility == User.VISIBILITY_TYPE_PRIVATE
 
     def has_approved_follow_request_from_user(self, user):
         return self.received_follow_requests.filter(creator=user, approved=True).exists()
@@ -2712,6 +2727,52 @@ class User(AbstractUser):
 
         return ModeratedObject.objects.filter(query).count()
 
+    def delete_sent_follow_requests(self):
+        return self.sent_follow_requests.delete()
+
+    def has_follow_request_from_user(self, user):
+        return self.received_follow_requests.filter(creator=user).exists()
+
+    def create_follow_request_for_user_with_id(self, user_id):
+        user = User.objects.get(pk=user_id)
+        return self.create_follow_request_for_user(user)
+
+    def create_follow_request_for_user(self, user):
+        check_can_create_follow_request(user=user, user_requesting_to_follow=user)
+
+        FollowRequest = get_follow_request_model()
+        follow_request = FollowRequest.create_follow_request(creator_id=self.pk, target_user_id=user.pk)
+
+        # Create request notification
+        self._create_follow_request_notification(follow_request=follow_request)
+        self._send_follow_request_push_notification(follow_request=follow_request)
+
+        return follow_request
+
+    def delete_follow_request_for_user_with_id(self, user_id):
+        user = User.objects.get(pk=user_id)
+        return self.delete_follow_request_for_user(user)
+
+    def delete_follow_request_for_user(self, user):
+        check_can_delete_follow_request_for_user(user=user, user_requesting_to_follow=user)
+
+        FollowRequest = get_follow_request_model()
+        FollowRequest.delete_follow_request(creator_id=self.pk, target_user_id=user.pk)
+
+    def approve_follow_request_from_user_with_id(self, user_id):
+        user = User.objects.get(pk=user_id)
+        return self.approve_follow_request_from_user(user=user)
+
+    def approve_follow_request_from_user(self, user):
+        check_can_approve_follow_request_from_user(user=self, target_user=user)
+        follow = user.follow_user(user=self, is_pre_approved=True)
+
+        # Create approved notification
+        self._create_follow_request_approved_notification(follow=follow)
+        self._send_follow_request_approved_push_notification(follow=follow)
+
+        self.delete_follow_request_from_user(user=user)
+
     def follow_user_with_id(self, user_id, lists_ids=None):
         user = User.objects.get(pk=user_id)
         return self.follow_user(user, lists_ids)
@@ -2733,6 +2794,10 @@ class User(AbstractUser):
         follow = Follow.create_follow(user_id=self.pk, followed_user_id=user_to_follow.pk, lists_ids=lists_ids)
         self._create_follow_notification(followed_user_id=user_to_follow.pk)
         self._send_follow_push_notification(followed_user_id=user_to_follow.pk)
+
+        if self.has_max_number_of_following():
+            # Delete all send follow requests as we cant follow anyone else
+            self.delete_sent_follow_requests()
 
         return follow
 
@@ -2777,16 +2842,6 @@ class User(AbstractUser):
         follow = self.get_follow_for_user_with_id(user_id)
         follow.lists.add(list_id)
         return follow
-
-    def approve_follow_request_from_user_with_id(self, user_id):
-        user = User.objects.get(pk=user_id)
-        return self.approve_follow_request_from_user(user=user)
-
-    def approve_follow_request_from_user(self, user):
-        check_can_approve_follow_request_from_user(user=self, target_user=user)
-        user.follow_user(user=self, is_pre_approved=True)
-
-        self.delete_follow_request_from_user(user=user)
 
     def reject_follow_request_from_user_with_id(self, user_id):
         user = User.objects.get(pk=user_id)
@@ -3428,6 +3483,23 @@ class User(AbstractUser):
         ConnectionRequestNotification.delete_connection_request_notification_for_users_with_ids(user_a_id=self.pk,
                                                                                                 user_b_id=user_id)
 
+    def _create_follow_request_notification(self, follow_request):
+        FollowRequestNotification = get_follow_request_notification_model()
+        FollowRequestNotification.create_follow_request_notification(follow_request_id=follow_request.pk,
+                                                                     owner_id=follow_request.target_user.pk)
+
+    def _send_follow_request_push_notification(self, follow_request):
+        helpers.send_follow_request_push_notification(follow_request=follow_request)
+
+    def _create_follow_request_approved_notification(self, follow):
+        FollowRequestApprovedNotification = get_follow_request_approved_notification_model()
+        FollowRequestApprovedNotification.create_follow_request_approved_notification(
+            approver_id=follow.followed_user.pk,
+            owner_id=follow.user.pk)
+
+    def _send_follow_request_approved_push_notification(self, follow):
+        helpers.send_follow_request_approved_push_notification(follow=follow)
+
     def _reset_auth_token(self):
         self.auth_token.delete()
         bootstrap_user_auth_token(user=self)
@@ -3773,6 +3845,9 @@ class UserNotificationsSettings(models.Model):
     post_comment_reply_notifications = models.BooleanField(_('post comment reply notifications'), default=True)
     post_reaction_notifications = models.BooleanField(_('post reaction notifications'), default=True)
     follow_notifications = models.BooleanField(_('follow notifications'), default=True)
+    follow_request_notifications = models.BooleanField(_('follow request notifications'), default=True)
+    follow_request_approved_notifications = models.BooleanField(_('follow request approved notifications'),
+                                                                default=True)
     connection_request_notifications = models.BooleanField(_('connection request notifications'), default=True)
     connection_confirmed_notifications = models.BooleanField(_('connection confirmed notifications'), default=True)
     community_invite_notifications = models.BooleanField(_('community invite notifications'), default=True)
@@ -3791,6 +3866,8 @@ class UserNotificationsSettings(models.Model):
                post_comment_reply_notifications=None,
                post_reaction_notifications=None,
                follow_notifications=None,
+               follow_request_notifications=None,
+               follow_request_approved_notifications=None,
                connection_request_notifications=None,
                connection_confirmed_notifications=None,
                community_invite_notifications=None,
@@ -3820,6 +3897,12 @@ class UserNotificationsSettings(models.Model):
 
         if follow_notifications is not None:
             self.follow_notifications = follow_notifications
+
+        if follow_request_notifications is not None:
+            self.follow_request_notifications = follow_request_notifications
+
+        if follow_request_approved_notifications is not None:
+            self.follow_request_approved_notifications = follow_request_approved_notifications
 
         if connection_request_notifications is not None:
             self.connection_request_notifications = connection_request_notifications

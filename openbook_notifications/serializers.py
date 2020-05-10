@@ -3,8 +3,8 @@ from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
 from openbook_common.models import Emoji, Language, Badge
-from openbook_common.serializers import CommonHashtagSerializer, CommonPublicUserSerializer, \
-    CommonFollowRequestSerializer
+from openbook_common.serializers import CommonHashtagSerializer, \
+    CommonFollowRequestSerializer, CommonFollowSerializer
 from openbook_common.serializers_fields.post import IsEncircledField
 from openbook_common.serializers_fields.post_comment import PostCommentIsMutedField
 from openbook_communities.models import Community, CommunityInvite
@@ -494,13 +494,13 @@ class FollowRequestNotificationSerializer(serializers.ModelSerializer):
 
 
 class FollowRequestApprovedNotificationSerializer(serializers.ModelSerializer):
-    approver = CommonPublicUserSerializer()
+    follow = CommonFollowSerializer()
 
     class Meta:
-        model = FollowRequestNotification
+        model = FollowRequestApprovedNotification
         fields = (
             'id',
-            'approver'
+            'follow'
         )
 
 
