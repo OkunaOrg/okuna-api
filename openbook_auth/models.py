@@ -902,6 +902,9 @@ class User(AbstractUser):
     def has_visibility_private(self):
         return self.visibility == User.VISIBILITY_TYPE_PRIVATE
 
+    def has_visibility_okuna(self):
+        return self.visibility == User.VISIBILITY_TYPE_OKUNA
+
     def has_approved_follow_request_from_user(self, user):
         return self.received_follow_requests.filter(creator=user, approved=True).exists()
 

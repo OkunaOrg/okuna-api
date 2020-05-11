@@ -168,14 +168,13 @@ def check_can_follow_user(user, user_to_follow, is_pre_approved):
     check_has_not_reached_max_follows(user=user)
 
     if not is_pre_approved:
-        check_user_visibility_is_public(target_user=user_to_follow)
+        check_user_visibility_is_not_private(target_user=user_to_follow)
 
 
-def check_user_visibility_is_public(target_user):
-    # Check wether the visibility is public
-    if not target_user.has_visibility_public():
+def check_user_visibility_is_not_private(target_user):
+    if target_user.has_visibility_private():
         raise ValidationError(
-            _('This user is not public.'),
+            _('This user is private.'),
         )
 
 
