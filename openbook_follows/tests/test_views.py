@@ -19,46 +19,6 @@ logger = logging.getLogger(__name__)
 
 fake = Faker()
 
-
-class FollowsAPITests(OpenbookAPITestCase):
-    """
-    FollowsAPI
-    """
-
-    def test_retrieve_own_follows(self):
-        """
-        should be able to retrieve own follows and return 200
-        """
-        user = make_user()
-        auth_token = user.auth_token.key
-        headers = {'HTTP_AUTHORIZATION': 'Token %s' % auth_token}
-
-        list = mixer.blend(List, creator=user)
-
-        users_to_follow = mixer.cycle(5).blend(User)
-        user_to_follow_ids = [user_to_follow.pk for user_to_follow in users_to_follow]
-
-        for user_to_follow in users_to_follow:
-            user.follow_user(user_to_follow, lists_ids=[list.pk])
-
-        url = self._get_url()
-        response = self.client.get(url, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        response_follows = json.loads(response.content)
-
-        self.assertEqual(len(response_follows), len(users_to_follow))
-
-        for response_follow in response_follows:
-            followed_user = response_follow.get('followed_user')
-            followed_user_id = followed_user.get('id')
-            self.assertIn(followed_user_id, user_to_follow_ids)
-
-    def _get_url(self):
-        return reverse('follows')
-
-
 class FollowAPITests(OpenbookAPITestCase):
     def test_follow(self):
         """

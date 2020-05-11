@@ -15,17 +15,6 @@ from openbook_follows.serializers import FollowUserRequestSerializer, FollowSeri
     DeleteFollowSerializer, UpdateFollowSerializer, FollowUserSerializer, RequestToFollowUserSerializer, \
     ApproveUserFollowRequestSerializer, RejectUserFollowRequestSerializer, ReceivedFollowRequestsRequestSerializer
 
-
-class Follows(APIView):
-    permission_classes = (IsAuthenticated,)
-
-    def get(self, request):
-        user = request.user
-        response_serializer = FollowSerializer(user.follows, many=True, context={'request': request})
-
-        return Response(response_serializer.data, status=status.HTTP_200_OK)
-
-
 class ReceivedFollowRequests(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
 

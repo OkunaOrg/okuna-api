@@ -58,7 +58,7 @@ from openbook_hashtags.views.hashtag.views import HashtagItem, HashtagPosts
 from openbook_hashtags.views.hashtags.views import SearchHashtags
 from openbook_invitations.views import UserInvite, UserInvites, SearchUserInvites, SendUserInviteEmail
 from openbook_devices.views import Devices, DeviceItem
-from openbook_follows.views import Follows, FollowUser, UnfollowUser, UpdateFollowUser
+from openbook_follows.views import FollowUser, UnfollowUser, UpdateFollowUser
 from openbook_lists.views import Lists, ListItem, ListNameCheck
 from openbook_moderation.views.checks import IsNotSuspendedCheck
 from openbook_moderation.views.moderated_object.views import ModeratedObjectItem, ModeratedObjectLogs, \
@@ -346,7 +346,6 @@ lists_patterns = [
 ]
 
 follows_patterns = [
-    path('', Follows.as_view(), name='follows'),
     path('follow/', FollowUser.as_view(), name='follow-user'),
     path('unfollow/', UnfollowUser.as_view(), name='unfollow-user'),
     path('update/', UpdateFollowUser.as_view(), name='update-follow'),
