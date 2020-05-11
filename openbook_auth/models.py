@@ -544,6 +544,10 @@ class User(AbstractUser):
             profile.community_posts_visible = community_posts_visible
 
         if visibility:
+            if self.visibility == User.VISIBILITY_TYPE_PRIVATE and visibility != User.VISIBILITY_TYPE_PRIVATE:
+                # We are changing from private to public/okuna visibility which does not use follow requests
+                self.delete_received_follow_requests()
+
             self.visibility = visibility
 
         if save:
@@ -1978,6 +1982,9 @@ class User(AbstractUser):
 
         return profile_posts_community_exclusions
 
+    def get_received_follow_requests(self, max_id=None):
+        return self.received_follow_requests.filter(id__lt=max_id)
+
     def get_followers(self, max_id=None):
         followers_query = self._make_followers_query()
 
@@ -2730,14 +2737,17 @@ class User(AbstractUser):
 
         return ModeratedObject.objects.filter(query).count()
 
+    def delete_received_follow_requests(self):
+        return self.received_follow_requests.delete()
+
     def delete_sent_follow_requests(self):
         return self.sent_follow_requests.delete()
 
     def has_follow_request_from_user(self, user):
         return self.received_follow_requests.filter(creator=user).exists()
 
-    def create_follow_request_for_user_with_id(self, user_id):
-        user = User.objects.get(pk=user_id)
+    def create_follow_request_for_user_with_username(self, user_username):
+        user = User.objects.get(username=user_username)
         return self.create_follow_request_for_user(user)
 
     def create_follow_request_for_user(self, user):
@@ -2762,8 +2772,8 @@ class User(AbstractUser):
         FollowRequest = get_follow_request_model()
         FollowRequest.delete_follow_request(creator_id=self.pk, target_user_id=user.pk)
 
-    def approve_follow_request_from_user_with_id(self, user_id):
-        user = User.objects.get(pk=user_id)
+    def approve_follow_request_from_user_with_username(self, user_username):
+        user = User.objects.get(username=user_username)
         return self.approve_follow_request_from_user(user=user)
 
     def approve_follow_request_from_user(self, user):
@@ -2846,8 +2856,8 @@ class User(AbstractUser):
         follow.lists.add(list_id)
         return follow
 
-    def reject_follow_request_from_user_with_id(self, user_id):
-        user = User.objects.get(pk=user_id)
+    def reject_follow_request_from_user_with_username(self, user_username):
+        user = User.objects.get(username=user_username)
         return self.reject_follow_request_from_user(user=user)
 
     def reject_follow_request_from_user(self, user):
