@@ -11,6 +11,42 @@ from openbook_lists.models import List
 from openbook_lists.validators import list_id_exists
 
 
+class RequestToFollowUserSerializer(serializers.Serializer):
+    username = serializers.CharField(
+        max_length=settings.USERNAME_MAX_LENGTH,
+        allow_blank=False,
+        validators=[
+            username_characters_validator,
+            user_username_exists
+        ],
+        required=False
+    )
+
+
+class ApproveUserFollowRequestSerializer(serializers.Serializer):
+    username = serializers.CharField(
+        max_length=settings.USERNAME_MAX_LENGTH,
+        allow_blank=False,
+        validators=[
+            username_characters_validator,
+            user_username_exists
+        ],
+        required=False
+    )
+
+
+class RejectUserFollowRequestSerializer(serializers.Serializer):
+    username = serializers.CharField(
+        max_length=settings.USERNAME_MAX_LENGTH,
+        allow_blank=False,
+        validators=[
+            username_characters_validator,
+            user_username_exists
+        ],
+        required=False
+    )
+
+
 class FollowUserRequestSerializer(serializers.Serializer):
     username = serializers.CharField(
         max_length=settings.USERNAME_MAX_LENGTH,
@@ -82,6 +118,16 @@ class FollowSerializer(serializers.ModelSerializer):
             'lists',
             'followed_user',
         )
+
+
+class ReceivedFollowRequestsRequestSerializer(serializers.ModelSerializer):
+    max_id = serializers.IntegerField(
+        required=False,
+    )
+    count = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
 
 
 class DeleteFollowSerializer(serializers.Serializer):

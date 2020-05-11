@@ -1,15 +1,19 @@
 # Create your views here.
 from django.contrib.auth import get_user_model
-from django.db import IntegrityError, transaction
+from django.db import transaction
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from django.utils.translation import gettext as _
+from openbook_common.responses import ApiMessageResponse
+from openbook_common.serializers import CommonFollowRequestSerializer
 from openbook_moderation.permissions import IsNotSuspended
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_follows.serializers import FollowUserRequestSerializer, FollowSerializer, \
-    DeleteFollowSerializer, UpdateFollowSerializer, FollowUserSerializer
+    DeleteFollowSerializer, UpdateFollowSerializer, FollowUserSerializer, RequestToFollowUserSerializer, \
+    ApproveUserFollowRequestSerializer, RejectUserFollowRequestSerializer, ReceivedFollowRequestsRequestSerializer
 
 
 class Follows(APIView):
@@ -20,6 +24,87 @@ class Follows(APIView):
         response_serializer = FollowSerializer(user.follows, many=True, context={'request': request})
 
         return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class ReceivedFollowRequests(APIView):
+    permission_classes = (IsAuthenticated, IsNotSuspended)
+
+    def get(self, request):
+        query_params = request.query_params.dict()
+        user = request.user
+
+        serializer = ReceivedFollowRequestsRequestSerializer(data=query_params)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        max_id = data.get('max_id')
+        count = data.get('count', 10)
+
+        received_follow_requests = user.get_received_follow_requests(max_id=max_id).order_by(
+            '-id')[:count]
+
+        response_serializer = CommonFollowRequestSerializer(received_follow_requests, many=True,
+                                                            context={'request': request})
+
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
+
+
+class RequestToFollowUser(APIView):
+    permission_classes = (IsAuthenticated, IsNotSuspended)
+
+    def post(self, request):
+        serializer = RequestToFollowUserSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user_to_request_to_follow_username = data.get('username')
+
+        user = request.user
+
+        with transaction.atomic():
+            follow_request = user.create_follow_request_for_user_with_username(user_to_request_to_follow_username)
+
+        response_serializer = CommonFollowRequestSerializer(follow_request, context={"request": request})
+
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ApproveUserFollowRequest(APIView):
+    permission_classes = (IsAuthenticated, IsNotSuspended)
+
+    def post(self, request):
+        serializer = ApproveUserFollowRequestSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user_to_approve_follow_request_from_username = data.get('username')
+
+        user = request.user
+
+        with transaction.atomic():
+            user.approve_follow_request_from_user_with_username(
+                user_username=user_to_approve_follow_request_from_username)
+
+        return ApiMessageResponse(_('Follow request approved.'), status=status.HTTP_200_OK)
+
+
+class RejectUserFollowRequest(APIView):
+    permission_classes = (IsAuthenticated, IsNotSuspended)
+
+    def post(self, request):
+        serializer = RejectUserFollowRequestSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user_to_reject_follow_request_from_username = data.get('username')
+
+        user = request.user
+
+        with transaction.atomic():
+            user.reject_follow_request_from_user_with_username(
+                user_username=user_to_reject_follow_request_from_username)
+
+        return ApiMessageResponse(_('Follow request rejected.'), status=status.HTTP_200_OK)
 
 
 class FollowUser(APIView):
