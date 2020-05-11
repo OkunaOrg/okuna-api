@@ -2738,10 +2738,10 @@ class User(AbstractUser):
         return ModeratedObject.objects.filter(query).count()
 
     def delete_received_follow_requests(self):
-        return self.received_follow_requests.delete()
+        return self.received_follow_requests.all().delete()
 
     def delete_sent_follow_requests(self):
-        return self.sent_follow_requests.delete()
+        return self.sent_follow_requests.all().delete()
 
     def has_follow_request_from_user(self, user):
         return self.received_follow_requests.filter(creator=user).exists()
