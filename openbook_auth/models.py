@@ -2790,10 +2790,10 @@ class User(AbstractUser):
         user = User.objects.get(pk=user_id)
         return self.follow_user(user, lists_ids)
 
-    def follow_user(self, user_to_follow, lists_ids=None, is_pre_approved=False):
-        check_can_follow_user(user=self, user_to_follow=user_to_follow, is_pre_approved=is_pre_approved)
+    def follow_user(self, user, lists_ids=None, is_pre_approved=False):
+        check_can_follow_user(user=self, user_to_follow=user, is_pre_approved=is_pre_approved)
 
-        if self.pk == user_to_follow.pk:
+        if self.pk == user.pk:
             raise ValidationError(
                 _('A user cannot follow itself.'),
             )
@@ -2804,9 +2804,9 @@ class User(AbstractUser):
         check_follow_lists_ids(user=self, lists_ids=lists_ids)
 
         Follow = get_follow_model()
-        follow = Follow.create_follow(user_id=self.pk, followed_user_id=user_to_follow.pk, lists_ids=lists_ids)
-        self._create_follow_notification(followed_user_id=user_to_follow.pk)
-        self._send_follow_push_notification(followed_user_id=user_to_follow.pk)
+        follow = Follow.create_follow(user_id=self.pk, followed_user_id=user.pk, lists_ids=lists_ids)
+        self._create_follow_notification(followed_user_id=user.pk)
+        self._send_follow_push_notification(followed_user_id=user.pk)
 
         if self.has_max_number_of_following():
             # Delete all send follow requests as we cant follow anyone else
