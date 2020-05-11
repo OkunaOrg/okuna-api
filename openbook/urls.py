@@ -58,7 +58,8 @@ from openbook_hashtags.views.hashtag.views import HashtagItem, HashtagPosts
 from openbook_hashtags.views.hashtags.views import SearchHashtags
 from openbook_invitations.views import UserInvite, UserInvites, SearchUserInvites, SendUserInviteEmail
 from openbook_devices.views import Devices, DeviceItem
-from openbook_follows.views import FollowUser, UnfollowUser, UpdateFollowUser
+from openbook_follows.views import FollowUser, UnfollowUser, UpdateFollowUser, RequestToFollowUser, \
+    ApproveUserFollowRequest, RejectUserFollowRequest, ReceivedFollowRequests
 from openbook_lists.views import Lists, ListItem, ListNameCheck
 from openbook_moderation.views.checks import IsNotSuspendedCheck
 from openbook_moderation.views.moderated_object.views import ModeratedObjectItem, ModeratedObjectLogs, \
@@ -345,7 +346,15 @@ lists_patterns = [
     path('<int:list_id>/', ListItem.as_view(), name='list'),
 ]
 
+follow_requests_patterns = [
+    path('/', RequestToFollowUser.as_view(), name='request-to-follow-user'),
+    path('approve/', ApproveUserFollowRequest.as_view(), name='approve-user-follow-request'),
+    path('reject/', RejectUserFollowRequest.as_view(), name='reject-user-follow-request'),
+    path('received/', ReceivedFollowRequests.as_view(), name='received-follow-requests'),
+]
+
 follows_patterns = [
+    path('requests/', include(follow_requests_patterns)),
     path('follow/', FollowUser.as_view(), name='follow-user'),
     path('unfollow/', UnfollowUser.as_view(), name='unfollow-user'),
     path('update/', UpdateFollowUser.as_view(), name='update-follow'),
