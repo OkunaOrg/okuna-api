@@ -36,10 +36,10 @@ class FollowRequest(models.Model):
 
     @classmethod
     def create_follow_request(cls, creator_id, target_user_id):
-        follow = Follow.objects.create(creator_id=creator_id, target_user_id=target_user_id)
+        follow_request = FollowRequest.objects.create(creator_id=creator_id, target_user_id=target_user_id)
 
-        return follow
+        return follow_request
 
     @classmethod
     def delete_follow_request(cls, creator_id, target_user_id):
-        return Follow.objects.filter(creator_id=creator_id, target_user_id=target_user_id).delete()
+        return FollowRequest.objects.filter(creator_id=creator_id, target_user_id=target_user_id).delete()

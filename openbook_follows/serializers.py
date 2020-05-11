@@ -120,7 +120,7 @@ class FollowSerializer(serializers.ModelSerializer):
         )
 
 
-class ReceivedFollowRequestsRequestSerializer(serializers.ModelSerializer):
+class ReceivedFollowRequestsRequestSerializer(serializers.Serializer):
     max_id = serializers.IntegerField(
         required=False,
     )

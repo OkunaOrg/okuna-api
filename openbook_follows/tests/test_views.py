@@ -10,7 +10,7 @@ from faker import Faker
 import logging
 import json
 
-from openbook_common.tests.helpers import make_user
+from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user
 from openbook_lists.models import List
 from openbook_follows.models import Follow
 from openbook_notifications.models import FollowNotification, Notification
@@ -18,6 +18,40 @@ from openbook_notifications.models import FollowNotification, Notification
 logger = logging.getLogger(__name__)
 
 fake = Faker()
+
+
+class ReceivedFollowRequestsAPITests(OpenbookAPITestCase):
+    def test_can_retrieve_received_own_follow_requests(self):
+        """
+        should be able to retrieve own follow requests and return 200
+        """
+        user = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+        headers = make_authentication_headers_for_user(user)
+
+        number_of_own_follow_requests = 3
+        follow_requests_ids = []
+
+        for i in range(0, number_of_own_follow_requests):
+            requesting_user = make_user()
+            follow_request = requesting_user.create_follow_request_for_user(user=user)
+            follow_requests_ids.append(follow_request.pk)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_follow_requests = json.loads(response.content)
+
+        self.assertEqual(len(response_follow_requests), number_of_own_follow_requests)
+
+        for response_follow_request in response_follow_requests:
+            response_follow_request_id = response_follow_request.get('id')
+            self.assertIn(response_follow_request_id, follow_requests_ids)
+
+    def _get_url(self):
+        return reverse('received-follow-requests')
+
 
 class FollowAPITests(OpenbookAPITestCase):
     def test_follow(self):

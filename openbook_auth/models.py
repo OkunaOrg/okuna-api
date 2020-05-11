@@ -1983,7 +1983,11 @@ class User(AbstractUser):
         return profile_posts_community_exclusions
 
     def get_received_follow_requests(self, max_id=None):
-        return self.received_follow_requests.filter(id__lt=max_id)
+
+        if max_id:
+            return self.received_follow_requests.filter(id__lt=max_id)
+
+        return self.received_follow_requests.all()
 
     def get_followers(self, max_id=None):
         followers_query = self._make_followers_query()
