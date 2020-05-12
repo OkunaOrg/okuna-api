@@ -2755,7 +2755,7 @@ class User(AbstractUser):
         return self.create_follow_request_for_user(user)
 
     def create_follow_request_for_user(self, user):
-        check_can_create_follow_request(user=user, user_requesting_to_follow=user)
+        check_can_create_follow_request(user=self, user_requesting_to_follow=user)
 
         FollowRequest = get_follow_request_model()
         follow_request = FollowRequest.create_follow_request(creator_id=self.pk, target_user_id=user.pk)
@@ -2796,11 +2796,6 @@ class User(AbstractUser):
 
     def follow_user(self, user, lists_ids=None, is_pre_approved=False):
         check_can_follow_user(user=self, user_to_follow=user, is_pre_approved=is_pre_approved)
-
-        if self.pk == user.pk:
-            raise ValidationError(
-                _('A user cannot follow itself.'),
-            )
 
         if not lists_ids:
             lists_ids = self._get_default_follow_lists()

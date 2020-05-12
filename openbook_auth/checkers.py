@@ -136,7 +136,7 @@ def check_circle_data(user, name, color):
 
 def check_can_create_follow_request(user, user_requesting_to_follow):
     check_can_follow_user(user=user, user_to_follow=user_requesting_to_follow, is_pre_approved=True)
-    check_has_no_follow_request_from_user(user=user_requesting_to_follow, target_user=user)
+    check_target_user_has_no_follow_request_from_user(user=user, target_user=user_requesting_to_follow)
     check_user_visibility_is_private(target_user=user_requesting_to_follow)
 
 
@@ -157,12 +157,17 @@ def check_has_follow_request_from_user(user, target_user):
         raise ValidationError('Follow request does not exist.')
 
 
-def check_has_no_follow_request_from_user(user, target_user):
-    if user.has_follow_request_from_user(target_user):
+def check_target_user_has_no_follow_request_from_user(user, target_user):
+    if target_user.has_follow_request_from_user(user):
         raise ValidationError('Follow request already exists.')
 
 
 def check_can_follow_user(user, user_to_follow, is_pre_approved):
+    if user.pk == user_to_follow.pk:
+        raise ValidationError(
+            _('You cannot follow yourself.'),
+        )
+
     check_is_not_following_user_with_id(user=user, user_id=user_to_follow.pk)
     check_is_not_blocked_with_user_with_id(user=user, user_id=user_to_follow.pk)
     check_has_not_reached_max_follows(user=user)

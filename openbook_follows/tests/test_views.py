@@ -121,6 +121,47 @@ class RequestToFollowUserAPITests(OpenbookAPITestCase):
 
         self.assertTrue(user_to_request_to_follow.has_follow_request_from_user(user=user))
 
+    def test_cannot_request_to_follow_oneself(self):
+        """
+        should not be able to request to follow oneself user and return 500
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        data = {
+            'username': user.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(user.has_follow_request_from_user(user=user))
+
+    def test_cannot_request_to_follow_private_user_more_than_once(self):
+        """
+        should not be able to request to follow a private user more than once and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user_to_request_to_follow = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+        user.create_follow_request_for_user(user=user_to_request_to_follow)
+
+        data = {
+            'username': user_to_request_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertEqual(FollowRequest.objects.filter(creator=user, target_user=user_to_request_to_follow).count(), 1)
+
     def test_cannot_request_to_follow_user_if_not_private(self):
         """
         should not be able to request to follow a non-private user and return 400
@@ -338,6 +379,150 @@ class ApproveUserFollowRequestAPITests(OpenbookAPITestCase):
 
     def _get_url(self):
         return reverse('approve-user-follow-request')
+
+
+class RejectUserFollowRequestAPITests(OpenbookAPITestCase):
+    def test_rejecting_a_follow_request_does_not_follow_the_rejecting_user(self):
+        """
+        should be able to reject a follow request and automatically follow the rejecting user and return 200
+        """
+        user = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+        headers = make_authentication_headers_for_user(user)
+
+        user_requesting_to_follow = make_user()
+        user_requesting_to_follow.create_follow_request_for_user(user=user)
+
+        data = {
+            'username': user_requesting_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(user_requesting_to_follow.is_following_user(user=user))
+
+    def test_rejecting_a_follow_request_deletes_the_follow_request(self):
+        """
+        when rejecting a follow request it should delete the follow request
+        """
+        user = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+        headers = make_authentication_headers_for_user(user)
+
+        user_requesting_to_follow = make_user()
+        user_requesting_to_follow.create_follow_request_for_user(user=user)
+
+        data = {
+            'username': user_requesting_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(user.has_follow_request_from_user(user=user_requesting_to_follow))
+
+    def test_rejecting_a_follow_request_deletes_the_follow_request_database_notification(self):
+        """
+        when rejecting a follow request it should delete the follow request database notification
+        """
+        user = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+        headers = make_authentication_headers_for_user(user)
+
+        user_requesting_to_follow = make_user()
+        user_requesting_to_follow.create_follow_request_for_user(user=user)
+
+        data = {
+            'username': user_requesting_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(FollowRequestNotification.objects.filter(
+            notification__owner=user,
+            follow_request__creator=user_requesting_to_follow).exists())
+
+    def test_rejecting_a_follow_request_does_not_create_database_notification(self):
+        """
+        should not create a database notification when rejecting a follow request
+        """
+        user = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+        headers = make_authentication_headers_for_user(user)
+
+        user_requesting_to_follow = make_user()
+        user_requesting_to_follow.create_follow_request_for_user(user=user)
+
+        data = {
+            'username': user_requesting_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(FollowRequestApprovedNotification.objects.filter(notification__owner=user_requesting_to_follow,
+                                                                          follow__followed_user=user).exists())
+
+    @mock.patch('openbook_notifications.helpers.send_follow_request_approved_push_notification')
+    def test_rejecting_a_follow_request_does_not_create_push_notification(self,
+                                                                          send_follow_request_approved_push_notification):
+        """
+        should create a push notification when rejecting a follow request
+        """
+        user = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+        headers = make_authentication_headers_for_user(user)
+
+        user_requesting_to_follow = make_user()
+        user_requesting_to_follow.create_follow_request_for_user(user=user)
+
+        data = {
+            'username': user_requesting_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        follow = Follow.objects.get(followed_user=user, user=user_requesting_to_follow)
+
+        send_follow_request_approved_push_notification.assert_not_called(
+            follow=follow)
+
+    def test_cant_reject_non_existing_follow_request(self):
+        """
+        should not be able to reject a nonexisting request and return 400
+        """
+        user = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+        headers = make_authentication_headers_for_user(user)
+
+        user_requesting_to_follow = make_user()
+
+        data = {
+            'username': user_requesting_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(user_requesting_to_follow.is_following_user(user=user))
+
+    def _get_url(self):
+        return reverse('reject-user-follow-request')
 
 
 class FollowAPITests(OpenbookAPITestCase):
