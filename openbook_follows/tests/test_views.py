@@ -49,6 +49,49 @@ class ReceivedFollowRequestsAPITests(OpenbookAPITestCase):
             response_follow_request_id = response_follow_request.get('id')
             self.assertIn(response_follow_request_id, follow_requests_ids)
 
+    def test_can_retrieve_max_10_received_own_follow_requests(self):
+        """
+        should be able to retrieve a maximum of 10 own follow requests at a time and return 200
+        """
+        user = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+        headers = make_authentication_headers_for_user(user)
+
+        max_number_of_own_follow_requests = 10
+
+        for i in range(0, max_number_of_own_follow_requests + 1):
+            requesting_user = make_user()
+            requesting_user.create_follow_request_for_user(user=user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_follow_requests = json.loads(response.content)
+
+        self.assertEqual(len(response_follow_requests), max_number_of_own_follow_requests)
+
+    def test_cannot_retrieve_received_foreign_follow_requests(self):
+        """
+        should not be able to retrieve foreign follow requests and return 200
+        """
+        user = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+        foreign_user = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+
+        headers = make_authentication_headers_for_user(user)
+
+        requesting_user = make_user()
+        requesting_user.create_follow_request_for_user(user=foreign_user)
+
+        url = self._get_url()
+
+        response = self.client.get(url, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response_follow_requests = json.loads(response.content)
+
+        self.assertEqual(len(response_follow_requests), 0)
+
     def _get_url(self):
         return reverse('received-follow-requests')
 
