@@ -61,6 +61,8 @@ class AuthenticatedUserNotificationsSettingsSerializer(serializers.ModelSerializ
             'post_comment_notifications',
             'post_reaction_notifications',
             'follow_notifications',
+            'follow_request_notifications',
+            'follow_request_approved_notifications',
             'connection_request_notifications',
             'connection_confirmed_notifications',
             'community_invite_notifications',
@@ -77,6 +79,8 @@ class UpdateAuthenticatedUserNotificationsSettingsSerializer(serializers.Seriali
     post_comment_notifications = serializers.BooleanField(required=False)
     post_reaction_notifications = serializers.BooleanField(required=False)
     follow_notifications = serializers.BooleanField(required=False)
+    follow_request_notifications = serializers.BooleanField(required=False)
+    follow_request_approved_notifications = serializers.BooleanField(required=False)
     connection_request_notifications = serializers.BooleanField(required=False)
     connection_confirmed_notifications = serializers.BooleanField(required=False)
     community_invite_notifications = serializers.BooleanField(required=False)

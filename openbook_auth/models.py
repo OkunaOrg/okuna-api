@@ -555,7 +555,10 @@ class User(AbstractUser):
             self.save()
 
     def update_notifications_settings(self, post_comment_notifications=None, post_reaction_notifications=None,
-                                      follow_notifications=None, connection_request_notifications=None,
+                                      follow_notifications=None,
+                                      follow_request_notifications=None,
+                                      follow_request_approved_notifications=None,
+                                      connection_request_notifications=None,
                                       connection_confirmed_notifications=None,
                                       community_invite_notifications=None,
                                       community_new_post_notifications=None,
@@ -572,6 +575,8 @@ class User(AbstractUser):
             post_comment_notifications=post_comment_notifications,
             post_reaction_notifications=post_reaction_notifications,
             follow_notifications=follow_notifications,
+            follow_request_notifications=follow_request_notifications,
+            follow_request_approved_notifications=follow_request_approved_notifications,
             connection_request_notifications=connection_request_notifications,
             connection_confirmed_notifications=connection_confirmed_notifications,
             community_invite_notifications=community_invite_notifications,

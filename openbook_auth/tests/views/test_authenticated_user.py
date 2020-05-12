@@ -479,56 +479,6 @@ class AuthenticatedUserAPITests(OpenbookAPITestCase):
 
         self.assertEqual('https://' + unfully_qualified_url, user.profile.url)
 
-    def test_can_update_user_visibility_from_private_to_public(self):
-        """
-        should be able to update the authenticated user visibility from private to public and return 200
-        """
-
-        initial_visibility = User.VISIBILITY_TYPE_PRIVATE
-        new_visibility = User.VISIBILITY_TYPE_PUBLIC
-
-        user = make_user(visibility=initial_visibility)
-        headers = make_authentication_headers_for_user(user)
-
-        data = {
-            'visibility': new_visibility
-        }
-
-        url = self._get_url()
-
-        response = self.client.patch(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        user.refresh_from_db()
-
-        self.assertEqual(user.visibility, new_visibility)
-
-    def test_can_update_user_visibility_from_public_to_private(self):
-        """
-        should be able to update the authenticated user visibility from public to private and return 200
-        """
-
-        initial_visibility = User.VISIBILITY_TYPE_PUBLIC
-        new_visibility = User.VISIBILITY_TYPE_PRIVATE
-
-        user = make_user(visibility=initial_visibility)
-        headers = make_authentication_headers_for_user(user)
-
-        data = {
-            'visibility': new_visibility
-        }
-
-        url = self._get_url()
-
-        response = self.client.patch(url, data, **headers)
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        user.refresh_from_db()
-
-        self.assertEqual(user.visibility, new_visibility)
-
     def test_can_update_user_visibility(self):
         """
         should be able to update the authenticated user visibility and return 200
@@ -554,6 +504,31 @@ class AuthenticatedUserAPITests(OpenbookAPITestCase):
                 user.refresh_from_db()
 
                 self.assertEqual(user.visibility, new_visibility)
+
+    def test_when_updating_visibility_to_public_existing_follow_requests_get_deleted(self):
+        """
+        when updating the visibility to public, existing follow requests should be deleted
+        """
+        initial_visibility = User.VISIBILITY_TYPE_PRIVATE
+        new_visibility = User.VISIBILITY_TYPE_PUBLIC
+
+        user = make_user(visibility=initial_visibility)
+        headers = make_authentication_headers_for_user(user)
+
+        user_requesting_to_follow = make_user()
+        user_requesting_to_follow.create_follow_request_for_user(user=user)
+
+        data = {
+            'visibility': new_visibility
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(user.has_follow_request_from_user(user_requesting_to_follow))
 
     def _get_url(self):
         return reverse('authenticated-user')
@@ -668,6 +643,8 @@ class AuthenticatedUserNotificationsSettingsTests(OpenbookAPITestCase):
         notifications_settings.post_comment_notifications = fake.boolean()
         notifications_settings.post_reaction_notifications = fake.boolean()
         notifications_settings.follow_notifications = fake.boolean()
+        notifications_settings.follow_request_notifications = fake.boolean()
+        notifications_settings.follow_request_approved_notifications = fake.boolean()
         notifications_settings.connection_request_notifications = fake.boolean()
         notifications_settings.connection_confirmed_notifications = fake.boolean()
         notifications_settings.community_invite_notifications = fake.boolean()
@@ -685,6 +662,8 @@ class AuthenticatedUserNotificationsSettingsTests(OpenbookAPITestCase):
         new_post_comment_notifications = not notifications_settings.post_comment_notifications
         new_post_reaction_notifications = not notifications_settings.post_reaction_notifications
         new_follow_notifications = not notifications_settings.follow_notifications
+        new_follow_request_notifications = not notifications_settings.follow_request_notifications
+        new_follow_request_approved_notifications = not notifications_settings.follow_request_approved_notifications
         new_connection_request_notifications = not notifications_settings.connection_request_notifications
         new_connection_confirmed_notifications = not notifications_settings.connection_confirmed_notifications
         new_community_invite_notifications = not notifications_settings.community_invite_notifications
@@ -699,6 +678,8 @@ class AuthenticatedUserNotificationsSettingsTests(OpenbookAPITestCase):
             'post_comment_notifications': new_post_comment_notifications,
             'post_reaction_notifications': new_post_reaction_notifications,
             'follow_notifications': new_follow_notifications,
+            'follow_request_notifications': new_follow_request_notifications,
+            'follow_request_approved_notifications': new_follow_request_approved_notifications,
             'connection_request_notifications': new_connection_request_notifications,
             'connection_confirmed_notifications': new_connection_confirmed_notifications,
             'community_invite_notifications': new_community_invite_notifications,
@@ -721,6 +702,8 @@ class AuthenticatedUserNotificationsSettingsTests(OpenbookAPITestCase):
         self.assertEqual(notifications_settings.post_comment_notifications, new_post_comment_notifications)
         self.assertEqual(notifications_settings.post_reaction_notifications, new_post_reaction_notifications)
         self.assertEqual(notifications_settings.follow_notifications, new_follow_notifications)
+        self.assertEqual(notifications_settings.follow_request_notifications, new_follow_request_notifications)
+        self.assertEqual(notifications_settings.follow_request_approved_notifications, new_follow_request_approved_notifications)
         self.assertEqual(notifications_settings.connection_request_notifications, new_connection_request_notifications)
         self.assertEqual(notifications_settings.community_invite_notifications, new_community_invite_notifications)
         self.assertEqual(notifications_settings.community_new_post_notifications, new_community_new_post_notifications)
