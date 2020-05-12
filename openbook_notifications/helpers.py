@@ -125,7 +125,7 @@ def send_follow_request_approved_push_notification(follow):
     follow_requester = follow.user
     followed_user = follow.followed_user
 
-    if follow_requester.has_follow_request_notifications_enabled():
+    if follow_requester.has_follow_request_approved_notifications_enabled():
         target_user_language_code = get_notification_language_code_for_target_user(follow_requester)
         with translation.override(target_user_language_code):
             one_signal_notification = onesignal_sdk.Notification(

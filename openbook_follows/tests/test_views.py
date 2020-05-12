@@ -206,8 +206,8 @@ class RequestToFollowUserAPITests(OpenbookAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        self.assertTrue(FollowRequestNotification.objects.filter(notification__owner=user_to_request_to_follow,
-                                                                 follow_request__creator=user).exists())
+        self.assertEqual(FollowRequestNotification.objects.filter(notification__owner=user_to_request_to_follow,
+                                                                  follow_request__creator=user).count(), 1)
 
     @mock.patch('openbook_notifications.helpers.send_follow_request_push_notification')
     def test_requesting_to_follow_user_creates_push_notification(self, send_follow_request_push_notification):
@@ -233,6 +233,29 @@ class RequestToFollowUserAPITests(OpenbookAPITestCase):
 
         send_follow_request_push_notification.assert_called_with(
             follow_request=follow_request)
+
+    @mock.patch('openbook_notifications.helpers._send_notification_to_user')
+    def test_requesting_to_follow_user_does_not_create_push_notification_if_disabled(self, _send_notification_to_user):
+        """
+        should not create push notification when sending a request notification to a user if disabled
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user_to_request_to_follow = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+        user_to_request_to_follow.update_notifications_settings(follow_request_notifications=False)
+
+        data = {
+            'username': user_to_request_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        _send_notification_to_user.assert_not_called()
 
     def _get_url(self):
         return reverse('request-to-follow-user')
@@ -327,8 +350,8 @@ class ApproveUserFollowRequestAPITests(OpenbookAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        self.assertTrue(FollowRequestApprovedNotification.objects.filter(notification__owner=user_requesting_to_follow,
-                                                                         follow__followed_user=user).exists())
+        self.assertEqual(FollowRequestApprovedNotification.objects.filter(notification__owner=user_requesting_to_follow,
+                                                                          follow__followed_user=user).count(), 1)
 
     @mock.patch('openbook_notifications.helpers.send_follow_request_approved_push_notification')
     def test_approving_a_follow_request_creates_push_notification(self, send_follow_request_approved_push_notification):
@@ -355,6 +378,34 @@ class ApproveUserFollowRequestAPITests(OpenbookAPITestCase):
 
         send_follow_request_approved_push_notification.assert_called_with(
             follow=follow)
+
+    @mock.patch('openbook_notifications.helpers._send_notification_to_user')
+    def test_approving_a_follow_request_does_not_create_push_notification_if_disabled(self, _send_notification_to_user):
+        """
+        should not create push notification when approving a request notification to a user if disabled
+        """
+        user = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+
+        headers = make_authentication_headers_for_user(user)
+
+        user_requesting_to_follow = make_user()
+        user_requesting_to_follow.update_notifications_settings(follow_request_approved_notifications=False)
+        user_requesting_to_follow.create_follow_request_for_user(user=user)
+
+        data = {
+            'username': user_requesting_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        _send_notification_to_user.reset_mock()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Should be called 1 because we also send the follow notification
+        self.assertEqual(_send_notification_to_user.call_count, 1)
 
     def test_cant_approve_non_existing_follow_request(self):
         """
