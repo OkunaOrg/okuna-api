@@ -495,10 +495,7 @@ class RejectUserFollowRequestAPITests(OpenbookAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        follow = Follow.objects.get(followed_user=user, user=user_requesting_to_follow)
-
-        send_follow_request_approved_push_notification.assert_not_called(
-            follow=follow)
+        send_follow_request_approved_push_notification.assert_not_called()
 
     def test_cant_reject_non_existing_follow_request(self):
         """
