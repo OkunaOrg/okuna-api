@@ -2870,7 +2870,7 @@ class User(AbstractUser):
     def delete_follow_request_from_user(self, user):
         check_can_delete_follow_request_from_user(user=self, target_user=user)
         FollowRequest = get_follow_request_model()
-        FollowRequest.objects.delete(creator=user, target_user=self)
+        FollowRequest.objects.filter(creator=user, target_user=self).delete()
 
     def connect_with_user_with_id(self, user_id, circles_ids=None):
         check_can_connect_with_user_with_id(user=self, user_id=user_id)
@@ -3511,7 +3511,7 @@ class User(AbstractUser):
     def _create_follow_request_approved_notification(self, follow):
         FollowRequestApprovedNotification = get_follow_request_approved_notification_model()
         FollowRequestApprovedNotification.create_follow_request_approved_notification(
-            approver_id=follow.followed_user.pk,
+            follow_id=follow.pk,
             owner_id=follow.user.pk)
 
     def _send_follow_request_approved_push_notification(self, follow):

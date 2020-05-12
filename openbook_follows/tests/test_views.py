@@ -15,7 +15,8 @@ import json
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user
 from openbook_lists.models import List
 from openbook_follows.models import Follow, FollowRequest
-from openbook_notifications.models import FollowNotification, Notification, FollowRequestNotification
+from openbook_notifications.models import FollowNotification, Notification, FollowRequestNotification, \
+    FollowRequestApprovedNotification
 
 logger = logging.getLogger(__name__)
 
@@ -194,6 +195,149 @@ class RequestToFollowUserAPITests(OpenbookAPITestCase):
 
     def _get_url(self):
         return reverse('request-to-follow-user')
+
+
+class ApproveUserFollowRequestAPITests(OpenbookAPITestCase):
+    def test_approving_a_follow_request_follows_the_approving_user(self):
+        """
+        should be able to approve a follow request and automatically follow the approving user and return 200
+        """
+        user = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+        headers = make_authentication_headers_for_user(user)
+
+        user_requesting_to_follow = make_user()
+        user_requesting_to_follow.create_follow_request_for_user(user=user)
+
+        data = {
+            'username': user_requesting_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(user_requesting_to_follow.is_following_user(user=user))
+
+    def test_approving_a_follow_request_deletes_the_follow_request(self):
+        """
+        when approving a follow request it should delete the follow request
+        """
+        user = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+        headers = make_authentication_headers_for_user(user)
+
+        user_requesting_to_follow = make_user()
+        user_requesting_to_follow.create_follow_request_for_user(user=user)
+
+        data = {
+            'username': user_requesting_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(user.has_follow_request_from_user(user=user_requesting_to_follow))
+
+    def test_approving_a_follow_request_deletes_the_follow_request_database_notification(self):
+        """
+        when approving a follow request it should delete the follow request database notification
+        """
+        user = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+        headers = make_authentication_headers_for_user(user)
+
+        user_requesting_to_follow = make_user()
+        user_requesting_to_follow.create_follow_request_for_user(user=user)
+
+        data = {
+            'username': user_requesting_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(FollowRequestNotification.objects.filter(
+            notification__owner=user,
+            follow_request__creator=user_requesting_to_follow).exists())
+
+    def test_approving_a_follow_request_creates_database_notification(self):
+        """
+        should create a database notification when approving a follow request
+        """
+        user = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+        headers = make_authentication_headers_for_user(user)
+
+        user_requesting_to_follow = make_user()
+        user_requesting_to_follow.create_follow_request_for_user(user=user)
+
+        data = {
+            'username': user_requesting_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertTrue(FollowRequestApprovedNotification.objects.filter(notification__owner=user_requesting_to_follow,
+                                                                         follow__followed_user=user).exists())
+
+    @mock.patch('openbook_notifications.helpers.send_follow_request_approved_push_notification')
+    def test_approving_a_follow_request_creates_push_notification(self, send_follow_request_approved_push_notification):
+        """
+        should create a push notification when approving a follow request
+        """
+        user = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+        headers = make_authentication_headers_for_user(user)
+
+        user_requesting_to_follow = make_user()
+        user_requesting_to_follow.create_follow_request_for_user(user=user)
+
+        data = {
+            'username': user_requesting_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        follow = Follow.objects.get(followed_user=user, user=user_requesting_to_follow)
+
+        send_follow_request_approved_push_notification.assert_called_with(
+            follow=follow)
+
+    def test_cant_approve_non_existing_follow_request(self):
+        """
+        should not be able to approve a nonexisting request and return 400
+        """
+        user = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+        headers = make_authentication_headers_for_user(user)
+
+        user_requesting_to_follow = make_user()
+
+        data = {
+            'username': user_requesting_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(user_requesting_to_follow.is_following_user(user=user))
+
+    def _get_url(self):
+        return reverse('approve-user-follow-request')
 
 
 class FollowAPITests(OpenbookAPITestCase):
