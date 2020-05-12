@@ -1,4 +1,6 @@
 # Create your tests here.
+from unittest import mock
+
 from django.urls import reverse
 from rest_framework import status
 from openbook_common.tests.models import OpenbookAPITestCase
@@ -12,8 +14,8 @@ import json
 
 from openbook_common.tests.helpers import make_user, make_authentication_headers_for_user
 from openbook_lists.models import List
-from openbook_follows.models import Follow
-from openbook_notifications.models import FollowNotification, Notification
+from openbook_follows.models import Follow, FollowRequest
+from openbook_notifications.models import FollowNotification, Notification, FollowRequestNotification
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +96,104 @@ class ReceivedFollowRequestsAPITests(OpenbookAPITestCase):
 
     def _get_url(self):
         return reverse('received-follow-requests')
+
+
+class RequestToFollowUserAPITests(OpenbookAPITestCase):
+    def test_can_request_to_follow_private_user(self):
+        """
+        should be able to request to follow a private user and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user_to_request_to_follow = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+
+        data = {
+            'username': user_to_request_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(user_to_request_to_follow.has_follow_request_from_user(user=user))
+
+    def test_cannot_request_to_follow_user_if_not_private(self):
+        """
+        should not be able to request to follow a non-private user and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        for visibility_keyword, visibility_name in User.VISIBILITY_TYPES:
+            if visibility_keyword == User.VISIBILITY_TYPE_PRIVATE:
+                return
+
+            user_to_request_to_follow = make_user(visibility=visibility_keyword)
+
+            data = {
+                'username': user_to_request_to_follow.username,
+            }
+
+            url = self._get_url()
+
+            response = self.client.put(url, data, **headers, format='multipart')
+
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+            self.assertFalse(user_to_request_to_follow.has_follow_request_from_user(user=user))
+
+    def test_requesting_to_follow_user_creates_database_notification(self):
+        """
+        should create a database notification when sending a request notification to a user
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user_to_request_to_follow = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+
+        data = {
+            'username': user_to_request_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(FollowRequestNotification.objects.filter(notification__owner=user_to_request_to_follow,
+                                                                 follow_request__creator=user).exists())
+
+    @mock.patch('openbook_notifications.helpers.send_follow_request_push_notification')
+    def test_requesting_to_follow_user_creates_push_notification(self, send_follow_request_push_notification):
+        """
+        should create a push notification when sending a request notification to a user
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user_to_request_to_follow = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+
+        data = {
+            'username': user_to_request_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.put(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        follow_request = FollowRequest.objects.get(creator=user, target_user=user_to_request_to_follow)
+
+        send_follow_request_push_notification.assert_called_with(
+            follow_request=follow_request)
+
+    def _get_url(self):
+        return reverse('request-to-follow-user')
 
 
 class FollowAPITests(OpenbookAPITestCase):
