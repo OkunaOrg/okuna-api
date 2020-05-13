@@ -141,19 +141,19 @@ def check_can_create_follow_request(user, user_requesting_to_follow):
 
 
 def check_can_delete_follow_request_for_user(user, user_requesting_to_follow):
-    check_has_follow_request_from_user(user=user_requesting_to_follow, target_user=user)
+    check_has_follow_request(user=user, requesting_user=user_requesting_to_follow)
 
 
-def check_can_approve_follow_request_from_user(user, target_user):
-    check_has_follow_request_from_user(user=user, target_user=target_user)
+def check_can_approve_follow_request_from_requesting_user(user, requesting_user):
+    check_has_follow_request(user=user, requesting_user=requesting_user)
 
 
-def check_can_delete_follow_request_from_user(user, target_user):
-    check_has_follow_request_from_user(user=user, target_user=target_user)
+def check_can_delete_follow_request_from_requesting_user(user, requesting_user):
+    check_has_follow_request(user=user, requesting_user=requesting_user)
 
 
-def check_has_follow_request_from_user(user, target_user):
-    if not user.has_follow_request_from_user(target_user):
+def check_has_follow_request(user, requesting_user):
+    if not user.has_follow_request_from_user(requesting_user):
         raise ValidationError('Follow request does not exist.')
 
 
@@ -204,7 +204,7 @@ def check_can_get_posts_for_user(user, target_user):
 
 def check_target_user_is_visibile_for_user(user, target_user):
     if target_user.has_visibility_private() and not user.is_following_user(target_user):
-        raise ValidationError('This user is private, send a follow request.')
+        raise ValidationError(_('This user is private, send a follow request.'))
 
 
 def check_can_get_unauthenticated_posts_for_user(user):
@@ -258,7 +258,7 @@ def check_has_not_reached_max_connections(user):
         )
 
 
-def check_can_connect_with_user_with_id(user, user_to_connect_with):
+def check_can_connect_with_target_user(user, user_to_connect_with):
     if user.pk == user_to_connect_with:
         raise ValidationError(
             _('A user cannot connect with itself.'),
