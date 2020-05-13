@@ -4,6 +4,9 @@ from urllib.parse import urlsplit
 from django.urls import reverse
 from faker import Faker
 from rest_framework import status
+from mixer.backend.django import mixer
+
+from openbook_circles.models import Circle
 from openbook_common.tests.models import OpenbookAPITestCase
 from openbook_auth.models import User
 
@@ -530,6 +533,67 @@ class AuthenticatedUserAPITests(OpenbookAPITestCase):
 
         self.assertFalse(user.has_follow_request_from_user(user_requesting_to_follow))
 
+    def test_when_updating_visibility_to_private_existing_connection_requests_get_deleted(self):
+        """
+        when updating the visibility to private, existing connection requests should be deleted
+        """
+        initial_visibility = User.VISIBILITY_TYPE_PUBLIC
+        new_visibility = User.VISIBILITY_TYPE_PRIVATE
+
+        user = make_user(visibility=initial_visibility)
+        headers = make_authentication_headers_for_user(user)
+
+        number_of_connection_requests = 3
+
+        for i in range(number_of_connection_requests):
+            user_requesting_to_connect = make_user()
+            circle_to_connect = mixer.blend(Circle, creator=user_requesting_to_connect)
+            user_requesting_to_connect.connect_with_user_with_id(user.pk, circles_ids=[circle_to_connect.pk])
+
+        data = {
+            'visibility': new_visibility
+        }
+
+        url = self._get_url()
+
+        response = self.client.patch(url, data, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(user.targeted_connections.count(), 0)
+
+    def test_when_updating_visibility_to_non_private_from_non_private_existing_connection_requests_dont_get_deleted(self):
+        """
+        when updating the visibility from non private, to another non private, connection requests should not be deleted
+        """
+
+        for initial_visibility, name in User.VISIBILITY_TYPES:
+            for new_visibility, n_name in User.VISIBILITY_TYPES:
+                if initial_visibility == User.VISIBILITY_TYPE_PRIVATE or new_visibility == User.VISIBILITY_TYPE_PRIVATE:
+                    return
+
+                user = make_user(visibility=initial_visibility)
+                headers = make_authentication_headers_for_user(user)
+
+                number_of_connection_requests = 3
+
+                for i in range(number_of_connection_requests):
+                    user_requesting_to_connect = make_user()
+                    circle_to_connect = mixer.blend(Circle, creator=user_requesting_to_connect)
+                    user_requesting_to_connect.connect_with_user_with_id(user.pk, circles_ids=[circle_to_connect.pk])
+
+                data = {
+                    'visibility': new_visibility
+                }
+
+                url = self._get_url()
+
+                response = self.client.patch(url, data, **headers)
+
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+                self.assertEqual(user.targeted_connections.count(), number_of_connection_requests)
+
     def _get_url(self):
         return reverse('authenticated-user')
 
@@ -703,7 +767,8 @@ class AuthenticatedUserNotificationsSettingsTests(OpenbookAPITestCase):
         self.assertEqual(notifications_settings.post_reaction_notifications, new_post_reaction_notifications)
         self.assertEqual(notifications_settings.follow_notifications, new_follow_notifications)
         self.assertEqual(notifications_settings.follow_request_notifications, new_follow_request_notifications)
-        self.assertEqual(notifications_settings.follow_request_approved_notifications, new_follow_request_approved_notifications)
+        self.assertEqual(notifications_settings.follow_request_approved_notifications,
+                         new_follow_request_approved_notifications)
         self.assertEqual(notifications_settings.connection_request_notifications, new_connection_request_notifications)
         self.assertEqual(notifications_settings.community_invite_notifications, new_community_invite_notifications)
         self.assertEqual(notifications_settings.community_new_post_notifications, new_community_new_post_notifications)

@@ -550,6 +550,10 @@ class User(AbstractUser):
                 # We are changing from private to public/okuna visibility which does not use follow requests
                 self.delete_received_follow_requests()
 
+            if self.visibility != User.VISIBILITY_TYPE_PRIVATE and visibility == User.VISIBILITY_TYPE_PRIVATE:
+                # We are changing from public/okuna to private, we need to remove all connection requests.
+                self.delete_all_pending_connection_requests()
+
             self.visibility = visibility
 
         if save:
@@ -614,6 +618,9 @@ class User(AbstractUser):
             target_connection__user_id=user_id).get()
 
         return not connection.circles.exists()
+
+    def delete_all_pending_connection_requests(self):
+        self.connections.filter(circles__isnull=True).delete()
 
     def is_connected_with_user(self, user):
         return self.is_connected_with_user_with_id(user.pk)
