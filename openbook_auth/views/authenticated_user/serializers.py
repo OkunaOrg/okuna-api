@@ -90,6 +90,7 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
             'unread_notifications_count',
             'pending_communities_moderated_objects_count',
             'active_moderation_penalties_count',
+            'visibility'
         )
 
 
@@ -126,6 +127,7 @@ class LegacyGetAuthenticatedUserSerializer(serializers.ModelSerializer):
             'unread_notifications_count',
             'pending_communities_moderated_objects_count',
             'active_moderation_penalties_count',
+            'visibility',
         )
 
 

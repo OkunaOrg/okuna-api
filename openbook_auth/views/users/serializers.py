@@ -130,7 +130,8 @@ class GetUserUserSerializer(serializers.ModelSerializer):
             'connected_circles',
             'follow_lists',
             'date_joined',
-            'is_pending_connection_confirmation'
+            'is_pending_connection_confirmation',
+            'visibility'
         )
 
 
@@ -167,7 +168,8 @@ class LegacyGetUserUserSerializer(serializers.ModelSerializer):
             'connected_circles',
             'follow_lists',
             'date_joined',
-            'is_pending_connection_confirmation'
+            'is_pending_connection_confirmation',
+            'visibility'
         )
 
 
