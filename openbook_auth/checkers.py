@@ -183,12 +183,29 @@ def check_user_visibility_is_not_private(target_user):
         )
 
 
+def check_user_visibility_is_not_okuna(target_user):
+    if target_user.has_visibility_okuna():
+        raise ValidationError(
+            _('This user content is restricted to Okuna members only.'),
+        )
+
+
 def check_user_visibility_is_private(target_user):
     # Check wether the visibility is private
     if not target_user.has_visibility_private():
         raise ValidationError(
             _('This user is not private.'),
         )
+
+
+def check_can_get_posts_for_user(user, target_user):
+    if target_user.has_visibility_private() and not user.is_following_user(target_user):
+        raise ValidationError('This user is private, send a follow request.')
+
+
+def check_can_get_unauthenticated_posts_for_user(user):
+    check_user_visibility_is_not_private(target_user=user)
+    check_user_visibility_is_not_okuna(target_user=user)
 
 
 def check_is_not_following_user_with_id(user, user_id):

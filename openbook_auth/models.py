@@ -223,6 +223,8 @@ class User(AbstractUser):
 
     @classmethod
     def get_unauthenticated_public_posts_for_user_with_username(cls, username, max_id=None, min_id=None):
+        user = cls.objects.get(username=username)
+        check_can_get_unauthenticated_posts_for_user(user)
 
         Post = get_post_model()
         Circle = get_circle_model()
@@ -2387,6 +2389,8 @@ class User(AbstractUser):
         return self.get_posts_for_user(user=user, max_id=max_id, min_id=min_id)
 
     def get_posts_for_user(self, user, max_id=None, min_id=None):
+        check_can_get_posts_for_user(user=self, target_user=user)
+
         posts_prefetch_related = (
             'circles', 'creator', 'creator__profile__badges', 'hashtags', 'community')
 
