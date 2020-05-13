@@ -2877,7 +2877,11 @@ class User(AbstractUser):
         FollowRequest.objects.filter(creator=user, target_user=self).delete()
 
     def connect_with_user_with_id(self, user_id, circles_ids=None):
-        check_can_connect_with_user_with_id(user=self, user_id=user_id)
+        user = User.objects.get(pk=user_id)
+        return self.connect_with_user(user, circles_ids=circles_ids)
+
+    def connect_with_user(self, user, circles_ids=None):
+        check_can_connect_with_user_with_id(user=self, target_user=user)
 
         if not circles_ids:
             circles_ids = self._get_default_connection_circles()
@@ -2886,20 +2890,15 @@ class User(AbstractUser):
 
         check_connection_circles_ids(user=self, circles_ids=circles_ids)
 
-        if self.pk == user_id:
-            raise ValidationError(
-                _('A user cannot connect with itself.'),
-            )
-
         Connection = get_connection_model()
-        connection = Connection.create_connection(user_id=self.pk, target_user_id=user_id, circles_ids=circles_ids)
+        connection = Connection.create_connection(user_id=self.pk, target_user_id=user.pk, circles_ids=circles_ids)
 
         # Automatically follow user
-        if not self.is_following_user_with_id(user_id):
-            self.follow_user_with_id(user_id)
+        if not self.is_following_user_with_id(user.pk):
+            self.follow_user_with_id(user.pk)
 
-        self._create_connection_request_notification(user_connection_requested_for_id=user_id)
-        self._send_connection_request_push_notification(user_connection_requested_for_id=user_id)
+        self._create_connection_request_notification(user_connection_requested_for_id=user.pk)
+        self._send_connection_request_push_notification(user_connection_requested_for_id=user.pk)
 
         return connection
 

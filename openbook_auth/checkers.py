@@ -199,6 +199,10 @@ def check_user_visibility_is_private(target_user):
 
 
 def check_can_get_posts_for_user(user, target_user):
+    check_target_user_is_visibile_for_user(user=user, target_user=target_user)
+
+
+def check_target_user_is_visibile_for_user(user, target_user):
     if target_user.has_visibility_private() and not user.is_following_user(target_user):
         raise ValidationError('This user is private, send a follow request.')
 
@@ -254,9 +258,15 @@ def check_has_not_reached_max_connections(user):
         )
 
 
-def check_can_connect_with_user_with_id(user, user_id):
-    check_is_not_blocked_with_user_with_id(user=user, user_id=user_id)
-    check_is_not_connected_with_user_with_id(user=user, user_id=user_id)
+def check_can_connect_with_user_with_id(user, user_to_connect_with):
+    if user.pk == user_to_connect_with:
+        raise ValidationError(
+            _('A user cannot connect with itself.'),
+        )
+
+    check_target_user_is_visibile_for_user(user=user, target_user=user_to_connect_with)
+    check_is_not_blocked_with_user_with_id(user=user, user_id=user_to_connect_with.pk)
+    check_is_not_connected_with_user_with_id(user=user, user_id=user_to_connect_with.pk)
     check_has_not_reached_max_connections(user=user)
 
 
