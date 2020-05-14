@@ -14,8 +14,6 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Count
-from django.db import transaction
-import django_rq
 import ffmpy
 
 # Create your views here.
@@ -43,7 +41,7 @@ from openbook_common.utils.model_loaders import get_emoji_model, \
     get_post_user_mention_model, get_post_comment_user_mention_model, get_community_notifications_subscription_model, \
     get_community_new_post_notification_model, get_user_new_post_notification_model, \
     get_hashtag_model, get_user_notifications_subscription_model, get_trending_post_model, \
-    get_post_comment_reaction_notification_model, get_post_notifications_subscription_model
+    get_post_comment_reaction_notification_model
 from imagekit.models import ProcessedImageField
 
 from openbook_moderation.models import ModeratedObject
@@ -54,8 +52,7 @@ from openbook_posts.checkers import check_can_be_updated, check_can_add_media, c
     check_mimetype_is_supported_media_mimetypes
 from openbook_posts.helpers import upload_to_post_image_directory, upload_to_post_video_directory, \
     upload_to_post_directory
-from openbook_posts.jobs import process_post_media, process_activity_score_post_reaction, \
-    process_activity_score_post_comment, process_community_activity_score_post
+from openbook_posts.jobs import process_post_media
 
 magic = get_magic()
 from openbook_common.helpers import get_language_for_text
@@ -95,14 +92,10 @@ class Post(models.Model):
                                           upload_to=upload_to_post_directory,
                                           blank=False, null=True, format='JPEG', options={'quality': 30},
                                           processors=[ResizeToFit(width=512, upscale=False)])
-    activity_score = models.DecimalField(default=0.0, decimal_places=10, max_digits=10)
 
     class Meta:
         index_together = [
             ('creator', 'community'),
-        ]
-        indexes = [
-            models.Index(fields=['activity_score']),
         ]
 
     @classmethod
@@ -214,53 +207,77 @@ class Post(models.Model):
         return trending_community_posts_queryset
 
     @classmethod
-    def get_post_comment_notification_target_users(cls, post, post_commenter):
+    def get_trending_posts_old_for_user_with_id(cls, user_id):
         """
-        Returns the users that qualify to be notified of a post comment.
-        This includes the post creator and other post commenters and post subscribers
-        :return:
+        For backwards compatibility reasons
         """
-        # post subscribers
-        post_subscribers_query = Q(post_notifications_subscriptions__post_id=post.pk,
-                                   post_notifications_subscriptions__comment_notifications=True)
+        trending_posts_query = cls._get_trending_posts_old_query()
+        trending_posts_query.add(~Q(community__banned_users__id=user_id), Q.AND)
 
-        # Add other post commenters, exclude replies to comments
-        other_commenters_query = Q(posts_comments__post_id=post.pk, posts_comments__parent_comment_id=None,)
+        trending_posts_query.add(~Q(Q(creator__blocked_by_users__blocker_id=user_id) | Q(
+            creator__user_blocks__blocked_user_id=user_id)), Q.AND)
 
-        other_target_users = User.objects. \
-            only('id', 'username', 'notifications_settings__post_notifications'). \
-            filter((post_subscribers_query | other_commenters_query) & ~Q(id=post_commenter.pk))
+        trending_posts_query.add(~Q(moderated_object__reports__reporter_id=user_id), Q.AND)
 
-        post_creator = User.objects. \
-            only('id', 'username', 'notifications_settings__post_notifications'). \
-            filter(pk=post.creator_id)
+        trending_posts_query.add(~Q(moderated_object__status=ModeratedObject.STATUS_APPROVED), Q.AND)
 
-        return other_target_users.union(post_creator)
+        return cls._get_trending_posts_old_with_query(query=trending_posts_query)
 
     @classmethod
-    def get_post_comment_reply_notification_target_users(cls, post, post_comment):
+    def _get_trending_posts_old_with_query(cls, query):
+        return cls.objects.filter(query).annotate(Count('reactions')).order_by(
+            '-reactions__count', '-created')
+
+    @classmethod
+    def _get_trending_posts_old_query(cls):
+        trending_posts_query = Q(created__gte=timezone.now() - timedelta(
+            hours=12))
+
+        Community = get_community_model()
+
+        trending_posts_sources_query = Q(community__type=Community.COMMUNITY_TYPE_PUBLIC, status=cls.STATUS_PUBLISHED,
+                                         is_closed=False, is_deleted=False)
+
+        trending_posts_query.add(trending_posts_sources_query, Q.AND)
+
+        return trending_posts_query
+
+    @classmethod
+    def get_post_comment_notification_target_users(cls, post, post_commenter):
         """
-        Returns the users that qualify to be notified of a post comment reply.
-        This includes the post comment creator and other post commenters and post subscribers
+        Returns the users that should be notified of a post comment.
+        This includes the post creator and other post commenters
         :return:
         """
 
-        # post subscribers
-        post_subscribers_query = Q(post_notifications_subscriptions__post_id=post.pk,
-                                   post_notifications_subscriptions__reply_notifications=True)
+        # Add other post commenters, exclude replies to comments, the post commenter
+        other_commenters = User.objects.filter(
+            Q(posts_comments__post_id=post.pk, posts_comments__parent_comment_id=None, ) & ~Q(
+                id=post_commenter.pk))
 
-        # post comment subscribers
-        post_comment_reply_subscribers_query = Q(post_comment_notifications_subscriptions__post_comment_id=post_comment.pk)
+        post_creator = User.objects.filter(pk=post.creator_id)
 
-        post_target_users = User.objects.\
-            only('id', 'username', 'notifications_settings__post_notifications').\
-            filter(post_subscribers_query)
+        return other_commenters.union(post_creator)
 
-        post_comment_reply_target_users = User.objects.\
-            only('id', 'username', 'notifications_settings__post_notifications').\
-            filter(post_comment_reply_subscribers_query)
+    @classmethod
+    def get_post_comment_reply_notification_target_users(cls, post_commenter, parent_post_comment):
+        """
+        Returns the users that should be notified of a post comment reply.
+        :return:
+        """
 
-        return post_target_users.union(post_comment_reply_target_users)
+        # Add other post commenters, exclude non replies, the post commenter
+        other_repliers = User.objects.filter(
+            Q(posts_comments__parent_comment_id=parent_post_comment.pk, ) & ~Q(
+                id=post_commenter.pk))
+
+        # Add post comment creator
+        post_comment_creator = User.objects.filter(pk=parent_post_comment.commenter_id)
+
+        # Add post creator
+        post = parent_post_comment.post
+        post_creator = User.objects.filter(pk=post.creator.id)
+        return other_repliers.union(post_comment_creator, post_creator)
 
     @classmethod
     def get_community_notification_target_subscriptions(cls, post):
@@ -511,8 +528,6 @@ class Post(models.Model):
         self.status = Post.STATUS_PUBLISHED
         self.created = timezone.now()
         self._process_post_subscribers()
-        self._enqueue_process_activity_score_add_community_post()
-        self._subscribe_creator_to_post_notifications()
         self.save()
 
     def is_draft(self):
@@ -540,7 +555,6 @@ class Post(models.Model):
 
     def delete(self, *args, **kwargs):
         self.delete_media()
-        self._enqueue_process_activity_score_delete_community_post()
         super(Post, self).delete(*args, **kwargs)
 
     def delete_media(self):
@@ -549,7 +563,6 @@ class Post(models.Model):
 
     def soft_delete(self):
         self.delete_notifications()
-        self._enqueue_process_activity_score_delete_community_post()
         for comment in self.comments.all().iterator():
             comment.soft_delete()
         self.is_deleted = True
@@ -776,48 +789,6 @@ class Post(models.Model):
                     user_notifications_subscription_id=subscription.pk)
                 send_user_new_post_push_notification(user_notifications_subscription=subscription, post=self)
 
-    def _enqueue_process_activity_score_add_community_post(self):
-        if self.community is None:
-            return
-
-        add_post_job_id = 'process_add_community_post_community_{0}_pid_{1}_uid_{2}'.format(self.community.pk,
-                                                                                            self.pk,
-                                                                                            self.creator.pk)
-        queue = django_rq.get_queue('process-activity-score')
-        transaction.on_commit(lambda: queue.enqueue(process_community_activity_score_post,
-                                                    post_id=self.pk,
-                                                    post_creator_id=self.creator.pk,
-                                                    post_community_id=self.community.pk,
-                                                    job_id=add_post_job_id))
-
-    def _enqueue_process_activity_score_delete_community_post(self):
-        if self.community is None:
-            return
-
-        delete_post_job_id = 'process_delete_community_post_community_{0}_pid_{1}_uid_{2}'.format(self.community.pk,
-                                                                                                  self.pk,
-                                                                                                  self.creator.pk)
-        queue = django_rq.get_queue('process-activity-score')
-        post_id = self.pk
-        post_creator_id = self.creator.pk
-        post_community_id = self.community.pk
-        transaction.on_commit(lambda: queue.enqueue(process_community_activity_score_post,
-                                                    post_id=post_id,
-                                                    post_creator_id=post_creator_id,
-                                                    post_community_id=post_community_id,
-                                                    job_id=delete_post_job_id))
-
-    def _subscribe_creator_to_post_notifications(self):
-        PostNotificationsSubscription = get_post_notifications_subscription_model()
-
-        PostNotificationsSubscription.create_post_notifications_subscription(
-            post=self,
-            subscriber=self.creator,
-            comment_notifications=True,
-            reaction_notifications=True,
-            reply_notifications=False,
-        )
-
 
 class TopPost(models.Model):
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='top_post')
@@ -1004,12 +975,8 @@ class PostComment(models.Model):
         post_comment = PostComment.objects.create(text=text, commenter=commenter, post=post,
                                                   parent_comment=parent_comment)
         post_comment.language = get_language_for_text(text)
-        add_comment_job_id = 'process_add_comment_pid_{0}_cid_{1}'.format(post.pk, post_comment.pk)
-        transaction.on_commit(lambda: PostComment.enqueue_process_activity_score_job(post_id=post.pk,
-                                                                                     post_comment_id=post_comment.pk,
-                                                                                     post_commenter_id=commenter.pk,
-                                                                                     job_id=add_comment_job_id))
         post_comment.save()
+
         return post_comment
 
     @classmethod
@@ -1022,15 +989,6 @@ class PostComment(models.Model):
     def get_emoji_counts_for_post_comment_with_id(cls, post_comment_id, emoji_id=None, reactor_id=None):
         return Emoji.get_emoji_counts_for_post_comment_with_id(post_comment_id=post_comment_id, emoji_id=emoji_id,
                                                                reactor_id=reactor_id)
-
-    @classmethod
-    def enqueue_process_activity_score_job(cls, post_id, post_comment_id, post_commenter_id, job_id):
-        queue = django_rq.get_queue('process-activity-score')
-        queue.enqueue(process_activity_score_post_comment,
-                      post_id=post_id,
-                      post_comment_id=post_comment_id,
-                      post_commenter_id=post_commenter_id,
-                      job_id=job_id)
 
     def count_replies(self):
         return self.replies.count()
@@ -1170,25 +1128,6 @@ class PostComment(models.Model):
         self.is_deleted = True
         self.delete_notifications()
         self.save()
-        delete_comment_job_id = 'process_delete_comment_pid_{0}_cid_{1}'.format(self.post.pk, self.pk)
-        transaction.on_commit(lambda: PostComment.enqueue_process_activity_score_job(post_id=self.post.pk,
-                                                                                     post_comment_id=self.pk,
-                                                                                     post_commenter_id=self.commenter.pk,
-                                                                                     job_id=delete_comment_job_id))
-
-    def delete(self, *args, **kwargs):
-        if not self.is_deleted:
-            post_id = self.post.pk
-            post_comment_id = self.pk
-            post_commenter_id = self.commenter.pk
-            delete_comment_job_id = 'process_delete_comment_pid_{0}_cid_{1}'.format(post_id, post_comment_id)
-            transaction.on_commit(lambda:
-                                  PostComment.enqueue_process_activity_score_job(post_id=post_id,
-                                                                                 post_comment_id=post_comment_id,
-                                                                                 post_commenter_id=post_commenter_id,
-                                                                                 job_id=delete_comment_job_id))
-
-        super(PostComment, self).delete(*args, **kwargs)
 
     def unsoft_delete(self):
         self.is_deleted = False
@@ -1256,22 +1195,8 @@ class PostReaction(models.Model):
         unique_together = ('reactor', 'post',)
 
     @classmethod
-    def enqueue_process_activity_score_job(cls, post_id, post_reaction_id, job_id):
-        queue = django_rq.get_queue('process-activity-score')
-        queue.enqueue(process_activity_score_post_reaction,
-                      post_id=post_id,
-                      post_reaction_id=post_reaction_id,
-                      job_id=job_id)
-
-    @classmethod
     def create_reaction(cls, reactor, emoji_id, post):
-        post_reaction = PostReaction.objects.create(reactor=reactor, emoji_id=emoji_id, post=post)
-        job_id = 'process_add_unique_reaction_pid_{0}_rid_{1}'.format(post.pk, post_reaction.pk)
-        transaction.on_commit(lambda: PostReaction.enqueue_process_activity_score_job(post_id=post.pk,
-                                                                                      post_reaction_id=post_reaction.pk,
-                                                                                      job_id=job_id))
-
-        return post_reaction
+        return PostReaction.objects.create(reactor=reactor, emoji_id=emoji_id, post=post)
 
     @classmethod
     def count_reactions_for_post_with_id(cls, post_id, reactor_id=None):
@@ -1281,17 +1206,6 @@ class PostReaction(models.Model):
             count_query.add(Q(reactor_id=reactor_id), Q.AND)
 
         return cls.objects.filter(count_query).count()
-
-    def delete(self, *args, **kwargs):
-        reaction_id = self.pk
-        post_id = self.post.pk
-        job_id = 'process_remove_unique_reaction_pid_{0}_rid_{1}'.format(post_id, reaction_id)
-        transaction.on_commit(lambda: PostReaction.enqueue_process_activity_score_job(
-            post_id=post_id,
-            post_reaction_id=reaction_id,
-            job_id=job_id))
-
-        super(PostReaction, self).delete(*args, **kwargs)
 
     def save(self, *args, **kwargs):
         ''' On save, update timestamps '''
@@ -1386,168 +1300,3 @@ class PostCommentUserMention(models.Model):
             owner_id=user.pk)
         send_post_comment_user_mention_push_notification(post_comment_user_mention=post_comment_user_mention)
         return post_comment_user_mention
-
-
-class PostCommentNotificationsSubscription(models.Model):
-    subscriber = models.ForeignKey(User,
-                                   on_delete=models.CASCADE,
-                                   related_name='post_comment_notifications_subscriptions',
-                                   null=False,
-                                   blank=False)
-    post_comment = models.ForeignKey(PostComment, on_delete=models.CASCADE, related_name='notifications_subscriptions',
-                                     null=False, blank=False)
-    reaction_notifications = models.BooleanField(default=True, blank=False)
-    reply_notifications = models.BooleanField(default=True, blank=False)
-
-    class Meta:
-        unique_together = ('post_comment', 'subscriber',)
-
-    @classmethod
-    def create_post_comment_notifications_subscription(cls, subscriber, post_comment,
-                                                       reply_notifications=False,
-                                                       reaction_notifications=False):
-        if not cls.objects.filter(subscriber=subscriber, post_comment=post_comment).exists():
-            return cls.objects.create(subscriber=subscriber,
-                                      post_comment=post_comment,
-                                      reply_notifications=reply_notifications,
-                                      reaction_notifications=reaction_notifications)
-
-        post_comment_notifications_subscription = cls.objects.get(subscriber=subscriber, post_comment=post_comment)
-        post_comment_notifications_subscription.save()
-
-        return post_comment_notifications_subscription
-
-    @classmethod
-    def get_or_create_post_comment_notifications_subscription(cls, subscriber, post_comment,
-                                                              reply_notifications=None,
-                                                              reaction_notifications=None):
-        try:
-            post_comment_notifications_subscription = cls.objects.get(subscriber_id=subscriber.pk,
-                                                                      post_comment_id=post_comment.pk)
-        except cls.DoesNotExist:
-            post_comment_notifications_subscription = cls.create_post_comment_notifications_subscription(
-                subscriber=subscriber,
-                post_comment=post_comment,
-                reply_notifications=reply_notifications,
-                reaction_notifications=reaction_notifications
-            )
-
-        return post_comment_notifications_subscription
-
-    @classmethod
-    def delete_post_comment_notifications_subscription(cls, subscriber, post_comment):
-        return cls.objects.filter(subscriber=subscriber, post_comment=post_comment).delete()
-
-    @classmethod
-    def post_comment_notifications_subscription_exists(cls, subscriber, post_comment):
-        return cls.objects.filter(subscriber=subscriber, post_comment=post_comment).exists()
-
-    @classmethod
-    def is_user_with_username_subscribed_to_reply_notifications_for_post_comment_with_id(cls, username, post_comment_id):
-        return cls.objects.filter(post_comment_id=post_comment_id,
-                                  subscriber__username=username,
-                                  reply_notifications=True).exists()
-
-    @classmethod
-    def are_reply_notifications_enabled_for_user_with_username_and_post_comment_with_id(cls, username, post_comment_id):
-        return cls.objects.filter(post_comment_id=post_comment_id,
-                                  subscriber__username=username,
-                                  reply_notifications=True).exists()
-
-    def update(self,
-               reaction_notifications=None,
-               reply_notifications=None):
-
-        if reply_notifications is not None:
-            self.reply_notifications = reply_notifications
-
-        if reaction_notifications is not None:
-            self.reaction_notifications = reaction_notifications
-
-        self.save()
-
-
-class PostNotificationsSubscription(models.Model):
-    subscriber = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_notifications_subscriptions',
-                                   null=False,
-                                   blank=False)
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='notifications_subscriptions', null=False,
-                             blank=False)
-    reaction_notifications = models.BooleanField(default=True, blank=False)
-    comment_notifications = models.BooleanField(default=True, blank=False)
-    reply_notifications = models.BooleanField(default=False, blank=False)
-
-    class Meta:
-        unique_together = ('post', 'subscriber',)
-
-    @classmethod
-    def create_post_notifications_subscription(cls, subscriber, post,
-                                               comment_notifications=False,
-                                               reaction_notifications=False,
-                                               reply_notifications=False):
-
-        if not cls.objects.filter(subscriber=subscriber, post=post).exists():
-            return cls.objects.create(subscriber=subscriber,
-                                      post=post,
-                                      comment_notifications=comment_notifications,
-                                      reaction_notifications=reaction_notifications,
-                                      reply_notifications=reply_notifications)
-
-        post_notifications_subscription = cls.objects.get(subscriber=subscriber, post=post)
-        return post_notifications_subscription
-
-    @classmethod
-    def get_or_create_post_notifications_subscription(cls, subscriber, post,
-                                                      comment_notifications=False,
-                                                      reaction_notifications=False,
-                                                      reply_notifications=False):
-        try:
-            post_notifications_subscription = cls.objects.get(subscriber_id=subscriber.pk,
-                                                              post_id=post.pk)
-        except cls.DoesNotExist:
-            post_notifications_subscription = cls.create_post_notifications_subscription(
-                subscriber=subscriber,
-                post=post,
-                comment_notifications=comment_notifications,
-                reaction_notifications=reaction_notifications,
-                reply_notifications=reply_notifications
-            )
-
-        return post_notifications_subscription
-
-    @classmethod
-    def delete_post_notifications_subscription(cls, subscriber, post):
-        return cls.objects.filter(subscriber=subscriber, post=post).delete()
-
-    @classmethod
-    def post_notifications_subscription_exists(cls, subscriber, post):
-        return cls.objects.filter(subscriber=subscriber, post=post).exists()
-
-    @classmethod
-    def is_user_with_username_subscribed_to_comment_notifications_for_post_with_id(cls, username, post_id):
-        return cls.objects.filter(post_id=post_id,
-                                  subscriber__username=username,
-                                  comment_notifications=True).exists()
-
-    @classmethod
-    def are_comment_notifications_enabled_for_user_with_username_and_post_with_id(cls, username, post_id):
-        return cls.objects.filter(post_id=post_id,
-                                  subscriber__username=username,
-                                  comment_notifications=True).exists()
-
-    def update(self,
-               comment_notifications=None,
-               reaction_notifications=None,
-               reply_notifications=None):
-
-        if comment_notifications is not None:
-            self.comment_notifications = comment_notifications
-
-        if reaction_notifications is not None:
-            self.reaction_notifications = reaction_notifications
-
-        if reply_notifications is not None:
-            self.reply_notifications = reply_notifications
-
-        self.save()
-

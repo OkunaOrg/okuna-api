@@ -589,34 +589,49 @@ class AuthenticatedUserNotificationsSettingsTests(OpenbookAPITestCase):
         user = make_user()
         notifications_settings = user.notifications_settings
 
+        notifications_settings.post_comment_notifications = fake.boolean()
+        notifications_settings.post_reaction_notifications = fake.boolean()
         notifications_settings.follow_notifications = fake.boolean()
         notifications_settings.connection_request_notifications = fake.boolean()
         notifications_settings.connection_confirmed_notifications = fake.boolean()
         notifications_settings.community_invite_notifications = fake.boolean()
         notifications_settings.community_new_post_notifications = fake.boolean()
         notifications_settings.user_new_post_notifications = fake.boolean()
-        notifications_settings.post_notifications = fake.boolean()
+        notifications_settings.post_comment_reply_notifications = fake.boolean()
+        notifications_settings.post_comment_reaction_notifications = fake.boolean()
+        notifications_settings.post_comment_user_mention_notifications = fake.boolean()
+        notifications_settings.post_user_mention_notifications = fake.boolean()
 
         notifications_settings.save()
 
         headers = make_authentication_headers_for_user(user)
 
+        new_post_comment_notifications = not notifications_settings.post_comment_notifications
+        new_post_reaction_notifications = not notifications_settings.post_reaction_notifications
         new_follow_notifications = not notifications_settings.follow_notifications
         new_connection_request_notifications = not notifications_settings.connection_request_notifications
         new_connection_confirmed_notifications = not notifications_settings.connection_confirmed_notifications
         new_community_invite_notifications = not notifications_settings.community_invite_notifications
         new_community_new_post_notifications = not notifications_settings.community_new_post_notifications
         new_user_new_post_notifications = not notifications_settings.user_new_post_notifications
-        new_post_notifications = not notifications_settings.post_notifications
+        new_post_comment_reaction_notifications = not notifications_settings.post_comment_reaction_notifications
+        new_post_comment_reply_notifications = not notifications_settings.post_comment_reply_notifications
+        new_post_comment_user_mention_notifications = not notifications_settings.post_comment_user_mention_notifications
+        new_post_user_mention_notifications = not notifications_settings.post_user_mention_notifications
 
         data = {
+            'post_comment_notifications': new_post_comment_notifications,
+            'post_reaction_notifications': new_post_reaction_notifications,
             'follow_notifications': new_follow_notifications,
             'connection_request_notifications': new_connection_request_notifications,
             'connection_confirmed_notifications': new_connection_confirmed_notifications,
             'community_invite_notifications': new_community_invite_notifications,
             'community_new_post_notifications': new_community_new_post_notifications,
             'user_new_post_notifications': new_user_new_post_notifications,
-            'post_notifications': new_post_notifications,
+            'post_comment_reply_notifications': new_post_comment_reply_notifications,
+            'post_comment_reaction_notifications': new_post_comment_reaction_notifications,
+            'post_comment_user_mention_notifications': new_post_comment_user_mention_notifications,
+            'post_user_mention_notifications': new_post_user_mention_notifications
         }
 
         url = self._get_url()
@@ -627,6 +642,8 @@ class AuthenticatedUserNotificationsSettingsTests(OpenbookAPITestCase):
 
         notifications_settings.refresh_from_db()
 
+        self.assertEqual(notifications_settings.post_comment_notifications, new_post_comment_notifications)
+        self.assertEqual(notifications_settings.post_reaction_notifications, new_post_reaction_notifications)
         self.assertEqual(notifications_settings.follow_notifications, new_follow_notifications)
         self.assertEqual(notifications_settings.connection_request_notifications, new_connection_request_notifications)
         self.assertEqual(notifications_settings.community_invite_notifications, new_community_invite_notifications)
@@ -634,7 +651,10 @@ class AuthenticatedUserNotificationsSettingsTests(OpenbookAPITestCase):
         self.assertEqual(notifications_settings.user_new_post_notifications, new_user_new_post_notifications)
         self.assertEqual(notifications_settings.connection_confirmed_notifications,
                          new_connection_confirmed_notifications)
-        self.assertEqual(notifications_settings.post_notifications, new_post_notifications)
+        self.assertEqual(notifications_settings.post_comment_reply_notifications,
+                         new_post_comment_reply_notifications)
+        self.assertEqual(notifications_settings.post_comment_reaction_notifications,
+                         new_post_comment_reaction_notifications)
 
     def _get_url(self):
         return reverse('authenticated-user-notifications-settings')
@@ -825,6 +845,8 @@ class AuthenticatedUserLanguageAPI(OpenbookAPITestCase):
         response = self.client.post(self.url, {
             'language_id': 99999
         }, **headers)
+
+        print(response)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         user.refresh_from_db()

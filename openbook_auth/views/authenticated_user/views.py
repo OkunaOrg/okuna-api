@@ -100,25 +100,35 @@ class AuthenticatedUserNotificationsSettings(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
+        post_comment_notifications = data.get('post_comment_notifications')
+        post_reaction_notifications = data.get('post_reaction_notifications')
         follow_notifications = data.get('follow_notifications')
         connection_request_notifications = data.get('connection_request_notifications')
         connection_confirmed_notifications = data.get('connection_confirmed_notifications')
         community_invite_notifications = data.get('community_invite_notifications')
         community_new_post_notifications = data.get('community_new_post_notifications')
         user_new_post_notifications = data.get('user_new_post_notifications')
-        post_notifications = data.get('post_notifications')
+        post_comment_reaction_notifications = data.get('post_comment_reaction_notifications')
+        post_comment_reply_notifications = data.get('post_comment_reply_notifications')
+        post_comment_user_mention_notifications = data.get('post_comment_user_mention_notifications')
+        post_user_mention_notifications = data.get('post_user_mention_notifications')
 
         user = request.user
 
         with transaction.atomic():
             notifications_settings = user.update_notifications_settings(
+                post_comment_notifications=post_comment_notifications,
+                post_reaction_notifications=post_reaction_notifications,
                 follow_notifications=follow_notifications,
                 connection_request_notifications=connection_request_notifications,
                 connection_confirmed_notifications=connection_confirmed_notifications,
                 community_invite_notifications=community_invite_notifications,
                 community_new_post_notifications=community_new_post_notifications,
                 user_new_post_notifications=user_new_post_notifications,
-                post_notifications=post_notifications
+                post_comment_reaction_notifications=post_comment_reaction_notifications,
+                post_comment_reply_notifications=post_comment_reply_notifications,
+                post_comment_user_mention_notifications=post_comment_user_mention_notifications,
+                post_user_mention_notifications=post_user_mention_notifications
             )
 
         user_notifications_settings_serializer = AuthenticatedUserNotificationsSettingsSerializer(

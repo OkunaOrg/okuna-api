@@ -118,6 +118,13 @@ jobs:
           . venv/bin/activate
           python utils/make_eb_config.py --name=$APPLICATION_NAME --region=$AWS_DEFAULT_REGION
     - run:
+        name: Create magic header authentication for protected environments
+        command: |
+          if [ $CIRCLE_BRANCH == 'develop' ]; then
+              . venv/bin/activate
+              python utils/make_magic_header.py --name=$DEVELOP_MAGIC_HEADER_NAME --value=$DEVELOP_MAGIC_HEADER_VALUE
+          fi
+    - run:
         name: Commit Dynamic EB Extensions
         command: |
           git config --global user.email "circle@ci.com"
@@ -126,7 +133,14 @@ jobs:
           git commit -m "EB Uploads only committed files, therefore this"
     - run:
         name: Deploy to EB
-        command: eb deploy $CIRCLE_BRANCH-$APPLICATION_NAME
+        command: |
+          if [ $CIRCLE_BRANCH == 'master' ]; then
+              eb deploy master-$MASTER_APPLICATION_NAME
+          elif [ $CIRCLE_BRANCH == 'develop' ]; then
+              eb deploy develop-$DEVELOP_APPLICATION_NAME
+          else
+              echo "Not deploying as its not master nor develop branches"
+          fi
 workflows:
   version: 2
   build:
@@ -138,4 +152,3 @@ workflows:
             only:
             - master
             - develop
-            - acceptance
