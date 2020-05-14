@@ -347,7 +347,7 @@ lists_patterns = [
 ]
 
 follow_requests_patterns = [
-    path('/', RequestToFollowUser.as_view(), name='request-to-follow-user'),
+    path('', RequestToFollowUser.as_view(), name='request-to-follow-user'),
     path('approve/', ApproveUserFollowRequest.as_view(), name='approve-user-follow-request'),
     path('reject/', RejectUserFollowRequest.as_view(), name='reject-user-follow-request'),
     path('received/', ReceivedFollowRequests.as_view(), name='received-follow-requests'),
