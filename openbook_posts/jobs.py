@@ -87,12 +87,6 @@ def _process_community_activity_score_reaction_deleted(community, post_reaction_
         community.activity_score = F('activity_score') - settings.ACTIVITY_UNIQUE_REACTION_WEIGHT
         community.save()
 
-    community.refresh_from_db()
-    if community.activity_score < Decimal(0.0):
-        logger.info('Community activity score for community with id {0} '
-                    'went below zero while processing delete reaction with id {1}'.format(
-            community.pk, post_reaction_id))
-
 
 def process_activity_score_post_reaction(post_id, post_reaction_id):
     """
@@ -136,11 +130,6 @@ def process_activity_score_post_reaction(post_id, post_reaction_id):
         post.activity_score = F('activity_score') + settings.ACTIVITY_UNIQUE_REACTION_WEIGHT
 
     post.save()
-    post.refresh_from_db()
-
-    if post.activity_score < Decimal(0.0):
-        logger.info('Post activity score for post with id {0} '
-                    'went below zero while processing reaction with id {1}'.format(post_id, post_reaction_id))
     logger.info('Processed activity score for reaction of post with id: %d' % post_id)
 
 
@@ -187,12 +176,6 @@ def _process_community_activity_score_comment_deleted(community,
         community.activity_score = F('activity_score') - settings.ACTIVITY_UNIQUE_COMMENT_WEIGHT
         default_scheduler.cancel(unique_comment_job_id)
         community.save()
-
-    community.refresh_from_db()
-    if community.activity_score < Decimal(0.0):
-        logger.info('Community activity score for community with id {0} '
-                    'went below zero while processing delete comment with id {1}'.format(
-                community.pk, post_comment_id))
 
 
 def _process_community_activity_score_comment_added(community,
@@ -280,10 +263,6 @@ def process_activity_score_post_comment(post_id, post_comment_id, post_commenter
             _process_post_activity_score_comment_added(post, commenter_comments_count)
 
     post.save()
-    post.refresh_from_db()
-    if post.activity_score < Decimal(0.0):
-        logger.info('Post activity score for post with id {0} '
-                    'went below zero while processing comment with id {1}'.format(post_id, post_comment_id))
     logger.info('Processed activity score for comment with id: %d' % post_comment_id)
 
 
@@ -337,12 +316,6 @@ def _process_community_activity_score_post_deleted(post_id, post_creator_id,
         community.activity_score = F('activity_score') - settings.ACTIVITY_UNIQUE_POST_WEIGHT
         default_scheduler.cancel(unique_post_job_id)
         community.save()
-
-    community.refresh_from_db()
-    if community.activity_score < Decimal(0.0):
-        logger.info('Community activity score for community with id {0} '
-                    'went below zero while processing delete post with id {1}'.format(
-            community.pk, post_id))
 
 
 def process_community_activity_score_post(post_id, post_creator_id, post_community_id):
