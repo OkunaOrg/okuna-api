@@ -141,7 +141,7 @@ def check_can_create_follow_request(user, user_requesting_to_follow):
 
 
 def check_can_delete_follow_request_for_user(user, user_requesting_to_follow):
-    check_has_follow_request(user=user, requesting_user=user_requesting_to_follow)
+    check_has_follow_request(user=user_requesting_to_follow, requesting_user=user)
 
 
 def check_can_approve_follow_request_from_requesting_user(user, requesting_user):

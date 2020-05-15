@@ -59,6 +59,24 @@ class RequestToFollowUser(APIView):
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
 
+class CancelRequestToFollowUser(APIView):
+    permission_classes = (IsAuthenticated, IsNotSuspended)
+
+    def post(self, request):
+        serializer = RequestToFollowUserSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user_to_cancel_request_for = data.get('username')
+
+        user = request.user
+
+        with transaction.atomic():
+            user.delete_follow_request_for_user_with_username(user_to_cancel_request_for)
+
+        return ApiMessageResponse(_('Follow request cancelled.'), status=status.HTTP_200_OK)
+
+
 class ApproveUserFollowRequest(APIView):
     permission_classes = (IsAuthenticated, IsNotSuspended)
 

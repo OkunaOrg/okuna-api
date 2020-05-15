@@ -59,7 +59,7 @@ from openbook_hashtags.views.hashtags.views import SearchHashtags
 from openbook_invitations.views import UserInvite, UserInvites, SearchUserInvites, SendUserInviteEmail
 from openbook_devices.views import Devices, DeviceItem
 from openbook_follows.views import FollowUser, UnfollowUser, UpdateFollowUser, RequestToFollowUser, \
-    ApproveUserFollowRequest, RejectUserFollowRequest, ReceivedFollowRequests
+    ApproveUserFollowRequest, RejectUserFollowRequest, ReceivedFollowRequests, CancelRequestToFollowUser
 from openbook_lists.views import Lists, ListItem, ListNameCheck
 from openbook_moderation.views.checks import IsNotSuspendedCheck
 from openbook_moderation.views.moderated_object.views import ModeratedObjectItem, ModeratedObjectLogs, \
@@ -350,6 +350,7 @@ follow_requests_patterns = [
     path('', RequestToFollowUser.as_view(), name='request-to-follow-user'),
     path('approve/', ApproveUserFollowRequest.as_view(), name='approve-user-follow-request'),
     path('reject/', RejectUserFollowRequest.as_view(), name='reject-user-follow-request'),
+    path('cancel/', CancelRequestToFollowUser.as_view(), name='cancel-request-to-follow-user'),
     path('received/', ReceivedFollowRequests.as_view(), name='received-follow-requests'),
 ]
 

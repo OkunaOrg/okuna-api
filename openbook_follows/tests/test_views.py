@@ -261,6 +261,79 @@ class RequestToFollowUserAPITests(OpenbookAPITestCase):
         return reverse('request-to-follow-user')
 
 
+class CancelRequestToFollowUserAPITests(OpenbookAPITestCase):
+    def test_can_cancel_request_to_follow_private_user(self):
+        """
+        should be able to cancel a request to follow a private user and return 200
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user_to_cancel_request_to_follow = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+
+        user.create_follow_request_for_user(user_to_cancel_request_to_follow)
+
+        data = {
+            'username': user_to_cancel_request_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(user_to_cancel_request_to_follow.has_follow_request_from_user(user=user))
+
+    def test_cannot_cancel_request_to_follow_user_if_not_exists(self):
+        """
+        should not be able to cancel a non existing request to follow and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user_to_cancel_request_to_follow = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+
+        data = {
+            'username': user_to_cancel_request_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_cancelling_a_request_to_follow_deletes_database_notification(self):
+        """
+        should delete the database notification when cancelling a request notification to a user
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        user_to_cancel_request_to_follow = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+
+        user.create_follow_request_for_user(user_to_cancel_request_to_follow)
+
+        data = {
+            'username': user_to_cancel_request_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.assertFalse(user_to_cancel_request_to_follow.has_follow_request_from_user(user=user))
+
+        self.assertFalse(FollowRequestNotification.objects.filter(notification__owner=user_to_cancel_request_to_follow,
+                                                                  follow_request__creator=user).exists())
+
+    def _get_url(self):
+        return reverse('cancel-request-to-follow-user')
+
+
 class ApproveUserFollowRequestAPITests(OpenbookAPITestCase):
     def test_approving_a_follow_request_follows_the_approving_user(self):
         """

@@ -2785,12 +2785,12 @@ class User(AbstractUser):
 
         return follow_request
 
-    def delete_follow_request_for_user_with_id(self, user_id):
-        user = User.objects.get(pk=user_id)
+    def delete_follow_request_for_user_with_username(self, user_username):
+        user = User.objects.get(username=user_username)
         return self.delete_follow_request_for_user(user)
 
     def delete_follow_request_for_user(self, user):
-        check_can_delete_follow_request_for_user(user=user, user_requesting_to_follow=user)
+        check_can_delete_follow_request_for_user(user=self, user_requesting_to_follow=user)
 
         FollowRequest = get_follow_request_model()
         FollowRequest.delete_follow_request(creator_id=self.pk, target_user_id=user.pk)
