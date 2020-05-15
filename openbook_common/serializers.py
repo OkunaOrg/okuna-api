@@ -4,6 +4,7 @@ from rest_framework import serializers
 from openbook_auth.models import User, UserProfile
 from openbook_circles.models import Circle
 from openbook_common.models import Emoji, EmojiGroup, Badge, Language
+from openbook_common.serializers_fields.user import IsFollowingField
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import IsFavoriteField, CommunityMembershipsField
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
@@ -218,14 +219,17 @@ class CommonBadgeSerializer(serializers.ModelSerializer):
 
 class CommonPublicUserProfileSerializer(serializers.ModelSerializer):
     badges = CommonBadgeSerializer(many=True)
+    is_following = IsFollowingField()
 
     class Meta:
         model = UserProfile
         fields = (
             'id',
             'avatar',
+            'cover',
             'name',
-            'badges'
+            'badges',
+            'is_following',
         )
 
 
@@ -238,7 +242,7 @@ class CommonPublicUserSerializer(serializers.ModelSerializer):
             'id',
             'username',
             'profile',
-            'visibility'
+            'visibility',
         )
 
 
