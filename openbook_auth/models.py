@@ -2824,7 +2824,10 @@ class User(AbstractUser):
         Follow = get_follow_model()
         follow = Follow.create_follow(user_id=self.pk, followed_user_id=user.pk, lists_ids=lists_ids)
         self._create_follow_notification(followed_user_id=user.pk)
-        self._send_follow_push_notification(followed_user_id=user.pk)
+
+        if not is_pre_approved:
+            # When its preapproved by the user to be followed, do not send the person a push notification
+            self._send_follow_push_notification(followed_user_id=user.pk)
 
         if self.has_max_number_of_following():
             # Delete all send follow requests as we cant follow anyone else

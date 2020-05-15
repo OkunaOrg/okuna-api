@@ -427,9 +427,9 @@ class ApproveUserFollowRequestAPITests(OpenbookAPITestCase):
                                                                           follow__followed_user=user).count(), 1)
 
     @mock.patch('openbook_notifications.helpers.send_follow_request_approved_push_notification')
-    def test_approving_a_follow_request_creates_push_notification(self, send_follow_request_approved_push_notification):
+    def test_approving_a_follow_request_send_approved_push_notification(self, send_follow_request_approved_push_notification):
         """
-        should create a push notification when approving a follow request
+        should send a follow request approved push notification when approving a follow request
         """
         user = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
         headers = make_authentication_headers_for_user(user)
@@ -451,6 +451,29 @@ class ApproveUserFollowRequestAPITests(OpenbookAPITestCase):
 
         send_follow_request_approved_push_notification.assert_called_with(
             follow=follow)
+
+    @mock.patch('openbook_notifications.helpers.send_follow_push_notification')
+    def test_approving_a_follow_request_does_not_send_a_follow_push_notification(self, send_follow_push_notification):
+        """
+        should not send a user followed push notification when approving a follow request
+        """
+        user = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+        headers = make_authentication_headers_for_user(user)
+
+        user_requesting_to_follow = make_user()
+        user_requesting_to_follow.create_follow_request_for_user(user=user)
+
+        data = {
+            'username': user_requesting_to_follow.username,
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        send_follow_push_notification.assert_not_called()
 
     @mock.patch('openbook_notifications.helpers._send_notification_to_user')
     def test_approving_a_follow_request_does_not_create_push_notification_if_disabled(self, _send_notification_to_user):
