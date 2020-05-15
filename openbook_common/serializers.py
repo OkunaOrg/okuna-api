@@ -64,32 +64,6 @@ class CommonPostCreatorBadgeSerializer(serializers.ModelSerializer):
             'keyword_description'
         )
 
-
-class CommonPostCreatorProfileSerializer(serializers.ModelSerializer):
-    badges = CommonPostCreatorBadgeSerializer(many=True)
-
-    class Meta:
-        model = UserProfile
-        fields = (
-            'avatar',
-            'name',
-            'cover',
-            'badges'
-        )
-
-
-class CommonPostCreatorSerializer(serializers.ModelSerializer):
-    profile = CommonPostCreatorProfileSerializer()
-
-    class Meta:
-        model = User
-        fields = (
-            'id',
-            'profile',
-            'username'
-        )
-
-
 class CommonPostReactionEmojiSerializer(serializers.ModelSerializer):
     class Meta:
         model = Emoji
@@ -263,7 +237,8 @@ class CommonPublicUserSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'username',
-            'profile'
+            'profile',
+            'visibility'
         )
 
 

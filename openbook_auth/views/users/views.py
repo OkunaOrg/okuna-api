@@ -11,8 +11,6 @@ from openbook_auth.views.users.serializers import SearchUsersSerializer, SearchU
     GetUserPostsCountUserSerializer, LegacyGetUserUserSerializer
 from openbook_common.utils.helpers import normalise_request_data
 from openbook_moderation.permissions import IsNotSuspended
-from openbook_common.responses import ApiMessageResponse
-from django.utils.translation import ugettext_lazy as _
 
 
 class SearchUsers(APIView):

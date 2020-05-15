@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from openbook_auth.models import User, UserProfile
 from openbook_common.models import Language, Badge
-from openbook_common.serializers import CommonEmojiSerializer
+from openbook_common.serializers import CommonEmojiSerializer, CommonPublicUserSerializer
 from openbook_common.serializers_fields.hashtag import HashtagPostsCountField
 from openbook_common.serializers_fields.post import IsEncircledField
 from openbook_communities.models import Community
@@ -18,31 +18,6 @@ class ModeratedObjectUserProfileBadgeSerializer(serializers.ModelSerializer):
         fields = (
             'keyword',
             'keyword_description'
-        )
-
-
-class ModeratedObjectUserProfileSerializer(serializers.ModelSerializer):
-    badges = ModeratedObjectUserProfileBadgeSerializer(many=True)
-
-    class Meta:
-        model = UserProfile
-        fields = (
-            'id',
-            'avatar',
-            'name',
-            'badges'
-        )
-
-
-class ModeratedObjectUserSerializer(serializers.ModelSerializer):
-    profile = ModeratedObjectUserProfileSerializer()
-
-    class Meta:
-        model = User
-        fields = (
-            'id',
-            'username',
-            'profile'
         )
 
 
@@ -109,7 +84,7 @@ class LanguageSerializer(serializers.ModelSerializer):
 
 
 class ModeratedObjectPostSerializer(serializers.ModelSerializer):
-    creator = ModeratedObjectUserSerializer()
+    creator = CommonPublicUserSerializer()
     community = ModeratedObjectCommunitySerializer()
     image = ModeratedObjectPostImageSerializer()
     language = LanguageSerializer()
@@ -132,7 +107,7 @@ class ModeratedObjectPostSerializer(serializers.ModelSerializer):
 
 
 class ModeratedObjectPostCommentSerializer(serializers.ModelSerializer):
-    commenter = ModeratedObjectUserSerializer()
+    commenter = CommonPublicUserSerializer()
     post = ModeratedObjectPostSerializer()
     language = LanguageSerializer()
 
@@ -169,7 +144,7 @@ class ModeratedObjectSerializer(serializers.ModelSerializer):
         Post: ModeratedObjectPostSerializer(),
         PostComment: ModeratedObjectPostCommentSerializer(),
         Community: ModeratedObjectCommunitySerializer(),
-        User: ModeratedObjectUserSerializer(),
+        User: CommonPublicUserSerializer(),
         Hashtag: ModeratedObjectHashtagSerializer(),
     })
 

@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from openbook_auth.models import UserProfile, User
 from openbook_common.models import Emoji, Badge
+from openbook_common.serializers import CommonPublicUserSerializer
 from openbook_posts.models import PostCommentReaction
 from openbook_posts.validators import post_uuid_exists, post_comment_id_exists, \
     post_comment_reaction_id_exists_for_post_with_uuid_and_comment_with_id, \
@@ -39,30 +40,6 @@ class PostReactorProfileBadgeSerializer(serializers.ModelSerializer):
         )
 
 
-class PostReactorProfileSerializer(serializers.ModelSerializer):
-    badges = PostReactorProfileBadgeSerializer(many=True)
-
-    class Meta:
-        model = UserProfile
-        fields = (
-            'avatar',
-            'id',
-            'badges'
-        )
-
-
-class PostCommentReactionReactorSerializer(serializers.ModelSerializer):
-    profile = PostReactorProfileSerializer(many=False)
-
-    class Meta:
-        model = User
-        fields = (
-            'username',
-            'profile',
-            'id'
-        )
-
-
 class PostCommentReactionEmojiSerializer(serializers.ModelSerializer):
     class Meta:
         model = Emoji
@@ -75,7 +52,7 @@ class PostCommentReactionEmojiSerializer(serializers.ModelSerializer):
 
 
 class PostCommentReactionSerializer(serializers.ModelSerializer):
-    reactor = PostCommentReactionReactorSerializer(many=False)
+    reactor = CommonPublicUserSerializer(many=False)
     emoji = PostCommentReactionEmojiSerializer(many=False)
 
     class Meta:

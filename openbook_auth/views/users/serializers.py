@@ -240,7 +240,8 @@ class SearchUsersUserSerializer(serializers.ModelSerializer):
             'username',
             'is_following',
             'are_new_post_notifications_enabled',
-            'is_connected'
+            'is_connected',
+            'visibility',
         )
 
 

@@ -1,10 +1,9 @@
 from generic_relations.relations import GenericRelatedField
 from rest_framework import serializers
 
-from openbook_auth.models import User, UserProfile
 from openbook_common.models import Emoji, Language, Badge
 from openbook_common.serializers import CommonHashtagSerializer, \
-    CommonFollowRequestSerializer, CommonFollowSerializer
+    CommonFollowRequestSerializer, CommonFollowSerializer, CommonPublicUserSerializer
 from openbook_common.serializers_fields.post import IsEncircledField
 from openbook_common.serializers_fields.post_comment import PostCommentIsMutedField
 from openbook_communities.models import Community, CommunityInvite
@@ -74,56 +73,6 @@ class NotificationsBadgeSerializer(serializers.ModelSerializer):
         )
 
 
-class PostCommentCommenterProfileSerializer(serializers.ModelSerializer):
-    badges = NotificationsBadgeSerializer(many=True)
-
-    class Meta:
-        model = UserProfile
-        fields = (
-            'id',
-            'avatar',
-            'name',
-            'badges'
-        )
-
-
-class PostCommentCommenterSerializer(serializers.ModelSerializer):
-    profile = PostCommentCommenterProfileSerializer()
-
-    class Meta:
-        model = User
-        fields = (
-            'id',
-            'username',
-            'profile'
-        )
-
-
-class PostCommentCreatorProfileSerializer(serializers.ModelSerializer):
-    badges = NotificationsBadgeSerializer(many=True)
-
-    class Meta:
-        model = UserProfile
-        fields = (
-            'id',
-            'avatar',
-            'name',
-            'badges'
-        )
-
-
-class PostCommentCreatorSerializer(serializers.ModelSerializer):
-    profile = PostCommentCreatorProfileSerializer()
-
-    class Meta:
-        model = User
-        fields = (
-            'id',
-            'username',
-            'profile'
-        )
-
-
 class PostImageSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(read_only=True)
 
@@ -150,7 +99,7 @@ class PostCommunitySerializer(serializers.ModelSerializer):
 
 
 class NotificationPostSerializer(serializers.ModelSerializer):
-    creator = PostCommentCreatorSerializer()
+    creator = CommonPublicUserSerializer()
     is_encircled = IsEncircledField()
     community = PostCommunitySerializer()
     # Temp backwards compat
@@ -186,7 +135,7 @@ class PostCommentLanguageSerializer(serializers.ModelSerializer):
 
 
 class NotificationPostCommentParentSerializer(serializers.ModelSerializer):
-    commenter = PostCommentCommenterSerializer()
+    commenter = CommonPublicUserSerializer()
     is_muted = PostCommentIsMutedField()
     language = PostCommentLanguageSerializer()
 
@@ -204,7 +153,7 @@ class NotificationPostCommentParentSerializer(serializers.ModelSerializer):
 
 
 class NotificationPostCommentSerializer(serializers.ModelSerializer):
-    commenter = PostCommentCommenterSerializer()
+    commenter = CommonPublicUserSerializer()
     post = NotificationPostSerializer()
     parent_comment = NotificationPostCommentParentSerializer()
     is_muted = PostCommentIsMutedField()
@@ -251,31 +200,6 @@ class PostCommentReplyNotificationSerializer(serializers.ModelSerializer):
         )
 
 
-class PostCommentReactionReactorProfileSerializer(serializers.ModelSerializer):
-    badges = NotificationsBadgeSerializer(many=True)
-
-    class Meta:
-        model = UserProfile
-        fields = (
-            'id',
-            'avatar',
-            'name',
-            'badges'
-        )
-
-
-class PostCommentReactionReactorSerializer(serializers.ModelSerializer):
-    profile = PostCommentReactionReactorProfileSerializer()
-
-    class Meta:
-        model = User
-        fields = (
-            'id',
-            'username',
-            'profile'
-        )
-
-
 class PostCommentReactionEmojiSerializer(serializers.ModelSerializer):
     class Meta:
         model = Emoji
@@ -287,7 +211,7 @@ class PostCommentReactionEmojiSerializer(serializers.ModelSerializer):
 
 
 class PostCommentReactionSerializer(serializers.ModelSerializer):
-    reactor = PostCommentReactionReactorSerializer()
+    reactor = CommonPublicUserSerializer()
     emoji = PostCommentReactionEmojiSerializer()
     post_comment = NotificationPostCommentSerializer()
 
@@ -313,31 +237,6 @@ class PostCommentReactionNotificationSerializer(serializers.ModelSerializer):
         )
 
 
-class PostReactionReactorProfileSerializer(serializers.ModelSerializer):
-    badges = NotificationsBadgeSerializer(many=True)
-
-    class Meta:
-        model = UserProfile
-        fields = (
-            'id',
-            'avatar',
-            'name',
-            'badges'
-        )
-
-
-class PostReactionReactorSerializer(serializers.ModelSerializer):
-    profile = PostReactionReactorProfileSerializer()
-
-    class Meta:
-        model = User
-        fields = (
-            'id',
-            'username',
-            'profile'
-        )
-
-
 class PostReactionEmojiSerializer(serializers.ModelSerializer):
     class Meta:
         model = Emoji
@@ -349,7 +248,7 @@ class PostReactionEmojiSerializer(serializers.ModelSerializer):
 
 
 class PostReactionSerializer(serializers.ModelSerializer):
-    reactor = PostReactionReactorSerializer()
+    reactor = CommonPublicUserSerializer()
     emoji = PostReactionEmojiSerializer()
     post = NotificationPostSerializer()
 
@@ -374,33 +273,8 @@ class PostReactionNotificationSerializer(serializers.ModelSerializer):
         )
 
 
-class ConnectionRequesterProfileSerializer(serializers.ModelSerializer):
-    badges = NotificationsBadgeSerializer(many=True)
-
-    class Meta:
-        model = UserProfile
-        fields = (
-            'id',
-            'avatar',
-            'name',
-            'badges'
-        )
-
-
-class ConnectionRequesterSerializer(serializers.ModelSerializer):
-    profile = ConnectionRequesterProfileSerializer()
-
-    class Meta:
-        model = User
-        fields = (
-            'id',
-            'username',
-            'profile'
-        )
-
-
 class ConnectionRequestNotificationSerializer(serializers.ModelSerializer):
-    connection_requester = ConnectionRequesterSerializer()
+    connection_requester = CommonPublicUserSerializer()
 
     class Meta:
         model = ConnectionRequestNotification
@@ -410,33 +284,8 @@ class ConnectionRequestNotificationSerializer(serializers.ModelSerializer):
         )
 
 
-class ConnectionConfirmatorProfileSerializer(serializers.ModelSerializer):
-    badges = NotificationsBadgeSerializer(many=True)
-
-    class Meta:
-        model = UserProfile
-        fields = (
-            'id',
-            'avatar',
-            'name',
-            'badges'
-        )
-
-
-class ConnectionConfirmatorSerializer(serializers.ModelSerializer):
-    profile = ConnectionConfirmatorProfileSerializer()
-
-    class Meta:
-        model = User
-        fields = (
-            'id',
-            'username',
-            'profile'
-        )
-
-
 class ConnectionConfirmedNotificationSerializer(serializers.ModelSerializer):
-    connection_confirmator = ConnectionConfirmatorSerializer()
+    connection_confirmator = CommonPublicUserSerializer()
 
     class Meta:
         model = ConnectionConfirmedNotification
@@ -446,33 +295,8 @@ class ConnectionConfirmedNotificationSerializer(serializers.ModelSerializer):
         )
 
 
-class FollowerProfileSerializer(serializers.ModelSerializer):
-    badges = NotificationsBadgeSerializer(many=True)
-
-    class Meta:
-        model = UserProfile
-        fields = (
-            'id',
-            'avatar',
-            'name',
-            'badges'
-        )
-
-
-class FollowerSerializer(serializers.ModelSerializer):
-    profile = FollowerProfileSerializer()
-
-    class Meta:
-        model = User
-        fields = (
-            'id',
-            'username',
-            'profile'
-        )
-
-
 class FollowNotificationSerializer(serializers.ModelSerializer):
-    follower = FollowerSerializer()
+    follower = CommonPublicUserSerializer()
 
     class Meta:
         model = FollowNotification
@@ -504,31 +328,6 @@ class FollowRequestApprovedNotificationSerializer(serializers.ModelSerializer):
         )
 
 
-class CommunityInviteCreatorProfileSerializer(serializers.ModelSerializer):
-    badges = NotificationsBadgeSerializer(many=True)
-
-    class Meta:
-        model = UserProfile
-        fields = (
-            'id',
-            'avatar',
-            'name',
-            'badges'
-        )
-
-
-class CommunityInviteCreatorSerializer(serializers.ModelSerializer):
-    profile = CommunityInviteCreatorProfileSerializer()
-
-    class Meta:
-        model = User
-        fields = (
-            'id',
-            'username',
-            'profile'
-        )
-
-
 class CommunityInviteCommunitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Community
@@ -542,7 +341,7 @@ class CommunityInviteCommunitySerializer(serializers.ModelSerializer):
 
 
 class CommunityInviteSerializer(serializers.ModelSerializer):
-    creator = CommunityInviteCreatorSerializer()
+    creator = CommonPublicUserSerializer()
     community = CommunityInviteCommunitySerializer()
 
     class Meta:
@@ -590,7 +389,7 @@ class UserNewPostNotificationSerializer(serializers.ModelSerializer):
 
 class PostUserMentionSerializer(serializers.ModelSerializer):
     post = NotificationPostSerializer()
-    user = PostCommentCreatorSerializer()
+    user = CommonPublicUserSerializer()
 
     class Meta:
         model = PostUserMention
@@ -614,7 +413,7 @@ class PostUserMentionNotificationSerializer(serializers.ModelSerializer):
 
 class PostCommentUserMentionSerializer(serializers.ModelSerializer):
     post_comment = NotificationPostCommentSerializer()
-    user = PostCommentCreatorSerializer()
+    user = CommonPublicUserSerializer()
 
     class Meta:
         model = PostCommentUserMention
