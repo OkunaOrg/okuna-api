@@ -7,6 +7,7 @@ import tempfile
 
 import magic
 import spectra
+from cursor_pagination import CursorPaginator
 from django.http import QueryDict
 from imagekit.utils import get_cache
 from imagekit.models import ProcessedImageField
