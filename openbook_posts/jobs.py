@@ -1,5 +1,4 @@
 from django.utils import timezone
-from decimal import Decimal
 from django_rq import job, get_scheduler, get_queue
 
 from openbook_common.utils.helpers import chunked_queryset_iterator
@@ -639,26 +638,3 @@ def clean_trending_posts():
 
     # delete posts
     TrendingPost.objects.filter(id__in=direct_removable_delete_ids).delete()
-
-
-def _chunked_queryset_iterator(queryset, size, *, ordering=('id',)):
-    """
-    Split a queryset into chunks.
-    This can be used instead of `queryset.iterator()`,
-    so `.prefetch_related()` also works
-    Note::
-    The ordering must uniquely identify the object,
-    and be in the same order (ASC/DESC). See https://github.com/photocrowd/django-cursor-pagination
-    """
-    pager = CursorPaginator(queryset, ordering)
-    after = None
-    while True:
-        page = pager.page(after=after, first=size)
-        if page:
-            yield from page.items
-        else:
-            return
-        if not page.has_next:
-            break
-        # take last item, next page starts after this.
-        after = pager.cursor(instance=page[-1])
