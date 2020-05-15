@@ -500,8 +500,7 @@ class ApproveUserFollowRequestAPITests(OpenbookAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # Should be called 1 because we also send the follow notification
-        self.assertEqual(_send_notification_to_user.call_count, 1)
+        self.assertEqual(_send_notification_to_user.call_count, 0)
 
     def test_cant_approve_non_existing_follow_request(self):
         """
