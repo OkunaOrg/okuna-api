@@ -846,8 +846,6 @@ class AuthenticatedUserLanguageAPI(OpenbookAPITestCase):
             'language_id': 99999
         }, **headers)
 
-        print(response)
-
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         user.refresh_from_db()
         self.assertTrue(user.language.id, language.id)

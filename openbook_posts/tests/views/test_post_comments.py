@@ -1,11 +1,17 @@
 # Create your tests here.
 import json
 from django.urls import reverse
+from django_rq import get_worker, get_scheduler
+from django.conf import settings
 from faker import Faker
 from rest_framework import status
 from unittest import mock
 from unittest.mock import ANY
-from openbook_common.tests.models import OpenbookAPITestCase
+
+from rq import SimpleWorker
+
+from openbook_common.tests.models import OpenbookAPITestCase, OpenbookAPITransactionTestCase
+from unittest.mock import call
 
 import logging
 import random

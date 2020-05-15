@@ -1,16 +1,20 @@
 # Create your tests here.
 import json
 from django.urls import reverse
+from django.conf import settings
+from django_rq import get_worker
 from faker import Faker
 from rest_framework import status
-from openbook_common.tests.models import OpenbookAPITestCase
+from rq import SimpleWorker
+
+from openbook_common.tests.models import OpenbookAPITestCase, OpenbookAPITransactionTestCase
 
 import logging
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_emoji, make_emoji_group, make_reactions_emoji_group, \
     make_community
 from openbook_notifications.models import PostReactionNotification
-from openbook_posts.models import PostReaction
+from openbook_posts.models import PostReaction, Post
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -591,6 +595,77 @@ class PostReactionsAPITests(OpenbookAPITestCase):
     def _get_url(self, post):
         return reverse('post-reactions', kwargs={
             'post_uuid': post.uuid,
+        })
+
+
+class PostReactionsTransactionAPITests(OpenbookAPITransactionTestCase):
+    """
+    PostReactionsTransactionAPI
+    """
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
+    def test_creating_post_reaction_updates_post_activity_score(self):
+        """
+        should update activity score in post after successful reaction
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        post = user.create_public_post(text=make_fake_post_text())
+
+        emoji_group = make_reactions_emoji_group()
+
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id, emoji_group.pk)
+
+        url = self._get_url(post)
+        response = self.client.put(url, data, **headers)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        post.refresh_from_db()
+        self.assertEqual(post.activity_score, settings.ACTIVITY_UNIQUE_REACTION_WEIGHT)
+
+    def test_creating_post_reaction_updates_community_activity_score(self):
+        """
+        should update activity score in community after successful community post reaction
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        community = make_community(creator=user)
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+
+        activity_score_before_reaction = community.activity_score
+
+        emoji_group = make_reactions_emoji_group()
+
+        post_reaction_emoji_id = make_emoji(group=emoji_group).pk
+
+        data = self._get_create_post_reaction_request_data(post_reaction_emoji_id, emoji_group.pk)
+
+        url = self._get_url(post)
+        response = self.client.put(url, data, **headers)
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
+
+        community.refresh_from_db()
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(community.activity_score, activity_score_before_reaction + settings.ACTIVITY_UNIQUE_REACTION_WEIGHT)
+
+    def _get_create_post_reaction_request_data(self, emoji_id, emoji_group_id):
+        return {
+            'emoji_id': emoji_id,
+            'group_id': emoji_group_id
+        }
+
+    def _get_url(self, post):
+        return reverse('post-reactions', kwargs={
+            'post_uuid': post.uuid
         })
 
 

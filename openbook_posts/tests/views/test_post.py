@@ -5,34 +5,33 @@ from os import access, F_OK
 
 from PIL import Image
 from django.urls import reverse
-from django_rq import get_worker
-from django_rq.queues import get_queues
+from django_rq import get_worker, get_scheduler
 from faker import Faker
+from django.db import transaction
 from rest_framework import status
-from openbook_common.tests.models import OpenbookAPITestCase
+from openbook_common.tests.models import OpenbookAPITestCase, OpenbookAPITransactionTestCase
 from django.core.files.images import ImageFile
 from django.core.files import File
-from django.core.cache import cache
 from django.conf import settings
 from unittest import mock
 
 import logging
 
-from rq import SimpleWorker, Worker
+from rq import SimpleWorker
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_community, make_moderation_category, \
-    get_test_videos, get_test_image, make_proxy_blacklisted_domain, make_hashtag, make_hashtag_name, \
+    get_test_videos, get_test_image, make_hashtag, make_hashtag_name, \
     make_reactions_emoji_group, make_emoji
-from openbook_common.utils.model_loaders import get_language_model, get_community_new_post_notification_model, \
+from openbook_common.utils.model_loaders import get_community_new_post_notification_model, \
     get_post_comment_notification_model, get_post_comment_user_mention_notification_model, \
     get_post_user_mention_notification_model, get_post_comment_reaction_notification_model, \
     get_post_comment_reply_notification_model
+from openbook_common.utils.model_loaders import get_language_model
 from openbook_communities.models import Community
 from openbook_hashtags.models import Hashtag
 from openbook_notifications.models import PostUserMentionNotification, Notification
 from openbook_posts.models import Post, PostUserMention, PostMedia
-from openbook_common.models import ProxyBlacklistedDomain
 
 logger = logging.getLogger(__name__)
 fake = Faker()
@@ -1297,6 +1296,82 @@ class PostItemAPITests(OpenbookAPITestCase):
         response = self.client.get(url, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def _get_url(self, post):
+        return reverse('post', kwargs={
+            'post_uuid': post.uuid
+        })
+
+
+class PostItemTransactionAPITests(OpenbookAPITransactionTestCase):
+
+    def test_reduces_community_activity_score_on_delete_post(self):
+        """
+        should reduce community activity score on delete post and return 200
+        """
+        self._clear_jobs_in_scheduler()
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        community = make_community(creator=user)
+        with transaction.atomic():
+            post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+
+        activity_score_before_delete = community.activity_score
+
+        url = self._get_url(post)
+        response = self.client.delete(url, **headers)
+
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+
+        expected_weight = activity_score_before_delete - \
+                          settings.ACTIVITY_UNIQUE_POST_WEIGHT - \
+                          settings.ACTIVITY_COUNT_POSTS_WEIGHT
+
+        self._clear_jobs_in_scheduler()
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(community.activity_score, expected_weight)
+
+    def test_reduces_community_activity_score_appropriately_on_delete_two_posts_by_same_creator(self):
+        """
+        should reduce community activity score correctly on delete two posts by same creator
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+        community = make_community(creator=user)
+        with transaction.atomic():
+            post_1 = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+            post_2 = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+
+        activity_score_before_delete = community.activity_score
+
+        url_1 = self._get_url(post_1)
+        response_1 = self.client.delete(url_1, **headers)
+        url_2 = self._get_url(post_2)
+        response_2 = self.client.delete(url_2, **headers)
+
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+
+        expected_weight = activity_score_before_delete - \
+                          settings.ACTIVITY_UNIQUE_POST_WEIGHT - \
+                          (2 * settings.ACTIVITY_COUNT_POSTS_WEIGHT)
+
+        self._clear_jobs_in_scheduler()
+        self.assertEqual(response_1.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_2.status_code, status.HTTP_200_OK)
+        self.assertEqual(community.activity_score, expected_weight)
+
+    def _clear_jobs_in_scheduler(self):
+        default_scheduler = get_scheduler('process-activity-score')
+        for job in default_scheduler.get_jobs():
+            default_scheduler.cancel(job.get_id())
 
     def _get_url(self, post):
         return reverse('post', kwargs={

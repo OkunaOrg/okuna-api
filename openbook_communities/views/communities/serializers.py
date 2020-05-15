@@ -89,11 +89,22 @@ class GetFavoriteCommunitiesSerializer(serializers.Serializer):
     )
 
 
+class TrendingCommunitiesSerializerLegacy(serializers.Serializer):
+    category = serializers.CharField(max_length=settings.CATEGORY_NAME_MAX_LENGTH,
+                                     allow_blank=True,
+                                     required=False,
+                                     validators=[category_name_exists])
+
+
 class TrendingCommunitiesSerializer(serializers.Serializer):
     category = serializers.CharField(max_length=settings.CATEGORY_NAME_MAX_LENGTH,
                                      allow_blank=True,
                                      required=False,
                                      validators=[category_name_exists])
+    count = serializers.IntegerField(
+        required=False,
+        max_value=20
+    )
 
 
 class GetCommunitiesCommunityCategorySerializer(serializers.ModelSerializer):
