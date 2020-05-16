@@ -18,6 +18,8 @@ class Notification(models.Model):
     CONNECTION_REQUEST = 'CR'
     CONNECTION_CONFIRMED = 'CC'
     FOLLOW = 'F'
+    FOLLOW_REQUEST = 'FR'
+    FOLLOW_REQUEST_APPROVED = 'FRA'
     COMMUNITY_INVITE = 'CI'
     POST_USER_MENTION = 'PUM'
     POST_COMMENT_USER_MENTION = 'PCUM'
@@ -32,6 +34,8 @@ class Notification(models.Model):
         (CONNECTION_REQUEST, 'Connection Request'),
         (CONNECTION_CONFIRMED, 'Connection Confirmed'),
         (FOLLOW, 'Follow'),
+        (FOLLOW_REQUEST, 'Follow request'),
+        (FOLLOW_REQUEST_APPROVED, 'Follow request approved'),
         (COMMUNITY_INVITE, 'Community Invite'),
         (POST_USER_MENTION, 'Post user mention'),
         (POST_COMMENT_USER_MENTION, 'Post comment user mention'),

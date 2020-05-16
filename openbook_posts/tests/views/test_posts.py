@@ -1476,12 +1476,12 @@ class PostsAPITests(OpenbookAPITestCase):
         for post_id in created_posts_ids:
             self.assertIn(post_id, response_posts_ids)
 
-    def test_get_all_public_posts_for_user_unauthenticated(self):
+    def test_get_all_public_posts_for_public_user_unauthenticated(self):
         """
-        should be able to retrieve all the public posts of an specific user
+        should be able to retrieve all the public posts of an specific public visibility user
         being unauthenticated and return 200
         """
-        user = make_user()
+        user = make_user(visibility=User.VISIBILITY_TYPE_PUBLIC)
 
         amount_of_user_public_posts = random.randint(1, 5)
         amount_of_user_encircled_posts = random.randint(1, 5)
@@ -1503,6 +1503,129 @@ class PostsAPITests(OpenbookAPITestCase):
         response = self.client.get(url, {
             'username': user.username
         })
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), len(public_posts_ids))
+
+        response_posts_ids = [response_post['id'] for response_post in response_posts]
+
+        for public_post_id in public_posts_ids:
+            self.assertIn(public_post_id, response_posts_ids)
+
+    def test_cant_get_public_posts_for_private_user_unauthenticated(self):
+        """
+        should not be able to retrieve the public posts of an specific private visibility user
+        being unauthenticated and return 400
+        """
+        user = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+
+        amount_of_user_public_posts = random.randint(1, 5)
+
+        public_posts_ids = []
+
+        for i in range(amount_of_user_public_posts):
+            post_text = make_fake_post_text()
+            public_post = user.create_public_post(text=post_text)
+            public_posts_ids.append(public_post.pk)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': user.username
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_can_get_public_posts_for_okuna_visibility_user_authenticated(self):
+        """
+        should be able to retrieve the public posts of an specific okuna visibility user
+        being authenticated and return 400
+        """
+
+        user = make_user()
+
+        headers = make_authentication_headers_for_user(user=user)
+
+        user_to_retrieve_posts_from = make_user(visibility=User.VISIBILITY_TYPE_OKUNA)
+
+        amount_of_user_public_posts = random.randint(1, 5)
+
+        public_posts_ids = []
+
+        for i in range(amount_of_user_public_posts):
+            post_text = make_fake_post_text()
+            public_post = user_to_retrieve_posts_from.create_public_post(text=post_text)
+            public_posts_ids.append(public_post.pk)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': user_to_retrieve_posts_from.username
+        }, **headers)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response_posts = json.loads(response.content)
+
+        self.assertEqual(len(response_posts), len(public_posts_ids))
+
+        response_posts_ids = [response_post['id'] for response_post in response_posts]
+
+        for public_post_id in public_posts_ids:
+            self.assertIn(public_post_id, response_posts_ids)
+
+    def test_cant_get_public_posts_for_okuna_visibility_user_unauthenticated(self):
+        """
+        should not be able to retrieve the public posts of an specific okuna visibility user
+        being unauthenticated and return 400
+        """
+        user = make_user(visibility=User.VISIBILITY_TYPE_OKUNA)
+
+        amount_of_user_public_posts = random.randint(1, 5)
+
+        public_posts_ids = []
+
+        for i in range(amount_of_user_public_posts):
+            post_text = make_fake_post_text()
+            public_post = user.create_public_post(text=post_text)
+            public_posts_ids.append(public_post.pk)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': user.username
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_can_get_public_posts_for_public_visibility_user_authenticated(self):
+        """
+        should be able to retrieve the public posts of an specific public visibility user
+        being authenticated and return 400
+        """
+
+        user = make_user()
+        headers = make_authentication_headers_for_user(user=user)
+
+        user_to_retrieve_posts_from = make_user(visibility=User.VISIBILITY_TYPE_PUBLIC)
+
+        amount_of_user_public_posts = random.randint(1, 5)
+
+        public_posts_ids = []
+
+        for i in range(amount_of_user_public_posts):
+            post_text = make_fake_post_text()
+            public_post = user_to_retrieve_posts_from.create_public_post(text=post_text)
+            public_posts_ids.append(public_post.pk)
+
+        url = self._get_url()
+
+        response = self.client.get(url, {
+            'username': user_to_retrieve_posts_from.username
+        }, **headers)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
@@ -2016,12 +2139,12 @@ class PostsAPITests(OpenbookAPITestCase):
 
         self.assertEqual(len(response_posts), 0)
 
-    def test_get_all_public_posts_for_user_unauthenticated_with_max_id_and_count(self):
+    def test_get_all_public_posts_for_public_visibility_user_unauthenticated_with_max_id_and_count(self):
         """
-        should be able to retrieve all the public posts of an specific user
+        should be able to retrieve all the public posts of an specific public visibility user
         using max_id and count being unauthenticated and return 200
         """
-        user = make_user()
+        user = make_user(visibility=User.VISIBILITY_TYPE_PUBLIC)
 
         amount_of_user_public_posts = 10
 

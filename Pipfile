@@ -8,7 +8,7 @@ polib = "*"
 pytz = "*"
 
 [packages]
-django = "==2.2.5"
+django = "==2.2.12"
 python-dotenv = "*"
 djangorestframework = "*"
 sentry-sdk = "==0.10.2"
@@ -22,7 +22,7 @@ nose-exclude = "*"
 mixer = "*"
 faker = "*"
 "boto3" = "*"
-django-storages = "*"
+django-storages = "==1.8"
 django-amazon-ses = "*"
 django-media-fixtures = "==0.0.3"
 django-modeltranslation = {git = "https://github.com/lifenautjoe/django-modeltranslation.git",ref = "551af9905961038badad9d9a16b2f47996f7685b"}

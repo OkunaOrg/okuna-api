@@ -4,7 +4,7 @@ from django.conf import settings
 from openbook_auth.models import UserProfile, User
 from openbook_circles.models import Circle
 from openbook_common.models import Badge, Language
-from openbook_common.serializers import CommonHashtagSerializer
+from openbook_common.serializers import CommonHashtagSerializer, CommonPublicUserSerializer
 from openbook_common.serializers_fields.post import PostCreatorField, PostReactionsEmojiCountField, ReactionField, \
     CommentsCountField, CirclesField, PostIsMutedField, IsEncircledField
 from openbook_communities.models import CommunityMembership, Community
@@ -76,18 +76,6 @@ class PostCreatorProfileSerializer(serializers.ModelSerializer):
         )
 
 
-class PostCreatorSerializer(serializers.ModelSerializer):
-    profile = PostCreatorProfileSerializer(many=False)
-
-    class Meta:
-        model = User
-        fields = (
-            'id',
-            'profile',
-            'username'
-        )
-
-
 class PostImageSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(read_only=True)
 
@@ -142,7 +130,7 @@ class PostCircleSerializer(serializers.ModelSerializer):
 
 
 class GetPostPostSerializer(serializers.ModelSerializer):
-    creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
+    creator = PostCreatorField(post_creator_serializer=CommonPublicUserSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
     reaction = ReactionField(reaction_serializer=PostReactionSerializer)

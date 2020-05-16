@@ -1,7 +1,7 @@
 from django.conf import settings
 from rest_framework import serializers
 
-from openbook_common.serializers import CommonPostCreatorSerializer, \
+from openbook_common.serializers import CommonPublicUserSerializer, \
     CommonCommunityMembershipSerializer, CommonPostEmojiCountSerializer, CommonPostCommunitySerializer, \
     CommonPostReactionSerializer, CommonPostLanguageSerializer, CommonHashtagSerializer, CommonCircleSerializer, \
     CommonEmojiSerializer
@@ -54,7 +54,7 @@ class GetHashtagHashtagSerializer(serializers.ModelSerializer):
 
 class GetHashtagPostsPostSerializer(serializers.ModelSerializer):
     # Temp backwards compat
-    creator = PostCreatorField(post_creator_serializer=CommonPostCreatorSerializer,
+    creator = PostCreatorField(post_creator_serializer=CommonPublicUserSerializer,
                                community_membership_serializer=CommonCommunityMembershipSerializer)
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=CommonPostEmojiCountSerializer)
     comments_count = CommentsCountField()
