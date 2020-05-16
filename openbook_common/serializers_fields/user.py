@@ -155,6 +155,23 @@ class IsPendingConnectionConfirmation(Field):
         return False
 
 
+class isPendingFollowRequestApproval(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(isPendingFollowRequestApproval, self).__init__(**kwargs)
+
+    def to_representation(self, value):
+        request = self.context.get('request')
+
+        if not request.user.is_anonymous:
+            if request.user.pk == value.pk:
+                return False
+            return value.has_follow_request_from_user_with_id(request.user.pk)
+
+        return False
+
+
 class FollowersCountField(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'

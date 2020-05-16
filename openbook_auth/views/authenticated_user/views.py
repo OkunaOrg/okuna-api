@@ -43,6 +43,7 @@ class AuthenticatedUser(APIView):
                 url=data.get('url'),
                 followers_count_visible=data.get('followers_count_visible'),
                 community_posts_visible=data.get('community_posts_visible'),
+                visibility=data.get('visibility'),
                 save=False
             )
 
@@ -103,6 +104,8 @@ class AuthenticatedUserNotificationsSettings(APIView):
         post_comment_notifications = data.get('post_comment_notifications')
         post_reaction_notifications = data.get('post_reaction_notifications')
         follow_notifications = data.get('follow_notifications')
+        follow_request_notifications = data.get('follow_request_notifications')
+        follow_request_approved_notifications = data.get('follow_request_approved_notifications')
         connection_request_notifications = data.get('connection_request_notifications')
         connection_confirmed_notifications = data.get('connection_confirmed_notifications')
         community_invite_notifications = data.get('community_invite_notifications')
@@ -120,6 +123,8 @@ class AuthenticatedUserNotificationsSettings(APIView):
                 post_comment_notifications=post_comment_notifications,
                 post_reaction_notifications=post_reaction_notifications,
                 follow_notifications=follow_notifications,
+                follow_request_notifications=follow_request_notifications,
+                follow_request_approved_notifications=follow_request_approved_notifications,
                 connection_request_notifications=connection_request_notifications,
                 connection_confirmed_notifications=connection_confirmed_notifications,
                 community_invite_notifications=community_invite_notifications,

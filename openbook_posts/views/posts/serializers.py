@@ -1,12 +1,11 @@
 from rest_framework import serializers
 
 from django.conf import settings
-from openbook_auth.models import User, UserProfile
 from openbook_auth.validators import user_username_exists, username_characters_validator
 from openbook_circles.models import Circle
 from openbook_circles.validators import circle_id_exists
 from openbook_common.models import Emoji, Badge
-from openbook_common.serializers import CommonHashtagSerializer
+from openbook_common.serializers import CommonHashtagSerializer, CommonPublicUserSerializer
 from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, PostReactionsEmojiCountField, \
     CirclesField, PostCreatorField, PostIsMutedField, IsEncircledField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField, RestrictedFileSizeField
@@ -99,32 +98,6 @@ class PostCreatorProfileBadgeSerializer(serializers.ModelSerializer):
             'keyword',
             'keyword_description'
         )
-
-
-class PostCreatorProfileSerializer(serializers.ModelSerializer):
-    badges = PostCreatorProfileBadgeSerializer(many=True)
-
-    class Meta:
-        model = UserProfile
-        fields = (
-            'avatar',
-            'cover',
-            'badges',
-            'name'
-        )
-
-
-class PostCreatorSerializer(serializers.ModelSerializer):
-    profile = PostCreatorProfileSerializer(many=False)
-
-    class Meta:
-        model = User
-        fields = (
-            'id',
-            'profile',
-            'username'
-        )
-
 
 class PostReactionEmojiSerializer(serializers.ModelSerializer):
     class Meta:
@@ -223,7 +196,7 @@ class PostImageSerializer(serializers.ModelSerializer):
 
 
 class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
-    creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
+    creator = PostCreatorField(post_creator_serializer=CommonPublicUserSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
     reaction = ReactionField(reaction_serializer=PostReactionSerializer)
@@ -287,7 +260,7 @@ class AuthenticatedUserTrendingPostSerializer(serializers.ModelSerializer):
 
 
 class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
-    creator = PostCreatorField(post_creator_serializer=PostCreatorSerializer,
+    creator = PostCreatorField(post_creator_serializer=CommonPublicUserSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
     comments_count = CommentsCountField()

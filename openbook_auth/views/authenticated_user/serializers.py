@@ -90,6 +90,7 @@ class GetAuthenticatedUserSerializer(serializers.ModelSerializer):
             'unread_notifications_count',
             'pending_communities_moderated_objects_count',
             'active_moderation_penalties_count',
+            'visibility'
         )
 
 
@@ -126,6 +127,7 @@ class LegacyGetAuthenticatedUserSerializer(serializers.ModelSerializer):
             'unread_notifications_count',
             'pending_communities_moderated_objects_count',
             'active_moderation_penalties_count',
+            'visibility',
         )
 
 
@@ -151,6 +153,7 @@ class UpdateAuthenticatedUserSerializer(serializers.Serializer):
                            allow_blank=True)
     location = serializers.CharField(max_length=settings.PROFILE_LOCATION_MAX_LENGTH, required=False,
                                      allow_blank=True)
+    visibility = serializers.ChoiceField(choices=User.VISIBILITY_TYPES, required=False)
 
 
 class DeleteAuthenticatedUserSerializer(serializers.Serializer):

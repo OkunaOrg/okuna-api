@@ -8,7 +8,7 @@ from openbook_common.models import Badge, Emoji
 from openbook_common.serializers_fields.user import FollowersCountField, FollowingCountField, UserPostsCountField, \
     IsFollowingField, IsConnectedField, IsFullyConnectedField, ConnectedCirclesField, FollowListsField, \
     IsPendingConnectionConfirmation, IsBlockedField, IsUserReportedField, IsFollowedField, \
-    AreNewPostNotificationsEnabledForUserField
+    AreNewPostNotificationsEnabledForUserField, isPendingFollowRequestApproval
 from openbook_lists.models import List
 
 
@@ -111,6 +111,7 @@ class GetUserUserSerializer(serializers.ModelSerializer):
     connected_circles = ConnectedCirclesField(circle_serializer=GetUserUserCircleSerializer)
     follow_lists = FollowListsField(list_serializer=GetUserUserListSerializer)
     is_pending_connection_confirmation = IsPendingConnectionConfirmation()
+    is_pending_follow_request_approval = isPendingFollowRequestApproval()
     is_reported = IsUserReportedField()
 
     class Meta:
@@ -130,7 +131,9 @@ class GetUserUserSerializer(serializers.ModelSerializer):
             'connected_circles',
             'follow_lists',
             'date_joined',
-            'is_pending_connection_confirmation'
+            'is_pending_connection_confirmation',
+            'is_pending_follow_request_approval',
+            'visibility'
         )
 
 
@@ -147,6 +150,7 @@ class LegacyGetUserUserSerializer(serializers.ModelSerializer):
     connected_circles = ConnectedCirclesField(circle_serializer=GetUserUserCircleSerializer)
     follow_lists = FollowListsField(list_serializer=GetUserUserListSerializer)
     is_pending_connection_confirmation = IsPendingConnectionConfirmation()
+    is_pending_follow_request_approval = isPendingFollowRequestApproval()
     is_reported = IsUserReportedField()
 
     class Meta:
@@ -167,7 +171,9 @@ class LegacyGetUserUserSerializer(serializers.ModelSerializer):
             'connected_circles',
             'follow_lists',
             'date_joined',
-            'is_pending_connection_confirmation'
+            'is_pending_connection_confirmation',
+            'is_pending_follow_request_approval',
+            'visibility'
         )
 
 
@@ -234,7 +240,8 @@ class SearchUsersUserSerializer(serializers.ModelSerializer):
             'username',
             'is_following',
             'are_new_post_notifications_enabled',
-            'is_connected'
+            'is_connected',
+            'visibility',
         )
 
 

@@ -229,6 +229,78 @@ class ConnectAPITests(OpenbookAPITestCase):
         self.assertTrue(ConnectionRequestNotification.objects.filter(notification__owner_id=user_to_connect.pk,
                                                                      connection_requester_id=user.pk).exists())
 
+    def test_cannot_connect_with_private_visibility_user_without_following(self):
+        """
+        should not be able to connect with a private visibility user without previously following and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        circle_to_connect = mixer.blend(Circle, creator=user)
+        user_to_connect = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+
+        data = {
+            'username': user_to_connect.username,
+            'circles_ids': circle_to_connect.pk
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertFalse(user_to_connect.is_connected_with_user_with_id(user_id=user.pk))
+
+    def test_can_connect_with_private_visibility_user_previously_following(self):
+        """
+        should be able to connect with a private visibility user having previously followed it and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        circle_to_connect = mixer.blend(Circle, creator=user)
+        user_to_connect = make_user(visibility=User.VISIBILITY_TYPE_PRIVATE)
+
+        user.create_follow_request_for_user(user=user_to_connect)
+        user_to_connect.approve_follow_request_from_user(user=user)
+
+        data = {
+            'username': user_to_connect.username,
+            'circles_ids': circle_to_connect.pk
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(user_to_connect.is_connected_with_user_with_id(user_id=user.pk))
+
+    def test_can_connect_with_okuna_visibility_without_previously_following(self):
+        """
+        should be able to connect with a okuna visibility without having previously followed the person and return 400
+        """
+        user = make_user()
+        headers = make_authentication_headers_for_user(user)
+
+        circle_to_connect = mixer.blend(Circle, creator=user)
+        user_to_connect = make_user(visibility=User.VISIBILITY_TYPE_PUBLIC)
+
+        data = {
+            'username': user_to_connect.username,
+            'circles_ids': circle_to_connect.pk
+        }
+
+        url = self._get_url()
+
+        response = self.client.post(url, data, **headers, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(user_to_connect.is_connected_with_user_with_id(user_id=user.pk))
+
     def _get_url(self):
         return reverse('connect-with-user')
 

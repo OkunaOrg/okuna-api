@@ -134,10 +134,82 @@ def check_circle_data(user, name, color):
         check_circle_name_not_taken(user=user, circle_name=name)
 
 
-def check_can_follow_user_with_id(user, user_id):
-    check_is_not_blocked_with_user_with_id(user=user, user_id=user_id)
-    check_is_not_following_user_with_id(user=user, user_id=user_id)
+def check_can_create_follow_request(user, user_requesting_to_follow):
+    check_can_follow_user(user=user, user_to_follow=user_requesting_to_follow, is_pre_approved=True)
+    check_target_user_has_no_follow_request_from_user(user=user, target_user=user_requesting_to_follow)
+    check_user_visibility_is_private(target_user=user_requesting_to_follow)
+
+
+def check_can_delete_follow_request_for_user(user, user_requesting_to_follow):
+    check_has_follow_request(user=user_requesting_to_follow, requesting_user=user)
+
+
+def check_can_approve_follow_request_from_requesting_user(user, requesting_user):
+    check_has_follow_request(user=user, requesting_user=requesting_user)
+
+
+def check_can_delete_follow_request_from_requesting_user(user, requesting_user):
+    check_has_follow_request(user=user, requesting_user=requesting_user)
+
+
+def check_has_follow_request(user, requesting_user):
+    if not user.has_follow_request_from_user(requesting_user):
+        raise ValidationError('Follow request does not exist.')
+
+
+def check_target_user_has_no_follow_request_from_user(user, target_user):
+    if target_user.has_follow_request_from_user(user):
+        raise ValidationError('Follow request already exists.')
+
+
+def check_can_follow_user(user, user_to_follow, is_pre_approved):
+    if user.pk == user_to_follow.pk:
+        raise ValidationError(
+            _('You cannot follow yourself.'),
+        )
+
+    check_is_not_following_user_with_id(user=user, user_id=user_to_follow.pk)
+    check_is_not_blocked_with_user_with_id(user=user, user_id=user_to_follow.pk)
     check_has_not_reached_max_follows(user=user)
+
+    if not is_pre_approved:
+        check_user_visibility_is_not_private(target_user=user_to_follow)
+
+
+def check_user_visibility_is_not_private(target_user):
+    if target_user.has_visibility_private():
+        raise ValidationError(
+            _('This user is private.'),
+        )
+
+
+def check_user_visibility_is_not_okuna(target_user):
+    if target_user.has_visibility_okuna():
+        raise ValidationError(
+            _('This user content is restricted to Okuna members only.'),
+        )
+
+
+def check_user_visibility_is_private(target_user):
+    # Check wether the visibility is private
+    if not target_user.has_visibility_private():
+        raise ValidationError(
+            _('This user is not private.'),
+        )
+
+
+def check_can_get_posts_for_user(user, target_user):
+    check_target_user_is_visibile_for_user(user=user, target_user=target_user)
+
+
+def check_target_user_is_visibile_for_user(user, target_user):
+    if target_user.has_visibility_private() and not user.is_following_user(target_user):
+        raise ValidationError(_('This user is private, send a follow request.'))
+
+
+def check_can_get_unauthenticated_posts_for_user(user):
+    check_user_visibility_is_not_private(target_user=user)
+    check_user_visibility_is_not_okuna(target_user=user)
 
 
 def check_is_not_following_user_with_id(user, user_id):
@@ -148,7 +220,7 @@ def check_is_not_following_user_with_id(user, user_id):
 
 
 def check_has_not_reached_max_follows(user):
-    if user.count_following() > settings.USER_MAX_FOLLOWS:
+    if user.count_following() >= settings.USER_MAX_FOLLOWS:
         raise ValidationError(
             _('Maximum number of follows reached.'),
         )
@@ -186,9 +258,15 @@ def check_has_not_reached_max_connections(user):
         )
 
 
-def check_can_connect_with_user_with_id(user, user_id):
-    check_is_not_blocked_with_user_with_id(user=user, user_id=user_id)
-    check_is_not_connected_with_user_with_id(user=user, user_id=user_id)
+def check_can_connect_with_target_user(user, user_to_connect_with):
+    if user.pk == user_to_connect_with:
+        raise ValidationError(
+            _('A user cannot connect with itself.'),
+        )
+
+    check_target_user_is_visibile_for_user(user=user, target_user=user_to_connect_with)
+    check_is_not_blocked_with_user_with_id(user=user, user_id=user_to_connect_with.pk)
+    check_is_not_connected_with_user_with_id(user=user, user_id=user_to_connect_with.pk)
     check_has_not_reached_max_connections(user=user)
 
 

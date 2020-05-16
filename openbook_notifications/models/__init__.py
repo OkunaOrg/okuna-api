@@ -11,3 +11,5 @@ from .post_comment_user_mention_notification import PostCommentUserMentionNotifi
 from .post_user_mention_notification import PostUserMentionNotification
 from .community_new_post_notification import CommunityNewPostNotification
 from .user_new_post_notification import UserNewPostNotification
+from .follow_request_approved_notification import FollowRequestApprovedNotification
+from .follow_request_notification import FollowRequestNotification

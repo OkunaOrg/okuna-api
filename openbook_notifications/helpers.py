@@ -92,6 +92,64 @@ def send_follow_push_notification(followed_user, following_user):
         _send_notification_to_user(notification=one_signal_notification, user=followed_user)
 
 
+def send_follow_request_push_notification(follow_request):
+    follow_requester = follow_request.creator
+    follow_request_target_user = follow_request.target_user
+
+    if follow_request_target_user.has_follow_request_notifications_enabled():
+        target_user_language_code = get_notification_language_code_for_target_user(follow_request_target_user)
+        with translation.override(target_user_language_code):
+            one_signal_notification = onesignal_sdk.Notification(
+                post_body={"contents": {"en": _(
+                    '%(follow_requester_name)s · @%(follow_requester_username)s wants to follow you.') % {
+                                                  'follow_requester_username': follow_requester.username,
+                                                  'follow_requester_name': follow_requester.profile.name,
+                                              }}})
+
+        Notification = get_notification_model()
+
+        notification_data = {
+            'type': Notification.FOLLOW_REQUEST,
+        }
+
+        notification_group = NOTIFICATION_GROUP_MEDIUM_PRIORITY
+
+        one_signal_notification.set_parameter('data', notification_data)
+        one_signal_notification.set_parameter('!thread_id', notification_group)
+        one_signal_notification.set_parameter('android_group', notification_group)
+
+        _send_notification_to_user(user=follow_request_target_user, notification=one_signal_notification)
+
+
+def send_follow_request_approved_push_notification(follow):
+    follow_requester = follow.user
+    followed_user = follow.followed_user
+
+    if follow_requester.has_follow_request_approved_notifications_enabled():
+        target_user_language_code = get_notification_language_code_for_target_user(follow_requester)
+        with translation.override(target_user_language_code):
+            one_signal_notification = onesignal_sdk.Notification(
+                post_body={"contents": {"en": _(
+                    '%(followed_user_name)s · @%(followed_user_username)s has approved your follow request.') % {
+                                                  'followed_user_username': followed_user.username,
+                                                  'followed_user_name': followed_user.profile.name,
+                                              }}})
+
+        Notification = get_notification_model()
+
+        notification_data = {
+            'type': Notification.FOLLOW_REQUEST_APPROVED,
+        }
+
+        notification_group = NOTIFICATION_GROUP_MEDIUM_PRIORITY
+
+        one_signal_notification.set_parameter('data', notification_data)
+        one_signal_notification.set_parameter('!thread_id', notification_group)
+        one_signal_notification.set_parameter('android_group', notification_group)
+
+        _send_notification_to_user(user=follow_requester, notification=one_signal_notification)
+
+
 def send_connection_request_push_notification(connection_requester, connection_requested_for):
     if connection_requested_for.has_connection_request_notifications_enabled():
         target_user_language_code = get_notification_language_code_for_target_user(connection_requested_for)
@@ -273,10 +331,11 @@ def send_user_new_post_push_notification(user_notifications_subscription, post):
         target_user_language_code = get_notification_language_code_for_target_user(target_user)
         with translation.override(target_user_language_code):
             one_signal_notification = onesignal_sdk.Notification(
-                post_body={"contents": {"en": _('%(post_creator_name)s · @%(post_creator_username)s posted something.') % {
-                    'post_creator_username': post_creator_username,
-                    'post_creator_name': post_creator_name,
-                }}})
+                post_body={
+                    "contents": {"en": _('%(post_creator_name)s · @%(post_creator_username)s posted something.') % {
+                        'post_creator_username': post_creator_username,
+                        'post_creator_name': post_creator_name,
+                    }}})
 
         Notification = get_notification_model()
 
