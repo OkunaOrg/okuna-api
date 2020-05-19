@@ -2769,6 +2769,12 @@ class User(AbstractUser):
     def has_follow_request_from_user(self, user):
         return self.has_follow_request_from_user_with_id(user_id=user.pk)
 
+    def has_follow_request_for_user_with_id(self, user_id):
+        return self.sent_follow_requests.filter(creator_id=user_id).exists()
+
+    def has_follow_request_for_user(self, user):
+        return self.has_follow_request_for_user_with_id(user_id=user.pk)
+
     def create_follow_request_for_user_with_username(self, user_username):
         user = User.objects.get(username=user_username)
         return self.create_follow_request_for_user(user)

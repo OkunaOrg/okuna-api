@@ -8,7 +8,7 @@ from openbook_common.models import Badge, Emoji
 from openbook_common.serializers_fields.user import FollowersCountField, FollowingCountField, UserPostsCountField, \
     IsFollowingField, IsConnectedField, IsFullyConnectedField, ConnectedCirclesField, FollowListsField, \
     IsPendingConnectionConfirmation, IsBlockedField, IsUserReportedField, IsFollowedField, \
-    AreNewPostNotificationsEnabledForUserField, isPendingFollowRequestApproval
+    AreNewPostNotificationsEnabledForUserField, IsPendingFollowRequestApproval, IsFollowRequested
 from openbook_lists.models import List
 
 
@@ -111,7 +111,8 @@ class GetUserUserSerializer(serializers.ModelSerializer):
     connected_circles = ConnectedCirclesField(circle_serializer=GetUserUserCircleSerializer)
     follow_lists = FollowListsField(list_serializer=GetUserUserListSerializer)
     is_pending_connection_confirmation = IsPendingConnectionConfirmation()
-    is_pending_follow_request_approval = isPendingFollowRequestApproval()
+    is_pending_follow_request_approval = IsPendingFollowRequestApproval()
+    is_follow_requested = IsFollowRequested()
     is_reported = IsUserReportedField()
 
     class Meta:
@@ -124,6 +125,7 @@ class GetUserUserSerializer(serializers.ModelSerializer):
             'following_count',
             'is_following',
             'is_followed',
+            'is_follow_requested',
             'are_new_post_notifications_enabled',
             'is_connected',
             'is_reported',
@@ -144,13 +146,14 @@ class LegacyGetUserUserSerializer(serializers.ModelSerializer):
     posts_count = UserPostsCountField()
     is_following = IsFollowingField()
     is_followed = IsFollowedField()
+    is_follow_requested = IsFollowRequested()
     are_new_post_notifications_enabled = AreNewPostNotificationsEnabledForUserField()
     is_connected = IsConnectedField()
     is_fully_connected = IsFullyConnectedField()
     connected_circles = ConnectedCirclesField(circle_serializer=GetUserUserCircleSerializer)
     follow_lists = FollowListsField(list_serializer=GetUserUserListSerializer)
     is_pending_connection_confirmation = IsPendingConnectionConfirmation()
-    is_pending_follow_request_approval = isPendingFollowRequestApproval()
+    is_pending_follow_request_approval = IsPendingFollowRequestApproval()
     is_reported = IsUserReportedField()
 
     class Meta:
@@ -164,6 +167,7 @@ class LegacyGetUserUserSerializer(serializers.ModelSerializer):
             'posts_count',
             'is_following',
             'is_followed',
+            'is_follow_requested',
             'are_new_post_notifications_enabled',
             'is_connected',
             'is_reported',
