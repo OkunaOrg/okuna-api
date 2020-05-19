@@ -155,11 +155,28 @@ class IsPendingConnectionConfirmation(Field):
         return False
 
 
-class isPendingFollowRequestApproval(Field):
+class IsPendingFollowRequestApproval(Field):
     def __init__(self, **kwargs):
         kwargs['source'] = '*'
         kwargs['read_only'] = True
-        super(isPendingFollowRequestApproval, self).__init__(**kwargs)
+        super(IsPendingFollowRequestApproval, self).__init__(**kwargs)
+
+    def to_representation(self, value):
+        request = self.context.get('request')
+
+        if not request.user.is_anonymous:
+            if request.user.pk == value.pk:
+                return False
+            return request.user.has_follow_request_from_user_with_id(value.pk)
+
+        return False
+
+
+class IsFollowRequested(Field):
+    def __init__(self, **kwargs):
+        kwargs['source'] = '*'
+        kwargs['read_only'] = True
+        super(IsFollowRequested, self).__init__(**kwargs)
 
     def to_representation(self, value):
         request = self.context.get('request')
