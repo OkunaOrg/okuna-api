@@ -44,7 +44,7 @@ Once you register, your name and additional information that you choose to inclu
 
 ### **3.1. Usage Information**
 
-Okuna will inevitably collect some usage information automatically when you visit and/or use the Service and store it in log files. This information refers mainly to the technical information about your use of the Service through your internet browser or mobile device and is necessary for the correct technical functioning of the Service. We use this information to administer the Service and better tailor the Site and our Services to our users&#39; needs.
+Okuna will inevitably collect some usage information automatically when you visit and/or use the Service and store it in log files. This information refers mainly to the technical information about your use of the Service through your internet browser or mobile device and is necessary for the correct technical functioning of the Service. We use this information to administer the Service and improve the Site and our Services to our users&#39; needs.
 
 This information may include, but is not limited to:
 
