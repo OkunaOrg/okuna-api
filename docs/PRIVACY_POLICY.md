@@ -2,7 +2,7 @@
 
 ## **1.** **Introduction**
 
-**SUMMARY:** _We are committed to transparency. This document explains our practices concerning your Personal Information and applies to all Okuna users._
+#### **SUMMARY:** _We are committed to transparency. This document explains our practices concerning your Personal Information and applies to all Okuna users._
 
 Welcome to the Okuna website available at [https://okuna.io](https://okuna.io) ( **&quot;Website&quot;** ). Okuna B.V. ( **&quot;Okuna&quot;, &quot;we&quot;, &quot;us&quot;** and/or **&quot;Service&quot;** ) is committed to transparency and has created this Privacy Policy (&quot; **Policy**&quot;) to provide you with all tools necessary to understand how we collect, use and protect your Personal Information.
 
@@ -31,7 +31,7 @@ G.        &#39;Profile&#39; is the section of our app where you can edit the Per
 
 ## **3.** **Information we collect**
 
-**SUMMARY:** _In order for our _Service_ to work, we need to collect certain Information from you. This Information may include Personal Information, such as your name, but also some non-identifiable information, such as session storage properties, metadata and basic information about your device._
+#### **SUMMARY:** _In order for our _Service_ to work, we need to collect certain Information from you. This Information may include Personal Information, such as your name, but also some non-identifiable information, such as session storage properties, metadata and basic information about your device._
 
 Okuna collects or receives information from users in different ways. We ask you to provide basic Personal Information during the registration process, such as your name and email address. Your Internet browser or device on which you are using our app collects certain information as well, such as your device/browser information and IP address.
 
@@ -64,7 +64,7 @@ We do not require any kind of sensitive information, such as health/genetic info
 
 ## **4.** **How we collect information**
 
-**SUMMARY:** _We obtain information about you when you voluntarily give it to us._
+#### **SUMMARY:** _We obtain information about you when you voluntarily give it to us._
 
 We use different methods to collect Personal Information from and about you, for example:
 
@@ -73,7 +73,7 @@ We use different methods to collect Personal Information from and about you, for
 
 ## **5.** **How we use the Personal Information collected**
 
-**SUMMARY:** _We use the information collected to ensure the proper functioning of our _Service_, maintain security, and/or comply with our legal obligations._
+#### **SUMMARY:** _We use the information collected to ensure the proper functioning of our _Service_, maintain security, and/or comply with our legal obligations._
 
 Okuna will use your Personal Information only when it is allowed to by applicable law and in a manner that is consistent with this Policy. We use your Personal Information for the following purposes:
 
@@ -103,7 +103,7 @@ We may process your information in a way that is necessary for compliance with a
 
 ## **6.** **How we share your information**
 
-**SUMMARY:** _Part of the Personal Information that you share with us is also shared with the community of our Users. You can decide which Personal Information will be displayed on your Profile by making changes in the &#39;Edit Profile&#39; tab of the Okuna app._
+#### **SUMMARY:** _Part of the Personal Information that you share with us is also shared with the community of our Users. You can decide which Personal Information will be displayed on your Profile by making changes in the &#39;Edit Profile&#39; tab of the Okuna app._
 
 ### **6.1. We display information on your Profile**
 
@@ -129,7 +129,7 @@ Okuna must share information with government agencies as required by law in resp
 
 ## **7.** **Information retention and deletion**
 
-**SUMMARY:** _We store your Personal Information for as long as you are a registered user. After deleting the account, your Personal Information is erased from our databases._
+#### **SUMMARY:** _We store your Personal Information for as long as you are a registered user. After deleting the account, your Personal Information is erased from our databases._
 
 Okuna must retain your Personal Information for the period when you are a registered User to ensure the proper functioning of our Service.
 
@@ -139,7 +139,7 @@ If you delete your profile, the entire account information will be permanently d
 
 ## **8.** **Users and the GDPR**
 
-**SUMMARY:** _As a User of Okuna, the GDPR grants you a number of rights concerning the use, storage and processing of your Personal Information._
+#### **SUMMARY:** _As a User of Okuna, the GDPR grants you a number of rights concerning the use, storage and processing of your Personal Information._
 
 The General Data Protection Regulation (the &#39;GDPR&#39;) is an EU legislation that grants certain rights to Data Subjects. Those rights apply to all the Users of Okuna worldwide – the fact that we are a company registered in the EU and we process your information in the EU (The Netherlands and Germany) makes all Okuna Users Data Subjects under the GDPR.
 
@@ -177,13 +177,13 @@ Through creating an account and accepting the Terms of Use, you provide certain 
 
 ## **9.** **International Data Transfers**
 
-**SUMMARY:** _Okuna is a company registered in the Netherlands but outsources its hosting services from a company that processes information in Germany._
+#### **SUMMARY:** _Okuna is a company registered in the Netherlands but outsources its hosting services from a company that processes information in Germany._
 
 We use **Amazon Web Services** for the purposes of hosting our Service. We transfer the data to an AWS server in Frankfurt, Germany. We take appropriate safeguards for international data transfers, all the data is encrypted and sent through a secure TLS connection with AWS servers.
 
 ### **10.** **Security**
 
-**SUMMARY:** _We utilize a variety of industry-standard safeguards to keep your Information safe, such as secure coding, privacy by design/default, two-step authentication, encryption, two step-authentication, TLS connections, and 3-layer access._
+#### **SUMMARY:** _We utilize a variety of industry-standard safeguards to keep your Information safe, such as secure coding, privacy by design/default, two-step authentication, encryption, two step-authentication, TLS connections, and 3-layer access._
 
 Okuna takes information security very seriously. Sustainability, privacy and security are paramount values in our organisation. We work hard to protect the Personal Information you give us from loss, misuse, or unauthorized access. We utilize a variety of safeguards to protect the Personal Information submitted to us, both during transmission and once it is received.
 
@@ -197,7 +197,7 @@ multi-factor authentication for development and management systems.
 
 ## **11.** **Children&#39;s Privacy**
 
-**SUMMARY:** _We do not intentionally gather Personal Information from persons under the age of 16._
+#### **SUMMARY:** _We do not intentionally gather Personal Information from persons under the age of 16._
 
 If you are under the age of 16, please do not submit any Personal Information through the Service. Okuna does not collect or process Personal Information pertaining to a child, where a child under the GDPR is defined as an individual below the age of 16 years old.
 
