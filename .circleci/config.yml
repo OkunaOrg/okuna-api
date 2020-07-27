@@ -89,11 +89,6 @@ jobs:
           sudo apt-get -y -qq update
           sudo apt-get install python-pip python-dev build-essential
           sudo pip install awsebcli --upgrade
-#    - run:
-#        name: Make EB Magic Header Extension
-#        command: |
-#          . venv/bin/activate
-#          python utils/make_magic_header.py --name=$MAGIC_HEADER_NAME --value=$MAGIC_HEADER_VALUE
     - run:
         name: Prepare environment variables for creating admin config
         command: |
@@ -108,11 +103,6 @@ jobs:
               echo "export SAUTH_SERVER_NAME=sauth-not-existing.localhost" >> $BASH_ENV
           fi
     - run:
-        name: Make EB Admin Config
-        command: |
-          . venv/bin/activate
-          python utils/make_admin_headers.py --lb-name=$LB_NAME --sauth-server-name=$SAUTH_SERVER_NAME
-    - run:
         name: Make EB Config
         command: |
           . venv/bin/activate
@@ -123,6 +113,10 @@ jobs:
           if [ $CIRCLE_BRANCH == 'develop' ]; then
               . venv/bin/activate
               python utils/make_magic_header.py --name=$DEVELOP_MAGIC_HEADER_NAME --value=$DEVELOP_MAGIC_HEADER_VALUE
+          fi
+          if [ $CIRCLE_BRANCH == 'master' ]; then
+              . venv/bin/activate
+              python utils/make_magic_header_admin.py --name=$MASTER_MAGIC_HEADER_ADMIN_NAME --value=$MASTER_MAGIC_HEADER_ADMIN_VALUE
           fi
     - run:
         name: Commit Dynamic EB Extensions
