@@ -124,6 +124,10 @@ jobs:
               . venv/bin/activate
               python utils/make_magic_header.py --name=$DEVELOP_MAGIC_HEADER_NAME --value=$DEVELOP_MAGIC_HEADER_VALUE
           fi
+          if [ $CIRCLE_BRANCH == 'master' ]; then
+              . venv/bin/activate
+              python utils/make_magic_header_admin.py --name=$MASTER_MAGIC_HEADER_ADMIN_NAME --value=$MASTER_MAGIC_HEADER_ADMIN_VALUE
+          fi
     - run:
         name: Commit Dynamic EB Extensions
         command: |
