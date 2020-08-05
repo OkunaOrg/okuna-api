@@ -84,7 +84,7 @@ from openbook_posts.views.post_comments.views import PostComments, PostCommentsD
 from openbook_posts.views.post_media.views import PostMedia
 from openbook_posts.views.post_reaction.views import PostReactionItem
 from openbook_posts.views.post_reactions.views import PostReactions, PostReactionsEmojiCount, PostReactionEmojiGroups
-from openbook_posts.views.posts.views import Posts, TrendingPosts, TopPosts, TrendingPostsNew, \
+from openbook_posts.views.posts.views import Posts, TrendingPosts, TopPosts, TrendingPostsLegacy, \
     ProfilePostsExcludedCommunities, SearchProfilePostsExcludedCommunities, TopPostsExcludedCommunities, \
     SearchTopPostsExcludedCommunities, ProfilePostsExcludedCommunity, TopPostsExcludedCommunity
 from openbook_importer.views import ImportItem
@@ -234,7 +234,7 @@ posts_patterns = [
     path('<uuid:post_uuid>/', include(post_patterns)),
     path('', Posts.as_view(), name='posts'),
     path('trending/', TrendingPosts.as_view(), name='trending-posts'),
-    path('trending/new/', TrendingPostsNew.as_view(), name='trending-posts-new'),
+    path('trending/new/', TrendingPostsLegacy.as_view(), name='trending-posts-new'),
     path('emojis/groups/', PostReactionEmojiGroups.as_view(), name='posts-emoji-groups'),
     path('profile/', include(posts_profile_patterns)),
     path('top/', include(posts_top_patterns)),
@@ -454,7 +454,6 @@ if settings.FEATURE_IMPORTER_ENABLED:
 urlpatterns = [
     path('api/', include(api_patterns)),
     url('admin/', admin.site.urls),
-    path('django-rq/', include('django_rq.urls')),
     url('health/', Health.as_view(), name='health'),
 ]
 

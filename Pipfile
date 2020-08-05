@@ -55,6 +55,7 @@ shutilwhich = "*"
 halo = "*"
 watchdog = "*"
 spectra = "*"
+colorlog = "*"
 
 [pipenv]
 allow_prereleases = true

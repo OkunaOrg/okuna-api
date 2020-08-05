@@ -1,4 +1,4 @@
-FROM python:3.7.3
+FROM python:3.6
 
 RUN apt-get -y update && apt-get -y upgrade &&  apt-get install -y ffmpeg  && apt-get install -y supervisor
 

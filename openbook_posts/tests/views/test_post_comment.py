@@ -1,7 +1,11 @@
 from django.urls import reverse
+from django_rq import get_worker, get_scheduler
+from django.conf import settings
 from faker import Faker
 from rest_framework import status
-from openbook_common.tests.models import OpenbookAPITestCase
+from rq import SimpleWorker
+
+from openbook_common.tests.models import OpenbookAPITestCase, OpenbookAPITransactionTestCase
 from unittest import mock
 import json
 
@@ -2155,6 +2159,110 @@ class PostCommentItemAPITests(OpenbookAPITestCase):
         post_comment_reply.refresh_from_db()
         self.assertTrue(post_comment_reply.text == original_post_comment_reply_text)
         self.assertFalse(post_comment_reply.is_edited)
+
+    def _get_url(self, post, post_comment):
+        return reverse('post-comment', kwargs={
+            'post_uuid': post.uuid,
+            'post_comment_id': post_comment.pk
+        })
+
+
+class PostCommentItemTransactionAPITests(OpenbookAPITransactionTestCase):
+
+    fixtures = [
+        'openbook_circles/fixtures/circles.json'
+    ]
+
+    def test_delete_comment_in_post_reduces_post_activity_score(self):
+        """
+          should reduce post activity score on delete comment in post and return 200
+        """
+        user = make_user()
+        commenter = make_user()
+
+        post = user.create_public_post(text=make_fake_post_text())
+        post_comment = commenter.comment_post_with_id(post.pk, text=make_fake_post_comment_text())
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.delete(url, **headers)
+
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
+        post.refresh_from_db()
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self._clear_jobs_in_scheduler()
+        self.assertEqual(post.activity_score, 0.0)
+
+    def test_delete_comment_in_community_post_reduces_community_activity_score(self):
+        """
+          should reduce community activity score on delete comment in community post and return 200
+        """
+        user = make_user()
+        community = make_community(creator=user)
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+        activity_score_before_delete = community.activity_score
+
+        post_comment = user.comment_post_with_id(post.pk, text=make_fake_post_comment_text())
+
+        url = self._get_url(post_comment=post_comment, post=post)
+
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.delete(url, **headers)
+
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+        self._clear_jobs_in_scheduler()
+        self.assertEqual(community.activity_score, activity_score_before_delete)
+
+    def test_delete_comment_in_community_post_one_by_one_reduces_community_activity_score_correctly(self):
+        """
+          should reduce community activity score correctly on sequential job runs of delete comment in community post and return 200
+        """
+        user = make_user()
+        community = make_community(creator=user)
+        post = user.create_community_post(text=make_fake_post_text(), community_name=community.name)
+
+        post_comment_1 = user.comment_post_with_id(post.pk, text=make_fake_post_comment_text())
+        post_comment_2 = user.comment_post_with_id(post.pk, text=make_fake_post_comment_text())
+
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+        activity_score_before_delete = community.activity_score
+
+        # delete comment one
+        url = self._get_url(post_comment=post_comment_1, post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.delete(url, **headers)
+
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+
+        expected_activity_score_1 = activity_score_before_delete - settings.ACTIVITY_COUNT_COMMENTS_WEIGHT
+        self.assertEqual(community.activity_score, expected_activity_score_1)
+
+        # delete comment two
+        url_2 = self._get_url(post_comment=post_comment_2, post=post)
+        headers = make_authentication_headers_for_user(user)
+        response = self.client.delete(url_2, **headers)
+
+        get_worker('process-activity-score', worker_class=SimpleWorker).work(burst=True)
+        community.refresh_from_db()
+        expected_activity_score_2 = expected_activity_score_1 - \
+                                    settings.ACTIVITY_COUNT_COMMENTS_WEIGHT - \
+                                    settings.ACTIVITY_UNIQUE_COMMENT_WEIGHT
+
+        self._clear_jobs_in_scheduler()
+        self.assertEqual(community.activity_score, expected_activity_score_2)
+
+    def _clear_jobs_in_scheduler(self):
+        default_scheduler = get_scheduler('process-activity-score')
+        for job in default_scheduler.get_jobs():
+            default_scheduler.cancel(job.get_id())
 
     def _get_url(self, post, post_comment):
         return reverse('post-comment', kwargs={
