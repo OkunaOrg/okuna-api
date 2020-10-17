@@ -13,7 +13,7 @@ from openbook_common.models import Language
 from openbook_communities.models import Community, CommunityMembership
 from openbook_communities.serializers_fields import CommunityMembershipsField
 from openbook_lists.validators import list_id_exists
-from openbook_posts.models import PostImage, Post, PostReaction, TopPost, TrendingPost
+from openbook_posts.models import PostImage, Post, PostReaction, TopPost, TrendingPost, PostLink
 from openbook_posts.validators import post_text_validators
 
 
@@ -183,6 +183,14 @@ class PostLanguageSerializer(serializers.ModelSerializer):
         )
 
 
+class PostLinkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostLink
+        fields = (
+            'link',
+        )
+
+
 class PostImageSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(read_only=True, required=False, allow_empty_file=True)
 
@@ -207,6 +215,7 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     language = PostLanguageSerializer()
     is_encircled = IsEncircledField()
     hashtags = CommonHashtagSerializer(many=True)
+    post_links = PostLinkSerializer(many=True)
 
     class Meta:
         model = Post
@@ -215,6 +224,7 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'uuid',
             'comments_count',
             'reactions_emoji_counts',
+            'post_links',
             'created',
             'text',
             'creator',

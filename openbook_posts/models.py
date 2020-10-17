@@ -402,6 +402,9 @@ class Post(models.Model):
 
         return False
 
+    def has_links(self):
+        return self.post_links.exists()
+
     def comment(self, text, commenter):
         return PostComment.create_comment(text=text, commenter=commenter, post=self)
 
@@ -421,6 +424,12 @@ class Post(models.Model):
 
     def is_publicly_visible(self):
         return self.is_public_post() or self.is_public_community_post()
+
+    def create_links(self, link_urls):
+        self.post_links.all().delete()
+        for link_url in link_urls:
+            link_url = normalise_url(link_url)
+            PostLink.create_link(link=link_url, post_id=self.pk)
 
     def is_encircled_post(self):
         return not self.is_public_post() and not self.community
@@ -550,6 +559,7 @@ class Post(models.Model):
 
         self._process_post_mentions()
         self._process_post_hashtags()
+        self._process_post_links()
 
         return post
 
@@ -789,6 +799,11 @@ class Post(models.Model):
                     user_notifications_subscription_id=subscription.pk)
                 send_user_new_post_push_notification(user_notifications_subscription=subscription, post=self)
 
+    def _process_post_links(self):
+        if self.has_text() and not self.has_image() and not self.has_video():
+            link_urls = extract_urls_from_string(self.text)
+            if len(link_urls) > 0:
+                self.create_links(link_urls)
 
 class TopPost(models.Model):
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='top_post')
@@ -1265,6 +1280,16 @@ class PostCommentMute(models.Model):
     @classmethod
     def create_post_comment_mute(cls, post_comment_id, muter_id):
         return cls.objects.create(post_comment_id=post_comment_id, muter_id=muter_id)
+
+
+class PostLink(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='post_links')
+    link = models.TextField(max_length=settings.POST_MAX_LENGTH)
+
+    @classmethod
+    def create_link(cls, link, post_id):
+        return cls.objects.create(link=link, post_id=post_id)
 
 
 class PostUserMention(models.Model):
