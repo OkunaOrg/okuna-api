@@ -55,7 +55,7 @@ from openbook_posts.helpers import upload_to_post_image_directory, upload_to_pos
 from openbook_posts.jobs import process_post_media
 
 magic = get_magic()
-from openbook_common.helpers import get_language_for_text
+from openbook_common.helpers import get_language_for_text, extract_urls_from_string
 
 post_image_storage = S3PrivateMediaStorage() if settings.IS_PRODUCTION else default_storage
 
