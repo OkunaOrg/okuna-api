@@ -188,6 +188,7 @@ class PostLinkSerializer(serializers.ModelSerializer):
         model = PostLink
         fields = (
             'link',
+            'has_preview'
         )
 
 
@@ -215,7 +216,7 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     language = PostLanguageSerializer()
     is_encircled = IsEncircledField()
     hashtags = CommonHashtagSerializer(many=True)
-    post_links = PostLinkSerializer(many=True)
+    links = PostLinkSerializer(many=True)
 
     class Meta:
         model = Post
@@ -224,7 +225,6 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'uuid',
             'comments_count',
             'reactions_emoji_counts',
-            'post_links',
             'created',
             'text',
             'creator',
@@ -242,6 +242,7 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
             'media_width',
             'media_thumbnail',
             'hashtags',
+            'links',
         )
 
 
@@ -275,6 +276,8 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=PostEmojiCountSerializer)
     comments_count = CommentsCountField()
     language = PostLanguageSerializer()
+    hashtags = CommonHashtagSerializer(many=True)
+    links = PostLinkSerializer(many=True)
 
     class Meta:
         model = Post
@@ -293,6 +296,8 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
             'media_height',
             'media_width',
             'media_thumbnail',
+            'hashtags',
+            'links',
         )
 
 

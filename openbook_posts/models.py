@@ -801,15 +801,11 @@ class Post(models.Model):
             if self.has_media():
                 link_urls = extract_urls_from_string(self.text)
                 if link_urls:
-                    created_post_links = []
                     self.post_links.all().delete()
                     for link_url in link_urls:
                         link_url = normalize_url(link_url)
                         post_link = PostLink.create_link(link=link_url, post_id=self.pk)
-                        created_post_links.append(post_link)
-
-                    first_post_link = created_post_links[0]
-                    first_post_link.refresh_has_preview()
+                        post_link.refresh_has_preview()
             else:
                 self.post_links.all().delete()
         else:
