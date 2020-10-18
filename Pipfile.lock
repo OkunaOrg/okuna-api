@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "d910e9df3230713fdd9b1ac5ce511758d30558d06e7e05a8ea22e380d7580d1f"
+            "sha256": "062aa436391ce270fe98cd67f14e1021cf1522a5ab9a0115b15941f0a3ca3764"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -348,13 +348,6 @@
             "markers": "python_version >= '3.4'",
             "version": "==3.1.9"
         },
-        "h11": {
-            "hashes": [
-                "sha256:3c6c61d69c6f13d41f1b80ab0322f1872702a3ba26e12aa864c928f6a43fbaab",
-                "sha256:ab6c335e1b6ef34b205d5ca3e228c9299cc7218b049819ec84a388c2525e5d87"
-            ],
-            "version": "==0.11.0"
-        },
         "halo": {
             "hashes": [
                 "sha256:78750d4778488b79b12104f3a966259579df6b42eec0d7736b3125bfc4c01b10",
@@ -363,27 +356,12 @@
             "index": "pypi",
             "version": "==0.0.30"
         },
-        "httpcore": {
-            "hashes": [
-                "sha256:18c4afcbfe884b635e59739105aed1692e132bc5d31597109f3c1c97e4ec1cac",
-                "sha256:2526a38f31ac5967d38b7f593b5d8c4bd3fa82c21400402f866ba3312946acbf"
-            ],
-            "markers": "python_version >= '3.6'",
-            "version": "==0.12.0"
-        },
-        "httpx": {
-            "hashes": [
-                "sha256:126424c279c842738805974687e0518a94c7ae8d140cd65b9c4f77ac46ffa537",
-                "sha256:9cffb8ba31fac6536f2c8cde30df859013f59e4bcc5b8d43901cb3654a8e0a5b"
-            ],
-            "markers": "python_version >= '3.6'",
-            "version": "==0.16.1"
-        },
         "idna": {
             "hashes": [
                 "sha256:b307872f855b18632ce0c21c5e45be78c0ea7ae4c15c828c20788b26921eb3f6",
                 "sha256:b97d804b1e9b523befed77c48dacec60e6dcb0b5391d57af6a65a312a90648c0"
             ],
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
             "version": "==2.10"
         },
         "importlib-metadata": {
@@ -501,11 +479,11 @@
         },
         "onesignal-sdk": {
             "hashes": [
-                "sha256:be2815178b71e5ece0d6cb1be348d496c8a14e65bfbc1e82cdd1b0d4dae63187",
-                "sha256:c6d1646e52f6ea2c13b45800af42b339ea2514e918baffe8a9894c6539cdaff7"
+                "sha256:1f23befd5e0d1e3a30b32145d303c123fa3d8b1a718e19c6b36f1d589181d17e",
+                "sha256:7205943e8820f712223359ae68098b4ec0770fa5cf13bfae72abc3a5245202e5"
             ],
             "index": "pypi",
-            "version": "==2.0.0"
+            "version": "==1.1.0"
         },
         "packaging": {
             "hashes": [
@@ -572,8 +550,8 @@
         },
         "pinocchio": {
             "hashes": [
-                "sha256:bc53568703bc8e22d0b96010be657a5ebc6ca445defa45878568a0aef992c343",
-                "sha256:1c73db81274d5c8cb50de768fb5735c6c6702891094acb4b08c0920b3758befd"
+                "sha256:1c73db81274d5c8cb50de768fb5735c6c6702891094acb4b08c0920b3758befd",
+                "sha256:bc53568703bc8e22d0b96010be657a5ebc6ca445defa45878568a0aef992c343"
             ],
             "index": "pypi",
             "version": "==0.4.2"
@@ -669,16 +647,6 @@
             "git": "https://github.com/Ian-Foote/rest-framework-generic-relations.git",
             "ref": "8a354d1d728dab16532ffb708af3f55a7c0414ec"
         },
-        "rfc3986": {
-            "extras": [
-                "idna2008"
-            ],
-            "hashes": [
-                "sha256:112398da31a3344dc25dbf477d8df6cb34f9278a94fee2625d89e4514be8bb9d",
-                "sha256:af9147e9aceda37c91a05f4deb128d4b4b49d6b199775fd2d2927768abdc8f50"
-            ],
-            "version": "==1.4.0"
-        },
         "rq": {
             "hashes": [
                 "sha256:6e32a39d467ffc56fc18f0f0f10abd6aa258895dbac03af31e38fe0c2337aab8",
@@ -739,14 +707,6 @@
             ],
             "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
             "version": "==3.0.4"
-        },
-        "sniffio": {
-            "hashes": [
-                "sha256:471b71698eac1c2112a40ce2752bb2f4a4814c22a54a3eed3676bc0f5ca9f663",
-                "sha256:c4666eecec1d3f50960c6bdf61ab7bc350648da6c126e3cf6898d8cd4ddcd3de"
-            ],
-            "markers": "python_version >= '3.5'",
-            "version": "==1.2.0"
         },
         "soupsieve": {
             "hashes": [

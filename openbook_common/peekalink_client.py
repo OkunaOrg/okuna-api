@@ -18,7 +18,7 @@ class PeekalinkClient:
     default_timeout = (3, 10)
 
     def __init__(self, api_key, default_timeout=None):
-        assert not api_key, "PeekalinkClient: No api_key was provided"
+        assert api_key, "PeekalinkClient: No api_key was provided"
 
         self.api_key = api_key
         self.session = requests.Session()
