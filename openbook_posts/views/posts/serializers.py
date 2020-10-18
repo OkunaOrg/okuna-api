@@ -314,3 +314,7 @@ class GetProfilePostsCommunityExclusionSerializer(serializers.Serializer):
         required=False,
         max_value=20
     )
+
+
+class PreviewLinkSerializer(serializers.Serializer):
+    link = serializers.CharField(max_length=255, required=True, allow_blank=False, )

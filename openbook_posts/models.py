@@ -23,6 +23,7 @@ from rest_framework.exceptions import ValidationError
 
 from django.conf import settings
 
+from openbook_common.peekalink_client import peekalink_client
 from openbook_posts.validators import post_text_validators, post_comment_text_validators
 from video_encoding.backends import get_backend
 from video_encoding.fields import VideoField
@@ -425,12 +426,6 @@ class Post(models.Model):
     def is_publicly_visible(self):
         return self.is_public_post() or self.is_public_community_post()
 
-    def create_links(self, link_urls):
-        self.post_links.all().delete()
-        for link_url in link_urls:
-            link_url = normalize_url(link_url)
-            PostLink.create_link(link=link_url, post_id=self.pk)
-
     def is_encircled_post(self):
         return not self.is_public_post() and not self.community
 
@@ -674,7 +669,7 @@ class Post(models.Model):
 
         # Remove all post comment notifications
         PostCommentNotification = get_post_comment_notification_model()
-        PostCommentNotification.objects.filter(post_comment__post_id=self.pk).\
+        PostCommentNotification.objects.filter(post_comment__post_id=self.pk). \
             exclude(notification__owner_id__in=excluded_ids).delete()
 
         # Remove all post reaction notifications
@@ -694,7 +689,8 @@ class Post(models.Model):
 
         # Remove all post comment user mention notifications
         PostCommentUserMentionNotification = get_post_comment_user_mention_notification_model()
-        PostCommentUserMentionNotification.objects.filter(post_comment_user_mention__post_comment__post_id=self.pk).exclude(
+        PostCommentUserMentionNotification.objects.filter(
+            post_comment_user_mention__post_comment__post_id=self.pk).exclude(
             notification__owner_id__in=excluded_ids).delete()
 
         # Remove all community new post notifications
@@ -704,7 +700,8 @@ class Post(models.Model):
 
         # Remove all user new post notifications
         UserNewPostNotification = get_user_new_post_notification_model()
-        UserNewPostNotification.objects.filter(post_id=self.pk).exclude(notification__owner_id__in=excluded_ids).delete()
+        UserNewPostNotification.objects.filter(post_id=self.pk).exclude(
+            notification__owner_id__in=excluded_ids).delete()
 
     def get_participants(self):
         User = get_user_model()
@@ -800,10 +797,24 @@ class Post(models.Model):
                 send_user_new_post_push_notification(user_notifications_subscription=subscription, post=self)
 
     def _process_post_links(self):
-        if self.has_text() and not self.has_image() and not self.has_video():
-            link_urls = extract_urls_from_string(self.text)
-            if len(link_urls) > 0:
-                self.create_links(link_urls)
+        if self.has_text():
+            if self.has_media():
+                link_urls = extract_urls_from_string(self.text)
+                if link_urls:
+                    created_post_links = []
+                    self.post_links.all().delete()
+                    for link_url in link_urls:
+                        link_url = normalize_url(link_url)
+                        post_link = PostLink.create_link(link=link_url, post_id=self.pk)
+                        created_post_links.append(post_link)
+
+                    first_post_link = created_post_links[0]
+                    first_post_link.refresh_has_preview()
+            else:
+                self.post_links.all().delete()
+        else:
+            self.post_links.all().delete()
+
 
 class TopPost(models.Model):
     post = models.OneToOneField(Post, on_delete=models.CASCADE, related_name='top_post')
@@ -1286,11 +1297,20 @@ class PostLink(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='post_links')
     link = models.TextField(max_length=settings.POST_MAX_LENGTH)
+    has_preview = models.BooleanField(default=False)
 
     @classmethod
     def create_link(cls, link, post_id):
         return cls.objects.create(link=link, post_id=post_id)
 
+    def refresh_has_preview(self):
+        try:
+            self.has_preview = peekalink_client.is_peekable(self.link)
+        except Exception as e:
+            # We dont care whether it succeeded or not
+            self.has_preview = False
+
+        self.save()
 
 class PostUserMention(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_mentions')

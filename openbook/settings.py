@@ -361,7 +361,10 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
     ),
-    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.AcceptHeaderVersioning'
+    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.AcceptHeaderVersioning',
+    'DEFAULT_THROTTLE_RATES': {
+        'link_preview': '300/hour',
+    }
 }
 
 # AWS Translate
@@ -579,3 +582,7 @@ if IS_PRODUCTION:
 # ONE SIGNAL
 ONE_SIGNAL_APP_ID = os.environ.get('ONE_SIGNAL_APP_ID')
 ONE_SIGNAL_API_KEY = os.environ.get('ONE_SIGNAL_API_KEY')
+
+# Peekalink
+
+PEEKALINK_API_KEY = os.environ.get('PEEKALINK_API_KEY', None)
