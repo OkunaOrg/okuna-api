@@ -23,13 +23,12 @@ import logging
 import json
 
 from openbook_circles.models import Circle
-from openbook_common.helpers import normalise_url
 from openbook_common.tests.helpers import make_user, make_users, make_fake_post_text, \
     make_authentication_headers_for_user, make_circle, make_community, make_list, make_moderation_category, \
     get_test_usernames, get_test_videos, get_test_image, make_global_moderator, \
     make_fake_post_comment_text, make_reactions_emoji_group, make_emoji, make_hashtag_name, make_hashtag, \
     get_test_valid_hashtags, get_test_invalid_hashtags, get_post_links
-from openbook_common.utils.helpers import sha256sum
+from openbook_common.utils.helpers import sha256sum, normalize_url
 from openbook_communities.models import Community
 from openbook_hashtags.models import Hashtag
 from openbook_lists.models import List
@@ -570,7 +569,7 @@ class PostsAPITests(OpenbookAPITestCase):
 
         self.assertEqual(len(result_links), len(links))
         for link in links:
-            link = normalise_url(link)
+            link = normalize_url(link)
             self.assertTrue(link in result_links)
 
     def test_create_text_post_does_not_skips_http_urls(self):

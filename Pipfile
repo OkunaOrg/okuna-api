@@ -55,6 +55,7 @@ shutilwhich = "*"
 halo = "*"
 watchdog = "*"
 spectra = "*"
+url-normalize = "*"
 
 [pipenv]
 allow_prereleases = true

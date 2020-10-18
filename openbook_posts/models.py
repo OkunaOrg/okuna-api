@@ -33,7 +33,7 @@ from openbook_auth.models import User
 
 from openbook_common.models import Emoji, Language
 from openbook_common.utils.helpers import delete_file_field, sha256sum, extract_usernames_from_string, get_magic, \
-    write_in_memory_file_to_disk, extract_hashtags_from_string
+    write_in_memory_file_to_disk, extract_hashtags_from_string, normalize_url
 from openbook_common.utils.model_loaders import get_emoji_model, \
     get_circle_model, get_community_model, get_post_comment_notification_model, \
     get_post_comment_reply_notification_model, get_post_reaction_notification_model, get_moderated_object_model, \
@@ -428,7 +428,7 @@ class Post(models.Model):
     def create_links(self, link_urls):
         self.post_links.all().delete()
         for link_url in link_urls:
-            link_url = normalise_url(link_url)
+            link_url = normalize_url(link_url)
             PostLink.create_link(link=link_url, post_id=self.pk)
 
     def is_encircled_post(self):
