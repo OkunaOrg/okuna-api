@@ -48,8 +48,6 @@ def process_post_media(post_id):
         post_video = post_media_video.content_object
         tasks.convert_video(post_video.file)
 
-
-
     # This updates the status and created attributes
     post._publish()
     logger.info('Processed media of post with id: %d' % post_id)

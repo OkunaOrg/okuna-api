@@ -1,13 +1,13 @@
 from hashlib import sha256
-from onesignal_sdk.client import Client
+import onesignal as onesignal_sdk
 from django.conf import settings
 from django_rq import job
 
 from openbook_common.utils.model_loaders import get_user_model
 
-onesignal_client = Client(
+onesignal_client = onesignal_sdk.Client(
     app_id=settings.ONE_SIGNAL_APP_ID,
-    rest_api_key=settings.ONE_SIGNAL_API_KEY
+    app_auth_key=settings.ONE_SIGNAL_API_KEY
 )
 
 
