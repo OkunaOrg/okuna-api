@@ -4,6 +4,9 @@ import random
 import re
 import secrets
 import tempfile
+from urllib.parse import urlparse
+
+from url_normalize import url_normalize
 
 import magic
 import spectra
@@ -143,3 +146,15 @@ def write_in_memory_file_to_disk(in_memory_file):
     tmp_file.seek(0)
     tmp_file.close()
     return tmp_file
+
+
+def normalize_url(url, default_scheme='http', scheme=None):
+    normalized_url = url_normalize(url, default_scheme=scheme or default_scheme)
+    if scheme:
+        parsed_url = urlparse(normalized_url)
+        if parsed_url.scheme != scheme:
+            normalized_url = normalized_url.replace('http://', 'https://')
+            parsed_url = urlparse(normalized_url)
+            normalized_url = parsed_url.geturl()
+
+    return normalized_url

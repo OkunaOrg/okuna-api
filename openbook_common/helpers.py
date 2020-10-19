@@ -40,6 +40,9 @@ def get_supported_translation_language(language_code):
     return Language.objects.get(code=supported_translation_code)
 
 
+extractor = URLExtract(cache_dir=tempfile.gettempdir())
+
+
 def extract_urls_from_string(text):
     """
     Returns all the raw extracted urls as a list
@@ -47,7 +50,6 @@ def extract_urls_from_string(text):
     URLs like www. are sanitised in the normalise_url
     """
     text = text.lower()
-    extractor = URLExtract(cache_dir=tempfile.gettempdir())
     results = [url for url in extractor.gen_urls(text)]
     for url in results:
         scheme = urlparse(url).scheme
@@ -75,7 +77,6 @@ def write_in_memory_file_to_disk(in_memory_file):
 
 
 def send_alert_to_channel(alert):
-
     post = {"text": alert}
 
     json_data = dumps(post)
