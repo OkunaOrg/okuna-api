@@ -404,7 +404,7 @@ class Post(models.Model):
         return False
 
     def has_links(self):
-        return self.post_links.exists()
+        return self.links.exists()
 
     def comment(self, text, commenter):
         return PostComment.create_comment(text=text, commenter=commenter, post=self)
@@ -801,15 +801,15 @@ class Post(models.Model):
             if self.has_media():
                 link_urls = extract_urls_from_string(self.text)
                 if link_urls:
-                    self.post_links.all().delete()
+                    self.links.all().delete()
                     for link_url in link_urls:
                         link_url = normalize_url(link_url)
                         post_link = PostLink.create_link(link=link_url, post_id=self.pk)
                         post_link.refresh_has_preview()
             else:
-                self.post_links.all().delete()
+                self.links.all().delete()
         else:
-            self.post_links.all().delete()
+            self.links.all().delete()
 
 
 class TopPost(models.Model):
@@ -1291,7 +1291,7 @@ class PostCommentMute(models.Model):
 
 class PostLink(models.Model):
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='post_links')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='links')
     link = models.TextField(max_length=settings.POST_MAX_LENGTH)
     has_preview = models.BooleanField(default=False)
 

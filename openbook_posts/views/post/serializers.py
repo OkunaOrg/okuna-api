@@ -150,7 +150,7 @@ class GetPostPostSerializer(serializers.ModelSerializer):
     language = PostLanguageSerializer()
     is_encircled = IsEncircledField()
     hashtags = CommonHashtagSerializer(many=True)
-    post_links = PostLinkSerializer(many=True)
+    links = PostLinkSerializer(many=True)
 
     class Meta:
         model = Post
@@ -159,7 +159,7 @@ class GetPostPostSerializer(serializers.ModelSerializer):
             'uuid',
             'comments_count',
             'reactions_emoji_counts',
-            'post_links',
+            'links',
             'created',
             'text',
             'creator',
