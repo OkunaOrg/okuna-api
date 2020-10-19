@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('openbook_posts', '0059_auto_20190910_1800'),
     ]

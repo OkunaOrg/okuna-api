@@ -8,7 +8,7 @@ polib = "*"
 pytz = "*"
 
 [packages]
-django = "==2.2.13"
+django = "==2.2.16"
 python-dotenv = "*"
 djangorestframework = "*"
 sentry-sdk = "==0.10.2"
@@ -25,15 +25,15 @@ faker = "*"
 django-storages = "==1.8"
 django-amazon-ses = "*"
 django-media-fixtures = "==0.0.3"
-django-modeltranslation = {git = "https://github.com/lifenautjoe/django-modeltranslation.git",ref = "551af9905961038badad9d9a16b2f47996f7685b"}
+django-modeltranslation = "*"
 bandit = "==1.5.1"
 pyyaml = ">=4.2b1"
 python-magic = "*"
 safety = "*"
 pyjwt = "*"
 django-imagekit = "*"
-rest-framework-generic-relations = {git = "https://github.com/Ian-Foote/rest-framework-generic-relations.git",ref = "8a354d1d728dab16532ffb708af3f55a7c0414ec"}
-onesignal-sdk = "*"
+rest-framework-generic-relations = "*"
+onesignal-sdk = "==1.1.0"
 django-replicated = "*"
 django-cacheops = "*"
 django-redis = "*"
@@ -55,6 +55,7 @@ shutilwhich = "*"
 halo = "*"
 watchdog = "*"
 spectra = "*"
+url-normalize = "*"
 
 [pipenv]
-allow_prereleases = true
+allow_prereleases = false
