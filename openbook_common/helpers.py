@@ -40,7 +40,7 @@ def get_supported_translation_language(language_code):
     return Language.objects.get(code=supported_translation_code)
 
 
-extractor = URLExtract(cache_dir=tempfile.gettempdir())
+extractor = URLExtract()
 
 
 def extract_urls_from_string(text):
