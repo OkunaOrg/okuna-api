@@ -2770,6 +2770,12 @@ class User(AbstractUser):
     def has_follow_request_from_user(self, user):
         return self.has_follow_request_from_user_with_id(user_id=user.pk)
 
+    def has_follow_request_for_user_with_id(self, user_id):
+        return self.sent_follow_requests.filter(creator_id=user_id).exists()
+
+    def has_follow_request_for_user(self, user):
+        return self.has_follow_request_for_user_with_id(user_id=user.pk)
+
     def create_follow_request_for_user_with_username(self, user_username):
         user = User.objects.get(username=user_username)
         return self.create_follow_request_for_user(user)
@@ -2989,12 +2995,13 @@ class User(AbstractUser):
         return self.notifications.filter(notifications_query)
 
     def read_notifications(self, max_id=None, types=None):
-        notifications_query = Q(read=False)
+        if types:
+            notifications_query = Q(read=False, notification_type__in=types)
+        else:
+            notifications_query = Q(read=False)
 
         if max_id:
             notifications_query.add(Q(id__lte=max_id), Q.AND)
-        if types:
-            notifications_query.add(Q(notification_type__in=types), Q.AND)
 
         self.notifications.filter(notifications_query).update(read=True)
 
