@@ -18,7 +18,8 @@ class PeekalinkClient:
     default_timeout = (3, 10)
 
     def __init__(self, api_key, default_timeout=None):
-        assert api_key, "PeekalinkClient: No api_key was provided"
+        if not api_key:
+            raise Exception("PeekalinkClient: No api_key was provided")
 
         self.api_key = api_key
         self.session = requests.Session()
@@ -27,7 +28,7 @@ class PeekalinkClient:
         if default_timeout:
             self.default_timeout = default_timeout
 
-    def peek(self, link: str, language_code: str, timeout):
+    def peek(self, link: str, language_code=None, timeout=None):
         if not timeout:
             timeout = self.default_timeout
 
@@ -51,7 +52,7 @@ class PeekalinkClient:
 
         return response.json()
 
-    def is_peekable(self, link: str, language_code: str, timeout):
+    def is_peekable(self, link: str, language_code=None, timeout=None):
         if not timeout:
             timeout = self.default_timeout
 

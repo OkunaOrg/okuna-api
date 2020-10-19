@@ -86,7 +86,8 @@ from openbook_posts.views.post_reaction.views import PostReactionItem
 from openbook_posts.views.post_reactions.views import PostReactions, PostReactionsEmojiCount, PostReactionEmojiGroups
 from openbook_posts.views.posts.views import Posts, TrendingPosts, TopPosts, TrendingPostsNew, \
     ProfilePostsExcludedCommunities, SearchProfilePostsExcludedCommunities, TopPostsExcludedCommunities, \
-    SearchTopPostsExcludedCommunities, ProfilePostsExcludedCommunity, TopPostsExcludedCommunity, PreviewLink
+    SearchTopPostsExcludedCommunities, ProfilePostsExcludedCommunity, TopPostsExcludedCommunity, PreviewLink, \
+    LinkIsPreviewable
 from openbook_importer.views import ImportItem
 
 auth_auth_patterns = [
@@ -189,12 +190,6 @@ post_participants_patterns = [
 post_media_patterns = [
     path('', PostMedia.as_view(), name='post-media'),
 ]
-
-post_links_patterns = [
-    path('preview/', PreviewLink.as_view(), name='preview-post-link'),
-    path('is-previewable/', PreviewLink.as_view(), name='post-link-is-previewable'),
-]
-
 post_patterns = [
     path('', PostItem.as_view(), name='post'),
     path('notifications/', include(post_notifications_patterns)),
@@ -214,7 +209,6 @@ post_patterns = [
     path('link-preview/', PostPreviewLinkData.as_view(), name='preview-post-link'),
     path('participants/', include(post_participants_patterns)),
     path('media/', include(post_media_patterns)),
-    path('links/', include(post_links_patterns)),
 ]
 
 posts_profile_patterns = [
@@ -236,6 +230,11 @@ posts_top_patterns = [
          name='top-posts-excluded-community'),
 ]
 
+posts_links_patterns = [
+    path('preview/', PreviewLink.as_view(), name='preview-post-link'),
+    path('is-previewable/', LinkIsPreviewable.as_view(), name='post-link-is-previewable'),
+]
+
 posts_patterns = [
     path('<uuid:post_uuid>/', include(post_patterns)),
     path('', Posts.as_view(), name='posts'),
@@ -244,6 +243,7 @@ posts_patterns = [
     path('emojis/groups/', PostReactionEmojiGroups.as_view(), name='posts-emoji-groups'),
     path('profile/', include(posts_profile_patterns)),
     path('top/', include(posts_top_patterns)),
+    path('links/', include(posts_links_patterns)),
 ]
 
 community_administrator_patterns = [
