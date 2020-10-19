@@ -18,9 +18,6 @@ class PeekalinkClient:
     default_timeout = (3, 10)
 
     def __init__(self, api_key, default_timeout=None):
-        if not api_key:
-            raise Exception("PeekalinkClient: No api_key was provided")
-
         self.api_key = api_key
         self.session = requests.Session()
         self.session.headers.update({'X-API-Key': self.api_key})
