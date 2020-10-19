@@ -372,10 +372,10 @@ def get_test_video():
 
 def get_post_links():
     return [
-        'https://www.okuna.io',
-        'www.techcrunch.com',
-        'https://bbc.co.uk',
-        'google.com?filter=evil',
-        'www.blablacar.com/i/rest/results',
-        'https://longwebsite.social?url=https%3A%2F%2Ftest.com%3Fyes%3Dtrue'
+        'https://www.okuna.io/',
+        'www.techcrunch.com/',
+        'https://bbc.co.uk/',
+        'google.com?filter=evil/',
+        'www.blablacar.com/i/rest/results/',
+        'https://longwebsite.social/?url=https%3A%2F%2Ftest.com%3Fyes%3Dtrue'
     ]

@@ -580,7 +580,7 @@ class PostsAPITests(OpenbookAPITestCase):
 
         headers = make_authentication_headers_for_user(user=user)
 
-        post_text = 'http://unsafe.com'
+        post_text = 'http://unsafe.com/'
 
         data = {
             'text': post_text
@@ -592,6 +592,8 @@ class PostsAPITests(OpenbookAPITestCase):
         post = Post.objects.get(text=post_text, creator_id=user.pk)
         post_links = PostLink.objects.filter(post_id=post.pk)
         result_links = [post_link.link for post_link in post_links]
+
+        self.assertTrue(len(result_links), 1)
 
         result_link = result_links[0]
 

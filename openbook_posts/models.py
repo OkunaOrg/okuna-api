@@ -798,7 +798,7 @@ class Post(models.Model):
 
     def _process_post_links(self):
         if self.has_text():
-            if self.has_media():
+            if not self.has_media():
                 link_urls = extract_urls_from_string(self.text)
                 if link_urls:
                     self.links.all().delete()
