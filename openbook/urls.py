@@ -86,7 +86,7 @@ from openbook_posts.views.post_reaction.views import PostReactionItem
 from openbook_posts.views.post_reactions.views import PostReactions, PostReactionsEmojiCount, PostReactionEmojiGroups
 from openbook_posts.views.posts.views import Posts, TrendingPosts, TopPosts, TrendingPostsNew, \
     ProfilePostsExcludedCommunities, SearchProfilePostsExcludedCommunities, TopPostsExcludedCommunities, \
-    SearchTopPostsExcludedCommunities, ProfilePostsExcludedCommunity, TopPostsExcludedCommunity
+    SearchTopPostsExcludedCommunities, ProfilePostsExcludedCommunity, TopPostsExcludedCommunity, PreviewLink
 from openbook_importer.views import ImportItem
 
 auth_auth_patterns = [
@@ -190,6 +190,11 @@ post_media_patterns = [
     path('', PostMedia.as_view(), name='post-media'),
 ]
 
+post_links_patterns = [
+    path('preview/', PreviewLink.as_view(), name='preview-post-link'),
+    path('is-previewable/', PreviewLink.as_view(), name='post-link-is-previewable'),
+]
+
 post_patterns = [
     path('', PostItem.as_view(), name='post'),
     path('notifications/', include(post_notifications_patterns)),
@@ -209,6 +214,7 @@ post_patterns = [
     path('link-preview/', PostPreviewLinkData.as_view(), name='preview-post-link'),
     path('participants/', include(post_participants_patterns)),
     path('media/', include(post_media_patterns)),
+    path('links/', include(post_links_patterns)),
 ]
 
 posts_profile_patterns = [
