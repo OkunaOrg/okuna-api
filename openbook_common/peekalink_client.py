@@ -61,7 +61,7 @@ class PeekalinkClient:
 
         response_data = response.json()
 
-        if not response_data['isPeekable']:
+        if 'isPeekable' not in response_data:
             raise PeekalinkUnexpectedResponseError()
 
         return response_data['isPeekable']

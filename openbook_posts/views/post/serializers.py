@@ -129,12 +129,12 @@ class PostCircleSerializer(serializers.ModelSerializer):
         )
 
 
-
 class PostLinkSerializer(serializers.ModelSerializer):
     class Meta:
         model = PostLink
         fields = (
             'link',
+            'has_preview'
         )
 
 
