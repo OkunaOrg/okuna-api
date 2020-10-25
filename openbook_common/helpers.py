@@ -49,7 +49,6 @@ def extract_urls_from_string(text):
     If a URL has a scheme, it ensures that it is http/s
     URLs like www. are sanitised in the normalise_url
     """
-    text = text.lower()
     results = [url for url in extractor.gen_urls(text)]
     for url in results:
         scheme = urlparse(url).scheme
