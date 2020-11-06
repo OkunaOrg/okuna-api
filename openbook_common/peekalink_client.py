@@ -34,6 +34,7 @@ class PeekalinkClient:
             'https://api.peekalink.io/',
             headers=headers,
             data=request_data,
+            timeout=(3, settings.LINK_PREVIEW_TIMEOUT_IN_SECONDS),
         )
 
         response.raise_for_status()
@@ -55,6 +56,7 @@ class PeekalinkClient:
             'https://api.peekalink.io/is-peekable/',
             headers=headers,
             data=request_data,
+            timeout=(3, settings.LINK_PREVIEW_TIMEOUT_IN_SECONDS),
         )
 
         response.raise_for_status()

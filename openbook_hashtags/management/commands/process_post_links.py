@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 import logging
 
-from django.db import transaction
+from django.db.models import Q
 
 from openbook_common.utils.model_loaders import get_post_model
 from openbook_posts.jobs import _chunked_queryset_iterator
@@ -15,10 +15,12 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         Post = get_post_model()
 
-        posts_to_process = Post.objects.filter(links__isnull=True,
-                                               text__isnull=False,
-                                               text__icontains='http'
-                                               ).only('id', 'text').all()
+        text_query = Q(text__isnull=False,
+                       text__icontains='http', )
+
+        links_query = Q(links__isnull=True) | Q(links__has_preview=False)
+
+        posts_to_process = Post.objects.filter(text_query & links_query).only('id', 'text').all()
         migrated_posts = 0
 
         for post in _chunked_queryset_iterator(posts_to_process, 100):
