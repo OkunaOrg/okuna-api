@@ -10,7 +10,7 @@ from openbook_communities.serializers_fields import IsFavoriteField, CommunityMe
 from openbook_communities.validators import community_name_characters_validator, community_name_exists
 from openbook_follows.models import FollowRequest, Follow
 from openbook_hashtags.models import Hashtag
-from openbook_posts.models import PostReaction, PostImage
+from openbook_posts.models import PostReaction, PostImage, PostLink
 
 
 class CommonEmojiSerializer(serializers.ModelSerializer):
@@ -64,6 +64,7 @@ class CommonPostCreatorBadgeSerializer(serializers.ModelSerializer):
             'keyword',
             'keyword_description'
         )
+
 
 class CommonPostReactionEmojiSerializer(serializers.ModelSerializer):
     class Meta:
@@ -148,6 +149,15 @@ class CommonHashtagSerializer(serializers.ModelSerializer):
             'text_color',
             'image',
             'emoji'
+        )
+
+
+class CommonPostLinkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PostLink
+        fields = (
+            'link',
+            'has_preview'
         )
 
 

@@ -4,7 +4,7 @@ from django.conf import settings
 from openbook_auth.models import UserProfile, User
 from openbook_circles.models import Circle
 from openbook_common.models import Badge, Language
-from openbook_common.serializers import CommonHashtagSerializer, CommonPublicUserSerializer
+from openbook_common.serializers import CommonHashtagSerializer, CommonPublicUserSerializer, CommonPostLinkSerializer
 from openbook_common.serializers_fields.post import PostCreatorField, PostReactionsEmojiCountField, ReactionField, \
     CommentsCountField, CirclesField, PostIsMutedField, IsEncircledField
 from openbook_communities.models import CommunityMembership, Community
@@ -129,15 +129,6 @@ class PostCircleSerializer(serializers.ModelSerializer):
         )
 
 
-class PostLinkSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PostLink
-        fields = (
-            'link',
-            'has_preview'
-        )
-
-
 class GetPostPostSerializer(serializers.ModelSerializer):
     creator = PostCreatorField(post_creator_serializer=CommonPublicUserSerializer,
                                community_membership_serializer=CommunityMembershipSerializer)
@@ -150,7 +141,7 @@ class GetPostPostSerializer(serializers.ModelSerializer):
     language = PostLanguageSerializer()
     is_encircled = IsEncircledField()
     hashtags = CommonHashtagSerializer(many=True)
-    links = PostLinkSerializer(many=True)
+    links = CommonPostLinkSerializer(many=True)
 
     class Meta:
         model = Post

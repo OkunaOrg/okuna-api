@@ -5,7 +5,7 @@ from openbook_auth.validators import user_username_exists, username_characters_v
 from openbook_circles.models import Circle
 from openbook_circles.validators import circle_id_exists
 from openbook_common.models import Emoji, Badge
-from openbook_common.serializers import CommonHashtagSerializer, CommonPublicUserSerializer
+from openbook_common.serializers import CommonHashtagSerializer, CommonPublicUserSerializer, CommonPostLinkSerializer
 from openbook_common.serializers_fields.post import ReactionField, CommentsCountField, PostReactionsEmojiCountField, \
     CirclesField, PostCreatorField, PostIsMutedField, IsEncircledField
 from openbook_common.serializers_fields.request import RestrictedImageFileSizeField, RestrictedFileSizeField
@@ -99,6 +99,7 @@ class PostCreatorProfileBadgeSerializer(serializers.ModelSerializer):
             'keyword_description'
         )
 
+
 class PostReactionEmojiSerializer(serializers.ModelSerializer):
     class Meta:
         model = Emoji
@@ -183,15 +184,6 @@ class PostLanguageSerializer(serializers.ModelSerializer):
         )
 
 
-class PostLinkSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PostLink
-        fields = (
-            'link',
-            'has_preview'
-        )
-
-
 class PostImageSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(read_only=True, required=False, allow_empty_file=True)
 
@@ -216,7 +208,7 @@ class AuthenticatedUserPostSerializer(serializers.ModelSerializer):
     language = PostLanguageSerializer()
     is_encircled = IsEncircledField()
     hashtags = CommonHashtagSerializer(many=True)
-    links = PostLinkSerializer(many=True)
+    links = CommonPostLinkSerializer(many=True)
 
     class Meta:
         model = Post
@@ -277,7 +269,7 @@ class UnauthenticatedUserPostSerializer(serializers.ModelSerializer):
     comments_count = CommentsCountField()
     language = PostLanguageSerializer()
     hashtags = CommonHashtagSerializer(many=True)
-    links = PostLinkSerializer(many=True)
+    links = CommonPostLinkSerializer(many=True)
 
     class Meta:
         model = Post
