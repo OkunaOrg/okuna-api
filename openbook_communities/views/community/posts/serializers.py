@@ -73,7 +73,7 @@ class CommunityPostSerializer(serializers.ModelSerializer):
             'media_height',
             'media_width',
             'media_thumbnail',
-            'hashtags'
+            'hashtags',
             'links'
         )
 
