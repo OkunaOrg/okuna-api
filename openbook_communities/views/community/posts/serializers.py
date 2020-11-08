@@ -1,7 +1,7 @@
 from django.conf import settings
 from rest_framework import serializers
 
-from openbook_common.serializers import CommonPostImageSerializer, CommonPublicUserSerializer, \
+from openbook_common.serializers import CommonPublicUserSerializer, \
     CommonCommunityMembershipSerializer, CommonPostEmojiCountSerializer, CommonPostCommunitySerializer, \
     CommonPostReactionSerializer, CommonPostLanguageSerializer, CommonHashtagSerializer, CommonPostLinkSerializer
 from openbook_common.serializers_fields.community import CommunityPostsCountField
@@ -42,7 +42,6 @@ class CreateCommunityPostSerializer(serializers.Serializer):
 
 class CommunityPostSerializer(serializers.ModelSerializer):
     # Temp backwards compat
-    image = CommonPostImageSerializer(many=False)
     creator = PostCreatorField(post_creator_serializer=CommonPublicUserSerializer,
                                community_membership_serializer=CommonCommunityMembershipSerializer)
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=CommonPostEmojiCountSerializer)
@@ -64,8 +63,6 @@ class CommunityPostSerializer(serializers.ModelSerializer):
             'reactions_emoji_counts',
             'created',
             'text',
-            # Temp backwards compat
-            'image',
             'language',
             'creator',
             'community',
