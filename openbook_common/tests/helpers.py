@@ -1,4 +1,5 @@
 import tempfile
+import string
 
 from PIL import Image
 from faker import Faker
@@ -166,11 +167,11 @@ def make_community_rules():
 
 
 def make_community_user_adjective():
-    return fake.word().title()
+    return string.capwords(fake.word(), ' ')
 
 
 def make_community_users_adjective():
-    return fake.word().title()
+    return string.capwords(fake.word(), ' ')
 
 
 def make_community_name():
