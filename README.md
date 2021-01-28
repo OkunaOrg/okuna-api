@@ -400,7 +400,7 @@ Send invite emails to all user invites who have not been sent the email.
 usage: manage.py send_invites [-h]
 ```
 
-####`manage.py allocate_invites`
+#### `manage.py allocate_invites`
 
 Assign user invites to all or specific users. 
 
