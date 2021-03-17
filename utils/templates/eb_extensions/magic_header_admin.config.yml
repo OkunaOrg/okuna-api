@@ -1,0 +1,12 @@
+files:
+  "/etc/httpd/conf.d/magic_header_admin.conf" :
+    mode: "000644"
+    owner: root
+    group: root
+    content: |
+      <LocationMatch "^/admin">
+        RewriteEngine On
+        RewriteCond %{HTTP:{{ HEADER_NAME }}} !^({{ HEADER_VALUE }})$
+        RewriteCond %{REQUEST_URI} !^/health/
+        RewriteRule ^ - [F]
+      </LocationMatch>

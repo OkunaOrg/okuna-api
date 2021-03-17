@@ -1,9 +1,9 @@
 from django.conf import settings
 from rest_framework import serializers
 
-from openbook_common.serializers import CommonPostImageSerializer, CommonPublicUserSerializer, \
+from openbook_common.serializers import CommonPublicUserSerializer, \
     CommonCommunityMembershipSerializer, CommonPostEmojiCountSerializer, CommonPostCommunitySerializer, \
-    CommonPostReactionSerializer, CommonPostLanguageSerializer, CommonHashtagSerializer
+    CommonPostReactionSerializer, CommonPostLanguageSerializer, CommonHashtagSerializer, CommonPostLinkSerializer
 from openbook_common.serializers_fields.community import CommunityPostsCountField
 from openbook_common.serializers_fields.post import PostReactionsEmojiCountField, CommentsCountField, PostCreatorField, \
     PostIsMutedField, ReactionField
@@ -42,7 +42,6 @@ class CreateCommunityPostSerializer(serializers.Serializer):
 
 class CommunityPostSerializer(serializers.ModelSerializer):
     # Temp backwards compat
-    image = CommonPostImageSerializer(many=False)
     creator = PostCreatorField(post_creator_serializer=CommonPublicUserSerializer,
                                community_membership_serializer=CommonCommunityMembershipSerializer)
     reactions_emoji_counts = PostReactionsEmojiCountField(emoji_count_serializer=CommonPostEmojiCountSerializer)
@@ -52,6 +51,7 @@ class CommunityPostSerializer(serializers.ModelSerializer):
     reaction = ReactionField(reaction_serializer=CommonPostReactionSerializer)
     language = CommonPostLanguageSerializer()
     hashtags = CommonHashtagSerializer(many=True)
+    links = CommonPostLinkSerializer(many=True)
 
     class Meta:
         model = Post
@@ -63,8 +63,6 @@ class CommunityPostSerializer(serializers.ModelSerializer):
             'reactions_emoji_counts',
             'created',
             'text',
-            # Temp backwards compat
-            'image',
             'language',
             'creator',
             'community',
@@ -75,7 +73,8 @@ class CommunityPostSerializer(serializers.ModelSerializer):
             'media_height',
             'media_width',
             'media_thumbnail',
-            'hashtags'
+            'hashtags',
+            'links'
         )
 
 

@@ -361,7 +361,10 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
     ),
-    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.AcceptHeaderVersioning'
+    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.AcceptHeaderVersioning',
+    'DEFAULT_THROTTLE_RATES': {
+        'link_preview': '300/hour',
+    }
 }
 
 # AWS Translate
@@ -509,6 +512,7 @@ MODERATED_OBJECT_DESCRIPTION_MAX_LENGTH = 1000
 GLOBAL_HIDE_CONTENT_AFTER_REPORTS_AMOUNT = int(os.environ.get('GLOBAL_HIDE_CONTENT_AFTER_REPORTS_AMOUNT', '20'))
 MODERATORS_COMMUNITY_NAME = os.environ.get('MODERATORS_COMMUNITY_NAME', 'mods')
 PROXY_BLACKLIST_DOMAIN_MAX_LENGTH = 150
+LINK_PREVIEW_TIMEOUT_IN_SECONDS = int(os.environ.get('GLOBAL_HIDE_CONTENT_AFTER_REPORTS_AMOUNT', 8))
 
 SUPPORTED_MEDIA_MIMETYPES = [
     'video/mp4',
@@ -579,3 +583,7 @@ if IS_PRODUCTION:
 # ONE SIGNAL
 ONE_SIGNAL_APP_ID = os.environ.get('ONE_SIGNAL_APP_ID')
 ONE_SIGNAL_API_KEY = os.environ.get('ONE_SIGNAL_API_KEY')
+
+# Peekalink
+
+PEEKALINK_API_KEY = os.environ.get('PEEKALINK_API_KEY', None)
