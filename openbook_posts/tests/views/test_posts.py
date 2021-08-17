@@ -7,10 +7,8 @@ from django.conf import settings
 from django.core.files import File
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
-from django_rq import get_worker
 from faker import Faker
 from rest_framework import status
-from rq import SimpleWorker
 
 from openbook_common.tests.models import OpenbookAPITestCase
 from mixer.backend.django import mixer
@@ -21,6 +19,8 @@ import random
 
 import logging
 import json
+
+from openbook.celery import celery_use_eager
 
 from openbook_circles.models import Circle
 from openbook_common.tests.helpers import make_user, make_users, make_fake_post_text, \
@@ -369,6 +369,7 @@ class PostsAPITests(OpenbookAPITestCase):
 
         self.assertTrue(PostUserMention.objects.filter(post_id=post.pk, user_id=mentioned_user.pk).exists())
 
+    @celery_use_eager
     def test_create_text_detect_mention_ignores_casing_of_username(self):
         """
         should detect mention regardless of the casing of the username
@@ -387,8 +388,6 @@ class PostsAPITests(OpenbookAPITestCase):
 
         url = self._get_url()
         response = self.client.put(url, data, **headers, format='multipart')
-
-        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         post = Post.objects.get(text=post_text, creator_id=user.pk)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -836,6 +835,7 @@ class PostsAPITests(OpenbookAPITestCase):
         media = PostMedia.objects.get(post_id=response_post_id, type=PostMedia.MEDIA_TYPE_IMAGE)
         self.assertEqual(media.content_object.hash, filehash)
 
+    @celery_use_eager
     def test_create_video_post(self):
         """
         should be able to create a video post and return 201
@@ -867,8 +867,6 @@ class PostsAPITests(OpenbookAPITestCase):
                 created_post = user.posts.filter(pk=response_post_id).get()
 
                 self.assertTrue(created_post.status, Post.STATUS_PROCESSING)
-
-                get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
                 created_post.refresh_from_db()
 
@@ -935,6 +933,7 @@ class PostsAPITests(OpenbookAPITestCase):
                 self.assertIsNotNone(media.content_object.thumbnail_width)
                 self.assertIsNotNone(media.content_object.thumbnail_height)
 
+    @celery_use_eager
     def test_create_video_and_text_post(self):
         """
         should be able to create a video and text post and return 201
@@ -970,8 +969,6 @@ class PostsAPITests(OpenbookAPITestCase):
             self.assertTrue(created_post.status, Post.STATUS_PROCESSING)
 
             self.assertEqual(created_post.text, post_text)
-
-            get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
             created_post.refresh_from_db()
 

@@ -1,10 +1,9 @@
-import django_rq
 from django.utils import translation
 from django.utils.translation import ugettext_lazy as _
 import onesignal as onesignal_sdk
 
 from openbook_common.utils.model_loaders import get_notification_model
-from openbook_notifications.django_rq_jobs import send_notification_to_user_with_id
+from openbook_notifications.jobs import send_notification_to_user_with_id
 from openbook_translation import translation_strategy
 
 import logging

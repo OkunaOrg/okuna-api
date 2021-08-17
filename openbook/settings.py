@@ -21,7 +21,7 @@ from sentry_sdk.integrations.django import DjangoIntegration
 from django_replicated.settings import *
 
 # Logging config
-from sentry_sdk.integrations.rq import RqIntegration
+from sentry_sdk.integrations.celery import CeleryIntegration
 
 from openbook_common.utils.environment import EnvironmentChecker
 
@@ -114,8 +114,6 @@ INSTALLED_APPS = [
     'imagekit',
     'django_media_fixtures',
     'cacheops',
-    'django_rq',
-    'scheduler',
     'django_extensions',
     'openbook_common',
     'openbook_auth',
@@ -171,12 +169,10 @@ REDIS_LOCATION = '%(protocol)s%(password)s@%(host)s:%(port)d' % {'protocol': red
                                                                  'host': REDIS_HOST,
                                                                  'port': REDIS_PORT}
 
-RQ_SHOW_ADMIN_LINK = False
-
 REDIS_DEFAULT_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 0}
-REDIS_RQ_DEFAULT_JOBS_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 1}
-REDIS_RQ_HIGH_JOBS_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 2}
-REDIS_RQ_LOW_JOBS_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 3}
+
+CELERY_REDIS_BROKER_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 1}
+CELERY_REDIS_RESULT_BACKEND_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 2}
 
 CACHES = {
     'default': {
@@ -186,30 +182,6 @@ CACHES = {
             "CLIENT_CLASS": "django_redis.client.DefaultClient"
         },
         "KEY_PREFIX": "ob-api-"
-    },
-    'rq-default-jobs': {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": REDIS_RQ_DEFAULT_JOBS_CACHE_LOCATION,
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient"
-        },
-        "KEY_PREFIX": "ob-api-rq-default-job-"
-    },
-    'rq-high-jobs': {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": REDIS_RQ_HIGH_JOBS_CACHE_LOCATION,
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient"
-        },
-        "KEY_PREFIX": "ob-api-rq-high-job-"
-    },
-    'rq-low-jobs': {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": REDIS_RQ_LOW_JOBS_CACHE_LOCATION,
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient"
-        },
-        "KEY_PREFIX": "ob-api-rq-low-job-"
     },
 }
 
@@ -224,18 +196,6 @@ CACHEOPS_DEFAULTS = {
 CACHEOPS = {
     # Don't cache anything automatically
     '*.*': {},
-}
-
-RQ_QUEUES = {
-    'default': {
-        'USE_REDIS_CACHE': 'rq-default-jobs',
-    },
-    'high': {
-        'USE_REDIS_CACHE': 'rq-high-jobs',
-    },
-    'low': {
-        'USE_REDIS_CACHE': 'rq-low-jobs',
-    },
 }
 
 if IS_BUILD:
@@ -393,7 +353,7 @@ if IS_PRODUCTION:
         raise NameError('SENTRY_DSN environment variable is required when running on a production environment')
     sentry_sdk.init(
         dsn=SENTRY_DSN,
-        integrations=[DjangoIntegration(), RqIntegration()]
+        integrations=[DjangoIntegration(), CeleryIntegration()]
     )
 else:
     if SENTRY_DSN:
