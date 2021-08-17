@@ -11,6 +11,7 @@ src/
 static/
 docker-compose.override.yml
 *.db
+celerybeat-schedule
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*

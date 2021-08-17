@@ -39,8 +39,7 @@ services:
       okuna:
         ipv4_address: 172.16.16.3
     depends_on:
-      - db
-      - redis
+      - worker
     env_file:
       - .docker-compose.env
   db:
