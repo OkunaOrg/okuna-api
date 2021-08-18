@@ -10,6 +10,7 @@ services:
     extra_hosts:
       - db.okuna:172.16.16.4
       - redis.okuna:172.16.16.5
+      - rabbit.okuna:172.16.16.6
     volumes:
       - ./:/opt/okuna-api
       - ./.docker-cache/pip:/root/.cache/pip
@@ -22,6 +23,7 @@ services:
     depends_on:
       - db
       - redis
+      - rabbit
     env_file:
       - .docker-compose.env
   worker:
@@ -33,6 +35,7 @@ services:
     extra_hosts:
       - db.okuna:172.16.16.4
       - redis.okuna:172.16.16.5
+      - rabbit.okuna:172.16.16.6
     volumes:
       - ./:/opt/okuna-api
       - ./.docker-cache/pip:/root/.cache/pip
@@ -53,6 +56,7 @@ services:
     extra_hosts:
       - db.okuna:172.16.16.4
       - redis.okuna:172.16.16.5
+      - rabbit.okuna:172.16.16.6
     volumes:
       - ./:/opt/okuna-api
       - ./.docker-cache/pip:/root/.cache/pip
@@ -90,10 +94,28 @@ services:
       - .docker-compose.env
     volumes:
       - redisdb:/bitnami/redis/data
+  rabbit:
+    container_name: rabbit
+    build:
+      dockerfile: Dockerfile
+      context: ./.docker/rabbitmq
+    privileged: true
+    ports:
+      - 5672
+      - 15672
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
+    networks:
+      okuna:
+        ipv4_address: 172.16.16.6
+    env_file:
+      - .docker-compose.env
+
 
 volumes:
   mariadb:
   redisdb:
+  rabbitmq:
 
 networks:
   okuna:
