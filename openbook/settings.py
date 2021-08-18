@@ -156,6 +156,22 @@ TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
 JWT_ALGORITHM = os.environ.get('JWT_ALGORITHM', 'HS256')
 
+RABBITMQ_HOST = os.environ.get('RABBITMQ_HOST', 'localhost')
+RABBITMQ_PORT = int(os.environ.get('RABBITMQ_PORT', '5672'))
+RABBITMQ_USERNAME = os.environ.get('RABBITMQ_USERNAME', 'guest')
+RABBITMQ_PASSWORD = os.environ.get('RABBITMQ_PASSWORD', 'guest')
+RABBITMQ_VHOST = os.environ.get('RABBITMQ_VHOST', '/')
+
+rabbitmq_vhost = '' if RABBITMQ_VHOST == '/' else '/%s' % RABBITMQ_VHOST
+
+RABBITMQ_LOCATION = 'amqp://%(user)s:%(password)s@%(host)s:%(port)d%(vhost)s' % {
+    'user': RABBITMQ_USERNAME,
+    'password': RABBITMQ_PASSWORD,
+    'host': RABBITMQ_HOST,
+    'port': RABBITMQ_PORT,
+    'vhost': rabbitmq_vhost,
+}
+
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
 REDIS_PORT = int(os.environ.get('REDIS_PORT', '6379'))
 REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
@@ -171,7 +187,8 @@ REDIS_LOCATION = '%(protocol)s%(password)s@%(host)s:%(port)d' % {'protocol': red
 
 REDIS_DEFAULT_CACHE_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 0}
 
-CELERY_REDIS_BROKER_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 1}
+CELERY_RABBITMQ_BROKER_LOCATION = RABBITMQ_LOCATION
+# CELERY_REDIS_BROKER_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 1}
 CELERY_REDIS_RESULT_BACKEND_LOCATION = '%(redis_location)s/%(db)d' % {'redis_location': REDIS_LOCATION, 'db': 2}
 
 CACHES = {

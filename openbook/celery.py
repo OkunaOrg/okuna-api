@@ -4,7 +4,7 @@ from functools import wraps
 
 from celery import Celery
 from kombu import Queue, Exchange
-from openbook.settings import CELERY_REDIS_BROKER_LOCATION, CELERY_REDIS_RESULT_BACKEND_LOCATION
+from openbook.settings import CELERY_RABBITMQ_BROKER_LOCATION, CELERY_REDIS_RESULT_BACKEND_LOCATION
 
 CELERY_DEFAULT_PRIORITY_QUEUE = 'default_priority'
 CELERY_LOW_PRIORITY_QUEUE = 'low_priority'
@@ -14,7 +14,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'openbook.settings')
 
 celery = Celery(
     'openbook',
-    broker=CELERY_REDIS_BROKER_LOCATION,
+    broker=CELERY_RABBITMQ_BROKER_LOCATION,
     backend=CELERY_REDIS_RESULT_BACKEND_LOCATION,
 )
 
