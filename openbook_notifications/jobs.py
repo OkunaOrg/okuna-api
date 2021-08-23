@@ -10,7 +10,7 @@ onesignal_client = onesignal_sdk.Client(
     app_auth_key=settings.ONE_SIGNAL_API_KEY
 )
 
-@celery.task(queue='default_priority')
+@celery.task(queue='default_priority', autoretry_for=(Exception,))
 def send_notification_to_user_with_id(user_id, notification):
     User = get_user_model()
     user = User.objects.only('username', 'uuid', 'id').get(pk=user_id)

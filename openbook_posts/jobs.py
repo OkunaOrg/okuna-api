@@ -12,7 +12,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-@celery.task(queue='low_priority')
+@celery.task(queue='low_priority', autoretry_for=(Exception,))
 def flush_draft_posts():
     """
     This job should be scheduled to get all pending draft posts for a day and remove them
@@ -31,7 +31,7 @@ def flush_draft_posts():
     return 'Flushed %s posts' % str(flushed_posts)
 
 
-@celery.task(queue='high_priority')
+@celery.task(queue='high_priority', autoretry_for=(Exception,))
 def process_post_media(post_id):
     """
     This job is called to process post media and mark it as published
@@ -52,7 +52,7 @@ def process_post_media(post_id):
     logger.info('Processed media of post with id: %d' % post_id)
 
 
-@celery.task(queue='low_priority')
+@celery.task(queue='low_priority', autoretry_for=(Exception,))
 def curate_top_posts():
     """
     Curates the top posts.
@@ -118,7 +118,7 @@ def curate_top_posts():
     return 'Checked: %d. Curated: %d' % (total_checked_posts, total_curated_posts)
 
 
-@celery.task(queue='low_priority')
+@celery.task(queue='low_priority', autoretry_for=(Exception,))
 def clean_top_posts():
     """
     Cleans up top posts, that no longer meet the criteria.
@@ -197,7 +197,7 @@ def _add_post_to_top_post(post):
     return None
 
 
-@celery.task(queue='low_priority')
+@celery.task(queue='low_priority', autoretry_for=(Exception,))
 def curate_trending_posts():
     """
     Curates the trending posts.
@@ -248,7 +248,7 @@ def curate_trending_posts():
     return 'Curated: %d posts' % posts.count()
 
 
-@celery.task(queue='low_priority')
+@celery.task(queue='low_priority', autoretry_for=(Exception,))
 def bootstrap_trending_posts():
     """
     Bootstraps the trending posts.
@@ -302,7 +302,7 @@ def bootstrap_trending_posts():
     return 'Checked: %d. Curated: %d' % (total_checked_posts, total_curated_posts)
 
 
-@celery.task(queue='low_priority')
+@celery.task(queue='low_priority', autoretry_for=(Exception,))
 def clean_trending_posts():
     """
     Cleans trending posts.
