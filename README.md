@@ -72,7 +72,7 @@ The API server for Okuna.
 
 ## Project overview
 
-The project is a [Django](https://www.djangoproject.com/start/) application. 
+The project is a [Django](https://www.djangoproject.com/start/) application.
 
 ## Contributing
 
@@ -92,7 +92,7 @@ Please read and follow our [Code of Conduct](https://github.com/OkunaOrg/okuna-a
 
 #### License
 
-Every contribution accepted is licensed under [AGPL v3.0](http://www.gnu.org/licenses/agpl-3.0.html) or any later version. 
+Every contribution accepted is licensed under [AGPL v3.0](http://www.gnu.org/licenses/agpl-3.0.html) or any later version.
 You must be careful to not include any code that can not be licensed under this license.
 
 Please read carefully [our license](https://github.com/OkunaOrg/okuna-api/blob/master/LICENSE.txt) and ask us if you have any questions.
@@ -134,13 +134,13 @@ You can use the CLI in two modes.
 1. [Full mode](#full-mode) - **Best for Okuna mobile/web app development**
 2. [Services-only mode](#services-only-mode) - **Best for Okuna API development**
 
-Depending on the kind of development you would like to do, follow the instructions below for your chosen mode. 
+Depending on the kind of development you would like to do, follow the instructions below for your chosen mode.
 
 ### Full mode
 
 **Best for Mobile/web app development**
 
-This mode brings a whole Okuna instance up, ready to use with a local Okuna mobile/web app. 
+This mode brings a whole Okuna instance up, ready to use with a local Okuna mobile/web app.
 
 #### Installation
 
@@ -179,7 +179,7 @@ If the process was abruptly terminated and Okuna is still running in the backgro
 
 ```bash
 python okuna-cli.py down-full
-``` 
+```
 
 ### Services-only mode
 
@@ -187,7 +187,7 @@ python okuna-cli.py down-full
 
 The Okuna services are a SQL server, a Redis server, a job scheduler server and a job worker server.
 
-This mode brings these services up but **not** the Okuna API itself, 
+This mode brings these services up but **not** the Okuna API itself,
 you are to run the API locally instead for a better development experience.
 
 #### Installation
@@ -231,7 +231,7 @@ If the process was abruptly terminated and Okuna is still running in the backgro
 
 ```bash
 python okuna-cli.py down-services-only
-``` 
+```
 
 #### Running the Okuna API server locally
 
@@ -286,8 +286,8 @@ Use this if you want to get a fresh version of Okuna next time you use the Okuna
 
 ```bash
 python okuna-cli.py clean
-``` 
- 
+```
+
 ### Okuna CLI behind the scenes
 
 This section will try to demistify what the Okuna CLI does.
@@ -319,7 +319,7 @@ When starting okuna-cli for the first time, 3 files will be generated
 
 A list of official and custom django commands that might come handy.
 
-If running the API locally you can execute them as 
+If running the API locally you can execute them as
 
 ```bash
 python manage.py $command
@@ -332,7 +332,7 @@ machine by running
 docker-compose -f docker-compose-full.yml exec webserver "/bin/bash"
 ```
 
-Inside the machine you can then execute the commands as 
+Inside the machine you can then execute the commands as
 
 ```bash
 python manage.py $command
@@ -394,7 +394,7 @@ usage: manage.py reset_invite_email_boolean [-h] [--days DAYS]
 
 #### `manage.py send_invites`
 
-Send invite emails to all user invites who have not been sent the email. 
+Send invite emails to all user invites who have not been sent the email.
 
 ```bash
 usage: manage.py send_invites [-h]
@@ -402,7 +402,7 @@ usage: manage.py send_invites [-h]
 
 ####`manage.py allocate_invites`
 
-Assign user invites to all or specific users. 
+Assign user invites to all or specific users.
 
 ```bash
 usage: manage.py allocate_invites [-h] [--count INCREMENT_INVITES_BY_COUNT --limit [INVITE_COUNT_UPPER_LIMIT]] [--total TOTAL_INVITE_COUNT_TO_SET] [--username USERNAME]
@@ -449,7 +449,7 @@ usage: manage.py flush_proxy_blacklisted_domains
 
 #### `manage.py worker_health_check`
 
-A a Django management command available for checking the worker health: 
+A a Django management command available for checking the worker health:
 
 Each queue has a required configurable `treshold`. These are configured in the Django settings.
 The `FAILED_JOB_THRESHOLD` is the maximum amount of failed jobs that are allowed, before an alert is sent using the `openbook_common.helpers.send_alert_to_channel` command, which sends an alert to a monitoring channel on i.e. Slack. Using the `ALERT_HOOK_URL` option in the Django settings file, it is possible to add the Slack hook URL.
@@ -462,7 +462,7 @@ It is recommended to schedule the worker monitoring functions, to run at a 5 min
 
 
 #### Crowdin translations update
-Download the latest django.po files in the respective locale/ folders from crowdin. 
+Download the latest django.po files in the respective locale/ folders from crowdin.
 Then locally run all or some of these commands depending on which models need updating.
 It will update the `.json` files, then check them in.
 ```$xslt
@@ -473,8 +473,6 @@ It will update the `.json` files, then check them in.
 ```
 
 ## Available Django jobs
-
-To schedule a job, go to the `/admin/scheduler` route on the running webserver.
 
 The available jobs are
 
@@ -509,13 +507,13 @@ source strings and a place to enter the translation strings. It doesnt overwrite
 4. If you find a fuzzy string, you can resolve it manually. Finally each string should like this
 ```
 #: openbook_lists/validators.py:10   <- place where the string occurs in code
-msgid "The list does not exist."     <- english translations  
+msgid "The list does not exist."     <- english translations
 msgstr "Die Liste ist nicht vorhanden."   <-- this will be empty for new strings
 ```
 5. Upload this `django.po` file to https://crowdin.com/project/okuna/settings#files by pressing `Update` next to the existing `django.po` file.
-6. Once all language volunteers have translated the new strings, download all the `django.po` files for each locale and 
+6. Once all language volunteers have translated the new strings, download all the `django.po` files for each locale and
 put them in their respective folders.
-7. Run `./manage.py compilemessages` to auto-generate `django.mo` files. 
+7. Run `./manage.py compilemessages` to auto-generate `django.mo` files.
 8. You need to checkin both `django.po` and `django.mo` files for each locale.
 
 
@@ -531,4 +529,3 @@ python manage.py runserver --noreload
 
 
 #### Happy coding 🎉!
-

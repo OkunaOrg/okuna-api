@@ -6,10 +6,10 @@ from PIL import Image
 from django.conf import settings
 from django.core.files import File
 from django.urls import reverse
-from django_rq import get_worker
 from faker import Faker
 from rest_framework import status
-from rq import SimpleWorker
+
+from openbook.celery import celery_use_eager
 
 from openbook_common.tests.models import OpenbookAPITestCase
 import random
@@ -182,6 +182,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    @celery_use_eager
     def test_add_first_media_video_creates_media_thumbnail_and_dimensions(self):
         """
         should create a post media_thumbnail and dimensions when adding the first media video
@@ -302,6 +303,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
         self.assertEqual(len(parsed_response), 0)
 
+    @celery_use_eager
     def test_can_retrieve_own_post_media_image(self):
         """
         should be able to retrieve an own post media image
@@ -315,8 +317,6 @@ class PostMediaAPITests(OpenbookAPITestCase):
         with open(test_image['path'], 'rb') as file:
             file = File(file)
             post = user.create_public_post(image=file)
-
-        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         url = self._get_url(post=post)
 
@@ -332,6 +332,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
         self._compare_response_media_with_post_media(post_media=post_media, response_media=response_media)
 
+    @celery_use_eager
     def test_can_retrieve_own_post_media_video(self):
         """
         should be able to retrieve an own post media video
@@ -345,8 +346,6 @@ class PostMediaAPITests(OpenbookAPITestCase):
         with open(test_video['path'], 'rb') as file:
             file = File(file)
             post = user.create_public_post(video=file)
-
-        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         url = self._get_url(post=post)
 
@@ -364,6 +363,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
         # foreign
 
+    @celery_use_eager
     def test_can_retrieve_foreign_user_post_media_image(self):
         """
         should be able to retrieve an foreign_user post media image
@@ -379,8 +379,6 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = foreign_user.create_public_post(image=file)
 
-        get_worker('high', worker_class=SimpleWorker).work(burst=True)
-
         url = self._get_url(post=post)
 
         response = self.client.get(url, **headers, format='multipart')
@@ -395,6 +393,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
         self._compare_response_media_with_post_media(post_media=post_media, response_media=response_media)
 
+    @celery_use_eager
     def test_can_retrieve_foreign_user_post_media_video(self):
         """
         should be able to retrieve an foreign_user post media video
@@ -410,8 +409,6 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = foreign_user.create_public_post(video=file)
 
-        get_worker('high', worker_class=SimpleWorker).work(burst=True)
-
         url = self._get_url(post=post)
 
         response = self.client.get(url, **headers, format='multipart')
@@ -426,6 +423,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
         self._compare_response_media_with_post_media(post_media=post_media, response_media=response_media)
 
+    @celery_use_eager
     def test_can_retrieve_following_user_post_media_image(self):
         """
         should be able to retrieve an following_user post media image
@@ -443,8 +441,6 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = following_user.create_public_post(image=file)
 
-        get_worker('high', worker_class=SimpleWorker).work(burst=True)
-
         url = self._get_url(post=post)
 
         response = self.client.get(url, **headers, format='multipart')
@@ -459,6 +455,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
         self._compare_response_media_with_post_media(post_media=post_media, response_media=response_media)
 
+    @celery_use_eager
     def test_can_retrieve_following_user_post_media_video(self):
         """
         should be able to retrieve an following_user post media video
@@ -476,8 +473,6 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = following_user.create_public_post(video=file)
 
-        get_worker('high', worker_class=SimpleWorker).work(burst=True)
-
         url = self._get_url(post=post)
 
         response = self.client.get(url, **headers, format='multipart')
@@ -492,6 +487,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
         self._compare_response_media_with_post_media(post_media=post_media, response_media=response_media)
 
+    @celery_use_eager
     def test_can_retrieve_follower_user_post_media_image(self):
         """
         should be able to retrieve an follower_user post media image
@@ -509,8 +505,6 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = follower_user.create_public_post(image=file)
 
-        get_worker('high', worker_class=SimpleWorker).work(burst=True)
-
         url = self._get_url(post=post)
 
         response = self.client.get(url, **headers, format='multipart')
@@ -525,6 +519,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
         self._compare_response_media_with_post_media(post_media=post_media, response_media=response_media)
 
+    @celery_use_eager
     def test_can_retrieve_follower_user_post_media_video(self):
         """
         should be able to retrieve an follower_user post media video
@@ -542,8 +537,6 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = follower_user.create_public_post(video=file)
 
-        get_worker('high', worker_class=SimpleWorker).work(burst=True)
-
         url = self._get_url(post=post)
 
         response = self.client.get(url, **headers, format='multipart')
@@ -558,6 +551,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
         self._compare_response_media_with_post_media(post_media=post_media, response_media=response_media)
 
+    @celery_use_eager
     def test_can_retrieve_connected_user_post_media_image(self):
         """
         should be able to retrieve an connected_user post media image
@@ -577,8 +571,6 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = connected_user.create_encircled_post(image=file, circles_ids=[circle.pk])
 
-        get_worker('high', worker_class=SimpleWorker).work(burst=True)
-
         url = self._get_url(post=post)
 
         response = self.client.get(url, **headers, format='multipart')
@@ -593,6 +585,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
         self._compare_response_media_with_post_media(post_media=post_media, response_media=response_media)
 
+    @celery_use_eager
     def test_can_retrieve_connected_user_post_media_video(self):
         """
         should be able to retrieve an connected_user post media video
@@ -613,8 +606,6 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = connected_user.create_encircled_post(video=file, circles_ids=[circle.pk])
 
-        get_worker('high', worker_class=SimpleWorker).work(burst=True)
-
         url = self._get_url(post=post)
 
         response = self.client.get(url, **headers, format='multipart')
@@ -629,6 +620,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
         self._compare_response_media_with_post_media(post_media=post_media, response_media=response_media)
 
+    @celery_use_eager
     def test_cant_retrieve_pending_connection_user_user_encircled_post_media_image(self):
         """
         should not be able to retrieve an pending_connection_user_user encircled post media image
@@ -647,14 +639,13 @@ class PostMediaAPITests(OpenbookAPITestCase):
             circle = make_circle(creator=pending_connection_user_user)
             post = pending_connection_user_user.create_encircled_post(image=file, circles_ids=[circle.pk])
 
-        get_worker('high', worker_class=SimpleWorker).work(burst=True)
-
         url = self._get_url(post=post)
 
         response = self.client.get(url, **headers, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    @celery_use_eager
     def test_cant_retrieve_pending_connection_user_user_encircled_post_media_video(self):
         """
         should be able to retrieve an pending_connection_user_user encircled post media video
@@ -673,14 +664,13 @@ class PostMediaAPITests(OpenbookAPITestCase):
             circle = make_circle(creator=pending_connection_user_user)
             post = pending_connection_user_user.create_encircled_post(video=file, circles_ids=[circle.pk])
 
-        get_worker('high', worker_class=SimpleWorker).work(burst=True)
-
         url = self._get_url(post=post)
 
         response = self.client.get(url, **headers, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    @celery_use_eager
     def test_can_retrieve_public_community_post_media_image(self):
         """
         should be able to retrieve an public_community post media image
@@ -699,8 +689,6 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = community_member.create_community_post(image=file, community_name=public_community.name)
 
-        get_worker('high', worker_class=SimpleWorker).work(burst=True)
-
         url = self._get_url(post=post)
 
         response = self.client.get(url, **headers, format='multipart')
@@ -715,6 +703,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
         self._compare_response_media_with_post_media(post_media=post_media, response_media=response_media)
 
+    @celery_use_eager
     def test_can_retrieve_public_community_post_media_video(self):
         """
         should be able to retrieve an public_community post media video
@@ -733,8 +722,6 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = community_member.create_community_post(video=file, community_name=public_community.name)
 
-        get_worker('high', worker_class=SimpleWorker).work(burst=True)
-
         url = self._get_url(post=post)
 
         response = self.client.get(url, **headers, format='multipart')
@@ -749,6 +736,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
         self._compare_response_media_with_post_media(post_media=post_media, response_media=response_media)
 
+    @celery_use_eager
     def test_can_retrieve_private_community_part_of_post_media_image(self):
         """
         should be able to retrieve an private_community part of post media image
@@ -769,8 +757,6 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = community_creator.create_community_post(image=file, community_name=private_community.name)
 
-        get_worker('high', worker_class=SimpleWorker).work(burst=True)
-
         url = self._get_url(post=post)
 
         response = self.client.get(url, **headers, format='multipart')
@@ -785,6 +771,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
         self._compare_response_media_with_post_media(post_media=post_media, response_media=response_media)
 
+    @celery_use_eager
     def test_can_retrieve_private_community_part_of_post_media_video(self):
         """
         should be able to retrieve an private_community part of post media video
@@ -805,8 +792,6 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = community_creator.create_community_post(video=file, community_name=private_community.name)
 
-        get_worker('high', worker_class=SimpleWorker).work(burst=True)
-
         url = self._get_url(post=post)
 
         response = self.client.get(url, **headers, format='multipart')
@@ -821,6 +806,7 @@ class PostMediaAPITests(OpenbookAPITestCase):
 
         self._compare_response_media_with_post_media(post_media=post_media, response_media=response_media)
 
+    @celery_use_eager
     def test_cannot_retrieve_private_community_not_part_of_post_media_image(self):
         """
         should not be able to retrieve an private_community not part of post media image
@@ -837,14 +823,13 @@ class PostMediaAPITests(OpenbookAPITestCase):
             file = File(file)
             post = community_creator.create_community_post(image=file, community_name=private_community.name)
 
-        get_worker('high', worker_class=SimpleWorker).work(burst=True)
-
         url = self._get_url(post=post)
 
         response = self.client.get(url, **headers, format='multipart')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    @celery_use_eager
     def test_cannot_retrieve_private_community_not_part_of_post_media_video(self):
         """
         should not be able to retrieve an private_community not part of post media video
@@ -860,8 +845,6 @@ class PostMediaAPITests(OpenbookAPITestCase):
         with open(test_video['path'], 'rb') as file:
             file = File(file)
             post = community_creator.create_community_post(video=file, community_name=private_community.name)
-
-        get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
         url = self._get_url(post=post)
 

@@ -1,3 +1,5 @@
+# TODO: port this over to Celery
+
 import django_rq
 from django_rq.utils import get_statistics, FailedJobRegistry
 

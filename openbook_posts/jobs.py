@@ -1,19 +1,18 @@
 from django.utils import timezone
-from django_rq import job
 from video_encoding import tasks
 from datetime import timedelta
 from django.db.models import Q, Count
 from django.conf import settings
 from cursor_pagination import CursorPaginator
 
+from openbook.celery import celery
 from openbook_common.utils.model_loaders import get_post_model, get_post_media_model, get_community_model, \
     get_top_post_model, get_post_comment_model, get_moderated_object_model, get_trending_post_model
 import logging
 
 logger = logging.getLogger(__name__)
 
-
-@job('low')
+@celery.task(queue='low_priority', autoretry_for=(Exception,))
 def flush_draft_posts():
     """
     This job should be scheduled to get all pending draft posts for a day and remove them
@@ -32,7 +31,7 @@ def flush_draft_posts():
     return 'Flushed %s posts' % str(flushed_posts)
 
 
-@job('high')
+@celery.task(queue='high_priority', autoretry_for=(Exception,))
 def process_post_media(post_id):
     """
     This job is called to process post media and mark it as published
@@ -53,7 +52,7 @@ def process_post_media(post_id):
     logger.info('Processed media of post with id: %d' % post_id)
 
 
-@job('low')
+@celery.task(queue='low_priority', autoretry_for=(Exception,))
 def curate_top_posts():
     """
     Curates the top posts.
@@ -119,7 +118,7 @@ def curate_top_posts():
     return 'Checked: %d. Curated: %d' % (total_checked_posts, total_curated_posts)
 
 
-@job('low')
+@celery.task(queue='low_priority', autoretry_for=(Exception,))
 def clean_top_posts():
     """
     Cleans up top posts, that no longer meet the criteria.
@@ -198,7 +197,7 @@ def _add_post_to_top_post(post):
     return None
 
 
-@job('low')
+@celery.task(queue='low_priority', autoretry_for=(Exception,))
 def curate_trending_posts():
     """
     Curates the trending posts.
@@ -249,7 +248,7 @@ def curate_trending_posts():
     return 'Curated: %d posts' % posts.count()
 
 
-@job('low')
+@celery.task(queue='low_priority', autoretry_for=(Exception,))
 def bootstrap_trending_posts():
     """
     Bootstraps the trending posts.
@@ -303,7 +302,7 @@ def bootstrap_trending_posts():
     return 'Checked: %d. Curated: %d' % (total_checked_posts, total_curated_posts)
 
 
-@job('low')
+@celery.task(queue='low_priority', autoretry_for=(Exception,))
 def clean_trending_posts():
     """
     Cleans trending posts.

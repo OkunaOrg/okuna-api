@@ -1,3 +1,5 @@
+# TODO: port this over to Celery
+
 from sys import exit
 from logging import getLogger
 

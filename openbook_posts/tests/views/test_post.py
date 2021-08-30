@@ -5,8 +5,6 @@ from os import access, F_OK
 
 from PIL import Image
 from django.urls import reverse
-from django_rq import get_worker
-from django_rq.queues import get_queues
 from faker import Faker
 from rest_framework import status
 from openbook_common.tests.models import OpenbookAPITestCase
@@ -18,7 +16,7 @@ from unittest import mock
 
 import logging
 
-from rq import SimpleWorker, Worker
+from openbook.celery import celery_use_eager
 
 from openbook_common.tests.helpers import make_authentication_headers_for_user, make_fake_post_text, \
     make_fake_post_comment_text, make_user, make_circle, make_community, make_moderation_category, \
@@ -655,6 +653,7 @@ class PostItemAPITests(OpenbookAPITestCase):
 
         self.assertFalse(access(file.name, F_OK))
 
+    @celery_use_eager
     def test_delete_video_post(self):
         """
         should be able to delete video post and file
@@ -667,9 +666,6 @@ class PostItemAPITests(OpenbookAPITestCase):
             video = File(file)
 
             post = user.create_public_post(text=make_fake_post_text(), video=video)
-
-            # Process videos
-            get_worker('high', worker_class=SimpleWorker).work(burst=True)
 
             post_media_video = post.get_first_media()
             post_video = post_media_video.content_object
@@ -2728,6 +2724,7 @@ class PublishPostAPITests(OpenbookAPITestCase):
         'openbook_circles/fixtures/circles.json'
     ]
 
+    @celery_use_eager
     def test_publishing_draft_image_post_should_process_media(self):
         """
         should process draft image post when publishing
@@ -2751,15 +2748,13 @@ class PublishPostAPITests(OpenbookAPITestCase):
 
         post = Post.objects.get(pk=post.pk)
 
-        self.assertEqual(post.status, Post.STATUS_PROCESSING)
-
-        # Run the process handled by a worker
-        get_worker('high', worker_class=SimpleWorker).work(burst=True)
-
-        post.refresh_from_db()
+        # TODO: wait for Celery task manually (without eager mode)
+        # self.assertEqual(post.status, Post.STATUS_PROCESSING)
+        # post.refresh_from_db()
 
         self.assertEqual(post.status, Post.STATUS_PUBLISHED)
 
+    @celery_use_eager
     def test_publishing_draft_video_post_should_process_media(self):
         """
         should process draft video post mp4|3gp|gif media when publishing
@@ -2782,12 +2777,9 @@ class PublishPostAPITests(OpenbookAPITestCase):
 
                 post = Post.objects.get(pk=post.pk)
 
-                self.assertEqual(post.status, Post.STATUS_PROCESSING)
-
-                # Run the process handled by a worker
-                get_worker('high', worker_class=SimpleWorker).work(burst=True)
-
-                post.refresh_from_db()
+                # TODO: wait for Celery task manually (without eager mode)
+                # self.assertEqual(post.status, Post.STATUS_PROCESSING)
+                # post.refresh_from_db()
 
                 self.assertEqual(post.status, Post.STATUS_PUBLISHED)
 
@@ -2924,6 +2916,7 @@ class PublishPostAPITests(OpenbookAPITestCase):
 
         self.assertTrue(Post.objects.filter(pk=post.pk, status=Post.STATUS_DRAFT))
 
+    @celery_use_eager
     def test_publishing_publicly_visible_image_post_with_new_hashtag_should_use_image(self):
         """
         when publishing a publicly visible post with a new hashtag, the hashtag should use the image
@@ -2951,12 +2944,9 @@ class PublishPostAPITests(OpenbookAPITestCase):
 
         post = Post.objects.get(pk=post.pk)
 
-        self.assertEqual(post.status, Post.STATUS_PROCESSING)
-
-        # Run the process handled by a worker
-        get_worker('high', worker_class=SimpleWorker).work(burst=True)
-
-        post.refresh_from_db()
+        # TODO: wait for Celery task manually (without eager mode)
+        # self.assertEqual(post.status, Post.STATUS_PROCESSING)
+        # post.refresh_from_db()
 
         self.assertEqual(post.status, Post.STATUS_PUBLISHED)
 

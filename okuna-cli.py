@@ -82,6 +82,10 @@ def _get_redis_password():
     return _get_random_string(128)
 
 
+def _get_rabbitmq_password():
+    return _get_random_string(128)
+
+
 def _copy_requirements_txt_to_docker_images_dir():
     copyfile(REQUIREMENTS_TXT_FILE, DOCKER_API_IMAGE_REQUIREMENTS_TXT_FILE)
     copyfile(REQUIREMENTS_TXT_FILE, DOCKER_WORKER_IMAGE_REQUIREMENTS_TXT_FILE)
@@ -121,6 +125,7 @@ def _clean():
     logger.info('🧹 Cleaning up database')
     subprocess.run(["docker", "volume", "rm", "okuna-api_mariadb"])
     subprocess.run(["docker", "volume", "rm", "okuna-api_redisdb"])
+    subprocess.run(["docker", "volume", "rm", "okuna-api_rabbitmq"])
 
     logger.info('🧹 Cleaning up config files')
     _remove_file_silently(LOCAL_API_ENV_FILE)
@@ -131,13 +136,13 @@ def _clean():
 
 def _print_okuna_logo():
     print(r"""
-   ____  _                      
-  / __ \| |                     
- | |  | | | ___   _ _ __   __ _ 
+   ____  _
+  / __ \| |
+ | |  | | | ___   _ _ __   __ _
  | |  | | |/ | | | | '_ \ / _` |
  | |__| |   <| |_| | | | | (_| |
   \____/|_|\_\\__,_|_| |_|\__,_|
-                                
+
   """)
 
 
@@ -173,6 +178,7 @@ def _ensure_has_local_api_environment_file(okuna_cli_config):
         "{{DJANGO_SECRET_KEY}}": okuna_cli_config['djangoSecretKey'],
         "{{SQL_PASSWORD}}": okuna_cli_config['sqlPassword'],
         "{{REDIS_PASSWORD}}": okuna_cli_config['redisPassword'],
+        "{{RABBITMQ_PASSWORD}}": okuna_cli_config['rabbitmqPassword'],
     })
 
 
@@ -190,6 +196,7 @@ def _ensure_has_docker_compose_api_environment_file(okuna_cli_config):
         "{{DJANGO_SECRET_KEY}}": okuna_cli_config['djangoSecretKey'],
         "{{SQL_PASSWORD}}": okuna_cli_config['sqlPassword'],
         "{{REDIS_PASSWORD}}": okuna_cli_config['redisPassword'],
+        "{{RABBITMQ_PASSWORD}}": okuna_cli_config['rabbitmqPassword'],
     })
 
 
@@ -200,10 +207,12 @@ def _ensure_has_okuna_config_file():
     django_secret_key = _get_django_secret_key()
     mysql_password = _get_mysql_password()
     redis_password = _get_redis_password()
+    rabbitmq_password = _get_rabbitmq_password()
 
     logger.info('Generated DJANGO_SECRET_KEY=%s' % django_secret_key)
     logger.info('Generated SQL_PASSWORD=%s' % mysql_password)
     logger.info('Generated REDIS_PASSWORD=%s' % redis_password)
+    logger.info('Generated RABBITMQ_PASSWORD=%s' % rabbitmq_password)
 
     logger.info('Config file does not exist. Creating %s' % OKUNA_CLI_CONFIG_FILE)
 
@@ -216,6 +225,7 @@ def _ensure_has_okuna_config_file():
         "{{DJANGO_SECRET_KEY}}": django_secret_key,
         "{{SQL_PASSWORD}}": mysql_password,
         "{{REDIS_PASSWORD}}": redis_password,
+        "{{RABBITMQ_PASSWORD}}": rabbitmq_password,
     })
 
 
