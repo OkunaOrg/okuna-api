@@ -96,7 +96,7 @@ class RegistrationAPITests(OpenbookAPITestCase):
         should return 400 if the username is not valid
         """
         url = self._get_url()
-        invalid_usernames = ('joel<;<', '<>', ' shantanu space ', 'greater_than_30_characters_username_is_not_valid',)
+        invalid_usernames = ('joel<;<', '<>', ' shantanu space ', 'greater_than_30_characters_username_is_not_valid','.start_with_period','more_than__one_special_char','end_with_period.')
         token = self._make_user_invite_token()
         for username in invalid_usernames:
             data = {
