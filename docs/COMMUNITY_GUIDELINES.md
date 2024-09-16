@@ -72,7 +72,7 @@ If you’re reading something that makes you feel uncomfortable…
 
 When replying to someone’s comment or post…
 
-* **Keep these guidelines in mind.** At minimum the in short section.
+* **Keep these guidelines in mind.** At minimum, the aforementioned "In short" section at the top of this document.
 * **Did you read that right?** Give it another look.
 * **Are you in doubt about what it means?** Kindly ask the person for more information.
 * **Find something in common and share it if possible.** Finding something in common between you and the original poster makes sure both of you see a human on the other side. This facilitates empathy and compassion.
@@ -81,7 +81,7 @@ When the discussion is going nowhere…
 
 * **Take a break.** If the discussion has been going for some time, taking a break or sleeping on it might help bring fresh, renewed perspective on the subject. Taking a shower might also work wonders.
 * **It’s not about winning or losing.** Discussions are an opportunity for all sides to learn something new.
-* **Gracefully exit the conversation.** If you've tried it all and the conversation is going nowhere, you might want to exit gracefully with something like: "Thank you for your opinion. I think differently, but I respect your views. I'd like to finish this topic here. Thank you very much!"
+* **Gracefully exit the conversation.** If you've tried it all and the conversation is going nowhere, you might want to exit gracefully with something like: "Thank you for your opinion. I think differently, but I respect your views. I'd like to finish this topic here. Thank you very much!".
 * **As a last resort, consider blocking.** As in real life, there might be cases where people just can’t get along. Consider blocking instead of escalating discussions.
 
 If the discussion becomes aggressive…
@@ -160,7 +160,7 @@ Making Okuna a healthy and welcoming community for everyone is a shared responsi
 Points borrowed from the [Norwegian Data Protection Authority](https://www.datatilsynet.no/personvern-pa-ulike-omrader/internett-og-apper/bilder-pa-nett/bilder-av-barn/).
 
 #### On harmful beliefs
-Some beliefs can cause real life harm. For example, the now unfortunately wide-spread belief that vaccination causes autism [(it doesn’t as overwhelmingly proven by numeours and independent studies)](https://www.healthychildren.org/English/safety-prevention/immunizations/Pages/Vaccine-Studies-Examine-the-Evidence.aspx) [resulting](https://jamanetwork.com/journals/jama/fullarticle/2656158?appId=scweb) in the [resurgence of measles outbreaks](https://www.unicef.org/press-releases/over-20-million-children-worldwide-missed-out-measles-vaccine-annually-past-8-years).
+Some beliefs can cause real life harm. For example, the now unfortunately wide-spread belief that vaccination causes autism [(it doesn’t as overwhelmingly proven by numerous and independent studies)](https://www.healthychildren.org/English/safety-prevention/immunizations/Pages/Vaccine-Studies-Examine-the-Evidence.aspx) [resulting](https://jamanetwork.com/journals/jama/fullarticle/2656158?appId=scweb) in the [resurgence of measles outbreaks](https://www.unicef.org/press-releases/over-20-million-children-worldwide-missed-out-measles-vaccine-annually-past-8-years).
 Beliefs like this example are exempted from the protected status and we will do our best to prevent their spreading on the platform.
 
 We will also determine a belief to be harmful—and therefore not protected—if:
